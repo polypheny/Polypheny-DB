@@ -1,1 +1,1 @@
-# Polypheny-DB-Core
+# Polypheny-DB
