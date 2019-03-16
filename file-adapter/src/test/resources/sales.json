@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "defaultSchema": "SALES",
+  "schemas": [
+    {
+      "name": "SALES",
+      "type": "custom",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.file.FileSchemaFactory",
+      "operand": {
+        "tables": [
+          {
+            "name": "EMPS",
+            "url": "file:sales/EMPS.html"
+          },
+          {
+            "name": "DEPTS",
+            "url": "file:sales/DEPTS.html"
+          }
+        ]
+      }
+    }
+  ]
+}

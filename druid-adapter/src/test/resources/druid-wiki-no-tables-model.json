@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "defaultSchema": "wiki",
+  "schemas": [
+    {
+      "type": "custom",
+      "name": "wiki",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchemaFactory",
+      "operand": {
+        "url": "http://localhost:8082",
+        "coordinatorUrl": "http://localhost:8081"
+      }
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "defaultSchema": "TEST",
+  "schemas": [
+    {
+      "name": "TEST",
+      "type": "custom",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.file.FileSchemaFactory",
+      "operand": {
+        "tables": [
+          {
+            "name": "T1",
+            "url": "file:tableOK.html"
+          },
+          {
+            "name": "T1_NO_TH",
+            "url": "file:tableNoTH.html"
+          },
+          {
+            "name": "TABLEX2",
+            "url": "file:tableX2.html"
+          }
+        ]
+      }
+    }
+  ]
+}

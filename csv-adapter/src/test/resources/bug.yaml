@@ -1,0 +1,8 @@
+version: 1.0
+defaultSchema: BUG
+schemas:
+    -   name: BUG
+        type: custom
+        factory: ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory
+        operand:
+            directory: bug

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "defaultSchema": "twissandra",
+  "schemas": [
+    {
+      "name": "twissandra",
+      "type": "custom",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraSchemaFactory",
+      "operand": {
+        "host": "localhost",
+        "port": 9142,
+        "keyspace": "twissandra"
+      }
+    }
+  ]
+}

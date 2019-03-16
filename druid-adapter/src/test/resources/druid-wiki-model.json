@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "defaultSchema": "wiki",
+  "schemas": [
+    {
+      "type": "custom",
+      "name": "wiki",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchemaFactory",
+      "operand": {
+        "url": "http://localhost:8082",
+        "coordinatorUrl": "http://localhost:8081"
+      },
+      "tables": [
+        {
+          "name": "wiki",
+          "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidTableFactory",
+          "operand": {
+            "dataSource": "wikiticker",
+            "interval": "1900-01-09T00:00:00.000Z/2992-01-10T00:00:00.000Z",
+            "timestampColumn": "time",
+            "dimensions": [
+              "channel",
+              "cityName",
+              "comment",
+              "countryIsoCode",
+              "countryName",
+              "isAnonymous",
+              "isMinor",
+              "isNew",
+              "isRobot",
+              "isUnpatrolled",
+              "metroCode",
+              "namespace",
+              "page",
+              "regionIsoCode",
+              "regionName"
+            ],
+            "metrics": [
+              {
+                "name": "count",
+                "type": "count"
+              },
+              {
+                "name": "added",
+                "type": "longSum",
+                "fieldName": "added"
+              },
+              {
+                "name": "deleted",
+                "type": "longSum",
+                "fieldName": "deleted"
+              },
+              {
+                "name": "delta",
+                "type": "longSum",
+                "fieldName": "delta"
+              },
+              {
+                "name": "user_unique",
+                "type": "hyperUnique",
+                "fieldName": "user_id"
+              }
+            ],
+            "complexMetrics": [
+              "user_id"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

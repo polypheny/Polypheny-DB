@@ -1,0 +1,13 @@
+rootProject.name = 'Polypheny-DB'
+include 'core'
+include 'cassandra-adapter'
+include 'csv-adapter'
+include 'druid-adapter'
+include 'elasticsearch-adapter'
+include 'file-adapter'
+include 'geode-adapter'
+include 'mongodb-adapter'
+include 'pig-adapter'
+include 'pig-parser'
+include 'webui'
+

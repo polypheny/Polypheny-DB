@@ -1,0 +1,16 @@
+#
+# A JSON model of a Polypheny-DB schema that is similar to model.json, except that it produces tables that implement FilterableTable.
+# These tables can implement their own simple filtering.
+#
+# A JSON model of a Polypheny-DB schema that is similar to model.json, except that it produces tables that implement TranslatableTable.
+# These tables are translated to a CsvTableScan relational expression which participates in query planning.
+#
+version: 1.0
+defaultSchema: SALES
+schemas:
+    -   name: SALES
+        type: custom
+        factory: ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory
+        operand:
+            directory: sales
+            flavor: TRANSLATABLE

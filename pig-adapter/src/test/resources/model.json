@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "defaultSchema": "PIG",
+  "schemas": [
+    {
+      "name": "PIG",
+      "type": "custom",
+      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigSchemaFactory",
+      "tables": [
+        {
+          "name": "t",
+          "type": "custom",
+          "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigTableFactory",
+          "operand": {
+            "file": "data.txt",
+            "columns": ["tc0", "tc1"]
+          }
+        },
+        {
+          "name": "s",
+          "type": "custom",
+          "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigTableFactory",
+          "operand": {
+            "file": "data2.txt",
+            "columns": ["sc0", "sc1"]
+          }
+        }
+      ]
+    }
+  ]
+}

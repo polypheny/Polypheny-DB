@@ -1,0 +1,93 @@
+/*
+ * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
+ * The changes are released under the MIT license.
+ *
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+
+
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.Metadata;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataDef;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataHandler;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.UnboundMetadata;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import java.lang.reflect.Method;
+
+
+/**
+ * HepRelMetadataProvider implements the {@link RelMetadataProvider} interface by combining metadata from the rels inside of a {@link HepRelVertex}.
+ */
+class HepRelMetadataProvider implements RelMetadataProvider {
+
+    @Override
+    public boolean equals( Object obj ) {
+        return obj instanceof HepRelMetadataProvider;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return 107;
+    }
+
+
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, final Class<? extends M> metadataClass ) {
+        return ( rel, mq ) -> {
+            if ( !(rel instanceof HepRelVertex) ) {
+                return null;
+            }
+            HepRelVertex vertex = (HepRelVertex) rel;
+            final RelNode rel2 = vertex.getCurrentRel();
+            UnboundMetadata<M> function = rel.getCluster().getMetadataProvider().apply( rel2.getClass(), metadataClass );
+            return function.bind( rel2, mq );
+        };
+    }
+
+
+    public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
+        return ImmutableMultimap.of();
+    }
+}
+
