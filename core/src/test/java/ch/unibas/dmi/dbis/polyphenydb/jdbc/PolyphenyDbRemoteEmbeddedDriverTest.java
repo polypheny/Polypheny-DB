@@ -110,7 +110,7 @@ import org.junit.Test;
 /**
  * Test for Polypheny-DB's remote JDBC driver.
  */
-public class PolyphenyDbRemoteDriverTest {
+public class PolyphenyDbRemoteEmbeddedDriverTest {
 
     public static final String LJS = Factory2.class.getName();
 

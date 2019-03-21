@@ -110,7 +110,7 @@ import org.apache.calcite.linq4j.function.Predicate1;
  */
 public class PolyphenyDbMetaImpl extends MetaImpl {
 
-    static final Driver DRIVER = new Driver();
+    static final EmbeddedDriver EMBEDDED_DRIVER = new EmbeddedDriver();
 
 
     public PolyphenyDbMetaImpl( PolyphenyDbConnectionImpl connection ) {
@@ -724,7 +724,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
      */
     @VisibleForTesting
     public static PolyphenyDbConnection connect( PolyphenyDbSchema schema, JavaTypeFactory typeFactory ) {
-        return DRIVER.connect( schema, typeFactory );
+        return EMBEDDED_DRIVER.connect( schema, typeFactory );
     }
 
 

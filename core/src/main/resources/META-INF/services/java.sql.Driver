@@ -1,1 +1,1 @@
-ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver
+ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver

@@ -89,9 +89,9 @@ public class SimpleJdbcExample {
                 + "}";
         info.put( "model", model );
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
 
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery( "SELECT * FROM \"TEST\".\"BookMaster\"" );
 

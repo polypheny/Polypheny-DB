@@ -118,7 +118,7 @@ public class TableFunctionTest {
      */
     @Test
     public void testTableFunction() throws SQLException {
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
             SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -136,7 +136,7 @@ public class TableFunctionTest {
      */
     @Test
     public void testScannableTableFunction() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -154,7 +154,7 @@ public class TableFunctionTest {
      */
     @Test
     public void testScannableTableFunctionWithNamedParameters() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -183,7 +183,7 @@ public class TableFunctionTest {
     @Test
     public void testMultipleScannableTableFunctionWithNamedParameters() throws SQLException, ClassNotFoundException {
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
                 Statement statement = connection.createStatement()
         ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
@@ -251,7 +251,7 @@ public class TableFunctionTest {
 
 
     private Connection getConnectionWithMultiplyFunction() throws ClassNotFoundException, SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -268,7 +268,7 @@ public class TableFunctionTest {
     @Test
     public void testTableFunctionCursorInputs() throws SQLException, ClassNotFoundException {
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" )
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" )
         ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
             SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
@@ -427,7 +427,7 @@ public class TableFunctionTest {
     @Test
     public void testInlineViewLateralTableFunction() throws SQLException {
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" )
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" )
         ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
             SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();

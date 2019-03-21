@@ -65,7 +65,7 @@ public class RelRunners {
      * Runs a relational expression by creating a JDBC connection.
      */
     public static PreparedStatement run( RelNode rel ) {
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             final RelRunner runner = connection.unwrap( RelRunner.class );
             return runner.prepare( rel );
         } catch ( SQLException e ) {

@@ -296,7 +296,7 @@ public class CollectionTypeTest {
 
 
     private Connection setupConnectionWithNestedTable() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -306,7 +306,7 @@ public class CollectionTypeTest {
 
 
     private Connection setupConnectionWithNestedAnyTypeTable() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );

@@ -122,7 +122,7 @@ public class AggregationTest {
         return new ConnectionFactory() {
             @Override
             public Connection createConnection() throws SQLException {
-                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:lex=JAVA" );
+                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:lex=JAVA" );
                 final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
 
                 root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );

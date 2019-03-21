@@ -84,7 +84,7 @@ public class GeodeBookstoreTest extends AbstractGeodeTest {
         return new ConnectionFactory() {
             @Override
             public Connection createConnection() throws SQLException {
-                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:lex=JAVA" );
+                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:lex=JAVA" );
                 final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
                 root.add( "geode", new GeodeSchema( POLICY.cache(), Arrays.asList( "BookMaster", "BookCustomer" ) ) );
                 return connection;

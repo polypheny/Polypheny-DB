@@ -84,7 +84,7 @@ public class MaterializedViewTable extends ViewTable {
 
     static {
         try {
-            MATERIALIZATION_CONNECTION = DriverManager.getConnection( "jdbc:polyphenydb:" ).unwrap( PolyphenyDbConnection.class );
+            MATERIALIZATION_CONNECTION = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ).unwrap( PolyphenyDbConnection.class );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }

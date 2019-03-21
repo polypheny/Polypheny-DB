@@ -69,7 +69,7 @@ public class RelMdColumnOriginsTest {
      */
     @Test
     public void testQueryWithAggregateGroupingSets() throws Exception {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
 
         polyphenyDbConnection.getRootSchema().add( "T1", new TableInRootSchemaTest.SimpleTable() );

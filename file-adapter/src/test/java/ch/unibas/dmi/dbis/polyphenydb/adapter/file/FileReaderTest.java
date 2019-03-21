@@ -297,7 +297,7 @@ public class FileReaderTest {
         info.put( "lex", "JAVA" );
 
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement stmt = connection.createStatement()
         ) {
             final String sql = "select * from FILES.DEPTS";

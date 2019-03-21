@@ -2478,7 +2478,7 @@ public class RelBuilderTest {
      */
     @Test
     public void testExpandViewInRelBuilder() throws SQLException {
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             final Frameworks.ConfigBuilder configBuilder = expandingConfig( connection );
             final RelOptTable.ViewExpander viewExpander = (RelOptTable.ViewExpander) Frameworks.getPlanner( configBuilder.build() );
             final TableScanFactory tableScanFactory = RelFactories.expandingScanFactory( viewExpander, RelFactories.DEFAULT_TABLE_SCAN_FACTORY );
@@ -2505,7 +2505,7 @@ public class RelBuilderTest {
     public void testExpandTable() throws SQLException {
         final RelOptTable.ViewExpander viewExpander = ( rowType, queryString, schemaPath, viewPath ) -> null;
         final RelFactories.TableScanFactory tableScanFactory = RelFactories.expandingScanFactory( viewExpander, RelFactories.DEFAULT_TABLE_SCAN_FACTORY );
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             // First, use a non-expanding RelBuilder. Plan contains LogicalTableScan.
             final Frameworks.ConfigBuilder configBuilder = expandingConfig( connection );
             final RelBuilder builder = RelBuilder.create( configBuilder.build() );

@@ -360,7 +360,7 @@ public class JdbcFrontLinqBackTest {
      */
     public static Connection makeConnection( final List<JdbcTest.Employee> initialData ) throws Exception {
         Properties info = new Properties();
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         connection = makePostProcessor( initialData ).apply( connection );
         return connection;
     }

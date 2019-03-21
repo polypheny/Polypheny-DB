@@ -383,7 +383,7 @@ public class ScannableTableTest {
         final Properties properties = new Properties();
         properties.setProperty( "caseSensitive", "true" );
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", properties )
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties )
         ) {
             final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
 

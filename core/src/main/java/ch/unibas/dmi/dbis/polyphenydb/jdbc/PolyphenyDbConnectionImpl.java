@@ -132,19 +132,19 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
     /**
      * Creates a PolyphenyDbConnectionImpl.
      *
-     * Not public; method is called only from the driver.
+     * Not public; method is called only from the embeddedDriver.
      *
-     * @param driver Driver
+     * @param embeddedDriver EmbeddedDriver
      * @param factory Factory for JDBC objects
      * @param url Server URL
      * @param info Other connection properties
      * @param rootSchema Root schema, or null
      * @param typeFactory Type factory, or null
      */
-    protected PolyphenyDbConnectionImpl( Driver driver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
-        super( driver, factory, url, info );
+    protected PolyphenyDbConnectionImpl( EmbeddedDriver embeddedDriver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+        super( embeddedDriver, factory, url, info );
         PolyphenyDbConnectionConfig cfg = new PolyphenyDbConnectionConfigImpl( info );
-        this.prepareFactory = driver.prepareFactory;
+        this.prepareFactory = embeddedDriver.prepareFactory;
         if ( typeFactory != null ) {
             this.typeFactory = typeFactory;
         } else {

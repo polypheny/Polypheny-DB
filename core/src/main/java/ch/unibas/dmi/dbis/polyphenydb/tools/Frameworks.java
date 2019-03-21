@@ -189,7 +189,7 @@ public class Frameworks {
                         PolyphenyDbConnectionProperty.TYPE_SYSTEM.camelName(),
                         action.config.getTypeSystem().getClass().getName() );
             }
-            Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             final PolyphenyDbServerStatement statement =
                     connection.createStatement()
                             .unwrap( PolyphenyDbServerStatement.class );

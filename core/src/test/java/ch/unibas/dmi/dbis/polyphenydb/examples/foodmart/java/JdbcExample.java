@@ -68,8 +68,8 @@ public class JdbcExample {
 
 
     public void run() throws ClassNotFoundException, SQLException {
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new Hr() ) );

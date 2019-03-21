@@ -77,11 +77,11 @@ import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -402,7 +402,7 @@ public class JdbcTest {
      */
     @Test
     public void testTableMacro() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -427,7 +427,7 @@ public class JdbcTest {
      */
     @Test
     public void testTableMacroMap() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -585,7 +585,7 @@ public class JdbcTest {
         };
         try ( TryThreadLocal.Memo ignore = HandlerDriver.HANDLERS.push( h ) ) {
             final HandlerDriver driver = new HandlerDriver();
-            PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydb:", new Properties() );
+            PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydbembedded:", new Properties() );
             SchemaPlus rootSchema = connection.getRootSchema();
             rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
             connection.setSchema( "hr" );
@@ -642,8 +642,8 @@ public class JdbcTest {
             // Statement.closeOnCompletion was introduced in JDK 1.7.
             return;
         }
-        final Driver driver = new Driver();
-        PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydb:", new Properties() );
+        final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
+        PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
         SchemaPlus rootSchema = connection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
         connection.setSchema( "hr" );
@@ -694,7 +694,7 @@ public class JdbcTest {
     public void testMockDdl() throws Exception {
         final MockDdlDriver driver = new MockDdlDriver();
         try (
-                Connection connection = driver.connect( "jdbc:polyphenydb:", new Properties() );
+                Connection connection = driver.connect( "jdbc:polyphenydbembedded:", new Properties() );
                 Statement statement = connection.createStatement()
         ) {
             assertThat( driver.counter, is( 0 ) );
@@ -711,7 +711,7 @@ public class JdbcTest {
     public void testReadme() throws ClassNotFoundException, SQLException {
         Properties info = new Properties();
         info.setProperty( "lex", "JAVA" );
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
@@ -732,12 +732,12 @@ public class JdbcTest {
 
 
     /**
-     * Test for {@link Driver#getPropertyInfo(String, Properties)}.
+     * Test for {@link EmbeddedDriver#getPropertyInfo(String, Properties)}.
      */
     @Test
     public void testConnectionProperties() throws ClassNotFoundException, SQLException {
-        java.sql.Driver driver = DriverManager.getDriver( "jdbc:polyphenydb:" );
-        final DriverPropertyInfo[] propertyInfo = driver.getPropertyInfo( "jdbc:polyphenydb:", new Properties() );
+        java.sql.Driver driver = DriverManager.getDriver( "jdbc:polyphenydbembedded:" );
+        final DriverPropertyInfo[] propertyInfo = driver.getPropertyInfo( "jdbc:polyphenydbembedded:", new Properties() );
         final Set<String> names = new HashSet<>();
         for ( DriverPropertyInfo info : propertyInfo ) {
             names.add( info.name );
@@ -753,10 +753,10 @@ public class JdbcTest {
      */
     @Test
     public void testVersion() throws ClassNotFoundException, SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         final DatabaseMetaData metaData = polyphenyDbConnection.getMetaData();
-        assertEquals( "Polypheny-DB JDBC Driver", metaData.getDriverName() );
+        assertEquals( "Polypheny-DB JDBC Embedded Driver", metaData.getDriverName() );
 
         final String driverVersion = metaData.getDriverVersion();
         final int driverMajor = metaData.getDriverMajorVersion();
@@ -1923,7 +1923,7 @@ public class JdbcTest {
                         + "  ]\n"
                         + "}" );
 
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         Statement statement = connection.createStatement();
         final String sql = "SELECT ID, VALS FROM ARR_TABLE";
         ResultSet rs = statement.executeQuery( sql );
@@ -2226,7 +2226,7 @@ public class JdbcTest {
      */
     @Test
     public void testUnnestItemsInMap() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         final String sql = "select * from unnest(MAP['a', 1, 'b', 2]) as um(k, v)";
         ResultSet resultSet = connection.createStatement().executeQuery( sql );
         final String expected = "K=a; V=1\n" + "K=b; V=2\n";
@@ -2237,7 +2237,7 @@ public class JdbcTest {
 
     @Test
     public void testUnnestItemsInMapWithOrdinality() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         final String sql = "select *\n" + "from unnest(MAP['a', 1, 'b', 2]) with ordinality as um(k, v, i)";
         ResultSet resultSet = connection.createStatement().executeQuery( sql );
         final String expected = "K=a; V=1; I=1\n"
@@ -2249,7 +2249,7 @@ public class JdbcTest {
 
     @Test
     public void testUnnestItemsInMapWithNoAliasAndAdditionalArgument() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         final String sql = "select * from unnest(MAP['a', 1, 'b', 2], array[5, 6, 7])";
         ResultSet resultSet = connection.createStatement().executeQuery( sql );
 
@@ -5491,7 +5491,7 @@ public class JdbcTest {
                     + "  ]\n"
                     + "}" );
             pw.flush();
-            final String url = "jdbc:polyphenydb:model=" + file;
+            final String url = "jdbc:polyphenydbembedded:model=" + file;
             try (
                     Connection c = DriverManager.getConnection( url );
                     Statement s = c.createStatement();
@@ -5514,7 +5514,7 @@ public class JdbcTest {
      */
     @Test
     public void testCustomSchemaDirectConnection() throws Exception {
-        final String url = "jdbc:polyphenydb:schemaFactory=" + MySchemaFactory.class.getName() + "; schema.tableName=ELVIS";
+        final String url = "jdbc:polyphenydbembedded:schemaFactory=" + MySchemaFactory.class.getName() + "; schema.tableName=ELVIS";
         checkCustomSchema( url, "adhoc" ); // implicit schema is called 'adhoc'
         checkCustomSchema( url + "; schema=xyz", "xyz" ); // explicit schema
     }
@@ -5552,7 +5552,7 @@ public class JdbcTest {
 
 
     private void checkJdbcSchemaDirectConnection( String s ) throws SQLException {
-        final StringBuilder b = new StringBuilder( "jdbc:polyphenydb:" );
+        final StringBuilder b = new StringBuilder( "jdbc:polyphenydbembedded:" );
         b.append( s );
         pv( b, "schema.jdbcUser", SCOTT.username );
         pv( b, "schema.jdbcPassword", SCOTT.password );
@@ -5592,7 +5592,7 @@ public class JdbcTest {
 
 
     private void checkMapSchemaDirectConnection( String s ) throws SQLException {
-        final String url = "jdbc:polyphenydb:" + s;
+        final String url = "jdbc:polyphenydbembedded:" + s;
         Connection connection = DriverManager.getConnection( url );
         assertThat( connection.getSchema(), is( "adhoc" ) );
         String expected = "EXPR$0=1\n";
@@ -5846,7 +5846,7 @@ public class JdbcTest {
                 .with(
                         new PolyphenyDbAssert.ConnectionFactory() {
                             public PolyphenyDbConnection createConnection() throws SQLException {
-                                PolyphenyDbConnection connection = (PolyphenyDbConnection) new AutoTempDriver( objects ).connect( "jdbc:polyphenydb:", new Properties() );
+                                PolyphenyDbConnection connection = (PolyphenyDbConnection) new AutoTempDriver( objects ).connect( "jdbc:polyphenydbembedded:", new Properties() );
                                 final SchemaPlus rootSchema = connection.getRootSchema();
                                 rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
                                 connection.setSchema( "hr" );
@@ -5920,7 +5920,7 @@ public class JdbcTest {
      */
     @Test
     public void testDifferentTypesSameFields() throws Exception {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "TEST", new ReflectiveSchema( new MySchema() ) );
@@ -6844,7 +6844,7 @@ public class JdbcTest {
                         + "  ]\n"
                         + "}" );
 
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
 
         ResultSet rs = connection.prepareStatement( "select * from t1" ).executeQuery();
 
@@ -6902,7 +6902,7 @@ public class JdbcTest {
                     + "}";
             info.put( "model", model );
 
-            Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
 
             ResultSet rs = connection.prepareStatement( "select * from t2" ).executeQuery();
 
@@ -6977,8 +6977,8 @@ public class JdbcTest {
      */
     @Test
     public void testAggMultipleMeasures() throws SQLException {
-        final Driver driver = new Driver();
-        PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydb:", new Properties() );
+        final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
+        PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
         SchemaPlus rootSchema = connection.getRootSchema();
         rootSchema.add( "sale", new ReflectiveSchema( new Smalls.WideSaleSchema() ) );
         connection.setSchema( "sale" );
@@ -7122,7 +7122,7 @@ public class JdbcTest {
                     + "}";
             info.put( "model", model );
 
-            Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
 
             final String sql = "select * from t3 where vals = ?";
             try (
@@ -7543,7 +7543,7 @@ public class JdbcTest {
     /**
      * Mock driver that has a handler that stores the results of each query in a temporary table.
      */
-    public static class AutoTempDriver extends ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver {
+    public static class AutoTempDriver extends EmbeddedDriver {
 
         private final List<Object> results;
 
@@ -7572,7 +7572,7 @@ public class JdbcTest {
     /**
      * Mock driver that a given {@link Handler}.
      */
-    public static class HandlerDriver extends ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver {
+    public static class HandlerDriver extends EmbeddedDriver {
 
         private static final TryThreadLocal<Handler> HANDLERS = TryThreadLocal.of( null );
 
@@ -7591,7 +7591,7 @@ public class JdbcTest {
     /**
      * Mock driver that can execute a trivial DDL statement.
      */
-    public static class MockDdlDriver extends ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver {
+    public static class MockDdlDriver extends EmbeddedDriver {
 
         public int counter;
 

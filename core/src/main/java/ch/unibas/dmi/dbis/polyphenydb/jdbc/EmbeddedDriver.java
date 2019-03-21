@@ -76,19 +76,19 @@ import org.apache.calcite.linq4j.function.Function0;
 /**
  * Polypheny-DB JDBC driver.
  */
-public class Driver extends UnregisteredDriver {
+public class EmbeddedDriver extends UnregisteredDriver {
 
-    public static final String CONNECT_STRING_PREFIX = "jdbc:polyphenydb:";
+    public static final String CONNECT_STRING_PREFIX = "jdbc:polyphenydbembedded:";
 
     final Function0<PolyphenyDbPrepare> prepareFactory;
 
 
     static {
-        new Driver().register();
+        new EmbeddedDriver().register();
     }
 
 
-    public Driver() {
+    public EmbeddedDriver() {
         super();
         this.prepareFactory = createPrepareFactory();
     }
@@ -120,9 +120,9 @@ public class Driver extends UnregisteredDriver {
 
     protected DriverVersion createDriverVersion() {
         return DriverVersion.load(
-                Driver.class,
+                EmbeddedDriver.class,
                 "ch-unibas-dmi-dbis-polyphenydb-jdbc.properties",
-                "Polypheny-DB JDBC Driver",
+                "Polypheny-DB JDBC Embedded Driver",
                 "unknown version",
                 "Polypheny-DB",
                 "unknown version" );

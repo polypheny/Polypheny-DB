@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.ArrayTableTest;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbRemoteDriverTest;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbRemoteEmbeddedDriverTest;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.LatticeSuggesterTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtilTest;
@@ -197,7 +197,7 @@ import org.junit.runners.Suite;
         ProfilerTest.class,
         SqlAdvisorJdbcTest.class,
         CoreQuidemTest.class,
-        PolyphenyDbRemoteDriverTest.class,
+        PolyphenyDbRemoteEmbeddedDriverTest.class,
         StreamTest.class,
         SortRemoveRuleTest.class,
 

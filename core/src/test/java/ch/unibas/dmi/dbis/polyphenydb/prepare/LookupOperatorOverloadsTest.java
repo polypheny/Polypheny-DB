@@ -156,7 +156,7 @@ public class LookupOperatorOverloadsTest {
         final String funcName = "MyFUNC";
         final String anotherName = "AnotherFunc";
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
             SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( schemaName, new AbstractSchema() );

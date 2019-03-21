@@ -90,7 +90,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
 
 
     public PolyphenyDbJdbc41Connection newConnection( UnregisteredDriver driver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
-        return new PolyphenyDbJdbc41Connection( (Driver) driver, factory, url, info, rootSchema, typeFactory );
+        return new PolyphenyDbJdbc41Connection( (EmbeddedDriver) driver, factory, url, info, rootSchema, typeFactory );
     }
 
 
@@ -126,8 +126,8 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
      */
     private static class PolyphenyDbJdbc41Connection extends PolyphenyDbConnectionImpl {
 
-        PolyphenyDbJdbc41Connection( Driver driver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
-            super( driver, factory, url, info, rootSchema, typeFactory );
+        PolyphenyDbJdbc41Connection( EmbeddedDriver embeddedDriver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+            super( embeddedDriver, factory, url, info, rootSchema, typeFactory );
         }
     }
 

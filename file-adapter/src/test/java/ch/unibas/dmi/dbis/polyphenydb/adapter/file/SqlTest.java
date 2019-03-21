@@ -152,7 +152,7 @@ public class SqlTest {
         try {
             Properties info = new Properties();
             info.put( "model", FileReaderTest.file( "build/test-classes/" + model + ".json" ) );
-            connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             statement = connection.createStatement();
             final ResultSet resultSet = statement.executeQuery( sql );
             fn.apply( resultSet );

@@ -215,8 +215,8 @@ public class UdfTest {
      */
     @Test
     public void testUserDefinedFunctionInView() throws Exception {
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );
@@ -902,7 +902,7 @@ public class UdfTest {
      */
     @Test
     public void testArrayUserDefinedFunction() throws Exception {
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
             PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
             SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
             rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );

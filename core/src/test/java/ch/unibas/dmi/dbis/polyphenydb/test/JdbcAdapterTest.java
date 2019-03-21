@@ -460,7 +460,7 @@ public class JdbcAdapterTest {
                         + "  ]\n"
                         + "}" );
 
-        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         ResultSet rs = connection.prepareStatement( "select 10 * count(ID) from t2" ).executeQuery();
 
         assertThat( rs.next(), is( true ) );

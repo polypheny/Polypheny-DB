@@ -79,7 +79,7 @@ public class SqlAdvisorJdbcTest {
             info.put( "lex", "SQL_SERVER" );
             info.put( "quoting", "BRACKET" );
         }
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );

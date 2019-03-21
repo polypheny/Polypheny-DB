@@ -53,8 +53,8 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableMacroImpl;
@@ -182,7 +182,7 @@ public class ReflectiveSchemaTest {
     @Ignore
     @Test
     public void testOperator() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -204,7 +204,7 @@ public class ReflectiveSchemaTest {
      */
     @Test
     public void testView() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -229,7 +229,7 @@ public class ReflectiveSchemaTest {
      */
     @Test
     public void testViewPath() throws SQLException, ClassNotFoundException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
@@ -841,9 +841,9 @@ public class ReflectiveSchemaTest {
      */
     @Test
     public void testReflectiveSchemaInUnnamedPackage() throws Exception {
-        final Driver driver = new Driver();
+        final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
         try (
-                PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydb:", new Properties() )
+                PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() )
         ) {
             SchemaPlus rootSchema = connection.getRootSchema();
             final Class<?> c = Class.forName( "RootHr" );

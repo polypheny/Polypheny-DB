@@ -253,7 +253,7 @@ public class CsvTest {
                         + "   ]\n"
                         + "}" );
 
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         // must print "directory ... not found" to stdout, but not fail
         ResultSet tables = connection.getMetaData().getTables( null, null, null, null );
         tables.next();
@@ -429,7 +429,7 @@ public class CsvTest {
         try {
             Properties info = new Properties();
             info.put( "model", jsonPath( model ) );
-            connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             statement = connection.createStatement();
             final ResultSet resultSet = statement.executeQuery( sql );
             fn.accept( resultSet );
@@ -584,7 +584,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             ResultSet res = connection.getMetaData().getColumns( null, null, "DATE", "JOINEDAT" );
             res.next();
             Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.DATE );
@@ -625,7 +625,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             Statement statement = connection.createStatement();
             final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
             ResultSet resultSet = statement.executeQuery( sql );
@@ -667,7 +667,7 @@ public class CsvTest {
         // Use LIMIT to ensure that results are deterministic without ORDER BY
         final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery( sql )
         ) {
@@ -689,7 +689,7 @@ public class CsvTest {
         info.put( "model", jsonPath( "bug" ) );
         final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery( sql )
         ) {
@@ -709,7 +709,7 @@ public class CsvTest {
         info.put( "model", jsonPath( "bug" ) );
         final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery( sql )
         ) {
@@ -728,7 +728,7 @@ public class CsvTest {
     public void testPrepared() throws SQLException {
         final Properties properties = new Properties();
         properties.setProperty( "caseSensitive", "true" );
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", properties ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties ) ) {
             final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
 
             final Schema schema = CsvSchemaFactory.INSTANCE.create( polyphenyDbConnection.getRootSchema(), null,
@@ -753,7 +753,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
 
             // date
@@ -797,7 +797,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
             final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
             final ResultSet joinTimes = statement.executeQuery( sql1 );
@@ -824,7 +824,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
 
             // date
@@ -859,7 +859,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
 
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info ) ) {
+        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
 
             // date
@@ -922,7 +922,7 @@ public class CsvTest {
         };
 
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:model=inline:" + model );
+                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=inline:" + model );
                 PrintWriter pw = Util.printWriter( file );
                 Worker<Void> worker = new Worker<>()
         ) {

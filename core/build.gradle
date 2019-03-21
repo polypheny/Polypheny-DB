@@ -8,6 +8,9 @@ def versionQualifier = 'SNAPSHOT'
 version = versionMajor + '.' + versionMinor + '-' + versionQualifier
 
 
+def lombokVersion = '1.16.18'
+
+
 configurations {
     javacc
     testClasses
@@ -27,6 +30,8 @@ buildscript {
         classpath group: 'ca.coglinc2.javacc', name: 'ca.coglinc2.javacc.gradle.plugin', version: '3.0.0'
         // Fmpp
         classpath group: 'net.sourceforge.fmpp', name: 'fmpp', version: '0.9.16'
+        // Lombok (https://github.com/franzbecker/gradle-lombok)
+        classpath group: 'io.franzbecker', name: 'gradle-lombok', version: '1.14'
     }
     ant.taskdef(name: 'fmpp', classname:'fmpp.tools.AntTask', classpath: buildscript.configurations.classpath.asPath)
 }
@@ -39,6 +44,7 @@ repositories {
 
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: 'io.franzbecker.gradle-lombok'
 
 
 tasks.withType(JavaCompile) {
@@ -120,6 +126,13 @@ sourceSets {
     }
 }
 
+
+
+lombok {
+    // https://projectlombok.org/
+    version = lombokVersion
+    sha256 = "" // skip verifyLombok task
+}
 
 
 

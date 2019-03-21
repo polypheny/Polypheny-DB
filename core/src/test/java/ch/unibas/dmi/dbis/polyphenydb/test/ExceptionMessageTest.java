@@ -104,7 +104,7 @@ public class ExceptionMessageTest {
 
     @Before
     public void setUp() throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
         SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
         rootSchema.add( "test", new ReflectiveSchema( new TestSchema() ) );

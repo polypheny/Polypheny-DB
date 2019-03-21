@@ -1377,7 +1377,7 @@ public class PolyphenyDbAssert {
             for ( Map.Entry<String, String> entry : map.entrySet() ) {
                 info.setProperty( entry.getKey(), entry.getValue() );
             }
-            Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+            Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             for ( ConnectionPostProcessor postProcessor : postProcessors ) {
                 connection = postProcessor.apply( connection );
             }

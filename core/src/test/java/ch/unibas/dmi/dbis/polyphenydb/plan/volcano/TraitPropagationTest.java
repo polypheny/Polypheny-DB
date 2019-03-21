@@ -417,7 +417,7 @@ public class TraitPropagationTest {
         FrameworkConfig config = Frameworks.newConfigBuilder().ruleSets( rules ).build();
 
         final Properties info = new Properties();
-        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:", info );
+        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
         final Context prepareContext = statement.createPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();

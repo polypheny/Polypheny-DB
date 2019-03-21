@@ -1003,7 +1003,7 @@ public class LatticeTest {
 
     // Just for debugging.
     private static void runJdbc() throws SQLException {
-        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:model=core/src/test/resources/mysql-foodmart-lattice-model.json" );
+        final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=core/src/test/resources/mysql-foodmart-lattice-model.json" );
         final ResultSet resultSet = connection.createStatement().executeQuery( "select * from \"adhoc\".\"m{32, 36}\"" );
         System.out.println( PolyphenyDbAssert.toString( resultSet ) );
         connection.close();

@@ -88,7 +88,7 @@ public class TableInRootSchemaTest {
      */
     @Test
     public void testAddingTableInRootSchema() throws Exception {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
 
         polyphenyDbConnection.getRootSchema().add( "SAMPLE", new SimpleTable() );

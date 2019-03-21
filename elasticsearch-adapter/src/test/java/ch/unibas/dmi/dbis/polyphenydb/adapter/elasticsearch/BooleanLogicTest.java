@@ -100,7 +100,7 @@ public class BooleanLogicTest {
         return new ConnectionFactory() {
             @Override
             public Connection createConnection() throws SQLException {
-                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydb:" );
+                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
                 final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
 
                 root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
