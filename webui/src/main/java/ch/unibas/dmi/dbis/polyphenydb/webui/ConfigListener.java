@@ -24,26 +24,34 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-//import static spark.Spark.*;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Server extends ConfigListener {
 
-    public Server( ConfigManager m ) {
-        super(m);
-        //port(80);
-        //get("/hello", (req, res) -> "Hello World");
+public class ConfigListener implements Observer {
+
+    private ConcurrentMap<String, ConfigValue> config = new ConcurrentHashMap<String, ConfigValue>(  );
+    private ConfigManager manager;
+    private Logger log = LoggerFactory.getLogger( ConfigListener.class );
+
+    ConfigListener( ConfigManager c ) {
+        this.manager = c;
+        c.addObserver( this );
     }
 
-
-    public static void main(String[] args) {
-        ConfigManager m = new ConfigManager();
-        Server s1 = new Server( m );
-        Server s2 = new Server( m );
-        s1.addConfig( "conf1" );
-        s2.addConfig( "wayTooLongConfig" );
-        s2.addConfig( "conf2" );
-
-        // new Server();
+    public void update( Observable o, Object arg ) {
+        this.config = ( ConcurrentMap<String, ConfigValue> ) arg;
+        for ( ConcurrentMap.Entry<String, ConfigValue> entry : this.config.entrySet() ) {
+            //log.info( entry.getKey() + "/" + entry.getValue().description() );
+            System.out.println( entry.getKey() + "/" + entry.getValue().description() );
+        }
     }
 
+    void addConfig( String config ){
+        this.manager.addConfig( config );
+    }
 }

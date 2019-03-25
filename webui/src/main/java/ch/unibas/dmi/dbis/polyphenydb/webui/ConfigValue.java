@@ -24,26 +24,24 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-//import static spark.Spark.*;
+import org.aeonbits.owner.Config;
+import org.aeonbits.owner.Config.Sources;
 
-public class Server extends ConfigListener {
-
-    public Server( ConfigManager m ) {
-        super(m);
-        //port(80);
-        //get("/hello", (req, res) -> "Hello World");
-    }
-
-
-    public static void main(String[] args) {
-        ConfigManager m = new ConfigManager();
-        Server s1 = new Server( m );
-        Server s2 = new Server( m );
-        s1.addConfig( "conf1" );
-        s2.addConfig( "wayTooLongConfig" );
-        s2.addConfig( "conf2" );
-
-        // new Server();
-    }
-
+@Sources( "file:properties/${filename}.properties" )
+public interface ConfigValue extends Config {
+    @DefaultValue( "" )
+    String description();
+    @DefaultValue( "false" )
+    boolean requiresRestart();
+    @DefaultValue( "" )
+    String ValidationMethod();
+    //callWhenChanged
+    @DefaultValue( "" )
+    String[] WebUiValidators();
+    //@DefaultValue( "" )
+    String WebUiFormType();
+    @DefaultValue( "" )
+    String WebUiGroup();
+    @DefaultValue( "0" )
+    int WebUiOrder();
 }

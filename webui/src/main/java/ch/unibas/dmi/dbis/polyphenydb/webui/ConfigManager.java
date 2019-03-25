@@ -24,26 +24,42 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-//import static spark.Spark.*;
+import java.util.Observable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.aeonbits.owner.ConfigFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Server extends ConfigListener {
 
-    public Server( ConfigManager m ) {
-        super(m);
-        //port(80);
-        //get("/hello", (req, res) -> "Hello World");
+//todo singleton?
+public class ConfigManager extends Observable {
+    private ConcurrentMap<String, ConfigValue> config = new ConcurrentHashMap<String, ConfigValue>(  );
+    private Logger log = LoggerFactory.getLogger( ConfigManager.class );
+
+    boolean addConfig( String configName ) {
+        if( validateConfig( configName )) {
+            ConfigFactory.setProperty( "filename", configName );
+            ConfigValue c = ConfigFactory.create( ConfigValue.class );
+            this.config.put( configName,c );
+            setChanged();
+            notifyObservers( this.config );
+            return true;
+        } else {
+            //log.info("did not add "+configName+" because too long");
+            System.out.println( "did not add "+configName+" because too long" );
+            return false;
+        }
     }
 
 
-    public static void main(String[] args) {
-        ConfigManager m = new ConfigManager();
-        Server s1 = new Server( m );
-        Server s2 = new Server( m );
-        s1.addConfig( "conf1" );
-        s2.addConfig( "wayTooLongConfig" );
-        s2.addConfig( "conf2" );
-
-        // new Server();
+    @Override
+    public void notifyObservers( Object arg ) {
+        super.notifyObservers( arg );
     }
 
+
+    private boolean validateConfig ( String configName ) {
+        return configName.length() <= 10;
+    }
 }
