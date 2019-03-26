@@ -24,26 +24,62 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-//import static spark.Spark.*;
+import static spark.Spark.*;
+import spark.Filter;
+import com.google.gson.Gson;
+import spark.Request;
+import spark.Response;
 
-public class Server extends ConfigListener {
 
-    public Server( ConfigManager m ) {
-        super(m);
-        //port(80);
-        //get("/hello", (req, res) -> "Hello World");
+public class Server {
+
+    static {
+        ConfigManager.getInstance().registerConfig( new Config<Integer>( "server.test", "just for testing" ).requiresRestart() );
     }
 
+    public Server() {
+
+        port(8081);
+
+        enableCORS( "*", "*", "*" );
+
+        post("/register", (req, res) -> {
+            res.type("application/json");
+            Gson gson = new Gson();
+            int[] test = {3,6,1};
+            System.out.println(gson.toJson( test ));
+            return gson.toJson( test );
+        });
+
+        get("/updateTest", (req, res) -> {
+            res.type("application/json");
+            ConfigManager.getInstance().set( "server.test", 10);
+            return 10;
+        });
+
+        get("/getTest", (req, res) -> ConfigManager.getInstance().getInt("server.test"));
+
+        get("/getConfig", (req, res) -> ConfigManager.getInstance().getConfig( "server.test" ).toString());
+
+    }
 
     public static void main(String[] args) {
-        ConfigManager m = new ConfigManager();
-        Server s1 = new Server( m );
-        Server s2 = new Server( m );
-        s1.addConfig( "conf1" );
-        s2.addConfig( "wayTooLongConfig" );
-        s2.addConfig( "conf2" );
+        new Server();
 
-        // new Server();
+        System.out.println("server running..");
     }
+
+    // https://yobriefca.se/blog/2014/02/20/spas-and-enabling-cors-in-spark/
+    private static void enableCORS(final String origin, final String methods, final String headers) {
+        before(new Filter() {
+            @Override
+            public void handle( Request request, Response response) {
+                response.header("Access-Control-Allow-Origin", origin);
+                response.header("Access-Control-Request-Method", methods);
+                response.header("Access-Control-Allow-Headers", headers);
+            }
+        });
+    }
+
 
 }

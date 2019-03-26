@@ -24,42 +24,84 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-import java.util.Observable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.aeonbits.owner.ConfigFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
+//todo observable
+public class ConfigManager {
 
-//todo singleton?
-public class ConfigManager extends Observable {
-    private ConcurrentMap<String, ConfigValue> config = new ConcurrentHashMap<String, ConfigValue>(  );
-    private Logger log = LoggerFactory.getLogger( ConfigManager.class );
+    private static ConfigManager instance;
 
-    boolean addConfig( String configName ) {
-        if( validateConfig( configName )) {
-            ConfigFactory.setProperty( "filename", configName );
-            ConfigValue c = ConfigFactory.create( ConfigValue.class );
-            this.config.put( configName,c );
-            setChanged();
-            notifyObservers( this.config );
+    private static ConcurrentMap<String, Config> config;
+    //private Logger log = LoggerFactory.getLogger( ConfigManager.class );
+
+    private ConfigManager() {
+        config = new ConcurrentHashMap<String, Config>();
+    }
+
+    public static ConfigManager getInstance () {
+        if(instance == null) {
+            instance = new ConfigManager();
+        }
+        return instance;
+    }
+
+    //todo what if already exists
+    static boolean registerConfig( Config c) {
+        if( validateConfig( c )) {
+            config.put( c.getKey(),c );
+            //setChanged();
+            //notifyObservers( this.config );
             return true;
         } else {
             //log.info("did not add "+configName+" because too long");
-            System.out.println( "did not add "+configName+" because too long" );
+            System.out.println( "did not add "+c.getKey()+" because keyname too long" );
             return false;
         }
     }
 
+    /**
+     * @param key (unique) key of the configuration
+     * */
+    static Object getObject ( String key) {
+        return config.get( key ).getValue();
+    }
 
-    @Override
-    public void notifyObservers( Object arg ) {
-        super.notifyObservers( arg );
+    static int getInt ( String key ) {
+        return (int) config.get( key ).getValue();
+    }
+
+    static String getString ( String key ) {
+        return (String) config.get( key ).getValue();
+    }
+
+    static Config getConfig( String s ) {
+        return config.get( s );
     }
 
 
-    private boolean validateConfig ( String configName ) {
-        return configName.length() <= 10;
+    /*static boolean set( String s, Config c ) {
+        if( config.get( s ) != null){
+            config.put(s, c);
+            return true;
+        } else {
+          return false;
+        }
+    }*/
+
+    //todo throw exception if config does not exist
+    static boolean set ( String s, Object v ) {
+        if( config.get( s ) != null){
+            config.get( s ).setValue( v );
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean validateConfig ( Config c ) {
+        return c.getKey().length() <= 100;
     }
 }
