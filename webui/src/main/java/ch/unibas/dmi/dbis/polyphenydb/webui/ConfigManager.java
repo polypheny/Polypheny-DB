@@ -26,21 +26,25 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
 
 //todo observable
+/** ConfigManager where you can add a configuration (Config object) that is needed in different Classes.
+ * If the configuration object has a WebUiGroup and WebUiPage, it can be requested from the WebUi and the value of the configuration can be changed there. */
 public class ConfigManager {
 
     private static ConfigManager instance;
 
-    private static ConcurrentMap<String, Config> config;
-    //private Logger log = LoggerFactory.getLogger( ConfigManager.class );
+    private ConcurrentMap<String, Config> config;
+    private ConcurrentMap<Integer, WebUiGroup> uiGroups;
+    private ConcurrentMap<Integer, WebUiPage> uiPages;
 
     private ConfigManager() {
-        config = new ConcurrentHashMap<String, Config>();
+        this.config = new ConcurrentHashMap<String, Config>();
+        this.uiGroups = new ConcurrentHashMap<Integer, WebUiGroup>();
+        this.uiPages = new ConcurrentHashMap<Integer, WebUiPage>();
     }
 
+    /** singleton */
     public static ConfigManager getInstance () {
         if(instance == null) {
             instance = new ConfigManager();
@@ -48,16 +52,20 @@ public class ConfigManager {
         return instance;
     }
 
-    //todo what if already exists
-    static boolean registerConfig( Config c) {
-        if( validateConfig( c )) {
-            config.put( c.getKey(),c );
+    /** add a configuration to the ConfigManager
+     * @param config configuration object of type Config */
+    boolean registerConfig( Config config) {
+        if( validateConfig( config )) {
+            if ( this.config.get( config.getKey() ) != null ) {
+                this.config.get( config.getKey() ).override( config );
+            }else {
+                this.config.put( config.getKey(),config );
+            }
             //setChanged();
             //notifyObservers( this.config );
             return true;
         } else {
-            //log.info("did not add "+configName+" because too long");
-            System.out.println( "did not add "+c.getKey()+" because keyname too long" );
+            System.out.println( "did not add "+config.getKey()+" because keyname too long" );
             return false;
         }
     }
@@ -65,43 +73,92 @@ public class ConfigManager {
     /**
      * @param key (unique) key of the configuration
      * */
-    static Object getObject ( String key) {
+    Object getObject ( String key) {
         return config.get( key ).getValue();
     }
 
-    static int getInt ( String key ) {
+    /** get configuration as int */
+    int getInt ( String key ) {
         return (int) config.get( key ).getValue();
     }
 
-    static String getString ( String key ) {
+    /** get configuration as String*/
+    String getString ( String key ) {
         return (String) config.get( key ).getValue();
     }
 
-    static Config getConfig( String s ) {
+    /** get configuration as Configuration object */
+    Config getConfig( String s ) {
         return config.get( s );
     }
 
-
-    /*static boolean set( String s, Config c ) {
-        if( config.get( s ) != null){
-            config.put(s, c);
-            return true;
-        } else {
-          return false;
-        }
-    }*/
-
     //todo throw exception if config does not exist
-    static boolean set ( String s, Object v ) {
-        if( config.get( s ) != null){
-            config.get( s ).setValue( v );
+    /** change the value of a configuration in the ConfigManager
+     * @param key key of the configuration
+     * @param value new value for the configuration */
+    boolean setConfigValue( String key, Object value ) {
+        if( config.get( key ) != null){
+            config.get( key ).setValue( value );
             return true;
         } else {
             return false;
         }
     }
 
-    private static boolean validateConfig ( Config c ) {
+    /** dummy validation method for testing  */
+    private boolean validateConfig ( Config c ) {
         return c.getKey().length() <= 100;
+    }
+
+    /** add a WebUiGroup to the ConfigManager
+     * @param g WebUiGroup to add */
+    void addUiGroup ( WebUiGroup g ) {
+        if ( this.uiGroups.get( g.getId() ) != null ){
+            this.uiGroups.get( g.getId() ).override( g );
+        } else {
+            this.uiGroups.put( g.getId(), g );
+        }
+    }
+
+    /** add a WebUiPage to the ConfigManager
+     * @param p WebUiPage to add */
+    void addUiPage ( WebUiPage p ) {
+        if ( this.uiPages.get( p.getId() ) != null ) {
+            this.uiPages.get( p.getId() ).override( p );
+        } else {
+            this.uiPages.put( p.getId(), p );
+        }
+    }
+
+    String getPageList () {
+        //fill WebUiGroups with Configs
+        //todo getPageList()
+        return "TODO";
+    }
+
+    /** get certain page as json
+     * @param id pageId */
+    //todo sort
+    String getPage ( int id ) {
+        //fill WebUiGroups with Configs
+        for( ConcurrentMap.Entry<String, Config> c : config.entrySet()){
+            try{
+                int i = c.getValue().getWebUiGroup();
+                this.uiGroups.get( i ).addConfig( c.getValue() );
+            } catch ( NullPointerException e ){
+                System.out.println("skipping config "+c.getKey()+" with no WebUiGroup");
+            }
+        }
+
+        //fill WebUiPages with WebUiGroups
+        for( ConcurrentMap.Entry<Integer, WebUiGroup> g : uiGroups.entrySet() ){
+            try{
+                int i = g.getValue().getPageId();
+                this.uiPages.get( i ).addWebUiGroup( g.getValue() );
+            } catch ( NullPointerException e ){
+                System.out.println("skipping group "+g.getKey()+" with no pageid");
+            }
+        }
+        return uiPages.get( id ).toString();
     }
 }

@@ -24,18 +24,26 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
+
+import com.google.gson.Gson;
+
+
 //todo missing fields
+/** configuration object that can be accessed and altered via the ConfigManager */
 public class Config<T> {
+    /** unique key */
     private String key;
     private T value;
     private String description;
     private boolean requiresRestart = false;
     private String validationMethod;
     private String callWhenChanged;
-    private String[] WebUiValidators;
-    private String WebUiFormType;
-    private String WebUiGroup;
-    private int WebUiOrder;
+    private WebUiValidator[] webUiValidators;
+    private WebUiFormType webUiFormType;
+    /** id of the WebUiGroup it should be displayed in */
+    private Integer webUiGroup;
+    /** id of the WebUiPage it should be displayed in */
+    private Integer webUiOrder;
 
     /**
      * @param key unique name for the configuration
@@ -53,39 +61,107 @@ public class Config<T> {
         this.description = description;
     }
 
+    /** override this with another config in
+     * @param in config that sould ovveride this config */
+    public Config<T> override ( Config<T> in ) {
+        if ( this.getClass() != in.getClass() ) {
+            System.err.println( "cannot override config of type "+this.getClass().toString()+" with config of type "+in.getClass().toString() );
+            return this;//todo or throw error
+        }
+        if ( in.key != null ) this.key = in.key;
+        if ( in.value != null ) this.value = in.value;
+        if ( in.description != null ) this.description = in.description;
+        if ( in.requiresRestart ) this.requiresRestart = true;
+        if ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
+        if ( in.callWhenChanged != null ) this.callWhenChanged = in.callWhenChanged;
+        //todo webUiValidators
+        if ( in.webUiFormType != null ) this.webUiFormType = in.webUiFormType;
+        if ( in.webUiGroup != null ) this.webUiGroup = in.webUiGroup;
+        if ( in.webUiOrder != null ) this.webUiOrder = in.webUiOrder;
+        return this;
+    }
+
     /** sets requiresRestart to true (is false by default) */
-    public Config requiresRestart() {
+    public Config<T> requiresRestart() {
         this.requiresRestart = true;
         return this;
     }
 
-    //todo
-    public Config withValidation () {
+    /** set Ui information
+     * @param webUiGroup id of webUiGroup
+     * @param type type, e.g. text or number
+     * */
+    public Config<T> withUi ( int webUiGroup, WebUiFormType type ) {
+        this.webUiGroup = webUiGroup;
+        this.webUiFormType = type;
         return this;
     }
 
-    public String toString() {
-        String out = "{";
-        out += "key:"+key+",";
-        out += "value:"+value.toString()+",";
-        out += "description:"+description+",";
-        out += "requiresResetart:"+requiresRestart+",";
-        out += "validationMethod:"+validationMethod+",";
-        //todo..
-        out += "}";
-        return out;
+    /** validators for the WebUi */
+    public Config<T> withValidation (WebUiValidator... validations) {
+        this.webUiValidators = validations;
+        return this;
     }
 
+    /** returns Config as json */
+    public String toString() {
+        Gson gson = new Gson();
+        return gson.toJson( this );
+    }
+
+    /** get config value in type T */
     public T getValue() {
         return this.value;
     }
 
     //todo what if cast not possible (wrong incoming type)
+    /** set the value of the config */
     public void setValue( Object value ){
         this.value = (T) value;
     }
 
+    /** get the key of the config */
     public String getKey() {
         return this.key;
     }
+
+    /** get the WebUiGroup id */
+    public int getWebUiGroup() {
+        return webUiGroup;
+    }
+}
+/** type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;)
+ * e.g. text or number */
+enum WebUiFormType{
+    TEXT("text"),
+    NUMBER("number");
+
+    private final String type;
+
+    WebUiFormType( String t ) {
+        this.type = t;
+    }
+
+    @Override
+    public String toString() {
+        return this.type;
+    }
+}
+//todo add more
+/** supported Angular form validators */
+enum WebUiValidator{
+    REQUIRED("required"),
+    EMAIL("email");
+
+    private final String validator;
+
+    WebUiValidator(String s){
+        this.validator = s;
+    }
+
+    @Override
+    public String toString() {
+        return this.validator;
+    }
+
 }
