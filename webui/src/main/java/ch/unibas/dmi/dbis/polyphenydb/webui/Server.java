@@ -26,6 +26,8 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Spark.*;
 import com.google.gson.Gson;
+import java.util.Map;
+
 
 /** RESTful server for the WebUis */
 public class Server {
@@ -93,20 +95,29 @@ public class Server {
             return gson.toJson( p );
         });
 
-        //get list of all pages
         get("/getPageList", ( req, res ) -> cm.getPageList());
 
         //get Ui of certain page
         post("/getPage", (req, res) -> {
             //input: req: {pageId: 123}
             try{
-                System.out.println(req.body());
+                System.out.println("get page "+req.body());
                 int pageId = Integer.parseInt( req.body() );
                 return cm.getPage( pageId );
             } catch ( Exception e ){
                 //if input not number or page does not exist
                 return "";
             }
+        });
+
+        //save changes from WebUi
+        post("/updateConfigs", (req, res) -> {
+            Map<String, Object> changes = gson.fromJson(req.body(), Map.class);
+            for (Map.Entry<String, Object> entry : changes.entrySet()) {
+                //todo give feedback if config does not exists
+                cm.setConfigValue( entry.getKey(), entry.getValue() );
+            }
+            return "{\"success\":1}";
         });
     }
 
@@ -145,7 +156,7 @@ public class Server {
         Config c2 = new Config("server.email.2").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         Config c3 = new Config( "server.number" );
-        Config c4 = new Config( "server.number" ).withUi( 1, WebUiFormType.NUMBER );
+        Config c4 = new Config( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
