@@ -1,15 +1,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
-public class ConfigString<String> extends Config<String> {
+public class ConfigString extends Config<String> {
 
     private String value;
 
-    public ConfigString ( java.lang.String key ) {
+    public ConfigString ( String key ) {
         super( key );
         super.setConfigType( "String" );
     }
 
-    public ConfigString ( java.lang.String key, java.lang.String description ) {
+    public ConfigString ( String key, String description ) {
         super( key, description );
     }
 
@@ -26,7 +26,7 @@ public class ConfigString<String> extends Config<String> {
         return this;
     }
 
-    public java.lang.String toString() {
+    public String toString() {
         return super.toString();
     }
 

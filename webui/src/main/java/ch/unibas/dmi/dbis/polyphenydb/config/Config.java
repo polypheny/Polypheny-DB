@@ -111,12 +111,19 @@ public abstract class Config<T> {
     public String toString() {
 
         // https://stackoverflow.com/questions/15736654/how-to-handle-deserializing-with-polymorphism
-        RuntimeTypeAdapterFactory<Config> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(Config.class, "configType")
+        /*RuntimeTypeAdapterFactory<Config> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(Config.class, "configType")
                 .registerSubtype( ConfigInteger.class, "Integer" )
                 .registerSubtype( ConfigNumber.class, "Number" )
-                .registerSubtype( ConfigString.class, "String" );
+                .registerSubtype( ConfigString.class, "String" );*/
 
-        Gson gson = new GsonBuilder().registerTypeAdapterFactory( runtimeTypeAdapterFactory ).setPrettyPrinting().create();
+        // SuperclassExclusionStrategy: https://stackoverflow.com/questions/16476513/class-a-declares-multiple-json-fields
+
+        Gson gson = new GsonBuilder()
+                //.registerTypeAdapterFactory( runtimeTypeAdapterFactory )
+                //.addDeserializationExclusionStrategy( new SuperclassExclusionStrategy() )
+                //.addSerializationExclusionStrategy( new SuperclassExclusionStrategy() )
+                .setPrettyPrinting()
+                .create();
 
         //Gson gson = new Gson();
         return gson.toJson( this );

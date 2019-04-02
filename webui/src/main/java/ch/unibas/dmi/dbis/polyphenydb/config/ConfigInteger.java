@@ -1,6 +1,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
-public class ConfigInteger<Integer> extends ConfigNumber<Integer> {
+public class ConfigInteger extends Config<Integer> {
 
     private Integer value;
 
