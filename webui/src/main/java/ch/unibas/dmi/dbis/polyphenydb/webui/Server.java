@@ -25,6 +25,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Spark.*;
+
+import ch.unibas.dmi.dbis.polyphenydb.config.*;
 import com.google.gson.Gson;
 import java.util.Map;
 
@@ -33,7 +35,7 @@ import java.util.Map;
 public class Server {
 
     static {
-        ConfigManager.getInstance().registerConfig( new Config<Integer>( "server.test", "just for testing" ).requiresRestart() );
+        ConfigManager.getInstance().registerConfig( new ConfigString( "server.test", "just for testing" ).requiresRestart() );
     }
 
     public Server() {
@@ -103,7 +105,12 @@ public class Server {
             try{
                 System.out.println("get page "+req.body());
                 int pageId = Integer.parseInt( req.body() );
-                return cm.getPage( pageId );
+                if( pageId == 0 ){
+                    //todo load page list or so.
+                    return "";
+                } else{
+                    return cm.getPage( pageId );
+                }
             } catch ( Exception e ){
                 //if input not number or page does not exist
                 return "";
@@ -149,14 +156,15 @@ public class Server {
 
     /** just for testing */
     private static void demoData() {
-        WebUiPage p = new WebUiPage( 1, "page1", "page1descr" );
+        WebUiPage p = new WebUiPage( 1, "page 1", "page 1 descr." );
+        WebUiPage p2 = new WebUiPage( 2, "page 2", "page 2 description." ).withIcon( "fa fa-table" );
         WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" ).withDescription( "description of group1" );
-        WebUiGroup g2 = new WebUiGroup( 2, 1 ).withDescription( "group2" );
-        Config c1 = new Config("server.text.1").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED );
-        Config c2 = new Config("server.email.2").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
+        WebUiGroup g2 = new WebUiGroup( 2, 2 ).withDescription( "group2" );
+        Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED );
+        Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
-        Config c3 = new Config( "server.number" );
-        Config c4 = new Config( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
+        Config c3 = new ConfigString( "server.number" );
+        Config c4 = new ConfigString( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -170,6 +178,7 @@ public class Server {
         cm.addUiGroup( g2 );
         cm.addUiGroup( g1 );
         cm.addUiPage( p );
+        cm.addUiPage( p2 );
 
         c1.setValue( "config1" );
     }

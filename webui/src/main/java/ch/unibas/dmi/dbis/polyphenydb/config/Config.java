@@ -22,18 +22,18 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import com.google.gson.Gson;
-
+import com.google.gson.GsonBuilder;
 
 //todo missing fields
 /** configuration object that can be accessed and altered via the ConfigManager */
-public class Config<T> {
+public abstract class Config<T> {
     /** unique key */
     private String key;
-    private T value;
+    //private T value;
     private String description;
     private boolean requiresRestart = false;
     private String validationMethod;
@@ -44,6 +44,9 @@ public class Config<T> {
     private Integer webUiGroup;
     /** id of the WebUiPage it should be displayed in */
     private Integer webUiOrder;
+
+    /** for gson */
+    private String configType;
 
     /**
      * @param key unique name for the configuration
@@ -63,13 +66,14 @@ public class Config<T> {
 
     /** override this with another config in
      * @param in config that sould ovveride this config */
-    public Config<T> override ( Config<T> in ) {
+    public Config override ( Config in ) {
         if ( this.getClass() != in.getClass() ) {
             System.err.println( "cannot override config of type "+this.getClass().toString()+" with config of type "+in.getClass().toString() );
             return this;//todo or throw error
         }
         if ( in.key != null ) this.key = in.key;
-        if ( in.value != null ) this.value = in.value;
+        //if ( in.value != null ) this.value = in.value;
+        if( in.getValue() != null ) this.setValue( (T) in.getValue());
         if ( in.description != null ) this.description = in.description;
         if ( in.requiresRestart ) this.requiresRestart = true;
         if ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
@@ -82,7 +86,7 @@ public class Config<T> {
     }
 
     /** sets requiresRestart to true (is false by default) */
-    public Config<T> requiresRestart() {
+    public Config requiresRestart() {
         this.requiresRestart = true;
         return this;
     }
@@ -91,34 +95,42 @@ public class Config<T> {
      * @param webUiGroup id of webUiGroup
      * @param type type, e.g. text or number
      * */
-    public Config<T> withUi ( int webUiGroup, WebUiFormType type ) {
+    public Config withUi ( int webUiGroup, WebUiFormType type ) {
         this.webUiGroup = webUiGroup;
         this.webUiFormType = type;
         return this;
     }
 
     /** validators for the WebUi */
-    public Config<T> withValidation (WebUiValidator... validations) {
+    public Config withValidation (WebUiValidator... validations) {
         this.webUiValidators = validations;
         return this;
     }
 
     /** returns Config as json */
     public String toString() {
-        Gson gson = new Gson();
+
+        // https://stackoverflow.com/questions/15736654/how-to-handle-deserializing-with-polymorphism
+        RuntimeTypeAdapterFactory<Config> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(Config.class, "configType")
+                .registerSubtype( ConfigInteger.class, "Integer" )
+                .registerSubtype( ConfigNumber.class, "Number" )
+                .registerSubtype( ConfigString.class, "String" );
+
+        Gson gson = new GsonBuilder().registerTypeAdapterFactory( runtimeTypeAdapterFactory ).setPrettyPrinting().create();
+
+        //Gson gson = new Gson();
         return gson.toJson( this );
     }
 
     /** get config value in type T */
-    public T getValue() {
-        return this.value;
-    }
+    public abstract T getValue();
 
     //todo what if cast not possible (wrong incoming type)
     /** set the value of the config */
-    public void setValue( Object value ){
+    /*public void setValue( Object value ){
         this.value = (T) value;
-    }
+    }*/
+    public abstract void setValue( T value );
 
     /** get the key of the config */
     public String getKey() {
@@ -129,39 +141,9 @@ public class Config<T> {
     public int getWebUiGroup() {
         return webUiGroup;
     }
-}
-/** type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;)
- * e.g. text or number */
-enum WebUiFormType{
-    TEXT("text"),
-    NUMBER("number");
 
-    private final String type;
 
-    WebUiFormType( String t ) {
-        this.type = t;
+    public void setConfigType( String configType ) {
+        this.configType = configType;
     }
-
-    @Override
-    public String toString() {
-        return this.type;
-    }
-}
-//todo add more
-/** supported Angular form validators */
-enum WebUiValidator{
-    REQUIRED("required"),
-    EMAIL("email");
-
-    private final String validator;
-
-    WebUiValidator(String s){
-        this.validator = s;
-    }
-
-    @Override
-    public String toString() {
-        return this.validator;
-    }
-
 }

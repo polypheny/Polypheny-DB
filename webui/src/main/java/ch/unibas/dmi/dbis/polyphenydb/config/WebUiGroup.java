@@ -1,8 +1,7 @@
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

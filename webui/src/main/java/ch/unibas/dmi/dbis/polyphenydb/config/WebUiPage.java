@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import com.google.gson.Gson;
@@ -58,6 +58,17 @@ public class WebUiPage {
         return id;
     }
 
+
+    public String getTitle() {
+        return title;
+    }
+
+
+    public String getIcon() {
+        return icon;
+    }
+
+
     /** add a WebUiGroup for this WebUiPage */
     public void addWebUiGroup ( WebUiGroup g ) {
         if ( groups.get( g.getId() ) != null ) {
@@ -70,6 +81,14 @@ public class WebUiPage {
     /** @return returns WebUiPage as json object */
     @Override
     public String toString() {
+
+        // https://stackoverflow.com/questions/15736654/how-to-handle-deserializing-with-polymorphism
+        /*RuntimeTypeAdapterFactory<Config> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(Config.class, "configType")
+                .registerSubtype( ConfigInteger.class, "Integer" )
+                .registerSubtype( ConfigNumber.class, "Number" )
+                .registerSubtype( ConfigString.class, "String" );*/
+
+        //Gson gson = new GsonBuilder().registerTypeAdapterFactory( runtimeTypeAdapterFactory ).setPrettyPrinting().create();
         Gson gson = new GsonBuilder().enableComplexMapKeySerialization().setPrettyPrinting().create();
         //Gson gson = new Gson();
         return gson.toJson( this );

@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.config;
 
+import com.google.gson.Gson;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -54,7 +56,7 @@ public class ConfigManager {
 
     /** add a configuration to the ConfigManager
      * @param config configuration object of type Config */
-    boolean registerConfig( Config config) {
+    public boolean registerConfig( Config config) {
         if( validateConfig( config )) {
             if ( this.config.get( config.getKey() ) != null ) {
                 this.config.get( config.getKey() ).override( config );
@@ -73,22 +75,22 @@ public class ConfigManager {
     /**
      * @param key (unique) key of the configuration
      * */
-    Object getObject ( String key) {
+    public Object getObject ( String key) {
         return config.get( key ).getValue();
     }
 
     /** get configuration as int */
-    int getInt ( String key ) {
+    public int getInt ( String key ) {
         return (int) config.get( key ).getValue();
     }
 
     /** get configuration as String*/
-    String getString ( String key ) {
+    public String getString ( String key ) {
         return (String) config.get( key ).getValue();
     }
 
     /** get configuration as Configuration object */
-    Config getConfig( String s ) {
+    public Config getConfig( String s ) {
         return config.get( s );
     }
 
@@ -96,7 +98,7 @@ public class ConfigManager {
     /** change the value of a configuration in the ConfigManager
      * @param key key of the configuration
      * @param value new value for the configuration */
-    boolean setConfigValue( String key, Object value ) {
+    public boolean setConfigValue( String key, Object value ) {
         if( config.get( key ) != null){
             config.get( key ).setValue( value );
             return true;
@@ -112,7 +114,7 @@ public class ConfigManager {
 
     /** add a WebUiGroup to the ConfigManager
      * @param g WebUiGroup to add */
-    void addUiGroup ( WebUiGroup g ) {
+    public void addUiGroup ( WebUiGroup g ) {
         if ( this.uiGroups.get( g.getId() ) != null ){
             this.uiGroups.get( g.getId() ).override( g );
         } else {
@@ -122,7 +124,7 @@ public class ConfigManager {
 
     /** add a WebUiPage to the ConfigManager
      * @param p WebUiPage to add */
-    void addUiPage ( WebUiPage p ) {
+    public void addUiPage ( WebUiPage p ) {
         if ( this.uiPages.get( p.getId() ) != null ) {
             this.uiPages.get( p.getId() ).override( p );
         } else {
@@ -130,16 +132,22 @@ public class ConfigManager {
         }
     }
 
-    String getPageList () {
-        //fill WebUiGroups with Configs
-        //todo getPageList()
-        return "TODO";
+    /** get simple list of pages, without their groups and configs (for WebUi Sidebar) */
+    public String getPageList () {
+        //todo recursion with parentPage field
+        // Angular wants: { id, name, icon, children[] }
+        ArrayList<PageListItem> out = new ArrayList<PageListItem>();
+        for ( WebUiPage p: uiPages.values() ){
+            out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon() ) );
+        }
+        Gson gson = new Gson();
+        return gson.toJson( out );
     }
 
     /** get certain page as json
      * @param id pageId */
     //todo sort
-    String getPage ( int id ) {
+    public String getPage ( int id ) {
         //fill WebUiGroups with Configs
         for( ConcurrentMap.Entry<String, Config> c : config.entrySet()){
             try{
@@ -160,5 +168,23 @@ public class ConfigManager {
             }
         }
         return uiPages.get( id ).toString();
+    }
+}
+
+class PageListItem{
+    private int id;
+    private String name;
+    private String icon;
+    private PageListItem[] children;
+    public PageListItem ( int id, String name, String icon ) {
+        this.id = id;
+        this.name = name;
+        this.icon = icon;
+    }
+
+    @Override
+    public String toString() {
+        Gson gson = new Gson();
+        return gson.toJson( this );
     }
 }
