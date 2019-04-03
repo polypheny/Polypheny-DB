@@ -87,9 +87,13 @@ public abstract class Config<T> {
     }
 
     /** sets requiresRestart to true (is false by default) */
-    public Config requiresRestart() {
+    public Config setRequiresRestart() {
         this.requiresRestart = true;
         return this;
+    }
+
+    public boolean getRequiresRestart () {
+        return this.requiresRestart;
     }
 
     /** set Ui information

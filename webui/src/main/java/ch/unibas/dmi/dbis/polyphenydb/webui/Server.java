@@ -27,15 +27,16 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import static spark.Spark.*;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.*;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager.Restartable;
 import com.google.gson.Gson;
 import java.util.Map;
 
 
 /** RESTful server for the WebUis */
-public class Server {
+public class Server implements Restartable {
 
     static {
-        ConfigManager.getInstance().registerConfig( new ConfigString( "server.test", "just for testing" ).requiresRestart() );
+        ConfigManager.getInstance().registerConfig( new ConfigString( "server.test", "just for testing" ).setRequiresRestart() );
     }
 
     public Server() {
@@ -68,7 +69,7 @@ public class Server {
     private void configRoutes () {
         String type = "application/json";
         Gson gson = new Gson();
-        ConfigManager cm = ConfigManager.getInstance();
+        ConfigManager cm = ConfigManager.getInstance().observeRestart( this );
 
         // add a new config
         post("/newConfig", (req, res) -> {
@@ -184,6 +185,10 @@ public class Server {
         cm.addUiPage( p2 );
 
         c1.setValue( "config1" );
+    }
+
+    public void restart(){
+
     }
 
 }

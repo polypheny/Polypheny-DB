@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 //todo observable
@@ -39,6 +40,7 @@ public class ConfigManager {
     private ConcurrentMap<String, Config> config;
     private ConcurrentMap<Integer, WebUiGroup> uiGroups;
     private ConcurrentMap<Integer, WebUiPage> uiPages;
+    private ConcurrentLinkedQueue<Restartable> restartableObservers = new ConcurrentLinkedQueue<Restartable>();
 
     private ConfigManager() {
         this.config = new ConcurrentHashMap<String, Config>();
@@ -125,6 +127,9 @@ public class ConfigManager {
                         //System.err.println("Unknown config type: "+config.get( key ).getConfigType() );
                 }
             }
+            if( config.get( key ).getRequiresRestart() ) {
+                restartObservers();
+            }
             return true;
         } else {
             return false;
@@ -192,6 +197,21 @@ public class ConfigManager {
             }
         }
         return uiPages.get( id ).toString();
+    }
+
+    public ConfigManager observeRestart ( Restartable r ) {
+        this.restartableObservers.add( r );
+        return this;
+    }
+
+    public void restartObservers () {
+        for ( Restartable r: this.restartableObservers ){
+            r.restart();
+        }
+    }
+
+    public interface Restartable {
+        void restart();
     }
 }
 
