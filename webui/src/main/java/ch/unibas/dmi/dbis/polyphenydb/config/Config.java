@@ -36,7 +36,7 @@ public abstract class Config<T> {
     //private T value;
     private String description;
     private boolean requiresRestart = false;
-    private String validationMethod;
+    //ConfigValidator validationMethod;
     private String callWhenChanged;
     private WebUiValidator[] webUiValidators;
     private WebUiFormType webUiFormType;
@@ -64,8 +64,8 @@ public abstract class Config<T> {
         this.description = description;
     }
 
-    /** override this with another config in
-     * @param in config that sould ovveride this config */
+    /** override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
+     * @param in other config that sould ovveride this config */
     public Config override ( Config in ) {
         if ( this.getClass() != in.getClass() ) {
             System.err.println( "cannot override config of type "+this.getClass().toString()+" with config of type "+in.getClass().toString() );
@@ -76,7 +76,8 @@ public abstract class Config<T> {
         if( in.getValue() != null ) this.setValue( (T) in.getValue());
         if ( in.description != null ) this.description = in.description;
         if ( in.requiresRestart ) this.requiresRestart = true;
-        if ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
+        //todo override validationMethod
+        //if ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
         if ( in.callWhenChanged != null ) this.callWhenChanged = in.callWhenChanged;
         //todo webUiValidators
         if ( in.webUiFormType != null ) this.webUiFormType = in.webUiFormType;
@@ -102,10 +103,13 @@ public abstract class Config<T> {
     }
 
     /** validators for the WebUi */
-    public Config withValidation (WebUiValidator... validations) {
+    public Config withWebUiValidation(WebUiValidator... validations) {
         this.webUiValidators = validations;
         return this;
     }
+
+    // set anonymous validation method for this config
+    //public abstract Config withJavaValidation (ConfigValidator c);
 
     /** returns Config as json */
     public String toString() {
@@ -156,4 +160,5 @@ public abstract class Config<T> {
     public void setConfigType( String configType ) {
         this.configType = configType;
     }
+
 }

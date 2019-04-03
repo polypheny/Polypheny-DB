@@ -111,7 +111,8 @@ public class ConfigManager {
                         break;
                     case "Integer":
                         //gson converts int to doubles..
-                        Double d = (Double) value;
+                        //Double d = (Double) value;
+                        Integer d = (Integer) value;
                         ConfigInteger i = (ConfigInteger) config.get( key );
                         i.setValue( d.intValue() );
                         break;

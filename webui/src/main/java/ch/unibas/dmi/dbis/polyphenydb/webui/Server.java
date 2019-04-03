@@ -161,8 +161,8 @@ public class Server {
         WebUiPage p2 = new WebUiPage( 2, "page 2", "page 2 description." ).withIcon( "fa fa-table" );
         WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" ).withDescription( "description of group1" );
         WebUiGroup g2 = new WebUiGroup( 2, 2 ).withDescription( "group2" );
-        Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED );
-        Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
+        Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
+        Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         ConfigInteger c3 = new ConfigInteger( "server.number" );
         ConfigInteger c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );

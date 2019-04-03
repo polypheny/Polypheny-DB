@@ -3,6 +3,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 public class ConfigString extends Config<String> {
 
     private String value;
+    private ConfigValidator validationMethod;
 
     public ConfigString ( String key ) {
         super( key );
@@ -18,7 +19,16 @@ public class ConfigString extends Config<String> {
     }
 
     public void setValue( String v ) {
-        this.value = v;
+        if ( this.validationMethod != null ) {
+            if( this.validationMethod.validate( v ) ) {
+                this.value = v;
+            } else {
+                System.out.println( "Java validation: false." );
+            }
+        } //else if (this.validationMethod == null ) {
+        else{
+            this.value = v;
+        }
     }
 
     public ConfigString withUi ( int webUiGroup, WebUiFormType type ) {
@@ -26,8 +36,17 @@ public class ConfigString extends Config<String> {
         return this;
     }
 
+    public ConfigString withJavaValidation (ConfigValidator c) {
+        this.validationMethod = c;
+        return this;
+    }
+
     public String toString() {
         return super.toString();
+    }
+
+    public interface ConfigValidator {
+        boolean validate ( String a );
     }
 
 }
