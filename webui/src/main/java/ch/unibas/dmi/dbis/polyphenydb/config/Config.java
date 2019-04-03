@@ -144,11 +144,14 @@ public abstract class Config<T> {
         return this.key;
     }
 
+    public String getConfigType() {
+        return configType;
+    }
+
     /** get the WebUiGroup id */
     public int getWebUiGroup() {
         return webUiGroup;
     }
-
 
     public void setConfigType( String configType ) {
         this.configType = configType;

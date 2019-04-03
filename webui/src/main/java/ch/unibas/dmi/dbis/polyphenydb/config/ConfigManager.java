@@ -100,7 +100,30 @@ public class ConfigManager {
      * @param value new value for the configuration */
     public boolean setConfigValue( String key, Object value ) {
         if( config.get( key ) != null){
-            config.get( key ).setValue( value );
+            if(value == null){
+                //to avoid problems with d.intValue() (null.intValue())
+                config.get( key ).setValue( null );
+            } else {
+                switch ( config.get( key ).getConfigType() ) {
+                    case "String":
+                        ConfigString s = (ConfigString) config.get( key );
+                        s.setValue( (String) value );
+                        break;
+                    case "Integer":
+                        //gson converts int to doubles..
+                        Double d = (Double) value;
+                        ConfigInteger i = (ConfigInteger) config.get( key );
+                        i.setValue( d.intValue() );
+                        break;
+                    case "Number":
+                        ConfigNumber n = (ConfigNumber) config.get( key );
+                        n.setValue( (Number) value );
+                        break;
+                    default:
+                        config.get( key ).setValue( value );
+                        //System.err.println("Unknown config type: "+config.get( key ).getConfigType() );
+                }
+            }
             return true;
         } else {
             return false;

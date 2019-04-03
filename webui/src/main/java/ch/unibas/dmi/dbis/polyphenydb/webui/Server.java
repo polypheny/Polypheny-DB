@@ -119,6 +119,7 @@ public class Server {
 
         //save changes from WebUi
         post("/updateConfigs", (req, res) -> {
+            System.out.println(req.body());
             Map<String, Object> changes = gson.fromJson(req.body(), Map.class);
             for (Map.Entry<String, Object> entry : changes.entrySet()) {
                 //todo give feedback if config does not exists
@@ -163,8 +164,9 @@ public class Server {
         Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED );
         Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
-        Config c3 = new ConfigString( "server.number" );
-        Config c4 = new ConfigString( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
+        ConfigInteger c3 = new ConfigInteger( "server.number" );
+        ConfigInteger c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
+        ConfigNumber c5 = new ConfigNumber( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -173,6 +175,7 @@ public class Server {
         cm.registerConfig( c2 );
         cm.registerConfig( c4 );
         cm.registerConfig( c3 );
+        cm.registerConfig( c5 );
 
         //inserting group before page is existing
         cm.addUiGroup( g2 );
