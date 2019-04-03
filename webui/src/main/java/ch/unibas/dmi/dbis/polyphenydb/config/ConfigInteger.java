@@ -1,6 +1,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
-public class ConfigInteger extends Config<Integer> {
+public class ConfigInteger extends Config {
 
     private Integer value;
     private ConfigValidator validationMethod;
@@ -12,37 +12,70 @@ public class ConfigInteger extends Config<Integer> {
 
     public ConfigInteger( String key, String description ) {
         super( key, description );
+        super.setConfigType( "Integer" );
     }
 
-    public Integer getValue() {
+    @Override
+    public Object getObject() {
         return this.value;
     }
 
-    public void setValue( Integer v ) {
-        if ( this.validationMethod != null ) {
-            if( this.validationMethod.validate( v ) ) {
-                this.value = v;
-            } else {
-                System.out.println( "Java validation: false." );
-            }
-        } //else if (this.validationMethod == null ) {
-        else{
-            this.value = v;
+    @Override
+    public void setObject( Object o ) {
+        //todo or parseInt
+        if(o == null){
+            this.value = null;
+            return;
+        }
+        Integer i = (Integer) o;
+        if( validate( i ) ){
+            this.value = i;
         }
     }
 
-    public ConfigInteger withUi ( int webUiGroup, WebUiFormType type ) {
-        super.withUi(webUiGroup, type);
-        return this;
+    @Override
+    public String getString() {
+        return this.value.toString();
+    }
+
+    @Override
+    public void setString( String s ) {
+        //todo or throw error
+        int i = Integer.parseInt( s );
+        if ( validate( i ) ){
+            this.value = i;
+        }
+    }
+
+    @Override
+    public int getInt() {
+        return this.value;
+    }
+
+    @Override
+    public void setInt( int i ) {
+        if ( validate( i ) ) {
+            this.value = i;
+        }
+    }
+
+    private boolean validate ( int i ) {
+        if ( this.validationMethod != null ) {
+            if( this.validationMethod.validate( i ) ) {
+                return true;
+            } else {
+                System.out.println( "Java validation: false." );
+                return false;
+            }
+        } //else if (this.validationMethod == null ) {
+        else{
+            return true;
+        }
     }
 
     public ConfigInteger withJavaValidation (ConfigValidator c) {
         this.validationMethod = c;
         return this;
-    }
-
-    public String toString() {
-        return super.toString();
     }
 
     public interface ConfigValidator {

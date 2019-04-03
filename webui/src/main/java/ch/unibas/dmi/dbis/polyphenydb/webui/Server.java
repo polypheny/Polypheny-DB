@@ -165,9 +165,9 @@ public class Server implements Restartable {
         Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
         Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
-        ConfigInteger c3 = new ConfigInteger( "server.number" );
-        ConfigInteger c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
-        ConfigNumber c5 = new ConfigNumber( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
+        Config c3 = new ConfigInteger( "server.number" );
+        Config c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
+        Config c5 = new ConfigNumber( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -184,7 +184,7 @@ public class Server implements Restartable {
         cm.addUiPage( p );
         cm.addUiPage( p2 );
 
-        c1.setValue( "config1" );
+        c1.setString( "config1" );
     }
 
     public void restart(){

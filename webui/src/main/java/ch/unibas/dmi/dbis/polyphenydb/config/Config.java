@@ -29,11 +29,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 //todo missing fields
+//T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
 /** configuration object that can be accessed and altered via the ConfigManager */
-public abstract class Config<T> {
+public abstract class Config < T extends Config<T> > {
     /** unique key */
     private String key;
-    //private T value;
+    //private transient T value;
     private String description;
     private boolean requiresRestart = false;
     //ConfigValidator validationMethod;
@@ -66,14 +67,14 @@ public abstract class Config<T> {
 
     /** override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
      * @param in other config that sould ovveride this config */
-    public Config override ( Config in ) {
+    public T override ( Config in ) {
         if ( this.getClass() != in.getClass() ) {
             System.err.println( "cannot override config of type "+this.getClass().toString()+" with config of type "+in.getClass().toString() );
-            return this;//todo or throw error
+            return (T) this;//todo or throw error
         }
         if ( in.key != null ) this.key = in.key;
         //if ( in.value != null ) this.value = in.value;
-        if( in.getValue() != null ) this.setValue( (T) in.getValue());
+        if( in.getObject() != null ) this.setObject( in.getObject() );
         if ( in.description != null ) this.description = in.description;
         if ( in.requiresRestart ) this.requiresRestart = true;
         //todo override validationMethod
@@ -83,13 +84,13 @@ public abstract class Config<T> {
         if ( in.webUiFormType != null ) this.webUiFormType = in.webUiFormType;
         if ( in.webUiGroup != null ) this.webUiGroup = in.webUiGroup;
         if ( in.webUiOrder != null ) this.webUiOrder = in.webUiOrder;
-        return this;
+        return (T) this;
     }
 
     /** sets requiresRestart to true (is false by default) */
-    public Config setRequiresRestart() {
+    public T setRequiresRestart() {
         this.requiresRestart = true;
-        return this;
+        return (T) this;
     }
 
     public boolean getRequiresRestart () {
@@ -100,16 +101,16 @@ public abstract class Config<T> {
      * @param webUiGroup id of webUiGroup
      * @param type type, e.g. text or number
      * */
-    public Config withUi ( int webUiGroup, WebUiFormType type ) {
+    public T withUi ( int webUiGroup, WebUiFormType type ) {
         this.webUiGroup = webUiGroup;
         this.webUiFormType = type;
-        return this;
+        return (T) this;
     }
 
     /** validators for the WebUi */
-    public Config withWebUiValidation(WebUiValidator... validations) {
+    public T withWebUiValidation(WebUiValidator... validations) {
         this.webUiValidators = validations;
-        return this;
+        return (T) this;
     }
 
     // set anonymous validation method for this config
@@ -137,15 +138,12 @@ public abstract class Config<T> {
         return gson.toJson( this );
     }
 
-    /** get config value in type T */
-    public abstract T getValue();
-
-    //todo what if cast not possible (wrong incoming type)
-    /** set the value of the config */
-    /*public void setValue( Object value ){
-        this.value = (T) value;
-    }*/
-    public abstract void setValue( T value );
+    public abstract Object getObject();
+    public abstract void setObject( Object o );
+    public abstract String getString();
+    public abstract void setString( String s );
+    public abstract int getInt();
+    public abstract void setInt( int i );
 
     /** get the key of the config */
     public String getKey() {

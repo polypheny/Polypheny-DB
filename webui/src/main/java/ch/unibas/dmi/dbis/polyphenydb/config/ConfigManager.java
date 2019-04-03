@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import javax.swing.DefaultBoundedRangeModel;
 
 //todo observable
 /** ConfigManager where you can add a configuration (Config object) that is needed in different Classes.
@@ -78,17 +79,17 @@ public class ConfigManager {
      * @param key (unique) key of the configuration
      * */
     public Object getObject ( String key) {
-        return config.get( key ).getValue();
+        return config.get( key ).getObject();
     }
 
     /** get configuration as int */
     public int getInt ( String key ) {
-        return (int) config.get( key ).getValue();
+        return (int) config.get( key ).getInt();
     }
 
     /** get configuration as String*/
     public String getString ( String key ) {
-        return (String) config.get( key ).getValue();
+        return (String) config.get( key ).getString();
     }
 
     /** get configuration as Configuration object */
@@ -102,28 +103,42 @@ public class ConfigManager {
      * @param value new value for the configuration */
     public boolean setConfigValue( String key, Object value ) {
         if( config.get( key ) != null){
-            if(value == null){
+            //todo "" needed for WebUi, what if in code you want "" but not null..
+            if(value == null || value.equals( "" )){
                 //to avoid problems with d.intValue() (null.intValue())
-                config.get( key ).setValue( null );
+                config.get( key ).setObject( null );
             } else {
                 switch ( config.get( key ).getConfigType() ) {
                     case "String":
                         ConfigString s = (ConfigString) config.get( key );
-                        s.setValue( (String) value );
+                        s.setString( (String) value );
                         break;
                     case "Integer":
                         //gson converts int to doubles..
-                        //Double d = (Double) value;
-                        Integer d = (Integer) value;
-                        ConfigInteger i = (ConfigInteger) config.get( key );
-                        i.setValue( d.intValue() );
+                        int i;
+                        try{
+                            i = ( Integer ) value;
+                        } catch ( ClassCastException e ){
+                            Double d = ( Double ) value;
+                            i = d.intValue();
+                        }
+                        ConfigInteger c = (ConfigInteger) config.get( key );
+                        c.setInt( i );
                         break;
-                    case "Number":
-                        ConfigNumber n = (ConfigNumber) config.get( key );
-                        n.setValue( (Number) value );
+                    case "Number"://todo type number makes not much sense, todo: type float/double etc.
+                        //gson converts int to doubles..
+                        int i2;
+                        try{
+                            i2 = ( Integer ) value;
+                        } catch ( ClassCastException e ){
+                            Double d = ( Double ) value;
+                            i2 = d.intValue();
+                        }
+                        ConfigNumber c2 = (ConfigNumber) config.get( key );
+                        c2.setInt( i2 );
                         break;
                     default:
-                        config.get( key ).setValue( value );
+                        config.get( key ).setObject( value );
                         //System.err.println("Unknown config type: "+config.get( key ).getConfigType() );
                 }
             }

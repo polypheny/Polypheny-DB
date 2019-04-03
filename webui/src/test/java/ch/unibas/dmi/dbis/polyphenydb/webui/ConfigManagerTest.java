@@ -1,7 +1,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.*;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger.ConfigValidator;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager.Restartable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,11 +30,11 @@ public class ConfigManagerTest implements Restartable {
     @Test
     public void insertConfigTwice() {
 
-        ConfigString c1 = new ConfigString("conf.text.1").withUi( 1, WebUiFormType.TEXT );
-        ConfigString c2 = new ConfigString("conf.text.1");
+        Config c1 = new ConfigString("conf.text.1").withUi( 1, WebUiFormType.TEXT );
+        Config c2 = new ConfigString("conf.text.1");
 
-        ConfigInteger c3 = new ConfigInteger( "double" );
-        ConfigInteger c4 = new ConfigInteger( "double" ).withUi( 1, WebUiFormType.NUMBER );
+        Config c3 = new ConfigInteger( "double" );
+        Config c4 = new ConfigInteger( "double" ).withUi( 1, WebUiFormType.NUMBER );
 
         //inserting configs before groups and pages are existing
         cm.registerConfig( c1 );
@@ -45,7 +44,7 @@ public class ConfigManagerTest implements Restartable {
 
         cm.setConfigValue( "conf.text.1", "config1" );
         //c1.setValue( "config1" );//wouldn't work
-        Assert.assertEquals( "config1", cm.getConfig( "conf.text.1" ).getValue() );
+        Assert.assertEquals( "config1", cm.getConfig( "conf.text.1" ).getString() );
         Assert.assertEquals( 1, cm.getConfig( "double" ).getWebUiGroup() );
 
         System.out.println( cm.getPage(1) );
@@ -62,10 +61,10 @@ public class ConfigManagerTest implements Restartable {
 
         cm.setConfigValue( "java.int.validation", 2 );
         cm.setConfigValue( "java.int.validation", 20 );
-        Assert.assertEquals( 2, cm.getConfig( "java.int.validation" ).getValue() );
+        Assert.assertEquals( 2, cm.getConfig( "java.int.validation" ).getInt() );
         cm.setConfigValue( "java.number.validation", 2 );
         cm.setConfigValue( "java.number.validation", 20 );
-        Assert.assertEquals( 2, cm.getConfig( "java.number.validation" ).getValue() );
+        Assert.assertEquals( 2, cm.getConfig( "java.number.validation" ).getInt() );
     }
 
     @Test
