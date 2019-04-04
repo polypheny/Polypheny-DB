@@ -1,6 +1,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
-public class ConfigString extends Config {
+public class ConfigString extends ConfigScalar {
 
     private String value;
     private ConfigValidator validationMethod;
@@ -41,19 +41,6 @@ public class ConfigString extends Config {
     public void setString( String s ) {
         if ( validate( s ) ){
             this.value = s;
-        }
-    }
-
-    @Override
-    public int getInt() {
-        //todo or throw error
-        return Integer.parseInt( value );
-    }
-
-    @Override
-    public void setInt( int i ) {
-        if ( validate( Integer.toString( i ) ) ) {
-            this.value = Integer.toString( i );
         }
     }
 

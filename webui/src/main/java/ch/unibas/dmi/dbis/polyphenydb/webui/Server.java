@@ -167,7 +167,7 @@ public class Server implements Restartable {
 
         Config c3 = new ConfigInteger( "server.number" );
         Config c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
-        Config c5 = new ConfigNumber( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 

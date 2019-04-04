@@ -25,8 +25,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.math.BigDecimal;
 
 //todo missing fields
 //T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
@@ -118,32 +120,42 @@ public abstract class Config < T extends Config<T> > {
 
     /** returns Config as json */
     public String toString() {
-
-        // https://stackoverflow.com/questions/15736654/how-to-handle-deserializing-with-polymorphism
-        /*RuntimeTypeAdapterFactory<Config> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(Config.class, "configType")
-                .registerSubtype( ConfigInteger.class, "Integer" )
-                .registerSubtype( ConfigNumber.class, "Number" )
-                .registerSubtype( ConfigString.class, "String" );*/
-
-        // SuperclassExclusionStrategy: https://stackoverflow.com/questions/16476513/class-a-declares-multiple-json-fields
-
         Gson gson = new GsonBuilder()
-                //.registerTypeAdapterFactory( runtimeTypeAdapterFactory )
-                //.addDeserializationExclusionStrategy( new SuperclassExclusionStrategy() )
-                //.addSerializationExclusionStrategy( new SuperclassExclusionStrategy() )
                 .setPrettyPrinting()
                 .create();
-
         //Gson gson = new Gson();
         return gson.toJson( this );
     }
 
-    public abstract Object getObject();
-    public abstract void setObject( Object o );
-    public abstract String getString();
-    public abstract void setString( String s );
-    public abstract int getInt();
-    public abstract void setInt( int i );
+    public Object getObject() { throwError(); return null; }
+    public abstract void setObject( Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
+    public String getString() { throwError(); return null; }
+    public void setString( String value ) { throwError(); }
+    public Boolean getBoolean() { throwError(); return null; }
+    public void setBoolean( boolean value ) { throwError(); }
+    public Integer getInt() { throwError(); return null; }
+    public void setInt( int value ) { throwError(); }
+    public Long getLong() { throwError(); return null; }
+    public void setLong( long value ) { throwError(); }
+    public Double getDouble() { throwError(); return null; }
+    public void setDouble( double value ) { throwError(); }
+    public BigDecimal getDecimal() { throwError(); return null; }
+    public void setDecimal( BigDecimal value ) { throwError(); }
+    //arrays
+    public Integer[] getIntegerArray() { throwError(); return null; }
+    public void setIntegerArray( Integer[] value ) { throwError(); }
+    public Double[] getDoubleArray() { throwError(); return null; }
+    public void setDoubleArray ( Double[] value ) { throwError(); }
+    //tables
+    public Integer[][] getIntegerTable() { throwError(); return null; }
+    public void setIntegerTable ( Integer[][] value ) { throwError(); }
+    public Double[][] getDoubleTable() { throwError(); return null; }
+    public void setDoubleTable ( Double[][] value ) { throwError(); }
+
+    private void throwError () {
+        throw new ConfigException();
+    }
+
 
     /** get the key of the config */
     public String getKey() {

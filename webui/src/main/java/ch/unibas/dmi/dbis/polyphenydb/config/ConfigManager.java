@@ -75,6 +75,14 @@ public class ConfigManager {
         }
     }
 
+    public boolean registerConfigs ( Config... configs ) {
+        boolean successful = true;
+        for ( Config c : configs ) {
+            if( !this.registerConfig( c ) ) successful = false;
+        }
+        return successful;
+    }
+
     /**
      * @param key (unique) key of the configuration
      * */
