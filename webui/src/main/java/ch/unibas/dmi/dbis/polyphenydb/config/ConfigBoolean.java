@@ -21,11 +21,13 @@ public class ConfigBoolean extends ConfigScalar {
     @Override
     public void setBoolean( boolean b ) {
         this.value = b;
+        notifyConfigListeners( this );
     }
 
     @Override
     public void setObject( Object o ) {
         this.value = ( boolean ) o;
+        notifyConfigListeners( this );
     }
 
 }

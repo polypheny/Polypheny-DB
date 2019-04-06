@@ -1,19 +1,19 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.*;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager.Restartable;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import java.math.BigDecimal;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ConfigManagerTest implements Restartable {
+public class ConfigManagerTest implements ConfigListener {
 
     private ConfigManager cm;
     private boolean wasRestarted = false;
 
     public ConfigManagerTest () {
         //insert config before groups and pages are existing
-        cm = ConfigManager.getInstance().observeRestart( this );
+        cm = ConfigManager.getInstance();
         WebUiPage p = new WebUiPage( 1, "page1", "page1descr" );
         WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" );
         WebUiGroup g2 = new WebUiGroup( 2, 1 ).withDescription( "group2" );
@@ -40,9 +40,9 @@ public class ConfigManagerTest implements Restartable {
         cm.registerConfig( c3 );
         cm.registerConfig( c4 );
 
-        cm.setConfigValue( "conf.text.1", "config1" );
+        cm.getConfig( "conf.text.1" ).setString( "config1" );
         //c1.setString( "config1" );//wouldn't work
-        cm.setConfigValue( "double", 22 );
+        cm.getConfig( "double" ).setInt( 22 );
         Assert.assertEquals( "config1", cm.getConfig( "conf.text.1" ).getString() );
         Assert.assertEquals( 1, cm.getConfig( "double" ).getWebUiGroup() );
 
@@ -56,12 +56,12 @@ public class ConfigManagerTest implements Restartable {
         cm.registerConfig( c5 );
         cm.registerConfig( c6 );
 
-        cm.setConfigValue( "java.int.validation", 2 );
-        cm.setConfigValue( "java.int.validation", 20 );
+        cm.getConfig( "java.int.validation" ).setInt( 2 );
+        cm.getConfig( "java.int.validation" ).setInt( 20 );
         int a = cm.getConfig( "java.int.validation" ).getInt();
         Assert.assertEquals( 2, a );
-        cm.setConfigValue( "java.number.validation", 3 );
-        cm.setConfigValue( "java.number.validation", 20 );
+        cm.getConfig( "java.number.validation" ).setInt( 3 );
+        cm.getConfig( "java.number.validation" ).setInt( 20 );
         //Assert.assertEquals( 2, cm.getConfig( "java.number.validation" ).getInt() );
 
         System.out.println( cm.getPage( 1 ) );
@@ -98,14 +98,48 @@ public class ConfigManagerTest implements Restartable {
     }
 
     @Test
+    public void isNotified () {
+
+        class ConfigObserver implements ConfigListener {
+            private boolean wasNotified = false;
+            public void restart ( Config c ) {
+                this.wasNotified = true;
+            }
+            public void onConfigChange ( Config c ) {
+                this.wasNotified = true;
+            }
+            public boolean wasNotified () {
+                return this.wasNotified;
+            }
+        }
+
+        ConfigObserver o1 = new ConfigObserver();
+        ConfigObserver o2 = new ConfigObserver();
+        ConfigBoolean willChange = new ConfigBoolean( "will.change" );
+        cm.registerConfig( willChange );
+        cm.getConfig( "will.change" ).addObserver( o1 );
+        cm.getConfig( "will.change" ).addObserver( o2 );
+        cm.getConfig( "will.change" ).removeObserver( o1 );
+        cm.getConfig( "will.change" ).setBoolean( true );
+        Assert.assertTrue( o2.wasNotified() );
+        Assert.assertFalse( o1.wasNotified() );
+
+    }
+
+    @Test
     public void isRestarted () {
-        Config c = new ConfigString( "test.restart" ).setRequiresRestart();
+        Config c = new ConfigString( "test.restart" ).setRequiresRestart().addObserver( this );
         cm.registerConfig( c );
-        cm.setConfigValue( c.getKey(), "someValue" );
+        cm.getConfig( c.getKey() ).setString( "someValue" );
         Assert.assertEquals( true, this.wasRestarted );
     }
 
-    public void restart(){
+    public void onConfigChange ( Config c ) {
+        System.out.println( "configChange: " + c.getKey() );
+    }
+
+    public void restart( Config c ){
+        System.out.println( "Config " + c.getKey() + " triggered restart;" );
         this.wasRestarted = true;
     }
 

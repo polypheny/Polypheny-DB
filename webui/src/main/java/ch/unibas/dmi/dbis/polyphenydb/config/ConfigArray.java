@@ -16,6 +16,7 @@ public class ConfigArray extends Config {
     @Override
     public void setObject( Object value ) {
         this.array = ( ConfigScalar[] ) value;
+        notifyConfigListeners( this );
     }
 
     @Override

@@ -16,6 +16,7 @@ public class ConfigDouble extends ConfigNumber {
     @Override
     public void setObject( Object value ) {
         this.value = ( double ) value;
+        notifyConfigListeners( this );
     }
 
     @Override
@@ -26,5 +27,6 @@ public class ConfigDouble extends ConfigNumber {
     @Override
     public void setDouble( double value ) {
         this.value = value;
+        notifyConfigListeners( this );
     }
 }

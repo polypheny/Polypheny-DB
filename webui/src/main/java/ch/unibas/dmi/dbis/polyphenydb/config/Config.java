@@ -29,6 +29,7 @@ import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 //todo missing fields
 //T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
@@ -50,6 +51,8 @@ public abstract class Config < T extends Config<T> > {
 
     /** for gson */
     private String configType;
+
+    private ConcurrentLinkedQueue<ConfigListener> listeners = new ConcurrentLinkedQueue<ConfigListener>();
 
     /**
      * @param key unique name for the configuration
@@ -173,6 +176,30 @@ public abstract class Config < T extends Config<T> > {
 
     public void setConfigType( String configType ) {
         this.configType = configType;
+    }
+
+    public T addObserver ( ConfigListener listener ) {
+        if ( ! this.listeners.contains( listener ) ) {
+            this.listeners.add( listener );
+        }
+        return (T) this;
+    }
+
+    public T removeObserver ( ConfigListener listener ) {
+        this.listeners.remove( listener );
+        return (T) this;
+    }
+
+    void notifyConfigListeners( Config c ){
+        for( ConfigListener listener : listeners ) {
+            listener.onConfigChange( c );
+            if( c.getRequiresRestart() ) listener.restart( c );
+        }
+    }
+
+    public interface ConfigListener{
+        void onConfigChange( Config c );
+        void restart ( Config c );
     }
 
 }

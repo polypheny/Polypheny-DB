@@ -27,13 +27,13 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import static spark.Spark.*;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.*;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager.Restartable;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import com.google.gson.Gson;
 import java.util.Map;
 
 
 /** RESTful server for the WebUis */
-public class Server implements Restartable {
+public class Server implements ConfigListener {
 
     static {
         ConfigManager.getInstance().registerConfig( new ConfigString( "server.test", "just for testing" ).setRequiresRestart() );
@@ -69,7 +69,7 @@ public class Server implements Restartable {
     private void configRoutes () {
         String type = "application/json";
         Gson gson = new Gson();
-        ConfigManager cm = ConfigManager.getInstance().observeRestart( this );
+        ConfigManager cm = ConfigManager.getInstance();
 
         // add a new config
         post("/newConfig", (req, res) -> {
@@ -124,7 +124,8 @@ public class Server implements Restartable {
             Map<String, Object> changes = gson.fromJson(req.body(), Map.class);
             for (Map.Entry<String, Object> entry : changes.entrySet()) {
                 //todo give feedback if config does not exists
-                cm.setConfigValue( entry.getKey(), entry.getValue() );
+                //cm.setConfigValue( entry.getKey(), entry.getValue() );
+                cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
             return "{\"success\":1}";
         });
@@ -166,7 +167,7 @@ public class Server implements Restartable {
         Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         Config c3 = new ConfigInteger( "server.number" );
-        Config c4 = new ConfigInteger( "server.number" ).withUi( 2, WebUiFormType.NUMBER );
+        Config c4 = new ConfigInteger( "server.number" ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
         Config c5 = new ConfigInteger( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
@@ -187,7 +188,13 @@ public class Server implements Restartable {
         c1.setString( "config1" );
     }
 
-    public void restart(){
+    @Override
+    public void onConfigChange( Config c ) {
+
+    }
+
+    @Override
+    public void restart( Config c ){
 
     }
 

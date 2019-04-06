@@ -16,6 +16,7 @@ public class ConfigLong extends ConfigNumber {
     @Override
     public void setObject( Object o ) {
         this.value = ( long ) o;
+        notifyConfigListeners( this );
     }
 
     @Override
@@ -26,5 +27,6 @@ public class ConfigLong extends ConfigNumber {
     @Override
     public void setLong( long value ) {
         this.value = value;
+        notifyConfigListeners( this );
     }
 }

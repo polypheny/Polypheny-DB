@@ -25,11 +25,19 @@ public class ConfigInteger extends ConfigNumber {
         //todo or parseInt
         if(o == null){
             this.value = null;
+            notifyConfigListeners( this );
             return;
         }
-        Integer i = (Integer) o;
+        Integer i;
+        try{
+            Double d = (Double) o;
+            i = d.intValue();
+        } catch ( ClassCastException e ) {
+            i = ( Integer ) o;
+        }
         if( validate( i ) ){
             this.value = i;
+            notifyConfigListeners( this );
         }
     }
 
@@ -42,6 +50,7 @@ public class ConfigInteger extends ConfigNumber {
     public void setInt( int i ) {
         if ( validate( i ) ) {
             this.value = i;
+            notifyConfigListeners( this );
         }
     }
 

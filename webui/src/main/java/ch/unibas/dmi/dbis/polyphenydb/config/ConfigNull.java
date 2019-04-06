@@ -16,6 +16,7 @@ public class ConfigNull extends ConfigScalar {
     @Override
     public void setObject( Object o ) {
         this.value = null;
+        notifyConfigListeners( this );
     }
 
     @Override

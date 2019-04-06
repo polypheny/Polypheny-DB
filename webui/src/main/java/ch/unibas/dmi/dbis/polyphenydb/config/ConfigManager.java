@@ -24,12 +24,11 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import javax.swing.DefaultBoundedRangeModel;
 
 //todo observable
 /** ConfigManager where you can add a configuration (Config object) that is needed in different Classes.
@@ -38,13 +37,12 @@ public class ConfigManager {
 
     private static ConfigManager instance;
 
-    private ConcurrentMap<String, Config> config;
+    private ConcurrentMap<String, Config> configs;
     private ConcurrentMap<Integer, WebUiGroup> uiGroups;
     private ConcurrentMap<Integer, WebUiPage> uiPages;
-    private ConcurrentLinkedQueue<Restartable> restartableObservers = new ConcurrentLinkedQueue<Restartable>();
 
     private ConfigManager() {
-        this.config = new ConcurrentHashMap<String, Config>();
+        this.configs = new ConcurrentHashMap<String, Config>();
         this.uiGroups = new ConcurrentHashMap<Integer, WebUiGroup>();
         this.uiPages = new ConcurrentHashMap<Integer, WebUiPage>();
     }
@@ -60,19 +58,12 @@ public class ConfigManager {
     /** add a configuration to the ConfigManager
      * @param config configuration object of type Config */
     public boolean registerConfig( Config config) {
-        if( validateConfig( config )) {
-            if ( this.config.get( config.getKey() ) != null ) {
-                this.config.get( config.getKey() ).override( config );
-            }else {
-                this.config.put( config.getKey(),config );
-            }
-            //setChanged();
-            //notifyObservers( this.config );
-            return true;
-        } else {
-            System.out.println( "did not add "+config.getKey()+" because keyname too long" );
-            return false;
+        if ( this.configs.get( config.getKey() ) != null ) {
+            this.configs.get( config.getKey() ).override( config );
+        }else {
+            this.configs.put( config.getKey(),config );
         }
+        return true;
     }
 
     public boolean registerConfigs ( Config... configs ) {
@@ -83,85 +74,32 @@ public class ConfigManager {
         return successful;
     }
 
+    public void observeAll ( ConfigListener listener ) {
+        for( Config c : configs.values() ) {
+            c.addObserver( listener );
+        }
+    }
+
     /**
      * @param key (unique) key of the configuration
      * */
     public Object getObject ( String key) {
-        return config.get( key ).getObject();
+        return configs.get( key ).getObject();
     }
 
     /** get configuration as int */
     public int getInt ( String key ) {
-        return (int) config.get( key ).getInt();
+        return (int) configs.get( key ).getInt();
     }
 
     /** get configuration as String*/
     public String getString ( String key ) {
-        return (String) config.get( key ).getString();
+        return (String) configs.get( key ).getString();
     }
 
     /** get configuration as Configuration object */
     public Config getConfig( String s ) {
-        return config.get( s );
-    }
-
-    //todo throw exception if config does not exist
-    /** change the value of a configuration in the ConfigManager
-     * @param key key of the configuration
-     * @param value new value for the configuration */
-    public boolean setConfigValue( String key, Object value ) {
-        if( config.get( key ) != null){
-            //todo "" needed for WebUi, what if in code you want "" but not null..
-            if(value == null || value.equals( "" )){
-                //to avoid problems with d.intValue() (null.intValue())
-                config.get( key ).setObject( null );
-            } else {
-                switch ( config.get( key ).getConfigType() ) {
-                    case "String":
-                        ConfigString s = (ConfigString) config.get( key );
-                        s.setString( (String) value );
-                        break;
-                    case "Integer":
-                        //gson converts int to doubles..
-                        int i;
-                        try{
-                            i = ( Integer ) value;
-                        } catch ( ClassCastException e ){
-                            Double d = ( Double ) value;
-                            i = d.intValue();
-                        }
-                        ConfigInteger c = (ConfigInteger) config.get( key );
-                        c.setInt( i );
-                        break;
-                    case "Number"://todo type number makes not much sense, todo: type float/double etc.
-                        //gson converts int to doubles..
-                        int i2;
-                        try{
-                            i2 = ( Integer ) value;
-                        } catch ( ClassCastException e ){
-                            Double d = ( Double ) value;
-                            i2 = d.intValue();
-                        }
-                        ConfigNumber c2 = (ConfigNumber) config.get( key );
-                        c2.setInt( i2 );
-                        break;
-                    default:
-                        config.get( key ).setObject( value );
-                        //System.err.println("Unknown config type: "+config.get( key ).getConfigType() );
-                }
-            }
-            if( config.get( key ).getRequiresRestart() ) {
-                restartObservers();
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /** dummy validation method for testing  */
-    private boolean validateConfig ( Config c ) {
-        return c.getKey().length() <= 100;
+        return configs.get( s );
     }
 
     /** add a WebUiGroup to the ConfigManager
@@ -201,7 +139,7 @@ public class ConfigManager {
     //todo sort
     public String getPage ( int id ) {
         //fill WebUiGroups with Configs
-        for( ConcurrentMap.Entry<String, Config> c : config.entrySet()){
+        for( ConcurrentMap.Entry<String, Config> c : configs.entrySet()){
             try{
                 int i = c.getValue().getWebUiGroup();
                 this.uiGroups.get( i ).addConfig( c.getValue() );
@@ -222,20 +160,6 @@ public class ConfigManager {
         return uiPages.get( id ).toString();
     }
 
-    public ConfigManager observeRestart ( Restartable r ) {
-        this.restartableObservers.add( r );
-        return this;
-    }
-
-    public void restartObservers () {
-        for ( Restartable r: this.restartableObservers ){
-            r.restart();
-        }
-    }
-
-    public interface Restartable {
-        void restart();
-    }
 }
 
 class PageListItem{

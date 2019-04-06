@@ -16,6 +16,7 @@ public class ConfigTable extends Config {
     @Override
     public void setObject( Object value ) {
         this.table = ( ConfigScalar[][] ) value;
+        notifyConfigListeners( this );
     }
 
     @Override

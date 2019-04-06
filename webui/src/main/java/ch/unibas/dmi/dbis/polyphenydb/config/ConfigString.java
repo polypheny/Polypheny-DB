@@ -24,11 +24,13 @@ public class ConfigString extends ConfigScalar {
     public void setObject( Object o ) {
         if(o == null){
             this.value = null;
+            notifyConfigListeners( this );
             return;
         }
         String s = o.toString();
         if( validate( s ) ){
             this.value = s;
+            notifyConfigListeners( this );
         }
     }
 
@@ -41,6 +43,7 @@ public class ConfigString extends ConfigScalar {
     public void setString( String s ) {
         if ( validate( s ) ){
             this.value = s;
+            notifyConfigListeners( this );
         }
     }
 

@@ -19,6 +19,7 @@ public class ConfigDecimal extends ConfigNumber {
     @Override
     public void setObject( Object value ) {
         this.value = ( BigDecimal ) value;
+        notifyConfigListeners( this );
     }
 
     @Override
@@ -29,6 +30,7 @@ public class ConfigDecimal extends ConfigNumber {
     @Override
     public void setDecimal( BigDecimal value ) {
         this.value = value;
+        notifyConfigListeners( this );
     }
 
 }
