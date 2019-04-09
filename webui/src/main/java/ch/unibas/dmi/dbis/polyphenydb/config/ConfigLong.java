@@ -5,12 +5,15 @@ public class ConfigLong extends ConfigNumber {
 
     long value;
 
-    public ConfigLong ( String key ) {
-        super( key );
+    public ConfigLong ( String key, long value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigLong ( String key, String description ) {
-        super( key, description );
+    public ConfigLong ( String key, String description, long value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override
@@ -20,7 +23,7 @@ public class ConfigLong extends ConfigNumber {
     }
 
     @Override
-    public Long getLong() {
+    public long getLong() {
         return this.value;
     }
 

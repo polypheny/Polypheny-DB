@@ -29,6 +29,8 @@ import static spark.Spark.*;
 import ch.unibas.dmi.dbis.polyphenydb.config.*;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import com.google.gson.Gson;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 
 
@@ -61,7 +63,7 @@ public class Server implements ConfigListener {
 
     private void webSockets () {
         //Websockets need to be defined before the post/get requests
-        webSocket("/echo", WebUiWebsocket.class);
+        webSocket("/configWebSocket", WebUiWebsocket.class);
     }
 
     /** many routes just for testing
@@ -125,7 +127,27 @@ public class Server implements ConfigListener {
             for (Map.Entry<String, Object> entry : changes.entrySet()) {
                 //todo give feedback if config does not exists
                 //cm.setConfigValue( entry.getKey(), entry.getValue() );
-                cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
+                Config c = cm.getConfig( entry.getKey() );
+                switch ( c.getConfigType() ) {
+                    case "ConfigInteger":
+                        Double d = (Double) entry.getValue();
+                        c.setInt( d.intValue() );
+                        break;
+                    case "ConfigDouble":
+                        c.setDouble( (double) entry.getValue() );
+                        break;
+                    case "ConfigDecimal":
+                        c.setDecimal( (BigDecimal) entry.getValue() );
+                        break;
+                    case "ConfigLong":
+                        c.setLong( (long) entry.getValue() );
+                    case "ConfigString":
+                        c.setString( (String) entry.getValue() );
+                        break;
+                    default:
+                        System.err.println("Config with type "+c.getConfigType()+" is not supported yet.");
+                }
+                //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
             return "{\"success\":1}";
         });
@@ -134,7 +156,7 @@ public class Server implements ConfigListener {
     // https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
     /** to avoid the CORS problem, when the Server receives requests from the WebUi */
     private static void enableCORS() {
-        staticFiles.header("Access-Control-Allow-Origin", "*");
+        //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         options("/*", (req, res) -> {
             String accessControlRequestHeaders = req.headers("Access-Control-Request-Headers");
@@ -151,24 +173,27 @@ public class Server implements ConfigListener {
         });
 
         before((req, res) -> {
-            res.header("Access-Control-Allow-Origin", "*");
+            //res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Allow-Origin", "http://localhost:4200");
+            res.header("Access-Control-Allow-Credentials", "true");
             res.header("Access-Control-Allow-Headers", "*");
             res.type("application/json");
         });
     }
 
     /** just for testing */
-    private static void demoData() {
+    private void demoData() {
+        System.out.println("demoData()");
         WebUiPage p = new WebUiPage( 1, "page 1", "page 1 descr." );
         WebUiPage p2 = new WebUiPage( 2, "page 2", "page 2 description." ).withIcon( "fa fa-table" );
         WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" ).withDescription( "description of group1" );
-        WebUiGroup g2 = new WebUiGroup( 2, 2 ).withDescription( "group2" );
-        Config c1 = new ConfigString("server.text.1").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
-        Config c2 = new ConfigString("server.email.2").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
+        WebUiGroup g2 = new WebUiGroup( 2, 2 ).withTitle( "group2" ).withDescription( "group2" );
+        Config c1 = new ConfigString("server.text.1", "text1").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
+        Config c2 = new ConfigString("server.email.2", "e@mail").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
-        Config c3 = new ConfigInteger( "server.number" );
-        Config c4 = new ConfigInteger( "server.number" ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
-        Config c5 = new ConfigInteger( "server.number.2" ).withUi( 2, WebUiFormType.NUMBER );
+        //Config c3 = new ConfigInteger( "server.number", 3 );
+        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( 2, WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -176,7 +201,7 @@ public class Server implements ConfigListener {
         cm.registerConfig( c1 );
         cm.registerConfig( c2 );
         cm.registerConfig( c4 );
-        cm.registerConfig( c3 );
+        //cm.registerConfig( c3 );
         cm.registerConfig( c5 );
 
         //inserting group before page is existing
@@ -185,12 +210,19 @@ public class Server implements ConfigListener {
         cm.addUiPage( p );
         cm.addUiPage( p2 );
 
-        c1.setString( "config1" );
+        //c1.setString( "config1" );
+
+        cm.observeAll( this );
     }
 
     @Override
     public void onConfigChange( Config c ) {
-
+        Gson gson = new Gson();
+        try {
+            WebUiWebsocket.broadcast( gson.toJson( c ) );
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
     }
 
     @Override

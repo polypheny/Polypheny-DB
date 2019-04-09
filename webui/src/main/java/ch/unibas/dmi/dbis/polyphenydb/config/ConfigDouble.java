@@ -5,12 +5,15 @@ public class ConfigDouble extends ConfigNumber {
 
     double value;
 
-    public ConfigDouble ( String key ) {
-        super( key );
+    public ConfigDouble ( String key, double value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigDouble ( String key, String description ) {
-        super( key, description );
+    public ConfigDouble ( String key, String description, double value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override
@@ -20,7 +23,7 @@ public class ConfigDouble extends ConfigNumber {
     }
 
     @Override
-    public Double getDouble() {
+    public double getDouble() {
         return this.value;
     }
 

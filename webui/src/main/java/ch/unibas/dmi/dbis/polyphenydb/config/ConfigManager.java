@@ -25,6 +25,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigException;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,7 +60,8 @@ public class ConfigManager {
      * @param config configuration object of type Config */
     public boolean registerConfig( Config config) {
         if ( this.configs.get( config.getKey() ) != null ) {
-            this.configs.get( config.getKey() ).override( config );
+            throw new ConfigException( "Cannot register Config twice: " + config.getKey() );
+            //this.configs.get( config.getKey() ).override( config );
         }else {
             this.configs.put( config.getKey(),config );
         }
@@ -144,7 +146,7 @@ public class ConfigManager {
                 int i = c.getValue().getWebUiGroup();
                 this.uiGroups.get( i ).addConfig( c.getValue() );
             } catch ( NullPointerException e ){
-                System.out.println("skipping config "+c.getKey()+" with no WebUiGroup");
+                //System.out.println("skipping config "+c.getKey()+" with no WebUiGroup");
             }
         }
 
@@ -154,7 +156,7 @@ public class ConfigManager {
                 int i = g.getValue().getPageId();
                 this.uiPages.get( i ).addWebUiGroup( g.getValue() );
             } catch ( NullPointerException e ){
-                System.out.println("skipping group "+g.getKey()+" with no pageid");
+                //System.out.println("skipping group "+g.getKey()+" with no pageid");
             }
         }
         return uiPages.get( id ).toString();

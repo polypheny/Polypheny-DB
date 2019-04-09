@@ -30,15 +30,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 //todo missing fields
 //T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
 /** configuration object that can be accessed and altered via the ConfigManager */
 public abstract class Config < T extends Config<T> > {
     /** unique key */
-    private String key;
+    String key;
     //private transient T value;
-    private String description;
+    String description;
     private boolean requiresRestart = false;
     //ConfigValidator validationMethod;
     private String callWhenChanged;
@@ -57,18 +59,18 @@ public abstract class Config < T extends Config<T> > {
     /**
      * @param key unique name for the configuration
      * */
-    public Config ( String key ) {
+    /*Config ( String key ) {
         this.key = key;
-    }
+    }*/
 
     /**
      * @param key unique name for the configuration
      * @param description description of the configuration
      * */
-    public Config ( String key, String description ) {
+    /*Config ( String key, String description ) {
         this.key = key;
         this.description = description;
-    }
+    }*/
 
     /** override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
      * @param in other config that sould ovveride this config */
@@ -79,7 +81,7 @@ public abstract class Config < T extends Config<T> > {
         }
         if ( in.key != null ) this.key = in.key;
         //if ( in.value != null ) this.value = in.value;
-        if( in.getObject() != null ) this.setObject( in.getObject() );
+        if( in.getObject() != null && ! in.getObject().equals(this.getObject()) ) this.setObject( in.getObject() );
         if ( in.description != null ) this.description = in.description;
         if ( in.requiresRestart ) this.requiresRestart = true;
         //todo override validationMethod
@@ -130,33 +132,33 @@ public abstract class Config < T extends Config<T> > {
         return gson.toJson( this );
     }
 
-    public Object getObject() { throwError(); return null; }
-    public abstract void setObject( Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
+    Object getObject() { throwError(); return null; }
+    abstract void setObject( Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
     public String getString() { throwError(); return null; }
     public void setString( String value ) { throwError(); }
-    public Boolean getBoolean() { throwError(); return null; }
+    public boolean getBoolean() { throwError(); return false; }
     public void setBoolean( boolean value ) { throwError(); }
-    public Integer getInt() { throwError(); return null; }
+    public int getInt() { throwError(); return 0; }
     public void setInt( int value ) { throwError(); }
-    public Long getLong() { throwError(); return null; }
+    public long getLong() { throwError(); return 0; }
     public void setLong( long value ) { throwError(); }
-    public Double getDouble() { throwError(); return null; }
+    public double getDouble() { throwError(); return 0; }
     public void setDouble( double value ) { throwError(); }
     public BigDecimal getDecimal() { throwError(); return null; }
     public void setDecimal( BigDecimal value ) { throwError(); }
     //arrays
-    public Integer[] getIntegerArray() { throwError(); return null; }
-    public void setIntegerArray( Integer[] value ) { throwError(); }
-    public Double[] getDoubleArray() { throwError(); return null; }
+    public int[] getIntArray() { throwError(); return null; }
+    public void setIntArray( Integer[] value ) { throwError(); }
+    public double[] getDoubleArray() { throwError(); return null; }
     public void setDoubleArray ( Double[] value ) { throwError(); }
     //tables
-    public Integer[][] getIntegerTable() { throwError(); return null; }
-    public void setIntegerTable ( Integer[][] value ) { throwError(); }
-    public Double[][] getDoubleTable() { throwError(); return null; }
+    public int[][] getIntTable() { throwError(); return null; }
+    public void setIntTable( Integer[][] value ) { throwError(); }
+    public double[][] getDoubleTable() { throwError(); return null; }
     public void setDoubleTable ( Double[][] value ) { throwError(); }
 
     private void throwError () {
-        throw new ConfigException();
+        throw new ConfigException( "This method cannot be applied to Config of type "+this.getClass().getSimpleName() );
     }
 
 
@@ -166,7 +168,7 @@ public abstract class Config < T extends Config<T> > {
     }
 
     public String getConfigType() {
-        return configType;
+        return this.getClass().getSimpleName();
     }
 
     /** get the WebUiGroup id */
@@ -174,7 +176,7 @@ public abstract class Config < T extends Config<T> > {
         return webUiGroup;
     }
 
-    public void setConfigType( String configType ) {
+    void setConfigType( String configType ) {
         this.configType = configType;
     }
 

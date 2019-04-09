@@ -2,17 +2,18 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 public class ConfigInteger extends ConfigNumber {
 
-    private Integer value;
+    private int value;
     private ConfigValidator validationMethod;
 
-    public ConfigInteger( String key ) {
-        super( key );
-        super.setConfigType( "Integer" );
+    public ConfigInteger( String key, int value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigInteger( String key, String description ) {
-        super( key, description );
-        super.setConfigType( "Integer" );
+    public ConfigInteger( String key, String description, int value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override
@@ -23,17 +24,12 @@ public class ConfigInteger extends ConfigNumber {
     @Override
     public void setObject( Object o ) {
         //todo or parseInt
-        if(o == null){
-            this.value = null;
-            notifyConfigListeners( this );
-            return;
-        }
         Integer i;
         try{
             Double d = (Double) o;
             i = d.intValue();
         } catch ( ClassCastException e ) {
-            i = ( Integer ) o;
+            i = ( int ) o;
         }
         if( validate( i ) ){
             this.value = i;
@@ -42,7 +38,7 @@ public class ConfigInteger extends ConfigNumber {
     }
 
     @Override
-    public Integer getInt() {
+    public int getInt() {
         return this.value;
     }
 

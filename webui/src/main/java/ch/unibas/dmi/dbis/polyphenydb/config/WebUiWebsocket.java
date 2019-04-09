@@ -24,9 +24,16 @@ public class WebUiWebsocket {
     }
 
     @OnWebSocketMessage
-    public void echo(Session session, String message) throws IOException {
+    public void configWebSocket(Session session, String message) throws IOException {
         System.out.println("Got: " + message);   // Print message
         session.getRemote().sendString(message); // and send it back
+    }
+
+    public static void broadcast( String msg ) throws IOException{
+        System.out.println("broadcasting..");
+        for( Session s: sessions ){
+            s.getRemote().sendString( msg );
+        }
     }
 
 }

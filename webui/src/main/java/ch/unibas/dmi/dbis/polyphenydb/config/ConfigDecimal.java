@@ -8,12 +8,15 @@ public class ConfigDecimal extends ConfigNumber {
 
     private BigDecimal value;
 
-    public ConfigDecimal ( String key ) {
-        super( key );
+    public ConfigDecimal ( String key, BigDecimal value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigDecimal ( String key, String description ) {
-        super( key, description );
+    public ConfigDecimal ( String key, String description, BigDecimal value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override

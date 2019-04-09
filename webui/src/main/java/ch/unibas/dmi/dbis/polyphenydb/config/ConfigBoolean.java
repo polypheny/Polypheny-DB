@@ -5,16 +5,19 @@ public class ConfigBoolean extends ConfigScalar {
 
     boolean value;
 
-    public ConfigBoolean ( String key ) {
-        super( key );
+    public ConfigBoolean ( String key, boolean value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigBoolean ( String key, String description ) {
-        super( key, description );
+    public ConfigBoolean ( String key, String description, boolean value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override
-    public Boolean getBoolean() {
+    public boolean getBoolean() {
         return this.value;
     }
 

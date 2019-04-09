@@ -5,14 +5,15 @@ public class ConfigString extends ConfigScalar {
     private String value;
     private ConfigValidator validationMethod;
 
-    public ConfigString ( String key ) {
-        super( key );
-        super.setConfigType( "String" );
+    public ConfigString ( String key, String value ) {
+        this.key = key;
+        this.value = value;
     }
 
-    public ConfigString ( String key, String description ) {
-        super( key, description );
-        super.setConfigType( "String" );
+    public ConfigString ( String key, String description, String value ) {
+        this.key = key;
+        this.description = description;
+        this.value = value;
     }
 
     @Override
@@ -22,11 +23,11 @@ public class ConfigString extends ConfigScalar {
 
     @Override
     public void setObject( Object o ) {
-        if(o == null){
+        /*if(o == null){
             this.value = null;
             notifyConfigListeners( this );
             return;
-        }
+        }*/
         String s = o.toString();
         if( validate( s ) ){
             this.value = s;
