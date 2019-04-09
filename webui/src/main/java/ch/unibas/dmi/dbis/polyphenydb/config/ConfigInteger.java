@@ -50,6 +50,11 @@ public class ConfigInteger extends ConfigNumber {
         }
     }
 
+    @Override
+    public long getLong() {
+        return (long) this.value;
+    }
+
     private boolean validate ( int i ) {
         if ( this.validationMethod != null ) {
             if( this.validationMethod.validate( i ) ) {

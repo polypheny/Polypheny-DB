@@ -1,6 +1,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import java.math.BigDecimal;
+
+
 public class ConfigDouble extends ConfigNumber {
 
     double value;
@@ -25,6 +28,11 @@ public class ConfigDouble extends ConfigNumber {
     @Override
     public double getDouble() {
         return this.value;
+    }
+
+    @Override
+    public BigDecimal getDecimal() {
+        return new BigDecimal( this.value );
     }
 
     @Override
