@@ -34,14 +34,14 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 
-/** RESTful server for the WebUis */
-public class Server implements ConfigListener {
+/** RESTful server for the WebUis, working with the ConfigManager */
+public class ConfigServer implements ConfigListener {
 
     static {
         ConfigManager.getInstance().registerConfig( new ConfigString( "server.test", "just for testing" ).setRequiresRestart() );
     }
 
-    public Server() {
+    public ConfigServer() {
 
         port(8081);
 
@@ -57,8 +57,8 @@ public class Server implements ConfigListener {
     }
 
     public static void main(String[] args) {
-        new Server();
-        System.out.println("server running..");
+        new ConfigServer();
+        System.out.println("ConfigServer running..");
     }
 
     private void webSockets () {
@@ -106,7 +106,7 @@ public class Server implements ConfigListener {
         post("/getPage", (req, res) -> {
             //input: req: {pageId: 123}
             try{
-                System.out.println("get page "+req.body());
+                //System.out.println("get page "+req.body());
                 int pageId = Integer.parseInt( req.body() );
                 if( pageId == 0 ){
                     //todo load page list or so.
@@ -154,8 +154,8 @@ public class Server implements ConfigListener {
     }
 
     // https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
-    /** to avoid the CORS problem, when the Server receives requests from the WebUi */
-    private static void enableCORS() {
+    /** to avoid the CORS problem, when the ConfigServer receives requests from the WebUi */
+    public static void enableCORS() {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         options("/*", (req, res) -> {
