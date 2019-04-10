@@ -29,6 +29,10 @@ import static spark.Spark.*;
 import ch.unibas.dmi.dbis.polyphenydb.informationprovider.*;
 import ch.unibas.dmi.dbis.polyphenydb.informationprovider.InformationGraph.GraphType;
 import com.google.gson.Gson;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+
 
 /** RESTful server for the WebUis, working with the InformationManager */
 public class InformationServer  {
@@ -59,7 +63,7 @@ public class InformationServer  {
 
     private void webSockets () {
         //Websockets need to be defined before the post/get requests
-
+        webSocket("/informationWebSocket", InformationWebSocket.class);
     }
 
     private void informationRoutes() {
@@ -109,6 +113,15 @@ public class InformationServer  {
         Information i6 = new InformationGraph( "i.graph2", "group1.2", labels, graphData ).ofType( GraphType.BAR );
 
         im.regsiterInformation( i1, i2, i4, i5, i6 );
+
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                Random r = new Random();
+                im.getInformation( "i.progress" ).updateProgress( r.nextInt(100) );
+            }
+        }, 5000, 5000 );
     }
 
 }

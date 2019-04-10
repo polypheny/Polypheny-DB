@@ -13,4 +13,10 @@ public class InformationLink extends Information {
         this.routerLink = routerLink;
     }
 
+    public void updateLink ( String label, String... routerLink ) {
+        this.label = label;
+        this.routerLink = routerLink;
+        InformationManager.getInstance().notify( this );
+    }
+
 }

@@ -39,4 +39,10 @@ public class InformationProgress extends Information {
         this.max = max;
         return this;
     }
+
+    public void updateProgress ( int value ) {
+        this.value = value;
+        InformationManager.getInstance().notify( this );
+    }
+
 }

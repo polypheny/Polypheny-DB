@@ -2,6 +2,7 @@ package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
 
 
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -40,6 +41,16 @@ public class InformationManager {
         }
     }
 
+    public void removeInformation ( Information... infos ) {
+        for ( Information i: infos) {
+            this.informations.remove( i.getId(), i );
+        }
+    }
+
+    public Information getInformation ( String key ) {
+        return this.informations.get( key );
+    }
+
     public String getPageList () {
         InformationPage[] pages1 = new InformationPage[this.pages.size()];
         int counter = 0;
@@ -65,6 +76,14 @@ public class InformationManager {
         }
         //System.out.println( p.toString() );
         return p.toString();
+    }
+
+    public void notify ( Information i ) {
+        try {
+            InformationWebSocket.broadcast( i.toString() );
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
     }
 
 }

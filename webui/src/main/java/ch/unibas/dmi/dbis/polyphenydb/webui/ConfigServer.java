@@ -63,7 +63,7 @@ public class ConfigServer implements ConfigListener {
 
     private void webSockets () {
         //Websockets need to be defined before the post/get requests
-        webSocket("/configWebSocket", WebUiWebsocket.class);
+        webSocket("/configWebSocket", ConfigWebsocket.class);
     }
 
     /** many routes just for testing
@@ -219,7 +219,7 @@ public class ConfigServer implements ConfigListener {
     public void onConfigChange( Config c ) {
         Gson gson = new Gson();
         try {
-            WebUiWebsocket.broadcast( gson.toJson( c ) );
+            ConfigWebsocket.broadcast( gson.toJson( c ) );
         } catch ( IOException e ) {
             e.printStackTrace();
         }

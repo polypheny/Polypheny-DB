@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 @WebSocket
-public class WebUiWebsocket {
+public class ConfigWebsocket {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 

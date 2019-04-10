@@ -19,6 +19,10 @@ public class InformationGraph extends Information {
         return this;
     }
 
+    public void updateGraph( GraphData... data ) {
+        this.data = data;
+    }
+
     public enum GraphType{
         LINE("line"),
         BAR("bar"),
