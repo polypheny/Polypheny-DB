@@ -1,3 +1,28 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
@@ -6,8 +31,12 @@ import com.google.gson.GsonBuilder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/** page for the WebUi containing WebUiGroups that contain Configuration object */
+
+/**
+ * Page for the WebUi containing WebUiGroups that contain configuration elements.
+ */
 public class WebUiPage {
+    
     private String id;
     private String title;
     private String description;
@@ -15,10 +44,14 @@ public class WebUiPage {
     private WebUiPage parentPage;
     private ConcurrentMap<String, WebUiGroup> groups = new ConcurrentHashMap<String, WebUiGroup>(  );
 
-    /** @param id unique id for the page */
-    public WebUiPage ( String id ) {
+
+    /**
+     * @param id unique id for the page
+     */
+    public WebUiPage( String id ) {
         this.id = id;
     }
+
 
     public WebUiPage ( String id, String title, String description ) {
         this.id = id;
@@ -26,34 +59,52 @@ public class WebUiPage {
         this.description = description;
     }
 
+
     public WebUiPage withIcon( String icon ) {
         this.icon = icon;
         return this;
     }
 
-    public WebUiPage withParent ( WebUiPage parent ) {
+
+    public WebUiPage withParent( WebUiPage parent ) {
         this.parentPage = parent;
         return this;
     }
 
-    public boolean hasTitle () {
+
+    public boolean hasTitle() {
         return this.title != null;
     }
 
+
     /**
      * applies all attributes of page p to this existing page object
+     *
      * @param p page with more attributes
-     * */
-    public WebUiPage override ( WebUiPage p ) {
-        if ( p.id != null ) this.id = p.id;
-        if ( p.title != null ) this.title = p.title;
-        if ( p.description != null ) this.description = p.description;
-        if ( p.icon != null ) this.icon = p.icon;
-        if ( p.parentPage != null ) this.parentPage = p.parentPage;
+     */
+    public WebUiPage override( WebUiPage p ) {
+        if ( p.id != null ) {
+            this.id = p.id;
+        }
+        if ( p.title != null ) {
+            this.title = p.title;
+        }
+        if ( p.description != null ) {
+            this.description = p.description;
+        }
+        if ( p.icon != null ) {
+            this.icon = p.icon;
+        }
+        if ( p.parentPage != null ) {
+            this.parentPage = p.parentPage;
+        }
         return this;
     }
 
-    /** @return id of this WebUiPage*/
+
+    /**
+     * @return id of this WebUiPage
+     */
     public String getId() {
         return id;
     }
@@ -69,16 +120,21 @@ public class WebUiPage {
     }
 
 
-    /** add a WebUiGroup for this WebUiPage */
-    public void addWebUiGroup ( WebUiGroup g ) {
+    /**
+     * add a WebUiGroup for this WebUiPage
+     */
+    public void addWebUiGroup( WebUiGroup g ) {
         if ( groups.get( g.getId() ) != null ) {
             groups.get( g.getId() ).override( g );
-        }else {
-            groups.put( g.getId(),g );
+        } else {
+            groups.put( g.getId(), g );
         }
     }
 
-    /** @return returns WebUiPage as json object */
+
+    /**
+     * @return returns WebUiPage as json object
+     */
     @Override
     public String toString() {
 

@@ -3,8 +3,8 @@
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,186 +20,450 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigException;
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-//todo missing fields
-//T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
-/** configuration object that can be accessed and altered via the ConfigManager */
-public abstract class Config < T extends Config<T> > {
-    /** unique key */
-    String key;
-    //private transient T value;
-    String description;
+// todo missing fields
+
+
+/**
+ * Configuration object that can be accessed and altered via the ConfigManager
+ */
+public abstract class Config<T extends Config<T>> {
+
+    /**
+     * unique key
+     */
+    private final String key;
+
+    /**
+     * Description of this configuration element
+     */
+    private String description;
+
+    /**
+     * Indicated weather applying changes to this configuration element requires a restart of Polypheny-DB
+     */
     private boolean requiresRestart = false;
+
+    // TODO MV: Missing
     //ConfigValidator validationMethod;
+
+
     private String callWhenChanged;
+
+    // TODO MV: Why is this field unused
+    /**
+     * Name of the validation method to use in the web ui
+     */
     private WebUiValidator[] webUiValidators;
+
+    /**
+     * Form type to use in the web ui for this config element
+     */
     private WebUiFormType webUiFormType;
-    /** id of the WebUiGroup it should be displayed in */
+
+    /**
+     * id of the WebUiGroup it should be displayed in
+     */
     private String webUiGroup;
-    /** id of the WebUiPage it should be displayed in */
+
+    /**
+     * id of the WebUiPage it should be displayed in
+     */
     private Integer webUiOrder;
 
-    /** for gson */
-    private String configType;
+    /**
+     * Type of configuration element. Required for GSON.
+     */
+    @SuppressWarnings("unused")
+    private final String configType;
 
-    private ConcurrentLinkedQueue<ConfigListener> listeners = new ConcurrentLinkedQueue<ConfigListener>();
 
     /**
-     * @param key unique name for the configuration
-     * */
-    /*Config ( String key ) {
-        this.key = key;
-    }*/
+     * List of observers
+     */
+    private final ConcurrentLinkedQueue<ConfigListener> listeners = new ConcurrentLinkedQueue<>();
+
 
     /**
-     * @param key unique name for the configuration
-     * @param description description of the configuration
-     * */
-    /*Config ( String key, String description ) {
+     * Constructor
+     *
+     * @param key Unique name for the configuration element
+     */
+    protected Config( final String key ) {
+        this( key, "" );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param key Unique name for the configuration element
+     * @param description Description of the configuration element
+     */
+    protected Config( final String key, final String description ) {
         this.key = key;
         this.description = description;
-    }*/
+        configType = getConfigType();
+    }
 
-    /** override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
-     * @param in other config that sould ovveride this config */
-    public T override ( Config in ) {
+
+    /**
+     * Override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
+     *
+     * @param in other config that should override this config
+     */
+    public T override( final Config in ) {
         if ( this.getClass() != in.getClass() ) {
-            System.err.println( "cannot override config of type "+this.getClass().toString()+" with config of type "+in.getClass().toString() );
-            return (T) this;//todo or throw error
+            System.err.println( "Cannot override config of type " + this.getClass().toString() + " with config of type " + in.getClass().toString() );
+            return (T) this;// todo or throw error
         }
-        if ( in.key != null ) this.key = in.key;
-        //if ( in.value != null ) this.value = in.value;
-        if( in.getObject() != null && ! in.getObject().equals(this.getObject()) ) this.setObject( in.getObject() );
-        if ( in.description != null ) this.description = in.description;
-        if ( in.requiresRestart ) this.requiresRestart = true;
-        //todo override validationMethod
-        //if ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
-        if ( in.callWhenChanged != null ) this.callWhenChanged = in.callWhenChanged;
+        //if ( in.key != null ) {
+        //    this.key = in.key;
+        //}
+        // If ( in.value != null ) this.value = in.value;
+        if ( in.getObject() != null && !in.getObject().equals( this.getObject() ) ) {
+            this.setObject( in.getObject() );
+        }
+        if ( in.description != null ) {
+            this.description = in.description;
+        }
+        if ( in.requiresRestart ) {
+            this.requiresRestart = true;
+        }
+        // todo override validationMethod
+        // If ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
+        if ( in.callWhenChanged != null ) {
+            this.callWhenChanged = in.callWhenChanged;
+        }
         //todo webUiValidators
-        if ( in.webUiFormType != null ) this.webUiFormType = in.webUiFormType;
-        if ( in.webUiGroup != null ) this.webUiGroup = in.webUiGroup;
-        if ( in.webUiOrder != null ) this.webUiOrder = in.webUiOrder;
+        if ( in.webUiFormType != null ) {
+            this.webUiFormType = in.webUiFormType;
+        }
+        if ( in.webUiGroup != null ) {
+            this.webUiGroup = in.webUiGroup;
+        }
+        if ( in.webUiOrder != null ) {
+            this.webUiOrder = in.webUiOrder;
+        }
         return (T) this;
     }
 
-    /** sets requiresRestart to true (is false by default) */
-    public T setRequiresRestart() {
-        this.requiresRestart = true;
+
+    /**
+     * Allows to set requiresRestart. Is false by default.
+     */
+    public T setRequiresRestart( final boolean requiresRestart ) {
+        this.requiresRestart = requiresRestart;
         return (T) this;
     }
 
-    public boolean getRequiresRestart () {
+
+    public boolean getRequiresRestart() {
         return this.requiresRestart;
     }
 
-    /** set Ui information
+
+    /**
+     * set Ui information
+     *
      * @param webUiGroup id of webUiGroup
      * @param type type, e.g. text or number
-     * */
+     */
     public T withUi ( String webUiGroup, WebUiFormType type ) {
         this.webUiGroup = webUiGroup;
         this.webUiFormType = type;
         return (T) this;
     }
 
-    /** validators for the WebUi */
-    public T withWebUiValidation(WebUiValidator... validations) {
+
+    /**
+     * validators for the WebUi
+     */
+    public T withWebUiValidation( final WebUiValidator... validations ) {
         this.webUiValidators = validations;
         return (T) this;
     }
 
+    // TODO MV:
     // set anonymous validation method for this config
     //public abstract Config withJavaValidation (ConfigValidator c);
 
-    /** returns Config as json */
-    public String toString() {
+
+    /**
+     * Get JSON representation of this configuration element
+     *
+     * @return Config as JSON
+     */
+    public String toJson() {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
-        //Gson gson = new Gson();
         return gson.toJson( this );
     }
 
-    Object getObject() { throwError(); return null; }
-    abstract void setObject( Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
-    public String getString() { throwError(); return null; }
-    public void setString( String value ) { throwError(); }
-    public boolean getBoolean() { throwError(); return false; }
-    public void setBoolean( boolean value ) { throwError(); }
-    public int getInt() { throwError(); return 0; }
-    public void setInt( int value ) { throwError(); }
-    public long getLong() { throwError(); return 0; }
-    public void setLong( long value ) { throwError(); }
-    public double getDouble() { throwError(); return 0; }
-    public void setDouble( double value ) { throwError(); }
-    public BigDecimal getDecimal() { throwError(); return null; }
-    public void setDecimal( BigDecimal value ) { throwError(); }
-    //arrays
-    public int[] getIntArray() { throwError(); return null; }
-    public void setIntArray( Integer[] value ) { throwError(); }
-    public double[] getDoubleArray() { throwError(); return null; }
-    public void setDoubleArray ( Double[] value ) { throwError(); }
-    //tables
-    public int[][] getIntTable() { throwError(); return null; }
-    public void setIntTable( Integer[][] value ) { throwError(); }
-    public double[][] getDoubleTable() { throwError(); return null; }
-    public void setDoubleTable ( Double[][] value ) { throwError(); }
 
-    private void throwError () {
-        throw new ConfigException( "This method cannot be applied to Config of type "+this.getClass().getSimpleName() );
+    // TODO MV: ???
+    Object getObject() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into an Object!" );
     }
 
 
-    /** get the key of the config */
+    // TODO MV: ???
+    abstract void setObject( final Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
+
+    //  ----- Scalars -----
+
+
+    /**
+     * Get the String representation of the configuration value.
+     *
+     * @return Configuration value as String
+     */
+    public String getString() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a String!" );
+    }
+
+
+    public void setString( final String value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type String on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Boolean representation of the configuration value.
+     *
+     * @return Configuration value as boolean
+     */
+    public boolean getBoolean() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a boolean!" );
+    }
+
+
+    public void setBoolean( final boolean value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type boolean on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Integer representation of the configuration value.
+     *
+     * @return Configuration value as int
+     */
+    public int getInt() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a int!" );
+    }
+
+
+    public void setInt( final int value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type int on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Long representation of the configuration value.
+     *
+     * @return Configuration value as long
+     */
+    public long getLong() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a long!" );
+    }
+
+
+    public void setLong( final long value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type long on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Double representation of the configuration value.
+     *
+     * @return Configuration value as double
+     */
+    public double getDouble() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a double!" );
+    }
+
+
+    public void setDouble( final double value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type double on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Decimal representation of the configuration value.
+     *
+     * @return Configuration value as BigDecimal
+     */
+    public BigDecimal getDecimal() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a BigDecimal!" );
+    }
+
+
+    public void setDecimal( final BigDecimal value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+    // ----- Arrays ------
+
+
+    /**
+     * Get the Integer-Array representation of the configuration value.
+     *
+     * @return Configuration value as int[]
+     */
+    public int[] getIntArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into an int[]!" );
+    }
+
+
+    public void setIntArray( final int[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type int[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Double-Array representation of the configuration value.
+     *
+     * @return Configuration value as double[]
+     */
+    public double[] getDoubleArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a double[]!" );
+    }
+
+
+    public void setDoubleArray( final double[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type double[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+    // TODO MV: Missing methods for String, boolean, long, decimal
+
+    // ----- Tables -----
+
+
+    /**
+     * Get the Integer-Table representation of the configuration value.
+     *
+     * @return Configuration value as int[][]
+     */
+    public int[][] getIntTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a int[][]!" );
+    }
+
+
+    public void setIntTable( final int[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type int[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Double-Table representation of the configuration value.
+     *
+     * @return Configuration value as double[][]
+     */
+    public double[][] getDoubleTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a double[][]!" );
+    }
+
+
+    public void setDoubleTable( final double[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type double[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+    // TODO MV: Missing methods for String, boolean, long, decimal
+
+    // TODO MV: Use lombok
+
+
+    /**
+     * Get the key of this config element
+     *
+     * @return Key as String
+     */
     public String getKey() {
         return this.key;
     }
 
+    // TODO MV: Use lombok
+
+
+    /**
+     * Type of configuration element
+     *
+     * @return The type of this configuration element as string
+     */
     public String getConfigType() {
         return this.getClass().getSimpleName();
     }
 
-    /** get the WebUiGroup id */
+    // TODO MV: Use lombok
+
+
+    /**
+     * Get the WebUiGroup, this configuration element belongs to,
+     *
+     * @return ID of the WebUiGroup
+     */
     public String getWebUiGroup() {
         return webUiGroup;
     }
 
-    void setConfigType( String configType ) {
-        this.configType = configType;
-    }
 
-    public T addObserver ( ConfigListener listener ) {
-        if ( ! this.listeners.contains( listener ) ) {
+    /**
+     * Add an observer for this config element.
+     *
+     * @param listener Observer to add
+     * @return Config
+     */
+    public T addObserver( final ConfigListener listener ) {
+        if ( !this.listeners.contains( listener ) ) {
             this.listeners.add( listener );
         }
         return (T) this;
     }
 
-    public T removeObserver ( ConfigListener listener ) {
+
+    /**
+     * Remove an observer from this config element.
+     *
+     * @param listener Observer to remove
+     * @return Config
+     */
+    public T removeObserver( final ConfigListener listener ) {
         this.listeners.remove( listener );
         return (T) this;
     }
 
-    void notifyConfigListeners( Config c ){
-        for( ConfigListener listener : listeners ) {
-            listener.onConfigChange( c );
-            if( c.getRequiresRestart() ) listener.restart( c );
+
+    /**
+     * Notify observers
+     */
+    protected void notifyConfigListeners() {
+        for ( ConfigListener listener : listeners ) {
+            listener.onConfigChange( this );
+            if ( getRequiresRestart() ) {
+                listener.restart( this );
+            }
         }
     }
 
-    public interface ConfigListener{
+
+    // TODO MV: JavaDoc
+    public interface ConfigListener {
+
         void onConfigChange( Config c );
-        void restart ( Config c );
+
+        void restart( Config c );
     }
 
 }

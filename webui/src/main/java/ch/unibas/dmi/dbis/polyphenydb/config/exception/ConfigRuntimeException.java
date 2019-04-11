@@ -23,27 +23,15 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.config.exception;
 
 
-public enum InformationType {
-    HEADER( "header" ),
-    PROGRESS( "progress" ),
-    LINK( "link" ),
-    HTML( "html" ),
-    GRAPH( "graph" );
+/**
+ * Generic Configuration Exception
+ */
+public class ConfigRuntimeException extends RuntimeException {
 
-
-    private final String type;
-
-
-    InformationType( String t ) {
-        this.type = t;
-    }
-
-
-    @Override
-    public String toString() {
-        return this.type;
+    public ConfigRuntimeException( String msg ) {
+        super( msg );
     }
 }
