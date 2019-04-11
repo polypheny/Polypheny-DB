@@ -1,14 +1,42 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
 package ch.unibas.dmi.dbis.polyphenydb.config;
+
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import java.math.BigDecimal;
 import org.junit.Assert;
 import org.junit.Test;
 
+
 public class ConfigManagerTest implements ConfigListener {
 
     private ConfigManager cm;
     private boolean wasRestarted = false;
+
 
     static {
         ConfigManager cm = ConfigManager.getInstance();
@@ -16,14 +44,15 @@ public class ConfigManagerTest implements ConfigListener {
         WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" );
         WebUiGroup g2 = new WebUiGroup( 2, 1 ).withDescription( "group2" );
 
-        Config c1 = new ConfigString("conf.test.2", "text1").withUi( 2, WebUiFormType.TEXT );
+        Config c1 = new ConfigString( "conf.test.2", "text1" ).withUi( 2, WebUiFormType.TEXT );
         cm.registerConfig( c1 );
         cm.addUiGroup( g2 );
         cm.addUiGroup( g1 );
         cm.addUiPage( p );
     }
 
-    public ConfigManagerTest () {
+
+    public ConfigManagerTest() {
         //insert config before groups and pages are existing
         cm = ConfigManager.getInstance();
     }
@@ -51,8 +80,9 @@ public class ConfigManagerTest implements ConfigListener {
 
     }*/
 
+
     @Test
-    public void javaValidation () {
+    public void javaValidation() {
         Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
         Config c6 = new ConfigInteger( "java.number.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
 
@@ -70,14 +100,15 @@ public class ConfigManagerTest implements ConfigListener {
         System.out.println( cm.getPage( 1 ) );
     }
 
+
     @Test
-    public void configTypes () {
-        Config c2 = new ConfigString("type.string", "string");
-        Config c3 = new ConfigBoolean("type.boolean", true);
-        Config c4 = new ConfigInteger("type.integer", 11);
-        Config c5 = new ConfigLong("type.long", 100);
+    public void configTypes() {
+        Config c2 = new ConfigString( "type.string", "string" );
+        Config c3 = new ConfigBoolean( "type.boolean", true );
+        Config c4 = new ConfigInteger( "type.integer", 11 );
+        Config c5 = new ConfigLong( "type.long", 100 );
         Config c6 = new ConfigDouble( "type.double", 1.01 );
-        Config c7 = new ConfigDecimal("type.decimal", new BigDecimal( 1.0001 ));
+        Config c7 = new ConfigDecimal( "type.decimal", new BigDecimal( 1.0001 ) );
 
         c2.setString( "string" );
         c3.setBoolean( true );
@@ -90,25 +121,33 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertEquals( "string", cm.getConfig( "type.string" ).getString() );
         Assert.assertTrue( cm.getConfig( "type.boolean" ).getBoolean() );
-        Assert.assertEquals( 10, (int) cm.getConfig(  "type.integer" ).getInt() );
-        Assert.assertEquals( 11, (long) cm.getConfig(  "type.long" ).getLong() );
-        Assert.assertEquals( 10.1, cm.getConfig(  "type.double" ).getDouble(), 0.0001 );
-        Assert.assertEquals( new BigDecimal( 3.14 ), cm.getConfig(  "type.decimal" ).getDecimal() );
+        Assert.assertEquals( 10, (int) cm.getConfig( "type.integer" ).getInt() );
+        Assert.assertEquals( 11, (long) cm.getConfig( "type.long" ).getLong() );
+        Assert.assertEquals( 10.1, cm.getConfig( "type.double" ).getDouble(), 0.0001 );
+        Assert.assertEquals( new BigDecimal( 3.14 ), cm.getConfig( "type.decimal" ).getDecimal() );
 
     }
 
+
     @Test
-    public void isNotified () {
+    public void isNotified() {
 
         class ConfigObserver implements ConfigListener {
+
             private boolean wasNotified = false;
-            public void restart ( Config c ) {
+
+
+            public void restart( Config c ) {
                 this.wasNotified = true;
             }
-            public void onConfigChange ( Config c ) {
+
+
+            public void onConfigChange( Config c ) {
                 this.wasNotified = true;
             }
-            public boolean wasNotified () {
+
+
+            public boolean wasNotified() {
                 return this.wasNotified;
             }
         }
@@ -126,19 +165,22 @@ public class ConfigManagerTest implements ConfigListener {
 
     }
 
+
     @Test
-    public void isRestarted () {
-        Config c = new ConfigString( "test.restart", "restart" ).setRequiresRestart().addObserver( this );
+    public void isRestarted() {
+        Config c = new ConfigString( "test.restart", "restart" ).setRequiresRestart( true ).addObserver( this );
         cm.registerConfig( c );
         cm.getConfig( c.getKey() ).setString( "someValue" );
         Assert.assertEquals( true, this.wasRestarted );
     }
 
-    public void onConfigChange ( Config c ) {
+
+    public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
     }
 
-    public void restart( Config c ){
+
+    public void restart( Config c ) {
         System.out.println( "Config " + c.getKey() + " triggered restart;" );
         this.wasRestarted = true;
     }
