@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -317,7 +317,7 @@ public abstract class QuidemTest {
                     final Connection connection = PolyphenyDbAssert.that()
                             .withSchema( "s", new AbstractSchema() )
                             .connect();
-                    connection.unwrap( PolyphenyDbConnection.class ).getRootSchema()
+                    connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema()
                             .getSubSchema( "s" )
                             .add( "my_seq",
                                     new AbstractTable() {

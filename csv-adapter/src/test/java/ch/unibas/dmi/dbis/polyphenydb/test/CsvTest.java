@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory;
@@ -729,13 +729,13 @@ public class CsvTest {
         final Properties properties = new Properties();
         properties.setProperty( "caseSensitive", "true" );
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties ) ) {
-            final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
+            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
 
-            final Schema schema = CsvSchemaFactory.INSTANCE.create( polyphenyDbConnection.getRootSchema(), null,
+            final Schema schema = CsvSchemaFactory.INSTANCE.create( polyphenyDbEmbeddedConnection.getRootSchema(), null,
                     ImmutableMap.of( "directory", resourcePath( "sales" ), "flavor", "scannable" ) );
-            polyphenyDbConnection.getRootSchema().add( "TEST", schema );
+            polyphenyDbEmbeddedConnection.getRootSchema().add( "TEST", schema );
             final String sql = "select * from \"TEST\".\"DEPTS\" where \"NAME\" = ?";
-            final PreparedStatement statement2 = polyphenyDbConnection.prepareStatement( sql );
+            final PreparedStatement statement2 = polyphenyDbEmbeddedConnection.prepareStatement( sql );
 
             statement2.setString( 1, "Sales" );
             final ResultSet resultSet1 = statement2.executeQuery();
@@ -935,9 +935,9 @@ public class CsvTest {
             pw.flush();
             worker.queue.put( writeLine( pw, lines.next() ) ); // first row
             worker.queue.put( writeLine( pw, lines.next() ) ); // second row
-            final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
+            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
             final String sql = "select stream * from \"SS\".\"DEPTS\"";
-            final PreparedStatement statement = polyphenyDbConnection.prepareStatement( sql );
+            final PreparedStatement statement = polyphenyDbEmbeddedConnection.prepareStatement( sql );
             final ResultSet resultSet = statement.executeQuery();
             int count = 0;
             try {

@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableMacroImpl;
@@ -183,8 +183,8 @@ public class ReflectiveSchemaTest {
     @Test
     public void testOperator() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         schema.add( "GenerateStrings", TableMacroImpl.create( Smalls.GENERATE_STRINGS_METHOD ) );
         schema.add( "StringUnion", TableMacroImpl.create( Smalls.STRING_UNION_METHOD ) );
@@ -205,8 +205,8 @@ public class ReflectiveSchemaTest {
     @Test
     public void testView() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         schema.add( "emps_view",
                 ViewTable.viewMacro( schema,
@@ -230,8 +230,8 @@ public class ReflectiveSchemaTest {
     @Test
     public void testViewPath() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         // create a view s.emps based on hr.emps. uses explicit schema path "hr".
         schema.add( "emps",
@@ -843,7 +843,7 @@ public class ReflectiveSchemaTest {
     public void testReflectiveSchemaInUnnamedPackage() throws Exception {
         final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
         try (
-                PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() )
+                PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() )
         ) {
             SchemaPlus rootSchema = connection.getRootSchema();
             final Class<?> c = Class.forName( "RootHr" );

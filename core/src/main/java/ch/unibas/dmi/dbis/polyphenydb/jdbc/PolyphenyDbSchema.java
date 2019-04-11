@@ -566,7 +566,7 @@ public abstract class PolyphenyDbSchema {
      */
     public static PolyphenyDbSchema createRootSchema( boolean addMetadataSchema, boolean cache, String name ) {
         PolyphenyDbSchema rootSchema;
-        final Schema schema = new PolyphenyDbConnectionImpl.RootSchema();
+        final Schema schema = new PolyphenyDbEmbeddedConnectionImpl.RootSchema();
         if ( cache ) {
             rootSchema = new CachingPolyphenyDbSchema( null, schema, name );
         } else {

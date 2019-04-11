@@ -51,7 +51,7 @@ import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import com.google.common.collect.Sets;
@@ -93,8 +93,8 @@ public class MultiJdbcSchemaJoinTest {
 
         // Connect via Polypheny-DB to these databases
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         final DataSource ds1 = JdbcSchema.dataSource( db1, "org.hsqldb.jdbcDriver", "", "" );
         rootSchema.add( "DB1", JdbcSchema.create( rootSchema, "DB1", ds1, null, null ) );
         final DataSource ds2 = JdbcSchema.dataSource( db2, "org.hsqldb.jdbcDriver", "", "" );
@@ -128,8 +128,8 @@ public class MultiJdbcSchemaJoinTest {
 
         // Make a Polypheny-DB schema with both a jdbc schema and a non-jdbc schema
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         rootSchema.add( "DB",
                 JdbcSchema.create( rootSchema, "DB",
                         JdbcSchema.dataSource( db, "org.hsqldb.jdbcDriver", "", "" ),
@@ -205,8 +205,8 @@ public class MultiJdbcSchemaJoinTest {
 
         // Connect via Polypheny-DB to these databases
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         final DataSource ds = JdbcSchema.dataSource( db, "org.hsqldb.jdbcDriver", "", "" );
         rootSchema.add( "DB", JdbcSchema.create( rootSchema, "DB", ds, null, null ) );
 

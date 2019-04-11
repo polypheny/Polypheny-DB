@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.server;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 
@@ -59,7 +59,7 @@ public interface PolyphenyDbServer {
 
     void removeStatement( Meta.StatementHandle h );
 
-    void addStatement( PolyphenyDbConnection connection, Meta.StatementHandle h );
+    void addStatement( PolyphenyDbEmbeddedConnection connection, Meta.StatementHandle h );
 
     /**
      * Returns the statement with a given handle.

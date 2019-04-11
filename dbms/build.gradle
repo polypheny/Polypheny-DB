@@ -1,0 +1,158 @@
+
+group 'ch.unibas.dmi.dbis.polyphenydb'
+
+
+def versionMajor = 1
+def versionMinor = 0
+def versionQualifier = 'SNAPSHOT'
+version = versionMajor + '.' + versionMinor + '-' + versionQualifier
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+
+    }
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+
+dependencies {
+    compile project(':core')
+    compile project(':csv-adapter')
+
+    ////// Logging
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.0' // License: Apache 2.0
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'   // License: Apache 2.0
+    compile group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: '2.11.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
+
+    ////// CLI PARSING
+    compile group: 'com.github.rvesse', name: 'airline', version: '2.5.0'
+
+    ////// APACHE COMMONS LANG
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+
+    ////// BYTE UNITS
+    compile group: 'com.jakewharton.byteunits', name: 'byteunits', version: '0.9.1' // License: Apache 2.0
+
+
+    ////// APACHE CALCITE AVATICA
+    compile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: '1.11.0'
+    
+    
+
+    // --- Test Compile ---
+    testCompile project(path: ':core', configuration: 'testClasses')
+
+    testCompile group: 'junit', name: 'junit', version:'4.12'
+}
+
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+    // suppress most of the warnings
+    options.addStringOption('Xdoclint:none', '-quiet')
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+
+
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
+        attributes "Version": "$version"
+    }
+}
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives jar // regular jar containing only the compiled source
+    archives sourcesJar // jar file containing the java doc files
+    archives javadocJar // jar file containing the source files
+}
+
+
+
+
+
+
+/**
+ * IntelliJ
+ */
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+
+        inheritOutputDirs = false
+        outputDir = file("${project.buildDir}/classes")
+        testOutputDir = file("${project.buildDir}/test-classes")
+    }
+}

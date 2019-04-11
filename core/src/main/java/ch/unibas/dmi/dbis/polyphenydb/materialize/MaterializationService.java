@@ -48,8 +48,8 @@ package ch.unibas.dmi.dbis.polyphenydb.materialize;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
@@ -134,7 +134,7 @@ public class MaterializationService {
             return null;
         }
 
-        final PolyphenyDbConnection connection = PolyphenyDbMetaImpl.connect( schema.root(), null );
+        final PolyphenyDbEmbeddedConnection connection = PolyphenyDbEmbeddedMetaImpl.connect( schema.root(), null );
         PolyphenyDbSchema.TableEntry tableEntry;
         // If the user says the materialization exists, first try to find a table with the name and if none can be found, lookup a view in the schema
         if ( existing ) {
@@ -364,7 +364,7 @@ public class MaterializationService {
     public static class DefaultTableFactory implements TableFactory {
 
         public Table createTable( PolyphenyDbSchema schema, String viewSql, List<String> viewSchemaPath ) {
-            final PolyphenyDbConnection connection = PolyphenyDbMetaImpl.connect( schema.root(), null );
+            final PolyphenyDbEmbeddedConnection connection = PolyphenyDbEmbeddedMetaImpl.connect( schema.root(), null );
             final ImmutableMap<PolyphenyDbConnectionProperty, String> map = ImmutableMap.of( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS, "false" );
             final PolyphenyDbSignature<Object> polyphenyDbSignature = Schemas.prepare( connection, schema, viewSchemaPath, viewSql, map );
             return CloneSchema.createCloneTable( connection.getTypeFactory(),

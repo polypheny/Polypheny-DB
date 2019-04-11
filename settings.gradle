@@ -10,4 +10,5 @@ include 'mongodb-adapter'
 include 'pig-adapter'
 include 'pig-parser'
 include 'webui'
+include 'dbms'
 

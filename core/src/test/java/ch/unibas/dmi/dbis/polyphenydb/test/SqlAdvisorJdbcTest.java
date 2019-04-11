@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
@@ -80,11 +80,11 @@ public class SqlAdvisorJdbcTest {
             info.put( "quoting", "BRACKET" );
         }
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
-        polyphenyDbConnection.setSchema( "hr" );
+        polyphenyDbEmbeddedConnection.setSchema( "hr" );
         final TableFunction getHints = apiVersion == 1 ? new SqlAdvisorGetHintsFunction() : new SqlAdvisorGetHintsFunction2();
         schema.add( "get_hints", getHints );
         String getHintsSql;

@@ -52,7 +52,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
@@ -385,7 +385,7 @@ public class ScannableTableTest {
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties )
         ) {
-            final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
+            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
 
             final AtomicInteger scanCount = new AtomicInteger();
             final AtomicInteger enumerateCount = new AtomicInteger();
@@ -414,9 +414,9 @@ public class ScannableTableTest {
                                     } );
                         }
                     };
-            polyphenyDbConnection.getRootSchema().add( "TEST", schema );
+            polyphenyDbEmbeddedConnection.getRootSchema().add( "TEST", schema );
             final String sql = "select * from \"TEST\".\"TENS\" where \"i\" < ?";
-            final PreparedStatement statement = polyphenyDbConnection.prepareStatement( sql );
+            final PreparedStatement statement = polyphenyDbEmbeddedConnection.prepareStatement( sql );
             assertThat( scanCount.get(), is( 0 ) );
             assertThat( enumerateCount.get(), is( 0 ) );
 
@@ -448,7 +448,7 @@ public class ScannableTableTest {
 
     protected ConnectionPostProcessor newSchema( final String schemaName, final String tableName, final Table table ) {
         return connection -> {
-            PolyphenyDbConnection con = connection.unwrap( PolyphenyDbConnection.class );
+            PolyphenyDbEmbeddedConnection con = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
             SchemaPlus rootSchema = con.getRootSchema();
             SchemaPlus schema = rootSchema.add( schemaName, new AbstractSchema() );
             schema.add( tableName, table );

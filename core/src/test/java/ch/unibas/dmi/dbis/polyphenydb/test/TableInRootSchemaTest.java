@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ToRelContext;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -89,10 +89,10 @@ public class TableInRootSchemaTest {
     @Test
     public void testAddingTableInRootSchema() throws Exception {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
 
-        polyphenyDbConnection.getRootSchema().add( "SAMPLE", new SimpleTable() );
-        Statement statement = polyphenyDbConnection.createStatement();
+        polyphenyDbEmbeddedConnection.getRootSchema().add( "SAMPLE", new SimpleTable() );
+        Statement statement = polyphenyDbEmbeddedConnection.createStatement();
         ResultSet resultSet = statement.executeQuery( "select A, SUM(B) from SAMPLE group by A" );
 
         assertThat(

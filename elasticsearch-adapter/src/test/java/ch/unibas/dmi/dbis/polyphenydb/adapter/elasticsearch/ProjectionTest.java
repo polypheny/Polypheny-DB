@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
@@ -96,7 +96,7 @@ public class ProjectionTest {
             @Override
             public Connection createConnection() throws SQLException {
                 final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-                final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
+                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
 
                 root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
 

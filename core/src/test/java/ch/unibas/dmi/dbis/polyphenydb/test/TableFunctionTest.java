@@ -52,7 +52,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
@@ -119,8 +119,8 @@ public class TableFunctionTest {
     @Test
     public void testTableFunction() throws SQLException {
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
             final TableFunction table = TableFunctionImpl.create( Smalls.GENERATE_STRINGS_METHOD );
             schema.add( "GenerateStrings", table );
@@ -137,8 +137,8 @@ public class TableFunctionTest {
     @Test
     public void testScannableTableFunction() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         final TableFunction table = TableFunctionImpl.create( Smalls.MAZE_METHOD );
         schema.add( "Maze", table );
@@ -155,8 +155,8 @@ public class TableFunctionTest {
     @Test
     public void testScannableTableFunctionWithNamedParameters() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         final TableFunction table = TableFunctionImpl.create( Smalls.MAZE2_METHOD );
         schema.add( "Maze", table );
@@ -186,8 +186,8 @@ public class TableFunctionTest {
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
                 Statement statement = connection.createStatement()
         ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
             final TableFunction table1 = TableFunctionImpl.create( Smalls.MAZE_METHOD );
             schema.add( "Maze", table1 );
@@ -252,8 +252,8 @@ public class TableFunctionTest {
 
     private Connection getConnectionWithMultiplyFunction() throws ClassNotFoundException, SQLException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         final TableFunction table = TableFunctionImpl.create( Smalls.MULTIPLICATION_TABLE_METHOD );
         schema.add( "multiplication", table );
@@ -270,8 +270,8 @@ public class TableFunctionTest {
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" )
         ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
             final TableFunction table = TableFunctionImpl.create( Smalls.GENERATE_STRINGS_METHOD );
             schema.add( "GenerateStrings", table );
@@ -299,8 +299,8 @@ public class TableFunctionTest {
         try (
                 Connection connection = getConnectionWithMultiplyFunction()
         ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.getSubSchema( "s" );
             final TableFunction table = TableFunctionImpl.create( Smalls.GENERATE_STRINGS_METHOD );
             schema.add( "GenerateStrings", table );
@@ -429,8 +429,8 @@ public class TableFunctionTest {
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" )
         ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
             final TableFunction table = TableFunctionImpl.create( Smalls.GENERATE_STRINGS_METHOD );
             schema.add( "GenerateStrings", table );
