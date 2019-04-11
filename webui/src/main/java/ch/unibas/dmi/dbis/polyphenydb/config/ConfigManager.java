@@ -39,13 +39,13 @@ public class ConfigManager {
     private static ConfigManager instance;
 
     private ConcurrentMap<String, Config> configs;
-    private ConcurrentMap<Integer, WebUiGroup> uiGroups;
-    private ConcurrentMap<Integer, WebUiPage> uiPages;
+    private ConcurrentMap<String, WebUiGroup> uiGroups;
+    private ConcurrentMap<String, WebUiPage> uiPages;
 
     private ConfigManager() {
         this.configs = new ConcurrentHashMap<String, Config>();
-        this.uiGroups = new ConcurrentHashMap<Integer, WebUiGroup>();
-        this.uiPages = new ConcurrentHashMap<Integer, WebUiPage>();
+        this.uiGroups = new ConcurrentHashMap<String, WebUiGroup>();
+        this.uiPages = new ConcurrentHashMap<String, WebUiPage>();
     }
 
     /** singleton */
@@ -139,11 +139,11 @@ public class ConfigManager {
     /** get certain page as json
      * @param id pageId */
     //todo sort
-    public String getPage ( int id ) {
+    public String getPage ( String id ) {
         //fill WebUiGroups with Configs
         for( ConcurrentMap.Entry<String, Config> c : configs.entrySet()){
             try{
-                int i = c.getValue().getWebUiGroup();
+                String i = c.getValue().getWebUiGroup();
                 this.uiGroups.get( i ).addConfig( c.getValue() );
             } catch ( NullPointerException e ){
                 //System.out.println("skipping config "+c.getKey()+" with no WebUiGroup");
@@ -151,9 +151,9 @@ public class ConfigManager {
         }
 
         //fill WebUiPages with WebUiGroups
-        for( ConcurrentMap.Entry<Integer, WebUiGroup> g : uiGroups.entrySet() ){
+        for( ConcurrentMap.Entry<String, WebUiGroup> g : uiGroups.entrySet() ){
             try{
-                int i = g.getValue().getPageId();
+                String i = g.getValue().getPageId();
                 this.uiPages.get( i ).addWebUiGroup( g.getValue() );
             } catch ( NullPointerException e ){
                 //System.out.println("skipping group "+g.getKey()+" with no pageid");
@@ -165,11 +165,11 @@ public class ConfigManager {
 }
 
 class PageListItem{
-    private int id;
+    private String id;
     private String name;
     private String icon;
     private PageListItem[] children;
-    public PageListItem ( int id, String name, String icon ) {
+    public PageListItem ( String id, String name, String icon ) {
         this.id = id;
         this.name = name;
         this.icon = icon;

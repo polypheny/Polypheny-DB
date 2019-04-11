@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentMap;
 
 /** a group in the WebUi containing multiple configuration fields. Is part of a WebUiPage */
 public class WebUiGroup {
-    private Integer id;
-    private Integer pageId;
+    private String id;
+    private String pageId;
     //int order;//schon mit id
     private String title;
     private String description;
@@ -18,7 +18,7 @@ public class WebUiGroup {
 
     /**@param id unique id of this group
      * @param pageId id of WebUiPage this group belongs to */
-    public WebUiGroup ( int id, int pageId ) {
+    public WebUiGroup ( String id, String pageId ) {
         this.id = id;
         this.pageId = pageId;
     }
@@ -44,11 +44,11 @@ public class WebUiGroup {
         return this.title != null;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public int getPageId() {
+    public String getPageId() {
         return pageId;
     }
 

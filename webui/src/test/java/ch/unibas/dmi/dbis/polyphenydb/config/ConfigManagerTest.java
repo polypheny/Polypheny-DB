@@ -12,11 +12,11 @@ public class ConfigManagerTest implements ConfigListener {
 
     static {
         ConfigManager cm = ConfigManager.getInstance();
-        WebUiPage p = new WebUiPage( 1, "page1", "page1descr" );
-        WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" );
-        WebUiGroup g2 = new WebUiGroup( 2, 1 ).withDescription( "group2" );
+        WebUiPage p = new WebUiPage( "p", "page1", "page1descr" );
+        WebUiGroup g1 = new WebUiGroup( "g1", "p" ).withTitle( "group1" );
+        WebUiGroup g2 = new WebUiGroup( "g2", "p" ).withDescription( "group2" );
 
-        Config c1 = new ConfigString("conf.test.2", "text1").withUi( 2, WebUiFormType.TEXT );
+        Config c1 = new ConfigString("conf.test.2", "text1").withUi( "g2", WebUiFormType.TEXT );
         cm.registerConfig( c1 );
         cm.addUiGroup( g2 );
         cm.addUiGroup( g1 );
@@ -53,8 +53,8 @@ public class ConfigManagerTest implements ConfigListener {
 
     @Test
     public void javaValidation () {
-        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
-        Config c6 = new ConfigInteger( "java.number.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c6 = new ConfigInteger( "java.number.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
 
         cm.registerConfig( c5 );
         cm.registerConfig( c6 );
@@ -67,7 +67,7 @@ public class ConfigManagerTest implements ConfigListener {
         cm.getConfig( "java.number.validation" ).setInt( 20 );
         //Assert.assertEquals( 2, cm.getConfig( "java.number.validation" ).getInt() );
 
-        System.out.println( cm.getPage( 1 ) );
+        System.out.println( cm.getPage( "p" ) );
     }
 
     @Test

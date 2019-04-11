@@ -8,19 +8,19 @@ import java.util.concurrent.ConcurrentMap;
 
 /** page for the WebUi containing WebUiGroups that contain Configuration object */
 public class WebUiPage {
-    private Integer id;
+    private String id;
     private String title;
     private String description;
     private String icon;
     private WebUiPage parentPage;
-    private ConcurrentMap<Integer, WebUiGroup> groups = new ConcurrentHashMap<Integer, WebUiGroup>(  );
+    private ConcurrentMap<String, WebUiGroup> groups = new ConcurrentHashMap<String, WebUiGroup>(  );
 
     /** @param id unique id for the page */
-    public WebUiPage ( int id ) {
+    public WebUiPage ( String id ) {
         this.id = id;
     }
 
-    public WebUiPage ( int id, String title, String description ) {
+    public WebUiPage ( String id, String title, String description ) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -54,7 +54,7 @@ public class WebUiPage {
     }
 
     /** @return id of this WebUiPage*/
-    public int getId() {
+    public String getId() {
         return id;
     }
 

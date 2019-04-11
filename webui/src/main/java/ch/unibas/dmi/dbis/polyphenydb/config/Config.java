@@ -30,8 +30,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 //todo missing fields
 //T extends Config<T> : https://stackoverflow.com/questions/17164375/subclassing-a-java-builder-class
@@ -47,7 +45,7 @@ public abstract class Config < T extends Config<T> > {
     private WebUiValidator[] webUiValidators;
     private WebUiFormType webUiFormType;
     /** id of the WebUiGroup it should be displayed in */
-    private Integer webUiGroup;
+    private String webUiGroup;
     /** id of the WebUiPage it should be displayed in */
     private Integer webUiOrder;
 
@@ -108,7 +106,7 @@ public abstract class Config < T extends Config<T> > {
      * @param webUiGroup id of webUiGroup
      * @param type type, e.g. text or number
      * */
-    public T withUi ( int webUiGroup, WebUiFormType type ) {
+    public T withUi ( String webUiGroup, WebUiFormType type ) {
         this.webUiGroup = webUiGroup;
         this.webUiFormType = type;
         return (T) this;
@@ -172,7 +170,7 @@ public abstract class Config < T extends Config<T> > {
     }
 
     /** get the WebUiGroup id */
-    public int getWebUiGroup() {
+    public String getWebUiGroup() {
         return webUiGroup;
     }
 

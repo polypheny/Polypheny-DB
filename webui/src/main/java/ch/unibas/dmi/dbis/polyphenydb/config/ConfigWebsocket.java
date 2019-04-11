@@ -13,13 +13,13 @@ public class ConfigWebsocket {
 
     @OnWebSocketConnect
     public void connected(Session session) {
-        System.out.println("Ui connected to Websocket");
+        //System.out.println("Ui connected to Websocket");
         sessions.add(session);
     }
 
     @OnWebSocketClose
     public void closed(Session session, int statusCode, String reason) {
-        System.out.println("Ui left Websocket");
+        //System.out.println("Ui left Websocket");
         sessions.remove(session);
     }
 
@@ -30,7 +30,7 @@ public class ConfigWebsocket {
     }
 
     public static void broadcast( String msg ) throws IOException{
-        System.out.println("broadcasting..");
+        //System.out.println("broadcasting:\n"+msg);
         for( Session s: sessions ){
             s.getRemote().sendString( msg );
         }

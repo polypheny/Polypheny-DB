@@ -32,6 +32,9 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 /** RESTful server for the WebUis, working with the ConfigManager */
@@ -106,14 +109,7 @@ public class ConfigServer implements ConfigListener {
         post("/getPage", (req, res) -> {
             //input: req: {pageId: 123}
             try{
-                //System.out.println("get page "+req.body());
-                int pageId = Integer.parseInt( req.body() );
-                if( pageId == 0 ){
-                    //todo load page list or so.
-                    return "";
-                } else{
-                    return cm.getPage( pageId );
-                }
+                return cm.getPage( req.body() );
             } catch ( Exception e ){
                 //if input not number or page does not exist
                 return "";
@@ -184,16 +180,16 @@ public class ConfigServer implements ConfigListener {
     /** just for testing */
     private void demoData() {
         System.out.println("demoData()");
-        WebUiPage p = new WebUiPage( 1, "page 1", "page 1 descr." );
-        WebUiPage p2 = new WebUiPage( 2, "page 2", "page 2 description." ).withIcon( "fa fa-table" );
-        WebUiGroup g1 = new WebUiGroup( 1, 1 ).withTitle( "group1" ).withDescription( "description of group1" );
-        WebUiGroup g2 = new WebUiGroup( 2, 2 ).withTitle( "group2" ).withDescription( "group2" );
-        Config c1 = new ConfigString("server.text.1", "text1").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
-        Config c2 = new ConfigString("server.email.2", "e@mail").withUi( 1, WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
+        WebUiPage p = new WebUiPage( "p", "page 1", "page 1 descr." );
+        WebUiPage p2 = new WebUiPage( "p2", "page 2", "page 2 description." ).withIcon( "fa fa-table" );
+        WebUiGroup g1 = new WebUiGroup( "g1", "p" ).withTitle( "group1" ).withDescription( "description of group1" );
+        WebUiGroup g2 = new WebUiGroup( "g2", "p2" ).withTitle( "group2" ).withDescription( "group2" );
+        Config c1 = new ConfigString("server.text.1", "text1").withUi( "g1", WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
+        Config c2 = new ConfigString("server.email.2", "e@mail").withUi( "g1", WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         //Config c3 = new ConfigInteger( "server.number", 3 );
-        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> a < 10 ).withUi( 2, WebUiFormType.NUMBER );
-        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( 2, WebUiFormType.NUMBER );
+        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( "g2", WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -213,6 +209,17 @@ public class ConfigServer implements ConfigListener {
         //c1.setString( "config1" );
 
         cm.observeAll( this );
+
+        //timer for UI testing
+        /*Timer timer = new Timer();
+        timer.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                Random r = new Random();
+                cm.getConfig( "server.number.2" ).setInt( r.nextInt(100) );
+            }
+        }, 10000, 10000 );*/
+
     }
 
     @Override
