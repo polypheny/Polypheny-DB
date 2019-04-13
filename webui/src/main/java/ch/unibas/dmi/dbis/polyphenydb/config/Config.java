@@ -61,9 +61,9 @@ public abstract class Config<T extends Config<T>> {
 
     private String callWhenChanged;
 
-    // TODO MV: Why is this field unused
     /**
      * Name of the validation method to use in the web ui
+     * this field is parsed to Json by Gson
      */
     private WebUiValidator[] webUiValidators;
 
@@ -119,48 +119,6 @@ public abstract class Config<T extends Config<T>> {
 
 
     /**
-     * Override Config c1 with Config c2 by c1.override(c2). c1 gets attributes of c2 if they are set in c2 but not in c1
-     *
-     * @param in other config that should override this config
-     */
-    public T override( final Config in ) {
-        if ( this.getClass() != in.getClass() ) {
-            System.err.println( "Cannot override config of type " + this.getClass().toString() + " with config of type " + in.getClass().toString() );
-            return (T) this;// todo or throw error
-        }
-        //if ( in.key != null ) {
-        //    this.key = in.key;
-        //}
-        // If ( in.value != null ) this.value = in.value;
-        if ( in.getObject() != null && !in.getObject().equals( this.getObject() ) ) {
-            this.setObject( in.getObject() );
-        }
-        if ( in.description != null ) {
-            this.description = in.description;
-        }
-        if ( in.requiresRestart ) {
-            this.requiresRestart = true;
-        }
-        // todo override validationMethod
-        // If ( in.validationMethod != null ) this.validationMethod = in.validationMethod;
-        if ( in.callWhenChanged != null ) {
-            this.callWhenChanged = in.callWhenChanged;
-        }
-        //todo webUiValidators
-        if ( in.webUiFormType != null ) {
-            this.webUiFormType = in.webUiFormType;
-        }
-        if ( in.webUiGroup != null ) {
-            this.webUiGroup = in.webUiGroup;
-        }
-        if ( in.webUiOrder != null ) {
-            this.webUiOrder = in.webUiOrder;
-        }
-        return (T) this;
-    }
-
-
-    /**
      * Allows to set requiresRestart. Is false by default.
      */
     public T setRequiresRestart( final boolean requiresRestart ) {
@@ -212,15 +170,6 @@ public abstract class Config<T extends Config<T>> {
         return gson.toJson( this );
     }
 
-
-    // TODO MV: ???
-    Object getObject() {
-        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into an Object!" );
-    }
-
-
-    // TODO MV: ???
-    abstract void setObject( final Object value );//needed in ConfigManager.override and ConfigManager.setConfigValue
 
     //  ----- Scalars -----
 
@@ -458,7 +407,12 @@ public abstract class Config<T extends Config<T>> {
     }
 
 
-    // TODO MV: JavaDoc
+    /**
+     * The observers of a Configuration object need to implement the method
+     * onConfigChange() to define what needs to happen when this Configuration changes. The parameter "Config c" provides
+     * the changed Config.
+     * The method restart() can be implemented to define what will happen, when a Config changes, that requires a restart.
+     */
     public interface ConfigListener {
 
         void onConfigChange( Config c );

@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -95,39 +96,11 @@ public class WebUiGroup {
 
 
     /**
-     * applies all attributes of group g to this existing WebUiGroup object
-     *
-     * @param g group with more attributes
-     */
-    public WebUiGroup override( WebUiGroup g ) {
-        if ( g.id != null ) {
-            this.id = g.id;
-        }
-        if ( g.pageId != null ) {
-            this.pageId = g.pageId;
-        }
-        if ( g.title != null ) {
-            this.title = g.title;
-        }
-        if ( g.description != null ) {
-            this.description = g.description;
-        }
-        if ( g.icon != null ) {
-            this.icon = g.icon;
-        }
-        return this;
-    }
-
-
-    /**
      * add a configuration object that should be displayed in this group
      */
     public void addConfig( Config c ) {
-        if ( this.configs.get( c.getKey() ) != null ) {
-            this.configs.get( c.getKey() ).override( c );
-        } else {
-            this.configs.put( c.getKey(), c );
-        }
+        this.configs.put( c.getKey(), c );
+
     }
 
 

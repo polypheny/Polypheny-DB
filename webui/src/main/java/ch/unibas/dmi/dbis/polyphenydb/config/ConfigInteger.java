@@ -29,7 +29,11 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 public class ConfigInteger extends ConfigScalar {
 
     private int value;
-    private ConfigValidator validationMethod; // TODO MV: Why is this defined here
+    /**
+     * When you change a ConfigInteger with the method setInt() and the field validationMethod is set,
+     * new value will only be set if the validation (ConfigValidator.validate()) returns true.
+     */
+    private ConfigValidator validationMethod;
 
 
     public ConfigInteger( final String key, final int value ) {
@@ -41,29 +45,6 @@ public class ConfigInteger extends ConfigScalar {
     public ConfigInteger( final String key, final String description, final int value ) {
         super( key, description );
         this.value = value;
-    }
-
-
-    @Override
-    public Object getObject() {
-        return this.value;
-    }
-
-
-    @Override
-    public void setObject( Object o ) {
-        //todo or parseInt
-        Integer i;
-        try {
-            Double d = (Double) o;
-            i = d.intValue();
-        } catch ( ClassCastException e ) {
-            i = (int) o;
-        }
-        if ( validate( i ) ) {
-            this.value = i;
-            notifyConfigListeners();
-        }
     }
 
 

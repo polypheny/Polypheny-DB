@@ -44,13 +44,6 @@ public class ConfigTable extends Config {
 
 
     @Override
-    void setObject( final Object value ) {
-        this.table = (ConfigScalar[][]) value;
-        notifyConfigListeners();
-    }
-
-
-    @Override
     public int[][] getIntTable() {
         int[][] out = new int[table.length][table[0].length];
         for ( int i = 0; i < out.length; i++ ) {

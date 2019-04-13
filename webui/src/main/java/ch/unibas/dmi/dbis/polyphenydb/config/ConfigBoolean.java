@@ -56,10 +56,4 @@ public class ConfigBoolean extends ConfigScalar {
     }
 
 
-    @Override
-    void setObject( final Object o ) {
-        this.value = (boolean) o;
-        notifyConfigListeners();
-    }
-
 }

@@ -78,31 +78,6 @@ public class WebUiPage {
 
 
     /**
-     * applies all attributes of page p to this existing page object
-     *
-     * @param p page with more attributes
-     */
-    public WebUiPage override( WebUiPage p ) {
-        if ( p.id != null ) {
-            this.id = p.id;
-        }
-        if ( p.title != null ) {
-            this.title = p.title;
-        }
-        if ( p.description != null ) {
-            this.description = p.description;
-        }
-        if ( p.icon != null ) {
-            this.icon = p.icon;
-        }
-        if ( p.parentPage != null ) {
-            this.parentPage = p.parentPage;
-        }
-        return this;
-    }
-
-
-    /**
      * @return id of this WebUiPage
      */
     public String getId() {
@@ -124,11 +99,7 @@ public class WebUiPage {
      * add a WebUiGroup for this WebUiPage
      */
     public void addWebUiGroup( WebUiGroup g ) {
-        if ( groups.get( g.getId() ) != null ) {
-            groups.get( g.getId() ).override( g );
-        } else {
-            groups.put( g.getId(), g );
-        }
+        groups.put( g.getId(), g );
     }
 
 

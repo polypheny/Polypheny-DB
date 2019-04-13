@@ -46,13 +46,6 @@ public class ConfigArray extends Config {
 
 
     @Override
-    void setObject( final Object value ) {
-        this.array = (ConfigScalar[]) value;
-        notifyConfigListeners();
-    }
-
-
-    @Override
     public int[] getIntArray() {
         int[] out = new int[array.length];
         for ( int i = 0; i < out.length; i++ ) {

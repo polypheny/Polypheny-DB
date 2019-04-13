@@ -45,27 +45,6 @@ public class ConfigString extends ConfigScalar {
 
 
     @Override
-    Object getObject() {
-        return this.value;
-    }
-
-
-    @Override
-    public void setObject( final Object o ) {
-        /*if(o == null){
-            this.value = null;
-            notifyConfigListeners( this );
-            return;
-        }*/
-        String s = o.toString();
-        if ( validate( s ) ) {
-            this.value = s;
-            notifyConfigListeners();
-        }
-    }
-
-
-    @Override
     public String getString() {
         return this.value;
     }

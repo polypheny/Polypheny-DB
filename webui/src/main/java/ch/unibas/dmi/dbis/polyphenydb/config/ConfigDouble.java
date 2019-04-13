@@ -47,13 +47,6 @@ public class ConfigDouble extends ConfigScalar {
 
 
     @Override
-    void setObject( Object value ) {
-        this.value = (double) value;
-        notifyConfigListeners();
-    }
-
-
-    @Override
     public double getDouble() {
         return this.value;
     }

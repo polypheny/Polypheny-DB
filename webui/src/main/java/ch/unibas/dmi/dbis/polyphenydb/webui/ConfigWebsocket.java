@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import org.eclipse.jetty.websocket.api.*;
@@ -31,8 +31,6 @@ import org.eclipse.jetty.websocket.api.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-// TODO MV: This belongs to the WebUI Server, not to the config package
 
 
 @WebSocket

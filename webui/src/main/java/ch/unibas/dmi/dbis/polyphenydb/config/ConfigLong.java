@@ -44,13 +44,6 @@ public class ConfigLong extends ConfigScalar {
 
 
     @Override
-    void setObject( final Object o ) {
-        this.value = (long) o;
-        notifyConfigListeners();
-    }
-
-
-    @Override
     public long getLong() {
         return this.value;
     }

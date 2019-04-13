@@ -143,7 +143,7 @@ public class ConfigManager {
      */
     public void addUiGroup( final WebUiGroup g ) {
         if ( this.uiGroups.get( g.getId() ) != null ) {
-            this.uiGroups.get( g.getId() ).override( g );
+            throw new ConfigRuntimeException( "Cannot register two WeUiGroups with the same key: " + g.getId() );
         } else {
             this.uiGroups.put( g.getId(), g );
         }
@@ -159,7 +159,7 @@ public class ConfigManager {
      */
     public void addUiPage( final WebUiPage p ) {
         if ( this.uiPages.get( p.getId() ) != null ) {
-            this.uiPages.get( p.getId() ).override( p );
+            throw new ConfigRuntimeException( "Cannot register two WebUiPages with the same key: " + p.getId() );
         } else {
             this.uiPages.put( p.getId(), p );
         }
