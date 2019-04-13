@@ -25,9 +25,11 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
-// TODO MV: Missing methods, missing JavaDoc
+
+import java.math.BigDecimal;
 
 
+/** ConfigArray contains an array of ConfigScalars. All of them need to be of the same type. */
 public class ConfigArray extends Config {
 
     private ConfigScalar[] array;
@@ -56,6 +58,16 @@ public class ConfigArray extends Config {
 
 
     @Override
+    public void setIntArray( int[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setInt( value[counter] );
+            counter++;
+        }
+    }
+
+
+    @Override
     public double[] getDoubleArray() {
         double[] out = new double[array.length];
         for ( int i = 0; i < out.length; i++ ) {
@@ -64,6 +76,95 @@ public class ConfigArray extends Config {
         return out;
     }
 
-    // TODO MV: Missing setters
+
+    @Override
+    public void setDoubleArray( double[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setDouble( value[counter] );
+            counter++;
+        }
+    }
+
+
+    @Override
+    public long[] getLongArray() {
+        long[] out = new long[array.length];
+        for ( int i = 0; i < out.length; i++ ) {
+            out[i] = array[i].getLong();
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setLongArray( long[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setLong( value[counter] );
+            counter++;
+        }
+    }
+
+
+    @Override
+    public BigDecimal[] getDecimalArray() {
+        BigDecimal[] out = new BigDecimal[array.length];
+        for ( int i = 0; i < out.length; i++ ) {
+            out[i] = array[i].getDecimal();
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setDecimalArray( BigDecimal[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setDecimal( value[counter] );
+            counter++;
+        }
+    }
+
+
+    @Override
+    public String[] getStringArray() {
+        String[] out = new String[array.length];
+        for ( int i = 0; i < out.length; i++ ) {
+            out[i] = array[i].getString();
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setStringArray( String[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setString( value[counter] );
+            counter++;
+        }
+    }
+
+
+    @Override
+    public boolean[] getBooleanArray() {
+        boolean[] out = new boolean[array.length];
+        for ( int i = 0; i < out.length; i++ ) {
+            out[i] = array[i].getBoolean();
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setBooleanArray( boolean[] value ) {
+        int counter = 0;
+        for( ConfigScalar c : array ) {
+            c.setBoolean( value[counter] );
+            counter++;
+        }
+    }
+
 
 }

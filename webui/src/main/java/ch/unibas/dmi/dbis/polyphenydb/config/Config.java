@@ -295,7 +295,66 @@ public abstract class Config<T extends Config<T>> {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
-    // TODO MV: Missing methods for String, boolean, long, decimal
+
+    /**
+     * Get the Long-Array representation of the configuration value.
+     *
+     * @return Configuration value as long[]
+     */
+    public long[] getLongArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a long[]!" );
+    }
+
+
+    public void setLongArray( final long[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type long[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the BigDecimal-Array representation of the configuration value.
+     *
+     * @return Configuration value as long[]
+     */
+    public BigDecimal[] getDecimalArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a BigDecimal[]!" );
+    }
+
+
+    public void setDecimalArray( final BigDecimal[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the boolean-Array representation of the configuration value.
+     *
+     * @return Configuration value as boolean[]
+     */
+    public boolean[] getBooleanArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a boolean[]!" );
+    }
+
+
+    public void setBooleanArray( final boolean[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type boolean[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the String-Array representation of the configuration value.
+     *
+     * @return Configuration value as String[]
+     */
+    public String[] getStringArray() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a String[]!" );
+    }
+
+
+    public void setStringArray( final String[] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type String[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
 
     // ----- Tables -----
 
@@ -329,7 +388,66 @@ public abstract class Config<T extends Config<T>> {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
-    // TODO MV: Missing methods for String, boolean, long, decimal
+
+    /**
+     * Get the Long-Table representation of the configuration value.
+     *
+     * @return Configuration value as long[][]
+     */
+    public long[][] getLongTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a long[][]!" );
+    }
+
+
+    public void setLongTable( final long[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type long[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the BigDecimal-Table representation of the configuration value.
+     *
+     * @return Configuration value as BigDecimal[][]
+     */
+    public BigDecimal[][] getDecimalTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a BigDecimal[][]!" );
+    }
+
+
+    public void setDecimalTable( final BigDecimal[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the String-Table representation of the configuration value.
+     *
+     * @return Configuration value as String[][]
+     */
+    public String[][] getStringTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a String[][]!" );
+    }
+
+
+    public void setStringTable( final String[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type String[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Get the Boolean-Table representation of the configuration value.
+     *
+     * @return Configuration value as booelan[][]
+     */
+    public boolean[][] getBooleanTable() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a boolean[][]!" );
+    }
+
+
+    public void setBooleanTable( final boolean[][] value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type boolean[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
 
     // TODO MV: Use lombok
 

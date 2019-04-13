@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import java.math.BigDecimal;
+
+
 public class ConfigTable extends Config {
 
     private ConfigScalar[][] table;
@@ -56,6 +59,16 @@ public class ConfigTable extends Config {
 
 
     @Override
+    public void setIntTable( int[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setInt( value[i][j] );
+            }
+        }
+    }
+
+
+    @Override
     public double[][] getDoubleTable() {
         double[][] out = new double[table.length][table[0].length];
         for ( int i = 0; i < out.length; i++ ) {
@@ -66,6 +79,103 @@ public class ConfigTable extends Config {
         return out;
     }
 
-    // TODO MV: Missing setters
+
+    @Override
+    public void setDoubleTable( double[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setDouble( value[i][j] );
+            }
+        }
+    }
+
+
+    @Override
+    public long[][] getLongTable() {
+        long[][] out = new long[table.length][table[0].length];
+        for ( int i = 0; i < out.length; i++ ) {
+            for ( int j = 0; j < out[0].length; j++ ) {
+                out[i][j] = this.table[i][j].getLong();
+            }
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setLongTable( long[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setLong( value[i][j] );
+            }
+        }
+    }
+
+
+    @Override
+    public BigDecimal[][] getDecimalTable() {
+        BigDecimal[][] out = new BigDecimal[table.length][table[0].length];
+        for ( int i = 0; i < out.length; i++ ) {
+            for ( int j = 0; j < out[0].length; j++ ) {
+                out[i][j] = this.table[i][j].getDecimal();
+            }
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setDecimalTable( BigDecimal[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setDecimal( value[i][j] );
+            }
+        }
+    }
+
+
+    @Override
+    public String[][] getStringTable() {
+        String[][] out = new String[table.length][table[0].length];
+        for ( int i = 0; i < out.length; i++ ) {
+            for ( int j = 0; j < out[0].length; j++ ) {
+                out[i][j] = this.table[i][j].getString();
+            }
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setStringTable( String[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setString( value[i][j] );
+            }
+        }
+    }
+
+
+    @Override
+    public boolean[][] getBooleanTable() {
+        boolean[][] out = new boolean[table.length][table[0].length];
+        for ( int i = 0; i < out.length; i++ ) {
+            for ( int j = 0; j < out[0].length; j++ ) {
+                out[i][j] = this.table[i][j].getBoolean();
+            }
+        }
+        return out;
+    }
+
+
+    @Override
+    public void setBooleanTable( boolean[][] value ) {
+        for ( int i = 0; i < table.length; i++ ) {
+            for ( int j = 0; j < table[0].length; j++ ) {
+                table[i][j].setBoolean( value[i][j] );
+            }
+        }
+    }
+
 
 }
