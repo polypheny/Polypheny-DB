@@ -35,15 +35,63 @@ public class ConfigArray extends Config {
     private ConfigScalar[] array;
 
 
-    public ConfigArray( final String key, final ConfigScalar[] array ) {
+    public ConfigArray ( final String key, final int[] array ) {
         super( key );
-        this.array = array;
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigInteger( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
     }
 
 
-    public ConfigArray( final String key, final String description, final ConfigScalar[] array ) {
-        super( key, description );
-        this.array = array;
+    public ConfigArray ( final String key, final double[] array ) {
+        super( key );
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigDouble( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
+    }
+
+
+    public ConfigArray ( final String key, final long[] array ) {
+        super( key );
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigLong( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
+    }
+
+
+    public ConfigArray ( final String key, final BigDecimal[] array ) {
+        super( key );
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigDecimal( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
+    }
+
+
+    public ConfigArray ( final String key, final String[] array ) {
+        super( key );
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigString( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
+    }
+
+
+    public ConfigArray ( final String key, final boolean[] array ) {
+        super( key );
+        ConfigScalar[] fill = new ConfigScalar[array.length];
+        for ( int i = 0; i<array.length; i++) {
+            fill[i] = (ConfigScalar) new ConfigBoolean( key+"."+i, array[i] ).isObservable( false );
+        }
+        this.array = fill;
     }
 
 
@@ -64,6 +112,7 @@ public class ConfigArray extends Config {
             c.setInt( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 
@@ -84,6 +133,7 @@ public class ConfigArray extends Config {
             c.setDouble( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 
@@ -104,6 +154,7 @@ public class ConfigArray extends Config {
             c.setLong( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 
@@ -124,6 +175,7 @@ public class ConfigArray extends Config {
             c.setDecimal( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 
@@ -144,6 +196,7 @@ public class ConfigArray extends Config {
             c.setString( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 
@@ -164,6 +217,7 @@ public class ConfigArray extends Config {
             c.setBoolean( value[counter] );
             counter++;
         }
+        notifyConfigListeners();
     }
 
 

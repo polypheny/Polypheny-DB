@@ -34,15 +34,75 @@ public class ConfigTable extends Config {
     private ConfigScalar[][] table;
 
 
-    public ConfigTable( final String key, final ConfigScalar[][] table ) {
+    public ConfigTable ( final String key, final int[][] array ) {
         super( key );
-        this.table = table;
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigInteger( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
     }
 
 
-    public ConfigTable( final String key, final String description, final ConfigScalar[][] table ) {
-        super( key, description );
-        this.table = table;
+    public ConfigTable ( final String key, final double[][] array ) {
+        super( key );
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigDouble( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
+    }
+
+
+    public ConfigTable ( final String key, final long[][] array ) {
+        super( key );
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigLong( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
+    }
+
+
+    public ConfigTable ( final String key, final BigDecimal[][] array ) {
+        super( key );
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigDecimal( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
+    }
+
+
+    public ConfigTable ( final String key, final String[][] array ) {
+        super( key );
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigString( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
+    }
+
+
+    public ConfigTable ( final String key, final boolean[][] array ) {
+        super( key );
+        ConfigScalar[][] fill = new ConfigScalar[array.length][array[0].length];
+        for ( int i = 0; i<array.length; i++) {
+            for ( int j = 0; j<array[0].length; j++) {
+                fill[i][j] = (ConfigScalar) new ConfigBoolean( key+"."+i+"."+j, array[i][j] ).isObservable( false );
+            }
+        }
+        this.table = fill;
     }
 
 
@@ -65,6 +125,7 @@ public class ConfigTable extends Config {
                 table[i][j].setInt( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 
@@ -87,6 +148,7 @@ public class ConfigTable extends Config {
                 table[i][j].setDouble( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 
@@ -109,6 +171,7 @@ public class ConfigTable extends Config {
                 table[i][j].setLong( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 
@@ -131,6 +194,7 @@ public class ConfigTable extends Config {
                 table[i][j].setDecimal( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 
@@ -153,6 +217,7 @@ public class ConfigTable extends Config {
                 table[i][j].setString( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 
@@ -175,6 +240,7 @@ public class ConfigTable extends Config {
                 table[i][j].setBoolean( value[i][j] );
             }
         }
+        notifyConfigListeners();
     }
 
 

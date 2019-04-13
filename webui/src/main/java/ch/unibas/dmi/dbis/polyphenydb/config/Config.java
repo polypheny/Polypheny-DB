@@ -88,6 +88,11 @@ public abstract class Config<T extends Config<T>> {
     @SuppressWarnings("unused")
     private final String configType;
 
+    /**
+     *  If isObservable is false, listeners will not be notified when this Config changes.
+     *  Needed for ConfigArray and ConfigTable: You get only one notification and not one for every element in them.
+     */
+    private boolean isObservable = true;
 
     /**
      * List of observers
@@ -485,14 +490,26 @@ public abstract class Config<T extends Config<T>> {
         return webUiGroup;
     }
 
+    /**
+     * Needed for ConfigArray and ConfigTable. Their elements should not trigger a notification,
+     * you only want to be notified once when the ConfigArray or ConfigTable changes.
+     */
+    T isObservable ( boolean b) {
+        this.isObservable = b;
+        return (T) this;
+    }
+
 
     /**
      * Add an observer for this config element.
+     * Configs from ConfigArray and ConfigTable (having isObservable = false) will be skipped
      *
      * @param listener Observer to add
      * @return Config
      */
     public T addObserver( final ConfigListener listener ) {
+        //don't observe if it is an element of ConfigArray or ConfigTable
+        if (!isObservable) return (T) this;
         if ( !this.listeners.contains( listener ) ) {
             this.listeners.add( listener );
         }

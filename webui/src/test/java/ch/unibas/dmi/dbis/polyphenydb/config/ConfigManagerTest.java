@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -132,26 +133,6 @@ public class ConfigManagerTest implements ConfigListener {
     @Test
     public void isNotified() {
 
-        class ConfigObserver implements ConfigListener {
-
-            private boolean wasNotified = false;
-
-
-            public void restart( Config c ) {
-                this.wasNotified = true;
-            }
-
-
-            public void onConfigChange( Config c ) {
-                this.wasNotified = true;
-            }
-
-
-            public boolean wasNotified() {
-                return this.wasNotified;
-            }
-        }
-
         ConfigObserver o1 = new ConfigObserver();
         ConfigObserver o2 = new ConfigObserver();
         ConfigBoolean willChange = new ConfigBoolean( "will.change", true );
@@ -174,6 +155,44 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertEquals( true, this.wasRestarted );
     }
 
+    @Test
+    public void configArray() {
+        int[] array = {1,2,3,4,5};
+        Config c = new ConfigArray( "array", array );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "array" ).addObserver( o );
+
+        int[] otherArray = {5,4,3,2,1};
+        c.setIntArray( otherArray );
+
+        Assert.assertArrayEquals( otherArray, c.getIntArray());
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 1, o.n );
+    }
+
+    @Test
+    public void configTable() {
+        int[][] table = new int[][]{
+                {1,2,3},
+                {4,5,6}
+        };
+        Config c = new ConfigTable( "table", table );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "table" ).addObserver( o );
+
+        int[][] otherTable = new int[][]{
+                {6,5,4},
+                {3,2,1}
+        };
+        c.setIntTable( otherTable );
+
+        Assert.assertArrayEquals( otherTable[0], c.getIntTable()[0]);
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 1, o.n );
+    }
+
 
     public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
@@ -183,6 +202,29 @@ public class ConfigManagerTest implements ConfigListener {
     public void restart( Config c ) {
         System.out.println( "Config " + c.getKey() + " triggered restart;" );
         this.wasRestarted = true;
+    }
+
+    class ConfigObserver implements ConfigListener {
+
+        private boolean wasNotified = false;
+
+        /** how many times it was notified*/
+        int n = 0;
+
+        public void restart( Config c ) {
+            this.wasNotified = true;
+        }
+
+
+        public void onConfigChange( Config c ) {
+            this.wasNotified = true;
+            this.n++;
+        }
+
+
+        public boolean wasNotified() {
+            return this.wasNotified;
+        }
     }
 
 }
