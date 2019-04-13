@@ -55,8 +55,12 @@ public abstract class Config<T extends Config<T>> {
      */
     private boolean requiresRestart = false;
 
-    // TODO MV: Missing
-    //ConfigValidator validationMethod;
+
+    /**
+     * When you change a Config with a method like setInt() and the field validationMethod is set,
+     * new value will only be set if the validation (ConfigValidator.validate()) returns true.
+     */
+    private ConfigValidator validationMethod;
 
 
     private String callWhenChanged;
@@ -542,6 +546,27 @@ public abstract class Config<T extends Config<T>> {
     }
 
 
+    boolean validate( final Object i ) {
+        if ( this.validationMethod != null ) {
+            if ( this.validationMethod.validate( i ) ) {
+                return true;
+            } else {
+                System.out.println( "Java validation: false." );
+                return false;
+            }
+        } //else if (this.validationMethod == null ) {
+        else {
+            return true;
+        }
+    }
+
+
+    public Config withJavaValidation( final ConfigValidator c ) {
+        this.validationMethod = c;
+        return this;
+    }
+
+
     /**
      * The observers of a Configuration object need to implement the method
      * onConfigChange() to define what needs to happen when this Configuration changes. The parameter "Config c" provides
@@ -553,6 +578,15 @@ public abstract class Config<T extends Config<T>> {
         void onConfigChange( Config c );
 
         void restart( Config c );
+    }
+
+    /**
+     * Interface needs to be implemented if you want to validate a value from a setter, before writing it to the Config
+     * e.g. your ConfigValidator could enforce that an ConfigInteger accepts only an Integer < 10
+     */
+    public interface ConfigValidator {
+
+        boolean validate( Object a );
     }
 
 }

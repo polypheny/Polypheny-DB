@@ -71,6 +71,10 @@ public class WebUiPage {
         return this;
     }
 
+    public WebUiPage getParent () {
+        return this.parentPage;
+    }
+
 
     public boolean hasTitle() {
         return this.title != null;

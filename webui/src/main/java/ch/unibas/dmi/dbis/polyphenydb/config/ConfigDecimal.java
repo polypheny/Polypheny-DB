@@ -54,8 +54,10 @@ public class ConfigDecimal extends ConfigScalar {
 
     @Override
     public void setDecimal( final BigDecimal value ) {
-        this.value = value;
-        notifyConfigListeners();
+        if( validate ( value )) {
+            this.value = value;
+            notifyConfigListeners();
+        }
     }
 
 }

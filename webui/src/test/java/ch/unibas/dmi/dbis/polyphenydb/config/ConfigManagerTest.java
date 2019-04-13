@@ -28,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,9 +46,9 @@ public class ConfigManagerTest implements ConfigListener {
 
         Config c1 = new ConfigString( "conf.test.2", "text1" ).withUi( "g2", WebUiFormType.TEXT );
         cm.registerConfig( c1 );
-        cm.addUiGroup( g2 );
-        cm.addUiGroup( g1 );
-        cm.addUiPage( p );
+        cm.registerWebUiGroup( g2 );
+        cm.registerWebUiGroup( g1 );
+        cm.registerWebUiPage( p );
     }
 
 
@@ -84,8 +83,8 @@ public class ConfigManagerTest implements ConfigListener {
 
     @Test
     public void javaValidation () {
-        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
-        Config c6 = new ConfigInteger( "java.number.validation", 10 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c6 = new ConfigDouble( "java.double.validation", 3 ).withJavaValidation( a -> (double) a < 5.5 ).withUi( "g2", WebUiFormType.NUMBER );
 
         cm.registerConfig( c5 );
         cm.registerConfig( c6 );
@@ -94,9 +93,9 @@ public class ConfigManagerTest implements ConfigListener {
         cm.getConfig( "java.int.validation" ).setInt( 20 );
         int a = cm.getConfig( "java.int.validation" ).getInt();
         Assert.assertEquals( 2, a );
-        cm.getConfig( "java.number.validation" ).setInt( 3 );
-        cm.getConfig( "java.number.validation" ).setInt( 20 );
-        //Assert.assertEquals( 2, cm.getConfig( "java.number.validation" ).getInt() );
+        cm.getConfig( "java.double.validation" ).setDouble( 1.2 );
+        cm.getConfig( "java.double.validation" ).setDouble( 10.4 );
+        Assert.assertEquals( 1.2, cm.getConfig( "java.double.validation" ).getDouble(), 0.01 );
 
         System.out.println( cm.getPage( "p" ) );
     }

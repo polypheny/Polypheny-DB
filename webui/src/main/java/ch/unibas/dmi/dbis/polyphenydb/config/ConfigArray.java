@@ -107,12 +107,14 @@ public class ConfigArray extends Config {
 
     @Override
     public void setIntArray( int[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setInt( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setInt( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -128,12 +130,14 @@ public class ConfigArray extends Config {
 
     @Override
     public void setDoubleArray( double[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setDouble( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setDouble( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -149,12 +153,14 @@ public class ConfigArray extends Config {
 
     @Override
     public void setLongArray( long[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setLong( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setLong( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -170,12 +176,15 @@ public class ConfigArray extends Config {
 
     @Override
     public void setDecimalArray( BigDecimal[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setDecimal( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setDecimal( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
+
     }
 
 
@@ -191,12 +200,15 @@ public class ConfigArray extends Config {
 
     @Override
     public void setStringArray( String[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setString( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setString( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
+
     }
 
 
@@ -212,12 +224,14 @@ public class ConfigArray extends Config {
 
     @Override
     public void setBooleanArray( boolean[] value ) {
-        int counter = 0;
-        for( ConfigScalar c : array ) {
-            c.setBoolean( value[counter] );
-            counter++;
+        if( validate ( value )) {
+            int counter = 0;
+            for( ConfigScalar c : array ) {
+                c.setBoolean( value[counter] );
+                counter++;
+            }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 

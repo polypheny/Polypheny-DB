@@ -34,9 +34,6 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 // TODO MV: Move test code into test package
 
@@ -102,7 +99,7 @@ public class ConfigServer implements ConfigListener {
             //res.type(type);
             WebUiGroup g = gson.fromJson( req.body(), WebUiGroup.class );
             System.out.println( g.toString() );
-            cm.addUiGroup( g );
+            cm.registerWebUiGroup( g );
             return gson.toJson( g );
         } );
 
@@ -111,11 +108,11 @@ public class ConfigServer implements ConfigListener {
             //res.type(type);
             WebUiPage p = gson.fromJson( req.body(), WebUiPage.class );
             System.out.println( p.toString() );
-            cm.addUiPage( p );
+            cm.registerWebUiPage( p );
             return gson.toJson( p );
         } );
 
-        get( "/getPageList", ( req, res ) -> cm.getPageList() );
+        get( "/getPageList", ( req, res ) -> cm.getWebUiPageList() );
 
         //get Ui of certain page
         post( "/getPage", ( req, res ) -> {
@@ -133,7 +130,7 @@ public class ConfigServer implements ConfigListener {
             System.out.println( req.body() );
             Map<String, Object> changes = gson.fromJson( req.body(), Map.class );
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
-                //todo give feedback if config does not exists
+                //todo give feedback if config does not exist
                 //cm.setConfigValue( entry.getKey(), entry.getValue() );
                 Config c = cm.getConfig( entry.getKey() );
                 switch ( c.getConfigType() ) {
@@ -207,7 +204,7 @@ public class ConfigServer implements ConfigListener {
         Config c2 = new ConfigString( "server.email.2", "e@mail" ).withUi( "g1", WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         //Config c3 = new ConfigInteger( "server.number", 3 );
-        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
         Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( "g2", WebUiFormType.NUMBER );
 
         ConfigManager cm = ConfigManager.getInstance();
@@ -220,10 +217,10 @@ public class ConfigServer implements ConfigListener {
         cm.registerConfig( c5 );
 
         //inserting group before page is existing
-        cm.addUiGroup( g2 );
-        cm.addUiGroup( g1 );
-        cm.addUiPage( p );
-        cm.addUiPage( p2 );
+        cm.registerWebUiGroup( g2 );
+        cm.registerWebUiGroup( g1 );
+        cm.registerWebUiPage( p );
+        cm.registerWebUiPage( p2 );
 
         //c1.setString( "config1" );
 

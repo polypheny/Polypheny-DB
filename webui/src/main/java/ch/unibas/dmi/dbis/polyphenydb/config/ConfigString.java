@@ -29,7 +29,6 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 public class ConfigString extends ConfigScalar {
 
     private String value;
-    private ConfigValidator validationMethod; // TODO MV: Why here???
 
 
     public ConfigString( final String key, final String value ) {
@@ -58,34 +57,5 @@ public class ConfigString extends ConfigScalar {
         }
     }
 
-
-    // TODO MV: Why here???
-    private boolean validate( final String s ) {
-        if ( this.validationMethod != null ) {
-            if ( this.validationMethod.validate( s ) ) {
-                return true;
-            } else {
-                System.out.println( "Java validation: false." );
-                return false;
-            }
-        } //else if (this.validationMethod == null ) {
-        else {
-            return true;
-        }
-    }
-
-
-    // TODO MV: Why here???
-    public ConfigString withJavaValidation( final ConfigValidator c ) {
-        this.validationMethod = c;
-        return this;
-    }
-
-
-    // TODO MV: Why here???
-    public interface ConfigValidator {
-
-        boolean validate( String a );
-    }
 
 }

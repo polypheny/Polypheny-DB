@@ -29,11 +29,6 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 public class ConfigInteger extends ConfigScalar {
 
     private int value;
-    /**
-     * When you change a ConfigInteger with the method setInt() and the field validationMethod is set,
-     * new value will only be set if the validation (ConfigValidator.validate()) returns true.
-     */
-    private ConfigValidator validationMethod;
 
 
     public ConfigInteger( final String key, final int value ) {
@@ -68,34 +63,5 @@ public class ConfigInteger extends ConfigScalar {
         return (long) this.value;
     }
 
-
-    // TODO MV: Why here
-    private boolean validate( final int i ) {
-        if ( this.validationMethod != null ) {
-            if ( this.validationMethod.validate( i ) ) {
-                return true;
-            } else {
-                System.out.println( "Java validation: false." );
-                return false;
-            }
-        } //else if (this.validationMethod == null ) {
-        else {
-            return true;
-        }
-    }
-
-
-    // TODO MV: Why here
-    public ConfigInteger withJavaValidation( final ConfigValidator c ) {
-        this.validationMethod = c;
-        return this;
-    }
-
-
-    // TODO MV: Why here
-    public interface ConfigValidator {
-
-        boolean validate( Integer a );
-    }
 
 }

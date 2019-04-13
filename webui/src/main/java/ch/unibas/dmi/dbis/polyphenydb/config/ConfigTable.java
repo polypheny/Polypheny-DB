@@ -120,12 +120,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setIntTable( int[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setInt( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setInt( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -143,12 +145,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setDoubleTable( double[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setDouble( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setDouble( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -166,12 +170,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setLongTable( long[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setLong( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setLong( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -189,12 +195,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setDecimalTable( BigDecimal[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setDecimal( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setDecimal( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -212,12 +220,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setStringTable( String[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setString( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setString( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 
@@ -235,12 +245,14 @@ public class ConfigTable extends Config {
 
     @Override
     public void setBooleanTable( boolean[][] value ) {
-        for ( int i = 0; i < table.length; i++ ) {
-            for ( int j = 0; j < table[0].length; j++ ) {
-                table[i][j].setBoolean( value[i][j] );
+        if( validate ( value )) {
+            for ( int i = 0; i < table.length; i++ ) {
+                for ( int j = 0; j < table[0].length; j++ ) {
+                    table[i][j].setBoolean( value[i][j] );
+                }
             }
+            notifyConfigListeners();
         }
-        notifyConfigListeners();
     }
 
 

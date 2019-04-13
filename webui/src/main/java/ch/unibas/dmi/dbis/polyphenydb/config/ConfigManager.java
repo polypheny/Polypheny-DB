@@ -33,8 +33,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-//todo observable
-
 
 /**
  * ConfigManager where you can add a configuration (Config object) that is needed in different Classes.
@@ -109,22 +107,6 @@ public class ConfigManager {
 
 
     /**
-     * Get value of a configuration element as int
-     */
-    public int getInt( final String key ) {
-        return (int) configs.get( key ).getInt();
-    }
-
-
-    /**
-     * Get value of a configuration element as String
-     */
-    public String getString( final String key ) {
-        return (String) configs.get( key ).getString();
-    }
-
-
-    /**
      * Get configuration as Configuration object
      */
     public Config getConfig( final String s ) {
@@ -137,11 +119,12 @@ public class ConfigManager {
 
 
     /**
-     * Add a WebUiGroup to the ConfigManager
+     * Register a WebUiGroup to the ConfigManager.
+     * A WebUiGroup consists of several Configs that will be displayed together in the Angular WebUi.
      *
-     * @param g WebUiGroup to add
+     * @param g WebUiGroup to register
      */
-    public void addUiGroup( final WebUiGroup g ) {
+    public void registerWebUiGroup( final WebUiGroup g ) {
         if ( this.uiGroups.get( g.getId() ) != null ) {
             throw new ConfigRuntimeException( "Cannot register two WeUiGroups with the same key: " + g.getId() );
         } else {
@@ -149,15 +132,14 @@ public class ConfigManager {
         }
     }
 
-    // TODO: Improve method name and JavaDoc
-
 
     /**
-     * Add a WebUiPage to the ConfigManager
+     * Register a WebUiPage to the ConfigManager.
+     * A WebUiPage consists of several WebUiGroups that will be displayed together in the Angular WebUi.
      *
-     * @param p WebUiPage to add
+     * @param p WebUiPage to register
      */
-    public void addUiPage( final WebUiPage p ) {
+    public void registerWebUiPage( final WebUiPage p ) {
         if ( this.uiPages.get( p.getId() ) != null ) {
             throw new ConfigRuntimeException( "Cannot register two WebUiPages with the same key: " + p.getId() );
         } else {
@@ -165,13 +147,12 @@ public class ConfigManager {
         }
     }
 
-    // TODO: Improve method name and JavaDoc
-
 
     /**
-     * Get simple list of pages, without their groups and configs (for WebUi Sidebar)
+     * Generates a Json of all the WebUiPages in the ConfigManager (for the Sidebar in the Angular WebUi)
+     * The Json does not contain the groups and configs of the WebUiPages
      */
-    public String getPageList() {
+    public String getWebUiPageList() {
         //todo recursion with parentPage field
         // Angular wants: { id, name, icon, children[] }
         ArrayList<PageListItem> out = new ArrayList<PageListItem>();
@@ -181,8 +162,6 @@ public class ConfigManager {
         Gson gson = new Gson();
         return gson.toJson( out );
     }
-
-    // TODO: Improve method name and JavaDoc
 
 
     /**
@@ -215,7 +194,11 @@ public class ConfigManager {
     }
 
 
-    // TODO: Missing JavaDoc
+    /**
+     * The class PageListItem will be converted into a Json String by Gson
+     * The Angular WebUi requires a Json Object with the fields id, name, icon, children[] for the Sidebar
+     * This class is needed to convert a WebUiPage object into the format needed by the Angular WebUi
+     */
     class PageListItem {
 
         private String id;
