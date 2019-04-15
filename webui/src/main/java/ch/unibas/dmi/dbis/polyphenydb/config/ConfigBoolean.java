@@ -33,12 +33,14 @@ public class ConfigBoolean extends ConfigScalar {
 
     public ConfigBoolean( final String key, final boolean value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.BOOLEAN;
         this.value = value;
     }
 
 
     public ConfigBoolean( final String key, final String description, final boolean value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.BOOLEAN;
         this.value = value;
     }
 

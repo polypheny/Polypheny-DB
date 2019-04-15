@@ -33,12 +33,14 @@ public class ConfigLong extends ConfigScalar {
 
     public ConfigLong( final String key, final long value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 
 
     public ConfigLong( final String key, final String description, final long value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 

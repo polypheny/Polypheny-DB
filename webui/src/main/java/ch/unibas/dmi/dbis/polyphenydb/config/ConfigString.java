@@ -33,12 +33,14 @@ public class ConfigString extends ConfigScalar {
 
     public ConfigString( final String key, final String value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
     }
 
 
     public ConfigString( final String key, final String description, final String value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
     }
 

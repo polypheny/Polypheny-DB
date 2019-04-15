@@ -32,7 +32,8 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
  */
 public enum WebUiFormType {
     TEXT( "text" ),
-    NUMBER( "number" );
+    NUMBER( "number" ),
+    BOOLEAN( "boolean" );
 
     private final String type;
 

@@ -33,12 +33,14 @@ public class ConfigInteger extends ConfigScalar {
 
     public ConfigInteger( final String key, final int value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 
 
     public ConfigInteger( final String key, final String description, final int value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 

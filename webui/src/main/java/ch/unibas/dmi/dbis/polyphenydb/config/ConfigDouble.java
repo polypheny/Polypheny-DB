@@ -36,12 +36,14 @@ public class ConfigDouble extends ConfigScalar {
 
     public ConfigDouble( final String key, final double value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 
 
     public ConfigDouble( final String key, final String description, final double value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 

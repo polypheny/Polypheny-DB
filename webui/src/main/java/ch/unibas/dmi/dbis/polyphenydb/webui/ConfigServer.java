@@ -149,6 +149,9 @@ public class ConfigServer implements ConfigListener {
                     case "ConfigString":
                         c.setString( (String) entry.getValue() );
                         break;
+                    case "ConfigBoolean":
+                        c.setBoolean( (boolean) entry.getValue() );
+                        break;
                     default:
                         System.err.println( "Config with type " + c.getConfigType() + " is not supported yet." );
                 }
@@ -200,12 +203,13 @@ public class ConfigServer implements ConfigListener {
         WebUiPage p2 = new WebUiPage( "p2", "page 2", "page 2 description." ).withIcon( "fa fa-table" );
         WebUiGroup g1 = new WebUiGroup( "g1", "p" ).withTitle( "group1" ).withDescription( "description of group1" );
         WebUiGroup g2 = new WebUiGroup( "g2", "p2" ).withTitle( "group2" ).withDescription( "group2" );
-        Config c1 = new ConfigString( "server.text.1", "text1" ).withUi( "g1", WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED );
-        Config c2 = new ConfigString( "server.email.2", "e@mail" ).withUi( "g1", WebUiFormType.TEXT ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
+        Config c1 = new ConfigString( "server.text.1", "text1" ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED );
+        Config c2 = new ConfigString( "server.email.2", "e@mail" ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
 
         //Config c3 = new ConfigInteger( "server.number", 3 );
-        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
-        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2" );
+        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( "g2" );
+        Config c6 = new ConfigBoolean( "server.boolean", false ).withUi( "g2" );
 
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -215,6 +219,12 @@ public class ConfigServer implements ConfigListener {
         cm.registerConfig( c4 );
         //cm.registerConfig( c3 );
         cm.registerConfig( c5 );
+        cm.registerConfig( c6 );
+
+        //throws error since it cannot be rendered in the UI
+        //int[] arr = {1,2,3};
+        //Config c7 = new ConfigArray( "config.array", arr ).withUi( "g2" );
+        //cm.registerConfig( c7 );
 
         //inserting group before page is existing
         cm.registerWebUiGroup( g2 );

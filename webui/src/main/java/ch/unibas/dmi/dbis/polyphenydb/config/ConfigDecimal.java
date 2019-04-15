@@ -36,12 +36,14 @@ public class ConfigDecimal extends ConfigScalar {
 
     public ConfigDecimal( final String key, final BigDecimal value ) {
         super( key );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 
 
     public ConfigDecimal( final String key, final String description, final BigDecimal value ) {
         super( key, description );
+        this.webUiFormType = WebUiFormType.NUMBER;
         this.value = value;
     }
 

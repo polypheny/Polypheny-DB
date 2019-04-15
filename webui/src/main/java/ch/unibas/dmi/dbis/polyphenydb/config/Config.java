@@ -74,7 +74,7 @@ public abstract class Config {
     /**
      * Form type to use in the web ui for this config element
      */
-    private WebUiFormType webUiFormType;
+    WebUiFormType webUiFormType;
 
     /**
      * id of the WebUiGroup it should be displayed in
@@ -145,11 +145,12 @@ public abstract class Config {
      * set Ui information
      *
      * @param webUiGroup id of webUiGroup
-     * @param type type, e.g. text or number
      */
-    public Config withUi ( String webUiGroup, WebUiFormType type ) {
+    public Config withUi( String webUiGroup ) {
+        if ( this.webUiFormType == null ) {
+            throw new ConfigRuntimeException( "Config of type " + getClass().getSimpleName() + " cannot be rendered in the UI" );
+        }
         this.webUiGroup = webUiGroup;
-        this.webUiFormType = type;
         return this;
     }
 

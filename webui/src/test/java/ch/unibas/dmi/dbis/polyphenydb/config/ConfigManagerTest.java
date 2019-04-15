@@ -44,7 +44,7 @@ public class ConfigManagerTest implements ConfigListener {
         WebUiGroup g1 = new WebUiGroup( "g1", "p" ).withTitle( "group1" );
         WebUiGroup g2 = new WebUiGroup( "g2", "p" ).withDescription( "group2" );
 
-        Config c1 = new ConfigString( "conf.test.2", "text1" ).withUi( "g2", WebUiFormType.TEXT );
+        Config c1 = new ConfigString( "conf.test.2", "text1" ).withUi( "g2" );
         cm.registerConfig( c1 );
         cm.registerWebUiGroup( g2 );
         cm.registerWebUiGroup( g1 );
@@ -60,8 +60,8 @@ public class ConfigManagerTest implements ConfigListener {
 
     @Test
     public void javaValidation () {
-        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2", WebUiFormType.NUMBER );
-        Config c6 = new ConfigDouble( "java.double.validation", 3 ).withJavaValidation( a -> (double) a < 5.5 ).withUi( "g2", WebUiFormType.NUMBER );
+        Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2" );
+        Config c6 = new ConfigDouble( "java.double.validation", 3 ).withJavaValidation( a -> (double) a < 5.5 ).withUi( "g2" );
 
         cm.registerConfig( c5 );
         cm.registerConfig( c6 );
