@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Configuration object that can be accessed and altered via the ConfigManager
  */
-public abstract class Config<T extends Config<T>> {
+public abstract class Config {
 
     /**
      * unique key
@@ -130,9 +130,9 @@ public abstract class Config<T extends Config<T>> {
     /**
      * Allows to set requiresRestart. Is false by default.
      */
-    public T setRequiresRestart( final boolean requiresRestart ) {
+    public Config setRequiresRestart( final boolean requiresRestart ) {
         this.requiresRestart = requiresRestart;
-        return (T) this;
+        return this;
     }
 
 
@@ -147,19 +147,19 @@ public abstract class Config<T extends Config<T>> {
      * @param webUiGroup id of webUiGroup
      * @param type type, e.g. text or number
      */
-    public T withUi ( String webUiGroup, WebUiFormType type ) {
+    public Config withUi ( String webUiGroup, WebUiFormType type ) {
         this.webUiGroup = webUiGroup;
         this.webUiFormType = type;
-        return (T) this;
+        return this;
     }
 
 
     /**
      * validators for the WebUi
      */
-    public T withWebUiValidation( final WebUiValidator... validations ) {
+    public Config withWebUiValidation( final WebUiValidator... validations ) {
         this.webUiValidators = validations;
-        return (T) this;
+        return this;
     }
 
     // TODO MV:
@@ -498,9 +498,9 @@ public abstract class Config<T extends Config<T>> {
      * Needed for ConfigArray and ConfigTable. Their elements should not trigger a notification,
      * you only want to be notified once when the ConfigArray or ConfigTable changes.
      */
-    T isObservable ( boolean b) {
+    Config isObservable ( boolean b) {
         this.isObservable = b;
-        return (T) this;
+        return this;
     }
 
 
@@ -511,13 +511,13 @@ public abstract class Config<T extends Config<T>> {
      * @param listener Observer to add
      * @return Config
      */
-    public T addObserver( final ConfigListener listener ) {
+    public Config addObserver( final ConfigListener listener ) {
         //don't observe if it is an element of ConfigArray or ConfigTable
-        if (!isObservable) return (T) this;
+        if (!isObservable) return this;
         if ( !this.listeners.contains( listener ) ) {
             this.listeners.add( listener );
         }
-        return (T) this;
+        return this;
     }
 
 
@@ -527,9 +527,9 @@ public abstract class Config<T extends Config<T>> {
      * @param listener Observer to remove
      * @return Config
      */
-    public T removeObserver( final ConfigListener listener ) {
+    public Config removeObserver( final ConfigListener listener ) {
         this.listeners.remove( listener );
-        return (T) this;
+        return this;
     }
 
 

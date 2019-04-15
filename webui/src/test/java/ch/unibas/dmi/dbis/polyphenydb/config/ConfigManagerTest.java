@@ -57,29 +57,6 @@ public class ConfigManagerTest implements ConfigListener {
         cm = ConfigManager.getInstance();
     }
 
-    /*@Test
-    public void insertConfigTwice() {
-
-        Config c1 = new ConfigString("conf.text.1", "text1").withUi( 1, WebUiFormType.TEXT );
-        Config c2 = new ConfigString("conf.text.1", "text1");
-
-        Config c3 = new ConfigInteger( "double", 2 );
-        Config c4 = new ConfigInteger( "double", 2 ).withUi( 1, WebUiFormType.NUMBER );
-
-        //inserting configs before groups and pages are existing
-        cm.registerConfig( c1 );
-        cm.registerConfig( c2 );
-        cm.registerConfig( c3 );
-        cm.registerConfig( c4 );
-
-        cm.getConfig( "conf.text.1" ).setString( "config1" );
-        //c1.setString( "config1" );//wouldn't work
-        cm.getConfig( "double" ).setInt( 22 );
-        Assert.assertEquals( "config1", cm.getConfig( "conf.text.1" ).getString() );
-        Assert.assertEquals( 1, cm.getConfig( "double" ).getWebUiGroup() );
-
-    }*/
-
 
     @Test
     public void javaValidation () {
