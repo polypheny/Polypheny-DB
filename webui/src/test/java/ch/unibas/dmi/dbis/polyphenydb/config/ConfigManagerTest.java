@@ -41,8 +41,8 @@ public class ConfigManagerTest implements ConfigListener {
     static {
         ConfigManager cm = ConfigManager.getInstance();
         WebUiPage p = new WebUiPage( "p", "page1", "page1descr" );
-        WebUiGroup g1 = new WebUiGroup( "g1", "p" ).withTitle( "group1" );
-        WebUiGroup g2 = new WebUiGroup( "g2", "p" ).withDescription( "group2" );
+        WebUiGroup g1 = new WebUiGroup( "g1", "p", 2 ).withTitle( "group1" );
+        WebUiGroup g2 = new WebUiGroup( "g2", "p", 1 ).withDescription( "group2" );
 
         Config c1 = new ConfigString( "conf.test.2", "text1" ).withUi( "g2" );
         cm.registerConfig( c1 );

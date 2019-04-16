@@ -32,7 +32,7 @@ import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-// todo missing fields
+// todo missing fields: priority
 
 
 /**
@@ -84,7 +84,7 @@ public abstract class Config {
     /**
      * id of the WebUiPage it should be displayed in
      */
-    private Integer webUiOrder;
+    private int webUiOrder;
 
     /**
      * Type of configuration element. Required for GSON.
@@ -156,16 +156,28 @@ public abstract class Config {
 
 
     /**
+     * set Ui information
+     *
+     * @param webUiGroup id of webUiGroup
+     * @param order order of config within a group. Configs with lower order will be rendered first. The ordering is happening in the Angular application.
+     */
+    public Config withUi( String webUiGroup, int order ) {
+        if ( this.webUiFormType == null ) {
+            throw new ConfigRuntimeException( "Config of type " + getClass().getSimpleName() + " cannot be rendered in the UI" );
+        }
+        this.webUiGroup = webUiGroup;
+        this.webUiOrder = order;
+        return this;
+    }
+
+
+    /**
      * validators for the WebUi
      */
     public Config withWebUiValidation( final WebUiValidator... validations ) {
         this.webUiValidators = validations;
         return this;
     }
-
-    // TODO MV:
-    // set anonymous validation method for this config
-    //public abstract Config withJavaValidation (ConfigValidator c);
 
 
     /**
@@ -459,9 +471,6 @@ public abstract class Config {
     }
 
 
-    // TODO MV: Use lombok
-
-
     /**
      * Get the key of this config element
      *
@@ -470,8 +479,6 @@ public abstract class Config {
     public String getKey() {
         return this.key;
     }
-
-    // TODO MV: Use lombok
 
 
     /**
@@ -482,8 +489,6 @@ public abstract class Config {
     public String getConfigType() {
         return this.getClass().getSimpleName();
     }
-
-    // TODO MV: Use lombok
 
 
     /**

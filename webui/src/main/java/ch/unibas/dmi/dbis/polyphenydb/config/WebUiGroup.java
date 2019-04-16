@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -39,7 +38,10 @@ public class WebUiGroup {
     
     private String id;
     private String pageId;
-    //int order;//schon mit id
+    /** field "order" is used by Gson
+     * Groups with lower order are rendered first in the GUI
+     */
+    private int order;
     private String title;
     private String description;
     private String icon;
@@ -53,6 +55,18 @@ public class WebUiGroup {
     public WebUiGroup( String id, String pageId ) {
         this.id = id;
         this.pageId = pageId;
+    }
+
+
+    /**
+     * @param id unique id of this group
+     * @param pageId id of WebUiPage this group belongs to
+     * @param order Group with lower order is rendered first in the GUI. The ordering is happening in the Angular application.
+     */
+    public WebUiGroup( String id, String pageId, int order ) {
+        this.id = id;
+        this.pageId = pageId;
+        this.order = order;
     }
 
 

@@ -67,7 +67,7 @@ public class ConfigManager {
 
     /**
      * Register a configuration element in the ConfigManager.
-     *
+     * throws a ConfigRuntimeException if a Config is already registered.
      * @param config Configuration element to register
      */
     public boolean registerConfig( final Config config ) {
@@ -83,7 +83,7 @@ public class ConfigManager {
 
 
     /**
-     * Register muultiple configuration elements in the ConfigManager.
+     * Register multiple configuration elements in the ConfigManager.
      *
      * @param configs Configuration elements to register
      */
@@ -98,7 +98,7 @@ public class ConfigManager {
     }
 
 
-    // TODO MV: Is this save?
+    // TODO MV: Is this save? -> hashsest in Config?
     public void observeAll( ConfigListener listener ) {
         for ( Config c : configs.values() ) {
             c.addObserver( listener );
@@ -112,10 +112,6 @@ public class ConfigManager {
     public Config getConfig( final String s ) {
         return configs.get( s );
     }
-
-    // TODO MV: Missing methods
-
-    // TODO MV: Missing setters
 
 
     /**
