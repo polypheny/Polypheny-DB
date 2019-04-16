@@ -103,12 +103,16 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Helper for implementing the {@code getXxx} methods such as {@link org.apache.calcite.avatica.AvaticaDatabaseMetaData#getTables}.
  */
 public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( PolyphenyDbEmbeddedMetaImpl.class );
 
     static final EmbeddedDriver EMBEDDED_DRIVER = new EmbeddedDriver();
 
@@ -581,6 +585,7 @@ public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
             final MetaResultSet metaResultSet = MetaResultSet.create( h.connectionId, h.id, false, signature, null );
             return new ExecuteResult( ImmutableList.of( metaResultSet ) );
         } catch ( SQLException e ) {
+            LOGGER.debug( "Caught exception", e );
             throw new RuntimeException( e );
         }
         // TODO: share code with prepare and createIterable

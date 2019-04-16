@@ -38,7 +38,7 @@
         <logger name="org" level="INFO">
             <AppenderRef ref="Console"/>
         </logger>
-        <logger name="ch" level="ERROR">
+        <logger name="ch" level="DEBUG">
             <AppenderRef ref="Console"/>
         </logger>
         <logger name="ch.unibas.dmi.dbis.polyphenydb" level="TRACE">

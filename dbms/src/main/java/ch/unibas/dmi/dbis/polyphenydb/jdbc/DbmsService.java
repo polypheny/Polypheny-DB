@@ -55,11 +55,11 @@ public class DbmsService implements Service {
 
 
     public DbmsService( MetricsSystem metrics ) throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
+        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=dbms/build/classes/model.json", "admin", "admin" );
         PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
 
-        //this.delegate = new LocalService( new JdbcMeta("jdbc:polyphenydbembedded:model=dbms/build/classes/model.json"), metrics );
-        this.delegate = new LocalService( new PolyphenyDbEmbeddedMetaImpl( (PolyphenyDbEmbeddedConnectionImpl) polyphenyDbEmbeddedConnection ), metrics );
+        PolyphenyDbEmbeddedMetaImpl meta = new PolyphenyDbEmbeddedMetaImpl( (PolyphenyDbEmbeddedConnectionImpl) polyphenyDbEmbeddedConnection );
+        this.delegate = new LocalService( meta, metrics );
     }
 
 

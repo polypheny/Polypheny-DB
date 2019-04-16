@@ -45,7 +45,6 @@ dependencies {
     ////// Logging
     compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.0' // License: Apache 2.0
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'   // License: Apache 2.0
-    compile group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: '2.11.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
 
     ////// CLI PARSING
@@ -59,7 +58,7 @@ dependencies {
 
 
     ////// APACHE CALCITE AVATICA
-    compile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: '1.11.0'
+    compile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: '1.13.0'
     
     
 
