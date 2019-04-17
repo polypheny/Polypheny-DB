@@ -3,8 +3,8 @@
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,23 +20,30 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
-
-import static spark.Spark.*;
+package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
-public class Server {
+/**
+ * Th type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
+ */
+public enum WebUiFormType {
+    TEXT( "text" ),
+    NUMBER( "number" ),
+    BOOLEAN( "boolean" );
 
-    public Server() {
-        port(80);
-        get("/hello", (req, res) -> "Hello World");
+    private final String type;
+
+
+    WebUiFormType( final String t ) {
+        this.type = t;
     }
 
 
-    public static void main(String[] args) {
-        new Server();
+    @Override
+    public String toString() {
+        return this.type;
     }
-
 }
