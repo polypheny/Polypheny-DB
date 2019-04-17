@@ -54,15 +54,13 @@ public abstract class Config {
      */
     private boolean requiresRestart = false;
 
-
     /**
      * When you change a Config with a method like setInt() and the field validationMethod is set,
      * new value will only be set if the validation (ConfigValidator.validate()) returns true.
      */
     private ConfigValidator validationMethod;
 
-
-    private String callWhenChanged;
+    //private String callWhenChanged;
 
     /**
      * Name of the validation method to use in the web ui
@@ -206,6 +204,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type String
+     *
+     * @param value new value of type String
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setString( final String value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -221,6 +225,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type boolean
+     *
+     * @param value new value of type boolean
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setBoolean( final boolean value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -236,6 +246,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type int
+     *
+     * @param value new value of type int
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setInt( final int value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -251,6 +267,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type long
+     *
+     * @param value new value of type long
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setLong( final long value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -266,6 +288,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type double
+     *
+     * @param value new value of type double
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDouble( final double value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -281,6 +309,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type BigDecimal
+     *
+     * @param value new value of type BigDecimal
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDecimal( final BigDecimal value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -298,6 +332,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type int[]
+     *
+     * @param value new value of type int[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setIntArray( final int[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -313,6 +353,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type double[]
+     *
+     * @param value new value of type double[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDoubleArray( final double[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -328,6 +374,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type long[]
+     *
+     * @param value new value of type long[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setLongArray( final long[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -336,13 +388,19 @@ public abstract class Config {
     /**
      * Get the BigDecimal-Array representation of the configuration value.
      *
-     * @return Configuration value as long[]
+     * @return Configuration value as BigDecimal[]
      */
     public BigDecimal[] getDecimalArray() {
         throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a BigDecimal[]!" );
     }
 
 
+    /**
+     * Set the configuration value to a new value of type BigDecimal[]
+     *
+     * @param value new value of type BigDecimal[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDecimalArray( final BigDecimal[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -358,6 +416,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type boolean[]
+     *
+     * @param value new value of type boolean[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setBooleanArray( final boolean[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -373,6 +437,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type String[]
+     *
+     * @param value new value of type String[]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setStringArray( final String[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -391,6 +461,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type int[][]
+     *
+     * @param value new value of type int[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setIntTable( final int[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -406,6 +482,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type double[][]
+     *
+     * @param value new value of type double[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDoubleTable( final double[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -421,6 +503,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type long[][]
+     *
+     * @param value new value of type long[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setLongTable( final long[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -436,6 +524,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type BigDecimal[][]
+     *
+     * @param value new value of type BigDecimal[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setDecimalTable( final BigDecimal[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -451,6 +545,12 @@ public abstract class Config {
     }
 
 
+    /**
+     * Set the configuration value to a new value of type String[][]
+     *
+     * @param value new value of type String[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setStringTable( final String[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
@@ -459,13 +559,19 @@ public abstract class Config {
     /**
      * Get the Boolean-Table representation of the configuration value.
      *
-     * @return Configuration value as booelan[][]
+     * @return Configuration value as boolean[][]
      */
     public boolean[][] getBooleanTable() {
         throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a boolean[][]!" );
     }
 
 
+    /**
+     * Set the configuration value to a new value of type boolean[][]
+     *
+     * @param value new value of type boolean[][]
+     * @return true if the new value was set, false if the new value was not set due to the Java validation (see Config.validate(), ConfigValidator)
+     */
     public boolean setBooleanTable( final boolean[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
