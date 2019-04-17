@@ -39,7 +39,7 @@ public class ConfigServerTest {
 
 
     /**
-     * Test data for the Angular app
+     * Test data
      */
     private static void demoData( ConfigServer s ) {
         System.out.println( "demoData()" );

@@ -27,8 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 /**
- * Th type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;)
- * e.g. text or number
+ * Th type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
  */
 public enum WebUiFormType {
     TEXT( "text" ),
@@ -38,7 +37,7 @@ public enum WebUiFormType {
     private final String type;
 
 
-    WebUiFormType( String t ) {
+    WebUiFormType( final String t ) {
         this.type = t;
     }
 

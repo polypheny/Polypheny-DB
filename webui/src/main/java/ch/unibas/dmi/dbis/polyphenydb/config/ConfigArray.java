@@ -29,67 +29,69 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import java.math.BigDecimal;
 
 
-/** ConfigArray contains an array of ConfigScalars. All of them need to be of the same type. */
+/**
+ * Representation of a value represented as array. All of the fields in the array need to be of the same type.
+ */
 public class ConfigArray extends Config {
 
     private ConfigScalar[] array;
 
 
-    public ConfigArray ( final String key, final int[] array ) {
+    public ConfigArray( final String key, final int[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigInteger( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigInteger( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
 
 
-    public ConfigArray ( final String key, final double[] array ) {
+    public ConfigArray( final String key, final double[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigDouble( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigDouble( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
 
 
-    public ConfigArray ( final String key, final long[] array ) {
+    public ConfigArray( final String key, final long[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigLong( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigLong( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
 
 
-    public ConfigArray ( final String key, final BigDecimal[] array ) {
+    public ConfigArray( final String key, final BigDecimal[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigDecimal( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigDecimal( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
 
 
-    public ConfigArray ( final String key, final String[] array ) {
+    public ConfigArray( final String key, final String[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigString( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigString( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
 
 
-    public ConfigArray ( final String key, final boolean[] array ) {
+    public ConfigArray( final String key, final boolean[] array ) {
         super( key );
         ConfigScalar[] fill = new ConfigScalar[array.length];
-        for ( int i = 0; i<array.length; i++) {
-            fill[i] = (ConfigScalar) new ConfigBoolean( key+"."+i, array[i] ).isObservable( false );
+        for ( int i = 0; i < array.length; i++ ) {
+            fill[i] = (ConfigScalar) new ConfigBoolean( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
     }
@@ -107,9 +109,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setIntArray( int[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setInt( value[counter] );
                 counter++;
             }
@@ -133,9 +135,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setDoubleArray( double[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setDouble( value[counter] );
                 counter++;
             }
@@ -159,9 +161,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setLongArray( long[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setLong( value[counter] );
                 counter++;
             }
@@ -185,9 +187,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setDecimalArray( BigDecimal[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setDecimal( value[counter] );
                 counter++;
             }
@@ -212,9 +214,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setStringArray( String[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setString( value[counter] );
                 counter++;
             }
@@ -239,9 +241,9 @@ public class ConfigArray extends Config {
 
     @Override
     public boolean setBooleanArray( boolean[] value ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             int counter = 0;
-            for( ConfigScalar c : array ) {
+            for ( ConfigScalar c : array ) {
                 c.setBoolean( value[counter] );
                 counter++;
             }
@@ -251,6 +253,5 @@ public class ConfigArray extends Config {
             return false;
         }
     }
-
 
 }

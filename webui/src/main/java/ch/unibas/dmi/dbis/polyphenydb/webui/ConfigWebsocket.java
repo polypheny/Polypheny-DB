@@ -26,42 +26,48 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import org.eclipse.jetty.websocket.api.*;
-import org.eclipse.jetty.websocket.api.annotations.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @WebSocket
 public class ConfigWebsocket {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigWebsocket.class );
+
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 
 
     @OnWebSocketConnect
-    public void connected( Session session ) {
-        //System.out.println( "Ui connected to Websocket" );
+    public void connected( final Session session ) {
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
-    public void closed( Session session, int statusCode, String reason ) {
-        //System.out.println( "Ui left Websocket" );
+    public void closed( final Session session, final int statusCode, final String reason ) {
         sessions.remove( session );
     }
 
 
     @OnWebSocketMessage
-    public void configWebSocket( Session session, String message ) throws IOException {
-        System.out.println( "Got: " + message );   // Print message
+    public void configWebSocket( final Session session, final String message ) throws IOException {
+        LOGGER.trace( "Got: " + message );
         session.getRemote().sendString( message ); // and send it back
     }
 
-    public static void broadcast( String msg ) throws IOException{
-        //System.out.println( "broadcasting:\n" + msg );
-        for( Session s: sessions ){
+
+    public static void broadcast( final String msg ) throws IOException {
+        LOGGER.trace( "broadcasting:\n" + msg );
+        for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }
     }

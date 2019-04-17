@@ -35,8 +35,8 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * ConfigManager where you can add a configuration (Config object) that is needed in different Classes.
- * If the configuration element has a WebUiGroup and WebUiPage, it can be requested from the WebUi and the value of the configuration can be changed there.
+ * ConfigManager allows to add and retrieve configuration objects.
+ * If the configuration element has a Web UI Group and Web UI Page defined, it can be requested from the Web UI and the value of the configuration can be changed there.
  */
 public class ConfigManager {
 
@@ -67,8 +67,9 @@ public class ConfigManager {
 
     /**
      * Register a configuration element in the ConfigManager.
-     * throws a ConfigRuntimeException if a Config is already registered.
-     * @param config Configuration element to register
+     *
+     * @param config Configuration element to register.
+     * @throws ConfigRuntimeException If a Config is already registered.
      */
     public void registerConfig( final Config config ) {
         if ( this.configs.get( config.getKey() ) != null ) {
@@ -84,14 +85,14 @@ public class ConfigManager {
      *
      * @param configs Configuration elements to register
      */
-    public void registerConfigs( Config... configs ) {
+    public void registerConfigs( final Config... configs ) {
         for ( Config c : configs ) {
             this.registerConfig( c );
         }
     }
 
 
-    public void observeAll( ConfigListener listener ) {
+    public void observeAll( final ConfigListener listener ) {
         for ( Config c : configs.values() ) {
             c.addObserver( listener );
         }
@@ -107,38 +108,40 @@ public class ConfigManager {
 
 
     /**
-     * Register a WebUiGroup to the ConfigManager.
-     * A WebUiGroup consists of several Configs that will be displayed together in the Angular WebUi.
+     * Register a Web UI Group in the ConfigManager.
+     * A Web UI Group consists of several Configs that will be displayed together in the Web UI.
      *
-     * @param g WebUiGroup to register
+     * @param group WebUiGroup to register
+     * @throws ConfigRuntimeException If a group with that key already exists.
      */
-    public void registerWebUiGroup( final WebUiGroup g ) {
-        if ( this.uiGroups.get( g.getId() ) != null ) {
-            throw new ConfigRuntimeException( "Cannot register two WeUiGroups with the same key: " + g.getId() );
+    public void registerWebUiGroup( final WebUiGroup group ) {
+        if ( this.uiGroups.get( group.getId() ) != null ) {
+            throw new ConfigRuntimeException( "Cannot register two WeUiGroups with the same key: " + group.getId() );
         } else {
-            this.uiGroups.put( g.getId(), g );
+            this.uiGroups.put( group.getId(), group );
         }
     }
 
 
     /**
-     * Register a WebUiPage to the ConfigManager.
-     * A WebUiPage consists of several WebUiGroups that will be displayed together in the Angular WebUi.
+     * Register a Web UI Page in the ConfigManager.
+     * A Web UI Page consists of several Web UI Groups that will be displayed together in the Web UI.
      *
-     * @param p WebUiPage to register
+     * @param page WebUiPage to register
+     * @throws ConfigRuntimeException If a page with that key already exists.
      */
-    public void registerWebUiPage( final WebUiPage p ) {
-        if ( this.uiPages.get( p.getId() ) != null ) {
-            throw new ConfigRuntimeException( "Cannot register two WebUiPages with the same key: " + p.getId() );
+    public void registerWebUiPage( final WebUiPage page ) {
+        if ( this.uiPages.get( page.getId() ) != null ) {
+            throw new ConfigRuntimeException( "Cannot register two WebUiPages with the same key: " + page.getId() );
         } else {
-            this.uiPages.put( p.getId(), p );
+            this.uiPages.put( page.getId(), page );
         }
     }
 
 
     /**
-     * Generates a Json of all the WebUiPages in the ConfigManager (for the Sidebar in the Angular WebUi)
-     * The Json does not contain the groups and configs of the WebUiPages
+     * Generates a Json of all the Web UI Pages in the ConfigManager (for the sidebar in the Web UI)
+     * The Json does not contain the groups and configs of the Web UI Pages
      */
     public String getWebUiPageList() {
         //todo recursion with parentPage field
@@ -153,29 +156,31 @@ public class ConfigManager {
 
 
     /**
-     * Get certain page as json
-     * Groups within a page and Configs within a group are sorted in the Angular app, not here.
+     * Get certain page as json.
+     * Groups within a page and configs within a group are sorted in the Web UI, not here.
      *
-     * @param id pageId
+     * @param id The id of the page
      */
-    public String getPage ( String id ) {
-        //fill WebUiGroups with Configs
-        for( ConcurrentMap.Entry<String, Config> c : configs.entrySet()){
-            try{
+    public String getPage( final String id ) {
+        // fill WebUiGroups with Configs
+        for ( ConcurrentMap.Entry<String, Config> c : configs.entrySet() ) {
+            try {
                 String i = c.getValue().getWebUiGroup();
                 this.uiGroups.get( i ).addConfig( c.getValue() );
             } catch ( NullPointerException e ) {
-                //System.out.println("skipping config "+c.getKey()+" with no WebUiGroup");
+                // TODO: This is not nice...
+                // Skipping config with no WebUiGroup
             }
         }
 
-        //fill WebUiPages with WebUiGroups
-        for( ConcurrentMap.Entry<String, WebUiGroup> g : uiGroups.entrySet() ){
-            try{
+        // fill WebUiPages with WebUiGroups
+        for ( ConcurrentMap.Entry<String, WebUiGroup> g : uiGroups.entrySet() ) {
+            try {
                 String i = g.getValue().getPageId();
                 this.uiPages.get( i ).addWebUiGroup( g.getValue() );
             } catch ( NullPointerException e ) {
-                //System.out.println("skipping group "+g.getKey()+" with no pageid");
+                // TODO: This is not nice...
+                // Skipping config with no page id
             }
         }
         return uiPages.get( id ).toString();
@@ -183,9 +188,9 @@ public class ConfigManager {
 
 
     /**
-     * The class PageListItem will be converted into a Json String by Gson
-     * The Angular WebUi requires a Json Object with the fields id, name, icon, children[] for the Sidebar
-     * This class is needed to convert a WebUiPage object into the format needed by the Angular WebUi
+     * The class PageListItem will be converted into a Json String by Gson.
+     * The Web UI requires a Json Object with the fields id, name, icon, children[] for the Sidebar.
+     * This class is required to convert a WebUiPage object into the format needed by the Angular WebUi
      */
     class PageListItem {
 
@@ -195,7 +200,7 @@ public class ConfigManager {
         private PageListItem[] children;
 
 
-        public PageListItem( String id, String name, String icon ) {
+        public PageListItem( final String id, final String name, final String icon ) {
             this.id = id;
             this.name = name;
             this.icon = icon;
@@ -208,6 +213,5 @@ public class ConfigManager {
             return gson.toJson( this );
         }
     }
-
 
 }

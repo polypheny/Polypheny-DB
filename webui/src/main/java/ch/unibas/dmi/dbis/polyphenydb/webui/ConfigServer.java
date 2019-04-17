@@ -26,74 +26,79 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import static spark.Spark.*;
+import static spark.Spark.before;
+import static spark.Spark.get;
+import static spark.Spark.options;
+import static spark.Spark.port;
+import static spark.Spark.post;
+import static spark.Spark.webSocket;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.*;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
- * RESTful server for the WebUis, working with the ConfigManager
+ * RESTful server used by the Web UI to interact with the Config Manager.
  */
 public class ConfigServer implements ConfigListener {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigServer.class );
+
 
     public ConfigServer() {
-
         port( 8081 );
 
         //needs to be called before route mapping!
         webSockets();
-
         enableCORS();
-
         configRoutes();
-
     }
 
 
     public static void main( String[] args ) {
+        LOGGER.debug( "Starting config server..." );
         new ConfigServer();
-        System.out.println( "ConfigServer running.." );
     }
 
 
     private void webSockets() {
-        //Websockets need to be defined before the post/get requests
+        // Websockets need to be defined before the post/get requests
         webSocket( "/configWebSocket", ConfigWebsocket.class );
     }
 
 
     /**
-     * many routes just for testing
-     * route getPage: get a WebUiPage as JSON (with all its groups and configs
+     * Many routes just for testing.
+     * Route getPage: get a WebUiPage as JSON (with all its groups and configs).
      */
     private void configRoutes() {
         String type = "application/json";
         Gson gson = new Gson();
         ConfigManager cm = ConfigManager.getInstance();
 
-
         get( "/getPageList", ( req, res ) -> cm.getWebUiPageList() );
 
-        //get Ui of certain page
+        // get Ui of certain page
         post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: 123}
-            try{
+            try {
                 return cm.getPage( req.body() );
-            } catch ( Exception e ){
+            } catch ( Exception e ) {
                 //if input not number or page does not exist
                 return "";
             }
         } );
 
-        //save changes from WebUi
+        // save changes from WebUi
         post( "/updateConfigs", ( req, res ) -> {
-            System.out.println( req.body() );
+            LOGGER.trace( req.body() );
             Map<String, Object> changes = gson.fromJson( req.body(), Map.class );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
@@ -140,7 +145,7 @@ public class ConfigServer implements ConfigListener {
                     default:
                         allValid = false;
                         feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
-                        System.err.println( "Config with type " + c.getConfigType() + " is not supported yet." );
+                        LOGGER.error( "Config with type " + c.getConfigType() + " is not supported yet." );
                 }
                 //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
@@ -155,9 +160,9 @@ public class ConfigServer implements ConfigListener {
 
 
     /**
-     * to avoid the CORS problem, when the ConfigServer receives requests from the WebUi
+     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
+     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
      */
-    // https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
     public static void enableCORS() {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 

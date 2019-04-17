@@ -53,7 +53,7 @@ public class ConfigBoolean extends ConfigScalar {
 
     @Override
     public boolean setBoolean( final boolean b ) {
-        if( validate ( value )) {
+        if ( validate( value ) ) {
             this.value = b;
             notifyConfigListeners();
             return true;

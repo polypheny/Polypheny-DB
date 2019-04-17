@@ -62,7 +62,7 @@ public class ConfigDouble extends ConfigScalar {
 
     @Override
     public boolean setDouble( final double value ) {
-        if( validate( value )){
+        if ( validate( value ) ) {
             this.value = value;
             notifyConfigListeners();
             return true;

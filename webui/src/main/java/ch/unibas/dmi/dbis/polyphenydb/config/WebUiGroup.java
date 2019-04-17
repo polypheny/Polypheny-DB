@@ -32,13 +32,14 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * A group in the WebUi containing multiple configuration fields. Is part of a WebUiPage.
+ * A group in the Web UI containing multiple configuration fields. Is part of a WebUiPage.
  */
 public class WebUiGroup {
-    
+
     private String id;
     private String pageId;
-    /** field "order" is used by Gson
+    /**
+     * Field "order" is used by Gson.
      * Groups with lower order are rendered first in the GUI
      */
     private int order;
@@ -49,21 +50,25 @@ public class WebUiGroup {
 
 
     /**
+     * Constructor
+     *
      * @param id unique id of this group
      * @param pageId id of WebUiPage this group belongs to
      */
-    public WebUiGroup( String id, String pageId ) {
+    public WebUiGroup( final String id, final String pageId ) {
         this.id = id;
         this.pageId = pageId;
     }
 
 
     /**
+     * Constructor
+     *
      * @param id unique id of this group
      * @param pageId id of WebUiPage this group belongs to
-     * @param order Group with lower order is rendered first in the GUI. The ordering is happening in the Angular application.
+     * @param order Group with lower order is rendered first in the GUI. The ordering is happening in the Web UI.
      */
-    public WebUiGroup( String id, String pageId, int order ) {
+    public WebUiGroup( final String id, final String pageId, final int order ) {
         this.id = id;
         this.pageId = pageId;
         this.order = order;
@@ -71,24 +76,24 @@ public class WebUiGroup {
 
 
     /**
-     * set the title of this group
+     * Set the title of this group
      */
-    public WebUiGroup withTitle( String title ) {
+    public WebUiGroup withTitle( final String title ) {
         this.title = title;
         return this;
     }
 
 
     /**
-     * set the description of this group
+     * Set the description of this group
      */
-    public WebUiGroup withDescription( String description ) {
+    public WebUiGroup withDescription( final String description ) {
         this.description = description;
         return this;
     }
 
 
-    public WebUiGroup withIcon( String icon ) {
+    public WebUiGroup withIcon( final String icon ) {
         this.icon = icon;
         return this;
     }
@@ -110,16 +115,20 @@ public class WebUiGroup {
 
 
     /**
-     * add a configuration object that should be displayed in this group
+     * Add a configuration object that should be displayed in this group.
+     *
+     * @param c The config to add to this group.
      */
-    public void addConfig( Config c ) {
+    public void addConfig( final Config c ) {
         this.configs.put( c.getKey(), c );
 
     }
 
 
     /**
-     * @return returns WebUiPage as json
+     * Serialize object as JSON.
+     *
+     * @return returns WebUiPage as JSON.
      */
     @Override
     public String toString() {

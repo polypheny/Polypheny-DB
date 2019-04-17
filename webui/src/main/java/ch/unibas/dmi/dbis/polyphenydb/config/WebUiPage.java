@@ -36,42 +36,45 @@ import java.util.concurrent.ConcurrentMap;
  * Page for the WebUi containing WebUiGroups that contain configuration elements.
  */
 public class WebUiPage {
-    
+
     private String id;
     private String title;
     private String description;
     private String icon;
     private WebUiPage parentPage;
-    private ConcurrentMap<String, WebUiGroup> groups = new ConcurrentHashMap<String, WebUiGroup>(  );
+    private ConcurrentMap<String, WebUiGroup> groups = new ConcurrentHashMap<>();
 
 
     /**
-     * @param id unique id for the page
+     * Constructor
+     *
+     * @param id Unique ID for the page
      */
-    public WebUiPage( String id ) {
+    public WebUiPage( final String id ) {
         this.id = id;
     }
 
 
-    public WebUiPage ( String id, String title, String description ) {
+    public WebUiPage( final String id, final String title, final String description ) {
         this.id = id;
         this.title = title;
         this.description = description;
     }
 
 
-    public WebUiPage withIcon( String icon ) {
+    public WebUiPage withIcon( final String icon ) {
         this.icon = icon;
         return this;
     }
 
 
-    public WebUiPage withParent( WebUiPage parent ) {
+    public WebUiPage withParent( final WebUiPage parent ) {
         this.parentPage = parent;
         return this;
     }
 
-    public WebUiPage getParent () {
+
+    public WebUiPage getParent() {
         return this.parentPage;
     }
 
@@ -81,9 +84,6 @@ public class WebUiPage {
     }
 
 
-    /**
-     * @return id of this WebUiPage
-     */
     public String getId() {
         return id;
     }
@@ -100,15 +100,19 @@ public class WebUiPage {
 
 
     /**
-     * add a WebUiGroup for this WebUiPage
+     * Add a WebUiGroup to this WebUiPage
+     *
+     * @param g The group to add to this page.
      */
-    public void addWebUiGroup( WebUiGroup g ) {
+    public void addWebUiGroup( final WebUiGroup g ) {
         groups.put( g.getId(), g );
     }
 
 
     /**
-     * @return returns WebUiPage as json object
+     * Serialize this as JSON.
+     *
+     * @return WebUiPage as JSON
      */
     @Override
     public String toString() {

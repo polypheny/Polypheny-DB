@@ -68,5 +68,4 @@ public class ConfigInteger extends ConfigScalar {
         return (long) this.value;
     }
 
-
 }
