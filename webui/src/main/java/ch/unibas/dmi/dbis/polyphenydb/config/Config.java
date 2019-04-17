@@ -30,9 +30,8 @@ import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-// todo missing fields: priority
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -82,7 +81,8 @@ public abstract class Config {
     private String webUiGroup;
 
     /**
-     * id of the WebUiPage it should be displayed in
+     * Required by GSON.
+     * Configs with a lower webUiOrder will be rendered first in a WebUiGroup (on the Angular app)
      */
     private int webUiOrder;
 
@@ -101,7 +101,7 @@ public abstract class Config {
     /**
      * List of observers
      */
-    private final ConcurrentLinkedQueue<ConfigListener> listeners = new ConcurrentLinkedQueue<>();
+    private final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
 
     /**
@@ -206,7 +206,7 @@ public abstract class Config {
     }
 
 
-    public void setString( final String value ) {
+    public boolean setString( final String value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -221,7 +221,7 @@ public abstract class Config {
     }
 
 
-    public void setBoolean( final boolean value ) {
+    public boolean setBoolean( final boolean value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -236,7 +236,7 @@ public abstract class Config {
     }
 
 
-    public void setInt( final int value ) {
+    public boolean setInt( final int value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -251,7 +251,7 @@ public abstract class Config {
     }
 
 
-    public void setLong( final long value ) {
+    public boolean setLong( final long value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -266,7 +266,7 @@ public abstract class Config {
     }
 
 
-    public void setDouble( final double value ) {
+    public boolean setDouble( final double value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -281,7 +281,7 @@ public abstract class Config {
     }
 
 
-    public void setDecimal( final BigDecimal value ) {
+    public boolean setDecimal( final BigDecimal value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -298,7 +298,7 @@ public abstract class Config {
     }
 
 
-    public void setIntArray( final int[] value ) {
+    public boolean setIntArray( final int[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -313,7 +313,7 @@ public abstract class Config {
     }
 
 
-    public void setDoubleArray( final double[] value ) {
+    public boolean setDoubleArray( final double[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -328,7 +328,7 @@ public abstract class Config {
     }
 
 
-    public void setLongArray( final long[] value ) {
+    public boolean setLongArray( final long[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -343,7 +343,7 @@ public abstract class Config {
     }
 
 
-    public void setDecimalArray( final BigDecimal[] value ) {
+    public boolean setDecimalArray( final BigDecimal[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -358,7 +358,7 @@ public abstract class Config {
     }
 
 
-    public void setBooleanArray( final boolean[] value ) {
+    public boolean setBooleanArray( final boolean[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -373,7 +373,7 @@ public abstract class Config {
     }
 
 
-    public void setStringArray( final String[] value ) {
+    public boolean setStringArray( final String[] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String[] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -391,7 +391,7 @@ public abstract class Config {
     }
 
 
-    public void setIntTable( final int[][] value ) {
+    public boolean setIntTable( final int[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type int[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -406,7 +406,7 @@ public abstract class Config {
     }
 
 
-    public void setDoubleTable( final double[][] value ) {
+    public boolean setDoubleTable( final double[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type double[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -421,7 +421,7 @@ public abstract class Config {
     }
 
 
-    public void setLongTable( final long[][] value ) {
+    public boolean setLongTable( final long[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type long[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -436,7 +436,7 @@ public abstract class Config {
     }
 
 
-    public void setDecimalTable( final BigDecimal[][] value ) {
+    public boolean setDecimalTable( final BigDecimal[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -451,7 +451,7 @@ public abstract class Config {
     }
 
 
-    public void setStringTable( final String[][] value ) {
+    public boolean setStringTable( final String[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -466,7 +466,7 @@ public abstract class Config {
     }
 
 
-    public void setBooleanTable( final boolean[][] value ) {
+    public boolean setBooleanTable( final boolean[][] value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type boolean[][] on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
@@ -520,9 +520,7 @@ public abstract class Config {
     public Config addObserver( final ConfigListener listener ) {
         //don't observe if it is an element of ConfigArray or ConfigTable
         if (!isObservable) return this;
-        if ( !this.listeners.contains( listener ) ) {
-            this.listeners.add( listener );
-        }
+        this.listeners.put( listener.hashCode(), listener );
         return this;
     }
 
@@ -534,7 +532,7 @@ public abstract class Config {
      * @return Config
      */
     public Config removeObserver( final ConfigListener listener ) {
-        this.listeners.remove( listener );
+        this.listeners.remove( listener.hashCode() );
         return this;
     }
 
@@ -543,7 +541,7 @@ public abstract class Config {
      * Notify observers
      */
     protected void notifyConfigListeners() {
-        for ( ConfigListener listener : listeners ) {
+        for ( ConfigListener listener : listeners.values() ) {
             listener.onConfigChange( this );
             if ( getRequiresRestart() ) {
                 listener.restart( this );

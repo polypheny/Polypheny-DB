@@ -52,10 +52,13 @@ public class ConfigInteger extends ConfigScalar {
 
 
     @Override
-    public void setInt( final int value ) {
+    public boolean setInt( final int value ) {
         if ( validate( value ) ) {
             this.value = value;
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 

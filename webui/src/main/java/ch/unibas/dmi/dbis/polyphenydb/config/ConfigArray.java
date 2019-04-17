@@ -106,7 +106,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setIntArray( int[] value ) {
+    public boolean setIntArray( int[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -114,6 +114,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -129,7 +132,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setDoubleArray( double[] value ) {
+    public boolean setDoubleArray( double[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -137,6 +140,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -152,7 +158,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setLongArray( long[] value ) {
+    public boolean setLongArray( long[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -160,6 +166,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -175,7 +184,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setDecimalArray( BigDecimal[] value ) {
+    public boolean setDecimalArray( BigDecimal[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -183,6 +192,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
 
     }
@@ -199,7 +211,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setStringArray( String[] value ) {
+    public boolean setStringArray( String[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -207,6 +219,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
 
     }
@@ -223,7 +238,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void setBooleanArray( boolean[] value ) {
+    public boolean setBooleanArray( boolean[] value ) {
         if( validate ( value )) {
             int counter = 0;
             for( ConfigScalar c : array ) {
@@ -231,6 +246,9 @@ public class ConfigArray extends Config {
                 counter++;
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 

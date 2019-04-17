@@ -119,7 +119,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setIntTable( int[][] value ) {
+    public boolean setIntTable( int[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -127,6 +127,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -144,7 +147,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setDoubleTable( double[][] value ) {
+    public boolean setDoubleTable( double[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -152,6 +155,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -169,7 +175,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setLongTable( long[][] value ) {
+    public boolean setLongTable( long[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -177,6 +183,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -194,7 +203,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setDecimalTable( BigDecimal[][] value ) {
+    public boolean setDecimalTable( BigDecimal[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -202,6 +211,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -219,7 +231,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setStringTable( String[][] value ) {
+    public boolean setStringTable( String[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -227,6 +239,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -244,7 +259,7 @@ public class ConfigTable extends Config {
 
 
     @Override
-    public void setBooleanTable( boolean[][] value ) {
+    public boolean setBooleanTable( boolean[][] value ) {
         if( validate ( value )) {
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
@@ -252,6 +267,9 @@ public class ConfigTable extends Config {
                 }
             }
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 

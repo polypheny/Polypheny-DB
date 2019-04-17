@@ -95,44 +95,69 @@ public class ConfigServer implements ConfigListener {
         post( "/updateConfigs", ( req, res ) -> {
             System.out.println( req.body() );
             Map<String, Object> changes = gson.fromJson( req.body(), Map.class );
+            StringBuilder feedback = new StringBuilder();
+            boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
-                //todo give feedback if config does not exist
                 //cm.setConfigValue( entry.getKey(), entry.getValue() );
                 Config c = cm.getConfig( entry.getKey() );
                 switch ( c.getConfigType() ) {
                     case "ConfigInteger":
                         Double d = (Double) entry.getValue();
-                        c.setInt( d.intValue() );
+                        if ( !c.setInt( d.intValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                         break;
                     case "ConfigDouble":
-                        c.setDouble( (double) entry.getValue() );
+                        if ( !c.setDouble( (double) entry.getValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                         break;
                     case "ConfigDecimal":
-                        c.setDecimal( (BigDecimal) entry.getValue() );
+                        if ( !c.setDecimal( (BigDecimal) entry.getValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                         break;
                     case "ConfigLong":
-                        c.setLong( (long) entry.getValue() );
+                        if ( !c.setLong( (long) entry.getValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                     case "ConfigString":
-                        c.setString( (String) entry.getValue() );
+                        if ( !c.setString( (String) entry.getValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                         break;
                     case "ConfigBoolean":
-                        c.setBoolean( (boolean) entry.getValue() );
+                        if ( !c.setBoolean( (boolean) entry.getValue() ) ) {
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
                         break;
                     default:
+                        allValid = false;
+                        feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
                         System.err.println( "Config with type " + c.getConfigType() + " is not supported yet." );
                 }
                 //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
-            return "{\"success\":1}";
+            if ( allValid ) {
+                return "{\"success\":1}";
+            } else {
+                feedback.append( "All other values were saved." );
+                return "{\"warning\": \"" + feedback.toString() + "\"}";
+            }
         } );
     }
-
-    // https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
 
 
     /**
      * to avoid the CORS problem, when the ConfigServer receives requests from the WebUi
      */
+    // https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
     public static void enableCORS() {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 

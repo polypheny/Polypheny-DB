@@ -70,16 +70,13 @@ public class ConfigManager {
      * throws a ConfigRuntimeException if a Config is already registered.
      * @param config Configuration element to register
      */
-    public boolean registerConfig( final Config config ) {
+    public void registerConfig( final Config config ) {
         if ( this.configs.get( config.getKey() ) != null ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
             this.configs.put( config.getKey(), config );
         }
-        return true;
     }
-
-    // TODO MV: Is this not always true?
 
 
     /**
@@ -87,18 +84,13 @@ public class ConfigManager {
      *
      * @param configs Configuration elements to register
      */
-    public boolean registerConfigs( Config... configs ) {
-        boolean successful = true;
+    public void registerConfigs( Config... configs ) {
         for ( Config c : configs ) {
-            if ( !this.registerConfig( c ) ) {
-                successful = false;
-            }
+            this.registerConfig( c );
         }
-        return successful;
     }
 
 
-    // TODO MV: Is this save? -> hashsest in Config?
     public void observeAll( ConfigListener listener ) {
         for ( Config c : configs.values() ) {
             c.addObserver( listener );
@@ -162,10 +154,10 @@ public class ConfigManager {
 
     /**
      * Get certain page as json
+     * Groups within a page and Configs within a group are sorted in the Angular app, not here.
      *
      * @param id pageId
      */
-    //todo sort
     public String getPage ( String id ) {
         //fill WebUiGroups with Configs
         for( ConcurrentMap.Entry<String, Config> c : configs.entrySet()){

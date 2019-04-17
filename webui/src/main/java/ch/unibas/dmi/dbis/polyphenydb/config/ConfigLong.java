@@ -52,10 +52,13 @@ public class ConfigLong extends ConfigScalar {
 
 
     @Override
-    public void setLong( final long value ) {
+    public boolean setLong( final long value ) {
         if( validate ( value )) {
             this.value = value;
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 }

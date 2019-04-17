@@ -52,10 +52,13 @@ public class ConfigString extends ConfigScalar {
 
 
     @Override
-    public void setString( final String s ) {
+    public boolean setString( final String s ) {
         if ( validate( s ) ) {
             this.value = s;
             notifyConfigListeners();
+            return true;
+        } else {
+            return false;
         }
     }
 

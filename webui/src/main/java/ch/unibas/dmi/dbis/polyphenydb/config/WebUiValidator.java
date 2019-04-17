@@ -30,23 +30,9 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 /**
  * Supported Angular form validators
+ * see https://angular.io/api/forms/Validators
  */
 public enum WebUiValidator {
-    REQUIRED( "required" ),
-    EMAIL( "email" );
-
-    // TODO MV: ??? why a string. Use the enum...
-    private final String validator;
-
-
-    WebUiValidator( String s ) {
-        this.validator = s;
-    }
-
-
-    @Override
-    public String toString() {
-        return this.validator;
-    }
-
+    REQUIRED,
+    EMAIL;
 }
