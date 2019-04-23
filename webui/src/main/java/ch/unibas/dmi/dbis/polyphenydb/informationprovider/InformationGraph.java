@@ -33,6 +33,14 @@ public class InformationGraph extends Information {
     private GraphType graphType = GraphType.LINE;
 
 
+    /**
+     * Constructor
+     *
+     * @param id unique id of the Information object
+     * @param group id of the group to which this InformationGraph object belongs
+     * @param labels labels that are displayed on the x-axis
+     * @param data data that is rendered in the graph
+     */
     public InformationGraph( String id, String group, String[] labels, GraphData... data ) {
         super( id, group );
         this.data = data;
@@ -52,6 +60,9 @@ public class InformationGraph extends Information {
     }
 
 
+    /**
+     * The enum GraphType defines the types of graphs that are supported by the WebUI
+     */
     public enum GraphType {
         LINE( "line" ),
         BAR( "bar" ),

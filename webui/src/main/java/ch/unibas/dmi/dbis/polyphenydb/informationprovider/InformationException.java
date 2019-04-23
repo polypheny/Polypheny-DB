@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
 
 
+/**
+ * Generic Information Exception
+ */
 public class InformationException extends RuntimeException {
 
     public InformationException( String message ) {

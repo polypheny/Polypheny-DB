@@ -55,11 +55,21 @@ public class InformationManager {
     }
 
 
+    /**
+     * Add a WebUI page to the InformationManager
+     *
+     * @param p page to add
+     */
     public void addPage( InformationPage p ) {
         this.pages.put( p.getId(), p );
     }
 
 
+    /**
+     * Add one or multiple WebUI groups to the InformationManager
+     *
+     * @param groups groups to add
+     */
     public void addGroup( InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
             this.groups.put( g.getId(), g );
@@ -67,6 +77,11 @@ public class InformationManager {
     }
 
 
+    /**
+     * Register one or multiple Information objects in the InformationManager
+     *
+     * @param infos Information objects to register
+     */
     public void registerInformation( Information... infos ) {
         for ( Information i : infos ) {
             this.informationMap.put( i.getId(), i );
@@ -74,6 +89,11 @@ public class InformationManager {
     }
 
 
+    /**
+     * Remove one or multiple Information Object from the InformationManager
+     *
+     * @param infos Information Object to remove
+     */
     public void removeInformation( Information... infos ) {
         for ( Information i : infos ) {
             this.informationMap.remove( i.getId(), i );
@@ -81,11 +101,22 @@ public class InformationManager {
     }
 
 
+    /**
+     * Get the Information object with a certain key
+     *
+     * @param key of the Information object that should be returned
+     * @return Information object with key <i>key</i>
+     */
     public Information getInformation( String key ) {
         return this.informationMap.get( key );
     }
 
 
+    /**
+     * Returns the list of pages of the Information Manager as JSON using Gson
+     *
+     * @return list of pages of the Information Manager as JSON
+     */
     public String getPageList() {
         InformationPage[] pages1 = new InformationPage[this.pages.size()];
         int counter = 0;
@@ -98,6 +129,12 @@ public class InformationManager {
     }
 
 
+    /**
+     * Get a certain page as JSON using Gson
+     *
+     * @param id id of the page that should be returned
+     * @return page as JSON string
+     */
     public String getPage( String id ) {
         InformationPage p = this.pages.get( id );
 
@@ -115,6 +152,9 @@ public class InformationManager {
     }
 
 
+    /**
+     * Send an updated Information object as Json via Websocket to the WebUI
+     */
     public void notify( Information i ) {
         try {
             InformationWebSocket.broadcast( i.toString() );

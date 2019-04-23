@@ -72,7 +72,8 @@ public class InformationServerTest {
         Information h2 = new InformationHeader( "i.header1.4", "group1.4", "Group 1.4" );
         Information h3 = new InformationHtml( "html1", "group1.3", "Test of <b>html</b>" );
         Information h4 = new InformationHtml( "html2", "group1.4", "Test of <i>html</i>" );
-        im.registerInformation( h1, h2, h3, h4 );
+        Information h5 = new InformationLink( "h.link", "group1.3", "config", "/config" );
+        im.registerInformation( h1, h2, h3, h4, h5 );
         im.addGroup( g3, g4 );
 
         im.registerInformation( i1, i2, i3, i5, i6 );
