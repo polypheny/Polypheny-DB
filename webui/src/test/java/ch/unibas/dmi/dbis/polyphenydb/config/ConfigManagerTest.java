@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
+import com.google.gson.Gson;
 import java.math.BigDecimal;
 import org.junit.Assert;
 import org.junit.Test;
@@ -169,6 +170,18 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertArrayEquals( otherTable[0], c.getIntTable()[0] );
         Assert.assertTrue( o.wasNotified() );
         Assert.assertEquals( 1, o.n );
+    }
+
+
+    @Test
+    public void properties() {
+        Config c = new ConfigString( "socket", "someSocket" );
+        cm.registerConfig( c );
+        Assert.assertEquals( "/configWebSocket", c.getString() );
+
+        Config c2 = new ConfigInteger( "port", 123 );
+        cm.registerConfig( c2 );
+        Assert.assertEquals( 8080, c2.getInt() );
     }
 
 

@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import com.google.gson.Gson;
 import java.math.BigDecimal;
 
 
@@ -69,5 +70,12 @@ public class ConfigDouble extends ConfigScalar {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public boolean setString( String value ) {
+        Gson gson = new Gson();
+        Double d = gson.fromJson( value, Double.class );
+        return setDouble( d );
     }
 }

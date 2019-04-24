@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import com.google.gson.Gson;
+
+
 public class ConfigLong extends ConfigScalar {
 
     long value;
@@ -60,5 +63,13 @@ public class ConfigLong extends ConfigScalar {
         } else {
             return false;
         }
+    }
+
+
+    @Override
+    public boolean setString( String value ) {
+        Gson gson = new Gson();
+        Long l = gson.fromJson( value, Long.class );
+        return setLong( l );
     }
 }

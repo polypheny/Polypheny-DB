@@ -29,7 +29,10 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -46,11 +49,23 @@ public class ConfigManager {
     private ConcurrentMap<String, WebUiGroup> uiGroups;
     private ConcurrentMap<String, WebUiPage> uiPages;
 
+    private Properties properties;
+
 
     private ConfigManager() {
         this.configs = new ConcurrentHashMap<>();
         this.uiGroups = new ConcurrentHashMap<>();
         this.uiPages = new ConcurrentHashMap<>();
+
+        try {
+            InputStream stream = ConfigManager.class.getClassLoader().getResourceAsStream( "configServer.properties" );
+            Properties p = new Properties();
+            p.load( stream );
+            this.properties = p;
+        } catch ( Exception e ) {
+            System.err.println( "Could not load properties file." );
+            e.printStackTrace();
+        }
     }
 
 
@@ -75,7 +90,13 @@ public class ConfigManager {
         if ( this.configs.get( config.getKey() ) != null ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
-            this.configs.put( config.getKey(), config );
+            if ( properties.getProperty( config.getKey() ) != null ) {
+                config.setString( properties.getProperty( config.getKey() ) );
+                this.configs.put( config.getKey(), config );
+            } else {
+                this.configs.put( config.getKey(), config );
+            }
+
         }
     }
 

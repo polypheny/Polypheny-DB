@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import com.google.gson.Gson;
+
+
 public class ConfigBoolean extends ConfigScalar {
 
     boolean value;
@@ -64,4 +67,10 @@ public class ConfigBoolean extends ConfigScalar {
     }
 
 
+    @Override
+    public boolean setString( String value ) {
+        Gson gson = new Gson();
+        boolean b = gson.fromJson( value, Boolean.class );
+        return setBoolean( b );
+    }
 }

@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import com.google.gson.Gson;
+
+
 public class ConfigInteger extends ConfigScalar {
 
     private int value;
@@ -66,6 +69,14 @@ public class ConfigInteger extends ConfigScalar {
     @Override
     public long getLong() {
         return (long) this.value;
+    }
+
+
+    @Override
+    public boolean setString( String value ) {
+        Gson gson = new Gson();
+        Integer i = gson.fromJson( value, Integer.class );
+        return setInt( i );
     }
 
 }

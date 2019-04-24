@@ -202,9 +202,9 @@ public abstract class Config {
 
     /**
      * Set the value of this config.
+     * This method is required, if you want that a ConfigSubclass supports values being loaded from a properties file.
      *
      * @param value New value for this config
-     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as String.
      */
     public boolean setString( final String value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type String on a configuration element of type " + this.getClass().getSimpleName() + "!" );
