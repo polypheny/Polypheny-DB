@@ -26,11 +26,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+/**
+ * an Information object containing html code that will be rendered in the UI
+ */
 public class InformationHtml extends Information {
 
     private String html;
 
 
+    /**
+     * constructor
+     */
     public InformationHtml( final String id, final String group, final String html ) {
         super( id, group );
         this.html = html;

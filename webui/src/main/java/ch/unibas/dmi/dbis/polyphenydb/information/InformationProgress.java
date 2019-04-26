@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+/**
+ * an Information object that will displayed as a progress bar in the UI
+ */
 public class InformationProgress extends Information {
 
     private String label;
@@ -35,6 +38,14 @@ public class InformationProgress extends Information {
     private int max = 100;
 
 
+    /**
+     * constructor
+     *
+     * @param id id of this Information object
+     * @param group group to which this Information object belongs to
+     * @param label label that will be displayed near the progress bar
+     * @param value value of the progress bar
+     */
     public InformationProgress( final String id, final String group, final String label, final int value ) {
         super( id, group );
         this.label = label;

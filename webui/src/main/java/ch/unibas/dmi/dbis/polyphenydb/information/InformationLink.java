@@ -26,12 +26,23 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+/**
+ * an Information object containing a routerLink linking to a subpage of the UI
+ */
 public class InformationLink extends Information {
 
     private String label;
     private String[] routerLink;
 
 
+    /**
+     * constructor
+     *
+     * @param id id of this Information object
+     * @param group id of the group this object belongs to
+     * @param label name of the link
+     * @param routerLink routerLink to a subpage of the UI
+     */
     public InformationLink( final String id, final String group, final String label, final String... routerLink ) {
         super( id, group );
         this.label = label;

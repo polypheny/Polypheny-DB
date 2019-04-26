@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+/**
+ * Background color for an InformationGroup
+ */
 public enum GroupColor {
     BLUE,
     LIGHTBLUE,

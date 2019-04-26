@@ -36,6 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+/**
+ * the InformationManager manages information objects, InformationGroups and InformationPages
+ */
 public class InformationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( InformationManager.class );

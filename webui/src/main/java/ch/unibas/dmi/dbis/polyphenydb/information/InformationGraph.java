@@ -26,11 +26,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+/**
+ * an information object that contains data for a graph that will be displayed in the ui
+ */
 public class InformationGraph extends Information {
 
     private GraphData[] data;
     private String[] labels;
-    private GraphType graphType = GraphType.LINE;
+    private GraphType graphType;
 
 
     /**
@@ -59,6 +62,7 @@ public class InformationGraph extends Information {
 
     /**
      * Set the typ of graph
+     * Types PIE, DOUGHNUT and POLARAREA can only be set if this.data has only one GraphData element
      *
      * @param type The type of graph
      */
@@ -75,7 +79,11 @@ public class InformationGraph extends Information {
         return this;
     }
 
-
+    /**
+     * Get the GraphType
+     *
+     * @return graphType enum
+     */
     public GraphType getGraphType() {
         return graphType;
     }
@@ -111,12 +119,29 @@ public class InformationGraph extends Information {
     }
 
 
+    /**
+     * The data in a graph, e.g. a line in the line-graph, with its label
+     */
     public static class GraphData {
 
+
+        /**
+         * Data for the graph, e.g. a line in the line-graph
+         */
         private final int[] data;
+
+
+        /**
+         * the label that describes the data
+         */
         private final String label;
 
 
+        /**
+         * GraphData constructor
+         * @param label the label that describes the data
+         * @param data data for the graph, e.g. a line in the line-graph
+         */
         public GraphData( final String label, final int[] data ) {
             this.label = label;
             this.data = data;
