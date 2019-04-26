@@ -23,32 +23,27 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-public class InformationHeader extends Information {
+public enum InformationType {
+    HEADER( "header" ),
+    PROGRESS( "progress" ),
+    LINK( "link" ),
+    HTML( "html" ),
+    GRAPH( "graph" );
 
-    private String label;
-    private String[] routerLink;
+
+    private final String type;
 
 
-    public InformationHeader( String id, String group, String header ) {
-        super( id, group );
-        this.type = InformationType.HEADER;
-        this.label = header;
-        this.uiOrder = 1;
+    InformationType( final String t ) {
+        this.type = t;
     }
 
 
-    public InformationHeader( String id, String group, String header, String... link ) {
-        this( id, group, header );
-        this.routerLink = link;
+    @Override
+    public String toString() {
+        return this.type;
     }
-
-
-    public void updateHeader( String header ) {
-        this.label = header;
-        InformationManager.getInstance().notify( this );
-    }
-
 }

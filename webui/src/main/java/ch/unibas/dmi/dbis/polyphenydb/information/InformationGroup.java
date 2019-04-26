@@ -23,17 +23,53 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-public class GraphData {
-
-    private int[] data;
-    private String label;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
-    public GraphData( String label, int[] data ) {
-        this.label = label;
-        this.data = data;
+public class InformationGroup {
+
+    private final String id;
+    private final String pageId;
+    private String color;
+    private int uiOrder;
+    private final ConcurrentMap<String, Information> list = new ConcurrentHashMap<>();
+
+
+    public InformationGroup( final String id, final String pageId ) {
+        this.id = id;
+        this.pageId = pageId;
     }
+
+
+    public void setColor( String color ) {
+        this.color = color;
+    }
+
+
+    public void addInformation( Information... infos ) {
+        for ( Information i : infos ) {
+            this.list.put( i.getId(), i );
+        }
+    }
+
+
+    public InformationGroup setOrder( int order ) {
+        this.uiOrder = order;
+        return this;
+    }
+
+
+    public String getId() {
+        return id;
+    }
+
+
+    public String getPageId() {
+        return pageId;
+    }
+
 }

@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 public class InformationGraph extends Information {
@@ -42,21 +42,37 @@ public class InformationGraph extends Information {
      * @param data data that is rendered in the graph
      */
     public InformationGraph( String id, String group, String[] labels, GraphData... data ) {
-        super( id, group );
+        super( id, group, InformationType.GRAPH );
         this.data = data;
         this.labels = labels;
-        this.type = InformationType.GRAPH;
     }
 
 
-    public InformationGraph ofType( GraphType t ) {
-        this.graphType = t;
+    /**
+     * Set the typ of graph
+     *
+     * @param type The type of graph
+     */
+    public InformationGraph setType( final GraphType type ) {
+        this.graphType = type;
         return this;
     }
 
 
+    /**
+     * Set the data for this graph
+     *
+     * @param data new GraphData objects
+     */
     public void updateGraph( GraphData... data ) {
         this.data = data;
+    }
+
+
+    @Override
+    public InformationGraph setOrder( final int order ) {
+        super.setOrder( order );
+        return this;
     }
 
 
@@ -85,4 +101,18 @@ public class InformationGraph extends Information {
             return this.type;
         }
     }
+
+
+    public static class GraphData {
+
+        private final int[] data;
+        private final String label;
+
+
+        public GraphData( final String label, final int[] data ) {
+            this.label = label;
+            this.data = data;
+        }
+    }
+
 }

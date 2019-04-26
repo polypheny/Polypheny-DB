@@ -23,29 +23,37 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
+import ch.unibas.dmi.dbis.polyphenydb.webui.InformationWebSocket;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class InformationManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( InformationManager.class );
+
     private static InformationManager instance;
-    private ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<String, Information>();
-    private ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<String, InformationGroup>();
-    private ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<String, InformationPage>();
+
+    private ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
 
     private InformationManager() {
+        // empty and private constructor to ensure singelton is applied by calling get instance
     }
 
 
     /**
-     * singleton pattern
+     * Singleton
      */
     public static InformationManager getInstance() {
         if ( instance == null ) {
@@ -58,10 +66,10 @@ public class InformationManager {
     /**
      * Add a WebUI page to the InformationManager
      *
-     * @param p page to add
+     * @param page page to add
      */
-    public void addPage( InformationPage p ) {
-        this.pages.put( p.getId(), p );
+    public void addPage( final InformationPage page ) {
+        this.pages.put( page.getId(), page );
     }
 
 
@@ -70,7 +78,7 @@ public class InformationManager {
      *
      * @param groups groups to add
      */
-    public void addGroup( InformationGroup... groups ) {
+    public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
             this.groups.put( g.getId(), g );
         }
@@ -82,7 +90,7 @@ public class InformationManager {
      *
      * @param infos Information objects to register
      */
-    public void registerInformation( Information... infos ) {
+    public void registerInformation( final Information... infos ) {
         for ( Information i : infos ) {
             this.informationMap.put( i.getId(), i );
         }
@@ -94,7 +102,7 @@ public class InformationManager {
      *
      * @param infos Information Object to remove
      */
-    public void removeInformation( Information... infos ) {
+    public void removeInformation( final Information... infos ) {
         for ( Information i : infos ) {
             this.informationMap.remove( i.getId(), i );
         }
@@ -106,9 +114,14 @@ public class InformationManager {
      *
      * @param key of the Information object that should be returned
      * @return Information object with key <i>key</i>
+     * @throws InformationRuntimeException If there is no informtion element with that key
      */
-    public Information getInformation( String key ) {
-        return this.informationMap.get( key );
+    public Information getInformation( final String key ) {
+        if ( informationMap.containsKey( key ) ) {
+            return this.informationMap.get( key );
+        } else {
+            throw new InformationRuntimeException( "There is no information element registered with that key: " + key );
+        }
     }
 
 
@@ -132,10 +145,10 @@ public class InformationManager {
     /**
      * Get a certain page as JSON using Gson
      *
-     * @param id id of the page that should be returned
+     * @param id The id of the page that should be returned
      * @return page as JSON string
      */
-    public String getPage( String id ) {
+    public String getPage( final String id ) {
         InformationPage p = this.pages.get( id );
 
         for ( Information i : this.informationMap.values() ) {
@@ -147,19 +160,18 @@ public class InformationManager {
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
-        //System.out.println( p.toString() );
         return p.toString();
     }
 
 
     /**
-     * Send an updated Information object as Json via Websocket to the WebUI
+     * Send an updated information object as JSON via Websocket to the WebUI
      */
-    public void notify( Information i ) {
+    public void notify( final Information i ) {
         try {
             InformationWebSocket.broadcast( i.toString() );
         } catch ( IOException e ) {
-            e.printStackTrace();
+            LOGGER.info( "Error while sending information object to web ui!", e );
         }
     }
 

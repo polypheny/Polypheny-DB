@@ -23,55 +23,27 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-public class InformationProgress extends Information {
+public class InformationHtml extends Information {
 
-    private String label;
-    private int value;
-    private String color = "dynamic";
-    private int min = 0;
-    private int max = 100;
+    private String html;
 
 
-    public InformationProgress( String id, String group, String label, int value ) {
-        super( id, group );
-        this.type = InformationType.PROGRESS;
-        this.label = label;
-        this.value = value;
+    public InformationHtml( final String id, final String group, final String html ) {
+        super( id, group, InformationType.HTML );
+        this.html = html;
     }
 
 
     /**
-     * @param color default: dynamic
-     * info/blue ("info" or "blue" will give you a blue progress bar)
-     * success/green
-     * warning/yellow
-     * danger/red
-     * dark/black
-     * (see render-item.component.ts -> setProgressColor() in Webui)
+     * Update the content of a InformationHtml object
+     *
+     * @param html The HTML code to set for this element
      */
-    public InformationProgress setColor( String color ) {
-        this.color = color;
-        return this;
-    }
-
-
-    public InformationProgress setMin( int min ) {
-        this.min = min;
-        return this;
-    }
-
-
-    public InformationProgress setMax( int max ) {
-        this.max = max;
-        return this;
-    }
-
-
-    public void updateProgress( int value ) {
-        this.value = value;
+    public void updateHtml( final String html ) {
+        this.html = html;
         InformationManager.getInstance().notify( this );
     }
 

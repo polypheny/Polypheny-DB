@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import java.io.IOException;
@@ -34,37 +34,41 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @WebSocket
 public class InformationWebSocket {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( InformationWebSocket.class );
+
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 
 
     @OnWebSocketConnect
-    public void connected( Session session ) {
-        //System.out.println( "Ui connected to Websocket" );
+    public void connected( final Session session ) {
+        LOGGER.debug( "UI connected to websocket" );
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
-    public void closed( Session session, int statusCode, String reason ) {
-        //System.out.println( "Ui left Websocket" );
+    public void closed( final Session session, final int statusCode, final String reason ) {
+        LOGGER.debug( "UI disconnected from websocket" );
         sessions.remove( session );
     }
 
 
     @OnWebSocketMessage
-    public void configWebSocket( Session session, String message ) throws IOException {
-        System.out.println( "Got: " + message );   // Print message
+    public void configWebSocket( final Session session, final String message ) throws IOException {
+        LOGGER.debug( "Received: " + message ); // Log message
         session.getRemote().sendString( message ); // and send it back
     }
 
 
-    public static void broadcast( String msg ) throws IOException {
-        //System.out.println("broadcasting:\n"+msg);
+    public static void broadcast( final String msg ) throws IOException {
+        LOGGER.trace( "broadcasting:\n" + msg );
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }

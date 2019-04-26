@@ -23,10 +23,11 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.informationprovider.InformationGraph.GraphType;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import java.util.Random;
 import java.util.Timer;
@@ -63,7 +64,7 @@ public class InformationServerTest {
         int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
         GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
         Information i5 = new InformationGraph( "i.graph", "group1.1", labels, graphData );
-        Information i6 = new InformationGraph( "i.graph2", "group1.2", labels, graphData ).ofType( GraphType.BAR );
+        Information i6 = new InformationGraph( "i.graph2", "group1.2", labels, graphData ).setType( GraphType.BAR );
 
         InformationGroup g3 = new InformationGroup( "group1.3", "page1" );
         InformationGroup g4 = new InformationGroup( "group1.4", "page1" );
@@ -85,7 +86,7 @@ public class InformationServerTest {
             @Override
             public void run() {
                 Random r = new Random();
-                im.getInformation( "i.progress" ).updateProgress( r.nextInt( 100 ) );
+                im.getInformation( "i.progress" ).unwrap( InformationProgress.class ).updateProgress( r.nextInt( 100 ) );
             }
         }, 5000, 5000 );
     }

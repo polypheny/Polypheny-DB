@@ -23,49 +23,36 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-import org.junit.Test;
+public class InformationHeader extends Information {
+
+    private String text;
+    private String[] routerLink;
 
 
-public class InformationManagerTest {
-
-    private InformationManager im;
-
-
-    static {
-        InformationManager im = InformationManager.getInstance();
-
-        InformationPage p = new InformationPage( "page1", "Page 1" );
-        InformationGroup g = new InformationGroup( "group1.1", "page1" );
-        im.addPage( p );
-        im.addGroup( g );
-
-        Information i1 = new InformationHeader( "i.header", "group1.1", "Gruppe 1" );
-        Information i2 = new InformationProgress( "i.progress", "group1.1", "progval", 30 );
-        Information i4 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" );
-
-        im.registerInformation( i1, i2, i4 );
+    public InformationHeader( String id, String group, String text ) {
+        super( id, group, InformationType.HEADER );
+        this.text = text;
+        this.uiOrder = 1;
     }
 
 
-    public InformationManagerTest() {
-        this.im = InformationManager.getInstance();
+    public InformationHeader( String id, String group, String text, String... link ) {
+        this( id, group, text );
+        this.routerLink = link;
     }
 
 
-    @Test
-    public void getPage() {
-        System.out.println( this.im.getPage( "page1" ) );
-        //Gson gson = new Gson();
-        //InformationPage p = gson.fromJson( this.im.getPage( "page1" ), InformationPage.class );
-    }
-
-
-    @Test
-    public void getPageList() {
-        System.out.println( this.im.getPageList() );
+    /**
+     * Set the text of this header element
+     *
+     * @param text The text to set for this header element
+     */
+    public void updateText( final String text ) {
+        this.text = text;
+        InformationManager.getInstance().notify( this );
     }
 
 }

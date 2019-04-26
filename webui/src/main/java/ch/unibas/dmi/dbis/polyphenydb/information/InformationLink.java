@@ -23,27 +23,32 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-public enum InformationType {
-    HEADER( "header" ),
-    PROGRESS( "progress" ),
-    LINK( "link" ),
-    HTML( "html" ),
-    GRAPH( "graph" );
+public class InformationLink extends Information {
+
+    private String label;
+    private String[] routerLink;
 
 
-    private final String type;
-
-
-    InformationType( String t ) {
-        this.type = t;
+    public InformationLink( final String id, final String group, final String label, final String... routerLink ) {
+        super( id, group, InformationType.LINK );
+        this.label = label;
+        this.routerLink = routerLink;
     }
 
 
-    @Override
-    public String toString() {
-        return this.type;
+    /**
+     * Update a InformationLink object
+     *
+     * @param label the name of the link when it is displayed
+     * @param routerLink Angular route to another subpage of the WebUI
+     */
+    public void updateLink( final String label, final String... routerLink ) {
+        this.label = label;
+        this.routerLink = routerLink;
+        InformationManager.getInstance().notify( this );
     }
+
 }

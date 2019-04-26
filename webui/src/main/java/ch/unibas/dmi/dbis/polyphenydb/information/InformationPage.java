@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 import com.google.gson.Gson;
@@ -34,32 +34,32 @@ import java.util.concurrent.ConcurrentMap;
 
 public class InformationPage {
 
-    private String id;
-    private String name;//title
+    private final String id;
+    private String name; // title
     private String description;
     private String icon;
     private boolean mansonry = false;
-    ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<String, InformationGroup>();
+    private ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
 
 
-    public InformationPage( String id, String title ) {
+    public InformationPage( final String id, final String title ) {
         this.id = id;
         this.name = title;
     }
 
 
-    public InformationPage( String id, String title, String description ) {
+    public InformationPage( final String id, final String title, final String description ) {
         this( id, title );
         this.description = description;
     }
 
 
-    public void setMansonry( boolean mansonry ) {
+    public void setMansonry( final boolean mansonry ) {
         this.mansonry = mansonry;
     }
 
 
-    public void addGroup( InformationGroup... groups ) {
+    public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
             this.groups.put( g.getId(), g );
         }
@@ -71,7 +71,7 @@ public class InformationPage {
     }
 
 
-    public void setIcon( String icon ) {
+    public void setIcon( final String icon ) {
         this.icon = icon;
     }
 
@@ -97,7 +97,6 @@ public class InformationPage {
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
                 .create();
-        //Gson gson = new Gson();
         return gson.toJson( this );
     }
 }

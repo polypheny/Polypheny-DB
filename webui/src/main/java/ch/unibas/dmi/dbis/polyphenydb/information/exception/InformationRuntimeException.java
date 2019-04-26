@@ -23,15 +23,15 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.informationprovider;
+package ch.unibas.dmi.dbis.polyphenydb.information.exception;
 
 
 /**
  * Generic Information Exception
  */
-public class InformationException extends RuntimeException {
+public class InformationRuntimeException extends RuntimeException {
 
-    public InformationException( String message ) {
+    public InformationRuntimeException( String message ) {
         super( message );
     }
 

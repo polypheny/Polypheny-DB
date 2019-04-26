@@ -26,14 +26,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import static spark.Spark.*;
+import static spark.Spark.get;
+import static spark.Spark.port;
+import static spark.Spark.post;
+import static spark.Spark.webSocket;
 
-import ch.unibas.dmi.dbis.polyphenydb.informationprovider.*;
-import ch.unibas.dmi.dbis.polyphenydb.informationprovider.InformationGraph.GraphType;
-import com.google.gson.Gson;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -41,35 +41,31 @@ import java.util.TimerTask;
  */
 public class InformationServer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( InformationServer.class );
+
 
     public InformationServer() {
 
         port( 8082 );
 
-        //needs to be called before defining routes!
+        // Needs to be called before defining routes!
         webSockets();
 
         enableCORS();
 
         informationRoutes();
 
-    }
-
-
-    public static void main( String[] args ) {
-        new InformationServer();
-        System.out.println( "InformationServer running.." );
+        LOGGER.info( "InformationServer started." );
     }
 
 
     private void webSockets() {
-        //Websockets need to be defined before the post/get requests
+        // Websockets need to be defined before the post/get requests
         webSocket( "/informationWebSocket", InformationWebSocket.class );
     }
 
 
     private void informationRoutes() {
-        Gson gson = new Gson();
         InformationManager im = InformationManager.getInstance();
 
         get( "/getPageList", ( req, res ) -> im.getPageList() );
@@ -77,10 +73,9 @@ public class InformationServer {
         post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: "page1"}
             try {
-                //System.out.println("get page "+req.body());
                 return im.getPage( req.body() );
             } catch ( Exception e ) {
-                //if input not number or page does not exist
+                // if input not number or page does not exist
                 return "";
             }
         } );
@@ -89,7 +84,7 @@ public class InformationServer {
 
 
     /**
-     * to avoid the CORS problem, when the ConfigServer receives requests from the WebUi
+     * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
      */
     private static void enableCORS() {
         ConfigServer.enableCORS();
