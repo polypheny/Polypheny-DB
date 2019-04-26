@@ -32,7 +32,7 @@ public class InformationHtml extends Information {
 
 
     public InformationHtml( final String id, final String group, final String html ) {
-        super( id, group, InformationType.HTML );
+        super( id, group );
         this.html = html;
     }
 

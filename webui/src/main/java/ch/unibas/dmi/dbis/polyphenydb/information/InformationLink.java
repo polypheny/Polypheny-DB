@@ -33,7 +33,7 @@ public class InformationLink extends Information {
 
 
     public InformationLink( final String id, final String group, final String label, final String... routerLink ) {
-        super( id, group, InformationType.LINK );
+        super( id, group );
         this.label = label;
         this.routerLink = routerLink;
     }

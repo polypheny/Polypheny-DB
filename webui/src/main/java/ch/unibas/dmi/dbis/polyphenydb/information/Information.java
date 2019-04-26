@@ -41,7 +41,7 @@ public abstract class Information {
      * The field type is used by Gson and is needed for the frontend
      */
     @SuppressWarnings("FieldCanBeLocal")
-    private final InformationType type;
+    final String type;
 
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
@@ -62,10 +62,10 @@ public abstract class Information {
      * @param id Unique id for this Information object
      * @param group The id of the InformationGroup to which this information belongs
      */
-    Information( final String id, final String group, final InformationType type ) {
+    Information( final String id, final String group ) {
         this.id = id;
         this.informationGroup = group;
-        this.type = type;
+        this.type = this.getClass().getSimpleName();
     }
 
 
@@ -119,8 +119,7 @@ public abstract class Information {
      *
      * @return object as JSON string
      */
-    @Override
-    public String toString() {
+    public String asJson() {
         Gson gson = new Gson();
         return gson.toJson( this );
     }

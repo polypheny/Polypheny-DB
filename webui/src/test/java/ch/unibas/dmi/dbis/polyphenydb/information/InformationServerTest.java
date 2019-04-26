@@ -55,7 +55,6 @@ public class InformationServerTest {
         im.addPage( p );
         im.addGroup( g1, g2 );
 
-        Information i1 = new InformationHeader( "i.header", "group1.1", "Gruppe 1" );
         Information i2 = new InformationProgress( "i.progress", "group1.1", "progval", 70 ).setColor( ProgressColor.DYNAMIC );
         Information i3 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" ).setOrder( 2 );
 
@@ -69,15 +68,13 @@ public class InformationServerTest {
         InformationGroup g3 = new InformationGroup( "group1.3", "page1" );
         InformationGroup g4 = new InformationGroup( "group1.4", "page1" ).setColor( GroupColor.LIGHTBLUE );
 
-        Information h1 = new InformationHeader( "i.header1.3", "group1.3", "Group 1.3" );
-        Information h2 = new InformationHeader( "i.header1.4", "group1.4", "Group 1.4" );
         Information h3 = new InformationHtml( "html1", "group1.3", "Test of <b>html</b>" );
         Information h4 = new InformationHtml( "html2", "group1.4", "Test of <i>html</i>" );
         Information h5 = new InformationLink( "h.link", "group1.3", "config", "/config" );
-        im.registerInformation( h1, h2, h3, h4, h5 );
+        im.registerInformation( h3, h4, h5 );
         im.addGroup( g3, g4 );
 
-        im.registerInformation( i1, i2, i3, i5, i6 );
+        im.registerInformation( i2, i3, i5, i6 );
 
         System.out.println( im.getInformation( "i.progress" ) );
 

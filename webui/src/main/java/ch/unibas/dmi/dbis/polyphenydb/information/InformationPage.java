@@ -85,8 +85,7 @@ public class InformationPage {
     }
 
 
-    @Override
-    public String toString() {
+    public String asJson() {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()

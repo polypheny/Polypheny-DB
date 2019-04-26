@@ -41,8 +41,8 @@ public class InformationGraph extends Information {
      * @param labels labels that are displayed on the x-axis
      * @param data data that is rendered in the graph
      */
-    public InformationGraph( String id, String group, String[] labels, GraphData... data ) {
-        super( id, group, InformationType.GRAPH );
+    public InformationGraph( final String id, final String group, final String[] labels, final GraphData... data ) {
+        super( id, group );
         this.data = data;
         this.labels = labels;
     }

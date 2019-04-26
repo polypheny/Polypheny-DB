@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -42,11 +43,10 @@ public class InformationManagerTest {
         im.addPage( p );
         im.addGroup( g );
 
-        Information i1 = new InformationHeader( "i.header", "group1.1", "Gruppe 1" );
-        Information i2 = new InformationProgress( "i.progress", "group1.1", "progval", 30 );
-        Information i4 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" );
+        Information i1 = new InformationProgress( "i.progress", "group1.1", "progval", 30 );
+        Information i2 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" );
 
-        im.registerInformation( i1, i2, i4 );
+        im.registerInformation( i1, i2 );
     }
 
 
@@ -66,6 +66,13 @@ public class InformationManagerTest {
     @Test
     public void getPageList() {
         System.out.println( this.im.getPageList() );
+    }
+
+
+    @Test
+    public void informationType() {
+        Information i1 = new InformationHtml( "id", "group", "html" );
+        Assert.assertEquals( "InformationHtml", i1.type );
     }
 
 }

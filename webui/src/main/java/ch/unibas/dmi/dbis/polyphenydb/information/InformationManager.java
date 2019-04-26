@@ -160,7 +160,7 @@ public class InformationManager {
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
-        return p.toString();
+        return p.asJson();
     }
 
 
@@ -169,7 +169,7 @@ public class InformationManager {
      */
     public void notify( final Information i ) {
         try {
-            InformationWebSocket.broadcast( i.toString() );
+            InformationWebSocket.broadcast( i.asJson() );
         } catch ( IOException e ) {
             LOGGER.info( "Error while sending information object to web ui!", e );
         }

@@ -36,7 +36,7 @@ public class InformationProgress extends Information {
 
 
     public InformationProgress( final String id, final String group, final String label, final int value ) {
-        super( id, group, InformationType.PROGRESS );
+        super( id, group );
         this.label = label;
         this.value = value;
     }
