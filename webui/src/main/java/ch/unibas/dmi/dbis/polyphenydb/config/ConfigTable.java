@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import java.math.BigDecimal;
 
 
@@ -273,5 +274,10 @@ public class ConfigTable extends Config {
         }
     }
 
+
+    @Override
+    void setValueFromFile( final com.typesafe.config.Config conf ) {
+        throw new ConfigRuntimeException( "Reading tables of values from config files is not supported yet." );
+    }
 
 }

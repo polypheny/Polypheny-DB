@@ -26,6 +26,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
+
+
 public class ConfigInteger extends ConfigScalar {
 
     private int value;
@@ -66,6 +71,21 @@ public class ConfigInteger extends ConfigScalar {
     @Override
     public long getLong() {
         return (long) this.value;
+    }
+
+
+    @Override
+    void setValueFromFile( final Config conf ) {
+        final int value;
+        try {
+            value = conf.getInt( this.getKey() ); // read value from config file
+        } catch ( ConfigException.Missing e ) {
+            // This should have been checked before!
+            throw new ConfigRuntimeException( "No config with this key found in the configuration file." );
+        } catch ( ConfigException.WrongType e ) {
+            throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
+        }
+        setInt( value );
     }
 
 }
