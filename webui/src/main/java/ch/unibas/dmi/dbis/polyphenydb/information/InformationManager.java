@@ -48,7 +48,7 @@ public class InformationManager {
 
 
     private InformationManager() {
-        // empty and private constructor to ensure singelton is applied by calling get instance
+        // empty and private constructor to ensure singleton is applied by calling get instance
     }
 
 

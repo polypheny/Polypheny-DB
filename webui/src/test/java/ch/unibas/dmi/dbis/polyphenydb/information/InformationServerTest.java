@@ -62,8 +62,8 @@ public class InformationServerTest {
         int[] graphData1 = { 5, 2, 7, 3, 2, 1 };
         int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
         GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
-        Information i5 = new InformationGraph( "i.graph", "group1.1", labels, graphData );
-        Information i6 = new InformationGraph( "i.graph2", "group1.2", labels, graphData ).setType( GraphType.BAR );
+        Information i5 = new InformationGraph( "i.graph", "group1.1", GraphType.LINE, labels, graphData );
+        Information i6 = new InformationGraph( "i.graph2", "group1.2", GraphType.BAR, labels, graphData );
 
         InformationGroup g3 = new InformationGroup( "group1.3", "page1" );
         InformationGroup g4 = new InformationGroup( "group1.4", "page1" ).setColor( GroupColor.LIGHTBLUE );
@@ -86,6 +86,22 @@ public class InformationServerTest {
                 im.getInformation( "i.progress" ).unwrap( InformationProgress.class ).updateProgress( r.nextInt( 100 ) );
             }
         }, 1000, 1000 );
+
+        Timer timer2 = new Timer();
+        timer2.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                InformationGraph i = (InformationGraph) im.getInformation( "i.graph" );
+                if ( i.getGraphType() == GraphType.LINE ) {
+                    i.updateType( GraphType.RADAR );
+                } else if ( i.getGraphType() == GraphType.RADAR ) {
+                    i.updateType( GraphType.BAR );
+                } else if ( i.getGraphType() == GraphType.BAR ) {
+                    i.updateType( GraphType.LINE );
+                }
+            }
+        }, 5000, 5000 );
+
     }
 
 

@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,5 +76,27 @@ public class InformationManagerTest {
         Information i1 = new InformationHtml( "id", "group", "html" );
         Assert.assertEquals( "InformationHtml", i1.type );
     }
+
+
+    @Test(expected = RuntimeException.class)
+    public void graphThrowingError() {
+        String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
+        int[] graphData1 = { 5, 2, 7, 3, 2, 1 };
+        int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
+        GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
+        Information i1 = new InformationGraph( "i.graph", "group1.1", GraphType.PIE, labels, graphData );
+    }
+
+
+    @Test
+    public void changeGraphType() {
+        String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
+        int[] graphData1 = { 5, 2, 7, 3, 2, 1 };
+        int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
+        GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
+        InformationGraph i1 = new InformationGraph( "i.graph", "group1.1", GraphType.LINE, labels, graphData );
+        i1.updateType( GraphType.RADAR );
+    }
+
 
 }

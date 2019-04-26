@@ -39,11 +39,20 @@ public class InformationGraph extends Information {
      * @param id unique id of the Information object
      * @param group id of the group to which this InformationGraph object belongs
      * @param labels labels that are displayed on the x-axis
-     * @param data data that is rendered in the graph
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String id, final String group, final String[] labels, final GraphData... data ) {
+    public InformationGraph( final String id, final String group, GraphType type, final String[] labels, final GraphData... data ) {
         super( id, group );
+
         this.data = data;
+
+        if ( this.data.length > 1 ) {
+            if ( type == GraphType.PIE || type == GraphType.DOUGHNUT || type == GraphType.POLARAREA ) {
+                throw new RuntimeException( "Graph of type " + type + " can only accept one GraphData object" );
+            }
+        }
+
+        this.graphType = type;
         this.labels = labels;
     }
 
@@ -53,11 +62,23 @@ public class InformationGraph extends Information {
      *
      * @param type The type of graph
      */
-    public InformationGraph setType( final GraphType type ) {
+    public InformationGraph updateType( final GraphType type ) {
+
+        if ( type == GraphType.PIE || type == GraphType.DOUGHNUT || type == GraphType.POLARAREA ) {
+            if ( this.data.length > 1 ) {
+                throw new RuntimeException( "Graph cannot be converted to type " + type + " because this type supports only one GraphData object and this graph currently has more that one GraphData object" );
+            }
+        }
+
         this.graphType = type;
+        InformationManager.getInstance().notify( this );
         return this;
     }
 
+
+    public GraphType getGraphType() {
+        return graphType;
+    }
 
     /**
      * Set the data for this graph
@@ -66,6 +87,7 @@ public class InformationGraph extends Information {
      */
     public void updateGraph( GraphData... data ) {
         this.data = data;
+        InformationManager.getInstance().notify( this );
     }
 
 
@@ -80,26 +102,12 @@ public class InformationGraph extends Information {
      * The enum GraphType defines the types of graphs that are supported by the WebUI
      */
     public enum GraphType {
-        LINE( "line" ),
-        BAR( "bar" ),
-        DOUGHNUT( "doughnut" ),
-        RADAR( "radar" ),
-        PIE( "pie" ),
-        POLARAREA( "polarArea" );
-
-
-        private final String type;
-
-
-        GraphType( String t ) {
-            this.type = t;
-        }
-
-
-        @Override
-        public String toString() {
-            return this.type;
-        }
+        LINE,
+        RADAR,
+        BAR,
+        PIE,
+        DOUGHNUT,
+        POLARAREA;
     }
 
 
