@@ -26,6 +26,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
+
+
 public class ConfigBoolean extends ConfigScalar {
 
     boolean value;
@@ -63,5 +68,19 @@ public class ConfigBoolean extends ConfigScalar {
 
     }
 
+
+    @Override
+    void setValueFromFile( final Config conf ) {
+        final boolean value;
+        try {
+            value = conf.getBoolean( this.getKey() ); // read value from config file
+        } catch ( ConfigException.Missing e ) {
+            // This should have been checked before!
+            throw new ConfigRuntimeException( "No config with this key found in the configuration file." );
+        } catch ( ConfigException.WrongType e ) {
+            throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
+        }
+        setBoolean( value );
+    }
 
 }
