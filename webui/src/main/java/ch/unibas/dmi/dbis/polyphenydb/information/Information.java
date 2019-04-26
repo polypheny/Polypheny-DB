@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
 
 
@@ -39,17 +40,20 @@ public abstract class Information {
     /**
      * The field type is used by Gson and is needed for the frontend
      */
+    @SuppressWarnings("FieldCanBeLocal")
     private final InformationType type;
 
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
      */
-    private String informationGroup;
+    private final String informationGroup;
 
     /**
-     * uiOrder is used by Gson. The information object with lowest uiOrder are rendered first, then those with higher number, then those where uiOrder is null
+     * The information object with lowest uiOrder are rendered first, then those with higher number, then those where uiOrder is null.
+     * Field required for GSON.
      */
-    protected int uiOrder;
+    @SuppressWarnings("FieldCanBeLocal")
+    private int uiOrder;
 
 
     /**
@@ -98,11 +102,15 @@ public abstract class Information {
     /**
      * Returns the actual implementation of this information element
      *
-     * @param impl The
+     * @param clazz The
      * @return The unwraped object
      */
-    public <T extends Information> T unwrap( Class<T> impl ) {
-        return (T) this;
+    public <T extends Information> T unwrap( final Class<T> clazz ) {
+        if ( clazz.isInstance( this ) ) {
+            return (T) this;
+        } else {
+            throw new InformationRuntimeException( "Can not unwrap as " + clazz.getSimpleName() );
+        }
     }
 
 

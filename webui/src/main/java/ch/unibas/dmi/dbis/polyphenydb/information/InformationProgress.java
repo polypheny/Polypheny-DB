@@ -59,7 +59,7 @@ public class InformationProgress extends Information {
      * warning/yellow
      * danger/red
      * dark/black
-     * (see render-item.component.ts -> setProgressColor() in Webui)
+     * (see render-item.component.ts -> setProgressColor() in WebUi)
      */
     public InformationProgress setColor( final String color ) {
         this.color = color;

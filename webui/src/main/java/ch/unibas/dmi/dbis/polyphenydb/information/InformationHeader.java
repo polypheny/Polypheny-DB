@@ -35,7 +35,7 @@ public class InformationHeader extends Information {
     public InformationHeader( String id, String group, String text ) {
         super( id, group, InformationType.HEADER );
         this.text = text;
-        this.uiOrder = 1;
+        super.setOrder( 1 );
     }
 
 

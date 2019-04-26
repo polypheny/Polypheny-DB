@@ -39,7 +39,7 @@ public class InformationPage {
     private String description;
     private String icon;
     private boolean mansonry = false;
-    private ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
 
 
     public InformationPage( final String id, final String title ) {

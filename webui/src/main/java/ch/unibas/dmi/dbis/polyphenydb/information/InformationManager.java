@@ -42,9 +42,9 @@ public class InformationManager {
 
     private static InformationManager instance;
 
-    private ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
 
     private InformationManager() {
@@ -114,7 +114,7 @@ public class InformationManager {
      *
      * @param key of the Information object that should be returned
      * @return Information object with key <i>key</i>
-     * @throws InformationRuntimeException If there is no informtion element with that key
+     * @throws InformationRuntimeException If there is no information element with that key
      */
     public Information getInformation( final String key ) {
         if ( informationMap.containsKey( key ) ) {
