@@ -56,7 +56,7 @@ public class InformationServerTest {
         im.addGroup( g1, g2 );
 
         Information i1 = new InformationHeader( "i.header", "group1.1", "Gruppe 1" );
-        Information i2 = new InformationProgress( "i.progress", "group1.1", "progval", 70 ).setColor( "" );
+        Information i2 = new InformationProgress( "i.progress", "group1.1", "progval", 70 ).setColor( ProgressColor.DYNAMIC );
         Information i3 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" ).setOrder( 2 );
 
         String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
@@ -67,7 +67,7 @@ public class InformationServerTest {
         Information i6 = new InformationGraph( "i.graph2", "group1.2", labels, graphData ).setType( GraphType.BAR );
 
         InformationGroup g3 = new InformationGroup( "group1.3", "page1" );
-        InformationGroup g4 = new InformationGroup( "group1.4", "page1" );
+        InformationGroup g4 = new InformationGroup( "group1.4", "page1" ).setColor( GroupColor.LIGHTBLUE );
 
         Information h1 = new InformationHeader( "i.header1.3", "group1.3", "Group 1.3" );
         Information h2 = new InformationHeader( "i.header1.4", "group1.4", "Group 1.4" );
@@ -88,7 +88,7 @@ public class InformationServerTest {
                 Random r = new Random();
                 im.getInformation( "i.progress" ).unwrap( InformationProgress.class ).updateProgress( r.nextInt( 100 ) );
             }
-        }, 5000, 5000 );
+        }, 1000, 1000 );
     }
 
 

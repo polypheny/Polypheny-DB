@@ -26,51 +26,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-
-public class InformationGroup {
-
-    private final String id;
-    private final String pageId;
-    private GroupColor color;
-    private int uiOrder;
-    private final ConcurrentMap<String, Information> list = new ConcurrentHashMap<>();
-
-
-    public InformationGroup( final String id, final String pageId ) {
-        this.id = id;
-        this.pageId = pageId;
-    }
-
-
-    public InformationGroup setColor( GroupColor color ) {
-        this.color = color;
-        return this;
-    }
-
-
-    public void addInformation( Information... infos ) {
-        for ( Information i : infos ) {
-            this.list.put( i.getId(), i );
-        }
-    }
-
-
-    public InformationGroup setOrder( int order ) {
-        this.uiOrder = order;
-        return this;
-    }
-
-
-    public String getId() {
-        return id;
-    }
-
-
-    public String getPageId() {
-        return pageId;
-    }
-
+/**
+ * Define the color of a progress bar
+ * DYNAMIC: changes with increasing value, from blue, to green, to yellow, to red
+ */
+public enum ProgressColor {
+    DYNAMIC,
+    BLUE,
+    GREEN,
+    YELLOW,
+    RED,
+    BLACK
 }

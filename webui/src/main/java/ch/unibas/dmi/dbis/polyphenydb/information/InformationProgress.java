@@ -30,7 +30,7 @@ public class InformationProgress extends Information {
 
     private String label;
     private int value;
-    private String color = "dynamic";
+    private ProgressColor color = ProgressColor.DYNAMIC;
     private int min = 0;
     private int max = 100;
 
@@ -46,22 +46,9 @@ public class InformationProgress extends Information {
      * Set the color of this progress-bar.
      * The default color is "dynamic"
      *
-     * @param color possible values:
-     * "dynamic" (the color changes with increasing value, from blue, to green, to yellow, to red)
-     * "blue" for blue progress bars
-     * "green" for green progress bars
-     * "yellow" for yellow progress bars
-     * "red" for red progress bars
-     * "black" for black progress bars
-     *
-     * info/blue ( "info" or "blue" will give you a blue progress bar)
-     * success/green
-     * warning/yellow
-     * danger/red
-     * dark/black
-     * (see render-item.component.ts -> setProgressColor() in WebUi)
+     * @param color color of the progress bar
      */
-    public InformationProgress setColor( final String color ) {
+    public InformationProgress setColor( final ProgressColor color ) {
         this.color = color;
         return this;
     }

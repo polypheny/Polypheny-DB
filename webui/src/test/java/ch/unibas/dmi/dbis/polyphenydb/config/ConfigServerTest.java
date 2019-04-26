@@ -27,6 +27,9 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class ConfigServerTest {
@@ -81,14 +84,14 @@ public class ConfigServerTest {
         cm.observeAll( s );
 
         //timer for UI testing
-        /*Timer timer = new Timer();
+        Timer timer = new Timer();
         timer.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
                 Random r = new Random();
                 cm.getConfig( "server.number.2" ).setInt( r.nextInt(100) );
             }
-        }, 10000, 10000 );*/
+        }, 5000, 5000 );
 
     }
 

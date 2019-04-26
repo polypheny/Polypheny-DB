@@ -38,7 +38,6 @@ public class InformationPage {
     private String name; // title
     private String description;
     private String icon;
-    private boolean mansonry = false;
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
 
 
@@ -51,11 +50,6 @@ public class InformationPage {
     public InformationPage( final String id, final String title, final String description ) {
         this( id, title );
         this.description = description;
-    }
-
-
-    public void setMansonry( final boolean mansonry ) {
-        this.mansonry = mansonry;
     }
 
 
