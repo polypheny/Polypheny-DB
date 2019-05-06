@@ -83,7 +83,7 @@ public class InformationGroup {
      * if you want the group to have a certain color in the UI, you can set it here
      * @param color color for this group
      */
-    public InformationGroup setColor( GroupColor color ) {
+    public InformationGroup setColor( final GroupColor color ) {
         this.color = color;
         return this;
     }
@@ -92,7 +92,7 @@ public class InformationGroup {
     /**
      * the InformationManager will add Information objects to this group that belong to this group
      */
-    public void addInformation( Information... infos ) {
+    public void addInformation( final Information... infos ) {
         for ( Information i : infos ) {
             if ( !i.getGroup().equals( this.id ) ) {
                 throw new InformationRuntimeException( "You are trying to add an information to a group where it does not belong to." );
@@ -106,7 +106,7 @@ public class InformationGroup {
      * groups with lower uiOrder will be rendered first, the groups with higher order, then groups with no uiOrder (0)
      * @param order an int > 0
      */
-    public InformationGroup setOrder( int order ) {
+    public InformationGroup setOrder( final int order ) {
         this.uiOrder = order;
         return this;
     }

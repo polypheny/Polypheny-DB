@@ -81,9 +81,9 @@ public class InformationManagerTest {
     @Test(expected = RuntimeException.class)
     public void graphThrowingError() {
         String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
-        int[] graphData1 = { 5, 2, 7, 3, 2, 1 };
-        int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
-        GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
+        Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
+        Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
+        GraphData[] graphData = { new GraphData<Integer>( "data1", graphData1 ), new GraphData<Integer>( "data2", graphData2 ) };
         Information i1 = new InformationGraph( "i.graph", "group1.1", GraphType.PIE, labels, graphData );
     }
 
@@ -91,9 +91,9 @@ public class InformationManagerTest {
     @Test
     public void changeGraphType() {
         String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
-        int[] graphData1 = { 5, 2, 7, 3, 2, 1 };
-        int[] graphData2 = { 7, 8, 2, 2, 7, 3 };
-        GraphData[] graphData = { new GraphData( "data1", graphData1 ), new GraphData( "data2", graphData2 ) };
+        Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
+        Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
+        GraphData[] graphData = { new GraphData<Integer>( "data1", graphData1 ), new GraphData<Integer>( "data2", graphData2 ) };
         InformationGraph i1 = new InformationGraph( "i.graph", "group1.1", GraphType.LINE, labels, graphData );
         i1.updateType( GraphType.RADAR );
     }

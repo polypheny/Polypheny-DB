@@ -88,12 +88,22 @@ public class InformationGraph extends Information {
         return graphType;
     }
 
+
     /**
      * Set the data for this graph
      *
-     * @param data new GraphData objects
+     * @param labels labels that are displayed on the x-axis
+     * @param data new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
      */
-    public void updateGraph( GraphData... data ) {
+    public void updateGraph( final String[] labels, final GraphData... data ) {
+
+        if ( data.length > 1 ) {
+            if ( this.graphType == GraphType.PIE || this.graphType == GraphType.DOUGHNUT || this.graphType == GraphType.POLARAREA ) {
+                throw new RuntimeException( "Graph of type " + this.graphType + " can only accept one GraphData object" );
+            }
+        }
+
+        this.labels = labels;
         this.data = data;
         InformationManager.getInstance().notify( this );
     }
@@ -122,13 +132,13 @@ public class InformationGraph extends Information {
     /**
      * The data in a graph, e.g. a line in the line-graph, with its label
      */
-    public static class GraphData {
+    public static class GraphData<T extends Number> {
 
 
         /**
          * Data for the graph, e.g. a line in the line-graph
          */
-        private final int[] data;
+        private final T[] data;
 
 
         /**
@@ -142,7 +152,7 @@ public class InformationGraph extends Information {
          * @param label the label that describes the data
          * @param data data for the graph, e.g. a line in the line-graph
          */
-        public GraphData( final String label, final int[] data ) {
+        public GraphData( final String label, final T[] data ) {
             this.label = label;
             this.data = data;
         }
