@@ -27,6 +27,9 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class ConfigServerTest {
@@ -43,52 +46,98 @@ public class ConfigServerTest {
      */
     private static void demoData( ConfigServer s ) {
         System.out.println( "demoData()" );
-        WebUiPage p = new WebUiPage( "p", "page 1", "page 1 descr." );
-        WebUiPage p2 = new WebUiPage( "p2", "page 2", "page 2 description." ).withIcon( "fa fa-table" );
-        WebUiGroup g1 = new WebUiGroup( "g1", "p", 2 ).withTitle( "group1" ).withDescription( "description of group1" );
-        WebUiGroup g2 = new WebUiGroup( "g2", "p", 1 ).withTitle( "group2" ).withDescription( "group2" );
-        Config c1 = new ConfigString( "server.text.1", "text1" ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED );
-        Config c2 = new ConfigString( "server.email.2", "e@mail" ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED, WebUiValidator.EMAIL );
-
-        //Config c3 = new ConfigInteger( "server.number", 3 );
-        Config c4 = new ConfigInteger( "server.number", 4 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2" );
-        Config c5 = new ConfigInteger( "server.number.2", 5 ).withUi( "g2", 1 );
-        Config c6 = new ConfigBoolean( "server.boolean", false ).withUi( "g2" );
 
         ConfigManager cm = ConfigManager.getInstance();
 
-        //inserting configs before groups and pages are existing
-        cm.registerConfig( c1 );
-        cm.registerConfig( c2 );
-        cm.registerConfig( c4 );
-        //cm.registerConfig( c3 );
-        cm.registerConfig( c5 );
-        cm.registerConfig( c6 );
+        //todo page with icon
+        WebUiPage p1 = new WebUiPage( "p1", "php.ini (1)", "Configuration for MAMP (php.ini), part 1." );
+        WebUiPage p2 = new WebUiPage( "p2", "php.ini (2)", "Configuration for MAMP (php.ini), part 2." );
 
-        //throws error since it cannot be rendered in the UI
-        //int[] arr = {1,2,3};
-        //Config c7 = new ConfigArray( "config.array", arr ).withUi( "g2" );
-        //cm.registerConfig( c7 );
+        WebUiGroup g1 = new WebUiGroup( "g1", "p1" ).withTitle( "Language Options" ).withDescription( "These are the settings for the php language." );
+        WebUiGroup g2 = new WebUiGroup( "g2", "p1" ).withTitle( "Miscellaneous" ).withDescription( "Miscellaneous options" );
+        WebUiGroup g3 = new WebUiGroup( "g3", "p1" ).withTitle( "Resource Limits" ).withDescription( "Set the resource limits for php" );
+        WebUiGroup g4 = new WebUiGroup( "g4", "p1" ).withTitle( "Error handling and logging" ).withDescription( "Settings for the error handling and logging" );
+        WebUiGroup g5 = new WebUiGroup( "g5", "p2" ).withTitle( "Data handling" );
+        WebUiGroup g6 = new WebUiGroup( "g6", "p2" ).withTitle( "Paths and Directories" );
+        WebUiGroup g7 = new WebUiGroup( "g7", "p2" ).withTitle( "File uploads" );
+        WebUiGroup g8 = new WebUiGroup( "g8", "p2" ).withTitle( "Fopen wrappers" );
 
-        //inserting group before page is existing
-        cm.registerWebUiGroup( g2 );
-        cm.registerWebUiGroup( g1 );
-        cm.registerWebUiPage( p );
+        cm.registerWebUiPage( p1 );
         cm.registerWebUiPage( p2 );
+        cm.registerWebUiGroup( g1 );
+        cm.registerWebUiGroup( g2 );
+        cm.registerWebUiGroup( g3 );
+        cm.registerWebUiGroup( g4 );
+        cm.registerWebUiGroup( g5 );
+        cm.registerWebUiGroup( g6 );
+        cm.registerWebUiGroup( g7 );
+        cm.registerWebUiGroup( g8 );
 
-        //c1.setString( "config1" );
+        Config c1 = new ConfigBoolean( "engine", true ).withUi( "g1" );
+        Config c2 = new ConfigBoolean( "short_open_tag", false ).withUi( "g1" );
+        Config c3 = new ConfigInteger( "precision", 14 ).withUi( "g1" );
+        Config c4 = new ConfigInteger( "output_buffering", 4096 ).withUi( "g1" ).withWebUiValidation( WebUiValidator.REQUIRED );
+        Config c5 = new ConfigBoolean( "zlib.output_compression", false ).withUi( "g1" );
+        Config c6 = new ConfigBoolean( "implicit_flush", false ).withUi( "g1" );
+        Config c7 = new ConfigInteger( "serialize_precision", -1 ).withUi( "g1" );
+        Config c8 = new ConfigBoolean( "zend.enable_gc", true ).withUi( "g1" );
+        cm.registerConfigs( c1, c2, c3, c4, c5, c6, c7, c8 );
+
+        Config c9 = new ConfigBoolean( "expose_php", true ).withUi( "g2" );
+        cm.registerConfig( c9 );
+
+        Config c10 = new ConfigInteger( "max_execution_time", 30 ).withUi( "g3" );
+        Config c11 = new ConfigInteger( "max_input_time", 60 ).withUi( "g3" );
+        Config c12 = new ConfigString( "memory_limit", "128M" ).withUi( "g3" );
+        cm.registerConfigs( c10, c11, c12 );
+
+        Config c13 = new ConfigString( "error_reporting", "E_ALL" ).withUi( "g4" );
+        Config c14 = new ConfigBoolean( "display_errors", false ).withUi( "g4" );
+        Config c15 = new ConfigBoolean( "display_startup_errors", false ).withUi( "g4" );
+        Config c16 = new ConfigBoolean( "log_errors", true ).withUi( "g4" );
+        Config c17 = new ConfigInteger( "log_errors_max_len", 1024 ).withUi( "g4" );
+        Config c18 = new ConfigBoolean( "ignore_repeated_errors", false ).withUi( "g4" );
+        Config c19 = new ConfigBoolean( "ignore_repeated_source", false ).withUi( "g4" );
+        Config c20 = new ConfigBoolean( "report_memleaks", true ).withUi( "g4" );
+        Config c21 = new ConfigBoolean( "html_errors", true ).withUi( "g4" );
+        Config c22 = new ConfigString( "error_log", "/Applications/MAMP/logs/php_error.log" ).withUi( "g4" );
+        cm.registerConfigs( c13, c14, c15, c16, c17, c18, c19, c20, c21, c22 );
+
+        Config c23 = new ConfigString( "request_order", "GP" ).withUi( "g5" );
+        Config c24 = new ConfigBoolean( "register_argc_argv", true ).withUi( "g5" );
+        Config c25 = new ConfigBoolean( "auto_globals_jit", true ).withUi( "g5" );
+        Config c26 = new ConfigString( "post_max_size", "8M" ).withUi( "g5" );
+        Config c27 = new ConfigString( "default_mimetype", "text/html" ).withUi( "g5" );
+        Config c28 = new ConfigString( "default_charset", "UTF-8" ).withUi( "g5" );
+        cm.registerConfigs( c23, c24, c25, c26, c27, c28 );
+
+        Config c29 = new ConfigString( "include_path", ".:/Applications/MAMP/bin/php/php7.2.10/lib/php" ).withUi( "g6" );
+        Config c30 = new ConfigString( "extension_dir", "Applications/MAMP/bin/php/php7.2.10/lib/php/extensions/no-debug-non-zts-20170718/" ).withUi( "g6" );
+        Config c31 = new ConfigBoolean( "enable_dl", true ).withUi( "g6" );
+        cm.registerConfigs( c29, c30, c31 );
+
+        Config c32 = new ConfigBoolean( "file_uploads", true ).withUi( "g7" );
+        Config c33 = new ConfigString( "upload_tmp_dir", "/Applications/MAMP/tmp/php" ).withUi( "g7" );
+        Config c34 = new ConfigString( "upload_max_filesize", "32M" ).withUi( "g7" );
+        Config c35 = new ConfigInteger( "max_file_uploads", 20 ).withUi( "g7" ).withJavaValidation( a -> (int) a > 0 );
+        cm.registerConfigs( c32, c33, c34, c35 );
+
+        Config c36 = new ConfigBoolean( "allow_url_fopen", true ).withUi( "g8" );
+        Config c37 = new ConfigBoolean( "allow_url_include", false ).withUi( "g8" );
+        Config c38 = new ConfigInteger( "default_socket_timeout", 60 ).withUi( "g8" );
+        cm.registerConfigs( c36, c37, c38 );
 
         cm.observeAll( s );
 
         //timer for UI testing
-        /*Timer timer = new Timer();
+        Timer timer = new Timer();
         timer.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
                 Random r = new Random();
-                cm.getConfig( "server.number.2" ).setInt( r.nextInt(100) );
+                cm.getConfig( "precision" ).setInt( r.nextInt( 100 ) );
             }
-        }, 10000, 10000 );*/
+        }, 10000, 10000 );
 
     }
 
