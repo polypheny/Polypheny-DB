@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * an Information object that will displayed as a progress bar in the UI
+ * An Information object that will displayed as a progress bar in the UI
  */
 public class InformationProgress extends Information {
 
@@ -39,12 +39,12 @@ public class InformationProgress extends Information {
 
 
     /**
-     * constructor
+     * Constructor
      *
-     * @param id id of this Information object
-     * @param group group to which this Information object belongs to
-     * @param label label that will be displayed near the progress bar
-     * @param value value of the progress bar
+     * @param id Id of this Information object
+     * @param group Group to which this Information object belongs to
+     * @param label Label that will be displayed near the progress bar
+     * @param value Value of the progress bar
      */
     public InformationProgress( final String id, final String group, final String label, final int value ) {
         super( id, group );
@@ -55,9 +55,9 @@ public class InformationProgress extends Information {
 
     /**
      * Set the color of this progress-bar.
-     * The default color is "dynamic"
+     * The default color is {@link ProgressColor.DYNAMIC}
      *
-     * @param color color of the progress bar
+     * @param color Color of the progress bar
      */
     public InformationProgress setColor( final ProgressColor color ) {
         this.color = color;
@@ -90,7 +90,7 @@ public class InformationProgress extends Information {
     /**
      * Update the value of the current state of a progress bar
      *
-     * @param value new value for the progress bar
+     * @param value New value for the progress bar
      */
     public void updateProgress( final int value ) {
         this.value = value;

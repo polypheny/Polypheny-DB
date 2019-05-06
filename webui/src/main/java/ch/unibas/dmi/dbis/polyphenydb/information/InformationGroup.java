@@ -32,12 +32,12 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * an InformationGroup contains multiple Information object that will be rendered together in the UI
+ * An InformationGroup contains multiple Information object that will be rendered together in the UI
  */
 public class InformationGroup {
 
     /**
-     * unique id for an InformationGroup
+     * Unique id for an InformationGroup
      */
     private final String id;
 
@@ -49,29 +49,28 @@ public class InformationGroup {
 
 
     /**
-     * the color of this group
-     * can be set for the UI
+     * The color of this group. This is used in the UI.
      */
     private GroupColor color;
 
 
     /**
-     * groups with lower uiOrder will be rendered first, the groups with higher order, then groups with no uiOrder (0)
+     * Groups with lower uiOrder will be rendered first in the UI. The groups with no uiOrder (0) are rendered last.
      */
     private int uiOrder;
 
 
     /**
-     * a Map of Information objects that belong to this group
+     * A Map of Information objects that belong to this group
      */
     private final ConcurrentMap<String, Information> list = new ConcurrentHashMap<>();
 
 
     /**
-     * constructor
+     * Constructor
      *
-     * @param id id of this group
-     * @param pageId id of the page this group belongs to
+     * @param id Id of this group
+     * @param pageId Id of the page this group belongs to
      */
     public InformationGroup( final String id, final String pageId ) {
         this.id = id;
@@ -80,8 +79,9 @@ public class InformationGroup {
 
 
     /**
-     * if you want the group to have a certain color in the UI, you can set it here
-     * @param color color for this group
+     * If you want the group to have a certain color in the UI, you can set it here
+     *
+     * @param color Color for this group
      */
     public InformationGroup setColor( final GroupColor color ) {
         this.color = color;
@@ -90,7 +90,7 @@ public class InformationGroup {
 
 
     /**
-     * the InformationManager will add Information objects to this group that belong to this group
+     * Add an information object to this group
      */
     public void addInformation( final Information... infos ) {
         for ( Information i : infos ) {
@@ -103,8 +103,9 @@ public class InformationGroup {
 
 
     /**
-     * groups with lower uiOrder will be rendered first, the groups with higher order, then groups with no uiOrder (0)
-     * @param order an int > 0
+     * Groups with lower uiOrder will be rendered first in the UI. The groups with no uiOrder (0) are rendered last.
+     *
+     * @param order An int > 0
      */
     public InformationGroup setOrder( final int order ) {
         this.uiOrder = order;
@@ -113,8 +114,9 @@ public class InformationGroup {
 
 
     /**
-     *  return the id for the group
-     * @return id of the group
+     * Return the id for the group
+     *
+     * @return Id of the group
      */
     public String getId() {
         return id;
@@ -122,8 +124,9 @@ public class InformationGroup {
 
 
     /**
-     * return the id of the page to which this group belongs to
-     * @return the page id of this group
+     * Return the id of the page to which this group belongs to
+     *
+     * @return The page id of this group
      */
     public String getPageId() {
         return pageId;

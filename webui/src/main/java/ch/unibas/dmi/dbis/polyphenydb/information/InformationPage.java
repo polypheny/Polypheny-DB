@@ -33,41 +33,47 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * an InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI
+ * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI
  */
 public class InformationPage {
 
 
     /**
-     * id of this page
+     * Id of this page
      */
     private final String id;
 
 
     /**
-     * name of this page
+     * Name of this page
      */
     private String name; // title
 
 
     /**
-     * description for this page
+     * Description for this page
      */
     private String description;
 
 
     /**
-     * you can set an icon that will be displayed before the label of this page (in the sidebar)
+     * You can set an icon that will be displayed before the label of this page (in the sidebar)
      */
     private String icon;
-    private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
 
 
     /**
-     * constructor
+     * Groups that belong to this page.
+     */
+    private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
+
+
+
+    /**
+     * Constructor
      *
-     * @param id id of this page
-     * @param title title of this page
+     * @param id Id of this page
+     * @param title Title of this page
      */
     public InformationPage( final String id, final String title ) {
         this.id = id;
@@ -76,10 +82,11 @@ public class InformationPage {
 
 
     /**
-     * constructor
-     * @param id id of this page
-     * @param title title of this page
-     * @param description description of this page, will be displayed in the UI
+     * Constructor
+     *
+     * @param id Id of this page
+     * @param title Title of this page
+     * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String id, final String title, final String description ) {
         this( id, title );
@@ -88,7 +95,7 @@ public class InformationPage {
 
 
     /**
-     * add a group that belongs to this page
+     * Add a group that belongs to this page
      */
     public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
@@ -98,7 +105,7 @@ public class InformationPage {
 
 
     /**
-     * get the name of this icon
+     * Get the name of this icon
      */
     public String getIcon() {
         return icon;
@@ -106,7 +113,7 @@ public class InformationPage {
 
 
     /**
-     * set the icon for this page
+     * Set the icon for this page
      */
     public void setIcon( final String icon ) {
         this.icon = icon;
@@ -114,7 +121,7 @@ public class InformationPage {
 
 
     /**
-     * get the id of this page
+     * Get the id of this page
      */
     public String getId() {
         return id;
@@ -122,7 +129,7 @@ public class InformationPage {
 
 
     /**
-     * get the name of this page
+     * Get the name of this page
      */
     public String getName() {
         return name;
@@ -130,7 +137,7 @@ public class InformationPage {
 
 
     /**
-     * get the description of this page
+     * Get the description of this page
      */
     public String getDescription() {
         return description;
@@ -138,7 +145,8 @@ public class InformationPage {
 
 
     /**
-     * page is converted to a JSON using gson
+     * Page is converted to a JSON using gson
+     *
      * @return this page as JSON
      */
     public String asJson() {

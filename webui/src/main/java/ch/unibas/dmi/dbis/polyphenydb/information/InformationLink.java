@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * an Information object containing a routerLink linking to a subpage of the UI
+ * An Information object containing a link to a subpage of the UI
  */
 public class InformationLink extends Information {
 
@@ -36,12 +36,12 @@ public class InformationLink extends Information {
 
 
     /**
-     * constructor
+     * Constructor
      *
-     * @param id id of this Information object
-     * @param group id of the group this object belongs to
-     * @param label name of the link
-     * @param routerLink routerLink to a subpage of the UI
+     * @param id Id of this Information object
+     * @param group Id of the group this object belongs to
+     * @param label Name of the link
+     * @param routerLink Link to a subpage of the UI
      */
     public InformationLink( final String id, final String group, final String label, final String... routerLink ) {
         super( id, group );
@@ -53,7 +53,7 @@ public class InformationLink extends Information {
     /**
      * Update a InformationLink object
      *
-     * @param label the name of the link when it is displayed
+     * @param label The name of the link when it is displayed
      * @param routerLink Angular route to another subpage of the WebUI
      */
     public void updateLink( final String label, final String... routerLink ) {

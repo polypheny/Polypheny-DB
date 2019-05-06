@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * the InformationManager manages information objects, InformationGroups and InformationPages
+ * The InformationManager manages information objects, InformationGroups and InformationPages
  */
 public class InformationManager {
 
@@ -69,7 +69,7 @@ public class InformationManager {
     /**
      * Add a WebUI page to the InformationManager
      *
-     * @param page page to add
+     * @param page Page to add
      */
     public void addPage( final InformationPage page ) {
         this.pages.put( page.getId(), page );
@@ -79,7 +79,7 @@ public class InformationManager {
     /**
      * Add one or multiple WebUI groups to the InformationManager
      *
-     * @param groups groups to add
+     * @param groups Groups to add
      */
     public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
@@ -131,7 +131,7 @@ public class InformationManager {
     /**
      * Returns the list of pages of the Information Manager as JSON using Gson
      *
-     * @return list of pages of the Information Manager as JSON
+     * @return List of pages of the Information Manager as JSON
      */
     public String getPageList() {
         InformationPage[] pages1 = new InformationPage[this.pages.size()];
@@ -149,7 +149,7 @@ public class InformationManager {
      * Get a certain page as JSON using Gson
      *
      * @param id The id of the page that should be returned
-     * @return page as JSON string
+     * @return Page as JSON string
      */
     public String getPage( final String id ) {
         InformationPage p = this.pages.get( id );
