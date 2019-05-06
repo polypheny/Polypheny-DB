@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
+import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,15 +43,19 @@ public class ConfigManager {
 
     private static ConfigManager instance;
 
-    private ConcurrentMap<String, Config> configs;
-    private ConcurrentMap<String, WebUiGroup> uiGroups;
-    private ConcurrentMap<String, WebUiPage> uiPages;
+    private final ConcurrentMap<String, Config> configs;
+    private final ConcurrentMap<String, WebUiGroup> uiGroups;
+    private final ConcurrentMap<String, WebUiPage> uiPages;
+
+    private com.typesafe.config.Config configFile;
 
 
     private ConfigManager() {
         this.configs = new ConcurrentHashMap<>();
         this.uiGroups = new ConcurrentHashMap<>();
         this.uiPages = new ConcurrentHashMap<>();
+
+        configFile = ConfigFactory.load();
     }
 
 
@@ -72,9 +77,13 @@ public class ConfigManager {
      * @throws ConfigRuntimeException If a Config is already registered.
      */
     public void registerConfig( final Config config ) {
-        if ( this.configs.get( config.getKey() ) != null ) {
+        if ( this.configs.containsKey( config.getKey() ) ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
+            // Check if the config file contains this key and if so set the value to the one defined in the config file
+            if ( configFile.hasPath( config.getKey() ) ) {
+                config.setValueFromFile( configFile );
+            }
             this.configs.put( config.getKey(), config );
         }
     }
@@ -115,7 +124,7 @@ public class ConfigManager {
      * @throws ConfigRuntimeException If a group with that key already exists.
      */
     public void registerWebUiGroup( final WebUiGroup group ) {
-        if ( this.uiGroups.get( group.getId() ) != null ) {
+        if ( this.uiGroups.containsKey( group.getId() ) ) {
             throw new ConfigRuntimeException( "Cannot register two WeUiGroups with the same key: " + group.getId() );
         } else {
             this.uiGroups.put( group.getId(), group );
@@ -131,7 +140,7 @@ public class ConfigManager {
      * @throws ConfigRuntimeException If a page with that key already exists.
      */
     public void registerWebUiPage( final WebUiPage page ) {
-        if ( this.uiPages.get( page.getId() ) != null ) {
+        if ( this.uiPages.containsKey( page.getId() ) ) {
             throw new ConfigRuntimeException( "Cannot register two WebUiPages with the same key: " + page.getId() );
         } else {
             this.uiPages.put( page.getId(), page );

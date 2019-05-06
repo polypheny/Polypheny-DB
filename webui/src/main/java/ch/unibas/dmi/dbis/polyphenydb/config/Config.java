@@ -697,6 +697,15 @@ public abstract class Config {
 
 
     /**
+     * Set the current value to the one read from the config file.
+     *
+     * @param conf Config object from the HACON typesafe config library used to read the config files
+     * @throws ConfigRuntimeException If value in the config file is incompatible with the type of the config element
+     */
+    abstract void setValueFromFile( com.typesafe.config.Config conf );
+
+
+    /**
      * The observers of a Configuration object need to implement the method onConfigChange() to define what needs to happen when this Configuration changes. The parameter "Config c" provides the changed Config.
      * The method restart() can be implemented to define what will happen, when a Config changes, that requires a restart.
      */

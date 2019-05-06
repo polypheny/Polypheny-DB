@@ -172,6 +172,54 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    @Test
+    public void configFiles() {
+        // Check if it works for integer values
+        Config c = new ConfigInteger( "test.junit.int", 18 );
+        Assert.assertEquals( c.getInt(), 18 );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getInt(), 42 );
+
+        // Check if it works for string values
+        c = new ConfigString( "test.junit.string", "Hello World" );
+        Assert.assertEquals( c.getString(), "Hello World" );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getString(), "Polypheny-DB" );
+
+        // Check if it works for boolean values
+        c = new ConfigBoolean( "test.junit.boolean", false );
+        Assert.assertEquals( c.getBoolean(), false );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getBoolean(), true );
+
+        // Check if it works for decimal values
+        c = new ConfigDecimal( "test.junit.decimal", new BigDecimal( "2.22222222222" ) );
+        Assert.assertEquals( c.getDecimal(), new BigDecimal( "2.22222222222" ) );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getDecimal(), new BigDecimal( "1.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111234567891" ) );
+
+        // Check if it works for double values
+        c = new ConfigDouble( "test.junit.double", 1.11d );
+        Assert.assertEquals( c.getDouble(), 1.11d, 0.0 );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getDouble(), -3.0d, 0.0 );
+
+        // Check if it works for long values
+        c = new ConfigLong( "test.junit.long", Integer.MAX_VALUE + 152463L );
+        Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 152463L );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 9999999L );
+
+        // ----
+
+        // Check for a key that is not present in the config file
+        c = new ConfigString( "mot.in.config.file", "Polystore" );
+        Assert.assertEquals( c.getString(), "Polystore" );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getString(), "Polystore" );
+
+    }
+
     public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
     }
