@@ -1,4 +1,5 @@
 rootProject.name = 'Polypheny-DB'
+
 include 'core'
 include 'cassandra-adapter'
 include 'csv-adapter'
@@ -10,4 +11,5 @@ include 'mongodb-adapter'
 include 'pig-adapter'
 include 'pig-parser'
 include 'webui'
-
+include 'config'
+include 'information'
