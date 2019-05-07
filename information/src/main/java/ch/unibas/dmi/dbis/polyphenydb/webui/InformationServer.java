@@ -87,7 +87,7 @@ public class InformationServer {
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
      */
     private static void enableCORS() {
-        ConfigServer.enableCORS();
+        InformationServer.enableCORS();
     }
 
 

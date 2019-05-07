@@ -2,11 +2,7 @@ import ca.coglinc.gradle.plugins.javacc.*
 
 group 'ch.unibas.dmi.dbis.polyphenydb'
 
-def versionMajor = 1
-def versionMinor = 0
-def versionQualifier = 'SNAPSHOT'
-version = versionMajor + '.' + versionMinor + '-' + versionQualifier
-
+version = versionMajor + '.' + versionMinor + versionQualifier
 
 def lombokVersion = '1.16.18'
 
@@ -54,6 +50,9 @@ tasks.withType(JavaCompile) {
 
 
 dependencies {
+    compile project(':config')
+    compile project(':information')
+
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: '4.0'
 
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
@@ -227,25 +226,32 @@ jar {
         attributes "Version": "$version"
     }
 }
+
+
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier 'sources'
     from sourceSets.main.allSource
 }
+
+
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier 'javadoc'
     from javadoc.destinationDir
 }
+
+
 task testJar (type: Jar) {
     from sourceSets.test.output
     classifier = 'test'
 }
+
+
 artifacts {
     archives jar // regular jar containing only the compiled source
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
     testClasses testJar
 }
-
 
 
 
