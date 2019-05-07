@@ -3,10 +3,7 @@ import ca.coglinc.gradle.plugins.javacc.*
 group 'ch.unibas.dmi.dbis.polyphenydb'
 
 
-def versionMajor = 1
-def versionMinor = 0
-def versionQualifier = 'SNAPSHOT'
-version = versionMajor + '.' + versionMinor + '-' + versionQualifier
+version = versionMajor + '.' + versionMinor + versionQualifier
 
 
 configurations {
