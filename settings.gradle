@@ -13,3 +13,5 @@ include 'pig-parser'
 include 'webui'
 include 'config'
 include 'information'
+
+include 'dbms'

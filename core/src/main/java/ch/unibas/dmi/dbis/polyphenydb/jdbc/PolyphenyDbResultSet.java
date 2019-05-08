@@ -81,7 +81,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     @Override
     protected PolyphenyDbResultSet execute() throws SQLException {
         // Call driver's callback. It is permitted to throw a RuntimeException.
-        PolyphenyDbConnectionImpl connection = getPolyphenyDbConnection();
+        PolyphenyDbEmbeddedConnectionImpl connection = getPolyphenyDbConnection();
         final boolean autoTemp = connection.config().autoTemp();
         Handler.ResultSink resultSink = null;
         if ( autoTemp ) {
@@ -141,8 +141,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
 
 
     // do not make public
-    PolyphenyDbConnectionImpl getPolyphenyDbConnection() throws SQLException {
-        return (PolyphenyDbConnectionImpl) statement.getConnection();
+    PolyphenyDbEmbeddedConnectionImpl getPolyphenyDbConnection() throws SQLException {
+        return (PolyphenyDbEmbeddedConnectionImpl) statement.getConnection();
     }
 }
 

@@ -50,7 +50,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.ParseResult;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
@@ -214,7 +214,7 @@ public final class Schemas {
 
 
     public static DataContext createDataContext( Connection connection, SchemaPlus rootSchema ) {
-        return new DummyDataContext( (PolyphenyDbConnection) connection, rootSchema );
+        return new DummyDataContext( (PolyphenyDbEmbeddedConnection) connection, rootSchema );
     }
 
 
@@ -304,7 +304,7 @@ public final class Schemas {
     /**
      * Parses and validates a SQL query. For use within Polypheny-DB only.
      */
-    public static ParseResult parse( final PolyphenyDbConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
+    public static ParseResult parse( final PolyphenyDbEmbeddedConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
         final PolyphenyDbPrepare.Context context = makeContext( connection, schema, schemaPath, null, propValues );
@@ -320,7 +320,7 @@ public final class Schemas {
     /**
      * Parses and validates a SQL query and converts to relational algebra. For use within Polypheny-DB only.
      */
-    public static PolyphenyDbPrepare.ConvertResult convert( final PolyphenyDbConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
+    public static PolyphenyDbPrepare.ConvertResult convert( final PolyphenyDbEmbeddedConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
         final PolyphenyDbPrepare.Context context = makeContext( connection, schema, schemaPath, null, propValues );
@@ -336,7 +336,7 @@ public final class Schemas {
     /**
      * Analyzes a view. For use within Polypheny-DB only.
      */
-    public static PolyphenyDbPrepare.AnalyzeViewResult analyzeView( final PolyphenyDbConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String viewSql, List<String> viewPath, boolean fail ) {
+    public static PolyphenyDbPrepare.AnalyzeViewResult analyzeView( final PolyphenyDbEmbeddedConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String viewSql, List<String> viewPath, boolean fail ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
         final PolyphenyDbPrepare.Context context = makeContext( connection, schema, schemaPath, viewPath, propValues );
@@ -352,7 +352,7 @@ public final class Schemas {
     /**
      * Prepares a SQL query for execution. For use within Polypheny-DB only.
      */
-    public static PolyphenyDbSignature<Object> prepare( final PolyphenyDbConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql, final ImmutableMap<PolyphenyDbConnectionProperty, String> map ) {
+    public static PolyphenyDbSignature<Object> prepare( final PolyphenyDbEmbeddedConnection connection, final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql, final ImmutableMap<PolyphenyDbConnectionProperty, String> map ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final PolyphenyDbPrepare.Context context = makeContext( connection, schema, schemaPath, null, map );
         PolyphenyDbPrepare.Dummy.push( context );
@@ -374,7 +374,7 @@ public final class Schemas {
      * @param propValues Connection properties
      * @return Context
      */
-    private static PolyphenyDbPrepare.Context makeContext( PolyphenyDbConnection connection, PolyphenyDbSchema schema, List<String> schemaPath, List<String> objectPath, final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues ) {
+    private static PolyphenyDbPrepare.Context makeContext( PolyphenyDbEmbeddedConnection connection, PolyphenyDbSchema schema, List<String> schemaPath, List<String> objectPath, final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues ) {
         if ( connection == null ) {
             final PolyphenyDbPrepare.Context context0 = PolyphenyDbPrepare.Dummy.peek();
             final PolyphenyDbConnectionConfig config = mutate( context0.config(), propValues );
@@ -591,12 +591,12 @@ public final class Schemas {
      */
     private static class DummyDataContext implements DataContext {
 
-        private final PolyphenyDbConnection connection;
+        private final PolyphenyDbEmbeddedConnection connection;
         private final SchemaPlus rootSchema;
         private final ImmutableMap<String, Object> map;
 
 
-        DummyDataContext( PolyphenyDbConnection connection, SchemaPlus rootSchema ) {
+        DummyDataContext( PolyphenyDbEmbeddedConnection connection, SchemaPlus rootSchema ) {
             this.connection = connection;
             this.rootSchema = rootSchema;
             this.map = ImmutableMap.of();

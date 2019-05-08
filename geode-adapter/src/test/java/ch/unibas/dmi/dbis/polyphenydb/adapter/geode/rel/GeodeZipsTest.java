@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertThat;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
@@ -93,7 +93,7 @@ public class GeodeZipsTest extends AbstractGeodeTest {
             @Override
             public Connection createConnection() throws SQLException {
                 final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:lex=JAVA" );
-                final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
+                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
 
                 root.add( "geode", new GeodeSchema( POLICY.cache(), Collections.singleton( "zips" ) ) );
 

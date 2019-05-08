@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.server;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
 import java.util.Iterator;
 import org.apache.calcite.avatica.Meta;
@@ -64,7 +64,7 @@ public interface PolyphenyDbServerStatement {
     /**
      * Returns the connection.
      */
-    PolyphenyDbConnection getConnection();
+    PolyphenyDbEmbeddedConnection getConnection();
 
     void setSignature( Meta.Signature signature );
 

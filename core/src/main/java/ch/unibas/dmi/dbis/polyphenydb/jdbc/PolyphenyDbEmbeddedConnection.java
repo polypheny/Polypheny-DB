@@ -45,36 +45,61 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
+import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import java.sql.Connection;
 import java.sql.SQLException;
-import org.apache.calcite.avatica.AvaticaPreparedStatement;
-import org.apache.calcite.avatica.Meta;
+import java.util.Properties;
+import org.apache.calcite.linq4j.QueryProvider;
 
 
 /**
- * Implementation of {@link java.sql.PreparedStatement} for the Polypheny-DB engine.
+ * Extension to Polypheny-DB's implementation of {@link java.sql.Connection JDBC connection} allows schemas to be defined dynamically.
  *
- * This class has sub-classes which implement JDBC 3.0 and JDBC 4.0 APIs; it is instantiated using {@link org.apache.calcite.avatica.AvaticaFactory#newPreparedStatement}.
+ * You can start off with an empty connection (no schemas), define one or two schemas, and start querying them.
+ *
+ * Since a {@code PolyphenyDbEmbeddedConnection} implements the linq4j {@link QueryProvider} interface, you can use a connection to execute expression trees as queries.
  */
-abstract class PolyphenyDbPreparedStatement extends AvaticaPreparedStatement {
+public interface PolyphenyDbEmbeddedConnection extends Connection, QueryProvider {
 
     /**
-     * Creates a PolyphenyDbPreparedStatement.
+     * Returns the root schema.
      *
-     * @param connection Connection
-     * @param h Statement handle
-     * @param signature Result of preparing statement
-     * @param resultSetType Result set type
-     * @param resultSetConcurrency Result set concurrency
-     * @param resultSetHoldability Result set holdability
-     * @throws SQLException if database error occurs
+     * You can define objects (such as relations) in this schema, and also nested schemas.
+     *
+     * @return Root schema
      */
-    protected PolyphenyDbPreparedStatement( PolyphenyDbConnectionImpl connection, Meta.StatementHandle h, Meta.Signature signature, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
-        super( connection, h, signature, resultSetType, resultSetConcurrency, resultSetHoldability );
-    }
+    SchemaPlus getRootSchema();
 
+    /**
+     * Returns the type factory.
+     *
+     * @return Type factory
+     */
+    JavaTypeFactory getTypeFactory();
 
-    @Override
-    public PolyphenyDbConnectionImpl getConnection() throws SQLException {
-        return (PolyphenyDbConnectionImpl) super.getConnection();
-    }
+    /**
+     * Returns an instance of the connection properties.
+     *
+     * NOTE: The resulting collection of properties is same collection used by the connection, and is writable, but behavior if you modify the collection is undefined. Some implementations might, for example,
+     * see a modified property, but only if you set it before you create a statement. We will remove this method when there are better implementations of stateful connections and configuration.
+     *
+     * @return properties
+     */
+    Properties getProperties();
+
+    // in java.sql.Connection from JDK 1.7, but declare here to allow other JDKs
+    void setSchema( String schema ) throws SQLException;
+
+    // in java.sql.Connection from JDK 1.7, but declare here to allow other JDKs
+    String getSchema() throws SQLException;
+
+    PolyphenyDbConnectionConfig config();
+
+    /**
+     * Creates a context for preparing a statement for execution.
+     */
+    Context createPrepareContext();
 }

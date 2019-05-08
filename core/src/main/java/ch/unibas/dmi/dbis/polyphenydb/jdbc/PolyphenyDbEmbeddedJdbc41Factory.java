@@ -71,12 +71,12 @@ import org.apache.calcite.avatica.UnregisteredDriver;
  * Implementation of {@link org.apache.calcite.avatica.AvaticaFactory} for Polypheny-DB and JDBC 4.1 (corresponds to JDK 1.7).
  */
 @SuppressWarnings("UnusedDeclaration")
-public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
+public class PolyphenyDbEmbeddedJdbc41Factory extends PolyphenyDbFactory {
 
     /**
      * Creates a factory for JDBC version 4.1.
      */
-    public PolyphenyDbJdbc41Factory() {
+    public PolyphenyDbEmbeddedJdbc41Factory() {
         this( 4, 1 );
     }
 
@@ -84,7 +84,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
     /**
      * Creates a JDBC factory with given major/minor version number.
      */
-    protected PolyphenyDbJdbc41Factory( int major, int minor ) {
+    protected PolyphenyDbEmbeddedJdbc41Factory( int major, int minor ) {
         super( major, minor );
     }
 
@@ -95,17 +95,17 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
 
 
     public PolyphenyDbJdbc41DatabaseMetaData newDatabaseMetaData( AvaticaConnection connection ) {
-        return new PolyphenyDbJdbc41DatabaseMetaData( (PolyphenyDbConnectionImpl) connection );
+        return new PolyphenyDbJdbc41DatabaseMetaData( (PolyphenyDbEmbeddedConnectionImpl) connection );
     }
 
 
     public PolyphenyDbJdbc41Statement newStatement( AvaticaConnection connection, Meta.StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
-        return new PolyphenyDbJdbc41Statement( (PolyphenyDbConnectionImpl) connection, h, resultSetType, resultSetConcurrency, resultSetHoldability );
+        return new PolyphenyDbJdbc41Statement( (PolyphenyDbEmbeddedConnectionImpl) connection, h, resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
 
     public AvaticaPreparedStatement newPreparedStatement( AvaticaConnection connection, Meta.StatementHandle h, Meta.Signature signature, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
-        return new PolyphenyDbJdbc41PreparedStatement( (PolyphenyDbConnectionImpl) connection, h, (PolyphenyDbSignature) signature, resultSetType, resultSetConcurrency, resultSetHoldability );
+        return new PolyphenyDbJdbc41PreparedStatement( (PolyphenyDbEmbeddedConnectionImpl) connection, h, (PolyphenyDbSignature) signature, resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
 
@@ -124,7 +124,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
     /**
      * Implementation of connection for JDBC 4.1.
      */
-    private static class PolyphenyDbJdbc41Connection extends PolyphenyDbConnectionImpl {
+    private static class PolyphenyDbJdbc41Connection extends PolyphenyDbEmbeddedConnectionImpl {
 
         PolyphenyDbJdbc41Connection( EmbeddedDriver embeddedDriver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
             super( embeddedDriver, factory, url, info, rootSchema, typeFactory );
@@ -135,9 +135,9 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
     /**
      * Implementation of statement for JDBC 4.1.
      */
-    private static class PolyphenyDbJdbc41Statement extends PolyphenyDbStatement {
+    private static class PolyphenyDbJdbc41Statement extends PolyphenyDbEmbeddedStatement {
 
-        PolyphenyDbJdbc41Statement( PolyphenyDbConnectionImpl connection, Meta.StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
+        PolyphenyDbJdbc41Statement( PolyphenyDbEmbeddedConnectionImpl connection, Meta.StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
             super( connection, h, resultSetType, resultSetConcurrency, resultSetHoldability );
         }
     }
@@ -146,9 +146,9 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
     /**
      * Implementation of prepared statement for JDBC 4.1.
      */
-    private static class PolyphenyDbJdbc41PreparedStatement extends PolyphenyDbPreparedStatement {
+    private static class PolyphenyDbJdbc41PreparedStatement extends PolyphenyDbEmbeddedPreparedStatement {
 
-        PolyphenyDbJdbc41PreparedStatement( PolyphenyDbConnectionImpl connection, Meta.StatementHandle h, PolyphenyDbSignature signature, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
+        PolyphenyDbJdbc41PreparedStatement( PolyphenyDbEmbeddedConnectionImpl connection, Meta.StatementHandle h, PolyphenyDbSignature signature, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
             super( connection, h, signature, resultSetType, resultSetConcurrency, resultSetHoldability );
         }
 
@@ -249,7 +249,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbFactory {
      */
     private static class PolyphenyDbJdbc41DatabaseMetaData extends AvaticaDatabaseMetaData {
 
-        PolyphenyDbJdbc41DatabaseMetaData( PolyphenyDbConnectionImpl connection ) {
+        PolyphenyDbJdbc41DatabaseMetaData( PolyphenyDbEmbeddedConnectionImpl connection ) {
             super( connection );
         }
     }

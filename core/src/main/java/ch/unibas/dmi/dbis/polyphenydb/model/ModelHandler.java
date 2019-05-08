@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.model;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -101,14 +101,14 @@ public class ModelHandler {
             .configure( JsonParser.Feature.ALLOW_COMMENTS, true );
     private static final ObjectMapper YAML_MAPPER = new YAMLMapper();
 
-    private final PolyphenyDbConnection connection;
+    private final PolyphenyDbEmbeddedConnection connection;
     private final Deque<Pair<String, SchemaPlus>> schemaStack = new ArrayDeque<>();
     private final String modelUri;
     Lattice.Builder latticeBuilder;
     Lattice.TileBuilder tileBuilder;
 
 
-    public ModelHandler( PolyphenyDbConnection connection, String uri ) throws IOException {
+    public ModelHandler( PolyphenyDbEmbeddedConnection connection, String uri ) throws IOException {
         super();
         this.connection = connection;
         this.modelUri = uri;

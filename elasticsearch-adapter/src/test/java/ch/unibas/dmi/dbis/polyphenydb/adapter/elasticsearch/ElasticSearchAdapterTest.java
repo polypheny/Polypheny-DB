@@ -49,7 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertThat;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.test.ElasticsearchChecker;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
@@ -137,7 +137,7 @@ public class ElasticSearchAdapterTest {
             @Override
             public Connection createConnection() throws SQLException {
                 final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:lex=JAVA" );
-                final SchemaPlus root = connection.unwrap( PolyphenyDbConnection.class ).getRootSchema();
+                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
 
                 root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), ZIPS ) );
 

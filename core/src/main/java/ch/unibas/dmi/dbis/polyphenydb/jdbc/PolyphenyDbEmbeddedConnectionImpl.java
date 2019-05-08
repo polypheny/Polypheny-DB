@@ -117,7 +117,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
  *
  * Abstract to allow newer versions of JDBC to add methods.
  */
-abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements PolyphenyDbConnection, QueryProvider {
+abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection implements PolyphenyDbEmbeddedConnection, QueryProvider {
 
     public final JavaTypeFactory typeFactory;
 
@@ -130,7 +130,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
 
 
     /**
-     * Creates a PolyphenyDbConnectionImpl.
+     * Creates a PolyphenyDbEmbeddedConnectionImpl.
      *
      * Not public; method is called only from the embeddedDriver.
      *
@@ -141,7 +141,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
      * @param rootSchema Root schema, or null
      * @param typeFactory Type factory, or null
      */
-    protected PolyphenyDbConnectionImpl( EmbeddedDriver embeddedDriver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+    protected PolyphenyDbEmbeddedConnectionImpl( EmbeddedDriver embeddedDriver, AvaticaFactory factory, String url, Properties info, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
         super( embeddedDriver, factory, url, info );
         PolyphenyDbConnectionConfig cfg = new PolyphenyDbConnectionConfigImpl( info );
         this.prepareFactory = embeddedDriver.prepareFactory;
@@ -171,8 +171,8 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
     }
 
 
-    PolyphenyDbMetaImpl meta() {
-        return (PolyphenyDbMetaImpl) meta;
+    PolyphenyDbEmbeddedMetaImpl meta() {
+        return (PolyphenyDbEmbeddedMetaImpl) meta;
     }
 
 
@@ -216,24 +216,24 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
 
 
     @Override
-    public PolyphenyDbStatement createStatement( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
-        return (PolyphenyDbStatement) super.createStatement( resultSetType, resultSetConcurrency, resultSetHoldability );
+    public PolyphenyDbEmbeddedStatement createStatement( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
+        return (PolyphenyDbEmbeddedStatement) super.createStatement( resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
 
     @Override
-    public PolyphenyDbPreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
+    public PolyphenyDbEmbeddedPreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         final PolyphenyDbPrepare.Query<Object> query = PolyphenyDbPrepare.Query.of( sql );
         return prepareStatement_( query, resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
 
-    private PolyphenyDbPreparedStatement prepareStatement_( PolyphenyDbPrepare.Query<?> query, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
+    private PolyphenyDbEmbeddedPreparedStatement prepareStatement_( PolyphenyDbPrepare.Query<?> query, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         try {
             final Meta.Signature signature = parseQuery( query, createPrepareContext(), -1 );
-            final PolyphenyDbPreparedStatement polyphenyDbPreparedStatement = (PolyphenyDbPreparedStatement) factory.newPreparedStatement( this, null, signature, resultSetType, resultSetConcurrency, resultSetHoldability );
-            server.getStatement( polyphenyDbPreparedStatement.handle ).setSignature( signature );
-            return polyphenyDbPreparedStatement;
+            final PolyphenyDbEmbeddedPreparedStatement polyphenyDbEmbeddedPreparedStatement = (PolyphenyDbEmbeddedPreparedStatement) factory.newPreparedStatement( this, null, signature, resultSetType, resultSetConcurrency, resultSetHoldability );
+            server.getStatement( polyphenyDbEmbeddedPreparedStatement.handle ).setSignature( signature );
+            return polyphenyDbEmbeddedPreparedStatement;
         } catch ( Exception e ) {
             throw Helper.INSTANCE.createException( "Error while preparing statement [" + query.sql + "]", e );
         }
@@ -295,7 +295,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
 
     public <T> Enumerator<T> executeQuery( Queryable<T> queryable ) {
         try {
-            PolyphenyDbStatement statement = (PolyphenyDbStatement) createStatement();
+            PolyphenyDbEmbeddedStatement statement = (PolyphenyDbEmbeddedStatement) createStatement();
             PolyphenyDbSignature<T> signature = statement.prepare( queryable );
             return enumerable( statement.handle, signature ).enumerator();
         } catch ( SQLException e ) {
@@ -361,13 +361,13 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
      */
     static class PolyphenyDbQueryable<T> extends BaseQueryable<T> {
 
-        PolyphenyDbQueryable( PolyphenyDbConnection connection, Type elementType, Expression expression ) {
+        PolyphenyDbQueryable( PolyphenyDbEmbeddedConnection connection, Type elementType, Expression expression ) {
             super( connection, elementType, expression );
         }
 
 
-        public PolyphenyDbConnection getConnection() {
-            return (PolyphenyDbConnection) provider;
+        public PolyphenyDbEmbeddedConnection getConnection() {
+            return (PolyphenyDbEmbeddedConnection) provider;
         }
     }
 
@@ -385,8 +385,8 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
         }
 
 
-        public void addStatement( PolyphenyDbConnection connection, Meta.StatementHandle h ) {
-            final PolyphenyDbConnectionImpl c = (PolyphenyDbConnectionImpl) connection;
+        public void addStatement( PolyphenyDbEmbeddedConnection connection, Meta.StatementHandle h ) {
+            final PolyphenyDbEmbeddedConnectionImpl c = (PolyphenyDbEmbeddedConnectionImpl) connection;
             final PolyphenyDbServerStatement previous = statementMap.put( h.id, new PolyphenyDbServerStatementImpl( c ) );
             if ( previous != null ) {
                 throw new AssertionError();
@@ -432,7 +432,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
         private final JavaTypeFactory typeFactory;
 
 
-        DataContextImpl( PolyphenyDbConnectionImpl connection, Map<String, Object> parameters, PolyphenyDbSchema rootSchema ) {
+        DataContextImpl( PolyphenyDbEmbeddedConnectionImpl connection, Map<String, Object> parameters, PolyphenyDbSchema rootSchema ) {
             this.queryProvider = connection;
             this.typeFactory = connection.getTypeFactory();
             this.rootSchema = rootSchema;
@@ -483,7 +483,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
 
 
         private SqlAdvisor getSqlAdvisor() {
-            final PolyphenyDbConnectionImpl con = (PolyphenyDbConnectionImpl) queryProvider;
+            final PolyphenyDbEmbeddedConnectionImpl con = (PolyphenyDbEmbeddedConnectionImpl) queryProvider;
             final String schemaName;
             try {
                 schemaName = con.getSchema();
@@ -532,12 +532,12 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
      */
     static class ContextImpl implements PolyphenyDbPrepare.Context {
 
-        private final PolyphenyDbConnectionImpl connection;
+        private final PolyphenyDbEmbeddedConnectionImpl connection;
         private final PolyphenyDbSchema mutableRootSchema;
         private final PolyphenyDbSchema rootSchema;
 
 
-        ContextImpl( PolyphenyDbConnectionImpl connection ) {
+        ContextImpl( PolyphenyDbEmbeddedConnectionImpl connection ) {
             this.connection = Objects.requireNonNull( connection );
             long now = System.currentTimeMillis();
             SchemaVersion schemaVersion = new LongSchemaVersion( now );
@@ -641,13 +641,13 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
      */
     static class PolyphenyDbServerStatementImpl implements PolyphenyDbServerStatement {
 
-        private final PolyphenyDbConnectionImpl connection;
+        private final PolyphenyDbEmbeddedConnectionImpl connection;
         private Iterator<Object> iterator;
         private Meta.Signature signature;
         private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
 
-        PolyphenyDbServerStatementImpl( PolyphenyDbConnectionImpl connection ) {
+        PolyphenyDbServerStatementImpl( PolyphenyDbEmbeddedConnectionImpl connection ) {
             this.connection = Objects.requireNonNull( connection );
         }
 
@@ -657,7 +657,7 @@ abstract class PolyphenyDbConnectionImpl extends AvaticaConnection implements Po
         }
 
 
-        public PolyphenyDbConnection getConnection() {
+        public PolyphenyDbEmbeddedConnection getConnection() {
             return connection;
         }
 

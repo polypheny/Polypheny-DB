@@ -63,8 +63,8 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
@@ -224,7 +224,7 @@ public class PolyphenyDbAssert {
 
 
                 @Override
-                public <T> AssertThat doWithConnection( Function<PolyphenyDbConnection, T> fn ) throws Exception {
+                public <T> AssertThat doWithConnection( Function<PolyphenyDbEmbeddedConnection, T> fn ) throws Exception {
                     return this;
                 }
 
@@ -558,9 +558,9 @@ public class PolyphenyDbAssert {
     static void assertQuery( Connection connection, String sql, int limit, boolean materializationsEnabled, List<Pair<Hook, Consumer>> hooks, Consumer<ResultSet> resultChecker, Consumer<Integer> updateChecker, Consumer<Throwable> exceptionChecker ) {
         final Supplier<String> message = () -> "With materializationsEnabled=" + materializationsEnabled + ", limit=" + limit + ", sql=" + sql;
         try ( Closer closer = new Closer() ) {
-            if ( connection.isWrapperFor( PolyphenyDbConnection.class ) ) {
-                final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-                final Properties properties = polyphenyDbConnection.getProperties();
+            if ( connection.isWrapperFor( PolyphenyDbEmbeddedConnection.class ) ) {
+                final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+                final Properties properties = polyphenyDbEmbeddedConnection.getProperties();
                 properties.setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
                 properties.setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
                 if ( !properties.containsKey( PolyphenyDbConnectionProperty.TIME_ZONE.camelName() ) ) {
@@ -618,9 +618,9 @@ public class PolyphenyDbAssert {
             Consumer<Throwable> exceptionChecker, PreparedStatementConsumer consumer ) {
         final Supplier<String> message = () -> "With materializationsEnabled=" + materializationsEnabled + ", limit=" + limit + ", sql = " + sql;
         try ( Closer closer = new Closer() ) {
-            if ( connection.isWrapperFor( PolyphenyDbConnection.class ) ) {
-                final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-                final Properties properties = polyphenyDbConnection.getProperties();
+            if ( connection.isWrapperFor( PolyphenyDbEmbeddedConnection.class ) ) {
+                final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+                final Properties properties = polyphenyDbEmbeddedConnection.getProperties();
                 properties.setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
                 properties.setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
                 if ( !properties.containsKey( PolyphenyDbConnectionProperty.TIME_ZONE.camelName() ) ) {
@@ -684,8 +684,8 @@ public class PolyphenyDbAssert {
             if ( substitutionChecker != null ) {
                 closer.add( Hook.SUB.addThread( (Consumer<RelNode>) substitutionChecker::apply ) );
             }
-            ((PolyphenyDbConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
-            ((PolyphenyDbConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
+            ((PolyphenyDbEmbeddedConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
+            ((PolyphenyDbEmbeddedConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
             PreparedStatement statement = connection.prepareStatement( sql );
             statement.close();
             connection.close();
@@ -1140,11 +1140,11 @@ public class PolyphenyDbAssert {
 
 
         /**
-         * Creates a {@link PolyphenyDbConnection} and executes a callback.
+         * Creates a {@link PolyphenyDbEmbeddedConnection} and executes a callback.
          */
-        public <T> AssertThat doWithConnection( Function<PolyphenyDbConnection, T> fn ) throws Exception {
+        public <T> AssertThat doWithConnection( Function<PolyphenyDbEmbeddedConnection, T> fn ) throws Exception {
             try ( Connection connection = connectionFactory.createConnection() ) {
-                T t = fn.apply( (PolyphenyDbConnection) connection );
+                T t = fn.apply( (PolyphenyDbEmbeddedConnection) connection );
                 Util.discard( t );
                 return AssertThat.this;
             }
@@ -1152,9 +1152,9 @@ public class PolyphenyDbAssert {
 
 
         /**
-         * Creates a {@link PolyphenyDbConnection} and executes a callback that returns no result.
+         * Creates a {@link PolyphenyDbEmbeddedConnection} and executes a callback that returns no result.
          */
-        public final AssertThat doWithConnection( Consumer<PolyphenyDbConnection> fn ) throws Exception {
+        public final AssertThat doWithConnection( Consumer<PolyphenyDbEmbeddedConnection> fn ) throws Exception {
             return doWithConnection( c -> {
                 fn.accept( c );
                 return null;
@@ -1166,8 +1166,8 @@ public class PolyphenyDbAssert {
          * Creates a {@link DataContext} and executes a callback.
          */
         public <T> AssertThat doWithDataContext( Function<DataContext, T> fn ) throws Exception {
-            try ( PolyphenyDbConnection connection = (PolyphenyDbConnection) connectionFactory.createConnection() ) {
-                final DataContext dataContext = PolyphenyDbMetaImpl.createDataContext( connection );
+            try ( PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) connectionFactory.createConnection() ) {
+                final DataContext dataContext = PolyphenyDbEmbeddedMetaImpl.createDataContext( connection );
                 T t = fn.apply( dataContext );
                 Util.discard( t );
                 return AssertThat.this;
@@ -1261,7 +1261,7 @@ public class PolyphenyDbAssert {
 
         public Connection apply( Connection connection ) throws SQLException {
             if ( schema != null ) {
-                PolyphenyDbConnection con = connection.unwrap( PolyphenyDbConnection.class );
+                PolyphenyDbEmbeddedConnection con = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
                 SchemaPlus rootSchema = con.getRootSchema();
                 rootSchema.add( name, schema );
             }
@@ -1305,7 +1305,7 @@ public class PolyphenyDbAssert {
 
 
         public Connection apply( Connection connection ) throws SQLException {
-            PolyphenyDbConnection con = connection.unwrap( PolyphenyDbConnection.class );
+            PolyphenyDbEmbeddedConnection con = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
             SchemaPlus rootSchema = con.getRootSchema();
             switch ( schemaSpec ) {
                 case CLONE_FOODMART:

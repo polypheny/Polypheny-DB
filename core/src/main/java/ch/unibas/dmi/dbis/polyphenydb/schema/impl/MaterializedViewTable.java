@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.ParseResult;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationKey;
@@ -79,12 +79,12 @@ public class MaterializedViewTable extends ViewTable {
      * Internal connection, used to execute queries to materialize views.
      * To be used only by Polypheny-DB internals. And sparingly.
      */
-    public static final PolyphenyDbConnection MATERIALIZATION_CONNECTION;
+    public static final PolyphenyDbEmbeddedConnection MATERIALIZATION_CONNECTION;
 
 
     static {
         try {
-            MATERIALIZATION_CONNECTION = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ).unwrap( PolyphenyDbConnection.class );
+            MATERIALIZATION_CONNECTION = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ).unwrap( PolyphenyDbEmbeddedConnection.class );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }

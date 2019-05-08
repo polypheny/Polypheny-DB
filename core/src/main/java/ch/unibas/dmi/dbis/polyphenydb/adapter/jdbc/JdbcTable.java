@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -221,7 +221,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
         public Enumerator<T> enumerator() {
-            final JavaTypeFactory typeFactory = ((PolyphenyDbConnection) queryProvider).getTypeFactory();
+            final JavaTypeFactory typeFactory = ((PolyphenyDbEmbeddedConnection) queryProvider).getTypeFactory();
             final SqlString sql = generateSql();
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );

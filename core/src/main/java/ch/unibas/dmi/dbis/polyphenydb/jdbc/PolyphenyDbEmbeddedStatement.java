@@ -57,10 +57,10 @@ import org.apache.calcite.linq4j.Queryable;
 /**
  * Implementation of {@link java.sql.Statement} for the Polypheny-DB engine.
  */
-public abstract class PolyphenyDbStatement extends AvaticaStatement {
+public abstract class PolyphenyDbEmbeddedStatement extends AvaticaStatement {
 
     /**
-     * Creates a PolyphenyDbStatement.
+     * Creates a PolyphenyDbEmbeddedStatement.
      *
      * @param connection Connection
      * @param h Statement handle
@@ -68,7 +68,7 @@ public abstract class PolyphenyDbStatement extends AvaticaStatement {
      * @param resultSetConcurrency Result set concurrency
      * @param resultSetHoldability Result set holdability
      */
-    PolyphenyDbStatement( PolyphenyDbConnectionImpl connection, Meta.StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
+    PolyphenyDbEmbeddedStatement( PolyphenyDbEmbeddedConnectionImpl connection, Meta.StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
         super( connection, h, resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
@@ -89,13 +89,13 @@ public abstract class PolyphenyDbStatement extends AvaticaStatement {
 
 
     @Override
-    public PolyphenyDbConnectionImpl getConnection() {
-        return (PolyphenyDbConnectionImpl) connection;
+    public PolyphenyDbEmbeddedConnectionImpl getConnection() {
+        return (PolyphenyDbEmbeddedConnectionImpl) connection;
     }
 
 
     protected <T> PolyphenyDbSignature<T> prepare( Queryable<T> queryable ) {
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         final PolyphenyDbPrepare prepare = connection.prepareFactory.apply();
         final PolyphenyDbServerStatement serverStatement;
         try {
@@ -111,7 +111,7 @@ public abstract class PolyphenyDbStatement extends AvaticaStatement {
     @Override
     protected void close_() {
         if ( !closed ) {
-            ((PolyphenyDbConnectionImpl) connection).server.removeStatement( handle );
+            ((PolyphenyDbEmbeddedConnectionImpl) connection).server.removeStatement( handle );
             super.close_();
         }
     }
