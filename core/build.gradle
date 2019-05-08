@@ -55,8 +55,8 @@ dependencies {
 
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: '4.0'
 
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
+    
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
     compile group: 'org.apache.commons', name: 'commons-dbcp2', version:'2.5.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.8'

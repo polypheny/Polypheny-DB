@@ -49,7 +49,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import com.google.common.collect.ImmutableMultiset;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -70,10 +70,10 @@ public class RelMdColumnOriginsTest {
     @Test
     public void testQueryWithAggregateGroupingSets() throws Exception {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
 
-        polyphenyDbConnection.getRootSchema().add( "T1", new TableInRootSchemaTest.SimpleTable() );
-        Statement statement = polyphenyDbConnection.createStatement();
+        polyphenyDbEmbeddedConnection.getRootSchema().add( "T1", new TableInRootSchemaTest.SimpleTable() );
+        Statement statement = polyphenyDbEmbeddedConnection.createStatement();
         ResultSet resultSet =
                 statement.executeQuery( "SELECT TABLE1.ID, TABLE2.ID FROM "
                         + "(SELECT GROUPING(A) AS ID FROM T1 "

@@ -113,7 +113,7 @@ public class EmbeddedDriver extends UnregisteredDriver {
                 throw new IllegalArgumentException( "JDBC version not supported: " + jdbcVersion );
             case JDBC_41:
             default:
-                return "ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbJdbc41Factory";
+                return "ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedJdbc41Factory";
         }
     }
 
@@ -134,7 +134,7 @@ public class EmbeddedDriver extends UnregisteredDriver {
         return new HandlerImpl() {
             @Override
             public void onConnectionInit( AvaticaConnection connection_ ) throws SQLException {
-                final PolyphenyDbConnectionImpl connection = (PolyphenyDbConnectionImpl) connection_;
+                final PolyphenyDbEmbeddedConnectionImpl connection = (PolyphenyDbEmbeddedConnectionImpl) connection_;
                 super.onConnectionInit( connection );
                 final String model = model( connection );
                 if ( model != null ) {
@@ -148,7 +148,7 @@ public class EmbeddedDriver extends UnregisteredDriver {
             }
 
 
-            String model( PolyphenyDbConnectionImpl connection ) {
+            String model( PolyphenyDbEmbeddedConnectionImpl connection ) {
                 String model = connection.config().model();
                 if ( model != null ) {
                     return model;
@@ -207,15 +207,15 @@ public class EmbeddedDriver extends UnregisteredDriver {
 
     @Override
     public Meta createMeta( AvaticaConnection connection ) {
-        return new PolyphenyDbMetaImpl( (PolyphenyDbConnectionImpl) connection );
+        return new PolyphenyDbEmbeddedMetaImpl( (PolyphenyDbEmbeddedConnectionImpl) connection );
     }
 
 
     /**
      * Creates an internal connection.
      */
-    PolyphenyDbConnection connect( PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
-        return (PolyphenyDbConnection) ((PolyphenyDbFactory) factory)
+    PolyphenyDbEmbeddedConnection connect( PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+        return (PolyphenyDbEmbeddedConnection) ((PolyphenyDbFactory) factory)
                 .newConnection( this, factory, CONNECT_STRING_PREFIX, new Properties(), rootSchema, typeFactory );
     }
 
@@ -223,8 +223,8 @@ public class EmbeddedDriver extends UnregisteredDriver {
     /**
      * Creates an internal connection.
      */
-    PolyphenyDbConnection connect( PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Properties properties ) {
-        return (PolyphenyDbConnection) ((PolyphenyDbFactory) factory)
+    PolyphenyDbEmbeddedConnection connect( PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Properties properties ) {
+        return (PolyphenyDbEmbeddedConnection) ((PolyphenyDbFactory) factory)
                 .newConnection( this, factory, CONNECT_STRING_PREFIX, properties, rootSchema, typeFactory );
     }
 }

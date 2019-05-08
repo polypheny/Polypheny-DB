@@ -49,7 +49,7 @@ import static ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable.M
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
@@ -110,7 +110,7 @@ public class CloneSchema extends AbstractSchema {
 
     private Table createCloneTable( QueryProvider queryProvider, QueryableTable sourceTable, String name ) {
         final Queryable<Object> queryable = sourceTable.asQueryable( queryProvider, sourceSchema, name );
-        final JavaTypeFactory typeFactory = ((PolyphenyDbConnection) queryProvider).getTypeFactory();
+        final JavaTypeFactory typeFactory = ((PolyphenyDbEmbeddedConnection) queryProvider).getTypeFactory();
         return createCloneTable( typeFactory, Schemas.proto( sourceTable ), ImmutableList.of(), null, queryable );
     }
 

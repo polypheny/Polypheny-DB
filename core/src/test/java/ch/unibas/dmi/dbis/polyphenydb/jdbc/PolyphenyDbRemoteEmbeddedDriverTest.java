@@ -677,7 +677,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
         public Service create( AvaticaConnection connection ) {
             try {
                 Connection conn = makeConnection();
-                final PolyphenyDbMetaImpl meta = new PolyphenyDbMetaImpl( conn.unwrap( PolyphenyDbConnectionImpl.class ) );
+                final PolyphenyDbEmbeddedMetaImpl meta = new PolyphenyDbEmbeddedMetaImpl( conn.unwrap( PolyphenyDbEmbeddedConnectionImpl.class ) );
                 return new LocalService( meta );
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
@@ -840,7 +840,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
         public Meta create( List<String> args ) {
             try {
                 final Connection connection = PolyphenyDbAssert.hr().connect();
-                return new PolyphenyDbMetaImpl( (PolyphenyDbConnectionImpl) connection );
+                return new PolyphenyDbEmbeddedMetaImpl( (PolyphenyDbEmbeddedConnectionImpl) connection );
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
             }
@@ -856,7 +856,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
         public Service create( AvaticaConnection connection ) {
             try {
                 Connection localConnection = PolyphenyDbAssert.hr().connect();
-                final Meta meta = PolyphenyDbConnectionImpl.TROJAN.getMeta( (PolyphenyDbConnectionImpl) localConnection );
+                final Meta meta = PolyphenyDbEmbeddedConnectionImpl.TROJAN.getMeta( (PolyphenyDbEmbeddedConnectionImpl) localConnection );
                 return new LocalJsonService( new LocalService( meta ) );
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
@@ -874,7 +874,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
         public Service create( AvaticaConnection connection ) {
             try {
                 Connection conn = JdbcFrontLinqBackTest.makeConnection();
-                final PolyphenyDbMetaImpl meta = new PolyphenyDbMetaImpl( conn.unwrap( PolyphenyDbConnectionImpl.class ) );
+                final PolyphenyDbEmbeddedMetaImpl meta = new PolyphenyDbEmbeddedMetaImpl( conn.unwrap( PolyphenyDbEmbeddedConnectionImpl.class ) );
                 return new LocalService( meta );
             } catch ( Exception e ) {
                 throw new RuntimeException( e );

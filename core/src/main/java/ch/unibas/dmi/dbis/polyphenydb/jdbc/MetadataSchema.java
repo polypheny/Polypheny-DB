@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl.MetaColumn;
-import static ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl.MetaTable;
+import static ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl.MetaColumn;
+import static ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl.MetaTable;
 
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
@@ -65,8 +65,8 @@ class MetadataSchema extends AbstractSchema {
     private static final Map<String, Table> TABLE_MAP =
             ImmutableMap.of(
                     "COLUMNS",
-                    new PolyphenyDbMetaImpl.MetadataTable<MetaColumn>( MetaColumn.class ) {
-                        public Enumerator<MetaColumn> enumerator( final PolyphenyDbMetaImpl meta ) {
+                    new PolyphenyDbEmbeddedMetaImpl.MetadataTable<MetaColumn>( MetaColumn.class ) {
+                        public Enumerator<MetaColumn> enumerator( final PolyphenyDbEmbeddedMetaImpl meta ) {
                             final String catalog;
                             try {
                                 catalog = meta.getConnection().getCatalog();
@@ -77,8 +77,8 @@ class MetadataSchema extends AbstractSchema {
                         }
                     },
                     "TABLES",
-                    new PolyphenyDbMetaImpl.MetadataTable<MetaTable>( MetaTable.class ) {
-                        public Enumerator<MetaTable> enumerator( PolyphenyDbMetaImpl meta ) {
+                    new PolyphenyDbEmbeddedMetaImpl.MetadataTable<MetaTable>( MetaTable.class ) {
+                        public Enumerator<MetaTable> enumerator( PolyphenyDbEmbeddedMetaImpl meta ) {
                             final String catalog;
                             try {
                                 catalog = meta.getConnection().getCatalog();

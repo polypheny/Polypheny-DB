@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
@@ -156,8 +156,8 @@ public class RelBuilderTest {
      * Creates a config builder that will contain a view, "MYVIEW", and also the SCOTT JDBC schema, whose tables implement {@link TranslatableTable}.
      */
     static Frameworks.ConfigBuilder expandingConfig( Connection connection ) throws SQLException {
-        final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final SchemaPlus root = polyphenyDbConnection.getRootSchema();
+        final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final SchemaPlus root = polyphenyDbEmbeddedConnection.getRootSchema();
         PolyphenyDbAssert.SchemaSpec spec = PolyphenyDbAssert.SchemaSpec.SCOTT;
         PolyphenyDbAssert.addSchema( root, spec );
         final String viewSql = String.format( Locale.ROOT, "select * from \"%s\".\"%s\" where 1=1", spec.schemaName, "EMP" );

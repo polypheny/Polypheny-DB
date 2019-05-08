@@ -50,7 +50,7 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
@@ -217,8 +217,8 @@ public class UdfTest {
     public void testUserDefinedFunctionInView() throws Exception {
         Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );
 
         SchemaPlus post = rootSchema.add( "POST", new AbstractSchema() );
@@ -903,8 +903,8 @@ public class UdfTest {
     @Test
     public void testArrayUserDefinedFunction() throws Exception {
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );
 
             SchemaPlus post = rootSchema.add( "POST", new AbstractSchema() );

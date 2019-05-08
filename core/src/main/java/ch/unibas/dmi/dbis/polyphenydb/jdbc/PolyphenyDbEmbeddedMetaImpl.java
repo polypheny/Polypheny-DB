@@ -103,17 +103,21 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Helper for implementing the {@code getXxx} methods such as {@link org.apache.calcite.avatica.AvaticaDatabaseMetaData#getTables}.
  */
-public class PolyphenyDbMetaImpl extends MetaImpl {
+public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( PolyphenyDbEmbeddedMetaImpl.class );
 
     static final EmbeddedDriver EMBEDDED_DRIVER = new EmbeddedDriver();
 
 
-    public PolyphenyDbMetaImpl( PolyphenyDbConnectionImpl connection ) {
+    public PolyphenyDbEmbeddedMetaImpl( PolyphenyDbEmbeddedConnectionImpl connection ) {
         super( connection );
         this.connProps
                 .setAutoCommit( false )
@@ -179,7 +183,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
         final StatementHandle h = super.createStatement( ch );
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         connection.server.addStatement( connection, h );
         return h;
     }
@@ -187,7 +191,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     @Override
     public void closeStatement( StatementHandle h ) {
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         final PolyphenyDbServerStatement stmt;
         try {
             stmt = connection.server.getStatement( h );
@@ -233,7 +237,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     protected MetaResultSet createResultSet( Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
         try {
-            final PolyphenyDbConnectionImpl connection = getConnection();
+            final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
             final AvaticaStatement statement = connection.createStatement();
             final PolyphenyDbSignature<Object> signature =
                     new PolyphenyDbSignature<Object>( "", ImmutableList.of(), internalParameters, null, columns, cursorFactory, null, ImmutableList.of(), -1, null, Meta.StatementType.SELECT ) {
@@ -249,8 +253,8 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
     }
 
 
-    PolyphenyDbConnectionImpl getConnection() {
-        return (PolyphenyDbConnectionImpl) connection;
+    PolyphenyDbEmbeddedConnectionImpl getConnection() {
+        return (PolyphenyDbEmbeddedConnectionImpl) connection;
     }
 
 
@@ -423,7 +427,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     private ImmutableList<MetaTypeInfo> getAllDefaultType() {
         final ImmutableList.Builder<MetaTypeInfo> allTypeList = ImmutableList.builder();
-        final PolyphenyDbConnectionImpl conn = (PolyphenyDbConnectionImpl) connection;
+        final PolyphenyDbEmbeddedConnectionImpl conn = (PolyphenyDbEmbeddedConnectionImpl) connection;
         final RelDataTypeSystem typeSystem = conn.typeFactory.getTypeSystem();
         for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
             allTypeList.add(
@@ -527,7 +531,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
     @Override
     public StatementHandle prepare( ConnectionHandle ch, String sql, long maxRowCount ) {
         final StatementHandle h = createStatement( ch );
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
 
         final PolyphenyDbServerStatement statement;
         try {
@@ -557,7 +561,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
         try {
             synchronized ( callback.getMonitor() ) {
                 callback.clear();
-                final PolyphenyDbConnectionImpl connection = getConnection();
+                final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
                 final PolyphenyDbServerStatement statement = connection.server.getStatement( h );
                 final Context context = statement.createPrepareContext();
                 final PolyphenyDbPrepare.Query<Object> query = toQuery( context, sql );
@@ -581,6 +585,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
             final MetaResultSet metaResultSet = MetaResultSet.create( h.connectionId, h.id, false, signature, null );
             return new ExecuteResult( ImmutableList.of( metaResultSet ) );
         } catch ( SQLException e ) {
+            LOGGER.debug( "Caught exception", e );
             throw new RuntimeException( e );
         }
         // TODO: share code with prepare and createIterable
@@ -605,7 +610,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     @Override
     public Frame fetch( StatementHandle h, long offset, int fetchMaxRowCount ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         PolyphenyDbServerStatement stmt = connection.server.getStatement( h );
         final Signature signature = stmt.getSignature();
         final Iterator<Object> iterator;
@@ -632,7 +637,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     @Override
     public ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         PolyphenyDbServerStatement stmt = connection.server.getStatement( h );
         final Signature signature = stmt.getSignature();
 
@@ -670,7 +675,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
 
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, List<String> sqlCommands ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionImpl connection = getConnection();
+        final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
         final PolyphenyDbServerStatement statement = connection.server.getStatement( h );
         final List<Long> updateCounts = new ArrayList<>();
         final Meta.PrepareCallback callback =
@@ -714,8 +719,8 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
      * A trojan-horse method, subject to change without notice.
      */
     @VisibleForTesting
-    public static DataContext createDataContext( PolyphenyDbConnection connection ) {
-        return ((PolyphenyDbConnectionImpl) connection).createDataContext( ImmutableMap.of(), PolyphenyDbSchema.from( connection.getRootSchema() ) );
+    public static DataContext createDataContext( PolyphenyDbEmbeddedConnection connection ) {
+        return ((PolyphenyDbEmbeddedConnectionImpl) connection).createDataContext( ImmutableMap.of(), PolyphenyDbSchema.from( connection.getRootSchema() ) );
     }
 
 
@@ -723,7 +728,7 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
      * A trojan-horse method, subject to change without notice.
      */
     @VisibleForTesting
-    public static PolyphenyDbConnection connect( PolyphenyDbSchema schema, JavaTypeFactory typeFactory ) {
+    public static PolyphenyDbEmbeddedConnection connect( PolyphenyDbSchema schema, JavaTypeFactory typeFactory ) {
         return EMBEDDED_DRIVER.connect( schema, typeFactory );
     }
 
@@ -806,14 +811,14 @@ public class PolyphenyDbMetaImpl extends MetaImpl {
         }
 
 
-        protected abstract Enumerator<E> enumerator( PolyphenyDbMetaImpl connection );
+        protected abstract Enumerator<E> enumerator( PolyphenyDbEmbeddedMetaImpl connection );
 
 
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
                 @SuppressWarnings("unchecked")
                 public Enumerator<T> enumerator() {
-                    return (Enumerator<T>) MetadataTable.this.enumerator( ((PolyphenyDbConnectionImpl) queryProvider).meta() );
+                    return (Enumerator<T>) MetadataTable.this.enumerator( ((PolyphenyDbEmbeddedConnectionImpl) queryProvider).meta() );
                 }
             };
         }

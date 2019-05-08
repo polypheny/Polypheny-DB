@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -342,13 +342,13 @@ public class JdbcFrontLinqBackTest {
      */
     private static PolyphenyDbAssert.ConnectionPostProcessor makePostProcessor( final List<JdbcTest.Employee> initialData ) {
         return connection -> {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus mapSchema = rootSchema.add( "foo", new AbstractSchema() );
             final String tableName = "bar";
             final JdbcTest.AbstractModifiableTable table = mutable( tableName, initialData );
             mapSchema.add( tableName, table );
-            return polyphenyDbConnection;
+            return polyphenyDbEmbeddedConnection;
         };
     }
 

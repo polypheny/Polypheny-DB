@@ -57,7 +57,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
@@ -157,8 +157,8 @@ public class LookupOperatorOverloadsTest {
         final String anotherName = "AnotherFunc";
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ) ) {
-            PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-            SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+            PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+            SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
             SchemaPlus schema = rootSchema.add( schemaName, new AbstractSchema() );
             final TableFunction table = TableFunctionImpl.create( Smalls.MAZE_METHOD );
             schema.add( funcName, table );

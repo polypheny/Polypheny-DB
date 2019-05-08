@@ -78,8 +78,8 @@ import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbMetaImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -403,8 +403,8 @@ public class JdbcTest {
     @Test
     public void testTableMacro() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         final TableMacro tableMacro = TableMacroImpl.create( Smalls.VIEW_METHOD );
         schema.add( "View", tableMacro );
@@ -428,8 +428,8 @@ public class JdbcTest {
     @Test
     public void testTableMacroMap() throws SQLException, ClassNotFoundException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         SchemaPlus schema = rootSchema.add( "s", new AbstractSchema() );
         final TableMacro tableMacro = TableMacroImpl.create( Smalls.STR_METHOD );
         schema.add( "Str", tableMacro );
@@ -585,7 +585,7 @@ public class JdbcTest {
         };
         try ( TryThreadLocal.Memo ignore = HandlerDriver.HANDLERS.push( h ) ) {
             final HandlerDriver driver = new HandlerDriver();
-            PolyphenyDbConnection connection = (PolyphenyDbConnection) driver.connect( "jdbc:polyphenydbembedded:", new Properties() );
+            PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) driver.connect( "jdbc:polyphenydbembedded:", new Properties() );
             SchemaPlus rootSchema = connection.getRootSchema();
             rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
             connection.setSchema( "hr" );
@@ -643,7 +643,7 @@ public class JdbcTest {
             return;
         }
         final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
-        PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
+        PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
         SchemaPlus rootSchema = connection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
         connection.setSchema( "hr" );
@@ -712,10 +712,10 @@ public class JdbcTest {
         Properties info = new Properties();
         info.setProperty( "lex", "JAVA" );
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
-        Statement statement = polyphenyDbConnection.createStatement();
+        Statement statement = polyphenyDbEmbeddedConnection.createStatement();
         ResultSet resultSet =
                 statement.executeQuery( "select d.deptno, min(e.empid)\n"
                         + "from hr.emps as e\n"
@@ -754,8 +754,8 @@ public class JdbcTest {
     @Test
     public void testVersion() throws ClassNotFoundException, SQLException {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final DatabaseMetaData metaData = polyphenyDbConnection.getMetaData();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final DatabaseMetaData metaData = polyphenyDbEmbeddedConnection.getMetaData();
         assertEquals( "Polypheny-DB JDBC Embedded Driver", metaData.getDriverName() );
 
         final String driverVersion = metaData.getDriverVersion();
@@ -844,7 +844,7 @@ public class JdbcTest {
 
     /**
      * Unit test for
-     * {@link PolyphenyDbMetaImpl#likeToRegex(org.apache.calcite.avatica.Meta.Pat)}.
+     * {@link PolyphenyDbEmbeddedMetaImpl#likeToRegex(org.apache.calcite.avatica.Meta.Pat)}.
      */
     @Test
     public void testLikeToRegex() {
@@ -872,7 +872,7 @@ public class JdbcTest {
 
 
     private void checkLikeToRegex( boolean b, String pattern, String abc ) {
-        final Pattern regex = PolyphenyDbMetaImpl.likeToRegex( Meta.Pat.of( pattern ) );
+        final Pattern regex = PolyphenyDbEmbeddedMetaImpl.likeToRegex( Meta.Pat.of( pattern ) );
         assertTrue( b == regex.matcher( abc ).matches() );
     }
 
@@ -987,8 +987,8 @@ public class JdbcTest {
     @Test
     public void testCloneSchema() throws ClassNotFoundException, SQLException {
         final Connection connection = PolyphenyDbAssert.that( PolyphenyDbAssert.Config.JDBC_FOODMART ).connect();
-        final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         final SchemaPlus foodmart = rootSchema.getSubSchema( "foodmart" );
         rootSchema.add( "foodmart2", new CloneSchema( foodmart ) );
         Statement statement = connection.createStatement();
@@ -5845,8 +5845,8 @@ public class JdbcTest {
         PolyphenyDbAssert.that()
                 .with(
                         new PolyphenyDbAssert.ConnectionFactory() {
-                            public PolyphenyDbConnection createConnection() throws SQLException {
-                                PolyphenyDbConnection connection = (PolyphenyDbConnection) new AutoTempDriver( objects ).connect( "jdbc:polyphenydbembedded:", new Properties() );
+                            public PolyphenyDbEmbeddedConnection createConnection() throws SQLException {
+                                PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) new AutoTempDriver( objects ).connect( "jdbc:polyphenydbembedded:", new Properties() );
                                 final SchemaPlus rootSchema = connection.getRootSchema();
                                 rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
                                 connection.setSchema( "hr" );
@@ -5921,10 +5921,10 @@ public class JdbcTest {
     @Test
     public void testDifferentTypesSameFields() throws Exception {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         rootSchema.add( "TEST", new ReflectiveSchema( new MySchema() ) );
-        Statement statement = polyphenyDbConnection.createStatement();
+        Statement statement = polyphenyDbEmbeddedConnection.createStatement();
         ResultSet resultSet = statement.executeQuery( "SELECT \"myvalue\" from TEST.\"mytable2\"" );
         assertEquals( "myvalue=2\n", PolyphenyDbAssert.toString( resultSet ) );
         resultSet.close();
@@ -6636,8 +6636,8 @@ public class JdbcTest {
     @Test
     public void testSchemaCaching() throws Exception {
         final Connection connection = PolyphenyDbAssert.that( PolyphenyDbAssert.Config.JDBC_FOODMART ).connect();
-        final PolyphenyDbConnection polyphenyDbConnection = connection.unwrap( PolyphenyDbConnection.class );
-        final SchemaPlus rootSchema = polyphenyDbConnection.getRootSchema();
+        final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
+        final SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
 
         // create schema "/a"
         final Map<String, Schema> aSubSchemaMap = new HashMap<>();
@@ -6978,7 +6978,7 @@ public class JdbcTest {
     @Test
     public void testAggMultipleMeasures() throws SQLException {
         final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
-        PolyphenyDbConnection connection = (PolyphenyDbConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
+        PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) embeddedDriver.connect( "jdbc:polyphenydbembedded:", new Properties() );
         SchemaPlus rootSchema = connection.getRootSchema();
         rootSchema.add( "sale", new ReflectiveSchema( new Smalls.WideSaleSchema() ) );
         connection.setSchema( "sale" );
