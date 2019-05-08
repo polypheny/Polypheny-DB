@@ -1,0 +1,142 @@
+
+group 'ch.unibas.dmi.dbis.polyphenydb'
+
+
+version = versionMajor + '.' + versionMinor + versionQualifier
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+
+    }
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+
+dependencies {
+    compile project(':core')
+
+    compile group: 'org.slf4j', name: 'slf4j-api', version:'1.7.25'
+    
+    compile group: 'com.sparkjava', name: 'spark-core', version: '2.8.0'
+
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
+    
+    compile group: 'com.typesafe', name: 'config', version: '1.2.1'
+    
+
+    // --- Test Compile ---
+    testCompile project(path: ':core', configuration: 'testClasses')
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version:'1.7.25'
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+    // suppress most of the warnings
+    options.addStringOption('Xdoclint:none', '-quiet')
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
+        attributes "Version": "$version"
+    }
+}
+
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
+}
+
+
+artifacts {
+    archives jar // regular jar containing only the compiled source
+    archives sourcesJar // jar file containing the java doc files
+    archives javadocJar // jar file containing the source files
+}
+
+
+
+
+/**
+ * IntelliJ
+ */
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+
+        inheritOutputDirs = false
+        outputDir = file("${project.buildDir}/classes")
+        testOutputDir = file("${project.buildDir}/test-classes")
+    }
+}

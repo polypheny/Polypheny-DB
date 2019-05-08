@@ -3,8 +3,8 @@
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,23 +20,32 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
-import static spark.Spark.*;
+
+import static spark.Spark.port;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
+/**
+ * HTTP server for serving the Polypheny-DB UI
+ */
 public class Server {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
+
+
     public Server() {
-        port(80);
-        get("/hello", (req, res) -> "Hello World");
+
+        port( 80 );
+
+        LOGGER.info( "HTTP Server started." );
     }
 
-
-    public static void main(String[] args) {
-        new Server();
-    }
 
 }
