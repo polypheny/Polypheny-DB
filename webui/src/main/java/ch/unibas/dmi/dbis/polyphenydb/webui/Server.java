@@ -29,14 +29,14 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import static spark.Spark.get;
 import static spark.Spark.port;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
+import spark.Spark;
 import spark.utils.IOUtils;
 
 
@@ -53,11 +53,12 @@ public class Server {
 
     public Server() {
 
+        extractJar();
+
         port( 81 );
 
-        //staticFiles.location( "jar" );
-        //Spark.staticFileLocation( "jar" );
-        Resource resource = new Resource();
+        //Spark.staticFileLocation( "jar/ui" );
+        Spark.staticFiles.location( "jar/ui/static" );
 
         get( "/", ( req, res ) -> {
             JarFile file = new JarFile( this.getClass().getClassLoader().getResource( "jar/Polypheny-DB-UI-1.0-SNAPSHOT.jar" ).getFile() );
@@ -67,22 +68,73 @@ public class Server {
             return IOUtils.toString( stream );
         } );
 
-        //source of mapping idea:
-        //https://www.deadcoderising.com/sparkjava-separating-routing-and-resources/
-        get( "/*", map( ( req, res ) -> resource.get( req ) ) );
 
         LOGGER.info( "HTTP Server started." );
 
     }
 
-    Route map( final Converter c ) {
-        return ( req, res ) -> c.convert( req, res ).handle( req, res );
+    /**
+     * extracts the JAR containing the WebUI files, such that the Spark server can serve them using staticFiles
+     */
+    //source: https://stackoverflow.com/questions/1529611/how-to-write-a-java-program-which-can-extract-a-jar-file-and-store-its-data-in-s
+    private void extractJar() {
+        final String destDir = this.getClass().getClassLoader().getResource( "jar" ).getPath() + "/ui";
+        final String jarPath = "jar/Polypheny-DB-UI-1.0-SNAPSHOT.jar";
+        try {
+            try {
+                deleteDirectory( new File( this.getClass().getClassLoader().getResource( "jar/ui" ).getFile() ) );
+                System.out.println( "Deleted folder jar/ui to create anew." );
+            } catch ( NullPointerException e ) {
+                //can skip, don't have to delete if not existing yet
+            }
+
+            System.out.println( "Starting to extract jar..." );
+            System.out.println( "This may take a minute." );
+            JarFile jar = new JarFile( this.getClass().getClassLoader().getResource( jarPath ).getFile() );
+            java.util.Enumeration enumEntries = jar.entries();
+            while ( enumEntries.hasMoreElements() ) {
+                JarEntry file = (java.util.jar.JarEntry) enumEntries.nextElement();
+                File f = new File( destDir + java.io.File.separator + file.getName() );
+                if ( file.isDirectory() ) { // if its a directory, create it
+                    boolean dirCreated = f.mkdirs();
+                    if ( !dirCreated ) {
+                        System.err.println( "Could not create directory " + f.getName() );
+                        break;
+                    }
+                    continue;
+                }
+                java.io.InputStream is = jar.getInputStream( file ); // get the input stream
+                java.io.FileOutputStream fos = new java.io.FileOutputStream( f );
+                while ( is.available() > 0 ) {  // write contents of 'is' to 'fos'
+                    fos.write( is.read() );
+                }
+                fos.close();
+                is.close();
+            }
+            jar.close();
+            System.out.println( "Finished extracting jar." );
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
     }
 
 
-    private interface Converter {
-
-        ResponseCreator convert( Request req, Response res );
+    /**
+     * Delete an existing directory.
+     */
+    //source: https://softwarecave.org/2018/03/24/delete-directory-with-contents-in-java/
+    private void deleteDirectory( final File file ) throws IOException {
+        if ( file.isDirectory() ) {
+            File[] entries = file.listFiles();
+            if ( entries != null ) {
+                for ( File entry : entries ) {
+                    deleteDirectory( entry );
+                }
+            }
+        }
+        if ( !file.delete() ) {
+            throw new IOException( "Failed to delete " + file );
+        }
     }
 
 }
