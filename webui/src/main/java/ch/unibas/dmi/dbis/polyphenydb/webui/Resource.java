@@ -26,63 +26,38 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import static spark.Spark.get;
-import static spark.Spark.port;
-
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Response;
-import spark.Route;
 import spark.utils.IOUtils;
 
 
-/**
- * HTTP server for serving the Polypheny-DB UI
- */
-public class Server {
+public class Resource {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
+    public ResponseCreator get( final Request _req ) {
 
-    public static void main( String[] args ) {
-        Server s = new Server();
-    }
+        String path = _req.splat()[0];
 
-    public Server() {
-
-        port( 81 );
-
-        //staticFiles.location( "jar" );
-        //Spark.staticFileLocation( "jar" );
-        Resource resource = new Resource();
-
-        get( "/", ( req, res ) -> {
+        InputStream stream = null;
+        try {
             JarFile file = new JarFile( this.getClass().getClassLoader().getResource( "jar/Polypheny-DB-UI-1.0-SNAPSHOT.jar" ).getFile() );
-            JarEntry entry = file.getJarEntry( "static/index.html" );
-            InputStream stream = file.getInputStream( entry );
+            JarEntry entry = file.getJarEntry( "static/" + path );
+            stream = file.getInputStream( entry );
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
+        if ( stream != null ) {
+            try {
+                return MyResponse.ok( IOUtils.toString( stream ), path );
+            } catch ( IOException e ) {
+                e.printStackTrace();
+            }
+        }
 
-            return IOUtils.toString( stream );
-        } );
-
-        //source of mapping idea:
-        //https://www.deadcoderising.com/sparkjava-separating-routing-and-resources/
-        get( "/*", map( ( req, res ) -> resource.get( req ) ) );
-
-        LOGGER.info( "HTTP Server started." );
+        //else:
+        return MyResponse.badRequest( "Did not find File " + path + " in UI jar File." );
 
     }
-
-    Route map( final Converter c ) {
-        return ( req, res ) -> c.convert( req, res ).handle( req, res );
-    }
-
-
-    private interface Converter {
-
-        ResponseCreator convert( Request req, Response res );
-    }
-
 }

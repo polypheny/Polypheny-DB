@@ -26,7 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import static spark.Spark.before;
 import static spark.Spark.get;
+import static spark.Spark.options;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.webSocket;
@@ -87,7 +89,27 @@ public class InformationServer {
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
      */
     private static void enableCORS() {
-        InformationServer.enableCORS();
+        options( "/*", ( req, res ) -> {
+            String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
+            if ( accessControlRequestHeaders != null ) {
+                res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
+            }
+
+            String accessControlRequestMethod = req.headers( "Access-Control-Request-Method" );
+            if ( accessControlRequestMethod != null ) {
+                res.header( "Access-Control-Allow-Methods", accessControlRequestMethod );
+            }
+
+            return "OK";
+        } );
+
+        before( ( req, res ) -> {
+            //res.header("Access-Control-Allow-Origin", "*");
+            res.header( "Access-Control-Allow-Origin", "*" );
+            res.header( "Access-Control-Allow-Credentials", "true" );
+            res.header( "Access-Control-Allow-Headers", "*" );
+            res.type( "application/json" );
+        } );
     }
 
 
