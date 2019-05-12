@@ -43,11 +43,15 @@ tasks.withType(JavaCompile) {
 }
 
 
+configurations {
+   uiFiles { transitive = false } 
+} 
+
 
 dependencies {
     compile project(':core')
 
-    compile group: 'ch.unibas.dmi.dbis.polyphenydb', name: 'polyphenydb-ui', version: '1.0'
+    uiFiles group: 'ch.unibas.dmi.dbis.polyphenydb', name: 'polyphenydb-ui', version: '1.0'
 
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
@@ -70,7 +74,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources"]
+            srcDirs = ["src/main/resources","$buildDir/webapp"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -85,6 +89,16 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
+
+
+
+// unzip ui files
+task unzipUiFIles(type: Copy) {
+   from zipTree(configurations.uiFiles.singleFile)
+   into "$buildDir/webapp"
+}
+
+build.dependsOn(unzipUiFIles)
 
 
 
