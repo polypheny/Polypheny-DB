@@ -19,6 +19,7 @@ buildscript {
 
 
 repositories {
+    mavenLocal()
     maven {
         // DBIS Artifactory
         url 'https://dbis-artifactory.dmi.unibas.ch/maven2/'
