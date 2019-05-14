@@ -53,19 +53,16 @@ public class Server {
 
     public Server() {
 
-        extractJar();
+        port( 8083 );
 
-        port( 81 );
-
-        //Spark.staticFileLocation( "jar/ui" );
-        Spark.staticFiles.location( "jar/ui/static" );
+        Spark.staticFiles.location( "webapp/" );
 
         get( "/", ( req, res ) -> {
-            JarFile file = new JarFile( this.getClass().getClassLoader().getResource( "jar/Polypheny-DB-UI-1.0-SNAPSHOT.jar" ).getFile() );
-            JarEntry entry = file.getJarEntry( "static/index.html" );
-            InputStream stream = file.getInputStream( entry );
-
-            return IOUtils.toString( stream );
+            try (InputStream stream = this.getClass().getClassLoader().getResource("webapp/index.html").openStream()) {
+                return IOUtils.toString(stream);
+            } catch( Exception e ){
+                return "Error: Spark server could not find index.html";
+            }
         } );
 
 
@@ -73,68 +70,5 @@ public class Server {
 
     }
 
-    /**
-     * extracts the JAR containing the WebUI files, such that the Spark server can serve them using staticFiles
-     */
-    //source: https://stackoverflow.com/questions/1529611/how-to-write-a-java-program-which-can-extract-a-jar-file-and-store-its-data-in-s
-    private void extractJar() {
-        final String destDir = this.getClass().getClassLoader().getResource( "jar" ).getPath() + "/ui";
-        final String jarPath = "jar/Polypheny-DB-UI-1.0-SNAPSHOT.jar";
-        try {
-            try {
-                deleteDirectory( new File( this.getClass().getClassLoader().getResource( "jar/ui" ).getFile() ) );
-                System.out.println( "Deleted folder jar/ui to create anew." );
-            } catch ( NullPointerException e ) {
-                //can skip, don't have to delete if not existing yet
-            }
-
-            System.out.println( "Starting to extract jar..." );
-            System.out.println( "This may take a minute." );
-            JarFile jar = new JarFile( this.getClass().getClassLoader().getResource( jarPath ).getFile() );
-            java.util.Enumeration enumEntries = jar.entries();
-            while ( enumEntries.hasMoreElements() ) {
-                JarEntry file = (java.util.jar.JarEntry) enumEntries.nextElement();
-                File f = new File( destDir + java.io.File.separator + file.getName() );
-                if ( file.isDirectory() ) { // if its a directory, create it
-                    boolean dirCreated = f.mkdirs();
-                    if ( !dirCreated ) {
-                        System.err.println( "Could not create directory " + f.getName() );
-                        break;
-                    }
-                    continue;
-                }
-                java.io.InputStream is = jar.getInputStream( file ); // get the input stream
-                java.io.FileOutputStream fos = new java.io.FileOutputStream( f );
-                while ( is.available() > 0 ) {  // write contents of 'is' to 'fos'
-                    fos.write( is.read() );
-                }
-                fos.close();
-                is.close();
-            }
-            jar.close();
-            System.out.println( "Finished extracting jar." );
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
-    }
-
-
-    /**
-     * Delete an existing directory.
-     */
-    //source: https://softwarecave.org/2018/03/24/delete-directory-with-contents-in-java/
-    private void deleteDirectory( final File file ) throws IOException {
-        if ( file.isDirectory() ) {
-            File[] entries = file.listFiles();
-            if ( entries != null ) {
-                for ( File entry : entries ) {
-                    deleteDirectory( entry );
-                }
-            }
-        }
-        if ( !file.delete() ) {
-            throw new IOException( "Failed to delete " + file );
-        }
-    }
 
 }
