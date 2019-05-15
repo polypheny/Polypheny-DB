@@ -97,6 +97,11 @@ sourceSets {
 task unzipUiFIles(type: Copy) {
    from zipTree(configurations.uiFiles.singleFile)
    into "$buildDir/webapp"
+   doLast {
+       file("$buildDir/webapp/index").mkdirs()
+       ant.move file: "$buildDir/webapp/webapp/index.html",
+                toDir: "$buildDir/webapp/index/"
+    }
 }
 
 build.dependsOn(unzipUiFIles)

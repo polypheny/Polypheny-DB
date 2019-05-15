@@ -29,15 +29,17 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import static spark.Spark.get;
 import static spark.Spark.port;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.io.InputStreamReader;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
-import spark.utils.IOUtils;
 
 
 /**
@@ -58,17 +60,47 @@ public class Server {
         Spark.staticFiles.location( "webapp/" );
 
         get( "/", ( req, res ) -> {
-            try (InputStream stream = this.getClass().getClassLoader().getResource("webapp/index.html").openStream()) {
-                return IOUtils.toString(stream);
-            } catch( Exception e ){
+            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream()) {
+                final DatagramSocket socket = new DatagramSocket();
+                socket.connect( InetAddress.getByName( "8.8.8.8" ), 10002 );
+                String ip = socket.getLocalAddress().getHostAddress();
+                return streamToString( stream, ip );
+            } catch( NullPointerException e ){
                 return "Error: Spark server could not find index.html";
+            } catch ( SocketException e ){
+                return "Error: Spark server could not determine its ip address.";
             }
         } );
-
 
         LOGGER.info( "HTTP Server started." );
 
     }
 
+
+    /**
+     * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
+     */
+    //quelle: http://roufid.com/5-ways-convert-inputstream-string-java/
+    private String streamToString( final InputStream stream, final String ip ) {
+        StringBuilder stringBuilder = new StringBuilder();
+        String line = null;
+
+        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ))) {
+            while (( line = bufferedReader.readLine() ) != null ) {
+                if( line.contains( "//SPARK-REPLACE" )){
+                    stringBuilder.append( "\nlocalStorage.setItem('settings.config.rest', 'http://" ).append( ip ).append( ":8081');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('settings.config.socket', 'ws://" ).append( ip ).append( ":8081/configWebSocket');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('settings.information.rest', 'http://" ).append( ip ).append( ":8082');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('settings.information.socket', 'ws://" ).append( ip ).append( ":8082/informationWebSocket');\n" );
+                }else {
+                    stringBuilder.append(line);
+                }
+            }
+        } catch ( IOException e ){
+            e.printStackTrace();
+        }
+
+        return stringBuilder.toString();
+    }
 
 }
