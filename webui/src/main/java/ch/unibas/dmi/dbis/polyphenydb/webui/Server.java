@@ -53,10 +53,16 @@ public class Server {
     private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
 
     public static void main( String[] args ) {
-        Server s = new Server();
+        if ( args.length < 4) {
+            System.out.println( "Missing command-line arguments. Please provied the following information:\n"
+                    + "java Server <host> <port> <database> <user> <password>\n"
+                    + "e.g. java Server localhost 8080 myDatabase root secret" );
+            System.exit( 1 );
+        }
+        Server s = new Server( args );
     }
 
-    public Server() {
+    public Server( String[] args ) {
 
         port( 8083 );
 
@@ -79,7 +85,7 @@ public class Server {
             }
         } );
 
-        crudRoutes();
+        crudRoutes( args );
 
         LOGGER.info( "HTTP Server started." );
 
@@ -89,13 +95,15 @@ public class Server {
     /**
      * defines the routes for this Server
      */
-    private void crudRoutes() {
+    private void crudRoutes( String[] args ) {
 
-        Crud crud = new Crud();
+        Crud crud = new Crud( args );
 
         post( "/getTable", crud::getTable );
 
-        get( "getSchemaTree", crud::getSchemaTree );
+        get( "/getSchemaTree", crud::getSchemaTree );
+
+        post( "/insertRow", crud::insertIntoTable);
 
     }
 
