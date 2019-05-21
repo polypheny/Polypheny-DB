@@ -26,16 +26,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import static spark.Spark.before;
-import static spark.Spark.get;
-import static spark.Spark.options;
-import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.webSocket;
+import static spark.Service.ignite;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Service;
 
 
 /**
@@ -46,33 +42,34 @@ public class InformationServer {
     private static final Logger LOGGER = LoggerFactory.getLogger( InformationServer.class );
 
 
-    public InformationServer() {
+    public InformationServer( final int port ) {
 
-        port( 8082 );
+
+        Service http = ignite().port( port );
 
         // Needs to be called before defining routes!
-        webSockets();
+        webSockets( http );
 
-        enableCORS();
+        enableCORS( http );
 
-        informationRoutes();
+        informationRoutes( http );
 
         LOGGER.info( "InformationServer started." );
     }
 
 
-    private void webSockets() {
+    private void webSockets( final Service http ) {
         // Websockets need to be defined before the post/get requests
-        webSocket( "/informationWebSocket", InformationWebSocket.class );
+        http.webSocket( "/informationWebSocket", InformationWebSocket.class );
     }
 
 
-    private void informationRoutes() {
+    private void informationRoutes( final Service http ) {
         InformationManager im = InformationManager.getInstance();
 
-        get( "/getPageList", ( req, res ) -> im.getPageList() );
+        http.get( "/getPageList", ( req, res ) -> im.getPageList() );
 
-        post( "/getPage", ( req, res ) -> {
+        http.post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: "page1"}
             try {
                 return im.getPage( req.body() );
@@ -88,8 +85,8 @@ public class InformationServer {
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
      */
-    private static void enableCORS() {
-        options( "/*", ( req, res ) -> {
+    private static void enableCORS( final Service http ) {
+        http.options( "/*", ( req, res ) -> {
             String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
             if ( accessControlRequestHeaders != null ) {
                 res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
@@ -103,7 +100,7 @@ public class InformationServer {
             return "OK";
         } );
 
-        before( ( req, res ) -> {
+        http.before( ( req, res ) -> {
             //res.header("Access-Control-Allow-Origin", "*");
             res.header( "Access-Control-Allow-Origin", "*" );
             res.header( "Access-Control-Allow-Credentials", "true" );

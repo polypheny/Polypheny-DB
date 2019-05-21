@@ -46,7 +46,7 @@ public class InformationServerTest {
 
 
     public static void main( String[] args ) {
-        InformationServer s = new InformationServer();
+        InformationServer s = new InformationServer( 8082 );
         demoData();
     }
 

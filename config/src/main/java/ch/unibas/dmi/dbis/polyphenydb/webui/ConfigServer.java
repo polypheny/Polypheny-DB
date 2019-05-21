@@ -26,12 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import static spark.Spark.before;
-import static spark.Spark.get;
-import static spark.Spark.options;
-import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.webSocket;
+import static spark.Service.ignite;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
@@ -42,6 +37,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Service;
 
 
 /**
@@ -52,25 +48,25 @@ public class ConfigServer implements ConfigListener {
     private static final Logger LOGGER = LoggerFactory.getLogger( ConfigServer.class );
 
 
-    public ConfigServer() {
-        port( 8081 );
+    public ConfigServer( final int port ) {
+        Service http = ignite().port( port );
 
         //needs to be called before route mapping!
-        webSockets();
-        enableCORS();
-        configRoutes();
+        webSockets( http );
+        enableCORS( http );
+        configRoutes( http );
     }
 
 
     public static void main( String[] args ) {
         LOGGER.debug( "Starting config server..." );
-        new ConfigServer();
+        new ConfigServer( 8081 );
     }
 
 
-    private void webSockets() {
+    private void webSockets( final Service http ) {
         // Websockets need to be defined before the post/get requests
-        webSocket( "/configWebSocket", ConfigWebsocket.class );
+        http.webSocket( "/configWebSocket", ConfigWebsocket.class );
     }
 
 
@@ -78,15 +74,15 @@ public class ConfigServer implements ConfigListener {
      * Many routes just for testing.
      * Route getPage: get a WebUiPage as JSON (with all its groups and configs).
      */
-    private void configRoutes() {
+    private void configRoutes( final Service http ) {
         String type = "application/json";
         Gson gson = new Gson();
         ConfigManager cm = ConfigManager.getInstance();
 
-        get( "/getPageList", ( req, res ) -> cm.getWebUiPageList() );
+        http.get( "/getPageList", ( req, res ) -> cm.getWebUiPageList() );
 
         // get Ui of certain page
-        post( "/getPage", ( req, res ) -> {
+        http.post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: 123}
             try {
                 return cm.getPage( req.body() );
@@ -97,7 +93,7 @@ public class ConfigServer implements ConfigListener {
         } );
 
         // save changes from WebUi
-        post( "/updateConfigs", ( req, res ) -> {
+        http.post( "/updateConfigs", ( req, res ) -> {
             LOGGER.trace( req.body() );
             Map<String, Object> changes = gson.fromJson( req.body(), Map.class );
             StringBuilder feedback = new StringBuilder();
@@ -163,10 +159,10 @@ public class ConfigServer implements ConfigListener {
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
      */
-    public static void enableCORS() {
+    public static void enableCORS( final Service http ) {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
-        options( "/*", ( req, res ) -> {
+        http.options( "/*", ( req, res ) -> {
             String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
             if ( accessControlRequestHeaders != null ) {
                 res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
@@ -180,7 +176,7 @@ public class ConfigServer implements ConfigListener {
             return "OK";
         } );
 
-        before( ( req, res ) -> {
+        http.before( ( req, res ) -> {
             //res.header("Access-Control-Allow-Origin", "*");
             res.header( "Access-Control-Allow-Origin", "*" );
             res.header( "Access-Control-Allow-Credentials", "true" );
@@ -191,7 +187,7 @@ public class ConfigServer implements ConfigListener {
 
 
     @Override
-    public void onConfigChange( Config c ) {
+    public void onConfigChange( final Config c ) {
         Gson gson = new Gson();
         try {
             ConfigWebsocket.broadcast( gson.toJson( c ) );
@@ -202,7 +198,7 @@ public class ConfigServer implements ConfigListener {
 
 
     @Override
-    public void restart( Config c ) {
+    public void restart( final Config c ) {
 
     }
 
