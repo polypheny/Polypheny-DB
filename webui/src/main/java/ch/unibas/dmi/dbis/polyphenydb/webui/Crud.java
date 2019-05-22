@@ -60,6 +60,10 @@ class Crud {
     private String dbName;
     private final int PAGESIZE = 4;
 
+
+    /**
+     * @param args from command line: "host port database user password"
+     */
     Crud( String[] args ) {
 
         if( args.length < 4 ) {
@@ -77,7 +81,6 @@ class Crud {
             pass = args[4];
         }
         final String PASS = pass;
-
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -98,6 +101,9 @@ class Crud {
     }
 
 
+    /**
+     * get the Number of rows in a table
+     */
     private Integer getTableSize ( final String tableName ) {
         Integer size = null;
         try {
@@ -180,7 +186,7 @@ class Crud {
 
         try {
             Statement stmt = conn.createStatement();
-            String query = "SELECT TABLE_NAME AS _tables FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?";
+            String query = "SELECT TABLE_NAME AS _tables FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'";
             PreparedStatement ps = conn.prepareStatement( query );
             ps.setString( 1, this.dbName );
             ResultSet rs = ps.executeQuery();
@@ -193,10 +199,33 @@ class Crud {
         } catch ( SQLException e ) {
             e.printStackTrace();
         }
-        SidebarElement db = new SidebarElement( "db", "db", "fa fa-database" );
+        SidebarElement db = new SidebarElement( "tables", "tables", "fa fa-table" );
         db.setChildren( result );
+
+        //get views
+        ArrayList<SidebarElement> views = new ArrayList<>();
+        try {
+            Statement stmt = conn.createStatement();
+            PreparedStatement ps = conn.prepareStatement( "SELECT TABLE_NAME "
+                    + "FROM information_schema.tables "
+                    + "WHERE TABLE_SCHEMA = ? "
+                    + "AND TABLE_TYPE = 'VIEW'" );
+            ps.setString( 1, this.dbName );
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                String view = rs.getString( 1 );
+                views.add( new SidebarElement( view, view, "icon-eye" ) );
+            }
+        } catch ( SQLException e ) {
+            e.printStackTrace();
+        }
+        SidebarElement sidebarViews = new SidebarElement( "views", "views", "icon-eye" );
+        sidebarViews.setChildren( views );
+
+        SidebarElement[] out = { db, sidebarViews };
+
         Gson gson = new Gson();
-        return gson.toJson( db );
+        return gson.toJson( out );
     }
 
 
