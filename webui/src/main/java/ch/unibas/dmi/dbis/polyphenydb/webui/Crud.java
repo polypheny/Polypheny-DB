@@ -59,6 +59,7 @@ class Crud {
     private int port;
     private String dbName;
     private final int PAGESIZE = 4;
+    private Gson gson = new Gson();
 
 
     /**
@@ -83,7 +84,7 @@ class Crud {
         final String PASS = pass;
 
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            Class.forName( "com.mysql.cj.jdbc.Driver" );
         } catch ( ClassNotFoundException e ) {
             System.err.println( "Could not load driver class." );
             e.printStackTrace();
@@ -126,11 +127,11 @@ class Crud {
      * with a maximum of PAGESIZE elements
      */
     String getTable( final Request req, final Response res ) {
-        Gson gson = new Gson();
-        UIRequest request = gson.fromJson( req.body(), UIRequest.class );
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
 
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<DbColumn> header = new ArrayList<>();
+        Result<String> result;
 
         try {
             StringBuilder query = new StringBuilder();
@@ -138,9 +139,31 @@ class Crud {
             if( request.filter != null) where = filterTable( request.filter );
             String orderBy = "";
             if ( request.sortState != null ) orderBy = sortTable( request.sortState );
-            query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( (request.currentPage -1) * PAGESIZE ).append( "," ).append( PAGESIZE );
+            query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( (request.currentPage - 1) * PAGESIZE ).append( "," ).append( PAGESIZE );
             PreparedStatement ps = conn.prepareStatement( query.toString() );
             ResultSet rs = ps.executeQuery();
+            result = buildResult( rs, request );
+        } catch ( SQLException e ) {
+            result = new Result<String>( e.getMessage() );
+        }
+        //System.out.println(gson.toJson( header ));
+
+        result.setCurrentPage( request.currentPage ).setTable( request.tableId );
+        int tableSize = getTableSize( request.tableId );
+        result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
+        return result.toJson();
+    }
+
+
+    /**
+     * From a ResultSet: build a Result object that the UI can understand
+     */
+    private Result<String> buildResult( ResultSet rs, UIRequest request ) {
+        ArrayList<String[]> data = new ArrayList<>();
+        ArrayList<DbColumn> header = new ArrayList<>();
+        Result result;
+
+        try {
             ResultSetMetaData meta = rs.getMetaData();
             int numOfCols = meta.getColumnCount();
             for( int i = 1; i <= numOfCols; i++) {
@@ -156,7 +179,6 @@ class Crud {
                     sort = new SortState();
                 }
                 header.add( new DbColumn( meta.getColumnName( i ), sort, meta.getColumnType( i ), filter ) );
-                //todo sortstate from request
             }
             while ( rs.next() ) {
                 String[] row = new String[numOfCols];
@@ -165,15 +187,11 @@ class Crud {
                 }
                 data.add( row );
             }
+            result = new Result<String>( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) );
         } catch ( SQLException e ) {
-            e.printStackTrace();
+            result = new Result<String>( e.getMessage() );
         }
-        //System.out.println(gson.toJson( header ));
-        Result<String> result = new Result<String>( header.toArray( new DbColumn[0] ) , data.toArray( new String[ 0 ][] ));
-        result.setCurrentPage( request.currentPage ).setTable( request.tableId );
-        int tableSize = getTableSize( request.tableId );
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
-        return result.toJson();
+        return result;
     }
 
 
@@ -224,8 +242,7 @@ class Crud {
 
         SidebarElement[] out = { db, sidebarViews };
 
-        Gson gson = new Gson();
-        return gson.toJson( out );
+        return this.gson.toJson( out );
     }
 
 
@@ -235,8 +252,7 @@ class Crud {
     int insertIntoTable( final Request req, final Response res ) {
         int rowsAffected = 0;
         try {
-            Gson gson = new Gson();
-            UIRequest request = gson.fromJson( req.body() , UIRequest.class );
+            UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
 
             Statement stmt = conn.createStatement();
             StringBuilder query = new StringBuilder().append( "INSERT INTO " ).append( request.tableId ).append( " VALUES " );
@@ -287,6 +303,26 @@ class Crud {
         String out = "";
         if ( counter > 0 ) out = joiner.toString();
         return out;
+    }
+
+
+    /**
+     * Run any query coming form the SQL console
+     */
+    String anyQuery( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Result<String> result;
+
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery( request.query );
+            result = buildResult( rs, request );
+
+        } catch ( SQLException e ) {
+            result = new Result<String>( e.getMessage() );
+        }
+
+        return result.toJson();
     }
 
 }

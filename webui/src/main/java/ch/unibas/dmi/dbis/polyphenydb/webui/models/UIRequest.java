@@ -61,4 +61,9 @@ public class UIRequest {
      */
     public Map<String, SortState> sortState;
 
+    /**
+     * a query from the SQL console
+     */
+    public String query;
+
 }

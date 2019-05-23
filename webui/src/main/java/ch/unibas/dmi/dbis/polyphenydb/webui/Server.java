@@ -103,7 +103,9 @@ public class Server {
 
         get( "/getSchemaTree", crud::getSchemaTree );
 
-        post( "/insertRow", crud::insertIntoTable);
+        post( "/insertRow", crud::insertIntoTable );
+
+        post( "/anyQuery", crud::anyQuery );
 
     }
 
