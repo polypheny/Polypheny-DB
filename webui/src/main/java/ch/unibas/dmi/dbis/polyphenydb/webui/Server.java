@@ -86,25 +86,10 @@ public class Server {
             }
         } );
 
-        crudRoutes();
-
         LOGGER.info( "HTTP Server started." );
 
     }
 
-
-    /**
-     * defines the routes for this Server
-     */
-    private void crudRoutes() {
-
-        Crud crud = new Crud();
-
-        post( "/getTable", crud::getTable );
-
-        get( "getSchemaTree", crud::getSchemaTree );
-
-    }
 
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
