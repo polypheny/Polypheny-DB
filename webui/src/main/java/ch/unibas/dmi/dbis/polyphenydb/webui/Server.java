@@ -32,13 +32,12 @@ import static spark.Spark.post;
 import static spark.Spark.options;
 import static spark.Spark.port;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +50,7 @@ import spark.Spark;
 public class Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
+    private final ConfigManager cm = ConfigManager.getInstance();
 
     public static void main( String[] args ) {
         if ( args.length < 4) {
@@ -59,12 +59,21 @@ public class Server {
                     + "e.g. java Server localhost 8080 myDatabase root secret" );
             System.exit( 1 );
         }
-        Server s = new Server( args );
+
+        ConfigManager cm = ConfigManager.getInstance();
+        cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ) );
+        cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ) );
+        cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ) );
+
+        //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
+        ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
+        InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
+        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt(), args );
     }
 
-    public Server( String[] args ) {
+    public Server( final int port, String[] args ) {
 
-        port( 8083 );
+        port( port );
 
         Spark.staticFiles.location( "webapp/" );
 
@@ -74,14 +83,9 @@ public class Server {
         get( "/", ( req, res ) -> {
             res.type( "text/html" );
             try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream()) {
-                final DatagramSocket socket = new DatagramSocket();
-                socket.connect( InetAddress.getByName( "8.8.8.8" ), 10002 );
-                String ip = socket.getLocalAddress().getHostAddress();
-                return streamToString( stream, ip );
+                return streamToString( stream );
             } catch( NullPointerException e ){
                 return "Error: Spark server could not find index.html";
-            } catch ( SocketException e ){
-                return "Error: Spark server could not determine its ip address.";
             }
         } );
 
@@ -110,22 +114,19 @@ public class Server {
         post( "/anyQuery", crud::anyQuery );
 
     }
-
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
      */
     //see: http://roufid.com/5-ways-convert-inputstream-string-java/
-    private String streamToString( final InputStream stream, final String ip ) {
+    private String streamToString( final InputStream stream ) {
         StringBuilder stringBuilder = new StringBuilder();
         String line = null;
         try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ))) {
             while (( line = bufferedReader.readLine() ) != null ) {
                 if( line.contains( "//SPARK-REPLACE" )){
-                    stringBuilder.append( "\nlocalStorage.setItem('settings.config.rest', 'http://" ).append( ip ).append( ":8081');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('settings.config.socket', 'ws://" ).append( ip ).append( ":8081/configWebSocket');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('settings.information.rest', 'http://" ).append( ip ).append( ":8082');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('settings.information.socket', 'ws://" ).append( ip ).append( ":8082/informationWebSocket');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('settings.crud.rest', 'http://" ).append( ip ).append( ":8083');\n" );
+                    stringBuilder.append( "\nlocalStorage.setItem('configServer.port', '" ).append( this.cm.getConfig( "configServer.port" ).getInt() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('informationServer.port', '" ).append( this.cm.getConfig( "informationServer.port" ).getInt() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('webUI.port', '" ).append( this.cm.getConfig( "webUI.port" ).getInt() ).append( "');" );
                 }else {
                     stringBuilder.append(line);
                 }
