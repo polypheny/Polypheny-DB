@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
@@ -41,6 +42,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringJoiner;
 import org.apache.commons.lang.math.NumberUtils;
 import spark.Request;
@@ -65,7 +67,7 @@ class Crud {
     /**
      * @param args from command line: "host port database user password"
      */
-    Crud( String[] args ) {
+    Crud( final String[] args ) {
 
         if( args.length < 4 ) {
             System.out.println( "Missing command-line arguments. Please provied the following information:\n"
@@ -131,7 +133,7 @@ class Crud {
 
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<DbColumn> header = new ArrayList<>();
-        Result<String> result;
+        Result result;
 
         try {
             StringBuilder query = new StringBuilder();
@@ -144,9 +146,8 @@ class Crud {
             ResultSet rs = ps.executeQuery();
             result = buildResult( rs, request );
         } catch ( SQLException e ) {
-            result = new Result<String>( e.getMessage() );
+            result = new Result( e.getMessage() );
         }
-        //System.out.println(gson.toJson( header ));
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         int tableSize = getTableSize( request.tableId );
@@ -158,7 +159,7 @@ class Crud {
     /**
      * From a ResultSet: build a Result object that the UI can understand
      */
-    private Result<String> buildResult( ResultSet rs, UIRequest request ) {
+    private Result buildResult( final ResultSet rs, final UIRequest request ) {
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<DbColumn> header = new ArrayList<>();
         Result result;
@@ -187,9 +188,9 @@ class Crud {
                 }
                 data.add( row );
             }
-            result = new Result<String>( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) );
+            result = new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
         } catch ( SQLException e ) {
-            result = new Result<String>( e.getMessage() );
+            result = new Result( e.getMessage() );
         }
         return result;
     }
@@ -210,7 +211,6 @@ class Crud {
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 String tableName = rs.getString( "_tables" );
-                //System.out.println( tableName);
                 result.add( new SidebarElement( tableName, tableName, "fa fa-table" ) );
             }
             stmt.close();
@@ -249,13 +249,15 @@ class Crud {
     /**
      * insert data into a table
      */
-    int insertIntoTable( final Request req, final Response res ) {
+    String insertIntoTable( final Request req, final Response res ) {
         int rowsAffected = 0;
+        Result result;
+        StringBuilder query = new StringBuilder();
         try {
             UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
 
             Statement stmt = conn.createStatement();
-            StringBuilder query = new StringBuilder().append( "INSERT INTO " ).append( request.tableId ).append( " VALUES " );
+            query.append( "INSERT INTO " ).append( request.tableId ).append( " VALUES " );
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
             for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
                 String value = entry.getValue();
@@ -269,13 +271,21 @@ class Crud {
             }
             query.append( joiner.toString() );
             rowsAffected = stmt.executeUpdate( query.toString() );
+            result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
         } catch ( SQLException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             e.printStackTrace();
         }
-        return rowsAffected;
+        return result.toJson();
     }
 
 
+    /**
+     * Filter a table with a keyword
+     * Show only entries where the value of that column starts with the keyword
+     *
+     * @return the generated condition for the query
+     */
     private String filterTable ( Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
         int counter = 0;
@@ -291,6 +301,9 @@ class Crud {
     }
 
 
+    /**
+     * Generates the ORDER BY clause of a query if a sorted column is requested by the UI
+     */
     private String sortTable ( Map<String, SortState> sorting) {
         StringJoiner joiner = new StringJoiner( ",", " ORDER BY ", "" );
         int counter = 0;
@@ -311,17 +324,63 @@ class Crud {
      */
     String anyQuery( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        Result<String> result;
+        Result result;
 
         try {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery( request.query );
             result = buildResult( rs, request );
-
         } catch ( SQLException e ) {
-            result = new Result<String>( e.getMessage() );
+            try {
+                Statement stmt = conn.createStatement();
+                int numOfRows = stmt.executeUpdate( request.query );
+                result = new Result( new Debug().setAffectedRows( numOfRows ) );
+            } catch ( SQLException e2 ) {
+                result = new Result( e2.getMessage() );
+            }
         }
 
+        return result.toJson();
+    }
+
+
+    /**
+     * delete a row from a table
+     * the row is determined by the value of every column in that row (conjunction)
+     * the transaction is being rolled back, if more that one row would be deleted
+     */
+    String deleteRow( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Result result;
+        StringBuilder builder = new StringBuilder();
+
+        try {
+            builder.append( "DELETE FROM " ).append( request.tableId ).append( " WHERE " );
+            StringJoiner joiner = new StringJoiner( " AND ", "", "" );
+            for ( Entry<String, String> entry : request.data.entrySet() ) {
+                String condition = "";
+                if ( entry.getValue() == null || entry.getValue().equals( "" ) ) {
+                    condition = String.format( "(%s IS NULL OR %s = '')", entry.getKey(), entry.getKey() );
+                } else {
+                    condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
+                }
+                joiner.add( condition );
+            }
+            builder.append( joiner.toString() );
+            conn.setAutoCommit( false );
+            Statement stmt = conn.createStatement();
+            int numOfRows = stmt.executeUpdate( builder.toString() );
+            //only commit if one row is deleted
+            if ( numOfRows == 1 ) {
+                conn.commit();
+                result = new Result( new Debug().setAffectedRows( numOfRows ) );
+            } else {
+                conn.rollback();
+                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            }
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+        }
         return result.toJson();
     }
 

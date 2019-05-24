@@ -32,7 +32,7 @@ import com.google.gson.Gson;
 /**
  * Contains data from a query, the titles of the columns and information about the pagination
  */
-public class Result<T> {
+public class Result {
 
     /**
      * the header contains information about the columns of a result
@@ -41,7 +41,7 @@ public class Result<T> {
     /**
      * the rows containing the fetched data
      */
-    private T[][] data;
+    private String[][] data;
     /**
      * information for the pagination: what current page is being displayed
      */
@@ -63,6 +63,10 @@ public class Result<T> {
      * error message if a query failed
      */
     private String error;
+    /**
+     * info about a query
+     */
+    private Debug info;
 
 
     /**
@@ -71,7 +75,7 @@ public class Result<T> {
      * @param header columns of the result
      * @param data data of the result
      */
-    public Result( final DbColumn[] header, final T[][] data ) {
+    public Result( final DbColumn[] header, final String[][] data ) {
         this.header = header;
         this.data = data;
     }
@@ -83,6 +87,11 @@ public class Result<T> {
      */
     public Result( String error ) {
         this.error = error;
+    }
+
+
+    public Result( Debug info ) {
+        this.info = info;
     }
 
 
@@ -109,4 +118,8 @@ public class Result<T> {
         return this;
     }
 
+    public Result setInfo( Debug info ) {
+        this.info = info;
+        return this;
+    }
 }

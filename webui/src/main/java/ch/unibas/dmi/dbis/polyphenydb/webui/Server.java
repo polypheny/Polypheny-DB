@@ -105,6 +105,8 @@ public class Server {
 
         post( "/insertRow", crud::insertIntoTable );
 
+        post( "/deleteRow", crud::deleteRow );
+
         post( "/anyQuery", crud::anyQuery );
 
     }
