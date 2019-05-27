@@ -111,6 +111,8 @@ public class Server {
 
         post( "/deleteRow", crud::deleteRow );
 
+        post( "/updateRow", crud::updateRow );
+
         post( "/anyQuery", crud::anyQuery );
 
     }

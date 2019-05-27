@@ -39,7 +39,7 @@ public class SidebarElement {
     private String name;
     private String icon;//todo: enum
     private String routerLink;
-    private ArrayList<SidebarElement> children;
+    private ArrayList<SidebarElement> children = new ArrayList<>();
 
 
     public SidebarElement( final String id, final String name ) {
@@ -55,9 +55,20 @@ public class SidebarElement {
     }
 
 
-    public void setChildren( final ArrayList<SidebarElement> children ) {
-        this.children = children;
+    public SidebarElement addChildren( final ArrayList<SidebarElement> children ) {
+        this.children.addAll( children );
+        return this;
     }
 
+
+    public SidebarElement addChild( final SidebarElement child ) {
+        this.children.add( child );
+        return this;
+    }
+
+    public SidebarElement setRouterLink( final String routerLink ) {
+        this.routerLink = routerLink;
+        return this;
+    }
 }
 

@@ -56,7 +56,8 @@ import spark.Response;
 class Crud {
 
     private Connection conn;
-    private String driver = "jdbc:mysql://";
+    //private String driver = "jdbc:mysql://";
+    private String driver = "jdbc:postgresql://";
     private String host;
     private int port;
     private String dbName;
@@ -86,14 +87,15 @@ class Crud {
         final String PASS = pass;
 
         try {
-            Class.forName( "com.mysql.cj.jdbc.Driver" );
+            //Class.forName( "com.mysql.cj.jdbc.Driver" );
+            Class.forName( "org.postgresql.Driver" );
         } catch ( ClassNotFoundException e ) {
             System.err.println( "Could not load driver class." );
             e.printStackTrace();
         }
 
         //Time zone: https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
-        final String URL = driver + host + ":" + port + "/" + dbName + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+        final String URL = driver + host + ":" + port + "/" + dbName;//"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
 
         try {
             this.conn =  DriverManager.getConnection( URL, USER, PASS );
@@ -111,8 +113,8 @@ class Crud {
         Integer size = null;
         try {
             Statement stmt = conn.createStatement();
-            String query = "SELECT count(1) FROM " + tableName;
-            PreparedStatement ps = conn.prepareStatement( query );
+            String query = "SELECT count(*) FROM " + tableName;
+            PreparedStatement ps = conn.prepareStatement( query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
             ResultSet rs = ps.executeQuery();
             rs.first();
             size = rs.getInt( 1 );
@@ -141,7 +143,7 @@ class Crud {
             if( request.filter != null) where = filterTable( request.filter );
             String orderBy = "";
             if ( request.sortState != null ) orderBy = sortTable( request.sortState );
-            query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( (request.currentPage - 1) * PAGESIZE ).append( "," ).append( PAGESIZE );
+            query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( PAGESIZE ).append( " OFFSET " ).append( (request.currentPage - 1) * PAGESIZE );
             PreparedStatement ps = conn.prepareStatement( query.toString() );
             ResultSet rs = ps.executeQuery();
             result = buildResult( rs, request );
@@ -204,45 +206,74 @@ class Crud {
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         try {
+            //get schemas
+            String query = "SELECT DISTINCT table_schema FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema')";
             Statement stmt = conn.createStatement();
-            String query = "SELECT TABLE_NAME AS _tables FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'";
-            PreparedStatement ps = conn.prepareStatement( query );
-            ps.setString( 1, this.dbName );
-            ResultSet rs = ps.executeQuery();
-            while ( rs.next() ) {
-                String tableName = rs.getString( "_tables" );
-                result.add( new SidebarElement( tableName, tableName, "fa fa-table" ) );
-            }
-            stmt.close();
-        } catch ( SQLException e ) {
-            e.printStackTrace();
-        }
-        SidebarElement db = new SidebarElement( "tables", "tables", "fa fa-table" );
-        db.setChildren( result );
+            ResultSet schemas = stmt.executeQuery( query );
+            while ( schemas.next() ) {
+                String schema = schemas.getString( "table_schema" );
+                SidebarElement schemaTree = new SidebarElement( schema, schema, "cui-layers" );
 
-        //get views
-        ArrayList<SidebarElement> views = new ArrayList<>();
-        try {
-            Statement stmt = conn.createStatement();
-            PreparedStatement ps = conn.prepareStatement( "SELECT TABLE_NAME "
-                    + "FROM information_schema.tables "
-                    + "WHERE TABLE_SCHEMA = ? "
-                    + "AND TABLE_TYPE = 'VIEW'" );
-            ps.setString( 1, this.dbName );
-            ResultSet rs = ps.executeQuery();
-            while ( rs.next() ) {
-                String view = rs.getString( 1 );
-                views.add( new SidebarElement( view, view, "icon-eye" ) );
+                try {
+                    Statement stmt2 = conn.createStatement();
+                    ArrayList<SidebarElement> tables = new ArrayList<>();
+                    String query2 = "SELECT table_name AS _tables FROM information_schema.tables "
+                            + "WHERE table_catalog = ? "
+                            + "AND table_schema = ?"
+                            + "AND table_type = 'BASE TABLE' "
+                            + "AND table_schema NOT IN ('pg_catalog', 'information_schema')";
+                    PreparedStatement ps = conn.prepareStatement( query2 );
+                    ps.setString( 1, this.dbName );
+                    ps.setString( 2, schema );
+                    ResultSet rs = ps.executeQuery();
+                    while ( rs.next() ) {
+                        String tableName = rs.getString( "_tables" );
+                        tables.add( new SidebarElement( schema + "." + tableName, tableName, "fa fa-table" ) );
+                    }
+                    schemaTree.addChild( new SidebarElement( "tables", "tables", "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    stmt2.close();
+                } catch ( SQLException e ) {
+                    e.printStackTrace();
+                }
+
+                //get views
+                ArrayList<SidebarElement> views = new ArrayList<>();
+                try {
+                    Statement stmt2 = conn.createStatement();
+                    PreparedStatement ps = conn.prepareStatement( "SELECT table_name AS _tables FROM information_schema.tables "
+                            + "WHERE table_catalog = ? "
+                            + "AND table_schema = ? "
+                            + "AND table_type = 'VIEW' "
+                            + "AND table_schema NOT IN ('pg_catalog', 'information_schema')" );
+                    ps.setString( 1, this.dbName );
+                    ps.setString( 2, schema );
+                    ResultSet rs = ps.executeQuery();
+                    while ( rs.next() ) {
+                        String view = rs.getString( 1 );
+                        views.add( new SidebarElement( schema + "." + view, view, "icon-eye" ) );
+                    }
+
+                    stmt2.close();
+                } catch ( SQLException e ) {
+                    e.printStackTrace();
+                }
+                SidebarElement sidebarViews = new SidebarElement( "views", "views", "icon-eye" ).setRouterLink( "" );
+                sidebarViews.addChildren( views );
+                schemaTree.addChild( sidebarViews );
+
+                result.add( schemaTree );
             }
         } catch ( SQLException e ) {
             e.printStackTrace();
         }
-        SidebarElement sidebarViews = new SidebarElement( "views", "views", "icon-eye" );
-        sidebarViews.setChildren( views );
+
+        /*
+        SidebarElement db = new SidebarElement( "tables", "tables", "fa fa-table" ).setRouterLink( "[]" );;
+        db.addChildren( result );
 
         SidebarElement[] out = { db, sidebarViews };
-
-        return this.gson.toJson( out );
+        */
+        return this.gson.toJson( result );
     }
 
 
@@ -336,6 +367,11 @@ class Crud {
                 int numOfRows = stmt.executeUpdate( request.query );
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } catch ( SQLException e2 ) {
+                try {
+                    conn.rollback();
+                } catch ( SQLException e3 ) {
+                    result = new Result( "Could not rollback failed transaction." );
+                }
                 result = new Result( e2.getMessage() );
             }
         }
@@ -377,6 +413,47 @@ class Crud {
             } else {
                 conn.rollback();
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            }
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+        }
+        return result.toJson();
+    }
+
+
+    String updateRow( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Result result;
+        StringBuilder builder = new StringBuilder();
+
+        try {
+            builder.append( "UPDATE " ).append( request.tableId ).append( " SET " );
+            StringJoiner setStatements = new StringJoiner( ",", "", "" );
+            for ( Entry<String, String> entry : request.data.entrySet() ) {
+                if ( NumberUtils.isNumber( entry.getValue() ) ) {
+                    setStatements.add( String.format( "%s = %s", entry.getKey(), entry.getValue() ) );
+                } else {
+                    setStatements.add( String.format( "%s = '%s'", entry.getKey(), entry.getValue() ) );
+                }
+            }
+            builder.append( setStatements.toString() );
+
+            StringJoiner where = new StringJoiner( " AND ", "", "" );
+            for ( Entry<String, String> entry : request.filter.entrySet() ) {
+                where.add( String.format( "%s = '%s'", entry.getKey(), entry.getValue() ) );
+            }
+            builder.append( " WHERE " ).append( where.toString() );
+
+            conn.setAutoCommit( false );
+            Statement stmt = conn.createStatement();
+            int numOfRows = stmt.executeUpdate( builder.toString() );
+
+            if ( numOfRows == 1 ) {
+                conn.commit();
+                result = new Result( new Debug().setAffectedRows( numOfRows ) );
+            } else {
+                conn.rollback();
+                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
