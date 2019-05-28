@@ -26,44 +26,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import java.util.Map;
-
-
 /**
- * needed to parse a request coming from the UI using Gson
+ * Describes where the data in the Result is coming from,
+ * if it is from a table, a view or from an arbitrary query
  */
-public class UIRequest {
-
-    /**
-     * the name of the table the data should be fetched from
-     */
-    public String tableId;
-
-    /**
-     * information about the pagination,
-     * what current page should be loaded
-     */
-    public int currentPage;
-
-    /**
-     * data that should be inserted
-     */
-    public Map<String, String> data;
-
-    /**
-     * for each column: if it should be filtered
-     * empty string if it should not be filtered
-     */
-    public Map<String, String> filter;
-
-    /**
-     * for each column: if and how it should be sorted
-     */
-    public Map<String, SortState> sortState;
-
-    /**
-     * a query from the SQL console
-     */
-    public String query;
-
+public enum ResultType {
+    TABLE,
+    VIEW,
+    QUERY
 }

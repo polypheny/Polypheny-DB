@@ -67,7 +67,10 @@ public class Result {
      * info about a query
      */
     private Debug info;
-
+    /**
+     * Type of the result: if the data is from a table/view/arbitrary query
+     */
+    private ResultType type;
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns
@@ -122,4 +125,15 @@ public class Result {
         this.info = info;
         return this;
     }
+
+    public Result setType( ResultType type ) {
+        this.type = type;
+        return this;
+    }
+
+    public Result setError ( String error ) {
+        this.error = error;
+        return this;
+    }
+
 }

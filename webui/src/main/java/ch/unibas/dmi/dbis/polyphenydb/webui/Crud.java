@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRequest;
@@ -44,7 +45,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -55,6 +60,7 @@ import spark.Response;
  */
 class Crud {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( Crud.class );
     private Connection conn;
     //private String driver = "jdbc:mysql://";
     private String driver = "jdbc:postgresql://";
@@ -71,7 +77,7 @@ class Crud {
     Crud( final String[] args ) {
 
         if( args.length < 4 ) {
-            System.out.println( "Missing command-line arguments. Please provied the following information:\n"
+            LOGGER.error( "Missing command-line arguments. Please provied the following information:\n"
                     + "java Server <host> <port> <database> <user> <password>\n"
                     + "e.g. java Server localhost 8080 myDatabase root secret" );
             System.exit( 1 );
@@ -90,8 +96,8 @@ class Crud {
             //Class.forName( "com.mysql.cj.jdbc.Driver" );
             Class.forName( "org.postgresql.Driver" );
         } catch ( ClassNotFoundException e ) {
-            System.err.println( "Could not load driver class." );
-            e.printStackTrace();
+            LOGGER.error( "Could not load driver class." );
+            LOGGER.error( e.getMessage() );
         }
 
         //Time zone: https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
@@ -100,8 +106,8 @@ class Crud {
         try {
             this.conn =  DriverManager.getConnection( URL, USER, PASS );
         } catch ( SQLException e ) {
-            System.err.println( "Could not connect to the Database" );
-            e.printStackTrace();
+            LOGGER.error( "Could not connect to the Database" );
+            LOGGER.error( e.getMessage() );
         }
     }
 
@@ -120,7 +126,7 @@ class Crud {
             size = rs.getInt( 1 );
             stmt.close();
         } catch ( SQLException e ) {
-            e.printStackTrace();
+            LOGGER.error( e.getMessage() );
         }
         return size;
     }
@@ -149,6 +155,28 @@ class Crud {
             result = buildResult( rs, request );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
+        }
+
+        //determine if it is a view or a table
+        try {
+            PreparedStatement ps = conn.prepareStatement( "SELECT table_type FROM information_schema.tables WHERE table_schema = ? AND table_name = ?" );
+            String[] t = request.tableId.split( "\\." );
+            ps.setString( 1, t[0] );
+            ps.setString( 2, t[1] );
+            ResultSet rs = ps.executeQuery();
+            rs.next();//expecting only one result
+            String type = rs.getString( "table_type" );
+            switch ( type ){
+                case "BASE TABLE":
+                    result.setType( ResultType.TABLE );
+                    break;
+                default:
+                    result.setType( ResultType.VIEW );
+                }
+
+        } catch ( SQLException e ) {
+            LOGGER.error( e.toString() );
+            result.setError( "Could not retrieve type of Result (table/view)." );
         }
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
@@ -233,7 +261,7 @@ class Crud {
                     schemaTree.addChild( new SidebarElement( "tables", "tables", "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
                     stmt2.close();
                 } catch ( SQLException e ) {
-                    e.printStackTrace();
+                    LOGGER.error( e.getMessage() );
                 }
 
                 //get views
@@ -255,7 +283,7 @@ class Crud {
 
                     stmt2.close();
                 } catch ( SQLException e ) {
-                    e.printStackTrace();
+                    LOGGER.error( e.getMessage() );
                 }
                 SidebarElement sidebarViews = new SidebarElement( "views", "views", "icon-eye" ).setRouterLink( "" );
                 sidebarViews.addChildren( views );
@@ -264,7 +292,7 @@ class Crud {
                 result.add( schemaTree );
             }
         } catch ( SQLException e ) {
-            e.printStackTrace();
+            LOGGER.error( e.getMessage() );
         }
 
         /*
@@ -305,7 +333,8 @@ class Crud {
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-            e.printStackTrace();
+            LOGGER.error( e.getMessage() );
+            LOGGER.error( "Generated query: " + query.toString() );
         }
         return result.toJson();
     }
@@ -322,7 +351,7 @@ class Crud {
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             if ( ! entry.getValue().equals( "" )) {
-                joiner.add( entry.getKey() + " LIKE '" + entry.getValue() + "%'"  );
+                joiner.add( entry.getKey() + "::TEXT LIKE '" + entry.getValue() + "%'"  );//:TEXT to cast number to text if necessary (see https://stackoverflow.com/questions/1684291/sql-like-condition-to-check-for-integer#answer-40537672)
                 counter++;
             }
         }
@@ -355,28 +384,74 @@ class Crud {
      */
     String anyQuery( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        Result result;
+        ArrayList<Result> results = new ArrayList<>();
+        //Result result;
 
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery( request.query );
-            result = buildResult( rs, request );
-        } catch ( SQLException e ) {
+        //todo remove comments from query
+
+        //Disable autoCommit if the query has commits.
+        //ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
+        Pattern p = Pattern.compile(".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher m = p.matcher(request.query);
+        if( m.matches() ) {
             try {
-                Statement stmt = conn.createStatement();
-                int numOfRows = stmt.executeUpdate( request.query );
-                result = new Result( new Debug().setAffectedRows( numOfRows ) );
-            } catch ( SQLException e2 ) {
-                try {
-                    conn.rollback();
-                } catch ( SQLException e3 ) {
-                    result = new Result( "Could not rollback failed transaction." );
-                }
-                result = new Result( e2.getMessage() );
+                conn.setAutoCommit( false );
+            } catch ( SQLException e ) {
+                LOGGER.error( e.toString() );
             }
         }
 
-        return result.toJson();
+        Pattern semicolon = Pattern.compile( ";$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
+        String[] queries = semicolon.split( request.query );
+        for ( String query: queries ) {
+            Result result;
+            Statement stmt = null;
+            if( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
+                try {
+                    conn.commit();
+                    results.add( new Result( new Debug().setGeneratedQuery( query )) );
+                } catch ( SQLException e ) {
+                    LOGGER.error( e.toString() );
+                }
+            } else if( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
+                try {
+                    conn.rollback();
+                    results.add( new Result( new Debug().setGeneratedQuery( query )) );
+                } catch ( SQLException e ) {
+                    LOGGER.error( e.toString() );
+                }
+            } else if( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
+                try {
+                    stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery( query );
+                    result = buildResult( rs, request ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    results.add( result );
+                } catch ( SQLException e ) {
+                    result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    results.add( result );
+                }
+            } else {
+                try {
+                    stmt = conn.createStatement();
+                    int numOfRows = stmt.executeUpdate( query );
+                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
+                    results.add( result );
+                } catch ( SQLException e ) {
+                    result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    results.add( result );
+                }
+            }
+        }
+
+        //reset autoCommit to true
+        try {
+            conn.setAutoCommit( true );
+        } catch ( SQLException e ) {
+            LOGGER.error(e.toString());
+        }
+
+        Gson gson = new Gson();
+        return gson.toJson( results );
     }
 
 

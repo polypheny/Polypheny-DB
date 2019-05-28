@@ -54,7 +54,7 @@ public class Server {
 
     public static void main( String[] args ) {
         if ( args.length < 4) {
-            System.out.println( "Missing command-line arguments. Please provied the following information:\n"
+            LOGGER.error( "Missing command-line arguments. Please provied the following information:\n"
                     + "java Server <host> <port> <database> <user> <password>\n"
                     + "e.g. java Server localhost 8080 myDatabase root secret" );
             System.exit( 1 );
@@ -134,7 +134,7 @@ public class Server {
                 }
             }
         } catch ( IOException e ){
-            e.printStackTrace();
+            LOGGER.error( e.getMessage() );
         }
 
         return stringBuilder.toString();
