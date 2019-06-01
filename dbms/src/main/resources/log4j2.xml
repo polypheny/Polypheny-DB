@@ -41,7 +41,7 @@
         <logger name="ch" level="DEBUG">
             <AppenderRef ref="Console"/>
         </logger>
-        <logger name="ch.unibas.dmi.dbis.polyphenydb" level="TRACE">
+        <logger name="ch.unibas.dmi.dbis.polyphenydb.jdbc" level="TRACE">
         </logger>
         <Root level="info"/>
     </Loggers>

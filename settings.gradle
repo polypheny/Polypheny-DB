@@ -12,6 +12,7 @@ include 'pig-adapter'
 include 'pig-parser'
 include 'webui'
 include 'dbms'
+include 'catalog'
 include 'config'
 include 'information'
 
