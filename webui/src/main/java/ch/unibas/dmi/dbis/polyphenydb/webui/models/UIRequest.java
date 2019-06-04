@@ -66,4 +66,14 @@ public class UIRequest {
      */
     public String query;
 
+    /**
+     * When requesting a SchemaTree for the left sidebar: with or without views
+     */
+    public boolean views;
+
+    /**
+     * When requesting a SchemaTree for the left sidebar: define the root routerLink for the node
+     */
+    public String routerLinkRoot;
+
 }

@@ -26,49 +26,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import java.util.ArrayList;
+public class ColumnRequest extends UIRequest {
+
+    public DbColumn oldColumn;
+    public DbColumn newColumn;
 
 
-/**
- * can be used to define data for the left sidebar in the UI
- * needed for Gson
- */
-public class SidebarElement {
+    public class DbColumn {
 
-    private String id;
-    private String name;
-    private String icon;//todo: enum
-    private String routerLink;
-    private ArrayList<SidebarElement> children = new ArrayList<>();
-
-
-    public SidebarElement( final String id, final String name, final String routerLinkRoot ) {
-        this.id = id;
-        this.name = name;
-        this.routerLink = routerLinkRoot + id;
-    }
-
-
-    public SidebarElement( final String id, final String name, final String routerLinkRoot, final String icon ) {
-        this( id, name, routerLinkRoot );
-        this.icon = icon;
-    }
-
-
-    public SidebarElement addChildren( final ArrayList<SidebarElement> children ) {
-        this.children.addAll( children );
-        return this;
-    }
-
-
-    public SidebarElement addChild( final SidebarElement child ) {
-        this.children.add( child );
-        return this;
-    }
-
-    public SidebarElement setRouterLink( final String routerLink ) {
-        this.routerLink = routerLink;
-        return this;
+        public String name;
+        public Boolean nullable;
+        public String type;//varchar/int/etc
+        public String maxLength;
     }
 }
-

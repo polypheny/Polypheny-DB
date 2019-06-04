@@ -33,6 +33,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.ColumnRequest;
 import com.google.gson.Gson;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -231,6 +232,7 @@ class Crud {
      */
     String getSchemaTree( final Request req, final Response res ) {
 
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         try {
@@ -240,7 +242,7 @@ class Crud {
             ResultSet schemas = stmt.executeQuery( query );
             while ( schemas.next() ) {
                 String schema = schemas.getString( "table_schema" );
-                SidebarElement schemaTree = new SidebarElement( schema, schema, "cui-layers" );
+                SidebarElement schemaTree = new SidebarElement( schema, schema, request.routerLinkRoot, "cui-layers" );
 
                 try {
                     Statement stmt2 = conn.createStatement();
@@ -256,38 +258,40 @@ class Crud {
                     ResultSet rs = ps.executeQuery();
                     while ( rs.next() ) {
                         String tableName = rs.getString( "_tables" );
-                        tables.add( new SidebarElement( schema + "." + tableName, tableName, "fa fa-table" ) );
+                        tables.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ) );
                     }
-                    schemaTree.addChild( new SidebarElement( "tables", "tables", "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
                     stmt2.close();
                 } catch ( SQLException e ) {
                     LOGGER.error( e.getMessage() );
                 }
 
-                //get views
-                ArrayList<SidebarElement> views = new ArrayList<>();
-                try {
-                    Statement stmt2 = conn.createStatement();
-                    PreparedStatement ps = conn.prepareStatement( "SELECT table_name AS _tables FROM information_schema.tables "
-                            + "WHERE table_catalog = ? "
-                            + "AND table_schema = ? "
-                            + "AND table_type = 'VIEW' "
-                            + "AND table_schema NOT IN ('pg_catalog', 'information_schema')" );
-                    ps.setString( 1, this.dbName );
-                    ps.setString( 2, schema );
-                    ResultSet rs = ps.executeQuery();
-                    while ( rs.next() ) {
-                        String view = rs.getString( 1 );
-                        views.add( new SidebarElement( schema + "." + view, view, "icon-eye" ) );
-                    }
+                if ( request.views ) {
+                    //get views if requested
+                    ArrayList<SidebarElement> views = new ArrayList<>();
+                    try {
+                        Statement stmt2 = conn.createStatement();
+                        PreparedStatement ps = conn.prepareStatement( "SELECT table_name AS _tables FROM information_schema.tables "
+                                + "WHERE table_catalog = ? "
+                                + "AND table_schema = ? "
+                                + "AND table_type = 'VIEW' "
+                                + "AND table_schema NOT IN ('pg_catalog', 'information_schema')" );
+                        ps.setString( 1, this.dbName );
+                        ps.setString( 2, schema );
+                        ResultSet rs = ps.executeQuery();
+                        while ( rs.next() ) {
+                            String view = rs.getString( 1 );
+                            views.add( new SidebarElement( schema + "." + view, view, request.routerLinkRoot, "icon-eye" ) );
+                        }
 
-                    stmt2.close();
-                } catch ( SQLException e ) {
-                    LOGGER.error( e.getMessage() );
+                        stmt2.close();
+                    } catch ( SQLException e ) {
+                        LOGGER.error( e.getMessage() );
+                    }
+                    SidebarElement sidebarViews = new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).setRouterLink( "" );
+                    sidebarViews.addChildren( views );
+                    schemaTree.addChild( sidebarViews );
                 }
-                SidebarElement sidebarViews = new SidebarElement( "views", "views", "icon-eye" ).setRouterLink( "" );
-                sidebarViews.addChildren( views );
-                schemaTree.addChild( sidebarViews );
 
                 result.add( schemaTree );
             }
@@ -295,12 +299,6 @@ class Crud {
             LOGGER.error( e.getMessage() );
         }
 
-        /*
-        SidebarElement db = new SidebarElement( "tables", "tables", "fa fa-table" ).setRouterLink( "[]" );;
-        db.addChildren( result );
-
-        SidebarElement[] out = { db, sidebarViews };
-        */
         return this.gson.toJson( result );
     }
 
@@ -401,7 +399,7 @@ class Crud {
             }
         }
 
-        Pattern semicolon = Pattern.compile( ";$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
+        Pattern semicolon = Pattern.compile( ";[\\s]*$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
         String[] queries = semicolon.split( request.query );
         for ( String query: queries ) {
             Result result;
@@ -450,8 +448,7 @@ class Crud {
             LOGGER.error(e.toString());
         }
 
-        Gson gson = new Gson();
-        return gson.toJson( results );
+        return this.gson.toJson( results );
     }
 
 
@@ -533,6 +530,119 @@ class Crud {
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
+        return result.toJson();
+    }
+
+
+    /**
+     * Get the columns of a table
+     */
+    String getColumns( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+
+        Result result;
+
+        try {
+            PreparedStatement ps = conn.prepareStatement( "SELECT column_name, is_nullable, udt_name, character_maximum_length FROM information_schema.columns WHERE table_schema = ? AND table_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
+            String[] t = request.tableId.split( "\\." );
+            ps.setString( 1, t[0] );
+            ps.setString( 2, t[1] );
+            ResultSet rs = ps.executeQuery();
+            result = buildResult( rs, request );
+        } catch ( SQLException e ) {
+            result = new Result( e.toString() );
+            LOGGER.error( e.toString() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Update a column of a table
+     */
+    String updateColumn( final Request req, final Response res ) {
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        ColumnRequest.DbColumn oldColumn = request.oldColumn;
+        ColumnRequest.DbColumn newColumn = request.newColumn;
+        Result result;
+        StringBuilder generatedQueries = new StringBuilder();
+        StringBuilder errors = new StringBuilder();
+
+        try {
+            conn.setAutoCommit( false );
+
+            //rename column if needed
+            if ( !oldColumn.name.equals( newColumn.name ) ) {
+                String query = String.format( "ALTER TABLE %s RENAME COLUMN %s TO %s", request.tableId, oldColumn.name, newColumn.name );
+                PreparedStatement ps1 = conn.prepareStatement( query );
+                generatedQueries.append( query );
+                ps1.executeUpdate();
+            }
+
+            //change type + length
+            if ( !oldColumn.type.equals( newColumn.type ) || !oldColumn.maxLength.equals( newColumn.maxLength ) ) {
+                PreparedStatement ps2;
+                if ( !newColumn.maxLength.equals( "" ) ) {
+                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s);", request.tableId, newColumn.name, newColumn.type, newColumn.maxLength );
+                    generatedQueries.append( query );
+                    ps2 = conn.prepareStatement( query );
+                } else {
+                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s;", request.tableId, newColumn.name, newColumn.type );
+                    ps2 = conn.prepareStatement( query );
+                    generatedQueries.append( query );
+                }
+                ps2.executeUpdate();
+            }
+
+            //set/drop nullable
+            if ( oldColumn.nullable != newColumn.nullable ) {
+                String nullable = "SET";
+                if ( newColumn.nullable ) {
+                    nullable = "DROP";
+                }
+                String query = "ALTER TABLE " + request.tableId + " ALTER COLUMN " + newColumn.name + " " + nullable + " NOT NULL";
+                PreparedStatement ps3 = conn.prepareStatement( query );
+                generatedQueries.append( query );
+                ps3.executeUpdate();
+            }
+
+            result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( generatedQueries.toString() ) );
+            conn.commit();
+            conn.setAutoCommit( true );
+        } catch ( SQLException e ) {
+            result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
+            try {
+                conn.rollback();
+            } catch ( SQLException e2 ) {
+                result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
+            }
+        }
+
+        return result.toJson();
+    }
+
+
+    /**
+     * Add a column to an existing table
+     */
+    String addColumn( final Request req, final Response res ) {
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.type );
+        if ( request.newColumn.maxLength != null ) {
+            query = query + String.format( "(%d)", Integer.parseInt( request.newColumn.maxLength ) );
+        }
+        if ( !request.newColumn.nullable ) {
+            query = query + " NOT NULL";
+        }
+        Result result;
+        try {
+            Statement stmt = conn.createStatement();
+            int affectedRows = stmt.executeUpdate( query );
+            result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.toString() );
+        }
+
         return result.toJson();
     }
 

@@ -105,7 +105,7 @@ public class Server {
 
         post( "/getTable", crud::getTable );
 
-        get( "/getSchemaTree", crud::getSchemaTree );
+        post( "/getSchemaTree", crud::getSchemaTree );
 
         post( "/insertRow", crud::insertIntoTable );
 
@@ -114,6 +114,12 @@ public class Server {
         post( "/updateRow", crud::updateRow );
 
         post( "/anyQuery", crud::anyQuery );
+
+        post( "/getColumns", crud::getColumns );
+
+        post( "/updateColumn", crud::updateColumn );
+
+        post( "/addColumn", crud::addColumn );
 
     }
     /**
