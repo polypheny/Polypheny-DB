@@ -646,4 +646,24 @@ class Crud {
         return result.toJson();
     }
 
+
+    /**
+     * Delete a column of a table
+     */
+    String dropColumn( final Request req, final Response res ) {
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        System.out.println( request.tableId );
+        System.out.println( request.oldColumn.name );
+        Result result;
+        String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
+        try {
+            PreparedStatement ps = conn.prepareStatement( query );
+            int affectedRows = ps.executeUpdate();
+            result = new Result( new Debug().setAffectedRows( affectedRows ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.toString() );
+        }
+        return result.toJson();
+    }
+
 }
