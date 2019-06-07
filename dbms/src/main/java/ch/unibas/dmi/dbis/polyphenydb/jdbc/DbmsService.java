@@ -48,11 +48,12 @@ public class DbmsService implements Service {
 
     public DbmsService() throws SQLException {
         this( NoopMetricsSystem.getInstance() );
+
     }
 
 
     public DbmsService( MetricsSystem metrics ) throws SQLException {
-        this.delegate = new LocalService( DbmsMeta.instance(), metrics );
+        this.delegate = new LocalService( JdbcMeta.getInstance(), metrics );
     }
 
 
