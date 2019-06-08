@@ -123,6 +123,12 @@ public class Server {
 
         post( "/dropColumn", crud::dropColumn );
 
+        post( "/getTables", crud::getTables );
+
+        post( "/dropTruncateTable", crud::dropTruncateTable );
+
+        post( "/createTable", crud::createTable );
+
     }
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer

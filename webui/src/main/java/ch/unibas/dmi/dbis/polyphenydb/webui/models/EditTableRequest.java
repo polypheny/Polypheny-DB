@@ -27,22 +27,24 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 /**
- * information about a column of a table
- * for the header of a table in the UI
+ * Model for a request to edit or create a Table
+ * used for request where you want to truncate/drop a table
+ * and when you want to create a new table
  */
-public class DbColumn {
+public class EditTableRequest {
 
-    public String name;
-    public SortState sort;
-    public int dataType;
-    public String filter;
+    public String schema;
+    public String table;
+    public String action;//truncate / drop
+    public EditTableRequest.DbColumn[] columns;
 
 
-    public DbColumn ( final String name, final SortState sort, final int dataType, final String filter ) {
-        this.name = name;
-        this.sort = sort;
-        this.dataType = dataType;
-        this.filter = filter;
+    public class DbColumn {
+
+        public String name;
+        public boolean primary;
+        public boolean nullable;
+        public String type;//varchar/int/etc
+        public String maxLength;
     }
-
 }

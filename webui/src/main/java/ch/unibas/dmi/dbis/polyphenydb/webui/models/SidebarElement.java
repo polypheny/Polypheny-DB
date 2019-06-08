@@ -45,7 +45,11 @@ public class SidebarElement {
     public SidebarElement( final String id, final String name, final String routerLinkRoot ) {
         this.id = id;
         this.name = name;
-        this.routerLink = routerLinkRoot + id;
+        if ( !routerLinkRoot.equals( "" ) ) {
+            this.routerLink = routerLinkRoot + id;
+        } else {
+            this.routerLink = "";
+        }
     }
 
 

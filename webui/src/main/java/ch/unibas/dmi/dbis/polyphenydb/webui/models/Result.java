@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import com.google.gson.Gson;
+import java.util.ArrayList;
 
 
 /**
@@ -54,6 +55,10 @@ public class Result {
      *  table from which the data has been fetched
      */
     private String table;
+    /**
+     * List of tables of a schema
+     * */
+    private String[] tables;
     /**
      * The request from the UI is being sent back
      * and contains information about which columns are being filtered and which are being sorted
@@ -133,6 +138,11 @@ public class Result {
 
     public Result setError ( String error ) {
         this.error = error;
+        return this;
+    }
+
+    public Result setTables( ArrayList<String> tables ) {
+        this.tables = tables.toArray( new String[tables.size()] );
         return this;
     }
 

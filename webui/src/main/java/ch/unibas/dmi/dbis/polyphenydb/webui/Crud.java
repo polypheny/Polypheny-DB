@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
@@ -182,6 +183,7 @@ class Crud {
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         int tableSize = getTableSize( request.tableId );
+        //todo if table is not existing: return result with error-message
         result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
         return result.toJson();
     }
@@ -242,7 +244,7 @@ class Crud {
             ResultSet schemas = stmt.executeQuery( query );
             while ( schemas.next() ) {
                 String schema = schemas.getString( "table_schema" );
-                SidebarElement schemaTree = new SidebarElement( schema, schema, request.routerLinkRoot, "cui-layers" );
+                SidebarElement schemaTree = new SidebarElement( schema, schema, "", "cui-layers" );
 
                 try {
                     Statement stmt2 = conn.createStatement();
@@ -300,6 +302,99 @@ class Crud {
         }
 
         return this.gson.toJson( result );
+    }
+
+
+    /**
+     * Get all tables of a schema
+     */
+    String getTables( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        Result result;
+        try {
+            String query2 = "SELECT table_name AS _tables FROM information_schema.tables "
+                    + "WHERE table_catalog = ? "
+                    + "AND table_schema = ?"
+                    + "AND table_type = 'BASE TABLE' "
+                    + "AND table_schema NOT IN ('pg_catalog', 'information_schema')";
+            PreparedStatement ps = conn.prepareStatement( query2 );
+            ps.setString( 1, this.dbName );
+            ps.setString( 2, request.schema );
+            ResultSet rs = ps.executeQuery();
+            ArrayList<String> tables = new ArrayList<>();
+            while ( rs.next() ) {
+                tables.add( rs.getString( 1 ) );
+            }
+            result = new Result( new Debug().setAffectedRows( tables.size() ) ).setTables( tables );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Drop or truncate a table
+     */
+    String dropTruncateTable( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        Result result;
+        StringBuilder query = new StringBuilder();
+        if ( request.action.toLowerCase().equals( "drop" ) ) {
+            query.append( "DROP TABLE " );
+        } else if ( request.action.toLowerCase().equals( "truncate" ) ) {
+            query.append( "TRUNCATE " );
+        }
+        query.append( request.schema ).append( "." ).append( request.table );
+        try {
+            Statement stmt = conn.createStatement();
+            int a = stmt.executeUpdate( query.toString() );
+            result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Create a new table
+     */
+    String createTable( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        StringBuilder query = new StringBuilder();
+        StringJoiner colJoiner = new StringJoiner( "," );
+        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
+        StringBuilder colBuilder;
+        Result result;
+        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
+        for ( EditTableRequest.DbColumn col : request.columns ) {
+            colBuilder = new StringBuilder();
+            colBuilder.append( col.name ).append( " " ).append( col.type );
+            if ( col.maxLength != null ) {
+                colBuilder.append( String.format( "(%d)", Integer.parseInt( col.maxLength ) ) );
+            }
+            if ( !col.nullable ) {
+                colBuilder.append( " NOT NULL" );
+            }
+            if ( col.primary ) {
+                primaryKeys.add( col.name );
+            }
+            colJoiner.add( colBuilder.toString() );
+        }
+        if ( primaryKeys.length() > 0 ) {
+            colJoiner.add( primaryKeys.toString() );
+        }
+        query.append( colJoiner.toString() );
+        query.append( ")" );
+        try {
+            Statement stmt = conn.createStatement();
+            int a = stmt.executeUpdate( query.toString() );
+            result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+        }
+        return result.toJson();
     }
 
 
@@ -385,7 +480,7 @@ class Crud {
         ArrayList<Result> results = new ArrayList<>();
         //Result result;
 
-        //todo remove comments from query
+        //todo set limit if it is not set or make it even smaller if is too large
 
         //Disable autoCommit if the query has commits.
         //ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
@@ -468,6 +563,7 @@ class Crud {
             for ( Entry<String, String> entry : request.data.entrySet() ) {
                 String condition = "";
                 if ( entry.getValue() == null || entry.getValue().equals( "" ) ) {
+                    //todo fix: doesn't work for integers
                     condition = String.format( "(%s IS NULL OR %s = '')", entry.getKey(), entry.getKey() );
                 } else {
                     condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
@@ -486,8 +582,15 @@ class Crud {
                 conn.rollback();
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
+            conn.setAutoCommit( true );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            try {
+                conn.rollback();
+                conn.setAutoCommit( false );
+            } catch ( SQLException e2 ) {
+                result = new Result( e2.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            }
         }
         return result.toJson();
     }
@@ -502,7 +605,9 @@ class Crud {
             builder.append( "UPDATE " ).append( request.tableId ).append( " SET " );
             StringJoiner setStatements = new StringJoiner( ",", "", "" );
             for ( Entry<String, String> entry : request.data.entrySet() ) {
-                if ( NumberUtils.isNumber( entry.getValue() ) ) {
+                if ( entry.getValue().equals( "" ) ) {
+                    setStatements.add( String.format( "%s = NULL", entry.getKey() ) );
+                } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                     setStatements.add( String.format( "%s = %s", entry.getKey(), entry.getValue() ) );
                 } else {
                     setStatements.add( String.format( "%s = '%s'", entry.getKey(), entry.getValue() ) );
@@ -527,8 +632,15 @@ class Crud {
                 conn.rollback();
                 result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
+            conn.setAutoCommit( true );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            try {
+                conn.rollback();
+                conn.setAutoCommit( true );
+            } catch ( SQLException e2 ) {
+                result = new Result( e2.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            }
         }
         return result.toJson();
     }
@@ -613,6 +725,7 @@ class Crud {
             result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
             try {
                 conn.rollback();
+                conn.setAutoCommit( true );
             } catch ( SQLException e2 ) {
                 result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
             }
@@ -640,7 +753,7 @@ class Crud {
             int affectedRows = stmt.executeUpdate( query );
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
         } catch ( SQLException e ) {
-            result = new Result( e.toString() );
+            result = new Result( e.getMessage() );
         }
 
         return result.toJson();
@@ -652,8 +765,6 @@ class Crud {
      */
     String dropColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        System.out.println( request.tableId );
-        System.out.println( request.oldColumn.name );
         Result result;
         String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
         try {
