@@ -46,6 +46,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -368,21 +369,38 @@ class Crud {
         StringBuilder colBuilder;
         Result result;
         StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        for ( EditTableRequest.DbColumn col : request.columns ) {
+        int primaryCounter = 0;
+        for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
             colBuilder.append( col.name ).append( " " ).append( col.type );
             if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", Integer.parseInt( col.maxLength ) ) );
+                colBuilder.append( String.format( "(%d)", col.maxLength ) );
             }
             if ( !col.nullable ) {
                 colBuilder.append( " NOT NULL" );
             }
+            if( col.defaultValue != null ) {
+                switch ( col.type ) {
+                    case "int8":
+                    case "int4":
+                        int a = Integer.parseInt( col.defaultValue );
+                        colBuilder.append( " DEFAULT " ).append( a );
+                        break;
+                    case "varchar":
+                        colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
+                        break;
+                    default:
+                        //varchar, timestamptz, bool
+                        colBuilder.append( " DEFAULT " ).append( col.defaultValue );
+                }
+            }
             if ( col.primary ) {
                 primaryKeys.add( col.name );
+                primaryCounter++;
             }
             colJoiner.add( colBuilder.toString() );
         }
-        if ( primaryKeys.length() > 0 ) {
+        if ( primaryCounter > 0 ) {
             colJoiner.add( primaryKeys.toString() );
         }
         query.append( colJoiner.toString() );
@@ -414,7 +432,7 @@ class Crud {
             for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
                 String value = entry.getValue();
                 if( value.equals( "" ) ){
-                    value = "NULL";
+                    value = "DEFAULT";
                 } else if( ! NumberUtils.isNumber( value )) {
                     value = "'"+value+"'";
 
@@ -654,13 +672,32 @@ class Crud {
 
         Result result;
 
+        //query inspired from: https://stackoverflow.com/questions/1214576/how-do-i-get-the-primary-keys-of-a-table-from-postgres-via-plpgsql
+
         try {
-            PreparedStatement ps = conn.prepareStatement( "SELECT column_name, is_nullable, udt_name, character_maximum_length FROM information_schema.columns WHERE table_schema = ? AND table_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
+            PreparedStatement ps = conn.prepareStatement( "select col.column_name, col.is_nullable, col.udt_name, col.character_maximum_length, col.column_default, "
+                    + "tc.constraint_type, kc.constraint_name "
+                    + "FROM information_schema.columns col "
+                    + "LEFT JOIN information_schema.key_column_usage AS kc "
+                    + "ON col.column_name = kc.column_name "
+                    + "LEFT JOIN information_schema.table_constraints tc "
+                    + "ON tc.constraint_name = kc.constraint_name "
+                    + "WHERE col.table_schema = ? "
+                    + "AND col.table_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
             String[] t = request.tableId.split( "\\." );
             ps.setString( 1, t[0] );
             ps.setString( 2, t[1] );
             ResultSet rs = ps.executeQuery();
-            result = buildResult( rs, request );
+            ArrayList<DbColumn> cols = new ArrayList<>();
+            while ( rs.next() ) {
+                boolean isPrimary = false;
+                if( rs.getString( "constraint_type" ) != null ){
+                    isPrimary = rs.getString( "constraint_type" ).equals( "PRIMARY KEY" );
+                }
+                //getObject, so you get null and not 0 if the field is NULL
+                cols.add( new DbColumn( rs.getString( "column_name" ), isPrimary, rs.getBoolean( "is_nullable" ), rs.getString( "udt_name" ), (Integer) rs.getObject("character_maximum_length"), rs.getString( "column_default" ) ) );
+            }
+            result = new Result( cols.toArray( new DbColumn[0] ), null );
         } catch ( SQLException e ) {
             result = new Result( e.toString() );
             LOGGER.error( e.toString() );
@@ -674,12 +711,13 @@ class Crud {
      */
     String updateColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        ColumnRequest.DbColumn oldColumn = request.oldColumn;
-        ColumnRequest.DbColumn newColumn = request.newColumn;
+        DbColumn oldColumn = request.oldColumn;
+        DbColumn newColumn = request.newColumn;
         Result result;
         StringBuilder generatedQueries = new StringBuilder();
         StringBuilder errors = new StringBuilder();
 
+        //todo divide into more try catch blocks
         try {
             conn.setAutoCommit( false );
 
@@ -692,14 +730,15 @@ class Crud {
             }
 
             //change type + length
-            if ( !oldColumn.type.equals( newColumn.type ) || !oldColumn.maxLength.equals( newColumn.maxLength ) ) {
+            if ( !oldColumn.type.equals( newColumn.type ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
                 PreparedStatement ps2;
-                if ( !newColumn.maxLength.equals( "" ) ) {
-                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s);", request.tableId, newColumn.name, newColumn.type, newColumn.maxLength );
+                if ( newColumn.maxLength != null ) {
+                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s) USING %s::%s;", request.tableId, newColumn.name, newColumn.type, newColumn.maxLength, newColumn.name, newColumn.type );
                     generatedQueries.append( query );
                     ps2 = conn.prepareStatement( query );
                 } else {
-                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s;", request.tableId, newColumn.name, newColumn.type );
+                    //todo drop maxlength if requested
+                    String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s::%s;", request.tableId, newColumn.name, newColumn.type, newColumn.name, newColumn.type );
                     ps2 = conn.prepareStatement( query );
                     generatedQueries.append( query );
                 }
@@ -718,9 +757,37 @@ class Crud {
                 ps3.executeUpdate();
             }
 
+            //change default value
+            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ){
+                String query;
+                if( newColumn.defaultValue == null ){
+                    query = String.format( "ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", request.tableId, newColumn.name );
+                }
+                else{
+                    query = String.format( "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
+                    switch ( newColumn.type ) {
+                        case "int8":
+                        case "int4":
+                            int a = Integer.parseInt( request.newColumn.defaultValue );
+                            query = query + a;
+                            break;
+                        case "varchar":
+                            query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                            break;
+                        default:
+                            //varchar, timestamptz, bool
+                            query = query + request.newColumn.defaultValue;
+                    }
+                }
+                PreparedStatement ps4 = conn.prepareStatement( query );
+                generatedQueries.append( query );
+                ps4.executeUpdate();
+            }
+
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( generatedQueries.toString() ) );
             conn.commit();
             conn.setAutoCommit( true );
+            System.out.println(generatedQueries);
         } catch ( SQLException e ) {
             result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
             try {
@@ -742,14 +809,30 @@ class Crud {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.type );
         if ( request.newColumn.maxLength != null ) {
-            query = query + String.format( "(%d)", Integer.parseInt( request.newColumn.maxLength ) );
+            query = query + String.format( "(%d)", request.newColumn.maxLength );
         }
         if ( !request.newColumn.nullable ) {
             query = query + " NOT NULL";
         }
+        if ( request.newColumn.defaultValue != null ){
+            switch ( request.newColumn.type ) {
+                case "int8":
+                case "int4":
+                    int a = Integer.parseInt( request.newColumn.defaultValue );
+                    query = query + " DEFAULT "+a;
+                    break;
+                case "varchar":
+                    query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                    break;
+                default:
+                    //varchar, timestamptz, bool
+                    query = query + " DEFAULT " + request.newColumn.defaultValue;
+            }
+        }
         Result result;
         try {
             Statement stmt = conn.createStatement();
+            System.out.println(query);
             int affectedRows = stmt.executeUpdate( query );
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
         } catch ( SQLException e ) {

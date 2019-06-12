@@ -31,12 +31,4 @@ public class ColumnRequest extends UIRequest {
     public DbColumn oldColumn;
     public DbColumn newColumn;
 
-
-    public class DbColumn {
-
-        public String name;
-        public Boolean nullable;
-        public String type;//varchar/int/etc
-        public String maxLength;
-    }
 }

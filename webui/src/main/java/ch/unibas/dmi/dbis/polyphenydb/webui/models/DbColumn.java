@@ -33,16 +33,33 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 public class DbColumn {
 
     public String name;
+
+    //for the Data-Table in the UI
     public SortState sort;
     public int dataType;
     public String filter;
 
+    //for editing columns
+    public boolean primary;
+    public boolean nullable;
+    public String type;//varchar/int/etc
+    public Integer maxLength;
+    public String defaultValue;
 
     public DbColumn ( final String name, final SortState sort, final int dataType, final String filter ) {
         this.name = name;
         this.sort = sort;
         this.dataType = dataType;
         this.filter = filter;
+    }
+
+    public DbColumn ( final String name, final boolean primary, final boolean nullable, final String type, final Integer maxLength, final String defaultValue ) {
+        this.name = name;
+        this.primary = primary;
+        this.nullable = nullable;
+        this.type = type;
+        this.maxLength = maxLength;
+        this.defaultValue = defaultValue;
     }
 
 }

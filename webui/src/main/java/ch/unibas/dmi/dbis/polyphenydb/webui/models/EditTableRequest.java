@@ -36,15 +36,6 @@ public class EditTableRequest {
     public String schema;
     public String table;
     public String action;//truncate / drop
-    public EditTableRequest.DbColumn[] columns;
+    public DbColumn[] columns;
 
-
-    public class DbColumn {
-
-        public String name;
-        public boolean primary;
-        public boolean nullable;
-        public String type;//varchar/int/etc
-        public String maxLength;
-    }
 }
