@@ -129,6 +129,12 @@ public class Server {
 
         post( "/createTable", crud::createTable );
 
+        post( "/getConstraints", crud::getConstraints );
+
+        post( "/dropConstraint", crud::dropConstraint );
+
+        post( "/addPrimaryKey", crud::addPrimaryKey );
+
     }
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer

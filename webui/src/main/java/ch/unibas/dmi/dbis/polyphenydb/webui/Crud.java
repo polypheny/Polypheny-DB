@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
@@ -856,6 +857,73 @@ class Crud {
             result = new Result( new Debug().setAffectedRows( affectedRows ) );
         } catch ( SQLException e ) {
             result = new Result( e.toString() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Get constraints of a table
+     */
+    String getConstraints( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        Result result;
+        String query = "SELECT constraint_name, constraint_type, is_deferrable, initially_deferred "
+                + "FROM information_schema.table_constraints tc "
+                + "WHERE table_schema = ? AND table_name = ? "
+                + "AND constraint_name NOT LIKE '%not_null'";
+        try{
+            PreparedStatement ps = conn.prepareStatement( query );
+            String[] t = request.tableId.split( "\\." );
+            ps.setString( 1, t[0] );
+            ps.setString( 2, t[1] );
+            ResultSet rs = ps.executeQuery();
+            result = buildResult( rs, request );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Drop consraint of a table
+     */
+    String dropConstraint ( final Request req, final Response res ) {
+        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+        String query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
+        Result result;
+        try{
+            Statement stmt = conn.createStatement();
+            int rows = stmt.executeUpdate( query );
+            result = new Result( new Debug().setAffectedRows( rows ) );
+        } catch ( SQLException e ){
+            result = new Result( e.getMessage() );
+        }
+        return result.toJson();
+    }
+
+    /**
+     * Add a primary key to a table
+     */
+    String addPrimaryKey ( final Request req, final Response res ) {
+        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+        Result result;
+        if( request.constraint.columns.length > 0 ){
+            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+            for( String s : request.constraint.columns ){
+                joiner.add( s );
+            }
+            String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
+            try{
+                Statement stmt = conn.createStatement();
+                int rows = stmt.executeUpdate( query );
+                result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
+            } catch ( SQLException e ){
+                result = new Result( e.getMessage() );
+            }
+        }else{
+            result = new Result( "Cannot add primary key if no columns are provided." );
         }
         return result.toJson();
     }
