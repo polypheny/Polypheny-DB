@@ -59,6 +59,7 @@ import java.sql.SQLException;
 import java.util.List;
 import lombok.NonNull;
 import lombok.val;
+import org.apache.calcite.avatica.Meta.Pat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -406,6 +407,13 @@ public class CatalogManagerImpl extends CatalogManager implements Catalog {
         } catch ( SQLException | CatalogConnectionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException | UnknownTableTypeException | CatalogTransactionException e ) {
             throw new GenericCatalogException( "Something went wrong...", e );
         }
+    }
+
+
+    @Override
+    public List<CatalogTable> getTables( @NonNull final PolyXid xid, @NonNull final String databaseName, Pat schemaPattern, Pat tableNamePattern ) throws GenericCatalogException {
+        // TODO
+        return null;
     }
 
 

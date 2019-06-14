@@ -53,6 +53,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.List;
+import org.apache.calcite.avatica.Meta.Pat;
 
 
 /**
@@ -86,6 +87,8 @@ public interface Catalog {
     CatalogTable getTableFromName( PolyXid xid, final CatalogSchema schema, final String tableName ) throws UnknownTableException, GenericCatalogException;
 
     List<CatalogColumn> getAllColumnsForTable( PolyXid xid, CatalogTable table ) throws UnknownTableException, GenericCatalogException;
+
+    List<CatalogTable> getTables( PolyXid xid, String databaseName, Pat schemaPattern, Pat tableNamePattern ) throws GenericCatalogException;
 
     List<CatalogTable> getAllTables( PolyXid xid ) throws GenericCatalogException;
 
