@@ -26,44 +26,57 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
+import java.util.StringJoiner;
+
+
 /**
- * information about a column of a table
- * for the header of a table in the UI
+ * Schema for the index of a table
  */
-public class DbColumn {
+public class Index {
 
-    public String name;
+    String schema;
+    String table;
+    String name;
+    String method;
+    String[] columns;
 
-    //for the Data-Table in the UI
-    public SortState sort;
-    public int dataType;
-    public String filter;
-
-    //for editing columns
-    public boolean primary;
-    public boolean nullable;
-    public String type;//varchar/int/etc
-    public Integer maxLength;
-    public String defaultValue;
-
-    public DbColumn( final String name ) {
+    public Index( final String schema, final String table, final String name, final String method, final String[] columns ) {
+        this.schema = schema;
+        this.table = table;
         this.name = name;
+        this.method = method;
+        this.columns = columns;
     }
 
-    public DbColumn ( final String name, final SortState sort, final int dataType, final String filter ) {
-        this.name = name;
-        this.sort = sort;
-        this.dataType = dataType;
-        this.filter = filter;
+    /**
+     * Generate the query to create an index
+     */
+    public String create() {
+        StringJoiner joiner = new StringJoiner( "," );
+        for ( String col : columns ) {
+            joiner.add( col );
+        }
+        return String.format( "CREATE INDEX %s ON %s.%s USING %s (%s)", this.name, this.schema, this.table, this.method, joiner.toString() );
     }
 
-    public DbColumn ( final String name, final boolean primary, final boolean nullable, final String type, final Integer maxLength, final String defaultValue ) {
-        this.name = name;
-        this.primary = primary;
-        this.nullable = nullable;
-        this.type = type;
-        this.maxLength = maxLength;
-        this.defaultValue = defaultValue;
+
+    /**
+     * Generate the query to drop an index
+     */
+    public String drop() {
+        return String.format( "DROP INDEX %s", this.name );
+    }
+
+
+    /**
+     * Convert index to a row to display in the UI
+     */
+    public String[] asRow() {
+        String[] row = new String[3];
+        row[0] = this.name;
+        row[1] = this.method;
+        row[2] = String.join( ",", this.columns );
+        return row;
     }
 
 }

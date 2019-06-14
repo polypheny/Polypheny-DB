@@ -135,6 +135,12 @@ public class Server {
 
         post( "/addPrimaryKey", crud::addPrimaryKey );
 
+        post( "/getIndexes", crud::getIndexes );
+
+        post( "/dropIndex", crud::dropIndex );
+
+        post( "/createIndex", crud::createIndex );
+
     }
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer

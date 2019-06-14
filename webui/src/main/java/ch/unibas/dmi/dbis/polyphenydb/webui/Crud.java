@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
@@ -676,15 +677,20 @@ class Crud {
         //query inspired from: https://stackoverflow.com/questions/1214576/how-do-i-get-the-primary-keys-of-a-table-from-postgres-via-plpgsql
 
         try {
-            PreparedStatement ps = conn.prepareStatement( "select col.column_name, col.is_nullable, col.udt_name, col.character_maximum_length, col.column_default, "
-                    + "tc.constraint_type, kc.constraint_name "
+            PreparedStatement ps = conn.prepareStatement( "SELECT column_name, is_nullable, udt_name, character_maximum_length, column_default, "
+                    + "constraint_type, constraint_name "
+                    + "FROM( "
+                    + "select DISTINCT ON (col.column_name) col.column_name, col.is_nullable, col.udt_name, col.character_maximum_length, col.column_default, "
+                    + "tc.constraint_type, kc.constraint_name, col.ordinal_position "
                     + "FROM information_schema.columns col "
                     + "LEFT JOIN information_schema.key_column_usage AS kc "
                     + "ON col.column_name = kc.column_name "
                     + "LEFT JOIN information_schema.table_constraints tc "
                     + "ON tc.constraint_name = kc.constraint_name "
                     + "WHERE col.table_schema = ? "
-                    + "AND col.table_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
+                    + "AND col.table_name = ? "
+                    + ") AS q1 "
+                    + "ORDER BY ordinal_position ASC", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY );
             String[] t = request.tableId.split( "\\." );
             ps.setString( 1, t[0] );
             ps.setString( 2, t[1] );
@@ -924,6 +930,74 @@ class Crud {
             }
         }else{
             result = new Result( "Cannot add primary key if no columns are provided." );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Get indexes of a table
+     */
+    String getIndexes( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        String query = "SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = ? AND tablename = ?";
+        Result result;
+        ArrayList<String[]> data = new ArrayList<>();
+        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "method" ), new DbColumn( "columns" ) };
+        try {
+            PreparedStatement ps = conn.prepareStatement( query );
+            ps.setString( 1, request.schema );
+            ps.setString( 2, request.table );
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                String indexDef = rs.getString( "indexDef" );
+                Pattern p = Pattern.compile( "\\((.*?)\\)" );
+                Matcher m = p.matcher( indexDef );
+                if ( !m.find() ) {
+                    continue;
+                }
+                String colsRaw = m.group( 1 );
+                String[] cols = colsRaw.split( ",\\s*" );
+                data.add( new Index( request.schema, request.table, rs.getString( "indexname" ), "btree", cols ).asRow() );
+            }
+            result = new Result( header, data.toArray( new String[data.size()][3] ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Drop an index of a table
+     */
+    String dropIndex( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        String query = String.format( "DROP INDEX %s.%s", request.schema, request.action );
+        Result result;
+        try {
+            Statement stmt = this.conn.createStatement();
+            int a = stmt.executeUpdate( query );
+            result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result.toJson();
+    }
+
+
+    /**
+     * Create an index for a table
+     */
+    String createIndex( final Request req, final Response res ) {
+        Index index = this.gson.fromJson( req.body(), Index.class );
+        Result result;
+        try {
+            Statement stmt = conn.createStatement();
+            int a = stmt.executeUpdate( index.create() );
+            result = new Result( new Debug().setAffectedRows( a ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
         }
         return result.toJson();
     }
