@@ -23,29 +23,34 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-import java.io.Serializable;
-import lombok.Getter;
-import lombok.NonNull;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.CatalogManagerImpl;
 
 
 /**
  *
  */
-@Getter
-public class AbstractCatalogEntity implements CatalogEntity, Serializable {
+public class Authenticator {
 
-    private static final long serialVersionUID = -2838552388995203393L;
-
-    protected InternalName internalName;
-    private final String name;
+    private Authenticator() {
+        throw new IllegalAccessError( "This is a utility class" );
+    }
 
 
-    public AbstractCatalogEntity( @NonNull final InternalName internalName, @NonNull final String name ) {
-        this.internalName = internalName;
-        this.name = name;
+    public static CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
+        try {
+            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getCatalog().getUser( username );
+            if ( catalogUser.password.equals( password ) ) {
+                return catalogUser;
+            } else {
+                throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
+            }
+        } catch ( UnknownUserException e ) {
+            throw new AuthenticationException( e );
+        }
     }
 }

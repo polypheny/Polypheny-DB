@@ -29,37 +29,60 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 
 /**
  *
  */
-@Getter
-public final class CatalogTable extends AbstractCatalogEntity {
+@EqualsAndHashCode
+public final class CatalogTable implements CatalogEntity {
 
-    private static final long serialVersionUID = -436870626194775370L;
+    private static final long serialVersionUID = 8764539164264008190L;
 
-    private final int owner;
-    private Encoding encoding;
-    private Collation collation;
-    private final TableType type;
-    private String definition;
-    private InternalName chunkColumn;
-    private Integer chunkSize;
+    public final String name;
+    public final String schema;
+    public final String database;
+    public final String owner;
+    public final Encoding encoding;
+    public final Collation collation;
+    public final String tableType;
+    public final String definition;
 
 
-    public CatalogTable( @NonNull final InternalName internalName, @NonNull final String name, final int owner, Encoding encoding, Collation collation, @NonNull final TableType type, String definition, InternalName chunkColumn, Integer chunkSize ) {
-        super( internalName, name );
+    public CatalogTable( @NonNull final String name, @NonNull final String schema, @NonNull final String database, final String owner, final Encoding encoding, final Collation collation, @NonNull final TableType type, final String definition ) {
+        this.name = name;
+        this.schema = schema;
+        this.database = database;
         this.owner = owner;
         this.encoding = encoding;
         this.collation = collation;
-        this.type = type;
+        this.tableType = type.name();
         this.definition = definition;
-        this.chunkColumn = chunkColumn;
-        this.chunkSize = chunkSize;
+    }
+
+
+    // Used for creating ResultSets
+    @Override
+    public Object[] getParameterArray() {
+        return new Object[]{ name, schema, database, owner, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), tableType, definition };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogTable {
+
+        public final String name;
+        public final String schema;
+        public final String database;
+        public final String owner;
+        public final String encoding;
+        public final String collation;
+        public final String tableType;
+        public final String definition;
+
     }
 
 

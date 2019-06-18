@@ -26,22 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-
-
 public class UnknownSchemaException extends CatalogException {
 
-    public UnknownSchemaException( String schemaName, int databaseId ) {
-        super( "There is no schema with name '" + schemaName + "' in the database with id '" + databaseId + "'" );
+    public UnknownSchemaException( String schemaName, String databaseName ) {
+        super( "There is no schema with name '" + schemaName + "' in the database '" + databaseName + "'" );
     }
 
-
-    public UnknownSchemaException( String schemaName, InternalName database ) {
-        super( "There is no schema with name '" + schemaName + "' in the database '" + database + "'" );
-    }
-
-
-    public UnknownSchemaException( InternalName internalName ) {
-        super( "There is no schema with InternalName '" + internalName.toString() + "'." );
-    }
 }

@@ -28,29 +28,49 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 
 /**
  *
  */
-public final class CatalogDatabase extends AbstractCatalogEntity {
+@EqualsAndHashCode
+public final class CatalogDatabase implements CatalogEntity {
 
-    private static final long serialVersionUID = 7583640566168674117L;
+    private static final long serialVersionUID = -9134468391960083988L;
 
-    private final int owner;
-    private Encoding encoding;
-    private Collation collation;
-    private final int connectionLimit;
+    public final String name;
+    public final String owner;
+    public final Encoding encoding;
+    public final Collation collation;
+    public final int connectionLimit;
 
 
-    public CatalogDatabase( @NonNull final InternalName internalName, @NonNull final String name, final int owner, Encoding encoding, Collation collation, int connectionLimit ) {
-        super( internalName, name );
+    public CatalogDatabase( @NonNull final String name, final String owner, final Encoding encoding, final Collation collation, final int connectionLimit ) {
+        this.name = name;
         this.owner = owner;
         this.encoding = encoding;
         this.collation = collation;
         this.connectionLimit = connectionLimit;
     }
 
+
+    // Used for creating ResultSets
+    @Override
+    public Object[] getParameterArray() {
+        return new Object[]{ name, owner, encoding.name(), collation.name(), connectionLimit };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogDatabase {
+
+        public final String name;
+        public final String owner;
+        public final String encoding;
+        public final String collation;
+        public final int connectionLimit;
+    }
 }

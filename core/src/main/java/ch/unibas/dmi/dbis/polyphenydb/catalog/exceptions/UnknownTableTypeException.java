@@ -28,7 +28,12 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 public class UnknownTableTypeException extends CatalogException {
 
-    public UnknownTableTypeException( int id ) {
+    public UnknownTableTypeException( final int id ) {
         super( "There is no TableType with id: " + id );
+    }
+
+
+    public UnknownTableTypeException( final String name ) {
+        super( "There is no TableType with name: " + name );
     }
 }

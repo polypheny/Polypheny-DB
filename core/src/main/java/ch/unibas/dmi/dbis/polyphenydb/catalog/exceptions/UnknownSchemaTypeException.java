@@ -26,10 +26,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-public class ExceedsMaximumNumberOfSchemasException extends CatalogException {
+public class UnknownSchemaTypeException extends CatalogException {
 
-    public ExceedsMaximumNumberOfSchemasException() {
-        super();
+    public UnknownSchemaTypeException( final int id ) {
+        super( "There is no SchemaType with id: " + id );
     }
 
+
+    public UnknownSchemaTypeException( final String name ) {
+        super( "There is no SchemaType with name: " + name );
+    }
 }

@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
 import java.io.Serializable;
 
 
@@ -35,7 +34,15 @@ import java.io.Serializable;
  */
 public interface CatalogEntity extends Serializable {
 
-    InternalName getInternalName();
+    Object[] getParameterArray();
 
-    String getName();
+
+    static String getEnumNameOrNull( Enum theEnum ) {
+        if ( theEnum == null ) {
+            return null;
+        } else {
+            return theEnum.name();
+        }
+    }
+
 }

@@ -26,20 +26,34 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import static org.apache.calcite.avatica.remote.MetricsHelper.concat;
-
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.PUID;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.ConnectionId;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogEntity;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable.PrimitiveCatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcMeta.ConnectionCacheSettings;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcMeta.StatementCacheSettings;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.CatalogManagerImpl;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -53,25 +67,29 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.calcite.avatica.AvaticaParameter;
+import org.apache.calcite.avatica.AvaticaSeverity;
+import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
-import org.apache.calcite.avatica.NoSuchConnectionException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.metrics.MetricsSystem;
-import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,22 +100,12 @@ public class DbmsMeta implements ProtobufMeta {
 
     private static final Logger LOG = LoggerFactory.getLogger( DbmsMeta.class );
 
-    private static final String CONN_CACHE_KEY_BASE = "avatica.connectioncache";
-
-    private static final String STMT_CACHE_KEY_BASE = "avatica.statementcache";
+    private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
 
     static {
-        try {
-            INSTANCE = new DbmsMeta( "jdbc:polyphenydbembedded:" );
-        } catch ( SQLException e ) {
-            LOG.error( "Exception while creating DBMS instance.", e );
-        }
-    }
-
-
-    public static DbmsMeta getInstance() {
-        return INSTANCE;
+        INSTANCE = new DbmsMeta();
     }
 
 
@@ -108,8 +116,6 @@ public class DbmsMeta implements ProtobufMeta {
      */
     public static final int UNLIMITED_COUNT = -2;
 
-    // End of constants, start of member variables
-
     final Calendar calendar = Unsafe.localCalendar();
 
     /**
@@ -118,115 +124,23 @@ public class DbmsMeta implements ProtobufMeta {
     private final AtomicInteger statementIdGenerator = new AtomicInteger();
 
 
-    private final String url;
-    private final Properties info;
-    private final Cache<String, Connection> connectionCache;
-    private final Cache<Integer, StatementInfo> statementCache;
-    private final MetricsSystem metrics;
-
-
-    /**
-     * Creates a JdbcMeta.
-     *
-     * @param url a database url of the form <code>jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     */
-    public DbmsMeta( String url ) throws SQLException {
-        this( url, new Properties() );
+    public static DbmsMeta getInstance() {
+        return INSTANCE;
     }
 
 
     /**
-     * Creates a JdbcMeta.
-     *
-     * @param url a database url of the form <code>jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     * @param user the database user on whose behalf the connection is being made
-     * @param password the user's password
+     * Creates a DbmsMeta
      */
-    public DbmsMeta( final String url, final String user, final String password ) throws SQLException {
-        this( url, new Properties() {
-            {
-                put( "user", user );
-                put( "password", password );
-            }
-        } );
-    }
+    private DbmsMeta() {
 
-
-    public DbmsMeta( String url, Properties info ) throws SQLException {
-        this( url, info, NoopMetricsSystem.getInstance() );
-    }
-
-
-    /**
-     * Creates a JdbcMeta.
-     *
-     * @param url a database url of the form <code> jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     * @param info a list of arbitrary string tag/value pairs as connection arguments; normally at least a "user" and "password" property should be included
-     */
-    public DbmsMeta( String url, Properties info, MetricsSystem metrics ) throws SQLException {
-        this.url = url;
-        this.info = info;
-        this.metrics = Objects.requireNonNull( metrics );
-
-        int concurrencyLevel = Integer.parseInt( info.getProperty( ConnectionCacheSettings.CONCURRENCY_LEVEL.key(), ConnectionCacheSettings.CONCURRENCY_LEVEL.defaultValue() ) );
-        int initialCapacity = Integer.parseInt( info.getProperty( ConnectionCacheSettings.INITIAL_CAPACITY.key(), ConnectionCacheSettings.INITIAL_CAPACITY.defaultValue() ) );
-        long maxCapacity = Long.parseLong( info.getProperty( ConnectionCacheSettings.MAX_CAPACITY.key(), ConnectionCacheSettings.MAX_CAPACITY.defaultValue() ) );
-        long connectionExpiryDuration = Long.parseLong( info.getProperty( ConnectionCacheSettings.EXPIRY_DURATION.key(), ConnectionCacheSettings.EXPIRY_DURATION.defaultValue() ) );
-        TimeUnit connectionExpiryUnit = TimeUnit.valueOf( info.getProperty( ConnectionCacheSettings.EXPIRY_UNIT.key(), ConnectionCacheSettings.EXPIRY_UNIT.defaultValue() ) );
-        this.connectionCache = CacheBuilder.newBuilder()
-                .concurrencyLevel( concurrencyLevel )
-                .initialCapacity( initialCapacity )
-                .maximumSize( maxCapacity )
-                .expireAfterAccess( connectionExpiryDuration, connectionExpiryUnit )
-                .removalListener( new ConnectionExpiryHandler() )
-                .build();
-        LOG.debug( "instantiated connection cache: {}", connectionCache.stats() );
-
-        concurrencyLevel = Integer.parseInt( info.getProperty( StatementCacheSettings.CONCURRENCY_LEVEL.key(), StatementCacheSettings.CONCURRENCY_LEVEL.defaultValue() ) );
-        initialCapacity = Integer.parseInt( info.getProperty( StatementCacheSettings.INITIAL_CAPACITY.key(), StatementCacheSettings.INITIAL_CAPACITY.defaultValue() ) );
-        maxCapacity = Long.parseLong( info.getProperty( StatementCacheSettings.MAX_CAPACITY.key(), StatementCacheSettings.MAX_CAPACITY.defaultValue() ) );
-        connectionExpiryDuration = Long.parseLong( info.getProperty( StatementCacheSettings.EXPIRY_DURATION.key(), StatementCacheSettings.EXPIRY_DURATION.defaultValue() ) );
-        connectionExpiryUnit = TimeUnit.valueOf( info.getProperty( StatementCacheSettings.EXPIRY_UNIT.key(), StatementCacheSettings.EXPIRY_UNIT.defaultValue() ) );
-        this.statementCache = CacheBuilder.newBuilder()
-                .concurrencyLevel( concurrencyLevel )
-                .initialCapacity( initialCapacity )
-                .maximumSize( maxCapacity )
-                .expireAfterAccess( connectionExpiryDuration, connectionExpiryUnit )
-                .removalListener( new StatementExpiryHandler() )
-                .build();
-
-        LOG.debug( "instantiated statement cache: {}", statementCache.stats() );
-
-        // Register some metrics
-        this.metrics.register( concat( JdbcMeta.class, "ConnectionCacheSize" ), () -> connectionCache.size() );
-
-        this.metrics.register( concat( JdbcMeta.class, "StatementCacheSize" ), () -> statementCache.size() );
-    }
-
-
-    // For testing purposes
-    protected AtomicInteger getStatementIdGenerator() {
-        return statementIdGenerator;
-    }
-
-
-    // For testing purposes
-    protected Cache<String, Connection> getConnectionCache() {
-        return connectionCache;
-    }
-
-
-    // For testing purposes
-    protected Cache<Integer, StatementInfo> getStatementCache() {
-        return statementCache;
     }
 
 
     /**
      * Converts from JDBC metadata to Avatica columns.
      */
-    protected static List<ColumnMetaData>
-    columns( ResultSetMetaData metaData ) throws SQLException {
+    protected static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
         if ( metaData == null ) {
             return Collections.emptyList();
         }
@@ -242,7 +156,9 @@ public class DbmsMeta implements ProtobufMeta {
                 t = ColumnMetaData.scalar( metaData.getColumnType( i ), metaData.getColumnTypeName( i ), rep );
             }
             ColumnMetaData md =
-                    new ColumnMetaData( i - 1, metaData.isAutoIncrement( i ),
+                    new ColumnMetaData(
+                            i - 1,
+                            metaData.isAutoIncrement( i ),
                             metaData.isCaseSensitive( i ), metaData.isSearchable( i ),
                             metaData.isCurrency( i ), metaData.isNullable( i ),
                             metaData.isSigned( i ), metaData.getColumnDisplaySize( i ),
@@ -261,7 +177,7 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Converts from JDBC metadata to Avatica parameters
      */
-    protected static List<AvaticaParameter> parameters( ParameterMetaData metaData ) throws SQLException {
+    protected static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
         if ( metaData == null ) {
             return Collections.emptyList();
         }
@@ -281,33 +197,18 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    protected static Signature signature( ResultSetMetaData metaData, ParameterMetaData parameterMetaData, String sql, StatementType statementType ) throws SQLException {
+    protected static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
         final CursorFactory cf = CursorFactory.LIST;  // because JdbcResultSet#frame
         return new Signature( columns( metaData ), sql, parameters( parameterMetaData ), null, cf, statementType );
     }
 
 
-    protected static Signature signature( ResultSetMetaData metaData ) throws SQLException {
+    protected static Signature signature( final ResultSetMetaData metaData ) throws SQLException {
         return signature( metaData, null, null, null );
     }
 
 
-    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        try {
-            final Map<DatabaseProperty, Object> map = new HashMap<>();
-            final Connection conn = getConnection( ch.id );
-            final DatabaseMetaData metaData = conn.getMetaData();
-            for ( DatabaseProperty p : DatabaseProperty.values() ) {
-                addProperty( map, metaData, p );
-            }
-            return map;
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
-    private static Object addProperty( Map<DatabaseProperty, Object> map, DatabaseMetaData metaData, DatabaseProperty p ) throws SQLException {
+    private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
         Object propertyValue;
         if ( p.isJdbc ) {
             try {
@@ -323,47 +224,332 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    protected Connection getConnection( String id ) throws SQLException {
-        if ( id == null ) {
-            throw new NullPointerException( "Connection id is null." );
-        }
-        Connection conn = connectionCache.getIfPresent( id );
-        if ( conn == null ) {
-            throw new NoSuchConnectionException( "Connection not found: invalid id, closed, or expired: " + id );
-        }
-        return conn;
+    protected MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+        final PolyphenyDbSignature<Object> signature =
+                new PolyphenyDbSignature<Object>(
+                        "",
+                        ImmutableList.of(),
+                        internalParameters,
+                        null,
+                        columns,
+                        cursorFactory,
+                        null,
+                        ImmutableList.of(),
+                        -1,
+                        null,
+                        StatementType.SELECT ) {
+                    @Override
+                    public Enumerable<Object> enumerable( DataContext dataContext ) {
+                        return Linq4j.asEnumerable( firstFrame.rows );
+                    }
+                };
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
     }
 
 
-    public MetaResultSet getTables( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat tableNamePattern, List<String> typeList ) {
-        final PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.TRANSACTION ), PUID.randomPUID( Type.TRANSACTION ) );
-        try {
-            List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables( randomXid, catalog, schemaPattern, tableNamePattern );
-
-            Connection connection = getConnection( ch.id );
-
-            //
-            //  TODO
-            //
-
-            final ResultSet rs = null;
-            int stmtId = registerMetaStatement( rs );
-            return JdbcResultSet.create( ch.id, stmtId, rs );
-        } catch ( GenericCatalogException | SQLException e ) {
-            throw new RuntimeException( e );
+    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class clazz, String... names ) {
+        final List<ColumnMetaData> columns = new ArrayList<>();
+        final List<Field> fields = new ArrayList<>();
+        //final List<String> fieldNames = new ArrayList<>();
+        for ( String name : names ) {
+            final int index = fields.size();
+            final String fieldName = AvaticaUtils.toCamelCase( name );
+            final Field field;
+            try {
+                field = clazz.getField( fieldName );
+            } catch ( NoSuchFieldException e ) {
+                throw new RuntimeException( e );
+            }
+            columns.add( MetaImpl.columnMetaData( name, index, field.getType(), false ) );
+            fields.add( field );
+            //fieldNames.add( fieldName );
         }
+        //noinspection unchecked
+        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
+        //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
+        return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.LIST, new Frame( 0, true, iterable ) );
     }
 
 
     /**
-     * Registers a StatementInfo for the given ResultSet, returning the id under which it is registered. This should be used for metadata ResultSets, which have an implicit statement created.
+     * Returns a map of static database properties.
+     *
+     * The provider can omit properties whose value is the same as the default.
      */
-    private int registerMetaStatement( ResultSet rs ) throws SQLException {
-        final int id = statementIdGenerator.getAndIncrement();
-        StatementInfo statementInfo = new StatementInfo( rs.getStatement() );
-        statementInfo.setResultSet( rs );
-        statementCache.put( id, statementInfo );
-        return id;
+    @Override
+    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+        final Map<DatabaseProperty, Object> map = new HashMap<>();
+        // TODO
+        return map;
+    }
+
+
+    private Enumerable<Object> toEnumerable( final List<? extends CatalogEntity> entities ) {
+        final List<Object> objects = new LinkedList<>();
+        for ( CatalogEntity entity : entities ) {
+            objects.add( entity.getParameterArray() );
+        }
+        return Linq4j.asEnumerable( objects );
+    }
+
+
+    public MetaResultSet getTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransaction( connection );
+            List<TableType> types = null;
+            if ( typeList != null ) {
+                types = Catalog.convertTableTypeList( typeList );
+            }
+            final List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables( xid, catalog, schemaPattern, tableNamePattern, types );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( tables ),
+                    PrimitiveCatalogTable.class,
+                    "NAME",
+                    "SCHEMA",
+                    "DATABASE",
+                    "OWNER",
+                    "ENCODING",
+                    "COLLATION",
+                    "TABLE_TYPE",
+                    "DEFINITION"
+            );
+        } catch ( GenericCatalogException | UnknownTableTypeException e ) {
+            throw propagate( e );
+        }
+    }
+
+
+
+    @Override
+    public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransaction( connection );
+            final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns( xid, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( columns ),
+                    PrimitiveCatalogColumn.class,
+                    "NAME",
+                    "TABLE",
+                    "SCHEMA",
+                    "DATABASE",
+                    "POSITION",
+                    "TYPE",
+                    "LENGTH",
+                    "PRECISION",
+                    "NULLABLE",
+                    "ENCODING",
+                    "COLLATION",
+                    "AUTOINCREMENT_START_VALUE",
+                    "AUTOINCREMENT_NEXT_VALUE",
+                    "DEFAULT_VALUE",
+                    "FORCE_DEFAULT"
+            );
+        } catch ( GenericCatalogException e ) {
+            throw propagate( e );
+        }
+    }
+
+
+    @Override
+    public MetaResultSet getSchemas( final ConnectionHandle ch, final String catalog, final Pat schemaPattern ) {
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransaction( connection );
+            final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas( xid, catalog, schemaPattern );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( schemas ),
+                    PrimitiveCatalogSchema.class,
+                    "NAME",
+                    "DATABASE",
+                    "OWNER",
+                    "ENCODING",
+                    "COLLATION",
+                    "SCHEMA_TYPE"
+            );
+        } catch ( GenericCatalogException e ) {
+            throw propagate( e );
+        }
+    }
+
+
+    @Override
+    public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransaction( connection );
+            final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( databases ),
+                    PrimitiveCatalogDatabase.class,
+                    "NAME",
+                    "OWNER",
+                    "ENCODING",
+                    "COLLATION",
+                    "CONNECTION_LIMIT"
+            );
+        } catch ( GenericCatalogException e ) {
+            throw propagate( e );
+        }
+    }
+
+
+    @Override
+    public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
+        final TableType[] tableTypes = TableType.values();
+        final List<Object> objects = new LinkedList<>();
+        for ( TableType tt : tableTypes ) {
+            objects.add( tt.getParameterArray() );
+        }
+        Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
+        StatementHandle statementHandle = createStatement( ch );
+        return createMetaResultSet(
+                ch,
+                statementHandle,
+                enumerable,
+                PrimitiveTableType.class,
+                "TABLE_TYPE"
+        );
+    }
+
+
+    @Override
+    public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
+        // TODO
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
+        return null;
+    }
+
+
+    @Override
+    public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+        return null;
     }
 
 
@@ -375,151 +561,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return An array of update counts containing one element for each command in the batch.
      */
     @Override
-    public ExecuteBatchResult executeBatchProtobuf( StatementHandle h, List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getColumns( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat tableNamePattern, Pat columnNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getSchemas( ConnectionHandle ch, String catalog, Pat schemaPattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getCatalogs( ConnectionHandle ch ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getTableTypes( ConnectionHandle ch ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getProcedures( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat procedureNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getProcedureColumns( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat procedureNamePattern, Pat columnNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getColumnPrivileges( ConnectionHandle ch, String catalog, String schema, String table, Pat columnNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getTablePrivileges( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat tableNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getBestRowIdentifier( ConnectionHandle ch, String catalog, String schema, String table, int scope, boolean nullable ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getVersionColumns( ConnectionHandle ch, String catalog, String schema, String table ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getPrimaryKeys( ConnectionHandle ch, String catalog, String schema, String table ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getImportedKeys( ConnectionHandle ch, String catalog, String schema, String table ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getExportedKeys( ConnectionHandle ch, String catalog, String schema, String table ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getCrossReference( ConnectionHandle ch, String parentCatalog, String parentSchema, String parentTable, String foreignCatalog, String foreignSchema, String foreignTable ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getTypeInfo( ConnectionHandle ch ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getIndexInfo( ConnectionHandle ch, String catalog, String schema, String table, boolean unique, boolean approximate ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getUDTs( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat typeNamePattern, int[] types ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getSuperTypes( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat typeNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getSuperTables( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat tableNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getAttributes( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat typeNamePattern, Pat attributeNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getClientInfoProperties( ConnectionHandle ch ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getFunctions( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat functionNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getFunctionColumns( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat functionNamePattern, Pat columnNamePattern ) {
-        return null;
-    }
-
-
-    @Override
-    public MetaResultSet getPseudoColumns( ConnectionHandle ch, String catalog, Pat schemaPattern, Pat tableNamePattern, Pat columnNamePattern ) {
+    public ExecuteBatchResult executeBatchProtobuf( final StatementHandle h, final List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
         return null;
     }
 
@@ -532,7 +574,7 @@ public class DbmsMeta implements ProtobufMeta {
      * relational expression in {@code signature}.
      */
     @Override
-    public Iterable<Object> createIterable( StatementHandle stmt, QueryState state, Signature signature, List<TypedValue> parameters, Frame firstFrame ) {
+    public Iterable<Object> createIterable( final StatementHandle stmt, final QueryState state, final Signature signature, final List<TypedValue> parameters, final Frame firstFrame ) {
         return null;
     }
 
@@ -546,7 +588,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Signature of prepared statement
      */
     @Override
-    public StatementHandle prepare( ConnectionHandle ch, String sql, long maxRowCount ) {
+    public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
         return null;
     }
 
@@ -563,7 +605,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @deprecated See {@link #prepareAndExecute(StatementHandle, String, long, int, PrepareCallback)}
      */
     @Override
-    public ExecuteResult prepareAndExecute( StatementHandle h, String sql, long maxRowCount, PrepareCallback callback ) throws NoSuchStatementException {
+    public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final PrepareCallback callback ) throws NoSuchStatementException {
         return null;
     }
 
@@ -583,7 +625,7 @@ public class DbmsMeta implements ProtobufMeta {
      * first frame of data
      */
     @Override
-    public ExecuteResult prepareAndExecute( StatementHandle h, String sql, long maxRowCount, int maxRowsInFirstFrame, PrepareCallback callback ) throws NoSuchStatementException {
+    public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
         return null;
     }
 
@@ -596,7 +638,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return An array of update counts containing one element for each command in the batch.
      */
     @Override
-    public ExecuteBatchResult prepareAndExecuteBatch( StatementHandle h, List<String> sqlCommands ) throws NoSuchStatementException {
+    public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) throws NoSuchStatementException {
         return null;
     }
 
@@ -609,7 +651,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return An array of update counts containing one element for each command in the batch.
      */
     @Override
-    public ExecuteBatchResult executeBatch( StatementHandle h, List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
+    public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
         return null;
     }
 
@@ -630,7 +672,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Frame, or null if there are no more
      */
     @Override
-    public Frame fetch( StatementHandle h, long offset, int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
+    public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
         return null;
     }
 
@@ -646,7 +688,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @deprecated See {@link #execute(StatementHandle, List, int)}
      */
     @Override
-    public ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, long maxRowCount ) throws NoSuchStatementException {
+    public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final long maxRowCount ) throws NoSuchStatementException {
         return null;
     }
 
@@ -660,7 +702,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Execute result
      */
     @Override
-    public ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame ) throws NoSuchStatementException {
+    public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
         return null;
     }
 
@@ -672,37 +714,132 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
-        return null;
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbStatementHandle statement;
+        synchronized ( OPEN_STATEMENTS ) {
+            final int id = statementIdGenerator.getAndIncrement();
+            statement = new PolyphenyDbStatement( connection, id );
+            OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
+        }
+        StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
+        LOG.trace( "created statement {}", h );
+        return h;
     }
 
+
+    /*
+    private void registerMetaStatement( final StatementHandle statementHandle, final PolyphenyDbResultSet rs ) throws SQLException {
+        final PolyphenyDbStatementHandle statement;
+        synchronized ( OPEN_STATEMENTS ) {
+            if ( OPEN_STATEMENTS.containsKey( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) ) ) {
+                statement = OPEN_STATEMENTS.get( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
+            } else {
+                throw new RuntimeException( "There is no corresponding statement" );
+            }
+        }
+        statement.setOpenResultSet( rs );
+    }
+*/
 
     /**
      * Closes a statement.
      *
-     * <p>If the statement handle is not known, or is already closed, does
-     * nothing.
+     * If the statement handle is not known, or is already closed, does nothing.
      *
-     * @param h Statement handle
+     * @param statementHandle Statement handle
      */
     @Override
-    public void closeStatement( StatementHandle h ) {
+    public void closeStatement( final StatementHandle statementHandle ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "closeStatement( StatementHandle {} )", statementHandle );
+        }
 
+        final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
+        if ( toClose != null ) {
+            toClose.setOpenResultSet( null ); // closes the currently open ResultSet
+        }
     }
 
 
     /**
-     * Opens (creates) a connection. The client allocates its own connection ID which the server is
-     * then made aware of through the {@link ConnectionHandle}. The Map {@code info} argument is
-     * analogous to the {@link Properties} typically passed to a "normal" JDBC Driver. Avatica
-     * specific properties should not be included -- only properties for the underlying driver.
+     * Opens (creates) a connection. The client allocates its own connection ID which the server is then made aware of through the {@link ConnectionHandle}.
+     * The Map {@code info} argument is analogous to the {@link Properties} typically passed to a "normal" JDBC Driver. Avatica specific properties should not
+     * be included -- only properties for the underlying driver.
      *
-     * @param ch A ConnectionHandle encapsulates information about the connection to be opened
-     * as provided by the client.
-     * @param info A Map corresponding to the Properties typically passed to a JDBC Driver.
+     * @param ch A ConnectionHandle encapsulates information about the connection to be opened as provided by the client.
+     * @param connectionParameters A Map corresponding to the Properties typically passed to a JDBC Driver.
      */
     @Override
-    public void openConnection( ConnectionHandle ch, Map<String, String> info ) {
+    public void openConnection( final ConnectionHandle ch, final Map<String, String> connectionParameters ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
+        }
 
+        final PolyphenyDbConnectionHandle connectionToOpen;
+        synchronized ( OPEN_CONNECTIONS ) {
+            if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
+                if ( LOG.isDebugEnabled() ) {
+                    LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
+                }
+                throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+            }
+
+            if ( LOG.isDebugEnabled() ) {
+                LOG.debug( "Creating a new connection." );
+            }
+
+            final CatalogUser user;
+            try {
+                user = Authenticator.authenticate(
+                        connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
+                        connectionParameters.getOrDefault( "password", "" ) );
+            } catch ( AuthenticationException e ) {
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            }
+            assert user != null;
+
+            String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
+            if ( databaseName == null || databaseName.isEmpty() ) {
+                databaseName = "APP";
+            }
+            String schemaName = connectionParameters.get( "schema" );
+            if ( schemaName == null || schemaName.isEmpty() ) {
+                schemaName = "public";
+            }
+
+            final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
+            final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
+
+            // Create transaction id
+            PolyXid xid = PolyphenyDbConnection.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+
+            final Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
+            // Check database access
+            final CatalogDatabase database;
+            try {
+                database = catalog.getDatabase( xid, databaseName );
+            } catch ( GenericCatalogException | UnknownDatabaseException e ) {
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            }
+            assert database != null;
+
+//            Authorizer.hasAccess( user, database );
+
+            // Check schema access
+            final CatalogSchema schema;
+            try {
+                schema = catalog.getSchema( xid, database.name, schemaName );
+            } catch ( GenericCatalogException | UnknownSchemaException e ) {
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            }
+            assert schema != null;
+
+//            Authorizer.hasAccess( user, schema );
+
+            connectionToOpen = new PolyphenyDbConnection( ch, nodeId, user, ch.id, database, schema, xid );
+
+            OPEN_CONNECTIONS.put( ch.id, connectionToOpen );
+        }
     }
 
 
@@ -711,7 +848,59 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeConnection( ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "closeConnection( ConnectionHandle {} )", ch );
+        }
 
+        final PolyphenyDbConnectionHandle connectionToClose = OPEN_CONNECTIONS.remove( ch.id );
+        if ( connectionToClose == null ) {
+            if ( LOG.isDebugEnabled() ) {
+                LOG.debug( "Connection {} already closed.", ch.id );
+            }
+            return;
+        }
+
+        synchronized ( OPEN_STATEMENTS ) {
+            for ( final String key : OPEN_STATEMENTS.keySet() ) {
+                if ( key.startsWith( ch.id ) ) {
+                    OPEN_STATEMENTS.remove( key ).setOpenResultSet( null );
+                }
+            }
+        }
+
+        // TODO: release all resources associated with this connection
+        LOG.error( "[NOT IMPLEMENTED YET] closeConnection( ConnectionHandle {} )", ch );
+    }
+
+
+    private PolyphenyDbConnectionHandle getPolyphenyDbConnectionHandle( String connectionId ) {
+        if ( OPEN_CONNECTIONS.containsKey( connectionId ) ) {
+            return OPEN_CONNECTIONS.get( connectionId );
+        } else {
+            throw new IllegalStateException( "Unknown connection id `" + connectionId + "`!" );
+        }
+    }
+
+
+    private PolyXid getCurrentTransaction( PolyphenyDbConnectionHandle connection ) {
+        final PolyXid currentTransaction;
+        final boolean beginOfTransaction;
+        synchronized ( this ) {
+            if ( connection.getCurrentTransaction() == null ) {
+                currentTransaction = connection.startNewTransaction();
+                beginOfTransaction = true;
+                if ( LOG.isTraceEnabled() ) {
+                    LOG.trace( "Required a new TransactionId: {}", currentTransaction );
+                }
+            } else {
+                currentTransaction = connection.getCurrentTransaction();
+                beginOfTransaction = false;
+                if ( LOG.isTraceEnabled() ) {
+                    LOG.trace( "Reusing the current TransactionId: {}", currentTransaction );
+                }
+            }
+        }
+        return currentTransaction;
     }
 
 
@@ -721,91 +910,67 @@ public class DbmsMeta implements ProtobufMeta {
      * @return True if there are results to fetch after resetting to the given offset. False otherwise
      */
     @Override
-    public boolean syncResults( StatementHandle sh, QueryState state, long offset ) throws NoSuchStatementException {
+    public boolean syncResults( final StatementHandle sh, final QueryState state, final long offset ) throws NoSuchStatementException {
         return false;
     }
 
 
     /**
-     * Makes all changes since the last commit/rollback permanent. Analogous to
-     * {@link Connection#commit()}.
+     * Makes all changes since the last commit/rollback permanent. Analogous to {@link Connection#commit()}.
      *
      * @param ch A reference to the real JDBC Connection
      */
     @Override
-    public void commit( ConnectionHandle ch ) {
-
+    public void commit( final ConnectionHandle ch ) {
+        throw new UnsupportedOperationException();
     }
 
 
     /**
-     * Undoes all changes since the last commit/rollback. Analogous to
-     * {@link Connection#rollback()};
+     * Undoes all changes since the last commit/rollback. Analogous to {@link Connection#rollback()};
      *
      * @param ch A reference to the real JDBC Connection
      */
     @Override
-    public void rollback( ConnectionHandle ch ) {
-
+    public void rollback( final ConnectionHandle ch ) {
+        throw new UnsupportedOperationException();
     }
+
 
 
     /**
      * Synchronizes client and server view of connection properties.
      *
-     * <p>Note: this interface is considered "experimental" and may undergo further changes as this
-     * functionality is extended to other aspects of state management for
-     * {@link Connection}, {@link Statement}, and {@link ResultSet}.</p>
+     * Note: this interface is considered "experimental" and may undergo further changes as this functionality is extended to other aspects of state management for
+     * {@link Connection}, {@link Statement}, and {@link ResultSet}.
      */
     @Override
     public ConnectionProperties connectionSync( ConnectionHandle ch, ConnectionProperties connProps ) {
-        return null;
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
+        }
+
+        final PolyphenyDbConnectionHandle connectionToSync = OPEN_CONNECTIONS.get( ch.id );
+        if ( connectionToSync == null ) {
+            if ( LOG.isDebugEnabled() ) {
+                LOG.debug( "Connection {} is not open.", ch.id );
+            }
+            throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
+        }
+
+//        LOGGER.error( "[NOT IMPLEMENTED YET] connectionSync( ConnectionHandle {}, ConnectionProperties {} )", connectionHandle, connProps );
+        return connectionToSync.mergeConnectionProperties( connProps );
     }
 
 
-    /**
-     * Callback for {@link #connectionCache} member expiration.
-     */
-    private class ConnectionExpiryHandler implements RemovalListener<String, Connection> {
-
-        public void onRemoval( RemovalNotification<String, Connection> notification ) {
-            String connectionId = notification.getKey();
-            Connection doomed = notification.getValue();
-            LOG.debug( "Expiring connection {} because {}", connectionId, notification.getCause() );
-            try {
-                if ( doomed != null ) {
-                    doomed.close();
-                }
-            } catch ( Throwable t ) {
-                LOG.info( "Exception thrown while expiring connection {}", connectionId, t );
-            }
+    RuntimeException propagate( Throwable e ) {
+        if ( e instanceof RuntimeException ) {
+            throw (RuntimeException) e;
+        } else if ( e instanceof Error ) {
+            throw (Error) e;
+        } else {
+            throw new RuntimeException( e );
         }
     }
 
-
-    /**
-     * Callback for {@link #statementCache} member expiration.
-     */
-    private class StatementExpiryHandler implements RemovalListener<Integer, StatementInfo> {
-
-        public void onRemoval( RemovalNotification<Integer, StatementInfo> notification ) {
-            Integer stmtId = notification.getKey();
-            StatementInfo doomed = notification.getValue();
-            if ( doomed == null ) {
-                // log/throw?
-                return;
-            }
-            LOG.debug( "Expiring statement {} because {}", stmtId, notification.getCause() );
-            try {
-                if ( doomed.getResultSet() != null ) {
-                    doomed.getResultSet().close();
-                }
-                if ( doomed.statement != null ) {
-                    doomed.statement.close();
-                }
-            } catch ( Throwable t ) {
-                LOG.info( "Exception thrown while expiring statement {}", stmtId, t );
-            }
-        }
-    }
 }

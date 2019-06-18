@@ -26,27 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-
-
 public class UnknownColumnException extends CatalogException {
 
-    public UnknownColumnException( String message ) {
-        super( message );
-    }
-
-
-    public UnknownColumnException( String columnName, String tableName ) {
-        super( "There is no column with name '" + columnName + "' in table '" + tableName + "'" );
-    }
-
-
-    public UnknownColumnException( String columnName, InternalName table ) {
-        super( "There is no column with name '" + columnName + "' in table '" + table + "'" );
-    }
-
-
-    public UnknownColumnException( InternalName column ) {
-        super( "There is no column with InternalName '" + column.toString() + "'." );
+    public UnknownColumnException( String columnName, String tableName, String schemaName, String databaseName ) {
+        super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
     }
 }

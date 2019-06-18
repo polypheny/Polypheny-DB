@@ -42,6 +42,12 @@ tasks.withType(JavaCompile) {
 }
 
 
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 

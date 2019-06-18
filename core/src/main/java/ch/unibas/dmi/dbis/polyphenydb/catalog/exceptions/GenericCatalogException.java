@@ -41,4 +41,9 @@ public class GenericCatalogException extends CatalogException {
         exception = e;
     }
 
+
+    public GenericCatalogException( Exception e ) {
+        super( e );
+    }
+
 }

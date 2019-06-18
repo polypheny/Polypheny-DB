@@ -29,35 +29,42 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
 import java.io.Serializable;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 
 /**
  *
  */
-@Getter
-public final class CatalogColumn extends AbstractCatalogEntity {
+@EqualsAndHashCode
+public final class CatalogColumn implements CatalogEntity {
 
-    private static final long serialVersionUID = -8840705439121820075L;
+    private static final long serialVersionUID = 8175898370446385726L;
 
-    private final int position;
-    private final PolySqlType type;
-    private Integer length;
-    private Integer precision;
-    private final boolean nullable;
-    private final Encoding encoding;
-    private final Collation collation;
-    private Long autoincrementStartValue;
-    private Long autoincrementNextValue;
-    private Serializable defaultValue;
-    private final boolean forceDefault;
+    public final String name;
+    public final String table;
+    public final String schema;
+    public final String database;
+    public final int position;
+    public final PolySqlType type;
+    public final Integer length;
+    public final Integer precision;
+    public final boolean nullable;
+    public final Encoding encoding;
+    public final Collation collation;
+    public final Long autoincrementStartValue;
+    public final Long autoincrementNextValue;
+    public final Serializable defaultValue;
+    public final boolean forceDefault;
 
 
-    public CatalogColumn( @NonNull final InternalName internalName, @NonNull final String name, final int position, @NonNull final PolySqlType type, Integer length, Integer precision, final boolean nullable, @NonNull final Encoding encoding, @NonNull final Collation collation, Long autoincrementStartValue, Long autoincrementNextValue, Serializable defaultValue, boolean forceDefault ) {
-        super( internalName, name );
+    public CatalogColumn( @NonNull final String name, @NonNull final String table, @NonNull final String schema, @NonNull final String database, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final Long autoincrementStartValue, final Long autoincrementNextValue, final Serializable defaultValue, final boolean forceDefault ) {
+        this.name = name;
+        this.table = table;
+        this.schema = schema;
+        this.database = database;
         this.position = position;
         this.type = type;
         this.length = length;
@@ -71,4 +78,36 @@ public final class CatalogColumn extends AbstractCatalogEntity {
         this.forceDefault = forceDefault;
     }
 
+
+    @Override
+    public Object[] getParameterArray() {
+        String dv = null;
+        if ( defaultValue != null ) {
+            if ( defaultValue instanceof String ) {
+                dv = (String) defaultValue;
+            } // TODO: Improve this
+        }
+        return new Object[]{ name, table, schema, database, position, CatalogEntity.getEnumNameOrNull( type ), length, precision, nullable, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), autoincrementStartValue, autoincrementNextValue, dv, forceDefault };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogColumn {
+
+        public final String name;
+        public final String table;
+        public final String schema;
+        public final String database;
+        public final int position;
+        public final String type;
+        public final Integer length;
+        public final Integer precision;
+        public final boolean nullable;
+        public final String encoding;
+        public final String collation;
+        public final Long autoincrementStartValue;
+        public final Long autoincrementNextValue;
+        public final String defaultValue;
+        public final boolean forceDefault;
+    }
 }

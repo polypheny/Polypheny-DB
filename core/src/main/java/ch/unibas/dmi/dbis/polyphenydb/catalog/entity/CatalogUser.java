@@ -26,37 +26,49 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PUID;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 
 
 /**
  *
  */
-@Getter
+@EqualsAndHashCode
 public final class CatalogUser implements CatalogEntity {
 
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = -6080759053881247269L;
 
-    private final String name;
-    private final PUID userId;
+    public final String name;
+    public final String password;
+    //private final PUID userId;
 
 
-    public CatalogUser( final String name, final long userId ) {
+    public CatalogUser( final String name, final String password ) {
         this.name = name;
-        this.userId = new PUID( 0L, userId );
+        this.password = password;
+        //this.userId = new PUID( 0L, userId );
     }
 
 
-    public CatalogUser( final String name, final PUID userId ) {
+    /*
+    public CatalogUser( final String name, final String password ) {
         this.name = name;
-        this.userId = userId;
+        this.password = password;
+        //this.userId = userId;
     }
+*/
 
 
+    // Used for creating ResultSets
     @Override
-    public InternalName getInternalName() {
-        return null;
+    public Object[] getParameterArray() {
+        return new Object[]{ name };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogUser {
+
+        public final String name;
     }
 }

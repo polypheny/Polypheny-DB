@@ -23,13 +23,19 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public class ExceedsMaximumNumberOfColumnsException extends CatalogException {
+/**
+ *
+ */
+public interface PolyphenyDbStatementHandle {
 
-    public ExceedsMaximumNumberOfColumnsException() {
-        super();
-    }
+    int getStatementId();
 
+    PolyphenyDbConnectionHandle getConnection();
+
+    void setOpenResultSet( PolyphenyDbResultSet result );
+
+    PolyphenyDbResultSet getOpenResultSet();
 }

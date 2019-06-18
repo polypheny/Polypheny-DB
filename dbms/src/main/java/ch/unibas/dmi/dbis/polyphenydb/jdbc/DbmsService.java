@@ -53,7 +53,7 @@ public class DbmsService implements Service {
 
 
     public DbmsService( MetricsSystem metrics ) throws SQLException {
-        this.delegate = new LocalService( JdbcMeta.getInstance(), metrics );
+        this.delegate = new LocalService( DbmsMeta.getInstance(), metrics );
     }
 
 

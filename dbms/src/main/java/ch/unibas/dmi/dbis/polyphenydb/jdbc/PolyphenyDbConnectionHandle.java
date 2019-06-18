@@ -23,13 +23,42 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public class ExceedsMaximumNumberOfTablesException extends CatalogException {
+import ch.unibas.dmi.dbis.polyphenydb.PUID.ConnectionId;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.ConnectionProperties;
 
-    public ExceedsMaximumNumberOfTablesException() {
-        super();
-    }
 
+/**
+ *
+ */
+public interface PolyphenyDbConnectionHandle {
+
+    ConnectionId getConnectionId();
+
+    PolyXid startNewTransaction();
+
+    PolyXid getCurrentTransaction();
+
+    PolyXid endCurrentTransaction();
+
+    CatalogUser getUser();
+
+    CatalogDatabase getDatabase();
+
+    CatalogSchema getSchema();
+
+    void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet );
+
+    ConnectionProperties mergeConnectionProperties( ConnectionProperties connectionProperties );
+
+    boolean isAutoCommit();
+
+    Meta.ConnectionHandle getHandle();
 }

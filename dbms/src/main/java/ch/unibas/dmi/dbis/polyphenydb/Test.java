@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -58,28 +59,37 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.sql.DataSource;
 
 
 public class Test {
 
     public static void main( String[] args ) throws SqlParseException, ValidationException, RelConversionException, SQLException {
 
-        //final String sql = "INSERT INTO emps(empid,deptno,name,salary,commission)VALUES(100, 10, 'Bill', 10000, 1000)";
+        //final String sql = "INSERT INTO emps(empid,deptno,name,salary,commission) VALUES (100, 10, 'Bill', 10000, 1000)";
+        //final String sql = "INSERT INTO depts(deptno,name) VALUES (40, 'IT')";
 
-        //final String sql = "SELECT * FROM emps";
-        //final String sql = "SELECT sum(salary) FROM emps";
-        //final String sql = "SELECT * FROM emps WHERE emps.empid > 110";
-        //final String sql = "SELECT count(empid) as anz FROM emps GROUP BY emps.deptno";
-        final String sql = "SELECT * FROM emps e, depts d WHERE e.deptno = d.deptno";
+        final String sql = "SELECT * FROM csv.emps";
+        //final String sql = "SELECT sum(salary) FROM csv.emps";
+        //final String sql = "SELECT * FROM csv.emps WHERE csv.emps.empid > 110";
+        //final String sql = "SELECT count(empid) as anz FROM csv.emps GROUP BY csv.emps.deptno";
+        //final String sql = "SELECT * FROM csv.emps e, csv.depts d WHERE e.deptno = d.deptno";
 
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( false );
         Config parserConfig = configConfigBuilder.build();
 
-        File csvDir = new File( "testTestCsv" );
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
-        //final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema() );
-        final SchemaPlus defSchema = rootSchema.add( "CSV", new CsvSchema( csvDir, Flavor.FILTERABLE ) );
+
+        // CSV
+        File csvDir = new File( "testTestCsv" );
+        rootSchema.add( "CSV", new CsvSchema( csvDir, Flavor.FILTERABLE ) );
+
+        // JDBC
+        final DataSource ds1 = JdbcSchema.dataSource( "jdbc:hsqldb:file:testdb", "org.hsqldb.jdbcDriver", "", "" );
+        final JdbcSchema jdbcSchema = JdbcSchema.create( rootSchema, "DB1", ds1, null, null );
+        //final Map<String, JdbcTable> tableMap = getJdbcTableMap(jdbcSchema);
+        rootSchema.add( "HSQLDB", jdbcSchema );
 
         SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
@@ -89,13 +99,13 @@ public class Test {
         Frameworks.ConfigBuilder frameworkConfigBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .traitDefs( traitDefs )
-                .defaultSchema( defSchema )
+                .defaultSchema( rootSchema )
                 .sqlToRelConverterConfig( sqlToRelConfig )
                 .programs( Programs.ofRules( Programs.RULE_SET ) );
         //.programs( Programs.ofRules( Programs.CALC_RULES ) );
         FrameworkConfig frameworkConfig = frameworkConfigBuilder.build();
 
-        RelNode bestPlan = executeQuery( frameworkConfig, sql, true );
+        RelNode bestPlan = planQuery( frameworkConfig, sql, true );
 
         // Execute query
         ResultSet resultSet = null;
@@ -111,7 +121,22 @@ public class Test {
     }
 
 
-    private static RelNode executeQuery( FrameworkConfig config, String query, boolean debug ) throws RelConversionException, SqlParseException, ValidationException {
+    /*
+    private static Map<String, JdbcTable> getJdbcTableMap( JdbcSchema jdbcSchema ) {
+        final Map<String, JdbcTable> tableMap  = ImmutableMap.<String, JdbcTable>builder()
+                .put( "test",
+                        new JdbcTable(
+                                jdbcSchema,
+                                "DB",
+                                "HSQLDB",
+                                "test",
+                                null
+                        ) ).build();
+        return tableMap;
+    }*/
+
+
+    private static RelNode planQuery( FrameworkConfig config, String query, boolean debug ) throws RelConversionException, SqlParseException, ValidationException {
         Planner planner = Frameworks.getPlanner( config );
         if ( debug ) {
             System.out.println( "Query:" + query );
@@ -137,5 +162,6 @@ public class Test {
         }
         return bestExp;
     }
+
 
 }

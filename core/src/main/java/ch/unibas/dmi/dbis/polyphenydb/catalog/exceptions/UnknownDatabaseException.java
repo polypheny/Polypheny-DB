@@ -26,9 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.InternalName;
-
-
 public class UnknownDatabaseException extends CatalogException {
 
 
@@ -36,9 +33,5 @@ public class UnknownDatabaseException extends CatalogException {
         super( "There is no database with name " + databaseName );
     }
 
-
-    public UnknownDatabaseException( InternalName internalName ) {
-        super( "There is no database with InternalName '" + internalName.toString() + "'." );
-    }
 
 }

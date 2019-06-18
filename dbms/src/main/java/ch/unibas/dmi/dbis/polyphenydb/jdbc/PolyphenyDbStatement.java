@@ -23,13 +23,49 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public class ExceedsMaximumNumberOfDatabasesException extends CatalogException {
+/**
+ *
+ */
+public class PolyphenyDbStatement implements PolyphenyDbStatementHandle {
 
-    public ExceedsMaximumNumberOfDatabasesException() {
-        super();
+    private final PolyphenyDbConnectionHandle connection;
+    private final int statementId;
+    private volatile transient PolyphenyDbResultSet openResultSet;
+
+
+    public PolyphenyDbStatement( final PolyphenyDbConnectionHandle connection, final int statementId ) {
+        this.connection = connection;
+        this.statementId = statementId;
     }
 
+
+    @Override
+    public int getStatementId() {
+        return statementId;
+    }
+
+
+    @Override
+    public PolyphenyDbConnectionHandle getConnection() {
+        return connection;
+    }
+
+
+    @Override
+    public synchronized void setOpenResultSet( PolyphenyDbResultSet result ) {
+        if ( this.openResultSet != null ) {
+            this.openResultSet.close();
+        }
+        this.openResultSet = result;
+
+    }
+
+
+    @Override
+    public synchronized PolyphenyDbResultSet getOpenResultSet() {
+        return openResultSet;
+    }
 }
