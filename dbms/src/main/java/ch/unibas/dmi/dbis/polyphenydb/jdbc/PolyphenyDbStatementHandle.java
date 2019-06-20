@@ -26,16 +26,46 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+
 /**
  *
  */
-public interface PolyphenyDbStatementHandle {
+public class PolyphenyDbStatementHandle {
 
-    int getStatementId();
+    private final PolyphenyDbConnectionHandle connection;
+    private final int statementId;
+    private volatile transient PolyphenyDbResultSet openResultSet;
 
-    PolyphenyDbConnectionHandle getConnection();
 
-    void setOpenResultSet( PolyphenyDbResultSet result );
+    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
+        this.connection = connection;
+        this.statementId = statementId;
+    }
 
-    PolyphenyDbResultSet getOpenResultSet();
+
+    public int getStatementId() {
+        return statementId;
+    }
+
+
+    public PolyphenyDbConnectionHandle getConnection() {
+        return connection;
+    }
+
+
+    public synchronized void setOpenResultSet( PolyphenyDbResultSet result ) {
+        if ( this.openResultSet != null ) {
+            this.openResultSet.close();
+        }
+        this.openResultSet = result;
+
+    }
+
+
+    public synchronized PolyphenyDbResultSet getOpenResultSet() {
+        return openResultSet;
+    }
+
+
+
 }

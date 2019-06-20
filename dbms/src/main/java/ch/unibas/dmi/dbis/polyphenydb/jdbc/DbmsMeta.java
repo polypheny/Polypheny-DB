@@ -33,6 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
@@ -51,13 +53,40 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
+import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
+import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
+import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
+import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
+import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -90,6 +119,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +170,7 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Converts from JDBC metadata to Avatica columns.
      */
-    protected static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
+    private static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
         if ( metaData == null ) {
             return Collections.emptyList();
         }
@@ -177,7 +207,7 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Converts from JDBC metadata to Avatica parameters
      */
-    protected static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
+    private static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
         if ( metaData == null ) {
             return Collections.emptyList();
         }
@@ -197,7 +227,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    protected static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
+    private static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
         final CursorFactory cf = CursorFactory.LIST;  // because JdbcResultSet#frame
         return new Signature( columns( metaData ), sql, parameters( parameterMetaData ), null, cf, statementType );
     }
@@ -224,7 +254,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    protected MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
         final PolyphenyDbSignature<Object> signature =
                 new PolyphenyDbSignature<Object>(
                         "",
@@ -271,19 +301,6 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    /**
-     * Returns a map of static database properties.
-     *
-     * The provider can omit properties whose value is the same as the default.
-     */
-    @Override
-    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        final Map<DatabaseProperty, Object> map = new HashMap<>();
-        // TODO
-        return map;
-    }
-
-
     private Enumerable<Object> toEnumerable( final List<? extends CatalogEntity> entities ) {
         final List<Object> objects = new LinkedList<>();
         for ( CatalogEntity entity : entities ) {
@@ -293,7 +310,29 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    /**
+     * Returns a map of static database properties.
+     *
+     * The provider can omit properties whose value is the same as the default.
+     */
+    @Override
+    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
+        }
+
+        final Map<DatabaseProperty, Object> map = new HashMap<>();
+        // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
+        return map;
+    }
+
+
     public MetaResultSet getTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, catalog, schemaPattern, tableNamePattern, typeList );
+        }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
@@ -326,6 +365,9 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+        }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
@@ -360,6 +402,9 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSchemas( final ConnectionHandle ch, final String catalog, final Pat schemaPattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, catalog, schemaPattern );
+        }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
@@ -385,6 +430,9 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getCatalogs( ConnectionHandle {} )", ch );
+        }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
@@ -409,6 +457,9 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getTableTypes( ConnectionHandle {} )", ch );
+        }
         final TableType[] tableTypes = TableType.values();
         final List<Object> objects = new LinkedList<>();
         for ( TableType tt : tableTypes ) {
@@ -428,127 +479,234 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
         return null;
     }
 
 
     @Override
     public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         return null;
     }
 
 
     @Override
     public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         return null;
     }
 
 
     @Override
     public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         return null;
     }
 
 
     @Override
     public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         return null;
     }
 
 
     @Override
     public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
         return null;
     }
 
 
     @Override
     public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getTypeInfo( ConnectionHandle {} )", ch );
+        }
+
         // TODO
+
+        LOG.error( "[NOT IMPLEMENTED YET] getTypeInfo( ConnectionHandle {} )", ch );
         return null;
     }
 
 
     @Override
     public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
         return null;
     }
 
 
     @Override
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
         return null;
     }
 
 
     @Override
     public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getClientInfoProperties( ConnectionHandle {} )", ch );
         return null;
     }
 
 
     @Override
     public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
         return null;
     }
 
@@ -562,6 +720,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatchProtobuf( final StatementHandle h, final List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
         return null;
     }
 
@@ -569,12 +732,16 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Creates an iterable for a result set.
      *
-     * <p>The default implementation just returns {@code iterable}, which it
-     * requires to be not null; derived classes may instead choose to execute the
-     * relational expression in {@code signature}.
+     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the relational
+     * expression in {@code signature}.
      */
     @Override
     public Iterable<Object> createIterable( final StatementHandle stmt, final QueryState state, final Signature signature, final List<TypedValue> parameters, final Frame firstFrame ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
         return null;
     }
 
@@ -589,6 +756,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
         return null;
     }
 
@@ -600,13 +772,15 @@ public class DbmsMeta implements ProtobufMeta {
      * @param sql SQL query
      * @param maxRowCount Negative for no limit (different meaning than JDBC)
      * @param callback Callback to lock, clear and assign cursor
-     * @return Result containing statement ID, and if a query, a result set and
-     * first frame of data
+     * @return Result containing statement ID, and if a query, a result set and first frame of data
      * @deprecated See {@link #prepareAndExecute(StatementHandle, String, long, int, PrepareCallback)}
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final PrepareCallback callback ) throws NoSuchStatementException {
-        return null;
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, PrepareCallback {} )", h, sql, maxRowCount, callback );
+        }
+        return prepareAndExecute( h, sql, maxRowCount, AvaticaUtils.toSaturatedInt( maxRowCount ), callback );
     }
 
 
@@ -615,19 +789,256 @@ public class DbmsMeta implements ProtobufMeta {
      *
      * @param h Statement handle
      * @param sql SQL query
-     * @param maxRowCount Maximum number of rows for the entire query. Negative for no limit
-     * (different meaning than JDBC).
-     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should
-     * always be less than or equal to {@code maxRowCount} as the number of results are guaranteed
-     * to be restricted by {@code maxRowCount} and the underlying database.
+     * @param maxRowCount Maximum number of rows for the entire query. Negative for no limit (different meaning than JDBC).
+     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should always be less than or equal to {@code maxRowCount} as the number of results are guaranteed     * to be restricted by {@code maxRowCount} and the underlying database.
      * @param callback Callback to lock, clear and assign cursor
-     * @return Result containing statement ID, and if a query, a result set and
-     * first frame of data
+     * @return Result containing statement ID, and if a query, a result set and first frame of data
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
-        return null;
+
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
+        }
+        final StopWatch stopWatch = new StopWatch();
+
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbStatementHandle statement;
+        synchronized ( OPEN_STATEMENTS ) {
+            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+            } else {
+                throw new RuntimeException( "Ok.... In this case there was no statement created before. Find out why." );
+            }
+        }
+
+        // //////////////////////////
+        // For testing
+        // /////////////////////////
+        final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
+
+        // CSV
+        File csvDir = new File( "testTestCsv" );
+        rootSchema.add( "CSV", new CsvSchema( csvDir, Flavor.FILTERABLE ) );
+
+        ///////////////////
+        // (1)  Configure //
+        ///////////////////
+        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        configConfigBuilder.setCaseSensitive( false );
+        Config parserConfig = configConfigBuilder.build();
+
+        SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
+        SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
+
+        List<RelTraitDef> traitDefs = new ArrayList<>();
+        traitDefs.add( ConventionTraitDef.INSTANCE );
+        FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
+                .parserConfig( parserConfig )
+                //            .traitDefs( traitDefs )
+                .defaultSchema( rootSchema )
+                //             .sqlToRelConverterConfig( sqlToRelConfig )
+                //             .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .build();
+        //.programs( Programs.ofRules( Programs.CALC_RULES ) );
+
+        ///////////////////
+        // (2)  PARSING  //
+        ///////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Parsing PolySQL statement ..." );
+        }
+        stopWatch.start();
+
+        Planner planner = Frameworks.getPlanner( frameworkConfig );
+        SqlNode parsed;
+        try {
+            parsed = planner.parse( sql );
+        } catch ( SqlParseException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        stopWatch.stop();
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Parsed query: [{}]", parsed );
+        }
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
+        }
+
+        /////////
+        // (2.5) TRANSACTION ID
+        ////////
+        PolyXid xid = getCurrentTransaction( connection );
+
+        //////////////////////
+        // (3)  VALIDATION  //
+        //////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating ..." );
+        }
+        stopWatch.start();
+        SqlNode validated;
+        try {
+            validated = planner.validate( parsed );
+        } catch ( ValidationException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        stopWatch.stop();
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Validated query: [{}]", validated );
+        }
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating ... done. [{}]", stopWatch );
+        }
+
+        /////////////////////////
+        // (4)  AUTHORIZATION  //
+        /////////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing ..." );
+        }
+        stopWatch.start();
+        // TODO
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing ... done. [{}]", stopWatch );
+        }
+
+        //////////////////////
+        // (5)  Planning    //
+        //////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning ..." );
+        }
+        stopWatch.start();
+        RelNode logicalPlan;
+        try {
+            logicalPlan = planner.rel( validated ).rel;
+        } catch ( RelConversionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning ... done. [{}]", stopWatch );
+        }
+
+        /////////////////////////
+        // (5)  Optimization  //
+        ///////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimization ..." );
+        }
+        stopWatch.start();
+
+        final HepProgram hepProgram =
+                new HepProgramBuilder()
+                        .addRuleInstance( CalcSplitRule.INSTANCE )
+                        .addRuleInstance( FilterTableScanRule.INSTANCE )
+                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
+                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
+                        .build();
+        final HepPlanner hepPlanner = new HepPlanner( hepProgram );
+        hepPlanner.setRoot( logicalPlan );
+        RelNode optimalPlan = hepPlanner.findBestExp();
+
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimization ... done. [{}]", stopWatch );
+        }
+
+        /////////////////////
+        // (6)  EXECUTION  //
+        /////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Execution ..." );
+        }
+        stopWatch.start();
+
+        PolyphenyDbResultSet resultSet;
+        try {
+            PreparedStatement preparedStatement = RelRunners.run( optimalPlan ); // TODO cloese
+            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
+        } catch ( SQLException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        //connection.setCurrentOpenResultSet(resultSet);
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Execution ... done. [{}]", stopWatch );
+        }
+
+        /////////
+        // (6.5) TRANSACTION ID
+        ////////
+        /*if ( rawExecutionResult.subType() == resultSet..Type.TRANSACTION_CONTROL ) {
+            // TODO: check whether only in case of success or always (try-finally)
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Deleting the current TransactionId: {}", xid );
+            }
+            connection.endCurrentTransaction();
+        }*/
+
+        ///////////////////////
+        // (7)  MARSHALLING  //
+        ///////////////////////
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Building response ..." );
+        }
+        stopWatch.start();
+
+        Signature signature;
+        try {
+            signature = signature( resultSet.getMetaData(), null, sql, StatementType.SELECT );
+        } catch ( SQLException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+        }
+
+        List<MetaResultSet> resultSets = Collections.emptyList();
+        if ( parsed.isA( SqlKind.QUERY ) ) {
+            // ResultSet
+            statement.setOpenResultSet( resultSet );
+            try {
+                resultSets = Collections.singletonList( MetaResultSet.create(
+                        h.connectionId,
+                        h.id,
+                        false,
+                        signature,
+                        maxRowsInFirstFrame > 0 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE
+                        //null
+                ) );
+            } catch ( MissingResultsException e ) {
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+            }
+        } else {
+            // TODO
+            throw new RuntimeException( "Implement!" );
+        }
+
+        final ExecuteResult executeResult = new ExecuteResult( resultSets );
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Building response ... done. [{}]", stopWatch );
+        }
+
+        return executeResult;
     }
+
 
 
     /**
@@ -639,6 +1050,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
         return null;
     }
 
@@ -652,6 +1068,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
         return null;
     }
 
@@ -659,21 +1080,58 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Returns a frame of rows.
      *
-     * <p>The frame describes whether there may be another frame. If there is not
-     * another frame, the current iteration is done when we have finished the
-     * rows in the this frame.
-     *
-     * <p>The default implementation always returns null.
+     * The frame describes whether there may be another frame. If there is not another frame, the current iteration is done when we have finished the rows in the this frame.
      *
      * @param h Statement handle
      * @param offset Zero-based offset of first row in the requested frame
-     * @param fetchMaxRowCount Maximum number of rows to return; negative means
-     * no limit
+     * @param fetchMaxRowCount Maximum number of rows to return; negative means no limit
      * @return Frame, or null if there are no more
      */
     @Override
     public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
-        return null;
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
+        }
+
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbStatementHandle statement;
+        synchronized ( OPEN_STATEMENTS ) {
+            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+            } else {
+                throw new NoSuchStatementException( h );
+            }
+        }
+
+        PolyphenyDbResultSet openResultSet = statement.getOpenResultSet();
+        if ( openResultSet == null ) {
+            throw new MissingResultsException( h );
+        }
+
+        final List<Object> rows = new LinkedList<>();
+        boolean done = false;
+        try {
+            int numberOfColumns = openResultSet.getMetaData().getColumnCount();
+            for ( int rowCount = 0; openResultSet.next() && (fetchMaxRowCount < 0 || rowCount < fetchMaxRowCount); ++rowCount ) {
+                Object[] array = new Object[numberOfColumns];
+                for ( int i = 0; i < numberOfColumns; i++ ) {
+                    array[i] = openResultSet.getObject( i + 1 );
+                }
+                rows.add( array );
+            }
+            done = openResultSet.isAfterLast();
+            return new Frame( offset, done, rows );
+        } catch ( SQLException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), e.getErrorCode(), e.getSQLState(), AvaticaSeverity.ERROR );
+        } finally {
+            if ( done ) {
+                openResultSet.close();
+                statement.setOpenResultSet( null );
+                if ( connection.isAutoCommit() ) {
+//                commit( connection.getHandle() );
+                }
+            }
+        }
     }
 
 
@@ -682,13 +1140,17 @@ public class DbmsMeta implements ProtobufMeta {
      *
      * @param h Statement handle
      * @param parameterValues A list of parameter values; may be empty, not null
-     * @param maxRowCount Maximum number of rows to return; negative means
-     * no limit
+     * @param maxRowCount Maximum number of rows to return; negative means no limit
      * @return Execute result
      * @deprecated See {@link #execute(StatementHandle, List, int)}
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final long maxRowCount ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
         return null;
     }
 
@@ -703,6 +1165,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
         return null;
     }
 
@@ -714,11 +1181,15 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "createStatement( ConnectionHandle {} )", ch );
+        }
+
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
         final PolyphenyDbStatementHandle statement;
         synchronized ( OPEN_STATEMENTS ) {
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatement( connection, id );
+            statement = new PolyphenyDbStatementHandle( connection, id );
             OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
         }
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -811,7 +1282,7 @@ public class DbmsMeta implements ProtobufMeta {
             final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
 
             // Create transaction id
-            PolyXid xid = PolyphenyDbConnection.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+            PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
 
             final Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
             // Check database access
@@ -836,7 +1307,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 //            Authorizer.hasAccess( user, schema );
 
-            connectionToOpen = new PolyphenyDbConnection( ch, nodeId, user, ch.id, database, schema, xid );
+            connectionToOpen = new PolyphenyDbConnectionHandle( ch, nodeId, user, ch.id, database, schema, xid );
 
             OPEN_CONNECTIONS.put( ch.id, connectionToOpen );
         }
@@ -911,6 +1382,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public boolean syncResults( final StatementHandle sh, final QueryState state, final long offset ) throws NoSuchStatementException {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
+        }
+
+        LOG.error( "[NOT IMPLEMENTED YET] syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
         return false;
     }
 
@@ -922,6 +1398,9 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "commit( ConnectionHandle {} )", ch );
+        }
         throw new UnsupportedOperationException();
     }
 
@@ -933,6 +1412,9 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
+        if ( LOG.isTraceEnabled() ) {
+            LOG.trace( "rollback( ConnectionHandle {} )", ch );
+        }
         throw new UnsupportedOperationException();
     }
 
@@ -958,7 +1440,6 @@ public class DbmsMeta implements ProtobufMeta {
             throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
         }
 
-//        LOGGER.error( "[NOT IMPLEMENTED YET] connectionSync( ConnectionHandle {}, ConnectionProperties {} )", connectionHandle, connProps );
         return connectionToSync.mergeConnectionProperties( connProps );
     }
 

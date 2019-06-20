@@ -26,39 +26,166 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PUID;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.ConnectionId;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Utils;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import java.util.Objects;
+import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.ConnectionHandle;
 import org.apache.calcite.avatica.Meta.ConnectionProperties;
 
 
 /**
  *
  */
-public interface PolyphenyDbConnectionHandle {
+public class PolyphenyDbConnectionHandle {
 
-    ConnectionId getConnectionId();
+    private final Meta.ConnectionHandle handle;
 
-    PolyXid startNewTransaction();
+    private final NodeId nodeId;
+    private final UserId userId;
 
-    PolyXid getCurrentTransaction();
+    private final CatalogUser user;
+    private final CatalogDatabase database;
+    private final CatalogSchema schema;
 
-    PolyXid endCurrentTransaction();
+    private final ConnectionId connectionId;
+    private volatile transient PolyXid currentTransaction;
+    private volatile transient PolyphenyDbResultSet currentOpenResultSet;
 
-    CatalogUser getUser();
+    private volatile transient ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
 
-    CatalogDatabase getDatabase();
 
-    CatalogSchema getSchema();
+    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema, PolyXid xid ) {
+        this.handle = handle;
 
-    void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet );
+        this.nodeId = nodeId;
+        this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
+        this.user = catalogUser;
+        this.connectionId = connectionId;
+        this.database = database;
+        this.schema = schema;
+        this.currentTransaction = xid;
+    }
 
-    ConnectionProperties mergeConnectionProperties( ConnectionProperties connectionProperties );
 
-    boolean isAutoCommit();
+    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema, PolyXid xid ) {
+        this.handle = handle;
 
-    Meta.ConnectionHandle getHandle();
+        this.nodeId = nodeId;
+        this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
+        this.user = catalogUser;
+        this.connectionId = ConnectionId.fromString( connectionId );
+        this.database = database;
+        this.schema = schema;
+        this.currentTransaction = xid;
+    }
+
+
+    public ConnectionId getConnectionId() {
+        return connectionId;
+    }
+
+
+    public PolyXid startNewTransaction() {
+        synchronized ( this ) {
+            if ( currentTransaction != null ) {
+                throw new IllegalStateException( "Illegal attempt to start a new transaction prior closing the current transaction." );
+            }
+
+            return currentTransaction = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, connectionId );
+        }
+    }
+
+
+    //
+    // DO NOT CALL THIS EXCEPT YOU KNOW WHAT YOU ARE DOING!!!!!!
+    //
+    // This method is only protected so that it can be called from the openConnection method in the DbmsMeta class. Do not call from elsewhere!
+    protected static PolyXid generateNewTransactionId( final NodeId nodeId, final UserId userId, final ConnectionId connectionId ) {
+        return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
+    }
+
+
+    public PolyXid getCurrentTransaction() {
+        synchronized ( this ) {
+            return currentTransaction;
+        }
+    }
+
+
+    public PolyXid endCurrentTransaction() {
+        synchronized ( this ) {
+            PolyXid endedTransaction = currentTransaction;
+            currentTransaction = null;
+            return endedTransaction;
+        }
+    }
+
+
+    public CatalogUser getUser() {
+        return user;
+    }
+
+
+    public CatalogDatabase getDatabase() {
+        return database;
+    }
+
+
+    public CatalogSchema getSchema() {
+        return schema;
+    }
+
+
+    public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {
+        synchronized ( this ) {
+            this.currentOpenResultSet = resultSet;
+        }
+    }
+
+
+    public ConnectionProperties mergeConnectionProperties( final ConnectionProperties connectionProperties ) {
+        synchronized ( this ) {
+            return this.connectionProperties.merge( connectionProperties );
+        }
+    }
+
+
+    public boolean isAutoCommit() {
+        synchronized ( this ) {
+            return this.connectionProperties.isAutoCommit();
+        }
+    }
+
+
+    public Meta.ConnectionHandle getHandle() {
+        return this.handle;
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        PolyphenyDbConnectionHandle that = (PolyphenyDbConnectionHandle) o;
+        return Objects.equals( connectionId, that.connectionId );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( connectionId );
+    }
 }
