@@ -53,45 +53,24 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
-import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -103,7 +82,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -111,7 +89,6 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
@@ -166,76 +143,6 @@ public class DbmsMeta implements ProtobufMeta {
 
     }
 
-
-    /**
-     * Converts from JDBC metadata to Avatica columns.
-     */
-    private static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
-        }
-        final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
-            final SqlType sqlType = SqlType.valueOf( metaData.getColumnType( i ) );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( sqlType.internal );
-            final ColumnMetaData.AvaticaType t;
-            if ( sqlType == SqlType.ARRAY || sqlType == SqlType.STRUCT || sqlType == SqlType.MULTISET ) {
-                ColumnMetaData.AvaticaType arrayValueType = ColumnMetaData.scalar( Types.JAVA_OBJECT, metaData.getColumnTypeName( i ), ColumnMetaData.Rep.OBJECT );
-                t = ColumnMetaData.array( arrayValueType, metaData.getColumnTypeName( i ), rep );
-            } else {
-                t = ColumnMetaData.scalar( metaData.getColumnType( i ), metaData.getColumnTypeName( i ), rep );
-            }
-            ColumnMetaData md =
-                    new ColumnMetaData(
-                            i - 1,
-                            metaData.isAutoIncrement( i ),
-                            metaData.isCaseSensitive( i ), metaData.isSearchable( i ),
-                            metaData.isCurrency( i ), metaData.isNullable( i ),
-                            metaData.isSigned( i ), metaData.getColumnDisplaySize( i ),
-                            metaData.getColumnLabel( i ), metaData.getColumnName( i ),
-                            metaData.getSchemaName( i ), metaData.getPrecision( i ),
-                            metaData.getScale( i ), metaData.getTableName( i ),
-                            metaData.getCatalogName( i ), t, metaData.isReadOnly( i ),
-                            metaData.isWritable( i ), metaData.isDefinitelyWritable( i ),
-                            metaData.getColumnClassName( i ) );
-            columns.add( md );
-        }
-        return columns;
-    }
-
-
-    /**
-     * Converts from JDBC metadata to Avatica parameters
-     */
-    private static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
-        }
-        final List<AvaticaParameter> params = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getParameterCount(); i++ ) {
-            params.add(
-                    new AvaticaParameter(
-                            metaData.isSigned( i ),
-                            metaData.getPrecision( i ),
-                            metaData.getScale( i ),
-                            metaData.getParameterType( i ),
-                            metaData.getParameterTypeName( i ),
-                            metaData.getParameterClassName( i ),
-                            "?" + i ) );
-        }
-        return params;
-    }
-
-
-    private static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
-        final CursorFactory cf = CursorFactory.LIST;  // because JdbcResultSet#frame
-        return new Signature( columns( metaData ), sql, parameters( parameterMetaData ), null, cf, statementType );
-    }
-
-
-    protected static Signature signature( final ResultSetMetaData metaData ) throws SQLException {
-        return signature( metaData, null, null, null );
-    }
 
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -828,11 +735,11 @@ public class DbmsMeta implements ProtobufMeta {
         configConfigBuilder.setCaseSensitive( false );
         Config parserConfig = configConfigBuilder.build();
 
-        SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
-        SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
+        // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
+        // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
 
-        List<RelTraitDef> traitDefs = new ArrayList<>();
-        traitDefs.add( ConventionTraitDef.INSTANCE );
+        // List<RelTraitDef> traitDefs = new ArrayList<>();
+        //traitDefs.add( ConventionTraitDef.INSTANCE );
         FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 //            .traitDefs( traitDefs )
@@ -871,172 +778,56 @@ public class DbmsMeta implements ProtobufMeta {
         ////////
         PolyXid xid = getCurrentTransaction( connection );
 
-        //////////////////////
-        // (3)  VALIDATION  //
-        //////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ..." );
-        }
-        stopWatch.start();
-        SqlNode validated;
-        try {
-            validated = planner.validate( parsed );
-        } catch ( ValidationException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-        stopWatch.stop();
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Validated query: [{}]", validated );
-        }
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ... done. [{}]", stopWatch );
-        }
 
-        /////////////////////////
-        // (4)  AUTHORIZATION  //
-        /////////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ..." );
-        }
-        stopWatch.start();
-        // TODO
-        stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ... done. [{}]", stopWatch );
-        }
-
-        //////////////////////
-        // (5)  Planning    //
-        //////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ..." );
-        }
-        stopWatch.start();
-        RelNode logicalPlan;
-        try {
-            logicalPlan = planner.rel( validated ).rel;
-        } catch ( RelConversionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
-        }
-        stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ... done. [{}]", stopWatch );
-        }
-
-        /////////////////////////
-        // (5)  Optimization  //
-        ///////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ..." );
-        }
-        stopWatch.start();
-
-        final HepProgram hepProgram =
-                new HepProgramBuilder()
-                        .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
-                        .build();
-        final HepPlanner hepPlanner = new HepPlanner( hepProgram );
-        hepPlanner.setRoot( logicalPlan );
-        RelNode optimalPlan = hepPlanner.findBestExp();
-
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
-        }
-
-        stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ... done. [{}]", stopWatch );
-        }
-
-        /////////////////////
-        // (6)  EXECUTION  //
-        /////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ..." );
-        }
-        stopWatch.start();
-
-        PolyphenyDbResultSet resultSet;
-        try {
-            PreparedStatement preparedStatement = RelRunners.run( optimalPlan ); // TODO cloese
-            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-
-        //connection.setCurrentOpenResultSet(resultSet);
-
-        stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ... done. [{}]", stopWatch );
-        }
-
-        /////////
-        // (6.5) TRANSACTION ID
-        ////////
-        /*if ( rawExecutionResult.subType() == resultSet..Type.TRANSACTION_CONTROL ) {
-            // TODO: check whether only in case of success or always (try-finally)
-            if ( LOG.isTraceEnabled() ) {
-                LOG.trace( "Deleting the current TransactionId: {}", xid );
-            }
-            connection.endCurrentTransaction();
-        }*/
-
-        ///////////////////////
-        // (7)  MARSHALLING  //
-        ///////////////////////
-        stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Building response ..." );
-        }
-        stopWatch.start();
-
-        Signature signature;
-        try {
-            signature = signature( resultSet.getMetaData(), null, sql, StatementType.SELECT );
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-        }
-
-        List<MetaResultSet> resultSets = Collections.emptyList();
-        if ( parsed.isA( SqlKind.QUERY ) ) {
-            // ResultSet
-            statement.setOpenResultSet( resultSet );
-            try {
-                resultSets = Collections.singletonList( MetaResultSet.create(
-                        h.connectionId,
-                        h.id,
-                        false,
-                        signature,
-                        maxRowsInFirstFrame > 0 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE
-                        //null
-                ) );
-            } catch ( MissingResultsException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-            }
-        } else {
-            // TODO
-            throw new RuntimeException( "Implement!" );
-        }
-
-        final ExecuteResult executeResult = new ExecuteResult( resultSets );
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Building response ... done. [{}]", stopWatch );
         }
 
-        return executeResult;
+        ExecuteResult result = null;
+        switch ( parsed.getKind() ) {
+            case SELECT:
+                result = ExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
+                break;
+
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+            case MERGE:
+            case PROCEDURE_CALL:
+                System.out.println( ":) DML" );
+                break;
+
+            case COMMIT:
+            case ROLLBACK:
+                System.out.println( ":) TRX Control" );
+                break;
+
+            case CREATE_SCHEMA:
+            case DROP_SCHEMA:
+            case CREATE_TABLE:
+            case ALTER_TABLE:
+            case DROP_TABLE:
+            case CREATE_VIEW:
+            case ALTER_VIEW:
+            case DROP_VIEW:
+            case CREATE_MATERIALIZED_VIEW:
+            case ALTER_MATERIALIZED_VIEW:
+            case DROP_MATERIALIZED_VIEW:
+            case CREATE_INDEX:
+            case ALTER_INDEX:
+            case DROP_INDEX:
+                result = ExecutionEngine.getInstance().executeDdl( h, statement, planner, stopWatch, parsed );
+                break;
+
+            case EXPLAIN:
+                result = ExecutionEngine.getInstance().executeExplain( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
+                break;
+
+            default:
+                throw new RuntimeException( "Unknown or unsupported query type: " + parsed.getKind().name() );
+        }
+
+        return result;
     }
 
 

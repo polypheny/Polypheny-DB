@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.Getter;
+
 
 /**
  *
@@ -35,6 +38,8 @@ public class PolyphenyDbStatementHandle {
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
     private volatile transient PolyphenyDbResultSet openResultSet;
+    @Getter
+    private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
 
     public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
