@@ -26,10 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.remote.LocalService;
@@ -51,15 +48,12 @@ public class DbmsService implements Service {
 
     public DbmsService() throws SQLException {
         this( NoopMetricsSystem.getInstance() );
+
     }
 
 
     public DbmsService( MetricsSystem metrics ) throws SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=dbms/build/classes/model.json", "admin", "admin" );
-        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-
-        PolyphenyDbEmbeddedMetaImpl meta = new PolyphenyDbEmbeddedMetaImpl( (PolyphenyDbEmbeddedConnectionImpl) polyphenyDbEmbeddedConnection );
-        this.delegate = new LocalService( meta, metrics );
+        this.delegate = new LocalService( DbmsMeta.getInstance(), metrics );
     }
 
 

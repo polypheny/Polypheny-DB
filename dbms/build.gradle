@@ -1,11 +1,8 @@
 
-group 'ch.unibas.dmi.dbis.polyphenydb'
+group "ch.unibas.dmi.dbis.polyphenydb"
 
 
-def versionMajor = 1
-def versionMinor = 0
-def versionQualifier = 'SNAPSHOT'
-version = versionMajor + '.' + versionMinor + '-' + versionQualifier
+version = versionMajor + '.' + versionMinor + versionQualifier
 
 
 buildscript {
@@ -17,55 +14,75 @@ buildscript {
         }
     }
     dependencies {
-
+        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
 
 repositories {
+    maven {
+        // DBIS Artifactory
+        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+    }
     mavenCentral()
 }
 
 
-apply plugin: 'java'
-apply plugin: 'idea'
-
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
+    options.encoding = "UTF-8"
 }
 
 
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 
 dependencies {
-    compile project(':core')
-    compile project(':csv-adapter')
+    compile project(":core")
+    compile project(":csv-adapter")
+    compile project(":catalog")
 
     ////// Logging
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.0' // License: Apache 2.0
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'   // License: Apache 2.0
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2" // License: Apache 2.0
+    compile group: "org.apache.logging.log4j", name: "log4j-core", version: "2.11.2"   // License: Apache 2.0
+    compile group: "org.apache.logging.log4j", name: "log4j-api", version: "2.11.2"
 
     ////// CLI PARSING
-    compile group: 'com.github.rvesse', name: 'airline', version: '2.5.0'
+    compile group: "com.github.rvesse", name: "airline", version: "2.7.0"
 
     ////// APACHE COMMONS LANG
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+    compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
     ////// BYTE UNITS
-    compile group: 'com.jakewharton.byteunits', name: 'byteunits', version: '0.9.1' // License: Apache 2.0
-
+    compile group: "com.jakewharton.byteunits", name: "byteunits", version: "0.9.1" // License: Apache 2.0
+    
+    // HSQLDB
+    compile group: "org.hsqldb", name: "hsqldb", version: "2.5.0"
 
     ////// APACHE CALCITE AVATICA
-    compile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: '1.13.0'
+    compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.13.0"
     
     
 
     // --- Test Compile ---
-    testCompile project(path: ':core', configuration: 'testClasses')
+    testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: 'junit', name: 'junit', version:'4.12'
+    testCompile group: "junit", name: "junit", version:"4.12"
 }
 
 
@@ -101,14 +118,13 @@ sourceSets {
  */
 javadoc {
     if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
+        options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
-    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption("Xdoclint:none", "-quiet")
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 
@@ -121,23 +137,27 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
+        attributes "Main-Class": "ch.unibas.dmi.dbis.polyphenydb.PolyphenyDb"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier 'sources'
+    classifier "sources"
     from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    classifier "javadoc"
     from javadoc.destinationDir
 }
+shadowJar {
+    classifier = ""
+}
+assemble.dependsOn shadowJar
 artifacts {
-    archives jar // regular jar containing only the compiled source
+    //archives jar // regular jar containing only the compiled source
+    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
-
 
 
 

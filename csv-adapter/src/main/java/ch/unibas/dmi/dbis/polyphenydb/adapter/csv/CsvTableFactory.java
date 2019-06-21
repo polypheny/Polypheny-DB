@@ -53,15 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFactory;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-
 import java.io.File;
 import java.util.Map;
 
@@ -83,7 +74,10 @@ public class CsvTableFactory implements TableFactory<CsvTable> {
         String fileName = (String) operand.get( "file" );
         final File base = (File) operand.get( ModelHandler.ExtraOperand.BASE_DIRECTORY.camelName );
         final Source source = Sources.file( base, fileName );
-        final RelProtoDataType protoRowType = rowType != null ? RelDataTypeImpl.proto( rowType ) : null;
+        final RelProtoDataType protoRowType =
+                rowType != null
+                        ? RelDataTypeImpl.proto( rowType )
+                        : null;
         return new CsvScannableTable( source, protoRowType );
     }
 }

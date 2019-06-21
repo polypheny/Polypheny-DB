@@ -76,6 +76,7 @@ sourceSets {
 }
 
 
+
 /**
  * JavaDoc
  */
@@ -114,9 +115,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
-
-
 
 
 

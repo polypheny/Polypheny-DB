@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -94,7 +95,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SemiJoinType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;

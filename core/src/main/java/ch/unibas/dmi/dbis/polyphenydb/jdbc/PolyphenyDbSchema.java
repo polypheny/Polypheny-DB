@@ -124,8 +124,7 @@ public abstract class PolyphenyDbSchema {
             this.functionNames = new NameSet();
             this.nullaryFunctionMap = new NameMap<>();
         } else {
-            // If you specify functionMap, you must also specify functionNames and
-            // nullaryFunctionMap.
+            // If you specify functionMap, you must also specify functionNames and nullaryFunctionMap.
             this.functionMap = Objects.requireNonNull( functionMap );
             this.functionNames = Objects.requireNonNull( functionNames );
             this.nullaryFunctionMap = Objects.requireNonNull( nullaryFunctionMap );
