@@ -26,10 +26,23 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import static spark.Spark.before;
+import static spark.Spark.get;
+import static spark.Spark.post;
+import static spark.Spark.options;
 import static spark.Spark.port;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.SocketException;
+import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Spark;
 
 
 /**
@@ -38,14 +51,98 @@ import org.slf4j.LoggerFactory;
 public class Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
+    private final ConfigManager cm = ConfigManager.getInstance();
 
+    public static void main( String[] args ) {
+        ConfigManager cm = ConfigManager.getInstance();
 
-    public Server() {
+        cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ) );
+        cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ) );
+        cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ) );
 
-        port( 80 );
-
-        LOGGER.info( "HTTP Server started." );
+        //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
+        ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
+        InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
+        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt() );
     }
 
+    public Server( final int port ) {
+
+        port( port );
+
+        Spark.staticFiles.location( "webapp/" );
+
+        enableCORS();
+
+        //get modified index.html
+        get( "/", ( req, res ) -> {
+            res.type( "text/html" );
+            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream()) {
+                return streamToString( stream );
+            } catch( NullPointerException e ){
+                return "Error: Spark server could not find index.html";
+            } catch ( SocketException e ){
+                return "Error: Spark server could not determine its ip address.";
+            }
+        } );
+
+        LOGGER.info( "HTTP Server started." );
+
+    }
+
+
+    /**
+     * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
+     */
+    //see: http://roufid.com/5-ways-convert-inputstream-string-java/
+    private String streamToString( final InputStream stream ) {
+        StringBuilder stringBuilder = new StringBuilder();
+        String line = null;
+        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ))) {
+            while (( line = bufferedReader.readLine() ) != null ) {
+                if( line.contains( "//SPARK-REPLACE" )){
+                    stringBuilder.append( "\nlocalStorage.setItem('configServer.port', '" ).append( this.cm.getConfig( "configServer.port" ).getInt() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('informationServer.port', '" ).append( this.cm.getConfig( "informationServer.port" ).getInt() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('webUI.port', '" ).append( this.cm.getConfig( "webUI.port" ).getInt() ).append( "');" );
+                }else {
+                    stringBuilder.append(line);
+                }
+            }
+        } catch ( IOException e ){
+            e.printStackTrace();
+        }
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
+     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
+     */
+    public static void enableCORS() {
+        //staticFiles.header("Access-Control-Allow-Origin", "*");
+
+        options( "/*", ( req, res ) -> {
+            String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
+            if ( accessControlRequestHeaders != null ) {
+                res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
+            }
+
+            String accessControlRequestMethod = req.headers( "Access-Control-Request-Method" );
+            if ( accessControlRequestMethod != null ) {
+                res.header( "Access-Control-Allow-Methods", accessControlRequestMethod );
+            }
+
+            return "OK";
+        } );
+
+        before( ( req, res ) -> {
+            //res.header("Access-Control-Allow-Origin", "*");
+            res.header( "Access-Control-Allow-Origin", "*" );
+            res.header( "Access-Control-Allow-Credentials", "true" );
+            res.header( "Access-Control-Allow-Headers", "*" );
+            res.type( "application/json" );
+        } );
+    }
 
 }

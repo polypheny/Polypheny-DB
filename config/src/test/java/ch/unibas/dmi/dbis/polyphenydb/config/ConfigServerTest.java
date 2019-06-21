@@ -36,7 +36,7 @@ public class ConfigServerTest {
 
 
     public static void main( String[] args ) {
-        ConfigServer s = new ConfigServer();
+        ConfigServer s = new ConfigServer( 8081 );
         demoData( s );
     }
 
