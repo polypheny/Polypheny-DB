@@ -52,6 +52,7 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -69,7 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;

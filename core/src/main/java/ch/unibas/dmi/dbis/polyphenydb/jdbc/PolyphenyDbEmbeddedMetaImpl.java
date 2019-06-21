@@ -62,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJdbcFunctionCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;

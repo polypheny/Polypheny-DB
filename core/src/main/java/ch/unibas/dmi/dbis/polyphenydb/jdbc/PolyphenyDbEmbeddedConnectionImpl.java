@@ -62,8 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.LongSchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServer;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -370,6 +368,29 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
             return (PolyphenyDbEmbeddedConnection) provider;
         }
     }
+
+
+    /**
+     * Server.
+     *
+     * Represents shared state among connections, and will have monitoring and management facilities.
+     */
+    public interface PolyphenyDbServer {
+
+        void removeStatement( Meta.StatementHandle h );
+
+        void addStatement( PolyphenyDbEmbeddedConnection connection, Meta.StatementHandle h );
+
+        /**
+         * Returns the statement with a given handle.
+         *
+         * @param h Statement handle
+         * @return Statement, never null
+         * @throws NoSuchStatementException if handle does not represent a statement
+         */
+        PolyphenyDbServerStatement getStatement( Meta.StatementHandle h ) throws NoSuchStatementException;
+    }
+
 
 
     /**
