@@ -332,6 +332,8 @@ public abstract class QuidemTest {
                                         }
                                     } );
                     return connection;
+                case "server":
+                    return DdlTest.connect();
                 default:
                     throw new RuntimeException( "unknown connection '" + name + "'" );
             }
