@@ -2,7 +2,7 @@
 group "ch.unibas.dmi.dbis.polyphenydb"
 
 
-version = versionMajor + '.' + versionMinor + versionQualifier
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
@@ -44,7 +44,7 @@ tasks.withType(JavaCompile) {
 
 configurations.all {
     // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
 
