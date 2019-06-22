@@ -2,7 +2,7 @@
 group "ch.unibas.dmi.dbis.polyphenydb"
 
 
-version = versionMajor + '.' + versionMinor + versionQualifier
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
@@ -44,7 +44,7 @@ tasks.withType(JavaCompile) {
 
 configurations.all {
     // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
 
@@ -112,7 +112,6 @@ sourceSets {
 
 
 
-
 /**
  * JavaDoc
  */
@@ -125,7 +124,6 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 
@@ -158,7 +156,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 
 

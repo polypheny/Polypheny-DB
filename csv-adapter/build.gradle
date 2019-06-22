@@ -1,8 +1,8 @@
 
-group 'ch.unibas.dmi.dbis.polyphenydb'
+group "ch.unibas.dmi.dbis.polyphenydb"
 
 
-version = versionMajor + '.' + versionMinor + versionQualifier
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
@@ -14,48 +14,66 @@ buildscript {
         }
     }
     dependencies {
-
+        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
 
 repositories {
+    maven {
+        // DBIS Artifactory
+        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+    }
     mavenCentral()
 }
 
 
-apply plugin: 'java'
-apply plugin: 'idea'
-
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
+    options.encoding = "UTF-8"
 }
 
+
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+}
+
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 
 dependencies {
-    compile project(':core')
+    compile project(":core")
 
-    compile group: 'org.apache.calcite', name: 'calcite-linq4j', version: '1.18.0'
+    compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
 
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:'2.9.6'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.9.6'
-    compile group: 'com.google.guava', name: 'guava', version:'19.0'
-    compile group: 'net.sf.opencsv', name: 'opencsv', version:'2.3'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.8'
-    compile group: 'commons-io', name: 'commons-io', version:'2.4'
+    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version:"2.9.6"
+    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version:"2.9.6"
+    compile group: "com.google.guava", name: "guava", version:"19.0"
+    compile group: "net.sf.opencsv", name: "opencsv", version:"2.3"
+    compile group: "org.apache.commons", name: "commons-lang3", version:"3.8"
+    compile group: "commons-io", name: "commons-io", version:"2.4"
 
 
     // --- Test Compile ---
-    testCompile project(path: ':core', configuration: 'testClasses')
+    testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: 'junit', name: 'junit', version:'4.12'
+    testCompile group: "junit", name: "junit", version:"4.12"
 
-    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version:'1.3'
-    testCompile group: 'sqlline', name: 'sqlline', version:'1.6.0'
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version:"1.3"
+    testCompile group: "sqlline", name: "sqlline", version:"1.6.0"
 }
+
 
 
 sourceSets {
@@ -88,14 +106,13 @@ sourceSets {
  */
 javadoc {
     if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
+        options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
-    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption("Xdoclint:none", "-quiet")
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 
@@ -110,21 +127,23 @@ jar {
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier 'sources'
+    classifier "sources"
     from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    classifier "javadoc"
     from javadoc.destinationDir
 }
+shadowJar {
+    classifier = ""
+}
+assemble.dependsOn shadowJar
 artifacts {
-    archives jar // regular jar containing only the compiled source
+    //archives jar // regular jar containing only the compiled source
+    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
-
-
 
 
 

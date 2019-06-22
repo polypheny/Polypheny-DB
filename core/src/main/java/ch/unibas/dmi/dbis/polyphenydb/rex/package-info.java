@@ -75,8 +75,8 @@
  *
  * <h2>Related packages</h2>
  * <ul>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.sql} SQL object model</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.plan} Core classes, including {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType} and {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory}.</li>
+ * <li>{@code ch.unibas.dmi.dbis.polyphenydb.sql} SQL object model</li>
+ * <li>{@code ch.unibas.dmi.dbis.polyphenydb.plan} Core classes, including {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType} and {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory}.</li>
  * </ul>
  */
 
