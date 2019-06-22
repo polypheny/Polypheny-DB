@@ -13,7 +13,10 @@ buildscript {
         }
     }
     dependencies {
-
+        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
@@ -31,6 +34,13 @@ repositories {
 
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 
 
 configurations.all {
@@ -39,9 +49,8 @@ configurations.all {
 }
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 
 configurations {
@@ -66,6 +75,7 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
 }
+
 
 
 sourceSets {
@@ -133,26 +143,24 @@ jar {
         attributes "Version": "$version"
     }
 }
-
-
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier 'sources'
     from sourceSets.main.allSource
 }
-
-
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier 'javadoc'
     from javadoc.destinationDir
 }
-
-
+shadowJar {
+    classifier = ""
+}
+assemble.dependsOn shadowJar
 artifacts {
-    archives jar // regular jar containing only the compiled source
+    //archives jar // regular jar containing only the compiled source
+    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 
 

@@ -2619,7 +2619,7 @@ public class Util {
 
     /**
      * Returns a {@code Collector} that accumulates the input elements into a
-     * Guava {@link ImmutableList} via a {@link ImmutableList.Builder}.
+     * Guava {@code ImmutableList} via a {@code ImmutableList.Builder}.
      *
      * <p>It will be obsolete when we move to {@link Bug#upgrade Guava 21.0},
      * which has {@code ImmutableList.toImmutableList()}.
