@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.scu.catalog;
+package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
 import java.sql.ResultSet;

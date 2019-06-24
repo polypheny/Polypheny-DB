@@ -38,7 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.TablePrinter;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.TablePrinter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
