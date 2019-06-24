@@ -421,7 +421,7 @@ public class TraitPropagationTest {
         final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
         final Context prepareContext = statement.createPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), prepareContext.getDefaultSchemaPath(), typeFactory, prepareContext.config() );
+        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), prepareContext.getDefaultSchemaPath(), typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final RelOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
 

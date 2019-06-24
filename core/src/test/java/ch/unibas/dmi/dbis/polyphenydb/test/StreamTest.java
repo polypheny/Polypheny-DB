@@ -52,7 +52,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -199,8 +198,7 @@ public class StreamTest {
                                 + "    EnumerableCalc(expr#0..3=[{inputs}], expr#4=[FLAG(HOUR)], expr#5=[FLOOR($t0, $t4)], ROWTIME=[$t5], PRODUCT=[$t2])\n"
                                 + "      EnumerableInterpreter\n"
                                 + "        BindableTableScan(table=[[STREAMS, ORDERS, (STREAM)]])" )
-                .returns(
-                        startsWith( "ROWTIME=2015-02-15 10:00:00; PRODUCT=paint; C=2" ) );
+                .returns( startsWith( "ROWTIME=2015-02-15 10:00:00; PRODUCT=paint; C=2" ) );
     }
 
 
@@ -307,8 +305,7 @@ public class StreamTest {
                     } catch ( SQLException e ) {
                         assertThat( e.getMessage(), is( "Statement canceled" ) );
                     }
-                    // With a 3 millisecond delay, typically n is between 200 - 400
-                    // before cancel takes effect.
+                    // With a 3 millisecond delay, typically n is between 200 - 400 before cancel takes effect.
                     assertTrue( "n is " + n, n > 5 );
                 } );
     }
@@ -366,8 +363,7 @@ public class StreamTest {
                 + "FROM Orders\n"
                 + "GROUP BY TUMBLE(rowtime, INTERVAL '1' HOUR)";
         // sql and sql2 should give same result
-        PolyphenyDbAssert.model( STREAM_JOINS_MODEL )
-                .query( sql );
+        PolyphenyDbAssert.model( STREAM_JOINS_MODEL ).query( sql );
     }
 
 
@@ -375,8 +371,7 @@ public class StreamTest {
         final ImmutableList<String> rowList = ImmutableList.copyOf( rows );
         return resultSet -> {
             try {
-                final PolyphenyDbAssert.ResultSetFormatter formatter =
-                        new PolyphenyDbAssert.ResultSetFormatter();
+                final PolyphenyDbAssert.ResultSetFormatter formatter = new PolyphenyDbAssert.ResultSetFormatter();
                 final ResultSetMetaData metaData = resultSet.getMetaData();
                 for ( String expectedRow : rowList ) {
                     if ( !resultSet.next() ) {
@@ -394,8 +389,7 @@ public class StreamTest {
 
 
     /**
-     * Base table for the Orders table. Manages the base schema used for the test tables and common
-     * functions.
+     * Base table for the Orders table. Manages the base schema used for the test tables and common functions.
      */
     private abstract static class BaseOrderStreamTable implements ScannableTable {
 
@@ -413,8 +407,7 @@ public class StreamTest {
 
 
         public Statistic getStatistic() {
-            return Statistics.of( 100d, ImmutableList.of(),
-                    RelCollations.createSingleton( 0 ) );
+            return Statistics.of( 100d, ImmutableList.of(), RelCollations.createSingleton( 0 ) );
         }
 
 
@@ -430,8 +423,7 @@ public class StreamTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column,
-                SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     }
@@ -448,8 +440,7 @@ public class StreamTest {
         }
 
 
-        public Table create( SchemaPlus schema, String name,
-                Map<String, Object> operand, RelDataType rowType ) {
+        public Table create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             return new OrdersTable( getRowList() );
         }
 
@@ -475,8 +466,7 @@ public class StreamTest {
     /**
      * Table representing the ORDERS stream.
      */
-    public static class OrdersTable extends BaseOrderStreamTable
-            implements StreamableTable {
+    public static class OrdersTable extends BaseOrderStreamTable implements StreamableTable {
 
         private final ImmutableList<Object[]> rows;
 
@@ -504,8 +494,7 @@ public class StreamTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column,
-                SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     }
@@ -522,8 +511,7 @@ public class StreamTest {
         }
 
 
-        public Table create( SchemaPlus schema, String name,
-                Map<String, Object> operand, RelDataType rowType ) {
+        public Table create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             return new InfiniteOrdersTable();
         }
     }
@@ -532,8 +520,7 @@ public class StreamTest {
     /**
      * Table representing an infinitely larger ORDERS stream.
      */
-    public static class InfiniteOrdersTable extends BaseOrderStreamTable
-            implements StreamableTable {
+    public static class InfiniteOrdersTable extends BaseOrderStreamTable implements StreamableTable {
 
         public Enumerable<Object[]> scan( DataContext root ) {
             return Linq4j.asEnumerable( () -> new Iterator<Object[]>() {
@@ -548,8 +535,7 @@ public class StreamTest {
 
                 public Object[] next() {
                     final int index = counter++;
-                    return new Object[]{
-                            System.currentTimeMillis(), index, items[index % items.length], 10 };
+                    return new Object[]{ System.currentTimeMillis(), index, items[index % items.length], 10 };
                 }
 
 
@@ -648,11 +634,9 @@ public class StreamTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column,
-                SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     }
 }
 
-// End StreamTest.java

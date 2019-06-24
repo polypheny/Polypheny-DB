@@ -56,6 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
@@ -311,8 +312,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 new PolyphenyDbCatalogReader(
                         context.getRootSchema(),
                         context.getDefaultSchemaPath(),
-                        typeFactory,
-                        context.config() );
+                        typeFactory );
         SqlParser parser = createParser( sql );
         SqlNode sqlNode;
         try {
@@ -650,8 +650,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 new PolyphenyDbCatalogReader(
                         context.getRootSchema(),
                         context.getDefaultSchemaPath(),
-                        typeFactory,
-                        context.config() );
+                        typeFactory );
         final List<Function1<Context, RelOptPlanner>> plannerFactories = createPlannerFactories();
         if ( plannerFactories.isEmpty() ) {
             throw new AssertionError( "no planner factories" );
@@ -757,7 +756,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     .setUnquotedCasing( config.unquotedCasing() )
                     .setQuoting( config.quoting() )
                     .setConformance( config.conformance() )
-                    .setCaseSensitive( config.caseSensitive() );
+                    .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
             final SqlParserImplFactory parserFactory = config.parserFactory( SqlParserImplFactory.class, null );
             if ( parserFactory != null ) {
                 parserConfig.setParserFactory( parserFactory );
@@ -1008,7 +1007,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         // REVIEW: initialize queryRel and tableRel inside MaterializationService, not here?
         try {
             final PolyphenyDbSchema schema = materialization.materializedTable.schema;
-            PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), materialization.viewSchemaPath, context.getTypeFactory(), context.config() );
+            PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), materialization.viewSchemaPath, context.getTypeFactory() );
             final PolyphenyDbMaterializer materializer = new PolyphenyDbMaterializer( this, context, catalogReader, schema, planner, createConvertletTable() );
             materializer.populate( materialization );
         } catch ( Exception e ) {
@@ -1035,7 +1034,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 action.getConfig().getDefaultSchema() != null
                         ? PolyphenyDbSchema.from( action.getConfig().getDefaultSchema() )
                         : prepareContext.getRootSchema();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), schema.path( null ), typeFactory, prepareContext.config() );
+        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), schema.path( null ), typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final RelOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
         final RelOptCluster cluster = createCluster( planner, rexBuilder );

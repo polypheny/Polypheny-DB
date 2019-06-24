@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;

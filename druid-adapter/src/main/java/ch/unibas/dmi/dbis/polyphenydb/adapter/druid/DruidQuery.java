@@ -45,26 +45,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableRel;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Compiler;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableRel;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Node;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Ord;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -75,25 +65,31 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation.Direction;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
+import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Strings;
@@ -102,9 +98,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
-import org.joda.time.Interval;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -118,6 +111,11 @@ import java.util.TimeZone;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Ord;
+import org.joda.time.Interval;
 
 
 /**
@@ -899,7 +897,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             final boolean isNotAcceptedType;
             if ( SqlTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( sqlTypeName ) || SqlTypeFamily.INTEGER.getTypeNames().contains( sqlTypeName ) ) {
                 isNotAcceptedType = false;
-            } else if ( SqlTypeFamily.EXACT_NUMERIC.getTypeNames().contains( sqlTypeName ) && (type.getScale() == 0 || druidQuery.getConnectionConfig().approximateDecimal()) ) {
+            } else if ( SqlTypeFamily.EXACT_NUMERIC.getTypeNames().contains( sqlTypeName ) && (type.getScale() == 0 || RuntimeConfig.APPROXIMATE_DECIMAL.getBoolean()) ) {
                 // Decimal, If scale is zero or we allow approximating decimal, we can proceed
                 isNotAcceptedType = false;
             } else {
@@ -1185,7 +1183,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         if ( havingFilter != null ) {
             return null;
         }
-        if ( !getConnectionConfig().approximateTopN() || groupByKeyDims.size() != 1 || limit.limit == null || limit.collations == null || limit.collations.size() != 1 ) {
+        if ( !RuntimeConfig.APPROXIMATE_TOP_N.getBoolean() || groupByKeyDims.size() != 1 || limit.limit == null || limit.collations == null || limit.collations.size() != 1 ) {
             return null;
         }
         if ( limit.collations.get( 0 ).dimension.equals( groupByKeyDims.get( 0 ).getOutputName() ) ) {
@@ -1312,7 +1310,6 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         final RelDataType type = aggCall.getType();
         final SqlTypeName sqlTypeName = type.getSqlTypeName();
         final JsonAggregation aggregation;
-        final PolyphenyDbConnectionConfig config = druidQuery.getConnectionConfig();
 
         if ( SqlTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( sqlTypeName ) ) {
             fractional = true;
@@ -1337,7 +1334,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         switch ( aggCall.getAggregation().getKind() ) {
             case COUNT:
                 if ( aggCall.isDistinct() ) {
-                    if ( aggCall.isApproximate() || config.approximateDistinctCount() ) {
+                    final boolean approximateDistinctCount = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
+                    if ( aggCall.isApproximate() || approximateDistinctCount ) {
                         if ( complexMetric == null ) {
                             aggregation = new JsonCardinalityAggregation( "cardinality", name, ImmutableList.of( fieldName ) );
                         } else {

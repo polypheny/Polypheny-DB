@@ -45,14 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.JethroDataSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;

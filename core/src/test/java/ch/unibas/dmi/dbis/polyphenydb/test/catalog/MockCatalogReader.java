@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -146,7 +145,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      * @param typeFactory Type factory
      */
     public MockCatalogReader( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
-        super( PolyphenyDbSchema.createRootSchema( false, false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory, null );
+        super( PolyphenyDbSchema.createRootSchema( false, false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory );
     }
 
 
@@ -1085,7 +1084,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             // For testing
             return call.getKind() != SqlKind.MAX && (parent.getKind() == SqlKind.SELECT || parent.getKind() == SqlKind.FILTER);
         }

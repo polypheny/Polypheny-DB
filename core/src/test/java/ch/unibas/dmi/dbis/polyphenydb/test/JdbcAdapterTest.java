@@ -50,7 +50,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertThat;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.DatabaseInstance;
 import java.sql.Connection;

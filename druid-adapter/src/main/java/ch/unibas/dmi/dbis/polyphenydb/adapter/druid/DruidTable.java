@@ -45,19 +45,19 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -65,21 +65,18 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelectKeyword;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
-import org.joda.time.DateTime;
-import org.joda.time.Interval;
-import org.joda.time.chrono.ISOChronology;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.joda.time.DateTime;
+import org.joda.time.Interval;
+import org.joda.time.chrono.ISOChronology;
 
 
 /**
@@ -187,11 +184,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
         assert isRolledUp( column );
+        final boolean approximateDistinctCount = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
         // Our rolled up columns are only allowed in COUNT(DISTINCT ...) aggregate functions. We only allow this when approximate results are acceptable.
-        return ((config != null
-                && config.approximateDistinctCount()
+        return ((approximateDistinctCount
                 && isCountDistinct( call ))
                 || call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT)
                 && call.getOperandList().size() == 1 // for COUNT(a_1, a_2, ... a_n). n should be 1

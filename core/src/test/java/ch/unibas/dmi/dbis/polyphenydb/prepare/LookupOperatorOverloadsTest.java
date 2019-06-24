@@ -169,7 +169,7 @@ public class LookupOperatorOverloadsTest {
             final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
             final Context prepareContext = statement.createPrepareContext();
             final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-            PolyphenyDbCatalogReader reader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), ImmutableList.of(), typeFactory, prepareContext.config() );
+            PolyphenyDbCatalogReader reader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), ImmutableList.of(), typeFactory );
 
             final List<SqlOperator> operatorList = new ArrayList<>();
             SqlIdentifier myFuncIdentifier = new SqlIdentifier( Lists.newArrayList( schemaName, funcName ), null, SqlParserPos.ZERO, null );

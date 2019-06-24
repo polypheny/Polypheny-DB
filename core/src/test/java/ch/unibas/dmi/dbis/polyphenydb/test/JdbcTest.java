@@ -75,8 +75,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
@@ -116,6 +115,8 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableMacroImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -6206,24 +6207,30 @@ public class JdbcTest {
      */
     @Test
     public void testLexMySQL() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.MYSQL )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.MYSQL.caseSensitive );
+            PolyphenyDbAssert.that()
+                    .with( Lex.MYSQL )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6232,24 +6239,30 @@ public class JdbcTest {
      */
     @Test
     public void testLexMySQLANSI() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.MYSQL_ANSI )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "\"" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.MYSQL_ANSI.caseSensitive );
+            PolyphenyDbAssert.that()
+                    .with( Lex.MYSQL_ANSI )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "\"" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6258,24 +6271,30 @@ public class JdbcTest {
      */
     @Test
     public void testLexSqlServer() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.SQL_SERVER )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "[" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.SQL_SERVER.caseSensitive );
+            PolyphenyDbAssert.that()
+                    .with( Lex.SQL_SERVER )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "[" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6284,25 +6303,31 @@ public class JdbcTest {
      */
     @Test
     public void testLexOracle() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.ORACLE )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "\"" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        // Oracle JDBC 12.1.0.1.0 returns true here, however it is not clear if the bug is in JDBC specification or Oracle driver
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.ORACLE.caseSensitive );
+            PolyphenyDbAssert.that()
+                    .with( Lex.ORACLE )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "\"" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            // Oracle JDBC 12.1.0.1.0 returns true here, however it is not clear if the bug is in JDBC specification or Oracle driver
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6311,24 +6336,30 @@ public class JdbcTest {
      */
     @Test
     public void testLexJava() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.JAVA )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.JAVA.caseSensitive );
+            PolyphenyDbAssert.that()
+                    .with( Lex.JAVA )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6337,28 +6368,33 @@ public class JdbcTest {
      */
     @Test
     public void testLexOracleAsJava() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( Lex.ORACLE )
-                .with( PolyphenyDbConnectionProperty.QUOTING, Quoting.BACK_TICK )
-                .with( PolyphenyDbConnectionProperty.UNQUOTED_CASING, Casing.UNCHANGED )
-                .with( PolyphenyDbConnectionProperty.QUOTED_CASING, Casing.UNCHANGED )
-                .with( PolyphenyDbConnectionProperty.CASE_SENSITIVE, true )
-                .doWithConnection( connection -> {
-                    try {
-                        DatabaseMetaData metaData = connection.getMetaData();
-                        assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
-                        assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
-                        assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
-                        assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( true );
+            PolyphenyDbAssert.that()
+                    .with( Lex.ORACLE )
+                    .with( PolyphenyDbConnectionProperty.QUOTING, Quoting.BACK_TICK )
+                    .with( PolyphenyDbConnectionProperty.UNQUOTED_CASING, Casing.UNCHANGED )
+                    .with( PolyphenyDbConnectionProperty.QUOTED_CASING, Casing.UNCHANGED )
+                    .doWithConnection( connection -> {
+                        try {
+                            DatabaseMetaData metaData = connection.getMetaData();
+                            assertThat( metaData.getIdentifierQuoteString(), equalTo( "`" ) );
+                            assertThat( metaData.supportsMixedCaseIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesMixedCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.supportsMixedCaseQuotedIdentifiers(), equalTo( true ) );
+                            assertThat( metaData.storesMixedCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesUpperCaseQuotedIdentifiers(), equalTo( false ) );
+                            assertThat( metaData.storesLowerCaseQuotedIdentifiers(), equalTo( false ) );
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 
@@ -6368,16 +6404,23 @@ public class JdbcTest {
     @Test
     public void testLexCaseInsensitive() {
         final PolyphenyDbAssert.AssertThat with = PolyphenyDbAssert.that().with( Lex.MYSQL );
-        with.query( "select COUNT(*) as c from metaData.tAbles" ).returns( "c=2\n" );
-        with.query( "select COUNT(*) as c from `metaData`.`tAbles`" ).returns( "c=2\n" );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.MYSQL.caseSensitive );
+            with.query( "select COUNT(*) as c from metaData.tAbles" ).returns( "c=2\n" );
+            with.query( "select COUNT(*) as c from `metaData`.`tAbles`" ).returns( "c=2\n" );
 
-        // case-sensitive gives error
-        final PolyphenyDbAssert.AssertThat with2 = PolyphenyDbAssert.that().with( Lex.JAVA );
-        with2.query( "select COUNT(*) as c from `metaData`.`tAbles`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
-        with2.query( "select COUNT(*) as c from `metaData`.`TABLES`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
-        with2.query( "select COUNT(*) as c from `metaData`.`tables`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
-        with2.query( "select COUNT(*) as c from `metaData`.`nonExistent`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
-        with2.query( "select COUNT(*) as c from `metadata`.`tAbles`" ).throws_( "Object 'tAbles' not found within 'metadata'; did you mean 'TABLES'?" );
+            // case-sensitive gives error
+            final PolyphenyDbAssert.AssertThat with2 = PolyphenyDbAssert.that().with( Lex.JAVA );
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( Lex.JAVA.caseSensitive );
+            with2.query( "select COUNT(*) as c from `metaData`.`tAbles`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
+            with2.query( "select COUNT(*) as c from `metaData`.`TABLES`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
+            with2.query( "select COUNT(*) as c from `metaData`.`tables`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
+            with2.query( "select COUNT(*) as c from `metaData`.`nonExistent`" ).throws_( "Object 'metaData' not found; did you mean 'metadata'?" );
+            with2.query( "select COUNT(*) as c from `metadata`.`tAbles`" ).throws_( "Object 'tAbles' not found within 'metadata'; did you mean 'TABLES'?" );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 

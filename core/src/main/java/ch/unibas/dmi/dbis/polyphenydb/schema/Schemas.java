@@ -50,6 +50,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.ParseResult;
@@ -448,7 +449,7 @@ public final class Schemas {
 
 
             public PolyphenyDbPrepare.SparkHandler spark() {
-                final boolean enable = config().spark();
+                final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
                 return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
             }
         };

@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
+import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;

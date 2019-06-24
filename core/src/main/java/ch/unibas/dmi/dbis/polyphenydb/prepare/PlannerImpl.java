@@ -47,8 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -85,7 +83,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import java.util.List;
-import java.util.Properties;
 
 
 /**
@@ -337,22 +334,10 @@ public class PlannerImpl implements Planner, ViewExpander {
     // PolyphenyDbCatalogReader is stateless; no need to store one
     private PolyphenyDbCatalogReader createCatalogReader() {
         final SchemaPlus rootSchema = rootSchema( defaultSchema );
-        final Context context = config.getContext();
-        final PolyphenyDbConnectionConfig connectionConfig;
-
-        if ( context != null ) {
-            connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
-        } else {
-            Properties properties = new Properties();
-            properties.setProperty( PolyphenyDbConnectionProperty.CASE_SENSITIVE.camelName(), String.valueOf( parserConfig.caseSensitive() ) );
-            connectionConfig = new PolyphenyDbConnectionConfigImpl( properties );
-        }
-
         return new PolyphenyDbCatalogReader(
                 PolyphenyDbSchema.from( rootSchema ),
                 PolyphenyDbSchema.from( defaultSchema ).path( null ),
-                typeFactory,
-                connectionConfig );
+                typeFactory );
     }
 
 

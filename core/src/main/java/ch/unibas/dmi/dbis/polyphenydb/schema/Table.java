@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
@@ -101,9 +100,8 @@ public interface Table {
      * @param column The column name for which {@code isRolledUp} is true
      * @param call The aggregate call
      * @param parent Parent node of {@code call} in the {@link SqlNode} tree
-     * @param config Config settings. May be null
      * @return true iff the given aggregate call is valid
      */
-    boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config );
+    boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent );
 }
 

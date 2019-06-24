@@ -51,6 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -259,7 +260,9 @@ public class RelBuilderTest {
         // Equivalent SQL:
         //   SELECT *
         //   FROM "emp"
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( true );
             final RelNode root =
                     RelBuilder
                             .create( config().build() )
@@ -268,6 +271,8 @@ public class RelBuilderTest {
             fail( "Expected error (table names are case-sensitive), but got " + root );
         } catch ( Exception e ) {
             assertThat( e.getMessage(), is( "Table 'emp' not found" ) );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
         }
     }
 
