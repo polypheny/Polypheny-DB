@@ -28,7 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.scu.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 
 
 /**

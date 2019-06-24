@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayEnumeratorCursor;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ObjectEnumeratorCursor;
@@ -82,9 +83,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     protected PolyphenyDbResultSet execute() throws SQLException {
         // Call driver's callback. It is permitted to throw a RuntimeException.
         PolyphenyDbEmbeddedConnectionImpl connection = getPolyphenyDbConnection();
-        final boolean autoTemp = connection.config().autoTemp();
         Handler.ResultSink resultSink = null;
-        if ( autoTemp ) {
+        if ( RuntimeConfig.AUTO_TEMP.getBoolean() ) {
             resultSink = () -> {
             };
         }

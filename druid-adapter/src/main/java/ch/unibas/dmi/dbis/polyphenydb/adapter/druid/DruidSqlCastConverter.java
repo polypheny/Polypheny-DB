@@ -45,23 +45,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
 import com.google.common.collect.ImmutableList;
-
-import org.joda.time.Period;
-
 import java.util.TimeZone;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.joda.time.Period;
 
 
 /**
@@ -89,7 +83,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
         final SqlTypeName toType = rexNode.getType().getSqlTypeName();
         final String timeZoneConf = druidQuery.getConnectionConfig().timeZone();
         final TimeZone timeZone = TimeZone.getTimeZone( timeZoneConf == null ? "UTC" : timeZoneConf );
-        final boolean nullEqualToEmpty = druidQuery.getConnectionConfig().nullEqualToEmpty();
+        final boolean nullEqualToEmpty = RuntimeConfig.NULL_EQUAL_TO_EMPTY.getBoolean();
 
         if ( SqlTypeName.CHAR_TYPES.contains( fromType ) && SqlTypeName.DATETIME_TYPES.contains( toType ) ) {
             //case chars to dates

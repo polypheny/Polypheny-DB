@@ -52,6 +52,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -335,7 +336,13 @@ public class TableFunctionTest {
         final String q = "select c1\n"
                 + "from table(\"s\".\"multiplication\"(2, 3, 100))\n"
                 + "where c1 + 2 < c2";
-        with().query( q ).throws_( "Column 'C1' not found in any table; did you mean 'c1'?" );
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( true );
+            with().query( q ).throws_( "Column 'C1' not found in any table; did you mean 'c1'?" );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
+        }
     }
 
 

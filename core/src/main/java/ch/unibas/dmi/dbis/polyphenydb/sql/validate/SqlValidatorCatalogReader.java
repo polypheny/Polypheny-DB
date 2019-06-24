@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
@@ -134,9 +133,5 @@ public interface SqlValidatorCatalogReader extends Wrapper {
      */
     PolyphenyDbSchema getRootSchema();
 
-    /**
-     * Returns Config settings
-     */
-    PolyphenyDbConnectionConfig getConfig();
 }
 
