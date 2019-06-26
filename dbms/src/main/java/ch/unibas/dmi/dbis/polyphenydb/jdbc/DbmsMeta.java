@@ -38,6 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
@@ -54,8 +55,10 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
@@ -786,7 +789,7 @@ public class DbmsMeta implements ProtobufMeta {
         ExecuteResult result = null;
         switch ( parsed.getKind() ) {
             case SELECT:
-                result = ExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
+                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, (SqlSelect) parsed );
                 break;
 
             case INSERT:
@@ -794,7 +797,7 @@ public class DbmsMeta implements ProtobufMeta {
             case UPDATE:
             case MERGE:
             case PROCEDURE_CALL:
-                System.out.println( ":) DML" );
+                result = DmlExecutionEngine.getInstance().executeDml( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
                 break;
 
             case COMMIT:
@@ -820,7 +823,11 @@ public class DbmsMeta implements ProtobufMeta {
                 break;
 
             case EXPLAIN:
-                result = ExecutionEngine.getInstance().executeExplain( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
+                if ( ((SqlExplain) parsed).getExplicandum().getKind() == SqlKind.SELECT ) {
+                    result = DmlExecutionEngine.getInstance().explain( h, statement, planner, stopWatch, (SqlExplain) parsed );
+                } else {
+                    throw new RuntimeException( "EXPLAIN is currently only supported for SELECT queries!" );
+                }
                 break;
 
             default:
@@ -1235,7 +1242,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    RuntimeException propagate( Throwable e ) {
+    private RuntimeException propagate( Throwable e ) {
         if ( e instanceof RuntimeException ) {
             throw (RuntimeException) e;
         } else if ( e instanceof Error ) {

@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
@@ -34,14 +36,16 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
+import com.google.common.collect.ImmutableList;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
@@ -49,10 +53,13 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta.ConnectionHandle;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.ExecuteResult;
 import org.apache.calcite.avatica.Meta.Frame;
@@ -60,53 +67,49 @@ import org.apache.calcite.avatica.Meta.MetaResultSet;
 import org.apache.calcite.avatica.Meta.Signature;
 import org.apache.calcite.avatica.Meta.StatementHandle;
 import org.apache.calcite.avatica.Meta.StatementType;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class ExecutionEngine {
+public class DmlExecutionEngine {
 
-    private static final Logger LOG = LoggerFactory.getLogger( ExecutionEngine.class );
+    private static final Logger LOG = LoggerFactory.getLogger( DmlExecutionEngine.class );
 
-    private static ExecutionEngine INSTANCE;
+    private static DmlExecutionEngine INSTANCE;
 
 
     static {
-        INSTANCE = new ExecutionEngine();
+        INSTANCE = new DmlExecutionEngine();
     }
 
 
-    public static ExecutionEngine getInstance() {
+    public static DmlExecutionEngine getInstance() {
         return INSTANCE;
     }
 
 
-    private ExecutionEngine() {
+    private DmlExecutionEngine() {
 
     }
 
 
-    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, SqlNode parsed ) throws NoSuchStatementException {
-
-        //////////////////////
-        // (3)  VALIDATION  //
-        //////////////////////
+    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, SqlSelect parsed ) throws NoSuchStatementException {
+        //
+        // 3: Validation
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Validating ..." );
         }
         stopWatch.start();
-        SqlNode validated;
-        try {
-            validated = planner.validate( parsed );
-        } catch ( ValidationException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
+        SqlNode validated = validate( parsed, planner );
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Validated query: [{}]", validated );
@@ -115,34 +118,27 @@ public class ExecutionEngine {
             LOG.debug( "Validating ... done. [{}]", stopWatch );
         }
 
-        /////////////////////////
-        // (4)  AUTHORIZATION  //
-        /////////////////////////
+        //
+        // 4: authorization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Authorizing ..." );
         }
         stopWatch.start();
-        // TODO
+        authorize( parsed );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Authorizing ... done. [{}]", stopWatch );
         }
 
-        //////////////////////
-        // (5)  Planning    //
-        //////////////////////
+        //
+        // 5: planning
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Planning ..." );
         }
         stopWatch.start();
-        RelNode logicalPlan;
-        try {
-            logicalPlan = planner.rel( validated ).rel;
-        } catch ( RelConversionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
+        RelNode logicalPlan = plan( validated, planner );
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -151,63 +147,37 @@ public class ExecutionEngine {
             LOG.debug( "Planning ... done. [{}]", stopWatch );
         }
 
-        /////////////////////////
-        // (5)  Optimization  //
-        ///////////////////////
+        //
+        // 6: optimization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimization ..." );
         }
         stopWatch.start();
-
-        final HepProgram hepProgram =
-                new HepProgramBuilder()
-                        .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
-                        .build();
-        final HepPlanner hepPlanner = new HepPlanner( hepProgram );
-        hepPlanner.setRoot( logicalPlan );
-        RelNode optimalPlan = hepPlanner.findBestExp();
-
+        RelNode optimalPlan = optimize( logicalPlan );
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimization ... done. [{}]", stopWatch );
         }
 
-        /////////////////////
-        // (6)  EXECUTION  //
-        /////////////////////
+        //
+        // 7: execution
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Execution ..." );
         }
         stopWatch.start();
-
-        PolyphenyDbResultSet resultSet;
-        try {
-            PreparedStatement preparedStatement = RelRunners.run( optimalPlan );
-            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-
-        //connection.setCurrentOpenResultSet(resultSet);
-
+        PolyphenyDbResultSet resultSet = execute( optimalPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Execution ... done. [{}]", stopWatch );
         }
 
-        /////////
-        // (6.5) TRANSACTION ID
-        ////////
+        //
+        // (7.5) transaction id
         /*if ( rawExecutionResult.subType() == resultSet..Type.TRANSACTION_CONTROL ) {
             // TODO: check whether only in case of success or always (try-finally)
             if ( LOG.isTraceEnabled() ) {
@@ -216,9 +186,8 @@ public class ExecutionEngine {
             connection.endCurrentTransaction();
         }*/
 
-        ///////////////////////
-        // (7)  MARSHALLING  //
-        ///////////////////////
+        //
+        // 8:  marshalling
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Building response ..." );
@@ -232,39 +201,138 @@ public class ExecutionEngine {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
         }
 
-        List<MetaResultSet> resultSets = Collections.emptyList();
-        if ( parsed.isA( SqlKind.QUERY ) ) {
-            // ResultSet
-            statement.setOpenResultSet( resultSet );
-            try {
-                resultSets = Collections.singletonList( MetaResultSet.create(
-                        h.connectionId,
-                        h.id,
-                        false,
-                        signature,
-                        maxRowsInFirstFrame > 0 ? DbmsMeta.getInstance().fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE
-                        //null
-                ) );
-            } catch ( MissingResultsException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-            }
-        } else {
-            // TODO
-            throw new RuntimeException( "Implement!" );
+        List<MetaResultSet> resultSets;
+        statement.setOpenResultSet( resultSet );
+        try {
+            resultSets = Collections.singletonList( MetaResultSet.create(
+                    h.connectionId,
+                    h.id,
+                    false,
+                    signature,
+                    maxRowsInFirstFrame > 0 ? DbmsMeta.getInstance().fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE // Send first frame to together with the response to save a fetch call
+            ) );
+        } catch ( MissingResultsException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+        }
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Building response ... done. [{}]", stopWatch );
         }
 
         return new ExecuteResult( resultSets );
     }
 
 
-    public ExecuteResult executeExplain( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, SqlNode parsed ) {
-        throw new RuntimeException( "Explain is not supported yet!" );
+    public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final int maxRowsInFirstFrame, final long maxRowCount, final Planner planner, final StopWatch stopWatch, final SqlNode parsed ) {
+        // TODO: Implement DML support
+        return null;
     }
 
 
-    public ExecuteResult executeDdl( StatementHandle h, PolyphenyDbStatementHandle statement, Planner planner, StopWatch stopWatch, SqlNode parsed ) {
-        System.out.println( parsed );
-        return null;
+    public ExecuteResult explain( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final SqlExplain explainQuery ) {
+
+        SqlNode explicandum = explainQuery.getExplicandum();
+
+        // 3: validation
+        SqlNode validated = validate( explicandum, planner );
+
+        // 4: authorization
+        authorize( explicandum );
+
+        // 5: planning
+        RelNode logicalPlan = plan( validated, planner );
+
+        // 6: optimization
+        RelNode optimalPlan = optimize( logicalPlan );
+
+        // 7: explain
+        String explanation;
+        if ( explainQuery.withImplementation() ) { // Physical Plan
+            throw new RuntimeException( "Getting physical query plan is not implemented yet!" );
+        } else if ( explainQuery.withType() ) { // Type
+            throw new RuntimeException( "Getting type is not implemented yet!" );
+        } else { // Logical plan
+            explanation = RelOptUtil.dumpPlan( "", optimalPlan, explainQuery.getFormat(), explainQuery.getDetailLevel() );
+        }
+
+        // 7: marshalling
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Building response ..." );
+        }
+        stopWatch.start();
+
+        LinkedList<MetaResultSet> resultSets = new LinkedList<>();
+        final Enumerable<Object> enumerable = Linq4j.singletonEnumerable( new String[]{ explanation } );
+
+        final List<ColumnMetaData> columns = new ArrayList<>();
+        columns.add( MetaImpl.columnMetaData( "plan", 1, String.class, false ) );
+        resultSets.add( createMetaResultSet( statement.getConnection().getHandle(), h, Collections.emptyMap(), columns, CursorFactory.LIST, new Frame( 0, true, enumerable ) ) );
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Building response ... done. [{}]", stopWatch );
+        }
+
+        return new ExecuteResult( resultSets );
+    }
+
+
+    private SqlNode validate( final SqlNode parsed, final Planner planner ) {
+        SqlNode validated;
+        try {
+            validated = planner.validate( parsed );
+        } catch ( ValidationException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        return validated;
+    }
+
+
+    private void authorize( final SqlNode validated ) {
+        // TODO
+    }
+
+
+    private RelNode plan( final SqlNode validated, final Planner planner ) {
+        RelNode logicalPlan;
+        try {
+            logicalPlan = planner.rel( validated ).rel;
+        } catch ( RelConversionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        return logicalPlan;
+    }
+
+
+    private RelNode optimize( final RelNode logicalPlan ) {
+        final HepProgram hepProgram =
+                new HepProgramBuilder()
+                        .addRuleInstance( CalcSplitRule.INSTANCE )
+                        .addRuleInstance( FilterTableScanRule.INSTANCE )
+                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
+                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
+                        .build();
+        final HepPlanner hepPlanner = new HepPlanner( hepProgram );
+        hepPlanner.setRoot( logicalPlan );
+        return hepPlanner.findBestExp();
+    }
+
+
+    private PolyphenyDbResultSet execute( final RelNode optimalPlan ) {
+        PolyphenyDbResultSet resultSet;
+        try {
+            PreparedStatement preparedStatement = RelRunners.run( optimalPlan );
+            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
+        } catch ( SQLException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        //connection.setCurrentOpenResultSet(resultSet);
+        return resultSet;
     }
 
 
@@ -343,6 +411,29 @@ public class ExecutionEngine {
 
     protected static Signature signature( final ResultSetMetaData metaData ) throws SQLException {
         return signature( metaData, null, null, null );
+    }
+
+
+    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+        final PolyphenyDbSignature<Object> signature =
+                new PolyphenyDbSignature<Object>(
+                        "",
+                        ImmutableList.of(),
+                        internalParameters,
+                        null,
+                        columns,
+                        cursorFactory,
+                        null,
+                        ImmutableList.of(),
+                        -1,
+                        null,
+                        StatementType.SELECT ) {
+                    @Override
+                    public Enumerable<Object> enumerable( DataContext dataContext ) {
+                        return Linq4j.asEnumerable( firstFrame.rows );
+                    }
+                };
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
     }
 
 
