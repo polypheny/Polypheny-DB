@@ -819,7 +819,7 @@ public class DbmsMeta implements ProtobufMeta {
             case CREATE_INDEX:
             case ALTER_INDEX:
             case DROP_INDEX:
-                result = ExecutionEngine.getInstance().executeDdl( h, statement, planner, stopWatch, parsed );
+
                 break;
 
             case EXPLAIN:
