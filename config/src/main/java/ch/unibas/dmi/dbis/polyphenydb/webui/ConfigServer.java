@@ -32,7 +32,9 @@ import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -95,7 +97,9 @@ public class ConfigServer implements ConfigListener {
         // save changes from WebUi
         http.post( "/updateConfigs", ( req, res ) -> {
             LOGGER.trace( req.body() );
-            Map<String, Object> changes = gson.fromJson( req.body(), Map.class );
+            Type clazzType = new TypeToken<Map<String, Object>>() {
+            }.getType();
+            Map<String, Object> changes = gson.fromJson( req.body(), clazzType );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {

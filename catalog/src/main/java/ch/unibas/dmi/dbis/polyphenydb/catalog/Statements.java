@@ -67,7 +67,7 @@ final class Statements {
      */
     static void createSchema( TransactionHandler transactionHandler ) {
         logger.debug( "Creating the catalog schema" );
-        boolean result = ScriptRunner.runScript( new InputStreamReader( Statements.class.getClass().getResourceAsStream( "/catalogSchema.sql" ) ), transactionHandler, false );
+        boolean result = ScriptRunner.runScript( new InputStreamReader( Statements.class.getResourceAsStream( "/catalogSchema.sql" ) ), transactionHandler, false );
         if ( !result ) {
             logger.error( "Exception while creating catalog schema" );
         }
