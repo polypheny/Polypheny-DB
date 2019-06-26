@@ -56,6 +56,7 @@ dependencies {
     compile project(":core")
     compile project(":csv-adapter")
     compile project(":catalog")
+    compile project(":webui")
 
     ////// Logging
     compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2" // License: Apache 2.0
