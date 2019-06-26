@@ -25,8 +25,11 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.dispatching.HttpServerDispatcher;
+import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
+import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
+import ch.unibas.dmi.dbis.polyphenydb.webui.Server;
 import java.io.Serializable;
 import java.sql.SQLException;
 import org.slf4j.Logger;
@@ -40,7 +43,6 @@ public class PolyphenyDb {
 
     private static final Logger log = LoggerFactory.getLogger( PolyphenyDb.class );
 
-    private int serverSocketPort = 20591;
     private PUID shutdownHookId;
 
 
@@ -112,13 +114,17 @@ public class PolyphenyDb {
         final ShutdownHelper sh = new ShutdownHelper();
        // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
-        final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( serverSocketPort );
+        final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( RuntimeConfig.JDBC_PORT.getInteger() );
         try {
             httpServerDispatcher.start();
         } catch ( Exception e ) {
             GLOBAL_LOGGER.error( "", e );
             return; // RETURN - no need to continue!
         }
+
+        final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
+        final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+        final Server webUiServer = new Server( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {

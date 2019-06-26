@@ -78,6 +78,34 @@ public enum RuntimeConfig {
             "Specifies whether Spark should be used as the engine for processing that cannot be pushed to the source system. If false, Polypheny-DB generates code that implements the Enumerable interface.",
             false,
             ConfigType.BOOLEAN
+    ),
+
+    JDBC_PORT(
+            "runtime/jdbcPort",
+            "The port on which the JDBC server should listen.",
+            20591,
+            ConfigType.INTEGER
+    ),
+
+    CONFIG_SERVER_PORT(
+            "runtime/configServerPort",
+            "The port on which the config server should listen.",
+            8081,
+            ConfigType.INTEGER
+    ),
+
+    INFORMATION_SERVER_PORT(
+            "runtime/informationServerPort",
+            "The port on which the information server should listen.",
+            8082,
+            ConfigType.INTEGER
+    ),
+
+    WEBUI_SERVER_PORT(
+            "runtime/webuiServerPort",
+            "The port on which the web ui server should listen.",
+            8080,
+            ConfigType.INTEGER
     );
 
 
