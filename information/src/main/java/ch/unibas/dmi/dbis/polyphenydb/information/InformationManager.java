@@ -42,6 +42,8 @@ public class InformationManager {
 
     private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
 
+    private static final String MAIN_MANAGER_IDENTIFIER = "0";
+
     /**
      * Map of instances.
      */
@@ -70,7 +72,7 @@ public class InformationManager {
      * Without a id the main Information Manager is returned.
      */
     public static InformationManager getInstance() {
-        return getInstance( null );
+        return getInstance( MAIN_MANAGER_IDENTIFIER );
     }
 
 
@@ -90,7 +92,7 @@ public class InformationManager {
      * Close an information manager.
      */
     public static void close( final String id ) {
-        if (id == null) {
+        if ( id.equals( MAIN_MANAGER_IDENTIFIER ) ) {
             throw new RuntimeException( "It is not allowed to close the main Information Manager" );
         }
         instances.remove( id );
@@ -210,7 +212,7 @@ public class InformationManager {
 
 
     /**
-     * Get a page from the InformationManager with a certain id.
+     * Get a page from the Information Manager with a certain id.
      *
      * @param id The id of the page that should be returned
      * @return the requested InformationPage

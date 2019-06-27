@@ -44,24 +44,20 @@ public class InformationPage {
      */
     private final String id;
 
-
     /**
      * Name of this page
      */
     private String name; // title
-
 
     /**
      * Description for this page
      */
     private String description;
 
-
     /**
      * You can set an icon that will be displayed before the label of this page (in the sidebar).
      */
     private String icon;
-
 
     /**
      * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added.
@@ -104,7 +100,7 @@ public class InformationPage {
      * Constructor
      * When creating a page implicitly
      */
-    public InformationPage ( final String id ) {
+    public InformationPage( final String id ) {
         this.id = id;
         this.name = id;
         this.implicit = true;
@@ -175,7 +171,7 @@ public class InformationPage {
     /**
      * Override an implicit page with an explicit one
      */
-    public void overrideWith ( final InformationPage page ){
+    public void overrideWith( final InformationPage page ) {
         if( ! this.implicit ){
             throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
         }else if( page.isImplicit() ){

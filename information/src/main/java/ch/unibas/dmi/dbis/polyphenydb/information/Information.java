@@ -28,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
-import com.sun.istack.internal.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public abstract class Information {
      * Sets the information manager instance this information is registered at.
      * Required for notifying the manager about changes.
      */
-    private InformationManager informationManager;
+    private transient InformationManager informationManager;
 
 
     /**
@@ -143,7 +142,7 @@ public abstract class Information {
      *
      * @return A reference to itself (builder pattern).
      */
-    public Information setManager( final @NotNull InformationManager informationManager ) {
+    public Information setManager( final InformationManager informationManager ) {
         this.informationManager = informationManager;
         return this;
     }
