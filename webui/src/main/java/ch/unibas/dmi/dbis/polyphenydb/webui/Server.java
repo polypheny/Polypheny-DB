@@ -37,6 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketException;
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ public class Server {
 
     public static void main( String[] args ) {
         ConfigManager cm = ConfigManager.getInstance();
+
         cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ) );
         cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ) );
         cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ) );
@@ -60,6 +62,7 @@ public class Server {
         //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
         ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
         InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
+        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt() );
     }
 
 
@@ -78,12 +81,15 @@ public class Server {
                 return streamToString( stream );
             } catch( NullPointerException e ){
                 return "Error: Spark server could not find index.html";
+            } catch ( SocketException e ) {
+                return "Error: Spark server could not determine its ip address.";
             }
         } );
 
         LOGGER.info( "HTTP Server started." );
 
     }
+
 
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
