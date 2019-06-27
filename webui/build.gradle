@@ -65,8 +65,6 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
-
-    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
 }
 
 

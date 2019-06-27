@@ -28,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Spark.before;
 import static spark.Spark.get;
-import static spark.Spark.post;
 import static spark.Spark.options;
 import static spark.Spark.port;
 
@@ -53,13 +52,6 @@ public class Server {
     private final ConfigManager cm = ConfigManager.getInstance();
 
     public static void main( String[] args ) {
-        if ( args.length < 4) {
-            LOGGER.error( "Missing command-line arguments. Please provied the following information:\n"
-                    + "java Server <host> <port> <database> <user> <password>\n"
-                    + "e.g. java Server localhost 8080 myDatabase root secret" );
-            System.exit( 1 );
-        }
-
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ) );
         cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ) );
@@ -68,10 +60,10 @@ public class Server {
         //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
         ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
         InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
-        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt(), args );
     }
 
-    public Server( final int port, String[] args ) {
+
+    public Server( final int port ) {
 
         port( port );
 
@@ -89,59 +81,10 @@ public class Server {
             }
         } );
 
-        crudRoutes( args );
-
         LOGGER.info( "HTTP Server started." );
 
     }
 
-
-    /**
-     * defines the routes for this Server
-     */
-    private void crudRoutes( String[] args ) {
-
-        Crud crud = new Crud( args );
-
-        post( "/getTable", crud::getTable );
-
-        post( "/getSchemaTree", crud::getSchemaTree );
-
-        post( "/insertRow", crud::insertIntoTable );
-
-        post( "/deleteRow", crud::deleteRow );
-
-        post( "/updateRow", crud::updateRow );
-
-        post( "/anyQuery", crud::anyQuery );
-
-        post( "/getColumns", crud::getColumns );
-
-        post( "/updateColumn", crud::updateColumn );
-
-        post( "/addColumn", crud::addColumn );
-
-        post( "/dropColumn", crud::dropColumn );
-
-        post( "/getTables", crud::getTables );
-
-        post( "/dropTruncateTable", crud::dropTruncateTable );
-
-        post( "/createTable", crud::createTable );
-
-        post( "/getConstraints", crud::getConstraints );
-
-        post( "/dropConstraint", crud::dropConstraint );
-
-        post( "/addPrimaryKey", crud::addPrimaryKey );
-
-        post( "/getIndexes", crud::getIndexes );
-
-        post( "/dropIndex", crud::dropIndex );
-
-        post( "/createIndex", crud::createIndex );
-
-    }
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
      */
