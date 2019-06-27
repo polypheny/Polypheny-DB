@@ -55,7 +55,7 @@ public class InformationProgress extends Information {
 
     /**
      * Set the color of this progress-bar.
-     * The default color is {@link ProgressColor.DYNAMIC}
+     * The default color is {@link ProgressColor#DYNAMIC}
      *
      * @param color Color of the progress bar
      */
@@ -66,7 +66,7 @@ public class InformationProgress extends Information {
 
 
     /**
-     * Set the minimum value of this progress bar
+     * Set the minimum value of this progress bar.
      *
      * @param min minimum value
      */
@@ -77,7 +77,7 @@ public class InformationProgress extends Information {
 
 
     /**
-     * Set the maximum value of this progress bar
+     * Set the maximum value of this progress bar.
      *
      * @param max maximum value
      */
@@ -88,13 +88,28 @@ public class InformationProgress extends Information {
 
 
     /**
-     * Update the value of the current state of a progress bar
+     * Update the value of the current state of a progress bar.
      *
      * @param value New value for the progress bar
      */
     public void updateProgress( final int value ) {
         this.value = value;
-        InformationManager.notify( this.debugId, this );
+        notifyManager();
     }
+
+
+    /**
+     * Define the color of a progress bar.
+     * DYNAMIC: changes with increasing value, from blue, to green, to yellow, to red.
+     */
+    public enum ProgressColor {
+        DYNAMIC,
+        BLUE,
+        GREEN,
+        YELLOW,
+        RED,
+        BLACK
+    }
+
 
 }

@@ -36,19 +36,16 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * The InformationManager manages information objects, InformationGroups and InformationPages
+ * The Information Manager manages information objects, Information Groups and Information Pages
  */
 public class InformationManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( InformationManager.class );
-
-    private static InformationManager instance;
+    private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
 
     /**
-     * Map of instances, to use the InformationManager as a debugger.
+     * Map of instances.
      */
-    private static ConcurrentMap<String, InformationManager> debuggers = new ConcurrentHashMap<>();
-    private final String debugId;
+    private static ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
@@ -56,44 +53,52 @@ public class InformationManager {
 
     private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
+    /**
+     *  Identifier of this information manager. null for the main information manger.
+     */
+    private final String instanceId;
 
-    private InformationManager( final String debugId ) {
-        this.debugId = debugId;
+
+    private InformationManager(final String instanceId) {
         // private constructor to ensure singleton is applied by calling get instance
+        this.instanceId = instanceId;
     }
 
 
     /**
-     * Singleton
+     * Singleton.
+     * Without a id the main Information Manager is returned.
      */
     public static InformationManager getInstance() {
-        if ( instance == null ) {
-            instance = new InformationManager( null );
-        }
-        return instance;
+        return getInstance( null );
     }
 
 
     /**
-     * Get the instance of a debugger or create one if not existing
+     * Singleton.
+     * null returns the main information manager.
      */
-    public static InformationManager getDebugger( final String id ) {
-        if ( ! debuggers.containsKey( id )) {
-            debuggers.put( id, new InformationManager( id ) );
+    public static InformationManager getInstance( final String instanceId ) {
+        if ( !instances.containsKey( instanceId ) ) {
+            instances.put( instanceId, new InformationManager( instanceId ) );
         }
-        return debuggers.get( id );
+        return instances.get( instanceId );
     }
 
+
     /**
-     * Close a debugger
+     * Close an information manager.
      */
-    public static void closeDebugger( final String id ) {
-        debuggers.remove( id );
+    public static void close( final String id ) {
+        if (id == null) {
+            throw new RuntimeException( "It is not allowed to close the main Information Manager" );
+        }
+        instances.remove( id );
     }
 
 
     /**
-     * Add a WebUI page to the InformationManager
+     * Add a WebUI page to the Information Manager.
      *
      * @param page Page to add
      */
@@ -101,7 +106,7 @@ public class InformationManager {
         if( this.pages.containsKey( page.getId() )){
             InformationPage existing = this.pages.get( page.getId() );
             if( !existing.isImplicit() ){
-                throw new InformationRuntimeException( "Yo are trying to add an InformationPage twice to the InformationManager." );
+                throw new InformationRuntimeException( "You are trying to add an InformationPage twice to the InformationManager." );
             } else{
                 existing.overrideWith( page );
             }
@@ -113,7 +118,7 @@ public class InformationManager {
 
 
     /**
-     * Add one or multiple WebUI groups to the InformationManager
+     * Add one or multiple WebUI groups to the Information Manager.
      *
      * @param groups Groups to add
      */
@@ -122,7 +127,7 @@ public class InformationManager {
             if( this.groups.containsKey( g.getId() )){
                 InformationGroup existing = this.groups.get( g.getId() );
                 if( !existing.isImplicit() ){
-                    throw new InformationRuntimeException( "Yo are trying to add an InformationGroup twice to the InformationManager" );
+                    throw new InformationRuntimeException( "You are trying to add an InformationGroup twice to the InformationManager" );
                 } else {
                     existing.overrideWith( g );
                 }
@@ -134,7 +139,7 @@ public class InformationManager {
 
 
     /**
-     * Add a QueryPlan to the InformationManager and create the needed page and group implicitly
+     * Add a QueryPlan to the Information Manager and create the needed page and group implicitly.
      */
     public void addQueryPlan ( final String id, final String queryPlan ) {
         InformationPage page = new InformationPage( id );
@@ -148,19 +153,19 @@ public class InformationManager {
 
 
     /**
-     * Register one or multiple Information objects in the InformationManager
+     * Register one or multiple Information objects in the Information Manager.
      *
      * @param infos Information objects to register
      */
     public void registerInformation( final Information... infos ) {
         for ( Information i : infos ) {
-            this.informationMap.put( i.getId(), i.setDebugId( this.debugId ) );
+            this.informationMap.put( i.getId(), i.setManager( this ) );
         }
     }
 
 
     /**
-     * Remove one or multiple Information Object from the InformationManager
+     * Remove one or multiple Information Objects from the Information Manager.
      *
      * @param infos Information Object to remove
      */
@@ -172,7 +177,7 @@ public class InformationManager {
 
 
     /**
-     * Get the Information object with a certain key
+     * Get the Information object with a certain key.
      *
      * @param key of the Information object that should be returned
      * @return Information object with key <i>key</i>
@@ -188,7 +193,7 @@ public class InformationManager {
 
 
     /**
-     * Returns the list of pages of the Information Manager as JSON using Gson
+     * Returns the list of pages of the Information Manager as JSON using GSON.
      *
      * @return List of pages of the Information Manager as JSON
      */
@@ -205,7 +210,7 @@ public class InformationManager {
 
 
     /**
-     * Get a page from the InformationManager with a certain id
+     * Get a page from the InformationManager with a certain id.
      *
      * @param id The id of the page that should be returned
      * @return the requested InformationPage
@@ -227,7 +232,7 @@ public class InformationManager {
 
 
     /**
-     * Add observer to the list of observers. The caller needs to provide an id as well
+     * Add observer to the list of observers. The caller needs to provide an id as well.
      */
     public InformationManager observe( final InformationObserver observer ) {
         this.observers.add( observer );
@@ -245,21 +250,9 @@ public class InformationManager {
     }
 
 
-    /**
-     * Get the InformationManager that holds this Information object and notify the observers.
-     */
-    public static void notify ( final String debugId, final Information i ) {
-        if( debugId == null ){
-            InformationManager.getInstance().notify( i );
-        } else {
-            InformationManager.getDebugger( debugId ).notify( i );
-        }
-    }
-
-
     private void notifyPageList (){
         for( InformationObserver observer : this.observers ){
-            observer.observePageList( this.debugId, this.pages.values().toArray( new InformationPage[0] ) );
+            observer.observePageList( instanceId, this.pages.values().toArray( new InformationPage[0] ) );
         }
     }
 

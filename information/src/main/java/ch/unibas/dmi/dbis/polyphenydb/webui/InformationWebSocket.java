@@ -68,7 +68,7 @@ public class InformationWebSocket {
 
 
     /**
-     * Send changed Information Object as Json via the WebSocket to the GUI
+     * Send changed Information Object as Json via the WebSocket to the GUI.
      */
     public static synchronized void broadcast( final String msg ) throws IOException {
         LOGGER.trace( "broadcasting:\n" + msg );

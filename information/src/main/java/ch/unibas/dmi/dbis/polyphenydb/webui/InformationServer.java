@@ -39,7 +39,7 @@ import spark.Service;
 
 
 /**
- * RESTful server for the WebUis, working with the InformationManager
+ * RESTful server for the WebUis, working with the InformationManager.
  */
 public class InformationServer implements InformationObserver {
 
@@ -47,7 +47,6 @@ public class InformationServer implements InformationObserver {
 
 
     public InformationServer( final int port ) {
-
 
         Service http = ignite().port( port );
 
@@ -84,7 +83,6 @@ public class InformationServer implements InformationObserver {
                 return "";
             }
         } );
-
     }
 
 
@@ -135,6 +133,5 @@ public class InformationServer implements InformationObserver {
             res.type( "application/json" );
         } );
     }
-
 
 }

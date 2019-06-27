@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI
+ * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI.
  */
 public class InformationPage {
 
@@ -58,13 +58,13 @@ public class InformationPage {
 
 
     /**
-     * You can set an icon that will be displayed before the label of this page (in the sidebar)
+     * You can set an icon that will be displayed before the label of this page (in the sidebar).
      */
     private String icon;
 
 
     /**
-     * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added
+     * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added.
      */
     private boolean implicit = false;
 

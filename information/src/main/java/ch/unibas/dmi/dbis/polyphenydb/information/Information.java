@@ -28,17 +28,23 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
+import com.sun.istack.internal.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public abstract class Information {
 
+    private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
+
+
     /**
-     * The id needs to be unique for every Information object
+     * The id needs to be unique for every Information object.
      */
     private final String id;
 
     /**
-     * The field type is used by Gson and is needed for the frontend
+     * The field type is used by Gson and is needed for the frontend.
      */
     @SuppressWarnings("FieldCanBeLocal")
     final String type;
@@ -56,10 +62,10 @@ public abstract class Information {
     private int uiOrder;
 
     /**
-     * Id of the debugger that holds this object. Null if it is part of the InformationManager
-     * This field is needed, so you can know what instance should be notified.
+     * Sets the information manager instance this information is registered at.
+     * Required for notifying the manager about changes.
      */
-    String debugId;
+    private InformationManager informationManager;
 
 
     /**
@@ -76,7 +82,7 @@ public abstract class Information {
 
 
     /**
-     * Get the id of this Information object
+     * Get the id of this Information object.
      *
      * @return id of this Information object
      */
@@ -86,7 +92,7 @@ public abstract class Information {
 
 
     /**
-     * Get the group id of the group to which this Information object belongs
+     * Get the group id of the group to which this Information object belongs.
      *
      * @return Id of the group this information object belongs to
      */
@@ -96,8 +102,8 @@ public abstract class Information {
 
 
     /**
-     * Set the order of an Information object
-     * Objects with lower numbers are rendered first, the objects with higher numbers, then objects for which there is no order set (0)
+     * Set the order of an Information object.
+     * Objects with lower numbers are rendered first, the objects with higher numbers, then objects for which there is no order set (0).
      */
     public Information setOrder( final int order ) {
         this.uiOrder = order;
@@ -106,7 +112,7 @@ public abstract class Information {
 
 
     /**
-     * Returns the actual implementation of this information element
+     * Returns the actual implementation of this information element.
      *
      * @param clazz The
      * @return The unwraped object
@@ -121,7 +127,7 @@ public abstract class Information {
 
 
     /**
-     * Serialize object to JSON string using GSON
+     * Serialize object to JSON string using GSON.
      *
      * @return object as JSON string
      */
@@ -132,11 +138,26 @@ public abstract class Information {
 
 
     /**
-     * Setter for the debugId, so you can know what instance to notify
+     * Sets the information manager instance this information is registered at.
+     * This is required for notifying the manager about changing information.
+     *
+     * @return A reference to itself (builder pattern).
      */
-    public Information setDebugId( final String debugId ) {
-        this.debugId = debugId;
+    public Information setManager( final @NotNull InformationManager informationManager ) {
+        this.informationManager = informationManager;
         return this;
+    }
+
+
+    /**
+     * Notify the information manager about changes of this information object.
+     */
+    protected void notifyManager() {
+        if (informationManager == null) {
+            LOG.error( "Requested notification of the information manager but no manager set." );
+        } else {
+            informationManager.notify( this );
+        }
     }
 
 }

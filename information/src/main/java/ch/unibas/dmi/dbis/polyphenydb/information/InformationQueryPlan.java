@@ -47,7 +47,7 @@ public class InformationQueryPlan extends Information {
 
     public void updateQueryPlan( final String queryPlan ) {
         this.queryPlan = queryPlan;
-        InformationManager.notify( this.debugId, this );
+        notifyManager();
     }
 
 }

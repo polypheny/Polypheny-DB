@@ -75,7 +75,7 @@ public class InformationGraph extends Information {
         }
 
         this.graphType = type;
-        InformationManager.notify( this.debugId, this );
+        notifyManager();
         return this;
     }
 
@@ -91,7 +91,7 @@ public class InformationGraph extends Information {
 
 
     /**
-     * Set the data for this graph
+     * Set the data for this graph.
      *
      * @param labels labels that are displayed on the x-axis
      * @param data new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
@@ -106,7 +106,7 @@ public class InformationGraph extends Information {
 
         this.labels = labels;
         this.data = data;
-        InformationManager.notify( this.debugId, this );
+        notifyManager();
     }
 
 
@@ -118,7 +118,7 @@ public class InformationGraph extends Information {
 
 
     /**
-     * The enum GraphType defines the types of graphs that are supported by the WebUI
+     * The enum GraphType defines the types of graphs that are supported by the WebUI.
      */
     public enum GraphType {
         LINE,
@@ -131,19 +131,19 @@ public class InformationGraph extends Information {
 
 
     /**
-     * The data in a graph, e.g. a line in the line-graph, with its label
+     * The data in a graph, e.g. a line in the line-graph, with its label.
      */
     public static class GraphData<T extends Number> {
 
 
         /**
-         * Data for the graph, e.g. a line in the line-graph
+         * Data for the graph, e.g. a line in the line-graph.
          */
         private final T[] data;
 
 
         /**
-         * The label that describes the data
+         * The label that describes the data.
          */
         private final String label;
 

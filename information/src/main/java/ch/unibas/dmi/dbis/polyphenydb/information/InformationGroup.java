@@ -32,18 +32,18 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * An InformationGroup contains multiple Information object that will be rendered together in the UI
+ * An InformationGroup contains multiple Information object that will be rendered together in the UI.
  */
 public class InformationGroup {
 
     /**
-     * Unique id for an InformationGroup
+     * Unique id for an InformationGroup.
      */
     private final String id;
 
 
     /**
-     * the id of the page this group belongs to
+     * The id of the page this group belongs to.
      */
     private final String pageId;
 
@@ -61,13 +61,13 @@ public class InformationGroup {
 
 
     /**
-     * Is true, if the group was created implicit. If it will be created explicit, additional information (color/uiOrder) will be added
+     * Is true, if the group was created implicit. If it will be created explicit, additional information (color/uiOrder) will be added.
      */
     private boolean implicit = false;
 
 
     /**
-     * A Map of Information objects that belong to this group
+     * A Map of Information objects that belong to this group.
      */
     private final ConcurrentMap<String, Information> informationObjects = new ConcurrentHashMap<>();
 
@@ -85,7 +85,7 @@ public class InformationGroup {
 
 
     /**
-     * If you want the group to have a certain color in the UI, you can set it here
+     * If you want the group to have a certain color in the UI, you can set it here.
      *
      * @param color Color for this group
      */
@@ -96,7 +96,7 @@ public class InformationGroup {
 
 
     /**
-     * Add an information object to this group
+     * Add an information object to this group.
      */
     public void addInformation( final Information... infos ) {
         for ( Information i : infos ) {
@@ -130,7 +130,7 @@ public class InformationGroup {
 
 
     /**
-     * Return the id of the page to which this group belongs to
+     * Return the id of the page to which this group belongs to.
      *
      * @return The page id of this group
      */
@@ -140,14 +140,15 @@ public class InformationGroup {
 
 
     /**
-     * Check if group was created implicitly
+     * Check if group was created implicitly.
      */
     public boolean isImplicit() {
         return implicit;
     }
 
+
     /**
-     * Setter for the implicit field
+     * Setter for the implicit field.
      * @param implicit true if the group was created implicitly
      */
     public InformationGroup setImplicit( final boolean implicit ) {
@@ -155,8 +156,9 @@ public class InformationGroup {
         return this;
     }
 
+
     /**
-     * If the InformationGroup was created implicitly, it can be overwritten with an explicitly created InformationGroup
+     * If the InformationGroup was created implicitly, it can be overwritten with an explicitly created InformationGroup.
      */
     public void overrideWith ( final InformationGroup group ) {
         if( ! this.implicit ){

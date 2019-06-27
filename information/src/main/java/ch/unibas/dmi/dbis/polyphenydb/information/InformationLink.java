@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * An Information object containing a link to a subpage of the UI
+ * An Information object containing a link to a subpage of the UI.
  */
 public class InformationLink extends Information {
 
@@ -59,7 +59,7 @@ public class InformationLink extends Information {
     public void updateLink( final String label, final String... routerLink ) {
         this.label = label;
         this.routerLink = routerLink;
-        InformationManager.notify( this.debugId, this );
+        notifyManager();
     }
 
 }
