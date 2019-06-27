@@ -28,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Spark.before;
 import static spark.Spark.get;
-import static spark.Spark.post;
 import static spark.Spark.options;
 import static spark.Spark.port;
 
@@ -66,6 +65,7 @@ public class Server {
         Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt() );
     }
 
+
     public Server( final int port ) {
 
         port( port );
@@ -81,7 +81,7 @@ public class Server {
                 return streamToString( stream );
             } catch( NullPointerException e ){
                 return "Error: Spark server could not find index.html";
-            } catch ( SocketException e ){
+            } catch ( SocketException e ) {
                 return "Error: Spark server could not determine its ip address.";
             }
         } );
@@ -109,7 +109,7 @@ public class Server {
                 }
             }
         } catch ( IOException e ){
-            e.printStackTrace();
+            LOGGER.error( e.getMessage() );
         }
 
         return stringBuilder.toString();

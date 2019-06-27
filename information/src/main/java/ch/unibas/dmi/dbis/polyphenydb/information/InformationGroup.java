@@ -32,18 +32,18 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * An InformationGroup contains multiple Information object that will be rendered together in the UI
+ * An InformationGroup contains multiple Information object that will be rendered together in the UI.
  */
 public class InformationGroup {
 
     /**
-     * Unique id for an InformationGroup
+     * Unique id for an InformationGroup.
      */
     private final String id;
 
 
     /**
-     * the id of the page this group belongs to
+     * The id of the page this group belongs to.
      */
     private final String pageId;
 
@@ -61,9 +61,15 @@ public class InformationGroup {
 
 
     /**
-     * A Map of Information objects that belong to this group
+     * Is true, if the group was created implicit. If it will be created explicit, additional information (color/uiOrder) will be added.
      */
-    private final ConcurrentMap<String, Information> list = new ConcurrentHashMap<>();
+    private boolean implicit = false;
+
+
+    /**
+     * A Map of Information objects that belong to this group.
+     */
+    private final ConcurrentMap<String, Information> informationObjects = new ConcurrentHashMap<>();
 
 
     /**
@@ -79,7 +85,7 @@ public class InformationGroup {
 
 
     /**
-     * If you want the group to have a certain color in the UI, you can set it here
+     * If you want the group to have a certain color in the UI, you can set it here.
      *
      * @param color Color for this group
      */
@@ -90,14 +96,14 @@ public class InformationGroup {
 
 
     /**
-     * Add an information object to this group
+     * Add an information object to this group.
      */
     public void addInformation( final Information... infos ) {
         for ( Information i : infos ) {
             if ( !i.getGroup().equals( this.id ) ) {
                 throw new InformationRuntimeException( "You are trying to add an information to a group where it does not belong to." );
             }
-            this.list.put( i.getId(), i );
+            this.informationObjects.put( i.getId(), i );
         }
     }
 
@@ -124,12 +130,46 @@ public class InformationGroup {
 
 
     /**
-     * Return the id of the page to which this group belongs to
+     * Return the id of the page to which this group belongs to.
      *
      * @return The page id of this group
      */
     public String getPageId() {
         return pageId;
+    }
+
+
+    /**
+     * Check if group was created implicitly.
+     */
+    public boolean isImplicit() {
+        return implicit;
+    }
+
+
+    /**
+     * Setter for the implicit field.
+     * @param implicit true if the group was created implicitly
+     */
+    public InformationGroup setImplicit( final boolean implicit ) {
+        this.implicit = implicit;
+        return this;
+    }
+
+
+    /**
+     * If the InformationGroup was created implicitly, it can be overwritten with an explicitly created InformationGroup.
+     */
+    public void overrideWith ( final InformationGroup group ) {
+        if( ! this.implicit ){
+            throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
+        }else if( group.isImplicit() ){
+            throw new InformationRuntimeException( "A page cannot be overwritten by an implicitly created page." );
+        }
+        this.color = group.color;
+        this.uiOrder = group.uiOrder;
+        this.informationObjects.putAll( group.informationObjects );
+        this.implicit = false;
     }
 
 }
