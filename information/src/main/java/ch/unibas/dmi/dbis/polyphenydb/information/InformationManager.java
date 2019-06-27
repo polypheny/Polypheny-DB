@@ -27,81 +27,147 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.InformationWebSocket;
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
- * The InformationManager manages information objects, InformationGroups and InformationPages
+ * The Information Manager manages information objects, Information Groups and Information Pages
  */
 public class InformationManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( InformationManager.class );
+    private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
 
-    private static InformationManager instance;
+    private static final String MAIN_MANAGER_IDENTIFIER = "0";
+
+    /**
+     * Map of instances.
+     */
+    private static ConcurrentMap<String, InformationManager> instances = new ConcurrentHashMap<>();
 
     private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
+    private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
-    private InformationManager() {
-        // empty and private constructor to ensure singleton is applied by calling get instance
+    /**
+     *  Identifier of this information manager. null for the main information manger.
+     */
+    private final String instanceId;
+
+
+    private InformationManager(final String instanceId) {
+        // private constructor to ensure singleton is applied by calling get instance
+        this.instanceId = instanceId;
     }
 
 
     /**
-     * Singleton
+     * Singleton.
+     * Without a id the main Information Manager is returned.
      */
     public static InformationManager getInstance() {
-        if ( instance == null ) {
-            instance = new InformationManager();
-        }
-        return instance;
+        return getInstance( MAIN_MANAGER_IDENTIFIER );
     }
 
 
     /**
-     * Add a WebUI page to the InformationManager
+     * Singleton.
+     * null returns the main information manager.
+     */
+    public static InformationManager getInstance( final String instanceId ) {
+        if ( !instances.containsKey( instanceId ) ) {
+            instances.put( instanceId, new InformationManager( instanceId ) );
+        }
+        return instances.get( instanceId );
+    }
+
+
+    /**
+     * Close an information manager.
+     */
+    public static void close( final String id ) {
+        if ( id.equals( MAIN_MANAGER_IDENTIFIER ) ) {
+            throw new RuntimeException( "It is not allowed to close the main Information Manager" );
+        }
+        instances.remove( id );
+    }
+
+
+    /**
+     * Add a WebUI page to the Information Manager.
      *
      * @param page Page to add
      */
     public void addPage( final InformationPage page ) {
-        this.pages.put( page.getId(), page );
+        if( this.pages.containsKey( page.getId() )){
+            InformationPage existing = this.pages.get( page.getId() );
+            if( !existing.isImplicit() ){
+                throw new InformationRuntimeException( "You are trying to add an InformationPage twice to the InformationManager." );
+            } else{
+                existing.overrideWith( page );
+            }
+        } else {
+            this.pages.put( page.getId(), page );
+            this.notifyPageList();
+        }
     }
 
 
     /**
-     * Add one or multiple WebUI groups to the InformationManager
+     * Add one or multiple WebUI groups to the Information Manager.
      *
      * @param groups Groups to add
      */
     public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
-            this.groups.put( g.getId(), g );
+            if( this.groups.containsKey( g.getId() )){
+                InformationGroup existing = this.groups.get( g.getId() );
+                if( !existing.isImplicit() ){
+                    throw new InformationRuntimeException( "You are trying to add an InformationGroup twice to the InformationManager" );
+                } else {
+                    existing.overrideWith( g );
+                }
+            } else {
+                this.groups.put( g.getId(), g );
+            }
         }
     }
 
 
     /**
-     * Register one or multiple Information objects in the InformationManager
+     * Add a QueryPlan to the Information Manager and create the needed page and group implicitly.
+     */
+    public void addQueryPlan ( final String id, final String queryPlan ) {
+        InformationPage page = new InformationPage( id );
+        InformationGroup group = new InformationGroup( id, id ).setImplicit( true );
+        InformationQueryPlan plan = new InformationQueryPlan( id, id, queryPlan );
+
+        this.addPage( page );
+        this.addGroup( group );
+        this.informationMap.put( plan.getId(), plan );
+    }
+
+
+    /**
+     * Register one or multiple Information objects in the Information Manager.
      *
      * @param infos Information objects to register
      */
     public void registerInformation( final Information... infos ) {
         for ( Information i : infos ) {
-            this.informationMap.put( i.getId(), i );
+            this.informationMap.put( i.getId(), i.setManager( this ) );
         }
     }
 
 
     /**
-     * Remove one or multiple Information Object from the InformationManager
+     * Remove one or multiple Information Objects from the Information Manager.
      *
      * @param infos Information Object to remove
      */
@@ -113,7 +179,7 @@ public class InformationManager {
 
 
     /**
-     * Get the Information object with a certain key
+     * Get the Information object with a certain key.
      *
      * @param key of the Information object that should be returned
      * @return Information object with key <i>key</i>
@@ -129,7 +195,7 @@ public class InformationManager {
 
 
     /**
-     * Returns the list of pages of the Information Manager as JSON using Gson
+     * Returns the list of pages of the Information Manager as JSON using GSON.
      *
      * @return List of pages of the Information Manager as JSON
      */
@@ -146,12 +212,12 @@ public class InformationManager {
 
 
     /**
-     * Get a certain page as JSON using Gson
+     * Get a page from the Information Manager with a certain id.
      *
      * @param id The id of the page that should be returned
-     * @return Page as JSON string
+     * @return the requested InformationPage
      */
-    public String getPage( final String id ) {
+    public InformationPage getPage( final String id ) {
         InformationPage p = this.pages.get( id );
 
         for ( Information i : this.informationMap.values() ) {
@@ -163,7 +229,16 @@ public class InformationManager {
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
-        return p.asJson();
+        return p;
+    }
+
+
+    /**
+     * Add observer to the list of observers. The caller needs to provide an id as well.
+     */
+    public InformationManager observe( final InformationObserver observer ) {
+        this.observers.add( observer );
+        return this;
     }
 
 
@@ -171,10 +246,15 @@ public class InformationManager {
      * Send an updated information object as JSON via Websocket to the WebUI
      */
     public void notify( final Information i ) {
-        try {
-            InformationWebSocket.broadcast( i.asJson() );
-        } catch ( IOException e ) {
-            LOGGER.info( "Error while sending information object to web ui!", e );
+        for( InformationObserver observer : this.observers ){
+            observer.observeInfos( i );
+        }
+    }
+
+
+    private void notifyPageList (){
+        for( InformationObserver observer : this.observers ){
+            observer.observePageList( instanceId, this.pages.values().toArray( new InformationPage[0] ) );
         }
     }
 

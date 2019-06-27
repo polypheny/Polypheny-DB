@@ -27,14 +27,27 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * Define the color of a progress bar
- * DYNAMIC: changes with increasing value, from blue, to green, to yellow, to red
+ * An information object containing a query plan. This class is mainly used for the debugger in the UI.
  */
-public enum ProgressColor {
-    DYNAMIC,
-    BLUE,
-    GREEN,
-    YELLOW,
-    RED,
-    BLACK
+public class InformationQueryPlan extends Information {
+
+    private String queryPlan;
+
+    /**
+     * Constructor
+     *
+     * @param id Unique id for this Information object
+     * @param group The id of the InformationGroup to which this information belongs
+     */
+    InformationQueryPlan( final String id, final String group, final String queryPlan ) {
+        super( id, group );
+        this.queryPlan = queryPlan;
+    }
+
+
+    public void updateQueryPlan( final String queryPlan ) {
+        this.queryPlan = queryPlan;
+        notifyManager();
+    }
+
 }

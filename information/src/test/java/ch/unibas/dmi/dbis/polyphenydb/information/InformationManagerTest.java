@@ -59,9 +59,9 @@ public class InformationManagerTest {
 
     @Test
     public void getPage() {
-        System.out.println( this.im.getPage( "page1" ) );
+        System.out.println( this.im.getPage( "page1" ).asJson() );
         //Gson gson = new Gson();
-        //InformationPage p = gson.fromJson( this.im.getPage( "page1" ), InformationPage.class );
+        //InformationPage p = gson.fromJson( this.im.getPage( "page1" ).asJson(), InformationPage.class );
     }
 
 
@@ -96,6 +96,18 @@ public class InformationManagerTest {
         GraphData[] graphData = { new GraphData<Integer>( "data1", graphData1 ), new GraphData<Integer>( "data2", graphData2 ) };
         InformationGraph i1 = new InformationGraph( "i.graph", "group1.1", GraphType.LINE, labels, graphData );
         i1.updateType( GraphType.RADAR );
+    }
+
+
+    @Test
+    public void implicit() {
+        im.addQueryPlan( "plan", "query-plan" );
+        Assert.assertTrue( im.getPage( "plan" ).isImplicit() );
+        Assert.assertNull( im.getPage( "plan" ).getDescription() );
+        InformationPage p1 = new InformationPage( "plan", "title", "description" );
+        im.addPage( p1 );
+        Assert.assertFalse( im.getPage( "plan" ).isImplicit() );
+        Assert.assertEquals( "description", im.getPage( "plan" ).getDescription() );
     }
 
 
