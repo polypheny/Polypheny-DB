@@ -61,9 +61,15 @@ public class InformationGroup {
 
 
     /**
+     * Is true, if the group was created implicit. If it will be created explicit, additional information (color/uiOrder) will be added
+     */
+    private boolean implicit = false;
+
+
+    /**
      * A Map of Information objects that belong to this group
      */
-    private final ConcurrentMap<String, Information> list = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Information> informationObjects = new ConcurrentHashMap<>();
 
 
     /**
@@ -97,7 +103,7 @@ public class InformationGroup {
             if ( !i.getGroup().equals( this.id ) ) {
                 throw new InformationRuntimeException( "You are trying to add an information to a group where it does not belong to." );
             }
-            this.list.put( i.getId(), i );
+            this.informationObjects.put( i.getId(), i );
         }
     }
 
@@ -130,6 +136,38 @@ public class InformationGroup {
      */
     public String getPageId() {
         return pageId;
+    }
+
+
+    /**
+     * Check if group was created implicitly
+     */
+    public boolean isImplicit() {
+        return implicit;
+    }
+
+    /**
+     * Setter for the implicit field
+     * @param implicit true if the group was created implicitly
+     */
+    public InformationGroup setImplicit( final boolean implicit ) {
+        this.implicit = implicit;
+        return this;
+    }
+
+    /**
+     * If the InformationGroup was created implicitly, it can be overwritten with an explicitly created InformationGroup
+     */
+    public void overrideWith ( final InformationGroup group ) {
+        if( ! this.implicit ){
+            throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
+        }else if( group.isImplicit() ){
+            throw new InformationRuntimeException( "A page cannot be overwritten by an implicitly created page." );
+        }
+        this.color = group.color;
+        this.uiOrder = group.uiOrder;
+        this.informationObjects.putAll( group.informationObjects );
+        this.implicit = false;
     }
 
 }

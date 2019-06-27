@@ -55,6 +55,12 @@ public abstract class Information {
     @SuppressWarnings("FieldCanBeLocal")
     private int uiOrder;
 
+    /**
+     * Id of the debugger that holds this object. Null if it is part of the InformationManager
+     * This field is needed, so you can know what instance should be notified.
+     */
+    String debugId;
+
 
     /**
      * Constructor
@@ -122,6 +128,15 @@ public abstract class Information {
     public String asJson() {
         Gson gson = new Gson();
         return gson.toJson( this );
+    }
+
+
+    /**
+     * Setter for the debugId, so you can know what instance to notify
+     */
+    public Information setDebugId( final String debugId ) {
+        this.debugId = debugId;
+        return this;
     }
 
 }

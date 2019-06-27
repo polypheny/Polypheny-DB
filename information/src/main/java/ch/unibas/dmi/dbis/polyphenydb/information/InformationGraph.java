@@ -75,7 +75,7 @@ public class InformationGraph extends Information {
         }
 
         this.graphType = type;
-        InformationManager.getInstance().notify( this );
+        InformationManager.notify( this.debugId, this );
         return this;
     }
 
@@ -106,7 +106,7 @@ public class InformationGraph extends Information {
 
         this.labels = labels;
         this.data = data;
-        InformationManager.getInstance().notify( this );
+        InformationManager.notify( this.debugId, this );
     }
 
 

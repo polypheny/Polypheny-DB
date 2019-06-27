@@ -27,10 +27,9 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.InformationWebSocket;
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +44,22 @@ public class InformationManager {
 
     private static InformationManager instance;
 
+    /**
+     * Map of instances, to use the InformationManager as a debugger.
+     */
+    private static ConcurrentMap<String, InformationManager> debuggers = new ConcurrentHashMap<>();
+    private final String debugId;
+
     private final ConcurrentMap<String, Information> informationMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, InformationPage> pages = new ConcurrentHashMap<>();
 
+    private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
-    private InformationManager() {
-        // empty and private constructor to ensure singleton is applied by calling get instance
+
+    private InformationManager( final String debugId ) {
+        this.debugId = debugId;
+        // private constructor to ensure singleton is applied by calling get instance
     }
 
 
@@ -60,9 +68,27 @@ public class InformationManager {
      */
     public static InformationManager getInstance() {
         if ( instance == null ) {
-            instance = new InformationManager();
+            instance = new InformationManager( null );
         }
         return instance;
+    }
+
+
+    /**
+     * Get the instance of a debugger or create one if not existing
+     */
+    public static InformationManager getDebugger( final String id ) {
+        if ( ! debuggers.containsKey( id )) {
+            debuggers.put( id, new InformationManager( id ) );
+        }
+        return debuggers.get( id );
+    }
+
+    /**
+     * Close a debugger
+     */
+    public static void closeDebugger( final String id ) {
+        debuggers.remove( id );
     }
 
 
@@ -72,7 +98,17 @@ public class InformationManager {
      * @param page Page to add
      */
     public void addPage( final InformationPage page ) {
-        this.pages.put( page.getId(), page );
+        if( this.pages.containsKey( page.getId() )){
+            InformationPage existing = this.pages.get( page.getId() );
+            if( !existing.isImplicit() ){
+                throw new InformationRuntimeException( "Yo are trying to add an InformationPage twice to the InformationManager." );
+            } else{
+                existing.overrideWith( page );
+            }
+        } else {
+            this.pages.put( page.getId(), page );
+            this.notifyPageList();
+        }
     }
 
 
@@ -83,8 +119,31 @@ public class InformationManager {
      */
     public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
-            this.groups.put( g.getId(), g );
+            if( this.groups.containsKey( g.getId() )){
+                InformationGroup existing = this.groups.get( g.getId() );
+                if( !existing.isImplicit() ){
+                    throw new InformationRuntimeException( "Yo are trying to add an InformationGroup twice to the InformationManager" );
+                } else {
+                    existing.overrideWith( g );
+                }
+            } else {
+                this.groups.put( g.getId(), g );
+            }
         }
+    }
+
+
+    /**
+     * Add a QueryPlan to the InformationManager and create the needed page and group implicitly
+     */
+    public void addQueryPlan ( final String id, final String queryPlan ) {
+        InformationPage page = new InformationPage( id );
+        InformationGroup group = new InformationGroup( id, id ).setImplicit( true );
+        InformationQueryPlan plan = new InformationQueryPlan( id, id, queryPlan );
+
+        this.addPage( page );
+        this.addGroup( group );
+        this.informationMap.put( plan.getId(), plan );
     }
 
 
@@ -95,7 +154,7 @@ public class InformationManager {
      */
     public void registerInformation( final Information... infos ) {
         for ( Information i : infos ) {
-            this.informationMap.put( i.getId(), i );
+            this.informationMap.put( i.getId(), i.setDebugId( this.debugId ) );
         }
     }
 
@@ -146,12 +205,12 @@ public class InformationManager {
 
 
     /**
-     * Get a certain page as JSON using Gson
+     * Get a page from the InformationManager with a certain id
      *
      * @param id The id of the page that should be returned
-     * @return Page as JSON string
+     * @return the requested InformationPage
      */
-    public String getPage( final String id ) {
+    public InformationPage getPage( final String id ) {
         InformationPage p = this.pages.get( id );
 
         for ( Information i : this.informationMap.values() ) {
@@ -163,7 +222,16 @@ public class InformationManager {
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
-        return p.asJson();
+        return p;
+    }
+
+
+    /**
+     * Add observer to the list of observers. The caller needs to provide an id as well
+     */
+    public InformationManager observe( final InformationObserver observer ) {
+        this.observers.add( observer );
+        return this;
     }
 
 
@@ -171,10 +239,27 @@ public class InformationManager {
      * Send an updated information object as JSON via Websocket to the WebUI
      */
     public void notify( final Information i ) {
-        try {
-            InformationWebSocket.broadcast( i.asJson() );
-        } catch ( IOException e ) {
-            LOGGER.info( "Error while sending information object to web ui!", e );
+        for( InformationObserver observer : this.observers ){
+            observer.observeInfos( i );
+        }
+    }
+
+
+    /**
+     * Get the InformationManager that holds this Information object and notify the observers.
+     */
+    public static void notify ( final String debugId, final Information i ) {
+        if( debugId == null ){
+            InformationManager.getInstance().notify( i );
+        } else {
+            InformationManager.getDebugger( debugId ).notify( i );
+        }
+    }
+
+
+    private void notifyPageList (){
+        for( InformationObserver observer : this.observers ){
+            observer.observePageList( this.debugId, this.pages.values().toArray( new InformationPage[0] ) );
         }
     }
 

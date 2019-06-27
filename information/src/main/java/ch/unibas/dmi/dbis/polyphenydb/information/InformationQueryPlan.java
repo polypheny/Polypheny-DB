@@ -27,29 +27,26 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * An Information object containing html code that will be rendered in the UI
+ * An information object containing a query plan. This class is mainly used for the debugger in the UI.
  */
-public class InformationHtml extends Information {
+public class InformationQueryPlan extends Information {
 
-    private String html;
-
+    private String queryPlan;
 
     /**
      * Constructor
+     *
+     * @param id Unique id for this Information object
+     * @param group The id of the InformationGroup to which this information belongs
      */
-    public InformationHtml( final String id, final String group, final String html ) {
+    InformationQueryPlan( final String id, final String group, final String queryPlan ) {
         super( id, group );
-        this.html = html;
+        this.queryPlan = queryPlan;
     }
 
 
-    /**
-     * Update the content of an InformationHtml object
-     *
-     * @param html The HTML code to set for this element
-     */
-    public void updateHtml( final String html ) {
-        this.html = html;
+    public void updateQueryPlan( final String queryPlan ) {
+        this.queryPlan = queryPlan;
         InformationManager.notify( this.debugId, this );
     }
 

@@ -59,7 +59,7 @@ public class InformationLink extends Information {
     public void updateLink( final String label, final String... routerLink ) {
         this.label = label;
         this.routerLink = routerLink;
-        InformationManager.getInstance().notify( this );
+        InformationManager.notify( this.debugId, this );
     }
 
 }

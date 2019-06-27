@@ -94,7 +94,7 @@ public class InformationProgress extends Information {
      */
     public void updateProgress( final int value ) {
         this.value = value;
-        InformationManager.getInstance().notify( this );
+        InformationManager.notify( this.debugId, this );
     }
 
 }

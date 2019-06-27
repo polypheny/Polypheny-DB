@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +64,11 @@ public class InformationPage {
 
 
     /**
+     * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added
+     */
+    private boolean implicit = false;
+
+    /**
      * Groups that belong to this page.
      */
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
@@ -95,6 +101,19 @@ public class InformationPage {
 
 
     /**
+     * Constructor
+     * When creating a page implicitly
+     */
+    public InformationPage ( final String id ) {
+        this.id = id;
+        this.name = id;
+        this.implicit = true;
+        //todo default icon
+        this.addGroup( new InformationGroup( id, id ).setImplicit( true ) );
+    }
+
+
+    /**
      * Add a group that belongs to this page
      */
     public void addGroup( final InformationGroup... groups ) {
@@ -115,8 +134,9 @@ public class InformationPage {
     /**
      * Set the icon for this page
      */
-    public void setIcon( final String icon ) {
+    public InformationPage setIcon( final String icon ) {
         this.icon = icon;
+        return this;
     }
 
 
@@ -141,6 +161,31 @@ public class InformationPage {
      */
     public String getDescription() {
         return description;
+    }
+
+
+    /**
+     * Check if the page was created implicit
+     */
+    public boolean isImplicit() {
+        return this.implicit;
+    }
+
+
+    /**
+     * Override an implicit page with an explicit one
+     */
+    public void overrideWith ( final InformationPage page ){
+        if( ! this.implicit ){
+            throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
+        }else if( page.isImplicit() ){
+            throw new InformationRuntimeException( "A page cannot be overwritten by an implicitly created page." );
+        }
+        this.name = page.getName();
+        this.description = page.getDescription();
+        this.icon = page.getIcon();
+        this.groups.putAll( page.groups );
+        this.implicit = false;
     }
 
 
