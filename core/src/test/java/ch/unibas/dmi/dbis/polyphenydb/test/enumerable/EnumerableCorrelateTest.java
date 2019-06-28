@@ -48,13 +48,13 @@ package ch.unibas.dmi.dbis.polyphenydb.test.enumerable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinToCorrelateRule;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertThat;
-import ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest;
 import java.util.function.Consumer;
 import org.junit.Test;
 

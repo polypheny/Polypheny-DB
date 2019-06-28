@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
@@ -59,7 +58,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 /**
  * Abstract base class for implementing {@link Table}.
  *
- * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, SqlCall, SqlNode, PolyphenyDbConnectionConfig)} if their table can potentially contain rolled up values.
+ * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, SqlCall, SqlNode)} if their table can potentially contain rolled up values.
  * This information is used by the validator to check for illegal uses of these columns.
  */
 public abstract class AbstractTable implements Table, Wrapper {
@@ -94,7 +93,7 @@ public abstract class AbstractTable implements Table, Wrapper {
 
 
     @Override
-    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
         return true;
     }
 }

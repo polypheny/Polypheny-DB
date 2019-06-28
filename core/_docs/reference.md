@@ -295,6 +295,7 @@ ALWAYS,
 **AND**,
 **ANY**,
 APPLY,
+**ARCHIVE**,
 **ARE**,
 **ARRAY**,
 **ARRAY_MAX_CARDINALITY**,
@@ -475,6 +476,7 @@ EXCLUDING,
 **EXTRACT**,
 **FALSE**,
 **FETCH**,
+**FILE**,
 **FILTER**,
 FINAL,
 FIRST,
@@ -512,6 +514,7 @@ HIERARCHY,
 **HOLD**,
 **HOUR**,
 **IDENTITY**,
+**IF**,
 IMMEDIATE,
 IMMEDIATELY,
 IMPLEMENTATION,
@@ -540,6 +543,7 @@ INVOKER,
 ISODOW,
 ISOLATION,
 ISOYEAR,
+**JAR**,
 JAVA,
 **JOIN**,
 JSON,
@@ -583,6 +587,7 @@ MATCHED,
 **MATCHES**,
 **MATCH_NUMBER**,
 **MATCH_RECOGNIZE**,
+**MATERIALIZED**,
 **MAX**,
 MAXVALUE,
 **MEASURES**,
@@ -842,6 +847,7 @@ STATEMENT,
 **STATIC**,
 **STDDEV_POP**,
 **STDDEV_SAMP**,
+**STORED**,
 **STREAM**,
 STRUCTURE,
 STYLE,
@@ -926,6 +932,7 @@ UTF8,
 VERSION,
 **VERSIONING**,
 VIEW,
+**VIRTUAL**,
 WEEK,
 **WHEN**,
 **WHENEVER**,
@@ -1978,35 +1985,22 @@ Note:
 
 ## User-defined functions
 
-Polypheny-DB is extensible. You can define each kind of function using user code.
-For each kind of function there are often several ways to define a function,
-varying from convenient to efficient.
+Polypheny-DB is extensible. You can define each kind of function using user code. For each kind of function there are often several ways to define a function, varying from convenient to efficient.
 
 To implement a *scalar function*, there are 3 options:
 
-* Create a class with a public static `eval` method,
-  and register the class;
-* Create a class with a public non-static `eval` method,
-  and a public constructor with no arguments,
-  and register the class;
-* Create a class with one or more public static methods,
-  and register each class/method combination.
+* Create a class with a public static `eval` method, and register the class;
+* Create a class with a public non-static `eval` method, and a public constructor with no arguments, and register the class;
+* Create a class with one or more public static methods, and register each class/method combination.
 
 To implement an *aggregate function*, there are 2 options:
 
-* Create a class with public static `init`, `add` and `result` methods,
-  and register the class;
-* Create a class with public non-static `init`, `add` and `result` methods,
-  and a  public constructor with no arguments,
-  and register the class.
+* Create a class with public static `init`, `add` and `result` methods, and register the class;
+* Create a class with public non-static `init`, `add` and `result` methods, and a  public constructor with no arguments, and register the class.
 
-Optionally, add a public `merge` method to the class; this allows Polypheny-DB to
-generate code that merges sub-totals.
+Optionally, add a public `merge` method to the class; this allows Polypheny-DB to generate code that merges sub-totals.
 
-Optionally, make your class implement the
-[SqlSplittableAggFunction]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/SqlSplittableAggFunction.html)
-interface; this allows Polypheny-DB to decompose the function across several stages
-of aggregation, roll up from summary tables, and push it through joins.
+Optionally, make your class implement the [SqlSplittableAggFunction]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/SqlSplittableAggFunction.html) interface; this allows Polypheny-DB to decompose the function across several stages of aggregation, roll up from summary tables, and push it through joins.
 
 To implement a *table function*, there are 3 options:
 
@@ -2038,21 +2032,13 @@ To implement a *table macro*, there are 3 options:
   [TranslatableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/TranslatableTable.html),
   and register each class/method combination.
 
-Polypheny-DB deduces the parameter types and result type of a function from the
-parameter and return types of the Java method that implements it. Further, you
-can specify the name and optionality of each parameter using the
-[Parameter]({{ site.apiRoot }}/org/apache/calcite/linq4j/function/Parameter.html)
-annotation.
+Polypheny-DB deduces the parameter types and result type of a function from the parameter and return types of the Java method that implements it. Further, you can specify the name and optionality of each parameter using the [Parameter]({{ site.apiRoot }}/org/apache/calcite/linq4j/function/Parameter.html) annotation.
 
 ### Calling functions with named and optional parameters
 
-Usually when you call a function, you need to specify all of its parameters,
-in order. But that can be a problem if a function has a lot of parameters,
-and especially if you want to add more parameters over time.
+Usually when you call a function, you need to specify all of its parameters, in order. But that can be a problem if a function has a lot of parameters, and especially if you want to add more parameters over time.
 
-To solve this problem, the SQL standard allows you to pass parameters by name,
-and to define parameters which are optional (that is, have a default value
-that is used if they are not specified).
+To solve this problem, the SQL standard allows you to pass parameters by name, and to define parameters which are optional (that is, have a default value that is used if they are not specified).
 
 Suppose you have a function `f`, declared as in the following pseudo syntax:
 
@@ -2065,40 +2051,25 @@ FUNCTION f(
   INTEGER e DEFAULT NULL) RETURNS INTEGER
 {% endhighlight sql %}
 
-All of the function's parameters have names, and parameters `b`, `d` and `e`
-have a default value of `NULL` and are therefore optional.
-(In Polypheny-DB, `NULL` is the only allowable default value for optional parameters;
-this may change
-[in future](https://issues.apache.org/jira/browse/CALCITE-947).)
+All of the function's parameters have names, and parameters `b`, `d` and `e` have a default value of `NULL` and are therefore optional. In Polypheny-DB, `NULL` is the only allowable default value for optional parameters.
 
-When calling a function with optional parameters,
-you can omit optional arguments at the end of the list, or use the `DEFAULT`
-keyword for any optional arguments.
-Here are some examples:
+When calling a function with optional parameters, you can omit optional arguments at the end of the list, or use the `DEFAULT` keyword for any optional arguments. Here are some examples:
 
 * `f(1, 2, 3, 4, 5)` provides a value to each parameter, in order;
 * `f(1, 2, 3, 4)` omits `e`, which gets its default value, `NULL`;
-* `f(1, DEFAULT, 3)` omits `d` and `e`,
-  and specifies to use the default value of `b`;
-* `f(1, DEFAULT, 3, DEFAULT, DEFAULT)` has the same effect as the previous
-  example;
+* `f(1, DEFAULT, 3)` omits `d` and `e`, and specifies to use the default value of `b`;
+* `f(1, DEFAULT, 3, DEFAULT, DEFAULT)` has the same effect as the previous example;
 * `f(1, 2)` is not legal, because `c` is not optional;
 * `f(1, 2, DEFAULT, 4)` is not legal, because `c` is not optional.
 
-You can specify arguments by name using the `=>` syntax.
-If one argument is named, they all must be.
-Arguments may be in any other, but must not specify any argument more than once,
-and you need to provide a value for every parameter which is not optional.
-Here are some examples:
+You can specify arguments by name using the `=>` syntax. If one argument is named, they all must be. Arguments may be in any other, but must not specify any argument more than once, and you need to provide a value for every parameter which is not optional. Here are some examples:
 
 * `f(c => 3, d => 1, a => 0)` is equivalent to `f(0, NULL, 3, 1, NULL)`;
-* `f(c => 3, d => 1)` is not legal, because you have not specified a value for
-  `a` and `a` is not optional.
+* `f(c => 3, d => 1)` is not legal, because you have not specified a value for `a` and `a` is not optional.
 
 ### MATCH_RECOGNIZE
 
-`MATCH_RECOGNIZE` is a SQL extension for recognizing sequences of
-events in complex event processing (CEP).
+`MATCH_RECOGNIZE` is a SQL extension for recognizing sequences of events in complex event processing (CEP).
 
 It is experimental in Polypheny-DB, and yet not fully implemented.
 
@@ -2161,16 +2132,9 @@ intervalLiteral:
       INTERVAL 'string' timeUnit [ TO timeUnit ]
 {% endhighlight %}
 
-In *patternQuantifier*, *repeat* is a positive integer,
-and *minRepeat* and *maxRepeat* are non-negative integers.
+In *patternQuantifier*, *repeat* is a positive integer, and *minRepeat* and *maxRepeat* are non-negative integers.
 
 ### DDL Extensions
-
-DDL extensions are only available in the calcite-server module.
-To enable, include `calcite-server.jar` in your class path, and add
-`parserFactory=ch.unibas.dmi.dbis.polyphenydb.sql.parser.ddl.SqlDdlParserImpl#FACTORY`
-to the JDBC connect string (see connect string property
-[parserFactory]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/config/PolyphenyDbConnectionProperty.html#PARSER_FACTORY)).
 
 {% highlight sql %}
 ddlStatement:
@@ -2283,12 +2247,8 @@ dropFunctionStatement:
       DROP FUNCTION [ IF EXISTS ] name
 {% endhighlight %}
 
-In *createTableStatement*, if you specify *AS query*, you may omit the list of
-*tableElement*s, or you can omit the data type of any *tableElement*, in which
-case it just renames the underlying column.
+In *createTableStatement*, if you specify *AS query*, you may omit the list of *tableElement*s, or you can omit the data type of any *tableElement*, in which case it just renames the underlying column.
 
-In *columnGenerator*, if you do not specify `VIRTUAL` or `STORED` for a
-generated column, `VIRTUAL` is the default.
+In *columnGenerator*, if you do not specify `VIRTUAL` or `STORED` for a generated column, `VIRTUAL` is the default.
 
-In *createFunctionStatement* and *usingFile*, *classNameLiteral*
-and *filePathLiteral* are character literals.
+In *createFunctionStatement* and *usingFile*, *classNameLiteral* and *filePathLiteral* are character literals.

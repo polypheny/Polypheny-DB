@@ -124,6 +124,7 @@ public class SqlParserTest {
             "ALTER", "92", "99", "2003", "2011", "2014", "c",
             "AND", "92", "99", "2003", "2011", "2014", "c",
             "ANY", "92", "99", "2003", "2011", "2014", "c",
+            "ARCHIVE", "92", "99", "2003", "2011", "2014", "c",      // MV: Added for DDL Parser
             "ARE", "92", "99", "2003", "2011", "2014", "c",
             "ARRAY", "99", "2003", "2011", "2014", "c",
             "ARRAY_AGG", "2011",
@@ -261,6 +262,7 @@ public class SqlParserTest {
             "EXTRACT", "92", "2011", "2014", "c",
             "FALSE", "92", "99", "2003", "2011", "2014", "c",
             "FETCH", "92", "99", "2003", "2011", "2014", "c",
+            "FILE", "92", "99", "2003", "2011", "2014", "c",         // MV: Added for DDL Parser
             "FILTER", "99", "2003", "2011", "2014", "c",
             "FIRST", "92", "99",
             "FIRST_VALUE", "2011", "2014", "c",
@@ -291,7 +293,7 @@ public class SqlParserTest {
             "HOUR", "92", "99", "2003", "2011", "2014", "c",
             "HOURS", "2011",
             "IDENTITY", "92", "99", "2003", "2011", "2014", "c",
-            "IF", "92", "99", "2003",
+            "IF", "92", "99", "2003", "c",
             "IMMEDIATE", "92", "99", "2003",
             "IMMEDIATELY",
             "IMPORT", "c",
@@ -313,6 +315,7 @@ public class SqlParserTest {
             "IS", "92", "99", "2003", "2011", "2014", "c",
             "ISOLATION", "92", "99",
             "ITERATE", "99", "2003",
+            "JAR", "92", "99", "2003", "2011", "2014", "c",          // MV: Added for DDL Parser
             "JOIN", "92", "99", "2003", "2011", "2014", "c",
             "JSON_ARRAY", "c",
             "JSON_ARRAYAGG", "c",
@@ -349,6 +352,7 @@ public class SqlParserTest {
             "MATCHES", "2014", "c",
             "MATCH_NUMBER", "2014", "c",
             "MATCH_RECOGNIZE", "2014", "c",
+            "MATERIALIZED", "92", "99", "2003", "2011", "2014", "c",  // MV: Added for DDL Parser
             "MAX", "92", "2011", "2014", "c",
             "MAX_CARDINALITY", "2011",
             "MEASURES", "c",
@@ -502,6 +506,7 @@ public class SqlParserTest {
             "STATIC", "99", "2003", "2011", "2014", "c",
             "STDDEV_POP", "2011", "2014", "c",
             "STDDEV_SAMP", "2011", "2014", "c",
+            "STORED", "92", "99", "2003", "2011", "2014", "c",       // MV: Added for DDL Parser
             "STREAM", "c",
             "SUBMULTISET", "2003", "2011", "2014", "c",
             "SUBSET", "2014", "c",
@@ -560,6 +565,7 @@ public class SqlParserTest {
             "VERSIONING", "2011", "2014", "c",
             "VERSIONS", "2011",
             "VIEW", "92", "99",
+            "VIRTUAL", "92", "99", "2003", "2011", "2014", "c",      // MV: Added for DDL Parser
             "WHEN", "92", "99", "2003", "2011", "2014", "c",
             "WHENEVER", "92", "99", "2003", "2011", "2014", "c",
             "WHERE", "92", "99", "2003", "2011", "2014", "c",
@@ -573,7 +579,8 @@ public class SqlParserTest {
             "WRITE", "92", "99",
             "YEAR", "92", "99", "2003", "2011", "2014", "c",
             "YEARS", "2011",
-            "ZONE", "92", "99" );
+            "ZONE", "92", "99"
+    );
 
     private static final String ANY = "(?s).*";
 

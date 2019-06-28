@@ -45,11 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AccessSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.BigQuerySqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.Db2SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.DerbySqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.FirebirdSqlDialect;
@@ -69,6 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.NetezzaSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.OracleSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.ParaccelSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PhoenixSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.RedshiftSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.SybaseSqlDialect;

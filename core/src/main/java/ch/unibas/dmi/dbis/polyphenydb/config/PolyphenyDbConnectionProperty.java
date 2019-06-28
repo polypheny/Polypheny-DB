@@ -48,6 +48,8 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
 
 import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import java.util.HashMap;
@@ -65,30 +67,6 @@ import org.apache.calcite.avatica.util.Quoting;
  * Properties that may be specified on the JDBC connect string.
  */
 public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
-    /**
-     * Whether approximate results from {@code COUNT(DISTINCT ...)} aggregate functions are acceptable.
-     */
-    APPROXIMATE_DISTINCT_COUNT( "approximateDistinctCount", Type.BOOLEAN, false, false ),
-
-    /**
-     * Whether approximate results from "Top N" queries ({@code ORDER BY aggFun DESC LIMIT n}) are acceptable.
-     */
-    APPROXIMATE_TOP_N( "approximateTopN", Type.BOOLEAN, false, false ),
-
-    /**
-     * Whether approximate results from aggregate functions on DECIMAL types are acceptable.
-     */
-    APPROXIMATE_DECIMAL( "approximateDecimal", Type.BOOLEAN, false, false ),
-
-    /**
-     * Whether to treat empty strings as null for Druid Adapter.
-     */
-    NULL_EQUAL_TO_EMPTY( "nullEqualToEmpty", Type.BOOLEAN, true, false ),
-
-    /**
-     * Whether to store query results in temporary tables.
-     */
-    AUTO_TEMP( "autoTemp", Type.BOOLEAN, false, false ),
 
     /**
      * Whether Polypheny-DB should use materializations.
@@ -103,8 +81,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     /**
      * How NULL values should be sorted if neither NULLS FIRST nor NULLS LAST are specified. The default, HIGH, sorts NULL values the same as Oracle.
      */
-    DEFAULT_NULL_COLLATION( "defaultNullCollation", Type.ENUM, NullCollation.HIGH,
-            true, NullCollation.class ),
+    DEFAULT_NULL_COLLATION( "defaultNullCollation", Type.ENUM, NullCollation.HIGH, true, NullCollation.class ),
 
     /**
      * How many rows the Druid adapter should fetch at a time when executing "select" queries.
@@ -141,10 +118,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
      */
     UNQUOTED_CASING( "unquotedCasing", Type.ENUM, null, false, Casing.class ),
 
-    /**
-     * Whether identifiers are matched case-sensitively. If not specified, value from {@link #LEX} is used.
-     */
-    CASE_SENSITIVE( "caseSensitive", Type.BOOLEAN, null, false ),
 
     /**
      * Parser factory.
@@ -175,11 +148,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
      * Ignored if {@link #MODEL} is specified.
      */
     SCHEMA_TYPE( "schemaType", Type.ENUM, null, false, JsonSchema.Type.class ),
-
-    /**
-     * Specifies whether Spark should be used as the engine for processing that cannot be pushed to the source system. If false (the default), Polypheny-DB generates code that implements the Enumerable interface.
-     */
-    SPARK( "spark", Type.BOOLEAN, false, false ),
 
     /**
      * Returns the time zone from the connect string, for example 'gmt-3'. If the time zone is not set then the JVM time zone is returned.

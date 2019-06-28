@@ -62,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
@@ -71,10 +70,10 @@ import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
@@ -82,6 +81,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableFunctionImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorException;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
@@ -966,8 +966,6 @@ public class PolyphenyDbAssert {
                     return with( SchemaSpec.JDBC_SCOTT );
                 case SCOTT:
                     return with( SchemaSpec.SCOTT );
-                case SPARK:
-                    return with( PolyphenyDbConnectionProperty.SPARK, true );
                 case AUX:
                     return with( SchemaSpec.AUX, SchemaSpec.POST );
                 default:
@@ -1852,11 +1850,6 @@ public class PolyphenyDbAssert {
          * Configuration that loads the "scott/tiger" database.
          */
         SCOTT,
-
-        /**
-         * Configuration that loads Spark.
-         */
-        SPARK,
 
         /**
          * Configuration that loads AUX schema for tests involving view expansions and lateral joins tests.

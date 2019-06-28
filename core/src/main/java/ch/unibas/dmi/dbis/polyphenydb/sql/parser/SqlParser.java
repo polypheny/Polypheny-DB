@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;

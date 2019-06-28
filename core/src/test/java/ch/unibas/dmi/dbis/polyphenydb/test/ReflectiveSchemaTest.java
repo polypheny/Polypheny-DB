@@ -52,13 +52,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableMacroImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest.Employee;
 import ch.unibas.dmi.dbis.polyphenydb.util.Smalls;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;

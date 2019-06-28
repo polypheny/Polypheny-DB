@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import java.sql.SQLException;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;

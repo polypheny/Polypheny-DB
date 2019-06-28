@@ -86,7 +86,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * Implementation of {@link Schema} that is backed by a JDBC data source.
  *
- * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed against those tables, pushing down as much as possible of the query logic to SQL.</p>
+ * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed against those tables, pushing down as much as possible of the query logic to SQL.
  */
 public class JdbcSchema implements Schema {
 

@@ -45,9 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -113,20 +113,18 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     protected final RelDataTypeFactory typeFactory;
     private final List<List<String>> schemaPaths;
     protected final SqlNameMatcher nameMatcher;
-    protected final PolyphenyDbConnectionConfig config;
 
 
-    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, RelDataTypeFactory typeFactory, PolyphenyDbConnectionConfig config ) {
+    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, RelDataTypeFactory typeFactory ) {
         this(
                 rootSchema,
-                SqlNameMatchers.withCaseSensitive( config != null && config.caseSensitive() ),
+                SqlNameMatchers.withCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() ),
                 ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() ),
-                typeFactory,
-                config );
+                typeFactory );
     }
 
 
-    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, SqlNameMatcher nameMatcher, List<List<String>> schemaPaths, RelDataTypeFactory typeFactory, PolyphenyDbConnectionConfig config ) {
+    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, SqlNameMatcher nameMatcher, List<List<String>> schemaPaths, RelDataTypeFactory typeFactory ) {
         this.rootSchema = Objects.requireNonNull( rootSchema );
         this.nameMatcher = nameMatcher;
         this.schemaPaths =
@@ -134,12 +132,11 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                         ? schemaPaths
                         : new LinkedHashSet<>( schemaPaths ) );
         this.typeFactory = typeFactory;
-        this.config = config;
     }
 
 
     public PolyphenyDbCatalogReader withSchemaPath( List<String> schemaPath ) {
-        return new PolyphenyDbCatalogReader( rootSchema, nameMatcher, ImmutableList.of( schemaPath, ImmutableList.of() ), typeFactory, config );
+        return new PolyphenyDbCatalogReader( rootSchema, nameMatcher, ImmutableList.of( schemaPath, ImmutableList.of() ), typeFactory );
     }
 
 
@@ -159,11 +156,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         return null;
     }
 
-
-    @Override
-    public PolyphenyDbConnectionConfig getConfig() {
-        return config;
-    }
 
 
     private Collection<Function> getFunctionsFrom( List<String> names ) {

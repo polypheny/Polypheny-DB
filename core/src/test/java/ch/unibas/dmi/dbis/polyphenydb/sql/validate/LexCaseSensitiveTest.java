@@ -52,11 +52,12 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableProject;
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
@@ -91,21 +92,27 @@ public class LexCaseSensitiveTest {
 
 
     private static void runProjectQueryWithLex( Lex lex, String sql ) throws SqlParseException, ValidationException, RelConversionException {
-        Config javaLex = SqlParser.configBuilder().setLex( lex ).build();
-        Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
-        assertThat( transform, instanceOf( EnumerableProject.class ) );
-        List<String> fieldNames = transform.getRowType().getFieldNames();
-        assertThat( fieldNames.size(), is( 2 ) );
-        if ( lex.caseSensitive ) {
-            assertThat( fieldNames.get( 0 ), is( "EMPID" ) );
-            assertThat( fieldNames.get( 1 ), is( "empid" ) );
-        } else {
-            assertThat( fieldNames.get( 0 ) + "-" + fieldNames.get( 1 ), anyOf( is( "EMPID-empid0" ), is( "EMPID0-empid" ) ) );
+        boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
+        try {
+            Config javaLex = SqlParser.configBuilder().setLex( lex ).build();
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( lex.caseSensitive );
+            Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
+            SqlNode parse = planner.parse( sql );
+            SqlNode validate = planner.validate( parse );
+            RelNode convert = planner.rel( validate ).rel;
+            RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+            RelNode transform = planner.transform( 0, traitSet, convert );
+            assertThat( transform, instanceOf( EnumerableProject.class ) );
+            List<String> fieldNames = transform.getRowType().getFieldNames();
+            assertThat( fieldNames.size(), is( 2 ) );
+            if ( lex.caseSensitive ) {
+                assertThat( fieldNames.get( 0 ), is( "EMPID" ) );
+                assertThat( fieldNames.get( 1 ), is( "empid" ) );
+            } else {
+                assertThat( fieldNames.get( 0 ) + "-" + fieldNames.get( 1 ), anyOf( is( "EMPID-empid0" ), is( "EMPID0-empid" ) ) );
+            }
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
         }
     }
 

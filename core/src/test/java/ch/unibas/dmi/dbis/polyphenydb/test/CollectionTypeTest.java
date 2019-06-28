@@ -51,7 +51,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -420,7 +419,7 @@ public class CollectionTypeTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     }
@@ -468,7 +467,7 @@ public class CollectionTypeTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     }

@@ -49,6 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
@@ -62,8 +63,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.LongSchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServer;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -164,7 +163,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
                         ? rootSchema
                         : PolyphenyDbSchema.createRootSchema( true ) );
         Preconditions.checkArgument( this.rootSchema.isRoot(), "must be root schema" );
-        this.properties.put( InternalProperty.CASE_SENSITIVE, cfg.caseSensitive() );
+        this.properties.put( InternalProperty.CASE_SENSITIVE, RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         this.properties.put( InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing() );
         this.properties.put( InternalProperty.QUOTED_CASING, cfg.quotedCasing() );
         this.properties.put( InternalProperty.QUOTING, cfg.quoting() );
@@ -335,7 +334,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
 
 
     public DataContext createDataContext( Map<String, Object> parameterValues, PolyphenyDbSchema rootSchema ) {
-        if ( config().spark() ) {
+        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
             return new SlimDataContext();
         }
         return new DataContextImpl( this, parameterValues, rootSchema );
@@ -370,6 +369,29 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
             return (PolyphenyDbEmbeddedConnection) provider;
         }
     }
+
+
+    /**
+     * Server.
+     *
+     * Represents shared state among connections, and will have monitoring and management facilities.
+     */
+    public interface PolyphenyDbServer {
+
+        void removeStatement( Meta.StatementHandle h );
+
+        void addStatement( PolyphenyDbEmbeddedConnection connection, Meta.StatementHandle h );
+
+        /**
+         * Returns the statement with a given handle.
+         *
+         * @param h Statement handle
+         * @return Statement, never null
+         * @throws NoSuchStatementException if handle does not represent a statement
+         */
+        PolyphenyDbServerStatement getStatement( Meta.StatementHandle h ) throws NoSuchStatementException;
+    }
+
 
 
     /**
@@ -497,7 +519,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
             final SqlValidatorWithHints validator =
                     new SqlAdvisorValidator(
                             SqlStdOperatorTable.instance(),
-                            new PolyphenyDbCatalogReader( rootSchema, schemaPath, typeFactory, con.config() ), typeFactory, SqlConformanceEnum.DEFAULT );
+                            new PolyphenyDbCatalogReader( rootSchema, schemaPath, typeFactory ), typeFactory, SqlConformanceEnum.DEFAULT );
             final PolyphenyDbConnectionConfig config = con.config();
             // This duplicates ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl.prepare2_
             final Config parserConfig = SqlParser.configBuilder()
@@ -505,7 +527,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
                     .setUnquotedCasing( config.unquotedCasing() )
                     .setQuoting( config.quoting() )
                     .setConformance( config.conformance() )
-                    .setCaseSensitive( config.caseSensitive() )
+                    .setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() )
                     .build();
             return new SqlAdvisor( validator, parserConfig );
         }
@@ -604,7 +626,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
 
 
         public PolyphenyDbPrepare.SparkHandler spark() {
-            final boolean enable = config().spark();
+            final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
             return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
         }
     }

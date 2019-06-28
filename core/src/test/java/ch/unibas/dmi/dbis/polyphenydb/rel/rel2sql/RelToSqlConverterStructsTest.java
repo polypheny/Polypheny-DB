@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
@@ -184,7 +183,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent, PolyphenyDbConnectionConfig config ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
             return false;
         }
     };

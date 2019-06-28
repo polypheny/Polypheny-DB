@@ -59,11 +59,11 @@ import static org.junit.Assert.assertThat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableFunctionImpl;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
@@ -169,7 +169,7 @@ public class LookupOperatorOverloadsTest {
             final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
             final Context prepareContext = statement.createPrepareContext();
             final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-            PolyphenyDbCatalogReader reader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), ImmutableList.of(), typeFactory, prepareContext.config() );
+            PolyphenyDbCatalogReader reader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), ImmutableList.of(), typeFactory );
 
             final List<SqlOperator> operatorList = new ArrayList<>();
             SqlIdentifier myFuncIdentifier = new SqlIdentifier( Lists.newArrayList( schemaName, funcName ), null, SqlParserPos.ZERO, null );

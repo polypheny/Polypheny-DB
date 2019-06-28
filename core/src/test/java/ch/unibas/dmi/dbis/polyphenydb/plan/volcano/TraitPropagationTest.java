@@ -50,6 +50,7 @@ import static org.junit.Assert.assertEquals;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptAbstractTable;
@@ -91,7 +92,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Statistics;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
-import ch.unibas.dmi.dbis.polyphenydb.server.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -421,7 +421,7 @@ public class TraitPropagationTest {
         final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
         final Context prepareContext = statement.createPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), prepareContext.getDefaultSchemaPath(), typeFactory, prepareContext.config() );
+        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), prepareContext.getDefaultSchemaPath(), typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final RelOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
 

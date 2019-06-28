@@ -1,7 +1,7 @@
 
-group 'ch.unibas.dmi.dbis.polyphenydb'
+group "ch.unibas.dmi.dbis.polyphenydb"
 
-version = versionMajor + '.' + versionMinor + versionQualifier
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
@@ -13,7 +13,10 @@ buildscript {
         }
     }
     dependencies {
-
+        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
@@ -22,26 +25,32 @@ repositories {
     mavenLocal()
     maven {
         // DBIS Artifactory
-        url 'https://dbis-artifactory.dmi.unibas.ch/maven2/'
+        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
     }
     mavenCentral()
     jcenter()
 }
 
 
-apply plugin: 'java'
-apply plugin: 'idea'
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
 
 
 configurations.all {
     // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 
 configurations {
@@ -50,24 +59,25 @@ configurations {
 
 
 dependencies {
-    compile project(':core')
+    compile project(":core")
 
-    uiFiles group: 'ch.unibas.dmi.dbis.polyphenydb', name: 'polyphenydb-ui', version: '1.0'
+    uiFiles group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-ui", version: "1.0"
 
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+    compile group: "org.slf4j", name: "slf4j-api", version: "1.7.25"
+    compile group: "org.slf4j", name: "slf4j-log4j12", version: "1.7.25"
     
-    compile group: 'com.sparkjava', name: 'spark-core', version: '2.8.0'
+    compile group: "com.sparkjava", name: "spark-core", version: "2.8.0"
     
 
     // --- Test Compile ---
-    testCompile project(path: ':core', configuration: 'testClasses')
+    testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
 
     compile group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
 }
+
 
 
 sourceSets {
@@ -115,10 +125,10 @@ build.dependsOn(unzipUiFIles)
  */
 javadoc {
     if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
+        options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
-    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption("Xdoclint:none", "-quiet")
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
@@ -135,26 +145,24 @@ jar {
         attributes "Version": "$version"
     }
 }
-
-
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier 'sources'
+    classifier "sources"
     from sourceSets.main.allSource
 }
-
-
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    classifier "javadoc"
     from javadoc.destinationDir
 }
-
-
+shadowJar {
+    classifier = ""
+}
+assemble.dependsOn shadowJar
 artifacts {
-    archives jar // regular jar containing only the compiled source
+    //archives jar // regular jar containing only the compiled source
+    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 
 

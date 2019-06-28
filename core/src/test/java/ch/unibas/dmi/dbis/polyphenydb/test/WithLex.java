@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

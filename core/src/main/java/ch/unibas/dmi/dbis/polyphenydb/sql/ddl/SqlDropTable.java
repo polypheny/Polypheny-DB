@@ -42,36 +42,29 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.server;
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
-import java.util.Iterator;
-import org.apache.calcite.avatica.Meta;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 
 
 /**
- * Statement within a Polypheny-DB server.
+ * Parse tree for {@code DROP TABLE} statement.
  */
-public interface PolyphenyDbServerStatement {
+public class SqlDropTable extends SqlDropObject {
+
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP TABLE", SqlKind.DROP_TABLE );
+
 
     /**
-     * Creates a context for preparing a statement for execution.
+     * Creates a SqlDropTable.
      */
-    Context createPrepareContext();
-
-    /**
-     * Returns the connection.
-     */
-    PolyphenyDbEmbeddedConnection getConnection();
-
-    void setSignature( Meta.Signature signature );
-
-    Meta.Signature getSignature();
-
-    Iterator<Object> getResultSet();
-
-    void setResultSet( Iterator<Object> resultSet );
+    SqlDropTable( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        super( OPERATOR, pos, ifExists, name );
+    }
 }
 

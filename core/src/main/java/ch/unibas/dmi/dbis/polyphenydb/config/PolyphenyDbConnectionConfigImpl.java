@@ -48,6 +48,8 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema.Type;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -79,32 +81,6 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
         final Properties properties1 = new Properties( properties );
         properties1.setProperty( property.camelName(), value );
         return new PolyphenyDbConnectionConfigImpl( properties1 );
-    }
-
-
-    public boolean approximateDistinctCount() {
-        return PolyphenyDbConnectionProperty.APPROXIMATE_DISTINCT_COUNT.wrap( properties ).getBoolean();
-    }
-
-
-    public boolean approximateTopN() {
-        return PolyphenyDbConnectionProperty.APPROXIMATE_TOP_N.wrap( properties ).getBoolean();
-    }
-
-
-    public boolean approximateDecimal() {
-        return PolyphenyDbConnectionProperty.APPROXIMATE_DECIMAL.wrap( properties ).getBoolean();
-    }
-
-
-    @Override
-    public boolean nullEqualToEmpty() {
-        return PolyphenyDbConnectionProperty.NULL_EQUAL_TO_EMPTY.wrap( properties ).getBoolean();
-    }
-
-
-    public boolean autoTemp() {
-        return PolyphenyDbConnectionProperty.AUTO_TEMP.wrap( properties ).getBoolean();
     }
 
 
@@ -179,11 +155,6 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
     }
 
 
-    public boolean caseSensitive() {
-        return PolyphenyDbConnectionProperty.CASE_SENSITIVE.wrap( properties ).getBoolean( lex().caseSensitive );
-    }
-
-
     public <T> T parserFactory( Class<T> parserFactoryClass, T defaultParserFactory ) {
         return PolyphenyDbConnectionProperty.PARSER_FACTORY.wrap( properties ).getPlugin( parserFactoryClass, defaultParserFactory );
     }
@@ -196,11 +167,6 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
 
     public Type schemaType() {
         return PolyphenyDbConnectionProperty.SCHEMA_TYPE.wrap( properties ).getEnum( Type.class );
-    }
-
-
-    public boolean spark() {
-        return PolyphenyDbConnectionProperty.SPARK.wrap( properties ).getBoolean();
     }
 
 

@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.util.TryThreadLocal;
 import java.util.Collection;
@@ -96,8 +97,12 @@ public class CoreQuidemTest extends QuidemTest {
                 // There are formatting differences (e.g. "4.000" vs "4") when using Oracle as the JDBC data source.
                 return;
         }
+        final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try ( TryThreadLocal.Memo ignored = Prepare.THREAD_EXPAND.push( true ) ) {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( true );
             checkRun( path );
+        } finally {
+            RuntimeConfig.CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
         }
     }
 

@@ -42,31 +42,70 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.server;
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.NoSuchStatementException;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import java.util.List;
 
 
 /**
- * Server.
+ * Parse tree for {@code UNIQUE}, {@code PRIMARY KEY} constraints.
  *
- * Represents shared state among connections, and will have monitoring and management facilities.
+ * And {@code FOREIGN KEY}, when we support it.
  */
-public interface PolyphenyDbServer {
+public class SqlCheckConstraint extends SqlCall {
 
-    void removeStatement( Meta.StatementHandle h );
+    private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "CHECK", SqlKind.CHECK );
 
-    void addStatement( PolyphenyDbEmbeddedConnection connection, Meta.StatementHandle h );
+    private final SqlIdentifier name;
+    private final SqlNode expression;
+
 
     /**
-     * Returns the statement with a given handle.
-     *
-     * @param h Statement handle
-     * @return Statement, never null
-     * @throws NoSuchStatementException if handle does not represent a statement
+     * Creates a SqlCheckConstraint; use {@link SqlDdlNodes#check}.
      */
-    PolyphenyDbServerStatement getStatement( Meta.StatementHandle h ) throws NoSuchStatementException;
+    SqlCheckConstraint( SqlParserPos pos, SqlIdentifier name, SqlNode expression ) {
+        super( pos );
+        this.name = name; // may be null
+        this.expression = expression;
+    }
+
+
+    @Override
+    public SqlOperator getOperator() {
+        return OPERATOR;
+    }
+
+
+    @Override
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( name, expression );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        if ( name != null ) {
+            writer.keyword( "CONSTRAINT" );
+            name.unparse( writer, 0, 0 );
+        }
+        writer.keyword( "CHECK" );
+        if ( writer.isAlwaysUseParentheses() ) {
+            expression.unparse( writer, 0, 0 );
+        } else {
+            writer.sep( "(" );
+            expression.unparse( writer, 0, 0 );
+            writer.sep( ")" );
+        }
+    }
 }
+

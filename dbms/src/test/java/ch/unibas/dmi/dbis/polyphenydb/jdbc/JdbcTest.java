@@ -23,18 +23,41 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-/**
- * Define the color of a progress bar
- * DYNAMIC: changes with increasing value, from blue, to green, to yellow, to red
- */
-public enum ProgressColor {
-    DYNAMIC,
-    BLUE,
-    GREEN,
-    YELLOW,
-    RED,
-    BLACK
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+@RunWith(JUnit4.class)
+public class JdbcTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger( JdbcTest.class );
+
+
+    @BeforeClass
+    public static void setup() {
+        LOG.info( "startup - creating JDBC connection" );
+    }
+
+
+    @AfterClass
+    public static void tearDown() {
+        LOG.info( "closing DB connection" );
+    }
+
+    // --------------- Tests ---------------
+
+
+    @Test
+    public void testGetTables() {
+
+    }
+
 }

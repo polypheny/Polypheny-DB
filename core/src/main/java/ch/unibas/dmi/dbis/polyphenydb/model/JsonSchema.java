@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.model;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.ArrayList;

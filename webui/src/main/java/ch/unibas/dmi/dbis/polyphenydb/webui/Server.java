@@ -28,9 +28,9 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Spark.before;
 import static spark.Spark.get;
-import static spark.Spark.post;
 import static spark.Spark.options;
 import static spark.Spark.port;
+import static spark.Spark.post;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
@@ -38,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketException;
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +87,8 @@ public class Server {
                 return streamToString( stream );
             } catch( NullPointerException e ){
                 return "Error: Spark server could not find index.html";
+            } catch ( SocketException e ) {
+                return "Error: Spark server could not determine its ip address.";
             }
         } );
 
@@ -93,6 +96,11 @@ public class Server {
 
         LOGGER.info( "HTTP Server started." );
 
+    }
+
+
+    public Server ( final int port ) {
+        this( port, null );
     }
 
 

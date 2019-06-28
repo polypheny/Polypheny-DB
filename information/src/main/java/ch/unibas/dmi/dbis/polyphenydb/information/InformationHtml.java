@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * An Information object containing html code that will be rendered in the UI
+ * An Information object containing html code that will be rendered in the UI.
  */
 public class InformationHtml extends Information {
 
@@ -44,13 +44,13 @@ public class InformationHtml extends Information {
 
 
     /**
-     * Update the content of an InformationHtml object
+     * Update the content of an InformationHtml object.
      *
      * @param html The HTML code to set for this element
      */
     public void updateHtml( final String html ) {
         this.html = html;
-        InformationManager.getInstance().notify( this );
+        notifyManager();
     }
 
 }

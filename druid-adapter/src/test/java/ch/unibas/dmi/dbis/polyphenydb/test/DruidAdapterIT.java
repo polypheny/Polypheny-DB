@@ -45,36 +45,33 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchema;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-
-import org.junit.Test;
-
-import java.net.URL;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.function.Consumer;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchema;
+import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
+import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import java.net.URL;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.function.Consumer;
+import org.junit.Test;
 
 
 /**
@@ -171,13 +168,22 @@ public class DruidAdapterIT {
 
 
     private PolyphenyDbAssert.AssertQuery approxQuery( URL url, String sql ) {
-        return PolyphenyDbAssert.that()
-                .enable( enabled() )
-                .withModel( url )
-                .with( PolyphenyDbConnectionProperty.APPROXIMATE_DISTINCT_COUNT, true )
-                .with( PolyphenyDbConnectionProperty.APPROXIMATE_TOP_N, true )
-                .with( PolyphenyDbConnectionProperty.APPROXIMATE_DECIMAL, true )
-                .query( sql );
+        final boolean oldApproximateDistinctCount = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
+        final boolean oldApproximateTopN = RuntimeConfig.APPROXIMATE_TOP_N.getBoolean();
+        final boolean oldApproximateDecimal = RuntimeConfig.APPROXIMATE_DECIMAL.getBoolean();
+        try {
+            RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.setBoolean( true );
+            RuntimeConfig.APPROXIMATE_TOP_N.setBoolean( true );
+            RuntimeConfig.APPROXIMATE_DECIMAL.setBoolean( true );
+            return PolyphenyDbAssert.that()
+                    .enable( enabled() )
+                    .withModel( url )
+                    .query( sql );
+        } finally {
+            RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.setBoolean( oldApproximateDistinctCount );
+            RuntimeConfig.APPROXIMATE_TOP_N.setBoolean( oldApproximateTopN );
+            RuntimeConfig.APPROXIMATE_DECIMAL.setBoolean( oldApproximateDecimal );
+        }
     }
 
 
@@ -694,7 +700,7 @@ public class DruidAdapterIT {
 
 
     /**
-     * As {@link #testGroupBySingleSortLimit}, but allowing approximate results due to {@link PolyphenyDbConnectionConfig#approximateDistinctCount()}. Therefore we send a "topN" query to Druid.
+     * As {@link #testGroupBySingleSortLimit}, but allowing approximate results due to {@link RuntimeConfig#APPROXIMATE_DISTINCT_COUNT} config. Therefore we send a "topN" query to Druid.
      */
     @Test
     public void testGroupBySingleSortLimitApprox() {
@@ -723,15 +729,20 @@ public class DruidAdapterIT {
                 + "  DruidQuery(table=[[foodmart, foodmart]], intervals=[[1900-01-09T00:00:00.000Z/"
                 + "2992-01-10T00:00:00.000Z]], projects=[[$2, $89]], groups=[{0}], "
                 + "aggs=[[SUM($1)]], sort0=[1], dir0=[DESC], fetch=[3])";
-        PolyphenyDbAssert.that()
-                .enable( enabled() )
-                .withModel( FOODMART )
-                .with( PolyphenyDbConnectionProperty.APPROXIMATE_TOP_N, approx )
-                .query( sql )
-                .runs()
-                .returnsOrdered( "brand_name=Hermanos; S=8469", "brand_name=Tell Tale; S=7877", "brand_name=Ebony; S=7438" )
-                .explainContains( explain )
-                .queryContains( druidChecker( druidQuery ) );
+        final boolean oldValue = RuntimeConfig.APPROXIMATE_TOP_N.getBoolean();
+        try {
+            RuntimeConfig.APPROXIMATE_TOP_N.setBoolean( approx );
+            PolyphenyDbAssert.that()
+                    .enable( enabled() )
+                    .withModel( FOODMART )
+                    .query( sql )
+                    .runs()
+                    .returnsOrdered( "brand_name=Hermanos; S=8469", "brand_name=Tell Tale; S=7877", "brand_name=Ebony; S=7438" )
+                    .explainContains( explain )
+                    .queryContains( druidChecker( druidQuery ) );
+        } finally {
+            RuntimeConfig.APPROXIMATE_TOP_N.setBoolean( oldValue );
+        }
     }
 
 
@@ -3008,14 +3019,19 @@ public class DruidAdapterIT {
 
 
     private void testCountWithApproxDistinct( boolean approx, String sql, String expectedExplain, String expectedDruidQuery ) {
-        PolyphenyDbAssert.that()
-                .enable( enabled() )
-                .withModel( FOODMART )
-                .with( PolyphenyDbConnectionProperty.APPROXIMATE_DISTINCT_COUNT, approx )
-                .query( sql )
-                .runs()
-                .explainContains( expectedExplain )
-                .queryContains( druidChecker( expectedDruidQuery ) );
+        final boolean oldValue = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
+        try {
+            RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.setBoolean( approx );
+            PolyphenyDbAssert.that()
+                    .enable( enabled() )
+                    .withModel( FOODMART )
+                    .query( sql )
+                    .runs()
+                    .explainContains( expectedExplain )
+                    .queryContains( druidChecker( expectedDruidQuery ) );
+        } finally {
+            RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.setBoolean( oldValue );
+        }
     }
 
 

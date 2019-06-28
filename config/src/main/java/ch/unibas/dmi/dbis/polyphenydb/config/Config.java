@@ -718,7 +718,7 @@ public abstract class Config {
 
 
     /**
-     * Interface needs to be implemented if you want to validate a value from a setter, before writing it to the Config e.g. your ConfigValidator could enforce that an ConfigInteger accepts only an Integer < 10.
+     * Interface needs to be implemented if you want to validate a value from a setter, before writing it to the Config e.g. your ConfigValidator could enforce that an ConfigInteger accepts only an {@literal Integer < 10 }.
      */
     public interface ConfigValidator {
 

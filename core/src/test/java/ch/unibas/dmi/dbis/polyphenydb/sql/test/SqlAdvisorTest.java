@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.test;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Lex;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlSimpleParser.Token;

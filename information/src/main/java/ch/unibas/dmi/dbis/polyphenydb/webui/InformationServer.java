@@ -28,22 +28,25 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import static spark.Service.ignite;
 
+import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
 
 
 /**
- * RESTful server for the WebUis, working with the InformationManager
+ * RESTful server for the WebUis, working with the InformationManager.
  */
-public class InformationServer {
+public class InformationServer implements InformationObserver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( InformationServer.class );
 
 
     public InformationServer( final int port ) {
-
 
         Service http = ignite().port( port );
 
@@ -66,21 +69,43 @@ public class InformationServer {
 
     private void informationRoutes( final Service http ) {
         InformationManager im = InformationManager.getInstance();
+        im.observe( this );
 
         http.get( "/getPageList", ( req, res ) -> im.getPageList() );
 
         http.post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: "page1"}
             try {
-                return im.getPage( req.body() );
+                return im.getPage( req.body() ).asJson();
             } catch ( Exception e ) {
                 // if input not number or page does not exist
+                e.printStackTrace();
                 return "";
             }
         } );
-
     }
 
+
+    /**
+     * Observe Changes in Information Objects of the Information Manager
+     */
+    @Override
+    public void observeInfos( final Information info ) {
+        try {
+            InformationWebSocket.broadcast( info.asJson() );
+        } catch ( IOException e ) {
+            LOGGER.info( "Error while sending information object to web ui!", e );
+        }
+    }
+
+
+    /**
+     * Observe Changes in the PageList of the Information Manager
+     */
+    @Override
+    public void observePageList( final String debugId, final InformationPage[] pages ) {
+        //todo can be implemented if needed
+    }
 
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
@@ -108,6 +133,5 @@ public class InformationServer {
             res.type( "application/json" );
         } );
     }
-
 
 }

@@ -45,13 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
+import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDelete;

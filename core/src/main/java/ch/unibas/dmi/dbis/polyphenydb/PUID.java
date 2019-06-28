@@ -90,6 +90,11 @@ public class PUID implements Serializable {
     }
 
 
+    public PUID( byte[] bytes ) {
+        this.puid = UUID.nameUUIDFromBytes( bytes );
+    }
+
+
     /**
      * Returns the least significant 64 bits of this UUID's 128 bit value.
      *
@@ -174,13 +179,13 @@ public class PUID implements Serializable {
         }
 
 
-        private UserId( final String userId ) {
-            super( userId );
+        private UserId( final byte[] userName ) {
+            super( userName );
         }
 
 
-        public static UserId fromString( final String userId ) {
-            return new UserId( userId );
+        public static UserId fromString( final String userName ) {
+            return new UserId( userName.getBytes() );
         }
     }
 
