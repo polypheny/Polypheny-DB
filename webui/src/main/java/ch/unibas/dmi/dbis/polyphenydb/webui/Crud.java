@@ -26,11 +26,20 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.Information;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationProgress;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
@@ -38,6 +47,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ColumnRequest;
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -49,7 +59,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Random;
 import java.util.StringJoiner;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.math.NumberUtils;
@@ -63,7 +77,7 @@ import spark.Response;
  * Create, read, update and delete elements from a database
  * contains only demo data so far
  */
-class Crud {
+class Crud implements InformationObserver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Crud.class );
     private Connection conn;
@@ -496,7 +510,7 @@ class Crud {
      * Run any query coming form the SQL console
      */
     String anyQuery( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
         ArrayList<Result> results = new ArrayList<>();
         //Result result;
 
@@ -514,6 +528,8 @@ class Crud {
             }
         }
 
+        long executionTime = 0;
+        long temp = 0;
         Pattern semicolon = Pattern.compile( ";[\\s]*$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
         String[] queries = semicolon.split( request.query );
         for ( String query: queries ) {
@@ -521,39 +537,68 @@ class Crud {
             Statement stmt = null;
             if( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
+                    temp = System.nanoTime();
                     conn.commit();
+                    executionTime += System.nanoTime() - temp;
                     results.add( new Result( new Debug().setGeneratedQuery( query )) );
                 } catch ( SQLException e ) {
+                    executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
             } else if( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
                 try {
+                    temp = System.nanoTime();
                     conn.rollback();
+                    executionTime += System.nanoTime() - temp;
                     results.add( new Result( new Debug().setGeneratedQuery( query )) );
                 } catch ( SQLException e ) {
+                    executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
             } else if( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
                 try {
                     stmt = conn.createStatement();
+                    temp = System.nanoTime();
                     ResultSet rs = stmt.executeQuery( query );
+                    executionTime += System.nanoTime() - temp;
                     result = buildResult( rs, request ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                 } catch ( SQLException e ) {
+                    executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                 }
             } else {
                 try {
                     stmt = conn.createStatement();
+                    temp = System.nanoTime();
                     int numOfRows = stmt.executeUpdate( query );
+                    executionTime += System.nanoTime() - temp;
                     result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
                     results.add( result );
                 } catch ( SQLException e ) {
+                    executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                 }
             }
+        }
+
+        if( request.analyze ){
+            InformationManager queryAnalyzer = InformationManager.getInstance( UUID.randomUUID().toString() ).observe( this );
+            InformationPage p1 = new InformationPage( "p1", "Query analysis", "Analysis of the query." );
+            InformationGroup g1 = new InformationGroup( "Execution time", "p1" );
+            InformationHtml html;
+            if( executionTime < 1e4 ) {
+                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %d nanoseconds", executionTime) );
+            } else {
+                double execTime = Math.round( executionTime / 1e6 ) + (executionTime % 1e6)/1e6;
+                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %.2f milliseconds", execTime) );
+            }
+            //todo convert to seconds / minutes if needed
+            queryAnalyzer.addPage( p1 );
+            queryAnalyzer.addGroup( g1 );
+            queryAnalyzer.registerInformation( html );
         }
 
         //reset autoCommit to true
@@ -794,7 +839,6 @@ class Crud {
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( generatedQueries.toString() ) );
             conn.commit();
             conn.setAutoCommit( true );
-            System.out.println(generatedQueries);
         } catch ( SQLException e ) {
             result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( generatedQueries.toString() ) );
             try {
@@ -839,7 +883,6 @@ class Crud {
         Result result;
         try {
             Statement stmt = conn.createStatement();
-            System.out.println(query);
             int affectedRows = stmt.executeUpdate( query );
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
         } catch ( SQLException e ) {
@@ -1000,6 +1043,57 @@ class Crud {
             result = new Result( e.getMessage() );
         }
         return result.toJson();
+    }
+
+
+    /**
+     * Send updates to the UI if Information objects in the query analyzer change.
+     */
+    @Override
+    public void observeInfos( final Information info ) {
+        try {
+            CrudWebSocket.broadcast( info.asJson() );
+        } catch ( IOException e ) {
+            LOGGER.error( e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Send an updated pageList of the query analyzer to the UI.
+     */
+    @Override
+    public void observePageList( final String analyzerId, final InformationPage[] pages ) {
+        SidebarElement[] nodes = new SidebarElement[ pages.length ];
+        int counter = 0;
+        for( InformationPage page: pages ){
+            nodes[counter] = new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() );
+            counter++;
+        }
+        try{
+            CrudWebSocket.sendPageList( this.gson.toJson( nodes ) );
+        } catch ( IOException e ) {
+            LOGGER.error( e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Get the content of an InformationPage of a query analyzer.
+     */
+    public String getAnalyzerPage( final Request req, final Response res ) {
+        String[] params = this.gson.fromJson( req.body(), String[].class );
+        return InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson();
+    }
+
+
+    /**
+     * Close a query analyzer if not needed anymore.
+     */
+    public String closeAnalyzer( final Request req, final Response res ) {
+        String id = req.body();
+        InformationManager.close( id );
+        return "";
     }
 
 }

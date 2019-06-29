@@ -31,9 +31,12 @@ import static spark.Spark.get;
 import static spark.Spark.options;
 import static spark.Spark.port;
 import static spark.Spark.post;
+import static spark.Spark.webSocket;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,9 +65,13 @@ public class Server {
         }
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ) );
-        cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ) );
-        cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ) );
+        WebUiPage configPage = new WebUiPage( "ports", "ports", "Ports for the ConfigurationServer, InformationServer and the WebUi" );
+        WebUiGroup portsGroup = new WebUiGroup( "portsGroup", "ports" ).withTitle( "ports" );
+        cm.registerWebUiPage( configPage );
+        cm.registerWebUiGroup( portsGroup );
+        cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ).withUi( "portsGroup", 1 ) );
+        cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ).withUi( "portsGroup", 2 ) );
+        cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ).withUi( "portsGroup", 3 ) );
 
         //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
         ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
@@ -72,9 +79,12 @@ public class Server {
         Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt(), args );
     }
 
+
     public Server( final int port, String[] args ) {
 
         port( port );
+
+        webSockets();
 
         Spark.staticFiles.location( "webapp/" );
 
@@ -149,7 +159,13 @@ public class Server {
 
         post( "/createIndex", crud::createIndex );
 
+        post( "/getAnalyzerPage", crud::getAnalyzerPage );
+
+        post( "/closeAnalyzer", crud::closeAnalyzer );
+
     }
+
+
     /**
      * reads the index.html and replaces the line "//SPARK-REPLACE" with information about the ConfigServer and InformationServer
      */
@@ -173,6 +189,15 @@ public class Server {
 
         return stringBuilder.toString();
     }
+
+
+    /**
+     * Define websocket paths
+     */
+    private void webSockets(  ) {
+        webSocket( "/queryAnalyzer", CrudWebSocket.class );
+    }
+
 
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
