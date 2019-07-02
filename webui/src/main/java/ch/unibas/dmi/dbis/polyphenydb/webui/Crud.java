@@ -138,8 +138,7 @@ class Crud implements InformationObserver {
         Integer size = null;
         String query = "SELECT count(*) FROM " + tableName;
         LocalTransactionHandler handler = getHandler();
-        try {
-            ResultSet rs = handler.executeSelect( query );
+        try ( ResultSet rs = handler.executeSelect( query ) ) {
             rs.next();
             size = rs.getInt( 1 );
             handler.commit();
@@ -166,8 +165,7 @@ class Crud implements InformationObserver {
         if ( request.sortState != null ) orderBy = sortTable( request.sortState );
         query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( PAGESIZE ).append( " OFFSET " ).append( (request.currentPage - 1) * PAGESIZE );
 
-        try {
-            ResultSet rs = handler.executeSelect( query.toString() );
+        try ( ResultSet rs = handler.executeSelect( query.toString() ) ) {
             result = buildResult( rs, request );
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
@@ -182,8 +180,7 @@ class Crud implements InformationObserver {
 
         //determine if it is a view or a table
         String[] t = request.tableId.split( "\\." );
-        try {
-            ResultSet rs = handler.getMetaData().getTables( this.dbName, t[0], t[1], null );
+        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, t[0], t[1], null ) ) {
             rs.next();//expecting only one result
             if( rs.getString( 4 ).equals( "TABLE" ) ){
                 result.setType( ResultType.TABLE );
@@ -253,8 +250,7 @@ class Crud implements InformationObserver {
         ArrayList<SidebarElement> result = new ArrayList<>();
         LocalTransactionHandler handler = getHandler();
 
-        try{
-            ResultSet schemas = handler.getMetaData().getSchemas();
+        try ( ResultSet schemas = handler.getMetaData().getSchemas() ) {
             while ( schemas.next() ){
                 String schema = schemas.getString( 1 );
                 if( schema.equals( "pg_catalog" ) || schema.equals( "information_schema" )) continue;
@@ -274,6 +270,7 @@ class Crud implements InformationObserver {
                 schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
                 schemaTree.addChild( new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
                 result.add( schemaTree );
+                tablesRs.close();
             }
         } catch ( SQLException e ) {
             LOGGER.error( e.getMessage() );
@@ -288,12 +285,9 @@ class Crud implements InformationObserver {
      */
     String getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        LocalTransactionHandler handler = getHandler();
         Result result;
-        try {
-
-            LocalTransactionHandler handler = getHandler();
-            ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, new String[]{"TABLE"} );
-
+        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, new String[]{"TABLE"} )) {
             ArrayList<String> tables = new ArrayList<>();
             while ( rs.next() ) {
                 tables.add( rs.getString( 3 ) );
@@ -319,8 +313,8 @@ class Crud implements InformationObserver {
             query.append( "TRUNCATE " );
         }
         query.append( request.schema ).append( "." ).append( request.table );
+        LocalTransactionHandler handler = getHandler();
         try {
-            LocalTransactionHandler handler = getHandler();
             int a = handler.executeUpdate( query.toString() );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
@@ -533,6 +527,7 @@ class Crud implements InformationObserver {
                     result = buildResult( rs, request ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                     if( autoCommit ) handler.commit();
+                    rs.close();
                 } catch ( SQLException | CatalogTransactionException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
@@ -684,8 +679,7 @@ class Crud implements InformationObserver {
             + "ORDER BY ordinal_position ASC";
         //todo use prepared statement
 
-        try {
-            ResultSet rs = handler.executeSelect( query );
+        try ( ResultSet rs = handler.executeSelect( query ) ) {
             ArrayList<DbColumn> cols = new ArrayList<>();
             while ( rs.next() ) {
                 boolean isPrimary = false;
@@ -861,8 +855,7 @@ class Crud implements InformationObserver {
             + String.format("WHERE table_schema = '%s' AND table_name = '%s' ", t[0], t[1])
             + "AND constraint_name NOT LIKE '%not_null'";
         //todo use prepared statement
-        try{
-            ResultSet rs = handler.executeSelect( query );
+        try ( ResultSet rs = handler.executeSelect( query ) ) {
             result = buildResult( rs, request );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
@@ -927,8 +920,7 @@ class Crud implements InformationObserver {
         Result result;
         ArrayList<String[]> data = new ArrayList<>();
         DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "method" ), new DbColumn( "columns" ) };
-        try {
-            ResultSet rs = handler.executeSelect( query );
+        try ( ResultSet rs = handler.executeSelect( query ) ) {
             while ( rs.next() ) {
                 String indexDef = rs.getString( "indexDef" );
                 Pattern p = Pattern.compile( "\\((.*?)\\)" );
