@@ -37,6 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
 import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
+import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +56,7 @@ public class Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
     private final ConfigManager cm = ConfigManager.getInstance();
+    private Gson gson = new Gson();
 
     public static void main( String[] args ) {
         if ( args.length < 4) {
@@ -121,43 +123,43 @@ public class Server {
 
         Crud crud = new Crud( args );
 
-        post( "/getTable", crud::getTable );
+        post( "/getTable", crud::getTable, gson::toJson );
 
-        post( "/getSchemaTree", crud::getSchemaTree );
+        post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
-        post( "/insertRow", crud::insertIntoTable );
+        post( "/insertRow", crud::insertIntoTable, gson::toJson );
 
-        post( "/deleteRow", crud::deleteRow );
+        post( "/deleteRow", crud::deleteRow, gson::toJson );
 
-        post( "/updateRow", crud::updateRow );
+        post( "/updateRow", crud::updateRow, gson::toJson );
 
-        post( "/anyQuery", crud::anyQuery );
+        post( "/anyQuery", crud::anyQuery, gson::toJson );
 
-        post( "/getColumns", crud::getColumns );
+        post( "/getColumns", crud::getColumns, gson::toJson );
 
-        post( "/updateColumn", crud::updateColumn );
+        post( "/updateColumn", crud::updateColumn, gson::toJson );
 
-        post( "/addColumn", crud::addColumn );
+        post( "/addColumn", crud::addColumn, gson::toJson );
 
-        post( "/dropColumn", crud::dropColumn );
+        post( "/dropColumn", crud::dropColumn, gson::toJson );
 
-        post( "/getTables", crud::getTables );
+        post( "/getTables", crud::getTables, gson::toJson );
 
-        post( "/dropTruncateTable", crud::dropTruncateTable );
+        post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
 
-        post( "/createTable", crud::createTable );
+        post( "/createTable", crud::createTable, gson::toJson );
 
-        post( "/getConstraints", crud::getConstraints );
+        post( "/getConstraints", crud::getConstraints, gson::toJson );
 
-        post( "/dropConstraint", crud::dropConstraint );
+        post( "/dropConstraint", crud::dropConstraint, gson::toJson );
 
-        post( "/addPrimaryKey", crud::addPrimaryKey );
+        post( "/addPrimaryKey", crud::addPrimaryKey, gson::toJson );
 
-        post( "/getIndexes", crud::getIndexes );
+        post( "/getIndexes", crud::getIndexes, gson::toJson );
 
-        post( "/dropIndex", crud::dropIndex );
+        post( "/dropIndex", crud::dropIndex, gson::toJson );
 
-        post( "/createIndex", crud::createIndex );
+        post( "/createIndex", crud::createIndex, gson::toJson );
 
         post( "/getAnalyzerPage", crud::getAnalyzerPage );
 

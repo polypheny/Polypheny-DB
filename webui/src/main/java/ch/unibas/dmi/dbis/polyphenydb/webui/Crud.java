@@ -153,7 +153,7 @@ class Crud implements InformationObserver {
      * returns the content of a table
      * with a maximum of PAGESIZE elements
      */
-    String getTable( final Request req, final Response res ) {
+    Result getTable( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
         LocalTransactionHandler handler = getHandler();
@@ -172,7 +172,7 @@ class Crud implements InformationObserver {
             result = new Result( e.getMessage() );
             try {
                 handler.rollback();
-                return new Result( e.getMessage() ).toJson();
+                return new Result( e.getMessage() );
             } catch ( CatalogTransactionException ex ) {
                 LOGGER.error( "Could not rollback", ex );
             }
@@ -195,10 +195,10 @@ class Crud implements InformationObserver {
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         Integer tableSize = getTableSize( request.tableId );
         if( tableSize == null ){
-            return new Result( String.format( "The table %s does not exist.", t[1] )).toJson();
+            return new Result( String.format( "The table %s does not exist.", t[1] ));
         }
         result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
-        return result.toJson();
+        return result;
     }
 
 
@@ -245,7 +245,7 @@ class Crud implements InformationObserver {
     /**
      * returns a Tree (in json format) with the Tables of a Database
      */
-    String getSchemaTree ( final Request req, final Response res ) {
+    ArrayList<SidebarElement> getSchemaTree ( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
         LocalTransactionHandler handler = getHandler();
@@ -276,14 +276,14 @@ class Crud implements InformationObserver {
             LOGGER.error( e.getMessage() );
         }
 
-        return this.gson.toJson( result );
+        return result;
     }
 
 
     /**
      * Get all tables of a schema
      */
-    String getTables( final Request req, final Response res ) {
+    Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         LocalTransactionHandler handler = getHandler();
         Result result;
@@ -296,14 +296,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Drop or truncate a table
      */
-    String dropTruncateTable( final Request req, final Response res ) {
+    Result dropTruncateTable( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Result result;
         StringBuilder query = new StringBuilder();
@@ -321,14 +321,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Create a new table
      */
-    String createTable( final Request req, final Response res ) {
+    Result createTable( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         StringBuilder query = new StringBuilder();
         StringJoiner colJoiner = new StringJoiner( "," );
@@ -380,14 +380,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * insert data into a table
      */
-    String insertIntoTable( final Request req, final Response res ) {
+    Result insertIntoTable( final Request req, final Response res ) {
         int rowsAffected = 0;
         Result result;
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
@@ -415,7 +415,7 @@ class Crud implements InformationObserver {
             LOGGER.error( e.getMessage() );
             LOGGER.error( "Generated query: " + query.toString() );
         }
-        return result.toJson();
+        return result;
     }
 
 
@@ -461,7 +461,7 @@ class Crud implements InformationObserver {
     /**
      * Run any query coming form the SQL console
      */
-    String anyQuery( final Request req, final Response res ) {
+    ArrayList<Result> anyQuery( final Request req, final Response res ) {
         QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
         ArrayList<Result> results = new ArrayList<>();
         LocalTransactionHandler handler = getHandler();
@@ -566,7 +566,7 @@ class Crud implements InformationObserver {
             queryAnalyzer.registerInformation( html );
         }
 
-        return this.gson.toJson( results );
+        return results;
     }
 
 
@@ -575,7 +575,7 @@ class Crud implements InformationObserver {
      * the row is determined by the value of every column in that row (conjunction)
      * the transaction is being rolled back, if more that one row would be deleted
      */
-    String deleteRow( final Request req, final Response res ) {
+    Result deleteRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
         StringBuilder builder = new StringBuilder();
@@ -607,11 +607,11 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
-        return result.toJson();
+        return result;
     }
 
 
-    String updateRow( final Request req, final Response res ) {
+    Result updateRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
         StringBuilder builder = new StringBuilder();
@@ -648,14 +648,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Get the columns of a table
      */
-    String getColumns( final Request req, final Response res ) {
+    Result getColumns( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         LocalTransactionHandler handler = getHandler();
         Result result;
@@ -694,14 +694,14 @@ class Crud implements InformationObserver {
             result = new Result( e.toString() );
             LOGGER.error( e.toString() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Update a column of a table
      */
-    String updateColumn( final Request req, final Response res ) {
+    Result updateColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         DbColumn oldColumn = request.oldColumn;
         DbColumn newColumn = request.newColumn;
@@ -779,14 +779,14 @@ class Crud implements InformationObserver {
             }
         }
 
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Add a column to an existing table
      */
-    String addColumn( final Request req, final Response res ) {
+    Result addColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         LocalTransactionHandler handler = getHandler();
         String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.type );
@@ -819,14 +819,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Delete a column of a table
      */
-    String dropColumn( final Request req, final Response res ) {
+    Result dropColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         LocalTransactionHandler handler = getHandler();
         Result result;
@@ -838,14 +838,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.toString() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Get constraints of a table
      */
-    String getConstraints( final Request req, final Response res ) {
+    Result getConstraints( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         String[] t = request.tableId.split( "\\." );
         Result result;
@@ -860,14 +860,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Drop constraint of a table
      */
-    String dropConstraint ( final Request req, final Response res ) {
+    Result dropConstraint ( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
         LocalTransactionHandler handler= getHandler();
         String query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
@@ -879,13 +879,13 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ){
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
     /**
      * Add a primary key to a table
      */
-    String addPrimaryKey ( final Request req, final Response res ) {
+    Result addPrimaryKey ( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
         LocalTransactionHandler handler = getHandler();
         Result result;
@@ -905,14 +905,14 @@ class Crud implements InformationObserver {
         }else{
             result = new Result( "Cannot add primary key if no columns are provided." );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Get indexes of a table
      */
-    String getIndexes( final Request req, final Response res ) {
+    Result getIndexes( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         String query = String.format( "SELECT indexname, indexdef FROM pg_indexes WHERE schemaname ='%s' AND tablename = '%s'", request.schema, request.table );
         //todo use prepared statement
@@ -936,14 +936,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Drop an index of a table
      */
-    String dropIndex( final Request req, final Response res ) {
+    Result dropIndex( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         LocalTransactionHandler handler = getHandler();
         String query = String.format( "DROP INDEX %s.%s", request.schema, request.action );
@@ -955,14 +955,14 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
     /**
      * Create an index for a table
      */
-    String createIndex( final Request req, final Response res ) {
+    Result createIndex( final Request req, final Response res ) {
         Index index = this.gson.fromJson( req.body(), Index.class );
         LocalTransactionHandler handler = getHandler();
         Result result;
@@ -973,7 +973,7 @@ class Crud implements InformationObserver {
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
-        return result.toJson();
+        return result;
     }
 
 
