@@ -34,15 +34,16 @@ public class DbColumn {
 
     public String name;
 
+    //for both
+    public String dataType;//varchar/int/etc
+
     //for the Data-Table in the UI
     public SortState sort;
-    public int dataType;
     public String filter;
 
     //for editing columns
     public boolean primary;
     public boolean nullable;
-    public String type;//varchar/int/etc
     public Integer maxLength;
     public String defaultValue;
 
@@ -50,19 +51,21 @@ public class DbColumn {
         this.name = name;
     }
 
-    public DbColumn ( final String name, final SortState sort, final int dataType, final String filter ) {
+    public DbColumn ( final String name, final String dataType, final boolean nullable, final Integer maxLength, final SortState sort, final String filter) {
         this.name = name;
-        this.sort = sort;
         this.dataType = dataType;
+        this.nullable = nullable;
+        if( dataType.equals( "varchar" )) this.maxLength = maxLength;
+        this.sort = sort;
         this.filter = filter;
     }
 
-    public DbColumn ( final String name, final boolean primary, final boolean nullable, final String type, final Integer maxLength, final String defaultValue ) {
+    public DbColumn ( final String name, final String dataType, final boolean nullable, final Integer maxLength, final boolean primary, final String defaultValue ) {
         this.name = name;
-        this.primary = primary;
+        this.dataType = dataType;
         this.nullable = nullable;
-        this.type = type;
         this.maxLength = maxLength;
+        this.primary = primary;
         this.defaultValue = defaultValue;
     }
 

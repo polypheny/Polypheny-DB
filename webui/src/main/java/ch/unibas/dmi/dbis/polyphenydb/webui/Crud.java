@@ -225,7 +225,8 @@ class Crud implements InformationObserver {
                 } else {
                     sort = new SortState();
                 }
-                header.add( new DbColumn( meta.getColumnName( i ), sort, meta.getColumnType( i ), filter ) );
+                // todo: get default value
+                header.add( new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter ) );
             }
             while ( rs.next() ) {
                 String[] row = new String[numOfCols];
@@ -339,7 +340,7 @@ class Crud implements InformationObserver {
         int primaryCounter = 0;
         for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.type );
+            colBuilder.append( col.name ).append( " " ).append( col.dataType);
             if ( col.maxLength != null ) {
                 colBuilder.append( String.format( "(%d)", col.maxLength ) );
             }
@@ -347,7 +348,7 @@ class Crud implements InformationObserver {
                 colBuilder.append( " NOT NULL" );
             }
             if( col.defaultValue != null ) {
-                switch ( col.type ) {
+                switch ( col.dataType ) {
                     case "int8":
                     case "int4":
                         int a = Integer.parseInt( col.defaultValue );
@@ -396,9 +397,11 @@ class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( ",", "(", ")" );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             String value = entry.getValue();
-            if( value.equals( "" ) ){
-                value = "DEFAULT";
-            } else if( ! NumberUtils.isNumber( value )) {
+            if( value == null ){
+                value = "NULL";
+            }
+            //todo default value
+            else if( ! NumberUtils.isNumber( value )) {
                 value = "'"+value+"'";
             }
             joiner.add( value );
@@ -583,9 +586,9 @@ class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition = "";
-            if ( entry.getValue() == null || entry.getValue().equals( "" ) ) {
+            if ( entry.getValue() == null) {
                 //todo fix: doesn't work for integers
-                condition = String.format( "(%s IS NULL OR %s = '')", entry.getKey(), entry.getKey() );
+                condition = String.format( "%s IS NULL", entry.getKey() );
             } else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
             }
@@ -618,7 +621,8 @@ class Crud implements InformationObserver {
         builder.append( "UPDATE " ).append( request.tableId ).append( " SET " );
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
-            if ( entry.getValue().equals( "" ) ) {
+            //todo default value
+            if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "%s = NULL", entry.getKey() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "%s = %s", entry.getKey(), entry.getValue() ) );
@@ -687,7 +691,7 @@ class Crud implements InformationObserver {
                     isPrimary = rs.getString( "constraint_type" ).equals( "PRIMARY KEY" );
                 }
                 //getObject, so you get null and not 0 if the field is NULL
-                cols.add( new DbColumn( rs.getString( "column_name" ), isPrimary, rs.getBoolean( "is_nullable" ), rs.getString( "udt_name" ), (Integer) rs.getObject("character_maximum_length"), rs.getString( "column_default" ) ) );
+                cols.add( new DbColumn( rs.getString( "column_name" ), rs.getString( "udt_name" ), rs.getBoolean( "is_nullable" ), (Integer) rs.getObject("character_maximum_length"), isPrimary, rs.getString( "column_default" ) ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
         } catch ( SQLException e ) {
@@ -717,13 +721,14 @@ class Crud implements InformationObserver {
         }
 
         //change type + length
-        if ( !oldColumn.type.equals( newColumn.type ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
+        //todo cast if needed
+        if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
             if ( newColumn.maxLength != null ) {
-                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s) USING %s::%s;", request.tableId, newColumn.name, newColumn.type, newColumn.maxLength, newColumn.name, newColumn.type );
+                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s) USING %s::%s;", request.tableId, newColumn.name, newColumn.dataType, newColumn.maxLength, newColumn.name, newColumn.dataType );
                 queries.add( query );
             } else {
                 //todo drop maxlength if requested
-                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s::%s;", request.tableId, newColumn.name, newColumn.type, newColumn.name, newColumn.type );
+                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s::%s;", request.tableId, newColumn.name, newColumn.dataType, newColumn.name, newColumn.dataType );
                 queries.add( query );
             }
         }
@@ -746,7 +751,7 @@ class Crud implements InformationObserver {
             }
             else{
                 query = String.format( "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
-                switch ( newColumn.type ) {
+                switch ( newColumn.dataType ) {
                     case "int8":
                     case "int4":
                         int a = Integer.parseInt( request.newColumn.defaultValue );
@@ -789,7 +794,7 @@ class Crud implements InformationObserver {
     Result addColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         LocalTransactionHandler handler = getHandler();
-        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.type );
+        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
         if ( request.newColumn.maxLength != null ) {
             query = query + String.format( "(%d)", request.newColumn.maxLength );
         }
@@ -797,7 +802,7 @@ class Crud implements InformationObserver {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ){
-            switch ( request.newColumn.type ) {
+            switch ( request.newColumn.dataType ) {
                 case "int8":
                 case "int4":
                     int a = Integer.parseInt( request.newColumn.defaultValue );
