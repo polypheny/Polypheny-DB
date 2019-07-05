@@ -576,7 +576,6 @@ class Crud implements InformationObserver {
     /**
      * delete a row from a table
      * the row is determined by the value of every column in that row (conjunction)
-     * the transaction is being rolled back, if more that one row would be deleted
      */
     Result deleteRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
@@ -599,14 +598,8 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
-            //only commit if one row is deleted
-            if ( numOfRows == 1 ) {
-                handler.commit();
-                result = new Result( new Debug().setAffectedRows( numOfRows ) );
-            } else {
-                handler.rollback();
-                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
-            }
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( builder.toString() ) );
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
@@ -614,6 +607,10 @@ class Crud implements InformationObserver {
     }
 
 
+    /**
+     * update a row from a table
+     * the row is determined by the value of every column in that row (conjunction)
+     */
     Result updateRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
@@ -641,14 +638,8 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
-
-            if ( numOfRows == 1 ) {
-                handler.commit();
-                result = new Result( new Debug().setAffectedRows( numOfRows ) );
-            } else {
-                handler.rollback();
-                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
-            }
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( builder.toString() ) );
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
