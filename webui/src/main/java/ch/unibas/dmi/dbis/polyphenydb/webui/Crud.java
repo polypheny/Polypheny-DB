@@ -34,8 +34,10 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
@@ -44,6 +46,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ColumnRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogConnectionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
@@ -979,6 +982,52 @@ class Crud implements InformationObserver {
             result = new Result( e.getMessage() );
         }
         return result;
+    }
+
+
+    /**
+     * Get the needed information for the uml view:
+     * Foreign keys
+     * Tables with its columns
+     */
+    Uml getUml ( final Request req, final Response res ) {
+        LocalTransactionHandler handler = getHandler();
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        ArrayList<ForeignKey> fKeys = new ArrayList<>();
+        try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, request.schema, null ) ) {
+            while ( rs.next() ){
+                fKeys.add( ForeignKey.builder()
+                    .pkTableSchema( rs.getString( 2 ))
+                    .pkTableName( rs.getString( 3 ))
+                    .pkColumnName( rs.getString( 4 ))
+                    .fkTableSchema( rs.getString( 6 ))
+                    .fkTableName( rs.getString( 7 ) )
+                    .fkColumnName( rs.getString( 8 ) )
+                    .fkName( rs.getString( 12 ) )
+                    .pkName( rs.getString( 13 ) )
+                    .build() );
+            }
+        } catch ( SQLException e ) {
+            LOGGER.error( "Could not fetch foreign keys of the schema " + request.schema, e );
+        }
+
+        //get Tables with its columns
+        ArrayList<DbTable> tables = new ArrayList<>();
+        String[] types = {"TABLE"};
+        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, types )) {
+            while ( rs.next() ){
+                DbTable table = new DbTable( rs.getString( 3 ), request.schema );
+                ResultSet rs2 = handler.getMetaData().getColumns( this.dbName, request.schema, rs.getString( 3 ), null );
+                while ( rs2.next() ){
+                    table.addColumn( new DbColumn( rs2.getString( 4 )));
+                }
+                tables.add( table );
+            }
+        } catch ( SQLException e ) {
+            LOGGER.error( "Could not fetch tables of the schema " + request.schema );
+        }
+
+        return new Uml( tables, fKeys );
     }
 
 

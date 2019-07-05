@@ -159,6 +159,8 @@ public class Server {
 
         post( "/dropIndex", crud::dropIndex, gson::toJson );
 
+        post( "/getUml", crud::getUml, gson::toJson );
+
         post( "/createIndex", crud::createIndex, gson::toJson );
 
         post( "/getAnalyzerPage", crud::getAnalyzerPage );
