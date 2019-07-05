@@ -72,6 +72,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -142,6 +143,7 @@ public class RelWriterTest {
      * Unit test for {@link RelJsonWriter} on a simple tree of relational expressions, consisting of a table, a filter and an aggregate node.
      */
     @Test
+    @Ignore
     public void testWriter() {
         String s =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {

@@ -68,7 +68,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexSlot;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
@@ -100,7 +99,8 @@ public class RelJson {
                     "ch.unibas.dmi.dbis.polyphenydb.rel.core.",
                     "ch.unibas.dmi.dbis.polyphenydb.rel.logical.",
                     "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.",
-                    "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules$" );
+                    "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules$",
+                    "ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables$" );
 
 
     public RelJson( JsonBuilder jsonBuilder ) {

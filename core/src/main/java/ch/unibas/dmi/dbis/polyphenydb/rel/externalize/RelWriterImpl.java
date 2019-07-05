@@ -45,9 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.collect.ImmutableList;
@@ -67,6 +69,7 @@ public class RelWriterImpl implements RelWriter {
     private final SqlExplainLevel detailLevel;
     private final boolean withIdPrefix;
     protected final Spacer spacer = new Spacer();
+    private final boolean insertFieldNames;
     private final List<Pair<String, Object>> values = new ArrayList<>();
 
 
@@ -76,9 +79,15 @@ public class RelWriterImpl implements RelWriter {
 
 
     public RelWriterImpl( PrintWriter pw, SqlExplainLevel detailLevel, boolean withIdPrefix ) {
+        this( pw, detailLevel, withIdPrefix, RuntimeConfig.REL_WRITER_INSERT_FIELD_NAMES.getBoolean() );
+    }
+
+
+    public RelWriterImpl( PrintWriter pw, SqlExplainLevel detailLevel, boolean withIdPrefix, boolean insertFieldNames ) {
         this.pw = pw;
         this.detailLevel = detailLevel;
         this.withIdPrefix = withIdPrefix;
+        this.insertFieldNames = insertFieldNames;
     }
 
 
@@ -110,7 +119,7 @@ public class RelWriterImpl implements RelWriter {
                 }
                 s.append( value.left )
                         .append( "=[" )
-                        .append( value.right )
+                        .append( insertFieldNames ? insertFieldNames( rel, value.right ) : value.right )
                         .append( "]" );
             }
             if ( j > 0 ) {
@@ -137,6 +146,28 @@ public class RelWriterImpl implements RelWriter {
         spacer.add( 2 );
         explainInputs( inputs );
         spacer.subtract( 2 );
+    }
+
+
+    // TODO MV: This is not a nice solution
+    private String insertFieldNames( RelNode rel, Object right ) {
+        String str = right.toString();
+        if ( str.contains( "$" ) ) {
+            int offset = 0;
+            for ( RelNode input : rel.getInputs() ) {
+                for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
+                    String searchStr = "$" + (offset + field.getIndex());
+                    int position = str.indexOf( searchStr );
+                    if ( position >= 0
+                            && ((str.length() == position + searchStr.length())
+                            || (str.length() > position + searchStr.length() && str.charAt( position + searchStr.length() ) != '{')) ) {
+                        str = str.replace( searchStr, searchStr + "{" + field.getName() + "}" );
+                    }
+                }
+                offset = input.getRowType().getFieldList().size();
+            }
+        }
+        return str;
     }
 
 

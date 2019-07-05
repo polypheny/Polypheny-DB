@@ -47,12 +47,16 @@ package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -71,16 +75,20 @@ public class RelJsonWriter implements RelWriter {
     private final List<Pair<String, Object>> values = new ArrayList<>();
     private String previousId;
 
+    private final Map<String, Map<String, Object>> parts;
+
 
     public RelJsonWriter() {
         jsonBuilder = new JsonBuilder();
         relList = jsonBuilder.list();
         relJson = new RelJson( jsonBuilder );
+        parts = new HashMap<>();
     }
 
 
     protected void explain_( RelNode rel, List<Pair<String, Object>> values ) {
         final Map<String, Object> map = jsonBuilder.map();
+        final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
         map.put( "id", null ); // ensure that id is the first attribute
         map.put( "relOp", relJson.classToTypeName( rel.getClass() ) );
@@ -88,20 +96,47 @@ public class RelJsonWriter implements RelWriter {
             if ( value.right instanceof RelNode ) {
                 continue;
             }
-            put( map, value.left, value.right );
+            put( map, value.left, replaceWithFieldNames( rel, value.right ) );
         }
-        // omit 'inputs: ["3"]' if "3" is the preceding rel
+
+        put( map, "rowcount", mq.getRowCount( rel ) );
+        put( map, "rows cost", mq.getCumulativeCost( rel ).getRows() );
+        put( map, "cpu cost", mq.getCumulativeCost( rel ).getCpu() );
+        put( map, "io cost", mq.getCumulativeCost( rel ).getIo() );
+
         final List<Object> list = explainInputs( rel.getInputs() );
-        if ( list.size() != 1 || !list.get( 0 ).equals( previousId ) ) {
-            map.put( "inputs", list );
+        List<Object> l = new LinkedList<>();
+        for ( Object o : list ) {
+            l.add( parts.get( o ) );
         }
+        map.put( "inputs", l );
 
         final String id = Integer.toString( relIdMap.size() );
         relIdMap.put( rel, id );
         map.put( "id", id );
 
         relList.add( map );
+        parts.put( id, map );
         previousId = id;
+    }
+
+
+    private String replaceWithFieldNames( RelNode rel, Object right ) {
+        String str = right.toString();
+        if ( str.contains( "$" ) ) {
+            int offset = 0;
+            for ( RelNode input : rel.getInputs() ) {
+                for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
+                    String searchStr = "$" + (offset + field.getIndex());
+                    int position = str.indexOf( searchStr );
+                    if ( position >= 0 && (str.length() >= position + searchStr.length()) ) {
+                        str = str.replace( searchStr, field.getName() );
+                    }
+                }
+                offset = input.getRowType().getFieldList().size();
+            }
+        }
+        return str;
     }
 
 
@@ -184,7 +219,7 @@ public class RelJsonWriter implements RelWriter {
      */
     public String asString() {
         final Map<String, Object> map = jsonBuilder.map();
-        map.put( "rels", relList );
+        map.put( "Plan", relList.get( relList.size() - 1 ) );
         return jsonBuilder.toJsonString( map );
     }
 }
