@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
@@ -93,7 +94,7 @@ public class RelJsonWriter implements RelWriter {
             if ( value.right instanceof RelNode ) {
                 continue;
             }
-            put( map, value.left, value.right );
+            put( map, value.left, replaceWithFieldNames( rel, value.right ) );
         }
 
         final List<Object> list = explainInputs( rel.getInputs() );
@@ -110,6 +111,25 @@ public class RelJsonWriter implements RelWriter {
         relList.add( map );
         parts.put( id, map );
         previousId = id;
+    }
+
+
+    private String replaceWithFieldNames( RelNode rel, Object right ) {
+        String str = right.toString();
+        if ( str.contains( "$" ) ) {
+            int offset = 0;
+            for ( RelNode input : rel.getInputs() ) {
+                for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
+                    String searchStr = "$" + (offset + field.getIndex());
+                    int position = str.indexOf( searchStr );
+                    if ( position >= 0 && (str.length() >= position + searchStr.length()) ) {
+                        str = str.replace( searchStr, field.getName() );
+                    }
+                }
+                offset = input.getRowType().getFieldList().size();
+            }
+        }
+        return str;
     }
 
 
