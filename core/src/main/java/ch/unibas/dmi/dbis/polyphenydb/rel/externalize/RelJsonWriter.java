@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
@@ -87,6 +88,7 @@ public class RelJsonWriter implements RelWriter {
 
     protected void explain_( RelNode rel, List<Pair<String, Object>> values ) {
         final Map<String, Object> map = jsonBuilder.map();
+        final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
 
         map.put( "id", null ); // ensure that id is the first attribute
         map.put( "relOp", relJson.classToTypeName( rel.getClass() ) );
@@ -96,6 +98,11 @@ public class RelJsonWriter implements RelWriter {
             }
             put( map, value.left, replaceWithFieldNames( rel, value.right ) );
         }
+
+        put( map, "rowcount", mq.getRowCount( rel ) );
+        put( map, "rows cost", mq.getCumulativeCost( rel ).getRows() );
+        put( map, "cpu cost", mq.getCumulativeCost( rel ).getCpu() );
+        put( map, "io cost", mq.getCumulativeCost( rel ).getIo() );
 
         final List<Object> list = explainInputs( rel.getInputs() );
         List<Object> l = new LinkedList<>();
