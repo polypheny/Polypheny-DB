@@ -5905,8 +5905,6 @@ public class JdbcTest {
                 + "    }\n"
                 + "  ]\n"
                 + "}\n";
-        with.query( "explain plan as json for values (1, 'ab')" )
-                .returns( expectedJson );
         with.query( "explain plan with implementation for values (1, 'ab')" )
                 .returns( "PLAN=EnumerableValues(tuples=[[{ 1, 'ab' }]])\n\n" );
         with.query( "explain plan without implementation for values (1, 'ab')" )

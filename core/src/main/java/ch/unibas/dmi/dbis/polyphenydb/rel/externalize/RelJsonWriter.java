@@ -52,7 +52,9 @@ import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -71,11 +73,14 @@ public class RelJsonWriter implements RelWriter {
     private final List<Pair<String, Object>> values = new ArrayList<>();
     private String previousId;
 
+    private final Map<String, Map<String, Object>> parts;
+
 
     public RelJsonWriter() {
         jsonBuilder = new JsonBuilder();
         relList = jsonBuilder.list();
         relJson = new RelJson( jsonBuilder );
+        parts = new HashMap<>();
     }
 
 
@@ -90,17 +95,20 @@ public class RelJsonWriter implements RelWriter {
             }
             put( map, value.left, value.right );
         }
-        // omit 'inputs: ["3"]' if "3" is the preceding rel
+
         final List<Object> list = explainInputs( rel.getInputs() );
-        if ( list.size() != 1 || !list.get( 0 ).equals( previousId ) ) {
-            map.put( "inputs", list );
+        List<Object> l = new LinkedList<>();
+        for ( Object o : list ) {
+            l.add( parts.get( o ) );
         }
+        map.put( "inputs", l );
 
         final String id = Integer.toString( relIdMap.size() );
         relIdMap.put( rel, id );
         map.put( "id", id );
 
         relList.add( map );
+        parts.put( id, map );
         previousId = id;
     }
 
@@ -184,7 +192,7 @@ public class RelJsonWriter implements RelWriter {
      */
     public String asString() {
         final Map<String, Object> map = jsonBuilder.map();
-        map.put( "rels", relList );
+        map.put( "Plan", relList.get( relList.size() - 1 ) );
         return jsonBuilder.toJsonString( map );
     }
 }
