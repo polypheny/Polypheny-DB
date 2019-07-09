@@ -52,7 +52,11 @@ public class ForeignKey {
     String update;
     String delete;
 
-    public void create ( LocalTransactionHandler handler ) throws SQLException, CatalogTransactionException {
+
+    /**
+     * Generates and executes the query to create the ForeignKey in the DBMS.
+     */
+    public void create ( final LocalTransactionHandler handler ) throws SQLException, CatalogTransactionException {
         String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
                 this.fkTableName, this.fkName, this.fkColumnName, this.pkTableName, this.pkColumnName, this.update, this.delete );
         System.out.println(sql);
