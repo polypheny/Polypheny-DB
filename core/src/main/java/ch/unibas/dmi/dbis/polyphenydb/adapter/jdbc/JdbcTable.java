@@ -106,7 +106,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private final TableType jdbcTableType;
 
 
-    JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType ) {
+    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.jdbcCatalogName = jdbcCatalogName;

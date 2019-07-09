@@ -33,7 +33,6 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
@@ -54,6 +53,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -64,6 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
+import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -97,6 +98,8 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -698,7 +701,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @param h Statement handle
      * @param sql SQL query
      * @param maxRowCount Maximum number of rows for the entire query. Negative for no limit (different meaning than JDBC).
-     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should always be less than or equal to {@code maxRowCount} as the number of results are guaranteed     * to be restricted by {@code maxRowCount} and the underlying database.
+     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should always be less than or equal to {@code maxRowCount} as the number of results are guaranteed to be restricted by {@code maxRowCount} and the underlying database.
      * @param callback Callback to lock, clear and assign cursor
      * @return Result containing statement ID, and if a query, a result set and first frame of data
      */
@@ -723,10 +726,7 @@ public class DbmsMeta implements ProtobufMeta {
         // //////////////////////////
         // For testing
         // /////////////////////////
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
-
-        // Build schema
-        StoreManager.getInstance().getStores().forEach( ( uniqueName, store ) -> rootSchema.add( uniqueName, store.getSchema() ) );
+        SchemaPlus rootSchema = PolySchema.getInstance().update();
 
         ///////////////////
         // (1)  Configure //
@@ -1246,6 +1246,23 @@ public class DbmsMeta implements ProtobufMeta {
             throw (Error) e;
         } else {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    /**
+     * Schema that has no parents.
+     */
+    static class RootSchema extends AbstractSchema {
+
+        RootSchema() {
+            super();
+        }
+
+
+        @Override
+        public Expression getExpression( SchemaPlus parentSchema, String name ) {
+            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
         }
     }
 

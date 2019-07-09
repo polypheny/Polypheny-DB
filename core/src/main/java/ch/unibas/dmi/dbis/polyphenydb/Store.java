@@ -1,18 +1,13 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import java.util.Map;
 
 
 public interface Store {
 
-
-    void addDatabase( String databaseName );
-
-    void addSchema( String schemaName, String databaseName );
-
-    void addTable( String tableName, String schemaName, String databaseName );
-
-    Schema getSchema();
+    Map<String, Table> getTables( SchemaPlus rootSchema );
 
 }

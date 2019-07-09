@@ -225,7 +225,42 @@ public class DmlExecutionEngine {
 
 
     public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final int maxRowsInFirstFrame, final long maxRowCount, final Planner planner, final StopWatch stopWatch, final SqlNode parsed ) {
+
+        //
+        // 3: Validation
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating ..." );
+        }
+        stopWatch.start();
+        SqlNode validated = validate( parsed, planner );
+        stopWatch.stop();
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Validated query: [{}]", validated );
+        }
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating ... done. [{}]", stopWatch );
+        }
+
+
         // TODO: Implement DML support
+
+        switch ( parsed.getKind() ) {
+            case INSERT:
+                break;
+
+            case DELETE:
+                break;
+
+            case UPDATE:
+
+            case MERGE:
+            case PROCEDURE_CALL:
+
+            default:
+                throw new RuntimeException( "Unknown or unsupported dml query type: " + parsed.getKind().name() );
+        }
+
         return null;
     }
 
