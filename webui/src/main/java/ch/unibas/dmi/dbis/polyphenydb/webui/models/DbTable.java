@@ -37,17 +37,34 @@ public class DbTable {
     private String tableName;
     private String schema;
     private ArrayList<DbColumn> columns = new ArrayList<>();
+    private ArrayList<String> primaryKeyFields = new ArrayList<>();
 
 
+    /**
+     * Constructor for DbTable
+     * @param tableName name of the table
+     * @param schema name of the schema this table belongs to
+     */
     public DbTable ( final String tableName, final String schema ) {
         this.tableName = tableName;
         this.schema = schema;
     }
 
 
-    public DbTable addColumn ( final DbColumn col ) {
+    /**
+     * Add a column to a table when building the DbTable object
+     * @param col column that is part of this table
+     */
+    public void addColumn ( final DbColumn col ) {
         this.columns.add( col );
-        return this;
+    }
+
+
+    /**
+     * Add a primary key column (multiple if composite PK) when building the DbTable object
+     */
+    public void addPrimaryKeyField ( final String columnName ) {
+        this.primaryKeyFields.add( columnName );
     }
 
 }

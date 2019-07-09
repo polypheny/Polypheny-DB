@@ -23,41 +23,12 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
-import java.sql.SQLException;
-import lombok.Builder;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
 
 
-/**
- * Model for a ForeignKey
- */
-@Builder
-public class ForeignKey {
-
-    String fkName;
-    String pkName;
-
-    String pkTableSchema;
-    String pkTableName;
-    String pkColumnName;
-
-    String fkTableSchema;
-    String fkTableName;
-    String fkColumnName;
-
-    String update;
-    String delete;
-
-    public void create ( LocalTransactionHandler handler ) throws SQLException, CatalogTransactionException {
-        String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
-                this.fkTableName, this.fkName, this.fkColumnName, this.pkTableName, this.pkColumnName, this.update, this.delete );
-        System.out.println(sql);
-        handler.executeUpdate( sql );
-        handler.commit();
-    }
-
+public class ForeignKeyRequest {
+    public ForeignKey foreignKey;
 }

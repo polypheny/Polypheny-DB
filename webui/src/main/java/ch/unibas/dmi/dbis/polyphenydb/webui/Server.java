@@ -161,6 +161,8 @@ public class Server {
 
         post( "/getUml", crud::getUml, gson::toJson );
 
+        post( "/addForeignKey", crud::addForeignKey, gson::toJson );
+
         post( "/createIndex", crud::createIndex, gson::toJson );
 
         post( "/getAnalyzerPage", crud::getAnalyzerPage );

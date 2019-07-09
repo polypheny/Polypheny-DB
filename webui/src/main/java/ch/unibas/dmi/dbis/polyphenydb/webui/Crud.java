@@ -32,20 +32,21 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.ConstraintRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.QueryRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.ColumnRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogConnectionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
@@ -250,9 +251,14 @@ class Crud implements InformationObserver {
      * returns a Tree (in json format) with the Tables of a Database
      */
     ArrayList<SidebarElement> getSchemaTree ( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        SchemaRequest request = this.gson.fromJson( req.body(), SchemaRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
         LocalTransactionHandler handler = getHandler();
+
+        if( request.depth < 1 ){
+            LOGGER.error( "Trying to fetch a schemaTree with depth < 1" );
+            return new ArrayList<>();
+        }
 
         try ( ResultSet schemas = handler.getMetaData().getSchemas() ) {
             while ( schemas.next() ){
@@ -260,21 +266,25 @@ class Crud implements InformationObserver {
                 if( schema.equals( "pg_catalog" ) || schema.equals( "information_schema" )) continue;
                 SidebarElement schemaTree = new SidebarElement( schema, schema, "", "cui-layers" );
 
-                ResultSet tablesRs = handler.getMetaData().getTables( this.dbName, schema, null, null );
-                ArrayList<SidebarElement> tables = new ArrayList<>();
-                ArrayList<SidebarElement> views = new ArrayList<>();
-                while ( tablesRs.next() ){
-                    String tableName = tablesRs.getString( 3 );
-                    if( tablesRs.getString( 4 ).equals("TABLE") ){
-                        tables.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
-                    } else if ( tablesRs.getString( 4 ).equals("VIEW") ){
-                        views.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
+                if( request.depth > 1 ){
+                    ResultSet tablesRs = handler.getMetaData().getTables( this.dbName, schema, null, null );
+                    ArrayList<SidebarElement> tables = new ArrayList<>();
+                    ArrayList<SidebarElement> views = new ArrayList<>();
+                    while ( tablesRs.next() ){
+                        String tableName = tablesRs.getString( 3 );
+                        if( tablesRs.getString( 4 ).equals("TABLE") ){
+                            tables.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
+                        } else if ( request.views && tablesRs.getString( 4 ).equals("VIEW") ){
+                            views.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
+                        }
                     }
+                    schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    if( request.views ) {
+                        schemaTree.addChild( new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
+                    }
+                    tablesRs.close();
                 }
-                schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                schemaTree.addChild( new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
                 result.add( schemaTree );
-                tablesRs.close();
             }
         } catch ( SQLException e ) {
             LOGGER.error( e.getMessage() );
@@ -297,7 +307,8 @@ class Crud implements InformationObserver {
                 tables.add( rs.getString( 3 ) );
             }
             result = new Result( new Debug().setAffectedRows( tables.size() ) ).setTables( tables );
-        } catch ( SQLException e ) {
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -320,8 +331,8 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
-            handler.commit();
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
+            handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
@@ -379,8 +390,8 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
-            handler.commit();
             result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
+            handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
@@ -414,8 +425,8 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         try {
             rowsAffected = handler.executeUpdate( query.toString() );
-            handler.commit();
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
+            handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             LOGGER.error( e.getMessage() );
@@ -697,7 +708,8 @@ class Crud implements InformationObserver {
                 cols.add( new DbColumn( rs.getString( "column_name" ), rs.getString( "udt_name" ), rs.getBoolean( "is_nullable" ), (Integer) rs.getObject("character_maximum_length"), isPrimary, rs.getString( "column_default" ) ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( SQLException e ) {
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.toString() );
             LOGGER.error( e.toString() );
         }
@@ -865,7 +877,8 @@ class Crud implements InformationObserver {
         //todo use prepared statement
         try ( ResultSet rs = handler.executeSelect( query ) ) {
             result = buildResult( rs, request );
-        } catch ( SQLException e ) {
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -941,7 +954,8 @@ class Crud implements InformationObserver {
                 data.add( new Index( request.schema, request.table, rs.getString( "indexname" ), "btree", cols ).asRow() );
             }
             result = new Result( header, data.toArray( new String[data.size()][3] ) );
-        } catch ( SQLException e ) {
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -1001,11 +1015,11 @@ class Crud implements InformationObserver {
                     .pkTableName( rs.getString( 3 ))
                     .pkColumnName( rs.getString( 4 ))
                     .fkTableSchema( rs.getString( 6 ))
-                    .fkTableName( rs.getString( 7 ) )
-                    .fkColumnName( rs.getString( 8 ) )
-                    .fkName( rs.getString( 12 ) )
-                    .pkName( rs.getString( 13 ) )
-                    .build() );
+                    .fkTableName( rs.getString( 7 ))
+                    .fkColumnName( rs.getString( 8 ))
+                    .fkName( rs.getString( 12 ))
+                    .pkName( rs.getString( 13 ))
+                    .build());
             }
         } catch ( SQLException e ) {
             LOGGER.error( "Could not fetch foreign keys of the schema " + request.schema, e );
@@ -1021,6 +1035,13 @@ class Crud implements InformationObserver {
                 while ( rs2.next() ){
                     table.addColumn( new DbColumn( rs2.getString( 4 )));
                 }
+
+                //get primary key with its columns
+                ResultSet pkSet = handler.getMetaData().getPrimaryKeys( this.dbName, request.schema,  rs.getString(3));
+                while( pkSet.next() ){
+                    table.addPrimaryKeyField( pkSet.getString( 4 ) );
+                }
+
                 tables.add( table );
             }
         } catch ( SQLException e ) {
@@ -1028,6 +1049,23 @@ class Crud implements InformationObserver {
         }
 
         return new Uml( tables, fKeys );
+    }
+
+
+    /**
+     * Add foreign key
+     */
+    Result addForeignKey( final Request req, final Response res ) {
+        ForeignKey foreignKey = this.gson.fromJson( req.body(), ForeignKey.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        try {
+            foreignKey.create( handler );
+            result = new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
     }
 
 

@@ -23,7 +23,10 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
+
+
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 
 
 /**

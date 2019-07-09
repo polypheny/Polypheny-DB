@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 

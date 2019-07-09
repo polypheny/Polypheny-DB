@@ -23,52 +23,19 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-import java.util.Map;
-
-
-/**
- * needed to parse a request coming from the UI using Gson
- */
-public class UIRequest {
+public class QueryRequest extends UIRequest {
 
     /**
-     * the name of the table the data should be fetched from
+     * a query from the SQL console
      */
-    public String tableId;
+    public String query;
 
     /**
-     * information about the pagination,
-     * what current page should be loaded
+     * True if information about the query execution should be added to the queryAnalyzer (InformationManager)
      */
-    public int currentPage;
-
-    /**
-     * data that should be inserted
-     */
-    public Map<String, String> data;
-
-    /**
-     * for each column: if it should be filtered
-     * empty string if it should not be filtered
-     */
-    public Map<String, String> filter;
-
-    /**
-     * for each column: if and how it should be sorted
-     */
-    public Map<String, SortState> sortState;
-
-    /**
-     * When requesting a SchemaTree for the left sidebar: with or without views
-     */
-    public boolean views;
-
-    /**
-     * When requesting a SchemaTree for the left sidebar: define the root routerLink for the node
-     */
-    public String routerLinkRoot;
+    public boolean analyze;
 
 }

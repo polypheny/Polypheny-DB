@@ -23,12 +23,11 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-public class ColumnRequest extends UIRequest {
-
-    public DbColumn oldColumn;
-    public DbColumn newColumn;
-
+public class SchemaRequest extends UIRequest {
+    public String routerLinkRoot;
+    public boolean views;
+    public int depth;
 }

@@ -23,19 +23,43 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-public class QueryRequest extends UIRequest {
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
+import java.util.Map;
+
+
+/**
+ * needed to parse a request coming from the UI using Gson
+ */
+public class UIRequest {
 
     /**
-     * a query from the SQL console
+     * the name of the table the data should be fetched from
      */
-    public String query;
+    public String tableId;
 
     /**
-     * True if information about the query execution should be added to the queryAnalyzer (InformationManager)
+     * information about the pagination,
+     * what current page should be loaded
      */
-    public boolean analyze;
+    public int currentPage;
+
+    /**
+     * data that should be inserted
+     */
+    public Map<String, String> data;
+
+    /**
+     * for each column: if it should be filtered
+     * empty string if it should not be filtered
+     */
+    public Map<String, String> filter;
+
+    /**
+     * for each column: if and how it should be sorted
+     */
+    public Map<String, SortState> sortState;
 
 }
