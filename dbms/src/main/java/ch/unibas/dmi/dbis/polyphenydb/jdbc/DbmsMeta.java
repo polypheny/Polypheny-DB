@@ -33,8 +33,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
@@ -66,7 +65,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import com.google.common.collect.ImmutableList;
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -727,9 +725,8 @@ public class DbmsMeta implements ProtobufMeta {
         // /////////////////////////
         final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
 
-        // CSV
-        File csvDir = new File( "testTestCsv" );
-        rootSchema.add( "CSV", new CsvSchema( csvDir, Flavor.FILTERABLE ) );
+        // Build schema
+        StoreManager.getInstance().getStores().forEach( ( uniqueName, store ) -> rootSchema.add( uniqueName, store.getSchema() ) );
 
         ///////////////////
         // (1)  Configure //
