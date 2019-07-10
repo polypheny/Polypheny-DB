@@ -216,3 +216,5 @@ nbdist/
 !/gradle/wrapper/gradle-wrapper.jar
 
 /geode-adapter/vf.gf.server.status.cmd
+/core/custom-schema-model.json
+/testTestCsv/**
