@@ -59,7 +59,6 @@ public class ForeignKey {
     public void create ( final LocalTransactionHandler handler ) throws SQLException, CatalogTransactionException {
         String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
                 this.fkTableName, this.fkName, this.fkColumnName, this.pkTableName, this.pkColumnName, this.update, this.delete );
-        System.out.println(sql);
         handler.executeUpdate( sql );
         handler.commit();
     }

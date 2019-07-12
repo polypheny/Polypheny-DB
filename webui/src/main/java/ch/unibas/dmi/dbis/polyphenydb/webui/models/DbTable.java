@@ -38,6 +38,7 @@ public class DbTable {
     private String schema;
     private ArrayList<DbColumn> columns = new ArrayList<>();
     private ArrayList<String> primaryKeyFields = new ArrayList<>();
+    private ArrayList<String> uniqueColumns = new ArrayList<>();
 
 
     /**
@@ -65,6 +66,14 @@ public class DbTable {
      */
     public void addPrimaryKeyField ( final String columnName ) {
         this.primaryKeyFields.add( columnName );
+    }
+
+
+    /**
+     * Add a column to the unique Columns list
+     */
+    public void addUniqueColumn( final String uniqueColumn ) {
+        this.uniqueColumns.add( uniqueColumn );
     }
 
 }

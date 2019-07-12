@@ -1041,6 +1041,14 @@ class Crud implements InformationObserver {
                 while( pkSet.next() ){
                     table.addPrimaryKeyField( pkSet.getString( 4 ) );
                 }
+                pkSet.close();
+
+                //get unique columns using indexes, see https://stackoverflow.com/questions/1674223/find-a-database-tables-unique-constraint
+                ResultSet uniqueCols = handler.getMetaData().getIndexInfo( this.dbName, request.schema, rs.getString( 3 ), true, true );
+                while ( uniqueCols.next() ){
+                    table.addUniqueColumn( uniqueCols.getString( 9 ) );
+                }
+                uniqueCols.close();
 
                 tables.add( table );
             }
