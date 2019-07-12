@@ -406,10 +406,12 @@ class Crud implements InformationObserver {
         int rowsAffected = 0;
         Result result;
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        StringJoiner cols = new StringJoiner( ",", "(", ")" );
         StringBuilder query = new StringBuilder();
-        query.append( "INSERT INTO " ).append( request.tableId ).append( " VALUES " );
-        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+        query.append( "INSERT INTO " ).append( request.tableId );
+        StringJoiner values = new StringJoiner( ",", "(", ")" );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
+            cols.add( entry.getKey() );
             String value = entry.getValue();
             if( value == null ){
                 value = "NULL";
@@ -418,9 +420,10 @@ class Crud implements InformationObserver {
             else if( ! NumberUtils.isNumber( value )) {
                 value = "'"+value+"'";
             }
-            joiner.add( value );
+            values.add( value );
         }
-        query.append( joiner.toString() );
+        query.append( cols.toString() );
+        query.append( " VALUES " ).append( values.toString() );
 
         LocalTransactionHandler handler = getHandler();
         try {
@@ -429,8 +432,6 @@ class Crud implements InformationObserver {
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-            LOGGER.error( e.getMessage() );
-            LOGGER.error( "Generated query: " + query.toString() );
         }
         return result;
     }
@@ -693,6 +694,7 @@ class Crud implements InformationObserver {
             + "ON tc.constraint_name = kc.constraint_name "
             + String.format( "WHERE col.table_schema = '%s' ", t[0])
             + String.format( "AND col.table_name = '%s' ", t[1])
+            + "AND (tc.constraint_type = 'PRIMARY KEY' OR tc.constraint_type IS NULL)"
             + ") AS q1 "
             + "ORDER BY ordinal_position ASC";
         //todo use prepared statement
