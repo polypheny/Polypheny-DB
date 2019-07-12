@@ -106,7 +106,12 @@ public enum RuntimeConfig {
             "The port on which the web ui server should listen.",
             8080,
             ConfigType.INTEGER
-    );
+    ),
+
+    REL_WRITER_INSERT_FIELD_NAMES( "runtime/relWriterInsertFieldName",
+            "If the rel writer should add the field names in brackets behind the ordinals in when printing query plans.",
+            false,
+            ConfigType.BOOLEAN );
 
 
     private final String key;
