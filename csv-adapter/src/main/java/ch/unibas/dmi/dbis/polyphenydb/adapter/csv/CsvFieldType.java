@@ -45,12 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.linq4j.tree.Primitive;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.calcite.linq4j.tree.Primitive;
 
 
 /**
@@ -93,6 +93,40 @@ enum CsvFieldType {
     CsvFieldType( Class clazz, String simpleName ) {
         this.clazz = clazz;
         this.simpleName = simpleName;
+    }
+
+
+    public static CsvFieldType getCsvFieldType( PolySqlType type ) {
+        switch ( type ) {
+            case BOOLEAN:
+                return CsvFieldType.BOOLEAN;
+            case VARBINARY:
+                return CsvFieldType.BYTE;
+            case INTEGER:
+                return CsvFieldType.INT;
+            case BIGINT:
+                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+            case REAL:
+                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+            case DOUBLE:
+                return CsvFieldType.DOUBLE;
+            case DECIMAL:
+                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+            case MONEY:
+                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+            case VARCHAR:
+                return CsvFieldType.STRING;
+            case TEXT:
+                return CsvFieldType.STRING;
+            case DATE:
+                return CsvFieldType.DATE;
+            case TIME:
+                return CsvFieldType.TIME;
+            case TIMESTAMP:
+                return CsvFieldType.TIMESTAMP;
+            default:
+                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+        }
     }
 
 

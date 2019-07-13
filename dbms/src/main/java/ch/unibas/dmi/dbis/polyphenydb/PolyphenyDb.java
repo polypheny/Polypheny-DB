@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb.HsqldbStore;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.dispatching.HttpServerDispatcher;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
@@ -55,8 +56,8 @@ public class PolyphenyDb {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
 
-            StoreManager.getInstance().register( "CSV", new CsvStore() );
-            StoreManager.getInstance().register( "HSQLDB", new HsqldbStore() );
+            StoreManager.getInstance().register( "CSV", new CsvStore( CatalogManagerImpl.getInstance().getCatalog().getCombinedSchema( "CSV" ) ) );
+            StoreManager.getInstance().register( "HSQLDB", new HsqldbStore( CatalogManagerImpl.getInstance().getCatalog().getCombinedSchema( "HSQLDB" ) ) );
 
             new PolyphenyDb().runPolyphenyDb();
 

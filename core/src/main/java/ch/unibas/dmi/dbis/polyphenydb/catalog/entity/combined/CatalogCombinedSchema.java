@@ -23,17 +23,26 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
 
 
-public abstract class CatalogManager {
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import java.util.List;
+import lombok.Getter;
+import lombok.NonNull;
 
 
-    public abstract Catalog getCatalog();
+public class CatalogCombinedSchema {
+
+    @Getter
+    private final CatalogSchema schema;
+    @Getter
+    private final List<CatalogCombinedTable> tables;
 
 
-    protected final boolean isValidIdentifier( final String str ) {
-        return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
+    public CatalogCombinedSchema( @NonNull CatalogSchema schema, @NonNull List<CatalogCombinedTable> tables ) {
+        this.schema = schema;
+        this.tables = tables;
     }
 
 }

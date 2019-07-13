@@ -77,7 +77,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,13 +105,14 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private final TableType jdbcTableType;
 
 
-    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType ) {
+    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType, RelProtoDataType protoRowType ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.jdbcCatalogName = jdbcCatalogName;
         this.jdbcSchemaName = jdbcSchemaName;
         this.jdbcTableName = tableName;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
+        this.protoRowType = protoRowType;
     }
 
 
@@ -128,13 +128,6 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        if ( protoRowType == null ) {
-            try {
-                protoRowType = jdbcSchema.getRelDataType( jdbcCatalogName, jdbcSchemaName, jdbcTableName );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( "Exception while reading definition of table '" + jdbcTableName + "'", e );
-            }
-        }
         return protoRowType.apply( typeFactory );
     }
 

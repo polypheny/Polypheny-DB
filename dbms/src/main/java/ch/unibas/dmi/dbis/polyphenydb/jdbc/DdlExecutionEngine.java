@@ -85,10 +85,10 @@ public class DdlExecutionEngine {
     }
 
 
-    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final SchemaPlus rootSchema, final Config parserConfig, final SqlNode parsed ) {
+    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final Config parserConfig, final SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
-            DataContextImpl dataContext = new DataContextImpl( ImmutableMap.of(), PolyphenyDbSchema.from( rootSchema ), parserConfig, "CSV" );
-            ContextImpl context = new ContextImpl( PolyphenyDbSchema.from( rootSchema ), dataContext, "C" );
+            DataContextImpl dataContext = new DataContextImpl( ImmutableMap.of(), rootSchema, parserConfig, "CSV" );
+            ContextImpl context = new ContextImpl( rootSchema, dataContext, "C" );
 
             try {
                 ((SqlExecutableStatement) parsed).execute( context );

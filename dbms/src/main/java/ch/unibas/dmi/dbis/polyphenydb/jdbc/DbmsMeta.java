@@ -33,6 +33,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
@@ -51,9 +52,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -64,8 +65,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -77,16 +78,20 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -98,8 +103,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -718,15 +722,17 @@ public class DbmsMeta implements ProtobufMeta {
         synchronized ( OPEN_STATEMENTS ) {
             if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
                 statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+                statement.unset();
             } else {
-                throw new RuntimeException( "Ok.... In this case there was no statement created before. Find out why." );
+                throw new RuntimeException( "There is no associated sstatement" );
             }
         }
 
         // //////////////////////////
         // For testing
         // /////////////////////////
-        SchemaPlus rootSchema = PolySchema.getInstance().update();
+        PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent();
+
 
         ///////////////////
         // (1)  Configure //
@@ -743,7 +749,7 @@ public class DbmsMeta implements ProtobufMeta {
         FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 //            .traitDefs( traitDefs )
-                .defaultSchema( rootSchema )
+                .defaultSchema( rootSchema.plus() )
                 //             .sqlToRelConverterConfig( sqlToRelConfig )
                 //             .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .build();
@@ -786,7 +792,7 @@ public class DbmsMeta implements ProtobufMeta {
         ExecuteResult result = null;
         switch ( parsed.getKind() ) {
             case SELECT:
-                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, (SqlSelect) parsed );
+                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, rootSchema, (SqlSelect) parsed );
                 break;
 
             case INSERT:
@@ -898,35 +904,39 @@ public class DbmsMeta implements ProtobufMeta {
             }
         }
 
-        PolyphenyDbResultSet openResultSet = statement.getOpenResultSet();
-        if ( openResultSet == null ) {
-            throw new MissingResultsException( h );
+        final PolyphenyDbSignature signature = statement.getSignature();
+        final Iterator<Object> iterator;
+        if ( statement.getOpenResultSet() == null ) {
+            final Iterable<Object> iterable = createIterable( statement, signature );
+            iterator = iterable.iterator();
+            statement.setOpenResultSet( iterator );
+        } else {
+            iterator = statement.getOpenResultSet();
+        }
+        final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<List<Object>>() );
+        boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
+        @SuppressWarnings("unchecked")
+        List<Object> rows1 = (List<Object>) rows;
+        return new Meta.Frame( offset, done, rows1 );
+    }
+
+
+    private Iterable<Object> createIterable( PolyphenyDbStatementHandle handle, PolyphenyDbSignature signature ) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        // Avoid overflow
+        int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
+        if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
+            map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
         }
 
-        final List<Object> rows = new LinkedList<>();
-        boolean done = false;
-        try {
-            int numberOfColumns = openResultSet.getMetaData().getColumnCount();
-            for ( int rowCount = 0; openResultSet.next() && (fetchMaxRowCount < 0 || rowCount < fetchMaxRowCount); ++rowCount ) {
-                Object[] array = new Object[numberOfColumns];
-                for ( int i = 0; i < numberOfColumns; i++ ) {
-                    array[i] = openResultSet.getObject( i + 1 );
-                }
-                rows.add( array );
-            }
-            done = openResultSet.isAfterLast();
-            return new Frame( offset, done, rows );
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), e.getErrorCode(), e.getSQLState(), AvaticaSeverity.ERROR );
-        } finally {
-            if ( done ) {
-                openResultSet.close();
-                statement.setOpenResultSet( null );
-                if ( connection.isAutoCommit() ) {
-//                commit( connection.getHandle() );
-                }
-            }
-        }
+        final AtomicBoolean cancelFlag;
+        cancelFlag = handle.getCancelFlag();
+        map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
+        final DataContext dataContext = createDataContext( map, signature.rootSchema, handle.getTypeFactory() );
+        //noinspection unchecked
+        final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
+        return polyphenyDbSignature.enumerable( dataContext );
+
     }
 
 
@@ -984,7 +994,7 @@ public class DbmsMeta implements ProtobufMeta {
         final PolyphenyDbStatementHandle statement;
         synchronized ( OPEN_STATEMENTS ) {
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id );
+            statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
             OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
         }
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -993,19 +1003,6 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    /*
-    private void registerMetaStatement( final StatementHandle statementHandle, final PolyphenyDbResultSet rs ) throws SQLException {
-        final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
-            } else {
-                throw new RuntimeException( "There is no corresponding statement" );
-            }
-        }
-        statement.setOpenResultSet( rs );
-    }
-*/
 
     /**
      * Closes a statement.
@@ -1022,7 +1019,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
         if ( toClose != null ) {
-            toClose.setOpenResultSet( null ); // closes the currently open ResultSet
+            toClose.unset();
         }
     }
 
@@ -1129,7 +1126,7 @@ public class DbmsMeta implements ProtobufMeta {
         synchronized ( OPEN_STATEMENTS ) {
             for ( final String key : OPEN_STATEMENTS.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    OPEN_STATEMENTS.remove( key ).setOpenResultSet( null );
+                    OPEN_STATEMENTS.remove( key ).unset();
                 }
             }
         }
@@ -1239,6 +1236,49 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    /**
+     * Iterator that returns at most {@code limit} rows from an underlying {@link Iterator}.
+     *
+     * @param <E> element type
+     */
+    private static class LimitIterator<E> implements Iterator<E> {
+
+        private final Iterator<E> iterator;
+        private final long limit;
+        int i = 0;
+
+
+        private LimitIterator( Iterator<E> iterator, long limit ) {
+            this.iterator = iterator;
+            this.limit = limit;
+        }
+
+
+        static <E> Iterator<E> of( Iterator<E> iterator, long limit ) {
+            if ( limit <= 0 ) {
+                return iterator;
+            }
+            return new LimitIterator<>( iterator, limit );
+        }
+
+
+        public boolean hasNext() {
+            return iterator.hasNext() && i < limit;
+        }
+
+
+        public E next() {
+            ++i;
+            return iterator.next();
+        }
+
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+
     private RuntimeException propagate( Throwable e ) {
         if ( e instanceof RuntimeException ) {
             throw (RuntimeException) e;
@@ -1250,20 +1290,38 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    /**
-     * Schema that has no parents.
-     */
-    static class RootSchema extends AbstractSchema {
+    public static DataContext createDataContext( Map<String, Object> parameterValues, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
+            return new SlimDataContext();
+        }
+        return new DataContextImpl( new QueryProviderImpl(), parameterValues, rootSchema, typeFactory );
+    }
 
-        RootSchema() {
-            super();
+
+    /**
+     * Implementation of {@link DataContext} that has few variables and is {@link Serializable}. For Spark.
+     */
+    private static class SlimDataContext implements DataContext, Serializable {
+
+        public SchemaPlus getRootSchema() {
+            return null;
         }
 
 
-        @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
+        public JavaTypeFactory getTypeFactory() {
+            return null;
+        }
+
+
+        public QueryProvider getQueryProvider() {
+            return null;
+        }
+
+
+        public Object get( String name ) {
+            return null;
         }
     }
+
 
 }

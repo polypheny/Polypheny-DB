@@ -33,6 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogConnectionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -42,6 +44,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import lombok.val;
 import org.apache.calcite.avatica.Meta.Pat;
@@ -292,6 +295,44 @@ public class CatalogManagerImpl extends CatalogManager implements Catalog {
     @Override
     public CatalogUser getUser( String userName ) throws UnknownUserException {
         return new CatalogUser( "pa", "" );
+    }
+
+
+    @Override
+    public CatalogCombinedSchema getCombinedSchema( String schemaName ) {
+        List<CatalogCombinedTable> combinedTables = new LinkedList<>();
+        if ( schemaName.equals( "HSQLDB" ) ) {
+            CatalogTable table = new CatalogTable( "test", "hsqldb", "", "marco", Encoding.UTF8, Collation.CASE_INSENSITIVE, TableType.TABLE, "" );
+            List<CatalogColumn> columns = new LinkedList<>();
+            columns.add( new CatalogColumn( "id", "test", "hsqldb", "", 1, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "name", "test", "hsqldb", "", 2, PolySqlType.VARCHAR, 20, 0, false, Encoding.UTF8, Collation.CASE_INSENSITIVE, null, null, "", false ) );
+            CatalogCombinedTable combinedTable = new CatalogCombinedTable( table, columns );
+            combinedTables.add( combinedTable );
+            CatalogSchema schema = new CatalogSchema( "hsqldb", "", "marco", Encoding.UTF8, Collation.CASE_INSENSITIVE, SchemaType.RELATIONAL );
+            CatalogCombinedSchema catalogCombinedSchema = new CatalogCombinedSchema( schema, combinedTables );
+            return catalogCombinedSchema;
+        } else if ( schemaName.equals( "CSV" ) ) {
+            // depts
+            CatalogTable depts = new CatalogTable( "depts", "csv", "", "marco", Encoding.UTF8, Collation.CASE_INSENSITIVE, TableType.TABLE, "" );
+            List<CatalogColumn> columns = new LinkedList<>();
+            columns.add( new CatalogColumn( "deptno", "depts", "csv", "", 1, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "name", "depts", "csv", "", 2, PolySqlType.VARCHAR, 20, 0, false, null, null, null, null, 0, false ) );
+            combinedTables.add( new CatalogCombinedTable( depts, columns ) );
+            // emps
+            CatalogTable emps = new CatalogTable( "emps", "csv", "", "marco", Encoding.UTF8, Collation.CASE_INSENSITIVE, TableType.TABLE, "" );
+            columns = new LinkedList<>();
+            columns.add( new CatalogColumn( "empid", "emps", "csv", "", 1, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "deptno", "emps", "csv", "", 2, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "name", "emps", "csv", "", 3, PolySqlType.VARCHAR, 20, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "salary", "emps", "csv", "", 4, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            columns.add( new CatalogColumn( "commission", "emps", "csv", "", 5, PolySqlType.INTEGER, 11, 0, false, null, null, null, null, 0, false ) );
+            combinedTables.add( new CatalogCombinedTable( emps, columns ) );
+
+            CatalogSchema schema = new CatalogSchema( "csv", "", "marco", Encoding.UTF8, Collation.CASE_INSENSITIVE, SchemaType.RELATIONAL );
+            CatalogCombinedSchema catalogCombinedSchema = new CatalogCombinedSchema( schema, combinedTables );
+            return catalogCombinedSchema;
+        }
+        return null;
     }
 
 

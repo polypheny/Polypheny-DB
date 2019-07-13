@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 
@@ -37,14 +40,17 @@ public class PolyphenyDbStatementHandle {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
-    private volatile transient PolyphenyDbResultSet openResultSet;
+    private volatile transient Iterator<Object> openResultSet;
+    private volatile transient PolyphenyDbSignature signature;
     @Getter
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
+    private final JavaTypeFactory typeFactory;
 
 
-    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
+    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId, final JavaTypeFactory typeFactory ) {
         this.connection = connection;
         this.statementId = statementId;
+        this.typeFactory = typeFactory;
     }
 
 
@@ -58,19 +64,36 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized void setOpenResultSet( PolyphenyDbResultSet result ) {
+    public synchronized void setOpenResultSet( Iterator<Object> result ) {
         if ( this.openResultSet != null ) {
-            this.openResultSet.close();
+            //  this.openResultSet.close();
         }
         this.openResultSet = result;
-
     }
 
 
-    public synchronized PolyphenyDbResultSet getOpenResultSet() {
+    public synchronized Iterator<Object> getOpenResultSet() {
         return openResultSet;
     }
 
 
+    public synchronized void setSignature( PolyphenyDbSignature signature ) {
+        this.signature = signature;
+    }
 
+
+    public synchronized PolyphenyDbSignature getSignature() {
+        return signature;
+    }
+
+
+    public JavaTypeFactory getTypeFactory() {
+        return typeFactory;
+    }
+
+
+    public void unset() {
+        this.openResultSet = null;
+        this.signature = null;
+    }
 }

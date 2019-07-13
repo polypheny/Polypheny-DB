@@ -27,6 +27,10 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
@@ -36,27 +40,31 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.avatica.AvaticaParameter;
+import java.util.Properties;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.ConnectionHandle;
@@ -64,16 +72,18 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.ExecuteResult;
 import org.apache.calcite.avatica.Meta.Frame;
 import org.apache.calcite.avatica.Meta.MetaResultSet;
-import org.apache.calcite.avatica.Meta.Signature;
 import org.apache.calcite.avatica.Meta.StatementHandle;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.calcite.linq4j.BaseQueryable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +111,7 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, SqlSelect parsed ) throws NoSuchStatementException {
+    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, PolyphenyDbSchema rootSchema, SqlSelect parsed ) throws NoSuchStatementException {
         //
         // 3: Validation
         stopWatch.reset();
@@ -164,13 +174,14 @@ public class DmlExecutionEngine {
         }
 
         //
-        // 7: execution
+        // 7: prepare to be executed
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Execution ..." );
         }
         stopWatch.start();
-        PolyphenyDbResultSet resultSet = execute( optimalPlan );
+        PolyphenyDbConnectionConfig connectionConfig = new PolyphenyDbConnectionConfigImpl( new Properties() );
+        PolyphenyDbSignature signature = prepare( optimalPlan, statement, rootSchema, connectionConfig );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Execution ... done. [{}]", stopWatch );
@@ -186,6 +197,7 @@ public class DmlExecutionEngine {
             connection.endCurrentTransaction();
         }*/
 
+
         //
         // 8:  marshalling
         stopWatch.reset();
@@ -194,15 +206,9 @@ public class DmlExecutionEngine {
         }
         stopWatch.start();
 
-        Signature signature;
-        try {
-            signature = signature( resultSet.getMetaData(), null, parsed.toSqlString( null ).getSql(), StatementType.SELECT );
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-        }
+        statement.setSignature( signature );
 
         List<MetaResultSet> resultSets;
-        statement.setOpenResultSet( resultSet );
         try {
             resultSets = Collections.singletonList( MetaResultSet.create(
                     h.connectionId,
@@ -357,95 +363,154 @@ public class DmlExecutionEngine {
     }
 
 
-    private PolyphenyDbResultSet execute( final RelNode optimalPlan ) {
-        PolyphenyDbResultSet resultSet;
-        try {
-            PreparedStatement preparedStatement = RelRunners.run( optimalPlan );
-            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-
-        //connection.setCurrentOpenResultSet(resultSet);
-        return resultSet;
+    private PolyphenyDbSignature prepare( final RelNode optimalPlan, final PolyphenyDbStatementHandle statementHandle, final PolyphenyDbSchema rootSchema, final PolyphenyDbConnectionConfig connectionConfig ) {
+        ArrayBindable bindable = Interpreters.bindable( optimalPlan );
+        final CursorFactory cf = CursorFactory.ARRAY;
+        final JavaTypeFactory typeFactory = statementHandle.getTypeFactory();
+        final List<List<String>> origins = Collections.nCopies( optimalPlan.getRowType().getFieldCount(), null );
+        List<ColumnMetaData> columnMetaData = getColumnMetaDataList( typeFactory, optimalPlan.getRowType(), optimalPlan.getRowType(), origins );
+        return new PolyphenyDbSignature( "", ImmutableList.of(), ImmutableMap.of(), optimalPlan.getRowType(), columnMetaData, cf, rootSchema, ImmutableList.of(), -1, bindable, StatementType.SELECT );
     }
 
 
-    /*
-     *
-     *  ///// Helpers /////
-     *
-     */
-
-
-    /**
-     * Converts from JDBC metadata to Avatica columns.
-     */
-    private static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
-        }
+    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, RelDataType x, RelDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
-            final SqlType sqlType = SqlType.valueOf( metaData.getColumnType( i ) );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( sqlType.internal );
-            final ColumnMetaData.AvaticaType t;
-            if ( sqlType == SqlType.ARRAY || sqlType == SqlType.STRUCT || sqlType == SqlType.MULTISET ) {
-                ColumnMetaData.AvaticaType arrayValueType = ColumnMetaData.scalar( Types.JAVA_OBJECT, metaData.getColumnTypeName( i ), ColumnMetaData.Rep.OBJECT );
-                t = ColumnMetaData.array( arrayValueType, metaData.getColumnTypeName( i ), rep );
-            } else {
-                t = ColumnMetaData.scalar( metaData.getColumnType( i ), metaData.getColumnTypeName( i ), rep );
-            }
-            ColumnMetaData md =
-                    new ColumnMetaData(
-                            i - 1,
-                            metaData.isAutoIncrement( i ),
-                            metaData.isCaseSensitive( i ), metaData.isSearchable( i ),
-                            metaData.isCurrency( i ), metaData.isNullable( i ),
-                            metaData.isSigned( i ), metaData.getColumnDisplaySize( i ),
-                            metaData.getColumnLabel( i ), metaData.getColumnName( i ),
-                            metaData.getSchemaName( i ), metaData.getPrecision( i ),
-                            metaData.getScale( i ), metaData.getTableName( i ),
-                            metaData.getCatalogName( i ), t, metaData.isReadOnly( i ),
-                            metaData.isWritable( i ), metaData.isDefinitelyWritable( i ),
-                            metaData.getColumnClassName( i ) );
-            columns.add( md );
+        for ( Ord<RelDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+            final RelDataTypeField field = pair.e;
+            final RelDataType type = field.getType();
+            final RelDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+            columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
     }
 
 
+    private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, RelDataType type, RelDataType fieldType, List<String> origins ) {
+        final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
+        return new ColumnMetaData(
+                ordinal,
+                false,
+                true,
+                false,
+                false,
+                type.isNullable()
+                        ? DatabaseMetaData.columnNullable
+                        : DatabaseMetaData.columnNoNulls,
+                true,
+                type.getPrecision(),
+                fieldName,
+                origin( origins, 0 ),
+                origin( origins, 2 ),
+                getPrecision( type ),
+                getScale( type ),
+                origin( origins, 1 ),
+                null,
+                avaticaType,
+                true,
+                false,
+                false,
+                avaticaType.columnClassName() );
+    }
+
+
+    private static String origin( List<String> origins, int offsetFromEnd ) {
+        return origins == null || offsetFromEnd >= origins.size()
+                ? null
+                : origins.get( origins.size() - 1 - offsetFromEnd );
+    }
+
+
+    private static int getScale( RelDataType type ) {
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
+    private static int getPrecision( RelDataType type ) {
+        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                ? 0
+                : type.getPrecision();
+    }
+
+
+    private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
+        final String typeName = getTypeName( type );
+        if ( type.getComponentType() != null ) {
+            final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
+            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            assert rep != null;
+            return ColumnMetaData.array( componentType, typeName, rep );
+        } else {
+            int typeOrdinal = getTypeOrdinal( type );
+            switch ( typeOrdinal ) {
+                case Types.STRUCT:
+                    final List<ColumnMetaData> columns = new ArrayList<>();
+                    for ( RelDataTypeField field : type.getFieldList() ) {
+                        columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
+                    }
+                    return ColumnMetaData.struct( columns );
+                case ExtraSqlTypes.GEOMETRY:
+                    typeOrdinal = Types.VARCHAR;
+                    // fall through
+                default:
+                    final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
+                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+                    assert rep != null;
+                    return ColumnMetaData.scalar( typeOrdinal, typeName, rep );
+            }
+        }
+    }
+
     /**
-     * Converts from JDBC metadata to Avatica parameters
+     * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
+     * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
-    private static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
+    private static String getTypeName( RelDataType type ) {
+        final SqlTypeName sqlTypeName = type.getSqlTypeName();
+        switch ( sqlTypeName ) {
+            case ARRAY:
+            case MULTISET:
+            case MAP:
+            case ROW:
+                return type.toString(); // e.g. "INTEGER ARRAY"
+            case INTERVAL_YEAR_MONTH:
+                return "INTERVAL_YEAR_TO_MONTH";
+            case INTERVAL_DAY_HOUR:
+                return "INTERVAL_DAY_TO_HOUR";
+            case INTERVAL_DAY_MINUTE:
+                return "INTERVAL_DAY_TO_MINUTE";
+            case INTERVAL_DAY_SECOND:
+                return "INTERVAL_DAY_TO_SECOND";
+            case INTERVAL_HOUR_MINUTE:
+                return "INTERVAL_HOUR_TO_MINUTE";
+            case INTERVAL_HOUR_SECOND:
+                return "INTERVAL_HOUR_TO_SECOND";
+            case INTERVAL_MINUTE_SECOND:
+                return "INTERVAL_MINUTE_TO_SECOND";
+            default:
+                return sqlTypeName.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
         }
-        final List<AvaticaParameter> params = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getParameterCount(); i++ ) {
-            params.add(
-                    new AvaticaParameter(
-                            metaData.isSigned( i ),
-                            metaData.getPrecision( i ),
-                            metaData.getScale( i ),
-                            metaData.getParameterType( i ),
-                            metaData.getParameterTypeName( i ),
-                            metaData.getParameterClassName( i ),
-                            "?" + i ) );
-        }
-        return params;
     }
 
 
-    private static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
-        final CursorFactory cf = CursorFactory.LIST;  // because JdbcResultSet#frame
-        return new Signature( columns( metaData ), sql, parameters( parameterMetaData ), null, cf, statementType );
+    private int getTypeOrdinal( RelDataType type ) {
+        return type.getSqlTypeName().getJdbcOrdinal();
     }
 
 
-    protected static Signature signature( final ResultSetMetaData metaData ) throws SQLException {
-        return signature( metaData, null, null, null );
+    /**
+     * Implementation of Queryable.
+     *
+     * @param <T> element type
+     */
+    static class PolyphenyDbQueryable<T> extends BaseQueryable<T> {
+
+        PolyphenyDbQueryable( QueryProvider queryProvider, Type elementType, Expression expression ) {
+            super( queryProvider, elementType, expression );
+        }
+
     }
 
 
