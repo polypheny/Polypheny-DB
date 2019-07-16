@@ -28,8 +28,18 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 public class UnknownSchemaException extends CatalogException {
 
-    public UnknownSchemaException( String schemaName, String databaseName ) {
+    public UnknownSchemaException( String databaseName, String schemaName ) {
         super( "There is no schema with name '" + schemaName + "' in the database '" + databaseName + "'" );
+    }
+
+
+    public UnknownSchemaException( long databaseId, String schemaName ) {
+        super( "There is no schema with name '" + schemaName + "' in the database with the id '" + databaseId + "'" );
+    }
+
+
+    public UnknownSchemaException( long schemaId ) {
+        super( "There is no schema with the id '" + schemaId + "'" );
     }
 
 }

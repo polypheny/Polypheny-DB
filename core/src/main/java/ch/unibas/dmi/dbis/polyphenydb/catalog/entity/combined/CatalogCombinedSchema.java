@@ -26,23 +26,34 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 
 
-public class CatalogCombinedSchema {
+public class CatalogCombinedSchema implements CatalogCombinedEntity {
+
+    private static final long serialVersionUID = 965922217831463449L;
+
 
     @Getter
     private final CatalogSchema schema;
     @Getter
     private final List<CatalogCombinedTable> tables;
+    @Getter
+    private CatalogDatabase database;
+    @Getter
+    private final CatalogUser owner;
 
 
-    public CatalogCombinedSchema( @NonNull CatalogSchema schema, @NonNull List<CatalogCombinedTable> tables ) {
+    public CatalogCombinedSchema( @NonNull CatalogSchema schema, @NonNull List<CatalogCombinedTable> tables, @NonNull CatalogDatabase database, @NonNull CatalogUser owner ) {
         this.schema = schema;
         this.tables = tables;
+        this.database = database;
+        this.owner = owner;
     }
 
 }

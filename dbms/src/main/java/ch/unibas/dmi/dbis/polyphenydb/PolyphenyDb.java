@@ -25,6 +25,7 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb.HsqldbStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
@@ -56,8 +57,12 @@ public class PolyphenyDb {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
 
-            StoreManager.getInstance().register( "CSV", new CsvStore( CatalogManagerImpl.getInstance().getCatalog().getCombinedSchema( "CSV" ) ) );
-            StoreManager.getInstance().register( "HSQLDB", new HsqldbStore( CatalogManagerImpl.getInstance().getCatalog().getCombinedSchema( "HSQLDB" ) ) );
+            PolyXid xid = Utils.generateGlobalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.USER ), PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( PUID.Type.TRANSACTION ) );
+
+            // TODO
+
+            StoreManager.getInstance().register( "CSV", new CsvStore( CatalogManagerImpl.getInstance().getCombinedSchema( xid, 1 ) ) );
+            StoreManager.getInstance().register( "HSQLDB", new HsqldbStore( CatalogManagerImpl.getInstance().getCombinedSchema( xid, 2 ) ) );
 
             new PolyphenyDb().runPolyphenyDb();
 

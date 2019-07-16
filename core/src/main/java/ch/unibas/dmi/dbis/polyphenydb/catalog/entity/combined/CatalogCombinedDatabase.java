@@ -23,34 +23,32 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import java.util.List;
+import lombok.Getter;
+import lombok.NonNull;
 
 
-/**
- *
- */
-public class Authenticator {
+public class CatalogCombinedDatabase implements CatalogCombinedEntity {
 
-    private Authenticator() {
-        throw new IllegalAccessError( "This is a utility class" );
+    private static final long serialVersionUID = 8705987903992498470L;
+
+    @Getter
+    private final CatalogDatabase database;
+    @Getter
+    private final List<CatalogCombinedSchema> schemas;
+    @Getter
+    private final CatalogUser owner;
+
+
+    public CatalogCombinedDatabase( @NonNull CatalogDatabase database, @NonNull List<CatalogCombinedSchema> schemas, @NonNull CatalogUser owner ) {
+        this.database = database;
+        this.schemas = schemas;
+        this.owner = owner;
     }
 
-
-    public static CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
-        try {
-            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );
-            if ( catalogUser.password.equals( password ) ) {
-                return catalogUser;
-            } else {
-                throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
-            }
-        } catch ( UnknownUserException e ) {
-            throw new AuthenticationException( e );
-        }
-    }
 }

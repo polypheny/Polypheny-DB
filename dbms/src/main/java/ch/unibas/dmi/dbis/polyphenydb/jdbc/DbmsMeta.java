@@ -33,10 +33,12 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType.PrimitiveTableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
@@ -49,8 +51,12 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
@@ -244,18 +250,24 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    public MetaResultSet getTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
+    // TODO: typeList is ignored
+    public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, catalog, schemaPattern, tableNamePattern, typeList );
+            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
             List<TableType> types = null;
             if ( typeList != null ) {
-                types = Catalog.convertTableTypeList( typeList );
+                types = CatalogManager.convertTableTypeList( typeList );
             }
-            final List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables( xid, catalog, schemaPattern, tableNamePattern, types );
+            final List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -277,16 +289,21 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-
     @Override
-    public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+    public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns( xid, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
+                    (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -304,26 +321,27 @@ public class DbmsMeta implements ProtobufMeta {
                     "NULLABLE",
                     "ENCODING",
                     "COLLATION",
-                    "AUTOINCREMENT_START_VALUE",
-                    "AUTOINCREMENT_NEXT_VALUE",
-                    "DEFAULT_VALUE",
                     "FORCE_DEFAULT"
             );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownEncodingException | UnknownColumnException | UnknownTypeException e ) {
             throw propagate( e );
         }
     }
 
 
     @Override
-    public MetaResultSet getSchemas( final ConnectionHandle ch, final String catalog, final Pat schemaPattern ) {
+    public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, catalog, schemaPattern );
+            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas( xid, catalog, schemaPattern );
+            final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -351,7 +369,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid );
+            final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid, null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -1076,7 +1094,7 @@ public class DbmsMeta implements ProtobufMeta {
             // Create transaction id
             PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
 
-            final Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
+            final CatalogManager catalog = CatalogManagerImpl.getInstance();
             // Check database access
             final CatalogDatabase database;
             try {
@@ -1092,7 +1110,7 @@ public class DbmsMeta implements ProtobufMeta {
             final CatalogSchema schema;
             try {
                 schema = catalog.getSchema( xid, database.name, schemaName );
-            } catch ( GenericCatalogException | UnknownSchemaException e ) {
+            } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
                 throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             }
             assert schema != null;

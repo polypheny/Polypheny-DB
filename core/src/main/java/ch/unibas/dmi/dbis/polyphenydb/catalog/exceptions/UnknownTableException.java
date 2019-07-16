@@ -28,9 +28,22 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 public class UnknownTableException extends CatalogException {
 
-    public UnknownTableException( String tableName, String schemaName, String databaseName ) {
+    public UnknownTableException( String databaseName, String schemaName, String tableName ) {
         super( "There is no table with name '" + tableName + "' in schema '" + schemaName + "' of database '" + databaseName + "'." );
     }
 
 
+    public UnknownTableException( long databaseId, String schemaName, String tableName ) {
+        super( "There is no table with name '" + tableName + "' in schema '" + schemaName + "' of database with the id '" + databaseId + "'." );
+    }
+
+
+    public UnknownTableException( long schemaId, String tableName ) {
+        super( "There is no table with name '" + tableName + "' in the schema with the id '" + schemaId + "'." );
+    }
+
+
+    public UnknownTableException( long tableId ) {
+        super( "There is no table with id '" + tableId + "'." );
+    }
 }
