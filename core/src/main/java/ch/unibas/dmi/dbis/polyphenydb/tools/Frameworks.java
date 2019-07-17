@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MapSqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.SqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
@@ -71,8 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -140,8 +137,7 @@ public class Frameworks {
         public abstract R apply(
                 RelOptCluster cluster,
                 RelOptSchema relOptSchema,
-                SchemaPlus rootSchema,
-                PolyphenyDbServerStatement statement );
+                SchemaPlus rootSchema );
     }
 
 
@@ -155,7 +151,7 @@ public class Frameworks {
     public static <R> R withPlanner( final PlannerAction<R> action, final FrameworkConfig config ) {
         return withPrepare(
                 new Frameworks.PrepareAction<R>( config ) {
-                    public R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema, PolyphenyDbServerStatement statement ) {
+                    public R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final PolyphenyDbSchema schema = PolyphenyDbSchema.from( Util.first( config.getDefaultSchema(), rootSchema ) );
                         return action.apply( cluster, relOptSchema, schema.root().plus() );
                     }
@@ -189,11 +185,8 @@ public class Frameworks {
                         PolyphenyDbConnectionProperty.TYPE_SYSTEM.camelName(),
                         action.config.getTypeSystem().getClass().getName() );
             }
-            Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
-            final PolyphenyDbServerStatement statement =
-                    connection.createStatement()
-                            .unwrap( PolyphenyDbServerStatement.class );
-            return new PolyphenyDbPrepareImpl().perform( statement, action );
+
+            return new PolyphenyDbPrepareImpl().perform( action );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
@@ -247,6 +240,7 @@ public class Frameworks {
         private boolean evolveLattice;
         private SqlStatisticProvider statisticProvider;
         private ViewExpander viewExpander;
+        private ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
 
 
         /**
@@ -281,6 +275,7 @@ public class Frameworks {
             typeSystem = config.getTypeSystem();
             evolveLattice = config.isEvolveLattice();
             statisticProvider = config.getStatisticProvider();
+            prepareContext = config.getPrepareContext();
         }
 
 
@@ -299,7 +294,8 @@ public class Frameworks {
                     executor,
                     evolveLattice,
                     statisticProvider,
-                    viewExpander );
+                    viewExpander,
+                    prepareContext );
         }
 
 
@@ -411,6 +407,12 @@ public class Frameworks {
             this.viewExpander = viewExpander;
             return this;
         }
+
+
+        public ConfigBuilder prepareContext( ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext ) {
+            this.prepareContext = prepareContext;
+            return this;
+        }
     }
 
 
@@ -433,9 +435,11 @@ public class Frameworks {
         private final boolean evolveLattice;
         private final SqlStatisticProvider statisticProvider;
         private final ViewExpander viewExpander;
+        private final ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
 
 
-        StdFrameworkConfig( Context context,
+        StdFrameworkConfig(
+                Context context,
                 SqlRexConvertletTable convertletTable,
                 SqlOperatorTable operatorTable,
                 ImmutableList<Program> programs,
@@ -448,7 +452,8 @@ public class Frameworks {
                 RexExecutor executor,
                 boolean evolveLattice,
                 SqlStatisticProvider statisticProvider,
-                ViewExpander viewExpander ) {
+                ViewExpander viewExpander,
+                ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext ) {
             this.context = context;
             this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
@@ -463,76 +468,97 @@ public class Frameworks {
             this.evolveLattice = evolveLattice;
             this.statisticProvider = statisticProvider;
             this.viewExpander = viewExpander;
+            this.prepareContext = prepareContext;
         }
 
 
+        @Override
         public SqlParser.Config getParserConfig() {
             return parserConfig;
         }
 
 
+        @Override
         public SqlToRelConverter.Config getSqlToRelConverterConfig() {
             return sqlToRelConverterConfig;
         }
 
 
+        @Override
         public SchemaPlus getDefaultSchema() {
             return defaultSchema;
         }
 
 
+        @Override
         public RexExecutor getExecutor() {
             return executor;
         }
 
 
+        @Override
         public ImmutableList<Program> getPrograms() {
             return programs;
         }
 
 
+        @Override
         public RelOptCostFactory getCostFactory() {
             return costFactory;
         }
 
 
+        @Override
         public ImmutableList<RelTraitDef> getTraitDefs() {
             return traitDefs;
         }
 
 
+        @Override
         public SqlRexConvertletTable getConvertletTable() {
             return convertletTable;
         }
 
 
+        @Override
         public Context getContext() {
             return context;
         }
 
 
+        @Override
         public SqlOperatorTable getOperatorTable() {
             return operatorTable;
         }
 
 
+        @Override
         public RelDataTypeSystem getTypeSystem() {
             return typeSystem;
         }
 
 
+        @Override
         public boolean isEvolveLattice() {
             return evolveLattice;
         }
 
 
+        @Override
         public SqlStatisticProvider getStatisticProvider() {
             return statisticProvider;
         }
 
 
+        @Override
         public ViewExpander getViewExpander() {
             return viewExpander;
+        }
+
+
+        @Override
+        public ch.unibas.dmi.dbis.polyphenydb.jdbc.Context getPrepareContext() {
+            return prepareContext;
         }
     }
 }

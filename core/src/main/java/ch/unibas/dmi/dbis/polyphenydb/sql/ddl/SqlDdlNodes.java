@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
@@ -239,7 +239,7 @@ public class SqlDdlNodes {
     /**
      * Returns the schema in which to create an object.
      */
-    static Pair<PolyphenyDbSchema, String> schema( PolyphenyDbPrepare.Context context, boolean mutable, SqlIdentifier id ) {
+    static Pair<PolyphenyDbSchema, String> schema( Context context, boolean mutable, SqlIdentifier id ) {
         final String name;
         final List<String> path;
         if ( id.isSimple() ) {
@@ -281,7 +281,7 @@ public class SqlDdlNodes {
     /**
      * Populates the table called {@code name} by executing {@code query}.
      */
-    protected static void populate( SqlIdentifier name, SqlNode query, PolyphenyDbPrepare.Context context ) {
+    protected static void populate( SqlIdentifier name, SqlNode query, Context context ) {
         // Generate, prepare and execute an "INSERT INTO table query" statement.
         // (It's a bit inefficient that we convert from SqlNode to SQL and back again.)
         final FrameworkConfig config =

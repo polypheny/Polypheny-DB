@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.examples.foodmart.java;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -68,7 +68,7 @@ public class JdbcExample {
 
 
     public void run() throws ClassNotFoundException, SQLException {
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
         SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();

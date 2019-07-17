@@ -47,7 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -88,7 +88,7 @@ import java.util.List;
  */
 class PolyphenyDbMaterializer extends PolyphenyDbPreparingStmt {
 
-    PolyphenyDbMaterializer( PolyphenyDbPrepareImpl prepare, PolyphenyDbPrepare.Context context, CatalogReader catalogReader, PolyphenyDbSchema schema, RelOptPlanner planner, SqlRexConvertletTable convertletTable ) {
+    PolyphenyDbMaterializer( PolyphenyDbPrepareImpl prepare, Context context, CatalogReader catalogReader, PolyphenyDbSchema schema, RelOptPlanner planner, SqlRexConvertletTable convertletTable ) {
         super( prepare, context, catalogReader, catalogReader.getTypeFactory(), schema, EnumerableRel.Prefer.ANY, planner, BindableConvention.INSTANCE, convertletTable );
     }
 

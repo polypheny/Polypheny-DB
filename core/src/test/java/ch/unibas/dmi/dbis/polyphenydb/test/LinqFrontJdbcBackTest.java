@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -62,7 +62,7 @@ import org.junit.Test;
 public class LinqFrontJdbcBackTest {
 
     @Test
-    public void testTableWhere() throws SQLException, ClassNotFoundException {
+    public void testTableWhere() throws SQLException {
         final Connection connection = PolyphenyDbAssert.that( PolyphenyDbAssert.Config.JDBC_FOODMART ).connect();
         final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
         final SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();

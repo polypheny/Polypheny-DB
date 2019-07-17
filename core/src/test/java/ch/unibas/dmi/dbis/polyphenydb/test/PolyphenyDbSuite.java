@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.ArrayTableTest;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbRemoteEmbeddedDriverTest;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbRemoteEmbeddedDriverTest;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.LatticeSuggesterTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtilTest;

@@ -52,7 +52,6 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -595,11 +594,8 @@ public class RexImplicationCheckerTest {
             final Holder<RexExecutorImpl> holder = Holder.of( null );
             Frameworks.withPrepare(
                     new Frameworks.PrepareAction<Void>() {
-                        public Void apply( RelOptCluster cluster,
-                                RelOptSchema relOptSchema,
-                                SchemaPlus rootSchema,
-                                PolyphenyDbServerStatement statement ) {
-                            DataContext dataContext = Schemas.createDataContext( statement.getConnection(), rootSchema );
+                        public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                            DataContext dataContext = Schemas.createDataContext( null, rootSchema );
                             holder.set( new RexExecutorImpl( dataContext ) );
                             return null;
                         }

@@ -76,11 +76,12 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -6616,7 +6617,7 @@ public class JdbcTest {
 
     @Test
     public void testSimplePolyphenyDbSchema() throws Exception {
-        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false, false ).plus();
+        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false ).plus();
 
         // create schema "/a"
         final Map<String, Schema> aSubSchemaMap = new HashMap<>();
@@ -6645,7 +6646,7 @@ public class JdbcTest {
 
     @Test
     public void testSimplePolyphenyDbSchemaWithView() throws Exception {
-        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false, false ).plus();
+        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false ).plus();
 
         final Multimap<String, ch.unibas.dmi.dbis.polyphenydb.schema.Function> functionMap = LinkedListMultimap.create();
         // create schema "/a"
@@ -7427,7 +7428,7 @@ public class JdbcTest {
     public static class FoodmartJdbcSchema extends JdbcSchema {
 
         public FoodmartJdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema ) {
-            super( dataSource, dialect, convention, catalog, schema );
+            super( dataSource, dialect, convention, catalog, schema, null );
         }
 
 

@@ -51,7 +51,7 @@ import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import com.google.common.collect.Sets;
@@ -65,6 +65,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
+import lombok.val;
 import org.junit.Test;
 
 
@@ -96,9 +97,9 @@ public class MultiJdbcSchemaJoinTest {
         PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
         SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         final DataSource ds1 = JdbcSchema.dataSource( db1, "org.hsqldb.jdbcDriver", "", "" );
-        rootSchema.add( "DB1", JdbcSchema.create( rootSchema, "DB1", ds1, null, null ) );
+        rootSchema.add( "DB1", JdbcSchema.create( rootSchema, "DB1", ds1, null, null, null ) ); // TODO MV: null
         final DataSource ds2 = JdbcSchema.dataSource( db2, "org.hsqldb.jdbcDriver", "", "" );
-        rootSchema.add( "DB2", JdbcSchema.create( rootSchema, "DB2", ds2, null, null ) );
+        rootSchema.add( "DB2", JdbcSchema.create( rootSchema, "DB2", ds2, null, null, null ) ); // TODO MV: null
 
         Statement stmt3 = connection.createStatement();
         ResultSet rs = stmt3.executeQuery( "select table1.id, table1.field1 from db1.table1 join db2.table2 on table1.id = table2.id" );
@@ -130,11 +131,8 @@ public class MultiJdbcSchemaJoinTest {
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
         PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
         SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
-        rootSchema.add( "DB",
-                JdbcSchema.create( rootSchema, "DB",
-                        JdbcSchema.dataSource( db, "org.hsqldb.jdbcDriver", "", "" ),
-                        null,
-                        null ) );
+        val dataSource = JdbcSchema.dataSource( db, "org.hsqldb.jdbcDriver", "", "" );
+        rootSchema.add( "DB", JdbcSchema.create( rootSchema, "DB", dataSource, null, null, null ) ); // TODO MV: null
         rootSchema.add( "hr", new ReflectiveSchema( new JdbcTest.HrSchema() ) );
         return connection;
     }
@@ -208,7 +206,7 @@ public class MultiJdbcSchemaJoinTest {
         PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
         SchemaPlus rootSchema = polyphenyDbEmbeddedConnection.getRootSchema();
         final DataSource ds = JdbcSchema.dataSource( db, "org.hsqldb.jdbcDriver", "", "" );
-        rootSchema.add( "DB", JdbcSchema.create( rootSchema, "DB", ds, null, null ) );
+        rootSchema.add( "DB", JdbcSchema.create( rootSchema, "DB", ds, null, null, null ) ); // TODO MV: null
 
         Statement stmt3 = connection.createStatement();
         ResultSet rs;

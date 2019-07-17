@@ -46,9 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.parser.parserextensiontesting;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
@@ -137,7 +137,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    public void execute( Context context ) {
         final List<String> path = context.getDefaultSchemaPath();
         PolyphenyDbSchema schema = context.getRootSchema();
         for ( String p : path ) {

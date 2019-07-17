@@ -46,8 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
@@ -64,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.CyclicDefinitionException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
@@ -119,46 +116,7 @@ public interface PolyphenyDbPrepare {
 
     <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable );
 
-    /**
-     * Context for preparing a statement.
-     */
-    interface Context {
 
-        JavaTypeFactory getTypeFactory();
-
-        /**
-         * Returns the root schema for statements that need a read-consistent snapshot.
-         */
-        PolyphenyDbSchema getRootSchema();
-
-        /**
-         * Returns the root schema for statements that need to be able to modify schemas and have the results available to other statements. Viz, DDL statements.
-         */
-        PolyphenyDbSchema getMutableRootSchema();
-
-        List<String> getDefaultSchemaPath();
-
-        PolyphenyDbConnectionConfig config();
-
-        /**
-         * Returns the spark handler. Never null.
-         */
-        SparkHandler spark();
-
-        DataContext getDataContext();
-
-        /**
-         * Returns the path of the object being analyzed, or null.
-         *
-         * The object is being analyzed is typically a view. If it is already being analyzed further up the stack, the view definition can be deduced to be cyclic.
-         */
-        List<String> getObjectPath();
-
-        /**
-         * Gets a runner; it can execute a relational expression.
-         */
-        RelRunner getRelRunner();
-    }
 
 
     /**

@@ -1,24 +1,4 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
- *
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- *
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
@@ -40,28 +20,26 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Query;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJdbcFunctionCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
@@ -95,10 +73,7 @@ import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
@@ -540,7 +515,7 @@ public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
             throw new AssertionError( "missing statement", e );
         }
         final Context context = statement.createPrepareContext();
-        final PolyphenyDbPrepare.Query<Object> query = toQuery( context, sql );
+        final Query<Object> query = toQuery( context, sql );
         h.signature = connection.parseQuery( query, context, maxRowCount );
         statement.setSignature( h.signature );
         return h;
@@ -563,7 +538,7 @@ public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
                 final PolyphenyDbEmbeddedConnectionImpl connection = getConnection();
                 final PolyphenyDbServerStatement statement = connection.server.getStatement( h );
                 final Context context = statement.createPrepareContext();
-                final PolyphenyDbPrepare.Query<Object> query = toQuery( context, sql );
+                final Query<Object> query = toQuery( context, sql );
                 signature = connection.parseQuery( query, context, maxRowCount );
                 statement.setSignature( signature );
                 final int updateCount;
@@ -596,8 +571,8 @@ public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
      * {@link Query} object, giving the
      * {@link Hook#STRING_TO_QUERY} hook chance to override.
      */
-    private PolyphenyDbPrepare.Query<Object> toQuery( Context context, String sql ) {
-        final Holder<PolyphenyDbPrepare.Query<Object>> queryHolder = Holder.of( PolyphenyDbPrepare.Query.of( sql ) );
+    private Query<Object> toQuery( Context context, String sql ) {
+        final Holder<Query<Object>> queryHolder = Holder.of( PolyphenyDbPrepare.Query.of( sql ) );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
                 .defaultSchema( context.getRootSchema().plus() )
@@ -776,50 +751,6 @@ public class PolyphenyDbEmbeddedMetaImpl extends MetaImpl {
         PolyphenyDbMetaSchema( PolyphenyDbSchema polyphenyDbSchema, String tableCatalog, String tableSchem ) {
             super( tableCatalog, tableSchem );
             this.polyphenyDbSchema = polyphenyDbSchema;
-        }
-    }
-
-
-    /**
-     * Table whose contents are metadata.
-     *
-     * @param <E> element type
-     */
-    abstract static class MetadataTable<E> extends AbstractQueryableTable {
-
-        MetadataTable( Class<E> clazz ) {
-            super( clazz );
-        }
-
-
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            return ((JavaTypeFactory) typeFactory).createType( elementType );
-        }
-
-
-        @Override
-        public TableType getJdbcTableType() {
-            return Schema.TableType.SYSTEM_TABLE;
-        }
-
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Class<E> getElementType() {
-            return (Class<E>) elementType;
-        }
-
-
-        protected abstract Enumerator<E> enumerator( PolyphenyDbEmbeddedMetaImpl connection );
-
-
-        public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-            return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
-                @SuppressWarnings("unchecked")
-                public Enumerator<T> enumerator() {
-                    return (Enumerator<T>) MetadataTable.this.enumerator( ((PolyphenyDbEmbeddedConnectionImpl) queryProvider).meta() );
-                }
-            };
         }
     }
 

@@ -54,7 +54,6 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -97,10 +96,9 @@ public class RexExecutorTest {
     protected void check( final Action action ) throws Exception {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>() {
-                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema,
-                            SchemaPlus rootSchema, PolyphenyDbServerStatement statement ) {
+                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
-                        DataContext dataContext = Schemas.createDataContext( statement.getConnection(), rootSchema );
+                        DataContext dataContext = Schemas.createDataContext( null, rootSchema );
                         final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
                         action.check( rexBuilder, executor );
                         return null;

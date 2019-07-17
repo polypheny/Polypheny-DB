@@ -46,9 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.ParseResult;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationKey;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;

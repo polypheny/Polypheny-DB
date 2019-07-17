@@ -34,7 +34,6 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
@@ -58,9 +57,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -72,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -85,14 +81,12 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -109,7 +103,6 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -751,13 +744,15 @@ public class DbmsMeta implements ProtobufMeta {
         // /////////////////////////
         PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent();
 
-
-        ///////////////////
+        ////////////////////
         // (1)  Configure //
-        ///////////////////
+        ////////////////////
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( false );
         Config parserConfig = configConfigBuilder.build();
+
+        DataContext dataContext = statement.getDataContext( rootSchema );
+        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "" );
 
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
@@ -768,6 +763,7 @@ public class DbmsMeta implements ProtobufMeta {
                 .parserConfig( parserConfig )
                 //            .traitDefs( traitDefs )
                 .defaultSchema( rootSchema.plus() )
+                .prepareContext( prepareContext )
                 //             .sqlToRelConverterConfig( sqlToRelConfig )
                 //             .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .build();
@@ -940,17 +936,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private Iterable<Object> createIterable( PolyphenyDbStatementHandle handle, PolyphenyDbSignature signature ) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        // Avoid overflow
-        int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
-        if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
-            map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
-        }
-
-        final AtomicBoolean cancelFlag;
-        cancelFlag = handle.getCancelFlag();
-        map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
-        final DataContext dataContext = createDataContext( map, signature.rootSchema, handle.getTypeFactory() );
+        DataContext dataContext = handle.getDataContext( signature.rootSchema );
         //noinspection unchecked
         final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
         return polyphenyDbSignature.enumerable( dataContext );
@@ -1306,40 +1292,5 @@ public class DbmsMeta implements ProtobufMeta {
             throw new RuntimeException( e );
         }
     }
-
-
-    public static DataContext createDataContext( Map<String, Object> parameterValues, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
-        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
-            return new SlimDataContext();
-        }
-        return new DataContextImpl( new QueryProviderImpl(), parameterValues, rootSchema, typeFactory );
-    }
-
-
-    /**
-     * Implementation of {@link DataContext} that has few variables and is {@link Serializable}. For Spark.
-     */
-    private static class SlimDataContext implements DataContext, Serializable {
-
-        public SchemaPlus getRootSchema() {
-            return null;
-        }
-
-
-        public JavaTypeFactory getTypeFactory() {
-            return null;
-        }
-
-
-        public QueryProvider getQueryProvider() {
-            return null;
-        }
-
-
-        public Object get( String name ) {
-            return null;
-        }
-    }
-
 
 }

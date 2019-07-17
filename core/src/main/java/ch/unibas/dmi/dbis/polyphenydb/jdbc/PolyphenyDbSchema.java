@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
@@ -53,8 +54,10 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
+import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable.MaterializedViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.StarTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
@@ -74,6 +77,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
@@ -538,41 +542,26 @@ public abstract class PolyphenyDbSchema {
     /**
      * Creates a root schema.
      *
-     * When <code>addMetadataSchema</code> argument is true adds a "metadata" schema containing definitions of tables, columns etc. to root schema. By default, creates a {@link CachingPolyphenyDbSchema}.
-     */
-    public static PolyphenyDbSchema createRootSchema( boolean addMetadataSchema ) {
-        return createRootSchema( addMetadataSchema, true );
-    }
-
-
-    /**
-     * Creates a root schema.
-     *
-     * @param addMetadataSchema Whether to add a "metadata" schema containing definitions of tables, columns etc.
      * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
      */
-    public static PolyphenyDbSchema createRootSchema( boolean addMetadataSchema, boolean cache ) {
-        return createRootSchema( addMetadataSchema, cache, "" );
+    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
+        return createRootSchema( cache, "" );
     }
 
 
     /**
      * Creates a root schema.
      *
-     * @param addMetadataSchema Whether to add a "metadata" schema containing definitions of tables, columns etc.
      * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
      * @param name Schema name
      */
-    public static PolyphenyDbSchema createRootSchema( boolean addMetadataSchema, boolean cache, String name ) {
+    public static PolyphenyDbSchema createRootSchema( boolean cache, String name ) {
         PolyphenyDbSchema rootSchema;
-        final Schema schema = new PolyphenyDbEmbeddedConnectionImpl.RootSchema();
+        final Schema schema = new RootSchema();
         if ( cache ) {
             rootSchema = new CachingPolyphenyDbSchema( null, schema, name );
         } else {
             rootSchema = new SimplePolyphenyDbSchema( null, schema, name );
-        }
-        if ( addMetadataSchema ) {
-            rootSchema.add( "metadata", MetadataSchema.INSTANCE );
         }
         return rootSchema;
     }
@@ -942,6 +931,23 @@ public abstract class PolyphenyDbSchema {
 
         public TableEntry getStarTable() {
             return starTableEntry;
+        }
+    }
+
+
+    /**
+     * Schema that has no parents.
+     */
+    static class RootSchema extends AbstractSchema {
+
+        RootSchema() {
+            super();
+        }
+
+
+        @Override
+        public Expression getExpression( SchemaPlus parentSchema, String name ) {
+            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
         }
     }
 

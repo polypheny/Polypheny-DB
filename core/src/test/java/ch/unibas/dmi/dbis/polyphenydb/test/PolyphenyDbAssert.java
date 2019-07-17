@@ -62,10 +62,10 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -783,11 +783,11 @@ public class PolyphenyDbAssert {
             case JDBC_SCOTT:
                 cs = DatabaseInstance.HSQLDB.scott;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) );
+                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, null ) ); // TODO MV: null
             case JDBC_FOODMART:
                 cs = DB.foodmart;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) );
+                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, null ) ); // TODO MV: null
             case JDBC_FOODMART_WITH_LATTICE:
                 foodmart = addSchemaIfNotExists( rootSchema, SchemaSpec.JDBC_FOODMART );
                 foodmart.add( schema.schemaName,

@@ -48,8 +48,8 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -157,7 +157,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final RelDataType queryRowType;

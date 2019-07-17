@@ -45,14 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -89,7 +88,7 @@ public class SimpleJdbcExample {
                 + "}";
         info.put( "model", model );
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
 
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         Statement statement = connection.createStatement();

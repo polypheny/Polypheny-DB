@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -90,7 +90,7 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         pair.left.add( pair.right, typeFactory -> {
             if ( dataType != null ) {

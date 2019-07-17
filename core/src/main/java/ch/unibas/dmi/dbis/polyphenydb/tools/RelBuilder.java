@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -250,7 +249,7 @@ public class RelBuilder {
         final RelOptSchema[] relOptSchemas = { null };
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
-                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema, PolyphenyDbServerStatement statement ) {
+                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         clusters[0] = cluster;
                         relOptSchemas[0] = relOptSchema;
                         return null;

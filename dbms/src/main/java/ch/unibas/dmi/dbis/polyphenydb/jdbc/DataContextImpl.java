@@ -28,27 +28,15 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorWithHints;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
+
 
 
 /**
@@ -100,20 +88,20 @@ public class DataContextImpl implements DataContext {
     }
 
 
+    @Override
     public synchronized Object get( String name ) {
         Object o = map.get( name );
         if ( o == AvaticaSite.DUMMY_VALUE ) {
             return null;
         }
-        if ( o == null && Variable.SQL_ADVISOR.camelName.equals( name ) ) {
+        /* if ( o == null && Variable.SQL_ADVISOR.camelName.equals( name ) ) {
             return getSqlAdvisor();
-        }
+        } */
         return o;
     }
 
-
+/*
     private SqlAdvisor getSqlAdvisor() {
-        final PolyphenyDbEmbeddedConnectionImpl con = (PolyphenyDbEmbeddedConnectionImpl) queryProvider;
         final String schemaName;
         try {
             schemaName = con.getSchema();
@@ -139,18 +127,22 @@ public class DataContextImpl implements DataContext {
                 .build();
         return new SqlAdvisor( validator, parserConfig );
     }
+*/
 
 
+    @Override
     public SchemaPlus getRootSchema() {
         return rootSchema == null ? null : rootSchema.plus();
     }
 
 
+    @Override
     public JavaTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
 
+    @Override
     public QueryProvider getQueryProvider() {
         return queryProvider;
     }

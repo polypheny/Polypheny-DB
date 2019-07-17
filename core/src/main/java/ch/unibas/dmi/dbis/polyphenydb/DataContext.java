@@ -51,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import com.google.common.base.CaseFormat;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -165,6 +166,32 @@ public interface DataContext {
         public <T> T get( DataContext dataContext ) {
             //noinspection unchecked
             return (T) clazz.cast( dataContext.get( camelName ) );
+        }
+    }
+
+
+    /**
+     * Implementation of {@link DataContext} that has few variables and is {@link Serializable}. For Spark.
+     */
+    public static class SlimDataContext implements DataContext, Serializable {
+
+        public SchemaPlus getRootSchema() {
+            return null;
+        }
+
+
+        public JavaTypeFactory getTypeFactory() {
+            return null;
+        }
+
+
+        public QueryProvider getQueryProvider() {
+            return null;
+        }
+
+
+        public Object get( String name ) {
+            return null;
         }
     }
 }

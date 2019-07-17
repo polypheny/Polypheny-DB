@@ -47,7 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
@@ -93,7 +93,7 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    public void execute( Context context ) {
         final List<String> path = context.getDefaultSchemaPath();
         PolyphenyDbSchema schema = context.getRootSchema();
         for ( String p : path ) {
