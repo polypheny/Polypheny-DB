@@ -39,9 +39,16 @@ public class SidebarElement {
     private String name;
     private String icon;//todo: enum
     private String routerLink;
+    private String cssClass;
     private ArrayList<SidebarElement> children = new ArrayList<>();
 
 
+    /**
+     * Constructor
+     * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
+     * @param name the name of the SidebarElement that will be displayed in the UI
+     * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
+     */
     public SidebarElement( final String id, final String name, final String routerLinkRoot ) {
         this.id = id;
         this.name = name;
@@ -53,26 +60,52 @@ public class SidebarElement {
     }
 
 
+    /**
+     * Constructor
+     * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
+     * @param name the name of the SidebarElement that will be displayed in the UI
+     * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
+     * @param icon class name of the icon that will be displayed left of the id, e.g. "fa fa-table"
+     */
     public SidebarElement( final String id, final String name, final String routerLinkRoot, final String icon ) {
         this( id, name, routerLinkRoot );
         this.icon = icon;
     }
 
 
+    /**
+     * Add an ArrayList of SidebarElements as children of this one.
+     */
     public SidebarElement addChildren( final ArrayList<SidebarElement> children ) {
         this.children.addAll( children );
         return this;
     }
 
 
+    /**
+     * Add a SidebarElement as a child of this one.
+     */
     public SidebarElement addChild( final SidebarElement child ) {
         this.children.add( child );
         return this;
     }
 
+
+    /**
+     * Set the routerLink of this SidebarElement.
+     */
     public SidebarElement setRouterLink( final String routerLink ) {
         this.routerLink = routerLink;
         return this;
     }
-}
 
+
+    /**
+     * Set a css class for this SidebarElement
+     */
+    public SidebarElement setCssClass( final String cssClass ) {
+        this.cssClass = cssClass;
+        return this;
+    }
+
+}

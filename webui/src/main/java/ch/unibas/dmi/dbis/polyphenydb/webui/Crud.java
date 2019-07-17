@@ -138,9 +138,10 @@ class Crud implements InformationObserver {
     /**
      * get the Number of rows in a table
      */
-    private Integer getTableSize ( final String tableName ) {
+    private Integer getTableSize ( final UIRequest request ) {
         Integer size = null;
-        String query = "SELECT count(*) FROM " + tableName;
+        String query = "SELECT count(*) FROM " + request.tableId;
+        if( request.filter != null) query += " " + filterTable( request.filter );
         LocalTransactionHandler handler = getHandler();
         try ( ResultSet rs = handler.executeSelect( query ) ) {
             rs.next();
@@ -197,7 +198,7 @@ class Crud implements InformationObserver {
         }
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
-        Integer tableSize = getTableSize( request.tableId );
+        Integer tableSize = getTableSize( request );
         if( tableSize == null ){
             return new Result( String.format( "The table %s does not exist.", t[1] ));
         }
@@ -272,10 +273,20 @@ class Crud implements InformationObserver {
                     ArrayList<SidebarElement> views = new ArrayList<>();
                     while ( tablesRs.next() ){
                         String tableName = tablesRs.getString( 3 );
+                        SidebarElement table = new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" );
+
+                        if( request.depth > 2){
+                            ResultSet columnsRs = handler.getMetaData().getColumns( this.dbName, schema, tableName, null );
+                            while ( columnsRs.next() ){
+                                String columnName = columnsRs.getString( 4 );
+                                table.addChild( new SidebarElement( schema + "." + tableName + "." + columnName, columnName, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            }
+                        }
+
                         if( tablesRs.getString( 4 ).equals("TABLE") ){
-                            tables.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
+                            tables.add( table );
                         } else if ( request.views && tablesRs.getString( 4 ).equals("VIEW") ){
-                            views.add( new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" ));
+                            views.add( table );
                         }
                     }
                     schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
@@ -1076,6 +1087,16 @@ class Crud implements InformationObserver {
             result = new Result( e.getMessage() );
         }
         return result;
+    }
+
+
+    /**
+     * Prototype to execute Relational Algebra
+     */
+    // todo implement execution of relational algebra
+    Result executeRelAlg ( final Request req, final Response res ) {
+        LOGGER.info( req.body() );
+        return new Result( "RelAlg execution not implemented yet." );
     }
 
 

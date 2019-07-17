@@ -169,6 +169,8 @@ public class Server {
 
         post( "/closeAnalyzer", crud::closeAnalyzer );
 
+        post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
+
     }
 
 
