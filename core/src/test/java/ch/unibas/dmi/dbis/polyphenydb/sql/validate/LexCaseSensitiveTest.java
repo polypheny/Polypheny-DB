@@ -50,9 +50,14 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableProject;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -86,6 +91,12 @@ public class LexCaseSensitiveTest {
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
                 .traitDefs( traitDefs )
                 .programs( programs )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
                 .build();
         return Frameworks.getPlanner( config );
     }

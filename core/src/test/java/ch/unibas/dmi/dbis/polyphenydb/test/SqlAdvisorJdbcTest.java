@@ -62,12 +62,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.function.Consumer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Tests for {@link SqlAdvisor}.
  */
+@Ignore
 public class SqlAdvisorJdbcTest {
 
     private void adviseSql( int apiVersion, String sql, Consumer<ResultSet> checker ) throws SQLException {

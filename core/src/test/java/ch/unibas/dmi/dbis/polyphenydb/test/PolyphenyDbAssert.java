@@ -61,6 +61,8 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcTable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcTableComputer;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
@@ -783,11 +785,17 @@ public class PolyphenyDbAssert {
             case JDBC_SCOTT:
                 cs = DatabaseInstance.HSQLDB.scott;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) ); // TODO MV: null
+                ImmutableMap<String, JdbcTable> tableMap = JdbcTableComputer.computeTables( cs.catalog, cs.schema, dataSource );
+                JdbcSchema jdbcSchema = JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, tableMap );
+                tableMap.forEach( ( s, jdbcTable ) -> jdbcTable.setSchema( jdbcSchema ) );
+                return rootSchema.add( schema.schemaName, jdbcSchema );
             case JDBC_FOODMART:
                 cs = DB.foodmart;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) ); // TODO MV: null
+                ImmutableMap<String, JdbcTable> tableMap2 = JdbcTableComputer.computeTables( cs.catalog, cs.schema, dataSource );
+                JdbcSchema jdbcSchema2 = JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, tableMap2 );
+                tableMap2.forEach( ( s, jdbcTable ) -> jdbcTable.setSchema( jdbcSchema2 ) );
+                return rootSchema.add( schema.schemaName, jdbcSchema2 );
             case JDBC_FOODMART_WITH_LATTICE:
                 foodmart = addSchemaIfNotExists( rootSchema, SchemaSpec.JDBC_FOODMART );
                 foodmart.add( schema.schemaName,
@@ -1374,6 +1382,11 @@ public class PolyphenyDbAssert {
             final Properties info = new Properties();
             for ( Map.Entry<String, String> entry : map.entrySet() ) {
                 info.setProperty( entry.getKey(), entry.getValue() );
+            }
+            try {
+                Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
+            } catch ( ClassNotFoundException e ) {
+                e.printStackTrace();
             }
             Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             for ( ConnectionPostProcessor postProcessor : postProcessors ) {

@@ -57,12 +57,14 @@ import java.util.Arrays;
 import org.apache.geode.cache.Cache;
 import org.apache.geode.cache.Region;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Tests using {@code Bookshop} schema.
  */
+@Ignore
 public class GeodeBookstoreTest extends AbstractGeodeTest {
 
     @BeforeClass

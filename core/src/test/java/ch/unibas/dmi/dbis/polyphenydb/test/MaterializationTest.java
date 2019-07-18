@@ -111,6 +111,7 @@ import org.junit.experimental.categories.Category;
  * Unit test for the materialized view rewrite mechanism. Each test has a query and one or more materializations (what Oracle calls materialized views) and checks that the materialization is used.
  */
 @Category(SlowTests.class)
+@Ignore
 public class MaterializationTest {
 
     private static final Consumer<ResultSet> CONTAINS_M0 = PolyphenyDbAssert.checkResultContains( "EnumerableTableScan(table=[[hr, m0]])" );
@@ -410,6 +411,7 @@ public class MaterializationTest {
 
 
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView() {
         checkMaterialize(
                 "select \"deptno\", \"empid\", \"name\" from \"emps\" where \"deptno\" = 10",
@@ -520,6 +522,7 @@ public class MaterializationTest {
      * As {@link #testFilterQueryOnFilterView()} but condition currently has unsupported type being checked on query.
      */
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView10() {
         checkNoMaterialize(
                 "select \"name\", \"deptno\" from \"emps\" where \"deptno\" > 10 and \"name\" = \'calcite\'",
@@ -532,6 +535,7 @@ public class MaterializationTest {
      * As {@link #testFilterQueryOnFilterView()} but condition is weaker in query and columns selected are subset of columns in materialized view. Condition here is complex.
      */
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView11() {
         checkNoMaterialize(
                 "select \"name\", \"deptno\" from \"emps\" where (\"salary\" < 1111.9 and \"deptno\" > 10) or (\"empid\" > 400 and \"salary\" > 5000)",
@@ -544,6 +548,7 @@ public class MaterializationTest {
      * As {@link #testFilterQueryOnFilterView()} but condition of query is stronger but is on the column not present in MV (salary).
      */
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView12() {
         checkNoMaterialize(
                 "select \"name\", \"deptno\" from \"emps\" where \"salary\" > 2000.5",
@@ -556,6 +561,7 @@ public class MaterializationTest {
      * As {@link #testFilterQueryOnFilterView()} but condition is weaker in query and columns selected are subset of columns in materialized view. Condition here is complex.
      */
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView13() {
         checkNoMaterialize(
                 "select * from \"emps\" where (\"salary\" < 1111.9 and \"deptno\" > 10) or (\"empid\" > 400 and \"salary\" > 5000)",
@@ -568,6 +574,7 @@ public class MaterializationTest {
      * As {@link #testFilterQueryOnFilterView7()} but columns in materialized view are a permutation of columns in the query.
      */
     @Test
+    @Ignore
     public void testFilterQueryOnFilterView14() {
         String q = "select * from \"emps\" where (\"salary\" > 1000 or (\"deptno\" >= 30 and \"salary\" <= 500))";
         String m = "select \"deptno\", \"empid\", \"name\", \"salary\", \"commission\" from \"emps\" as em where ((\"salary\" < 1111.9 and \"deptno\" > 10) or (\"empid\" > 400 and \"salary\" > 5000) or \"salary\" > 500)";

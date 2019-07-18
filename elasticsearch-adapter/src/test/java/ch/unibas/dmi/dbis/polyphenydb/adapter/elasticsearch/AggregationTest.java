@@ -69,12 +69,14 @@ import java.util.Locale;
 import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Testing Elasticsearch aggregation transformations.
  */
+@Ignore
 public class AggregationTest {
 
     @ClassRule

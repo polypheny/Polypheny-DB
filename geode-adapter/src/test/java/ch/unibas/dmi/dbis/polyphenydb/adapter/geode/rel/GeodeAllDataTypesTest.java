@@ -64,12 +64,14 @@ import java.util.Map;
 import org.apache.geode.cache.Cache;
 import org.apache.geode.cache.Region;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Test with different types of data like boolean, time, timestamp
  */
+@Ignore
 public class GeodeAllDataTypesTest extends AbstractGeodeTest {
 
     @BeforeClass

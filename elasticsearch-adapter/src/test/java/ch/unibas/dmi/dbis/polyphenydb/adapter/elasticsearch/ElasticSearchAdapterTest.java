@@ -74,12 +74,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Set of tests for ES adapter. Uses real instance via {@link EmbeddedElasticsearchPolicy}. Document source is local {@code zips-mini.json} file (located in test classpath).
  */
+@Ignore
 public class ElasticSearchAdapterTest {
 
     @ClassRule //init once for all tests

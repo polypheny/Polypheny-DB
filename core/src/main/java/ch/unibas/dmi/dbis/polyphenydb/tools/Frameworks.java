@@ -46,7 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MapSqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.SqlStatisticProvider;
@@ -117,13 +121,6 @@ public class Frameworks {
         private final FrameworkConfig config;
 
 
-        public PrepareAction() {
-            this.config = newConfigBuilder()
-                    .defaultSchema( Frameworks.createRootSchema( true ) )
-                    .build();
-        }
-
-
         public PrepareAction( FrameworkConfig config ) {
             this.config = config;
         }
@@ -166,7 +163,16 @@ public class Frameworks {
      * @return Return value from action
      */
     public static <R> R withPlanner( final PlannerAction<R> action ) {
-        FrameworkConfig config = newConfigBuilder().defaultSchema( Frameworks.createRootSchema( true ) ).build();
+        SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        FrameworkConfig config = newConfigBuilder()
+                .defaultSchema( rootSchema )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
+                .build();
         return withPlanner( action, config );
     }
 
@@ -196,10 +202,10 @@ public class Frameworks {
     /**
      * Creates a root schema.
      *
-     * @param addMetadataSchema Whether to add "metadata" schema containing definitions of tables, columns etc.
+     * @param cache Whether to create a caching schema.
      */
-    public static SchemaPlus createRootSchema( boolean addMetadataSchema ) {
-        return PolyphenyDbSchema.createRootSchema( addMetadataSchema ).plus();
+    public static SchemaPlus createRootSchema( boolean cache ) {
+        return PolyphenyDbSchema.createRootSchema( cache ).plus();
     }
 
 

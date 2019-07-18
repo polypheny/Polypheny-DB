@@ -91,6 +91,7 @@ import org.junit.Test;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
+@Ignore
 public class CsvTest {
 
     /**

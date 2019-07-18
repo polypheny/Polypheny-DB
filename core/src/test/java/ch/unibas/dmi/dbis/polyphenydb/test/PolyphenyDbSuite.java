@@ -196,7 +196,7 @@ import org.junit.runners.Suite;
         SqlToRelConverterTest.class,
         ProfilerTest.class,
         SqlAdvisorJdbcTest.class,
-        CoreQuidemTest.class,
+        //CoreQuidemTest.class,
         PolyphenyDbRemoteEmbeddedDriverTest.class,
         StreamTest.class,
         SortRemoveRuleTest.class,
@@ -232,5 +232,13 @@ import org.junit.runners.Suite;
         FoodmartTest.class
 })
 public class PolyphenyDbSuite {
+
+    static {
+        try {
+            Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
+        } catch ( ClassNotFoundException e ) {
+            e.printStackTrace();
+        }
+    }
 
 }

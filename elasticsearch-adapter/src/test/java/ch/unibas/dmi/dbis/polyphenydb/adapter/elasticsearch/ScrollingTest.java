@@ -65,12 +65,14 @@ import java.util.stream.IntStream;
 import org.elasticsearch.client.Response;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Tests usage of scrolling API like correct results and resource cleanup (delete scroll after scan).
  */
+@Ignore
 public class ScrollingTest {
 
     @ClassRule

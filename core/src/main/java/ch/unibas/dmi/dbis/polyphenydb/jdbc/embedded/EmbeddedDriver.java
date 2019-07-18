@@ -97,7 +97,7 @@ public class EmbeddedDriver extends UnregisteredDriver {
                 throw new IllegalArgumentException( "JDBC version not supported: " + jdbcVersion );
             case JDBC_41:
             default:
-                return "ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedJdbc41Factory";
+                return "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedJdbc41Factory";
         }
     }
 

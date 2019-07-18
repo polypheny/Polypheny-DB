@@ -75,6 +75,7 @@ import org.junit.Test;
 /**
  * Tests based on {@code zips-min.json} dataset. Runs automatically as part of CI.
  */
+@Ignore
 public class GeodeZipsTest extends AbstractGeodeTest {
 
     @BeforeClass

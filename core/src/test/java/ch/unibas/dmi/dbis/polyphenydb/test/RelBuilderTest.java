@@ -51,7 +51,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -149,7 +154,13 @@ public class RelBuilderTest {
                 .parserConfig( SqlParser.Config.DEFAULT )
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.SCOTT ) )
                 .traitDefs( (List<RelTraitDef>) null )
-                .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) );
+                .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) );
     }
 
 
@@ -169,7 +180,14 @@ public class RelBuilderTest {
         // register view (in root schema)
         root.add( "MYVIEW", macro );
 
-        return Frameworks.newConfigBuilder().defaultSchema( root );
+        return Frameworks.newConfigBuilder()
+                .defaultSchema( root )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( root ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) );
     }
 
 

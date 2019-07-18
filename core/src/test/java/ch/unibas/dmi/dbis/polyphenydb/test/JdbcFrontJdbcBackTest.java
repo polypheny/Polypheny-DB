@@ -96,6 +96,7 @@ public class JdbcFrontJdbcBackTest {
 
 
     @Test
+    @Ignore
     public void testTablesByType() throws Exception {
         // check with the form recommended by JDBC
         checkTablesByType( "SYSTEM TABLE", is( "COLUMNS;TABLES;" ) );
@@ -159,6 +160,7 @@ public class JdbcFrontJdbcBackTest {
 
 
     @Test
+    @Ignore
     public void testCase() {
         PolyphenyDbAssert.that()
                 .with( PolyphenyDbAssert.Config.JDBC_FOODMART )

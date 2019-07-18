@@ -62,12 +62,14 @@ import java.util.Locale;
 import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Test of different boolean expressions (some more complex than others).
  */
+@Ignore
 public class BooleanLogicTest {
 
     @ClassRule

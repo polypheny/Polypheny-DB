@@ -412,6 +412,7 @@ public class TableFunctionTest {
 
 
     @Test
+    @Ignore
     public void testCrossApply() {
         final String q1 = "select *\n"
                 + "from (values 2, 5) as t (c)\n"

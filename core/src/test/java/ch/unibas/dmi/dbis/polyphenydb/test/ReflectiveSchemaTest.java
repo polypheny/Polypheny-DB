@@ -716,6 +716,7 @@ public class ReflectiveSchemaTest {
      * @see CatchallSchema#list
      */
     @Test
+    @Ignore
     public void testSchemaFieldHasBadType() throws Exception {
         final PolyphenyDbAssert.AssertThat with = PolyphenyDbAssert.that().withSchema( "s", CATCHALL );
         // BitSet is not a valid relation type. It's as if "bitSet" field does not exist.
@@ -840,6 +841,7 @@ public class ReflectiveSchemaTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-281">[POLYPHENYDB-1919] NPE when target in ReflectiveSchema belongs to the unnamed package</a>.
      */
     @Test
+    @Ignore
     public void testReflectiveSchemaInUnnamedPackage() throws Exception {
         final EmbeddedDriver embeddedDriver = new EmbeddedDriver();
         try (

@@ -98,7 +98,7 @@ import org.apache.calcite.linq4j.Queryable;
 public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
     private RelProtoDataType protoRowType;
-    private final JdbcSchema jdbcSchema;
+    private JdbcSchema jdbcSchema;
     private final String jdbcCatalogName;
     private final String jdbcSchemaName;
     private final String jdbcTableName;
@@ -154,10 +154,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlIdentifier tableName() {
         final List<String> strings = new ArrayList<>();
-        if ( jdbcSchema.database != null ) {
+        if ( jdbcSchema != null && jdbcSchema.database != null ) {
             strings.add( jdbcSchema.database );
         }
-        if ( jdbcSchema.schema != null ) {
+        if ( jdbcSchema != null && jdbcSchema.schema != null ) {
             strings.add( jdbcSchema.schema );
         }
         strings.add( jdbcTableName );
@@ -192,6 +192,12 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         jdbcSchema.convention.register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+    }
+
+
+    // For unit testing only
+    public void setSchema( JdbcSchema jdbcSchema ) {
+        this.jdbcSchema = jdbcSchema;
     }
 
 

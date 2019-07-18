@@ -47,6 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.rex;
 
 import static org.junit.Assert.assertEquals;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
@@ -100,9 +104,16 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
 
 
     private RelNode convertSqlToRel( String sql, boolean simplifyRex ) {
+        PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( PolyphenyDbSchema.createRootSchema( false ).plus() )
+                .defaultSchema( rootSchema.plus() )
                 .parserConfig( SqlParser.configBuilder().build() )
+                .prepareContext( new ContextImpl( rootSchema, new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
         try ( Closer closer = new Closer() ) {

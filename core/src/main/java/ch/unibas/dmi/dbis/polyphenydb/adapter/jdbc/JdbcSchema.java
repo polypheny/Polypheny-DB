@@ -159,6 +159,21 @@ public class JdbcSchema implements Schema {
     }
 
 
+    // For unit testing only
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, tableMap );
+    }
+
+
+    // For unit testing only
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
+        final SqlDialect dialect = createDialect( dialectFactory, dataSource );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
+    }
+
+
     /**
      * Creates a JdbcSchema, taking credentials from a map.
      *
@@ -167,7 +182,7 @@ public class JdbcSchema implements Schema {
      * @param operand Map of property/value pairs
      * @return A JdbcSchema
      */
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand, ImmutableMap<String, JdbcTable> tableMap ) {
         DataSource dataSource;
         try {
             final String dataSourceName = (String) operand.get( "dataSource" );
@@ -188,10 +203,10 @@ public class JdbcSchema implements Schema {
         String sqlDialectFactory = (String) operand.get( "sqlDialectFactory" );
 
         if ( sqlDialectFactory == null || sqlDialectFactory.isEmpty() ) {
-            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema, tableMap );
         } else {
             SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, sqlDialectFactory );
-            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema, tableMap );
         }
     }
 
@@ -432,7 +447,7 @@ public class JdbcSchema implements Schema {
 
 
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            return JdbcSchema.create( parentSchema, name, operand );
+            return JdbcSchema.create( parentSchema, name, operand, null );
         }
     }
 }

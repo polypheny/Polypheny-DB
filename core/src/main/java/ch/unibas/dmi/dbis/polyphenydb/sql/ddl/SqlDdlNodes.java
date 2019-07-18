@@ -287,6 +287,7 @@ public class SqlDdlNodes {
         final FrameworkConfig config =
                 Frameworks.newConfigBuilder()
                         .defaultSchema( context.getRootSchema().plus() )
+                        .prepareContext( context )
                         .build();
         final Planner planner = Frameworks.getPlanner( config );
         try {

@@ -45,21 +45,20 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import static org.junit.Assert.assertEquals;
+
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-
 import com.google.common.collect.ImmutableMap;
-
-import org.junit.Test;
-
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Ignore;
+import org.junit.Test;
 
 
 /**
  * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.pig} package.
  */
+@Ignore
 public class PigAdapterTest extends AbstractPigTest {
 
     // Undo the %20 replacement of a space by URL

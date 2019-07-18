@@ -69,12 +69,14 @@ import java.util.function.Consumer;
 import java.util.regex.PatternSyntaxException;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Checks renaming of fields (also upper, lower cases) during projections
  */
+@Ignore
 public class Projection2Test {
 
     @ClassRule

@@ -84,8 +84,9 @@ public class MaterializedViewTable extends ViewTable {
 
     static {
         try {
+            Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" ); // TODO MV: Remove
             MATERIALIZATION_CONNECTION = DriverManager.getConnection( "jdbc:polyphenydbembedded:" ).unwrap( PolyphenyDbEmbeddedConnection.class );
-        } catch ( SQLException e ) {
+        } catch ( SQLException | ClassNotFoundException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -53,7 +53,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -68,6 +72,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
@@ -94,8 +99,18 @@ public class RexExecutorTest {
 
 
     protected void check( final Action action ) throws Exception {
+        PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
+        FrameworkConfig config = Frameworks.newConfigBuilder()
+                .defaultSchema( rootSchema.plus() )
+                .prepareContext( new ContextImpl( rootSchema, new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
+                .build();
         Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>() {
+                new Frameworks.PrepareAction<Void>( config ) {
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
                         DataContext dataContext = Schemas.createDataContext( null, rootSchema );

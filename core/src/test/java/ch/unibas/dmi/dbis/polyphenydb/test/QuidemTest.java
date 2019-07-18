@@ -81,6 +81,7 @@ import java.util.function.Function;
 import net.hydromatic.quidem.CommandHandler;
 import net.hydromatic.quidem.Quidem;
 import org.apache.calcite.avatica.AvaticaUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,6 +91,7 @@ import org.junit.runners.Parameterized;
  * Test that runs every Quidem file as a test.
  */
 @RunWith(Parameterized.class)
+@Ignore
 public abstract class QuidemTest {
 
     protected final String path;

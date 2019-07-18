@@ -85,6 +85,7 @@ import org.apache.calcite.avatica.server.Main;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -199,6 +200,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
 
 
     @Test
+    @Ignore
     public void testSchemasLocal() throws Exception {
         final Connection connection = DriverManager.getConnection( "jdbc:avatica:remote:factory=" + LJS );
         assertThat( connection.isClosed(), is( false ) );
@@ -260,6 +262,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
 
 
     @Test
+    @Ignore
     public void testRemoteSchemas() throws Exception {
         PolyphenyDbAssert.hr().with( REMOTE_CONNECTION_FACTORY )
                 .metaData( GET_SCHEMAS )

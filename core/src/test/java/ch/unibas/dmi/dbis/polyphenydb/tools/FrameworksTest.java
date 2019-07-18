@@ -52,8 +52,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptAbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -183,9 +188,30 @@ public class FrameworksTest {
      */
     @Test
     public void testTypeSystem() {
-        checkTypeSystem( 19, Frameworks.newConfigBuilder().build() );
-        checkTypeSystem( 25, Frameworks.newConfigBuilder().typeSystem( HiveLikeTypeSystem.INSTANCE ).build() );
-        checkTypeSystem( 31, Frameworks.newConfigBuilder().typeSystem( new HiveLikeTypeSystem2() ).build() );
+        checkTypeSystem( 19, Frameworks.newConfigBuilder()
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
+                .build() );
+        checkTypeSystem( 25, Frameworks.newConfigBuilder().typeSystem( HiveLikeTypeSystem.INSTANCE )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl( HiveLikeTypeSystem.INSTANCE );
+                    }
+                }, "" ) )
+                .build() );
+        checkTypeSystem( 31, Frameworks.newConfigBuilder().typeSystem( new HiveLikeTypeSystem2() )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl( new HiveLikeTypeSystem2() );
+                    }
+                }, "" ) )
+                .build() );
     }
 
 
@@ -214,6 +240,12 @@ public class FrameworksTest {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
         SqlNode parse = planner.parse( "select * from \"emps\" " );
@@ -275,6 +307,12 @@ public class FrameworksTest {
                     try {
                         final FrameworkConfig config = Frameworks.newConfigBuilder()
                                 .defaultSchema( connection.getRootSchema() )
+                                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( connection.getRootSchema() ), new SlimDataContext() {
+                                    @Override
+                                    public JavaTypeFactory getTypeFactory() {
+                                        return new JavaTypeFactoryImpl();
+                                    }
+                                }, "" ) )
                                 .build();
                         final RelBuilder builder = RelBuilder.create( config );
                         final RelRunner runner = connection.unwrap( RelRunner.class );
@@ -327,6 +365,12 @@ public class FrameworksTest {
                 // define the rules you want to apply
                 .ruleSets( RuleSets.ofList( AbstractConverter.ExpandConversionRule.INSTANCE ) )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                }, "" ) )
                 .build();
         executeQuery( config, " UPDATE MYTABLE set id=7 where id=1", PolyphenyDbPrepareImpl.DEBUG );
     }

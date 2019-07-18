@@ -58,12 +58,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
  * Test cases to check that necessary information from underlying exceptions is correctly propagated via {@link SQLException}s.
  */
+@Ignore
 public class ExceptionMessageTest {
 
     private Connection conn;
