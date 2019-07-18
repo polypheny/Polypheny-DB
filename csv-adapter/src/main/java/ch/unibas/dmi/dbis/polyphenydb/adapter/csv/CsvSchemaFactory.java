@@ -91,7 +91,7 @@ public class CsvSchemaFactory implements SchemaFactory {
         } else {
             flavor = CsvTable.Flavor.valueOf( flavorName.toUpperCase( Locale.ROOT ) );
         }
-        return new CsvSchema( directoryFile, flavor, null );
+        return new CsvSchema( directoryFile, flavor );
     }
 }
 

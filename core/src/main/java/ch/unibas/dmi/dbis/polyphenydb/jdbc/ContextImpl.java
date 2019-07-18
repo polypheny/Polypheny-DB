@@ -31,8 +31,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.LongSchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -41,7 +39,6 @@ import java.util.Properties;
 
 public class ContextImpl implements Context {
 
-    private final PolyphenyDbSchema mutableRootSchema;
     private final PolyphenyDbSchema rootSchema;
     private final JavaTypeFactory typeFactory;
     private final DataContext dataContext;
@@ -49,10 +46,7 @@ public class ContextImpl implements Context {
 
 
     public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String schemaName ) {
-        long now = System.currentTimeMillis();
-        SchemaVersion schemaVersion = new LongSchemaVersion( now );
-        this.mutableRootSchema = rootSchema;
-        this.rootSchema = mutableRootSchema.createSnapshot( schemaVersion );
+        this.rootSchema = rootSchema;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.schemaName = schemaName;
@@ -66,11 +60,6 @@ public class ContextImpl implements Context {
 
     public PolyphenyDbSchema getRootSchema() {
         return rootSchema;
-    }
-
-
-    public PolyphenyDbSchema getMutableRootSchema() {
-        return mutableRootSchema;
     }
 
 

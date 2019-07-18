@@ -3,26 +3,30 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import java.io.File;
 
 
 public class CsvStore implements Store {
 
     private static File csvDir = new File( "testTestCsv" );
-    private final CatalogCombinedSchema combinedSchema;
+    private CsvSchema schema;
 
 
-    public CsvStore( CatalogCombinedSchema combinedSchema ) {
-        this.combinedSchema = combinedSchema;
+    public CsvStore() {
     }
 
 
     @Override
-    public Schema getSchema( SchemaPlus rootSchema ) {
-        return new CsvSchema( csvDir, Flavor.FILTERABLE, combinedSchema );
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
+        schema = new CsvSchema( csvDir, Flavor.FILTERABLE );
     }
 
+
+    @Override
+    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
+        return schema.createCsvTable( combinedTable );
+    }
 }

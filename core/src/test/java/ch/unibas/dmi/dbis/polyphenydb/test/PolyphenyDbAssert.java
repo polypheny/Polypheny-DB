@@ -783,11 +783,11 @@ public class PolyphenyDbAssert {
             case JDBC_SCOTT:
                 cs = DatabaseInstance.HSQLDB.scott;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, null ) ); // TODO MV: null
+                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) ); // TODO MV: null
             case JDBC_FOODMART:
                 cs = DB.foodmart;
                 dataSource = JdbcSchema.dataSource( cs.url, cs.driver, cs.username, cs.password );
-                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, null ) ); // TODO MV: null
+                return rootSchema.add( schema.schemaName, JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema ) ); // TODO MV: null
             case JDBC_FOODMART_WITH_LATTICE:
                 foodmart = addSchemaIfNotExists( rootSchema, SchemaSpec.JDBC_FOODMART );
                 foodmart.add( schema.schemaName,

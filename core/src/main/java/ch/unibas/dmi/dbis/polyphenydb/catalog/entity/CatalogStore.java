@@ -23,36 +23,39 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import java.util.List;
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 
-public class CatalogCombinedDatabase implements CatalogCombinedEntity {
+public class CatalogStore implements CatalogEntity {
 
-    private static final long serialVersionUID = 8705987903992498470L;
+    private static final long serialVersionUID = 4754069156177607149L;
 
-    @Getter
-    private final CatalogDatabase database;
-    @Getter
-    private final List<CatalogCombinedSchema> schemas;
-    @Getter
-    private final CatalogSchema defaultSchema;
-    @Getter
-    private final CatalogUser owner;
+    public final int id;
+    public final String uniqueName;
+    public final String adapterClazz;
 
 
-    public CatalogCombinedDatabase( @NonNull CatalogDatabase database, @NonNull List<CatalogCombinedSchema> schemas, CatalogSchema defaultSchema, @NonNull CatalogUser owner ) {
-        this.database = database;
-        this.schemas = schemas;
-        this.owner = owner;
-        this.defaultSchema = defaultSchema;
+    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz ) {
+        this.id = id;
+        this.uniqueName = uniqueName;
+        this.adapterClazz = adapterClazz;
     }
 
+
+    // Used for creating ResultSets
+    @Override
+    public Object[] getParameterArray() {
+        return new Object[]{ uniqueName };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogUser {
+
+        public final String name;
+    }
 }

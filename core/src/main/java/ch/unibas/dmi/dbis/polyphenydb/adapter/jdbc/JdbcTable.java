@@ -154,8 +154,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlIdentifier tableName() {
         final List<String> strings = new ArrayList<>();
-        if ( jdbcSchema.catalog != null ) {
-            strings.add( jdbcSchema.catalog );
+        if ( jdbcSchema.database != null ) {
+            strings.add( jdbcSchema.database );
         }
         if ( jdbcSchema.schema != null ) {
             strings.add( jdbcSchema.schema );

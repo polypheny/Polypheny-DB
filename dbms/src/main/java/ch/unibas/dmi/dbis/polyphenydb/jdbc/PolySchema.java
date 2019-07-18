@@ -2,9 +2,16 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
@@ -20,7 +27,7 @@ public class PolySchema {
 
     private final static PolySchema INSTANCE = new PolySchema();
 
-    private PolyphenyDbSchema current = null;
+    private Map<PolyXid, PolyphenyDbSchema> cache = new HashMap<>();
 
 
     public static PolySchema getInstance() {
@@ -28,15 +35,15 @@ public class PolySchema {
     }
 
 
-    public PolyphenyDbSchema getCurrent() {
-        if ( current == null ) {
-            current = update();
+    public PolyphenyDbSchema getCurrent( PolyXid xid ) {
+        if ( !cache.containsValue( xid ) ) {
+            cache.put( xid, update( xid ) );
         }
-        return current;
+        return cache.get( xid );
     }
 
 
-    public PolyphenyDbSchema update() {
+    public PolyphenyDbSchema update( PolyXid xid ) {
         final PolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
@@ -48,19 +55,30 @@ public class PolySchema {
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
 
         // Build schema
-        //final Expression expression = polyphenyDbSchema.plus().getExpression( null, "" );
-        StoreManager.getInstance().getStores().forEach( ( uniqueName, store ) -> {
-            Schema s = store.getSchema( rootSchema );
-            rootSchema.add( uniqueName, s );
+        CatalogCombinedDatabase combinedDatabase;
+        try {
+            combinedDatabase = CatalogManagerImpl.getInstance().getCombinedDatabase( xid, 0 );
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException e ) {
+            throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
+        }
 
-            Map<String, Table> tableMap = null;
-            if ( uniqueName.equals( "HSQLDB" ) ) {
-                tableMap = new HashMap<>( ((JdbcSchema) s).getTableMap() );
-            } else if ( uniqueName.equals( "CSV" ) ) {
-                tableMap = new HashMap<>( ((CsvSchema) s).getTableMap() );
+        for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+            Map<String, Table> tableMap = new HashMap<>();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), combinedSchema.getSchema().name ).plus();
+            for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                int storeId = combinedTable.getPlacements().get( 0 ).storeId;
+                Store store = StoreManager.getInstance().getStore( storeId );
+                store.createNewSchema( rootSchema, combinedSchema.getSchema().name );
+                Table table = store.createTableSchema( combinedTable );
+                s.add( combinedTable.getTable().name, table );
+                tableMap.put( combinedTable.getTable().name, table );
             }
-            tableMap.forEach( polyphenyDbSchema.getSubSchema( uniqueName, false )::add );
-        } );
+            rootSchema.add( combinedSchema.getSchema().name, s );
+            tableMap.forEach( rootSchema.getSubSchema( combinedSchema.getSchema().name )::add );
+            if ( combinedDatabase.getDefaultSchema() != null && combinedSchema.getSchema().id == combinedDatabase.getDefaultSchema().id ) {
+                tableMap.forEach( rootSchema::add );
+            }
+        }
 
         return polyphenyDbSchema;
     }

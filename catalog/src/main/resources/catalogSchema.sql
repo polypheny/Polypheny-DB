@@ -107,6 +107,7 @@ CREATE TABLE "database" (
   "encoding"           INTEGER           NOT NULL,
   "collation"          INTEGER           NOT NULL,
   "connection_limit"   INTEGER           NOT NULL,
+  "default_schema"     BIGINT            NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -160,6 +161,21 @@ CREATE TABLE "user" (
   "username"  VARCHAR(100)      NOT NULL,
   "password"  VARCHAR(100)      NOT NULL,
   PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "store" (
+  "id"           INTEGER IDENTITY  NOT NULL,
+  "unique_name"  VARCHAR(100)      NOT NULL,
+  "adapter"      VARCHAR(100)      NOT NULL,
+  PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "data_placement" (
+  "store"    INTEGER   NOT NULL,
+  "table"    INTEGER   NOT NULL,
+  PRIMARY KEY ("store", "table")
 );
 
 
@@ -253,8 +269,19 @@ CREATE INDEX "index_columns_column"
 CREATE UNIQUE INDEX "user_username"
   ON "user" ("username");
 
+CREATE UNIQUE INDEX "store_unique_name"
+  ON "store" ("unique_name");
+CREATE INDEX "store_adapter"
+  ON "store" ("adapter");
+
+CREATE INDEX "data_placement_store"
+  ON "data_placement" ("store");
+CREATE INDEX "data_placement_table"
+  ON "data_placement" ("table");
+
 
 -- ---------------------------------------------------------------
+
 
 INSERT INTO "user" ("id", "username", "password") VALUES (0, 'system', '');
 INSERT INTO "user" ("id", "username", "password") VALUES (1, 'pa', '');
@@ -264,7 +291,7 @@ ALTER TABLE "user"
   RESTART WITH 2;
 
 
-INSERT INTO "database" ("id", "name", "owner", "encoding", "collation", "connection_limit") VALUES ( 0, 'APP', 0, 1, 2, 0 );
+INSERT INTO "database" ("id", "name", "owner", "encoding", "collation", "connection_limit", "default_schema" ) VALUES ( 0, 'APP', 0, 1, 2, 0, 0 );
 
 ALTER TABLE "database"
   ALTER COLUMN "id"
@@ -272,17 +299,17 @@ ALTER TABLE "database"
 
 
 INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 0, 0, 'public', 0, 1, 2, 1 );
-INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 1, 0, 'csv', 0, 1, 2, 1 );
-INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 2, 0, 'hsqldb', 0, 1, 2, 1 );
+-- INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 1, 0, 'csv', 0, 1, 2, 1 );
+-- INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 2, 0, 'hsqldb', 0, 1, 2, 1 );
 
 ALTER TABLE "schema"
   ALTER COLUMN "id"
-  RESTART WITH 3;
+  RESTART WITH 1;
 
 
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 0, 1, 'depts', 0, 1, 2, 1, '' );
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 1, 1, 'emps', 0, 1, 2, 1, '' );
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 2, 2, 'test', 0, 1, 2, 1, '' );
+INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 0, 0, 'depts', 0, 1, 2, 1, '' );
+INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 1, 0, 'emps', 0, 1, 2, 1, '' );
+INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 2, 0, 'test', 0, 1, 2, 1, '' );
 
 ALTER TABLE "schema"
   ALTER COLUMN "id"
@@ -302,3 +329,16 @@ INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "pre
 ALTER TABLE "column"
   ALTER COLUMN "id"
   RESTART WITH 10;
+
+
+INSERT INTO "store" ( "id", "unique_name", "adapter" ) VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb.HsqldbStore' );
+INSERT INTO "store" ( "id", "unique_name", "adapter" ) VALUES ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore' );
+
+ALTER TABLE "store"
+  ALTER COLUMN "id"
+  RESTART WITH 2;
+
+
+INSERT INTO "data_placement" ( "store", "table" ) VALUES ( 0, 2 );
+INSERT INTO "data_placement" ( "store", "table" ) VALUES ( 1, 0 );
+INSERT INTO "data_placement" ( "store", "table" ) VALUES ( 1, 1 );

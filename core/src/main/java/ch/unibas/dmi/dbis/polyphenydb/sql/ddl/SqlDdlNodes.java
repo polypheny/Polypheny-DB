@@ -249,7 +249,7 @@ public class SqlDdlNodes {
             path = Util.skipLast( id.names );
             name = Util.last( id.names );
         }
-        PolyphenyDbSchema schema = mutable ? context.getMutableRootSchema() : context.getRootSchema();
+        PolyphenyDbSchema schema = context.getRootSchema();
         for ( String p : path ) {
             schema = schema.getSubSchema( p, true );
         }

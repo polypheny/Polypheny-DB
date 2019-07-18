@@ -23,36 +23,42 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import java.util.List;
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 
-public class CatalogCombinedDatabase implements CatalogCombinedEntity {
+public class CatalogDataPlacement implements CatalogEntity {
 
-    private static final long serialVersionUID = 8705987903992498470L;
+    private static final long serialVersionUID = 4754069156177607149L;
 
-    @Getter
-    private final CatalogDatabase database;
-    @Getter
-    private final List<CatalogCombinedSchema> schemas;
-    @Getter
-    private final CatalogSchema defaultSchema;
-    @Getter
-    private final CatalogUser owner;
+    public final long tableId;
+    public final String tableName;
+    public final int storeId;
+    public final String storeUniqueName;
 
 
-    public CatalogCombinedDatabase( @NonNull CatalogDatabase database, @NonNull List<CatalogCombinedSchema> schemas, CatalogSchema defaultSchema, @NonNull CatalogUser owner ) {
-        this.database = database;
-        this.schemas = schemas;
-        this.owner = owner;
-        this.defaultSchema = defaultSchema;
+    public CatalogDataPlacement( final long tableId, @NonNull final String tableName, final int storeId, @NonNull final String storeUniqueName ) {
+        this.tableId = tableId;
+        this.tableName = tableName;
+        this.storeId = storeId;
+        this.storeUniqueName = storeUniqueName;
     }
 
+
+    // Used for creating ResultSets
+    @Override
+    public Object[] getParameterArray() {
+        return new Object[]{ tableName, storeUniqueName };
+    }
+
+
+    @RequiredArgsConstructor
+    public class PrimitiveCatalogUser {
+
+        public final String table;
+        public final String store;
+    }
 }

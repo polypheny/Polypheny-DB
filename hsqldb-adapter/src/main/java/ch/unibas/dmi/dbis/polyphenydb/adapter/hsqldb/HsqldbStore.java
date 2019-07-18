@@ -3,9 +3,9 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
 
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -16,10 +16,10 @@ public class HsqldbStore implements Store {
 
 
     private final BasicDataSource dataSource;
-    private final CatalogCombinedSchema combinedSchema;
+    private JdbcSchema currentJdbcSchema;
 
 
-    public HsqldbStore( CatalogCombinedSchema combinedSchema ) {
+    public HsqldbStore() {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
         dataSource.setUrl( "jdbc:hsqldb:mem:testdb" );
@@ -33,7 +33,8 @@ public class HsqldbStore implements Store {
         }
 
         this.dataSource = dataSource;
-        this.combinedSchema = combinedSchema;
+
+
     }
 
 
@@ -49,8 +50,14 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public Schema getSchema( SchemaPlus rootSchema ) {
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        return JdbcSchema.create( rootSchema, "HSQLDB", dataSource, null, null, combinedSchema );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null );
+    }
+
+
+    @Override
+    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
+        return currentJdbcSchema.createJdbcTable( combinedTable );
     }
 }

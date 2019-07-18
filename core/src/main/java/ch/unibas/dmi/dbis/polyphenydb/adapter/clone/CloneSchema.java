@@ -174,7 +174,7 @@ public class CloneSchema extends AbstractSchema {
     public static class Factory implements SchemaFactory {
 
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            SchemaPlus schema = parentSchema.add( name, JdbcSchema.create( parentSchema, name + "$source", operand, null ) );
+            SchemaPlus schema = parentSchema.add( name, JdbcSchema.create( parentSchema, name + "$source", operand ) );
             return new CloneSchema( schema );
         }
     }

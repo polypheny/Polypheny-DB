@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -60,7 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -75,7 +73,7 @@ public class CsvSchema extends AbstractSchema {
 
     private final File directoryFile;
     private final CsvTable.Flavor flavor;
-    private Map<String, CsvTable> tableMap;
+    private Map<String, CsvTable> tableMap = new HashMap<>();
 
 
     /**
@@ -84,30 +82,29 @@ public class CsvSchema extends AbstractSchema {
      * @param directoryFile Directory that holds {@code .csv} files
      * @param flavor Whether to instantiate flavor tables that undergo query optimization
      */
-    public CsvSchema( File directoryFile, CsvTable.Flavor flavor, CatalogCombinedSchema combinedSchema ) {
+    public CsvSchema( File directoryFile, CsvTable.Flavor flavor ) {
         super();
         this.directoryFile = directoryFile;
         this.flavor = flavor;
+    }
 
-        // initialize tableMap
-        final ImmutableMap.Builder<String, CsvTable> builder = ImmutableMap.builder();
+
+    public Table createCsvTable( CatalogCombinedTable combinedTable ) {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-            final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-            List<CsvFieldType> fieldTypes = new LinkedList<>();
-            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-                RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
-                fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
+        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        List<CsvFieldType> fieldTypes = new LinkedList<>();
+        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
 
-                fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
-            }
-
-            Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
-            CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes );
-            builder.put( combinedTable.getTable().name, table );
+            fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
-        this.tableMap = builder.build();
+
+        Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
+        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes );
+        tableMap.put( combinedTable.getTable().name, table );
+        return table;
     }
 
 

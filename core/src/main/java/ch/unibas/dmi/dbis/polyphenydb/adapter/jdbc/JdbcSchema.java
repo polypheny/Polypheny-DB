@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -75,6 +74,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -91,20 +91,20 @@ import org.apache.calcite.linq4j.tree.Expression;
 public class JdbcSchema implements Schema {
 
     final DataSource dataSource;
-    final String catalog;
+    final String database;
     final String schema;
     public final SqlDialect dialect;
     final JdbcConvention convention;
 
-    private final ImmutableMap<String, JdbcTable> tableMap;
+    private final Map<String, JdbcTable> tableMap;
 
 
-    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
         super();
         this.dataSource = Objects.requireNonNull( dataSource );
         this.dialect = Objects.requireNonNull( dialect );
         this.convention = convention;
-        this.catalog = catalog;
+        this.database = catalog;
         this.schema = schema;
 
         this.tableMap = tableMap;
@@ -117,47 +117,45 @@ public class JdbcSchema implements Schema {
      * @param dataSource Data source
      * @param dialect SQL dialect
      * @param convention Calling convention
-     * @param catalog Catalog name, or null
+     * @param database Database name, or null
      * @param schema Schema name pattern
-     * @param combinedSchema
      */
-    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, CatalogCombinedSchema combinedSchema ) {
+    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
         super();
         this.dataSource = Objects.requireNonNull( dataSource );
         this.dialect = Objects.requireNonNull( dialect );
         this.convention = convention;
-        this.catalog = catalog;
+        this.database = database;
         this.schema = schema;
+        this.tableMap = new HashMap<>();
+    }
 
-        // initialize tableMap
-        final ImmutableMap.Builder<String, JdbcTable> builder = ImmutableMap.builder();
+
+    public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-            final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-                RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
-                fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-            }
-
-            JdbcTable table = new JdbcTable( this, catalog, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ) );
-            builder.put( combinedTable.getTable().name, table );
+        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
         }
-        this.tableMap = builder.build();
+        JdbcTable table = new JdbcTable( this, database, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ) );
+        tableMap.put( combinedTable.getTable().name, table );
+        return table;
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, CatalogCombinedSchema combinedSchema ) {
-        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, combinedSchema );
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema ) {
+        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema );
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, CatalogCombinedSchema combinedSchema ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final SqlDialect dialect = createDialect( dialectFactory, dataSource );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, combinedSchema );
+        return new JdbcSchema( dataSource, dialect, convention, catalog, schema );
     }
 
 
@@ -169,7 +167,7 @@ public class JdbcSchema implements Schema {
      * @param operand Map of property/value pairs
      * @return A JdbcSchema
      */
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand, CatalogCombinedSchema combinedSchema ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
         DataSource dataSource;
         try {
             final String dataSourceName = (String) operand.get( "dataSource" );
@@ -190,10 +188,10 @@ public class JdbcSchema implements Schema {
         String sqlDialectFactory = (String) operand.get( "sqlDialectFactory" );
 
         if ( sqlDialectFactory == null || sqlDialectFactory.isEmpty() ) {
-            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema, combinedSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema );
         } else {
             SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, sqlDialectFactory );
-            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema, combinedSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema );
         }
     }
 
@@ -236,7 +234,7 @@ public class JdbcSchema implements Schema {
 
 
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
+        return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap );
     }
 
 
@@ -273,7 +271,7 @@ public class JdbcSchema implements Schema {
 
 
     public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
-        return tableMap;
+        return ImmutableMap.copyOf( tableMap );
     }
 
 
@@ -434,7 +432,7 @@ public class JdbcSchema implements Schema {
 
 
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            return JdbcSchema.create( parentSchema, name, operand, null );
+            return JdbcSchema.create( parentSchema, name, operand );
         }
     }
 }

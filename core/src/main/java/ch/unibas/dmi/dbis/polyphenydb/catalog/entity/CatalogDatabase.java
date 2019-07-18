@@ -48,9 +48,11 @@ public final class CatalogDatabase implements CatalogEntity {
     public final Encoding encoding;
     public final Collation collation;
     public final int connectionLimit;
+    public final Long defaultSchemaId; // can be null
+    public final String defaultSchemaName; // can be null
 
 
-    public CatalogDatabase( final long id, @NonNull final String name, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, final int connectionLimit ) {
+    public CatalogDatabase( final long id, @NonNull final String name, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, final int connectionLimit, final Long defaultSchemaId, final String defaultSchemaName ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
@@ -58,13 +60,15 @@ public final class CatalogDatabase implements CatalogEntity {
         this.encoding = encoding;
         this.collation = collation;
         this.connectionLimit = connectionLimit;
+        this.defaultSchemaId = defaultSchemaId;
+        this.defaultSchemaName = defaultSchemaName;
     }
 
 
     // Used for creating ResultSets
     @Override
     public Object[] getParameterArray() {
-        return new Object[]{ name, ownerName, encoding.name(), collation.name(), connectionLimit };
+        return new Object[]{ name, ownerName, encoding.name(), collation.name(), connectionLimit, defaultSchemaName };
     }
 
 
@@ -75,5 +79,6 @@ public final class CatalogDatabase implements CatalogEntity {
         public final String encoding;
         public final String collation;
         public final int connectionLimit;
+        public final String defaultSchemaName;
     }
 }

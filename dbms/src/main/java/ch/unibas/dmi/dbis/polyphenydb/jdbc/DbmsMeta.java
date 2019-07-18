@@ -373,7 +373,8 @@ public class DbmsMeta implements ProtobufMeta {
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
-                    "CONNECTION_LIMIT"
+                    "CONNECTION_LIMIT",
+                    "DEFAULT_SCHEMA"
             );
         } catch ( GenericCatalogException e ) {
             throw propagate( e );
@@ -739,10 +740,12 @@ public class DbmsMeta implements ProtobufMeta {
             }
         }
 
+        PolyXid xid = getCurrentTransaction( connection );
+
         // //////////////////////////
         // For testing
         // /////////////////////////
-        PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent();
+        PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent( xid );
 
         ////////////////////
         // (1)  Configure //
@@ -794,9 +797,8 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         /////////
-        // (2.5) TRANSACTION ID
+        // ((3) Execution
         ////////
-        PolyXid xid = getCurrentTransaction( connection );
 
 
         if ( LOG.isDebugEnabled() ) {
@@ -927,7 +929,7 @@ public class DbmsMeta implements ProtobufMeta {
         } else {
             iterator = statement.getOpenResultSet();
         }
-        final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<List<Object>>() );
+        final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
         boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
         @SuppressWarnings("unchecked")
         List<Object> rows1 = (List<Object>) rows;

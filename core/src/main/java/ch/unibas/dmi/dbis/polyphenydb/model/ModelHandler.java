@@ -350,10 +350,10 @@ public class ModelHandler {
                         jsonSchema.jdbcPassword );
         final JdbcSchema schema;
         if ( jsonSchema.sqlDialectFactory == null || jsonSchema.sqlDialectFactory.isEmpty() ) {
-            schema = JdbcSchema.create( parentSchema, jsonSchema.name, dataSource, jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema, null );
+            schema = JdbcSchema.create( parentSchema, jsonSchema.name, dataSource, jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema );
         } else {
             SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, jsonSchema.sqlDialectFactory );
-            schema = JdbcSchema.create( parentSchema, jsonSchema.name, dataSource, factory, jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema, null );
+            schema = JdbcSchema.create( parentSchema, jsonSchema.name, dataSource, factory, jsonSchema.jdbcCatalog, jsonSchema.jdbcSchema );
         }
         final SchemaPlus schemaPlus = parentSchema.add( jsonSchema.name, schema );
         populateSchema( jsonSchema, schemaPlus );

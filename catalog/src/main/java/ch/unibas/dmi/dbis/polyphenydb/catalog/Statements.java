@@ -34,8 +34,10 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -265,7 +267,7 @@ final class Statements {
 
 
     private static List<CatalogDatabase> databaseFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException {
-        String sql = "SELECT d.\"id\", d.\"name\", u.\"id\", u.\"username\", d.\"encoding\", d.\"collation\", d.\"connection_limit\" FROM \"database\" d, \"user\" u WHERE d.\"owner\" = u.\"id\"" + filter + ";";
+        String sql = "SELECT d.\"id\", d.\"name\", u.\"id\", u.\"username\", d.\"encoding\", d.\"collation\", d.\"connection_limit\", s.\"id\", s.\"name\" FROM \"database\" d, \"schema\" s, \"user\" u WHERE d.\"owner\" = u.\"id\" AND d.\"default_schema\" = s.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogDatabase> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -276,7 +278,9 @@ final class Statements {
                         rs.getString( 4 ),
                         Encoding.getById( rs.getInt( 5 ) ),
                         Collation.getById( rs.getInt( 6 ) ),
-                        rs.getInt( 7 )
+                        rs.getInt( 7 ),
+                        rs.getLong( 8 ),
+                        rs.getString( 9 )
                 ) );
             }
             return list;
@@ -475,7 +479,7 @@ final class Statements {
 
 
     private static List<CatalogTable> tableFilter( TransactionHandler transactionHandler, String filter ) throws UnknownEncodingException, UnknownCollationException, UnknownTableTypeException, GenericCatalogException {
-        final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"encoding\", t.\"collation\", t.\"type\", t.\"definition\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter;
+        final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"encoding\", t.\"collation\", t.\"type\", t.\"definition\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogTable> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -510,11 +514,9 @@ final class Statements {
      * @return A List of CatalogTables
      */
     static List<CatalogTable> getTables( TransactionHandler transactionHandler, long schemaId, Pattern tableNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownTableTypeException {
-        String filter;
+        String filter = " AND s.\"id\" = " + schemaId;
         if ( tableNamePattern != null ) {
-            filter = " AND \"schema\" = " + schemaId + " AND \"name\" LIKE '" + tableNamePattern.pattern + "';";
-        } else {
-            filter = " AND \"schema\" = " + schemaId + ";";
+            filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "';";
         }
         return tableFilter( transactionHandler, filter );
     }
@@ -537,7 +539,6 @@ final class Statements {
         if ( schemaNamePattern != null ) {
             filter += " AND s.\"name\" LIKE '" + schemaNamePattern.pattern + "'";
         }
-        filter += ";";
         return tableFilter( transactionHandler, filter );
     }
 
@@ -562,7 +563,6 @@ final class Statements {
         if ( databaseNamePattern != null ) {
             filter += " AND d.\"name\" LIKE '" + databaseNamePattern.pattern + "'";
         }
-        filter += ";";
         return tableFilter( transactionHandler, filter );
     }
 
@@ -575,7 +575,7 @@ final class Statements {
      * @return A CatalogTable
      */
     static CatalogTable getTable( TransactionHandler transactionHandler, long tableId ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
-        String filter = " AND \"id\" = " + tableId + ";";
+        String filter = " AND \"id\" = " + tableId;
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -595,7 +595,7 @@ final class Statements {
      * @return A CatalogTable
      */
     static CatalogTable getTable( TransactionHandler transactionHandler, long schemaId, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
-        String filter = " AND \"schema\" = " + schemaId + " AND \"name\" = '" + tableName + "';";
+        String filter = " AND \"schema\" = " + schemaId + " AND \"name\" = '" + tableName;
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -616,7 +616,7 @@ final class Statements {
      * @return A CatalogTable
      */
     static CatalogTable getTable( TransactionHandler transactionHandler, long databaseId, String schemaName, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
-        String filter = " AND s.\"database\" = " + databaseId + " AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "';";
+        String filter = " AND s.\"database\" = " + databaseId + " AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName;
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -637,7 +637,7 @@ final class Statements {
      * @return A CatalogTable
      */
     static CatalogTable getTable( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
-        String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "';";
+        String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName;
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -832,5 +832,78 @@ final class Statements {
         }
         return list.get( 0 );
     }
+
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+    //
+    //                                                                Store
+    //
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+    private static List<CatalogStore> storeFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String sql = "SELECT \"id\", \"unique_name\", \"adapter\" FROM \"store\"";
+        if ( filter.length() > 0 ) {
+            sql += " WHERE " + filter;
+        }
+        sql += ";";
+        try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
+            List<CatalogStore> list = new LinkedList<>();
+            while ( rs.next() ) {
+                list.add( new CatalogStore(
+                        rs.getInt( 1 ),
+                        rs.getString( 2 ),
+                        rs.getString( 3 )
+                ) );
+            }
+            return list;
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    // Get all Stores
+    public static List<CatalogStore> getStores( XATransactionHandler transactionHandler ) throws GenericCatalogException {
+        return storeFilter( transactionHandler, "" );
+    }
+
+
+    // Get Store by store id
+    public static List<CatalogStore> getStore( XATransactionHandler transactionHandler, int id ) throws GenericCatalogException {
+        String filter = " AND id = " + id;
+        return storeFilter( transactionHandler, filter );
+    }
+
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+    //
+    //                                                                Data Placement
+    //
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+    private static List<CatalogDataPlacement> dataPlacementFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String sql = "SELECT t.\"id\", t.\"name\", st.\"id\", st.\"unique_name\" FROM \"data_placement\" dp, \"store\" st, \"table\" t WHERE dp.\"store\" = st.\"id\" AND dp.\"table\" = t.\"id\"" + filter + ";";
+        try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
+            List<CatalogDataPlacement> list = new LinkedList<>();
+            while ( rs.next() ) {
+                list.add( new CatalogDataPlacement(
+                        rs.getLong( 1 ),
+                        rs.getString( 2 ),
+                        rs.getInt( 3 ),
+                        rs.getString( 4 )
+                ) );
+            }
+            return list;
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String filter = " AND t.\"id\" = " + tableId;
+        return dataPlacementFilter( transactionHandler, filter );
+    }
+
 
 }

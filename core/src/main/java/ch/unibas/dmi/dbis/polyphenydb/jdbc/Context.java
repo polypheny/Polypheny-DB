@@ -42,14 +42,9 @@ public interface Context {
     JavaTypeFactory getTypeFactory();
 
     /**
-     * Returns the root schema for statements that need a read-consistent snapshot.
+     * Returns the root schema
      */
     PolyphenyDbSchema getRootSchema();
-
-    /**
-     * Returns the root schema for statements that need to be able to modify schemas and have the results available to other statements. Viz, DDL statements.
-     */
-    PolyphenyDbSchema getMutableRootSchema();
 
     List<String> getDefaultSchemaPath();
 

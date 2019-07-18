@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -50,14 +51,17 @@ public class CatalogCombinedTable implements CatalogCombinedEntity {
     private CatalogDatabase database;
     @Getter
     private final CatalogUser owner;
+    @Getter
+    private final List<CatalogDataPlacement> placements;
 
 
-    public CatalogCombinedTable( @NonNull CatalogTable table, @NonNull List<CatalogColumn> columns, @NonNull CatalogSchema schema, @NonNull CatalogDatabase database, @NonNull CatalogUser owner ) {
+    public CatalogCombinedTable( @NonNull CatalogTable table, @NonNull List<CatalogColumn> columns, @NonNull CatalogSchema schema, @NonNull CatalogDatabase database, @NonNull CatalogUser owner, @NonNull List<CatalogDataPlacement> placements ) {
         this.table = table;
         this.columns = columns;
         this.schema = schema;
         this.database = database;
         this.owner = owner;
+        this.placements = placements;
     }
 
 

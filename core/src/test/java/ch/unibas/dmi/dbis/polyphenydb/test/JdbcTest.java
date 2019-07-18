@@ -7428,7 +7428,7 @@ public class JdbcTest {
     public static class FoodmartJdbcSchema extends JdbcSchema {
 
         public FoodmartJdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema ) {
-            super( dataSource, dialect, convention, catalog, schema, null );
+            super( dataSource, dialect, convention, catalog, schema );
         }
 
 

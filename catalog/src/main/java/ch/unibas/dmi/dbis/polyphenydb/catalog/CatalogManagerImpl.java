@@ -29,8 +29,10 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
@@ -452,6 +454,21 @@ public class CatalogManagerImpl extends CatalogManager {
     }
 
 
+    /**
+     * Get list of all stores
+     *
+     * @return List of stores
+     */
+    public List<CatalogStore> getStores( PolyXid xid ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getStores( transactionHandler );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
     @Override
     public CatalogCombinedDatabase getCombinedDatabase( PolyXid xid, long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
         try {
@@ -472,8 +489,12 @@ public class CatalogManagerImpl extends CatalogManager {
             for ( CatalogSchema schema : schemas ) {
                 combinedSchemas.add( getCombinedSchema( transactionHandler, schema.id ) );
             }
+            CatalogSchema defaultSchema = null;
+            if ( database.defaultSchemaId != null ) {
+                defaultSchema = Statements.getSchema( transactionHandler, database.defaultSchemaId );
+            }
             CatalogUser owner = Statements.getUser( transactionHandler, database.ownerId );
-            return new CatalogCombinedDatabase( database, combinedSchemas, owner );
+            return new CatalogCombinedDatabase( database, combinedSchemas, defaultSchema, owner );
         } catch ( UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
@@ -527,7 +548,8 @@ public class CatalogManagerImpl extends CatalogManager {
             CatalogSchema schema = Statements.getSchema( transactionHandler, table.schemaId );
             CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, table.ownerId );
-            return new CatalogCombinedTable( table, columns, schema, database, owner );
+            List<CatalogDataPlacement> placements = Statements.getDataPlacements( transactionHandler, tableId );
+            return new CatalogCombinedTable( table, columns, schema, database, owner, placements );
         } catch ( UnknownEncodingException | UnknownCollationException | UnknownTypeException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }

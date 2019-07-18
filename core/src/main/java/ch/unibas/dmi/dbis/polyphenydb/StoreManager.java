@@ -9,8 +9,8 @@ public class StoreManager {
 
     private static final StoreManager INSTANCE = new StoreManager();
 
-    private final Map<String, Store> stores = new HashMap<>();
-
+    private final Map<Integer, Store> storesById = new HashMap<>();
+    private final Map<String, Store> storesByName = new HashMap<>();
 
     public static StoreManager getInstance() {
         return INSTANCE;
@@ -22,23 +22,19 @@ public class StoreManager {
     }
 
 
-    public String register( final String proposedUniqueName, final Store instance ) {
-        String uniqueName = proposedUniqueName;
-        if ( stores.containsKey( uniqueName ) ) {
-            // There is already a store with this unique name registered
-            int counter = 0;
-            uniqueName = proposedUniqueName + counter;
-            while ( stores.containsKey( uniqueName ) ) {
-                counter++;
-                uniqueName = proposedUniqueName + counter;
-            }
-        }
-        stores.put( uniqueName, instance );
-        return uniqueName;
+    public void register( int storeId, final String uniqueName, final Store instance ) {
+        storesByName.put( uniqueName, instance );
+        storesById.put( storeId, instance );
     }
 
 
-    public Map<String, Store> getStores() {
-        return stores;
+    public Store getStore( String uniqueName ) {
+        return storesByName.get( uniqueName );
     }
+
+
+    public Store getStore( int id ) {
+        return storesById.get( id );
+    }
+
 }
