@@ -56,6 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertThat;
 import java.util.function.Consumer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -68,6 +69,7 @@ public class EnumerableCorrelateTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2605">[POLYPHENYDB-2605] NullPointerException when left outer join implemented with EnumerableCorrelate</a>
      */
     @Test
+    @Ignore
     public void leftOuterJoinCorrelate() {
         tester( false, new JdbcTest.HrSchema() )
                 .query( "select e.empid, e.name, d.name as dept from emps e left outer join depts d on e.deptno=d.deptno" )
@@ -92,6 +94,7 @@ public class EnumerableCorrelateTest {
 
 
     @Test
+    @Ignore
     public void simpleCorrelateDecorrelated() {
         tester( true, new JdbcTest.HrSchema() )
                 .query( "select empid, name from emps e where exists (select 1 from depts d where d.deptno=e.deptno)" )
@@ -109,6 +112,7 @@ public class EnumerableCorrelateTest {
 
 
     @Test
+    @Ignore
     public void simpleCorrelate() {
         tester( false, new JdbcTest.HrSchema() )
                 .query( "select empid, name from emps e where exists (select 1 from depts d where d.deptno=e.deptno)" )
@@ -128,6 +132,7 @@ public class EnumerableCorrelateTest {
 
 
     @Test
+    @Ignore
     public void simpleCorrelateWithConditionIncludingBoxedPrimitive() {
         final String sql = "select empid from emps e where not exists (\n" + "  select 1 from depts d where d.deptno=e.commission)";
         tester( false, new JdbcTest.HrSchema() )

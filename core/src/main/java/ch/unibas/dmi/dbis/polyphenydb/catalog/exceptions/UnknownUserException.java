@@ -29,7 +29,12 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 public class UnknownUserException extends CatalogException {
 
     public UnknownUserException( String username ) {
-        super( username );
+        super( "There is no user with the username '" + username + "'." );
+    }
+
+
+    public UnknownUserException( int userId ) {
+        super( "There is no user with the id '" + userId + "'." );
     }
 
 }

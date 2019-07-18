@@ -291,7 +291,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
      */
     public static SqlOperatorTable operatorTable( String className ) {
         // Dummy schema to collect the functions
-        final PolyphenyDbSchema schema = PolyphenyDbSchema.createRootSchema( false, false );
+        final PolyphenyDbSchema schema = PolyphenyDbSchema.createRootSchema( false );
         ModelHandler.addFunctions( schema.plus(), null, ImmutableList.of(), className, "*", true );
 
         // The following is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor

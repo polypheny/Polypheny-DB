@@ -42,7 +42,7 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
@@ -50,8 +50,13 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
@@ -59,10 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.DelegatingTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.LongSchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -71,7 +73,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorWithHints;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -108,7 +109,6 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
@@ -181,7 +181,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
 
 
     public Context createPrepareContext() {
-        return new ContextImpl( this );
+        return new ContextImpl( rootSchema, new DataContextImpl( this, ImmutableMap.of(), rootSchema ), "" );
     }
 
 
@@ -239,7 +239,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
     }
 
 
-    <T> PolyphenyDbSignature<T> parseQuery( PolyphenyDbPrepare.Query<T> query, PolyphenyDbPrepare.Context prepareContext, long maxRowCount ) {
+    <T> PolyphenyDbSignature<T> parseQuery( PolyphenyDbPrepare.Query<T> query, Context prepareContext, long maxRowCount ) {
         PolyphenyDbPrepare.Dummy.push( prepareContext );
         try {
             final PolyphenyDbPrepare prepare = prepareFactory.apply();
@@ -427,23 +427,6 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
 
 
     /**
-     * Schema that has no parents.
-     */
-    static class RootSchema extends AbstractSchema {
-
-        RootSchema() {
-            super();
-        }
-
-
-        @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
-        }
-    }
-
-
-    /**
      * Implementation of DataContext.
      */
     static class DataContextImpl implements DataContext {
@@ -549,87 +532,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
     }
 
 
-    /**
-     * Implementation of Context.
-     */
-    static class ContextImpl implements PolyphenyDbPrepare.Context {
 
-        private final PolyphenyDbEmbeddedConnectionImpl connection;
-        private final PolyphenyDbSchema mutableRootSchema;
-        private final PolyphenyDbSchema rootSchema;
-
-
-        ContextImpl( PolyphenyDbEmbeddedConnectionImpl connection ) {
-            this.connection = Objects.requireNonNull( connection );
-            long now = System.currentTimeMillis();
-            SchemaVersion schemaVersion = new LongSchemaVersion( now );
-            this.mutableRootSchema = connection.rootSchema;
-            this.rootSchema = mutableRootSchema.createSnapshot( schemaVersion );
-        }
-
-
-        public JavaTypeFactory getTypeFactory() {
-            return connection.typeFactory;
-        }
-
-
-        public PolyphenyDbSchema getRootSchema() {
-            return rootSchema;
-        }
-
-
-        public PolyphenyDbSchema getMutableRootSchema() {
-            return mutableRootSchema;
-        }
-
-
-        public List<String> getDefaultSchemaPath() {
-            final String schemaName;
-            try {
-                schemaName = connection.getSchema();
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
-            }
-            return schemaName == null
-                    ? ImmutableList.of()
-                    : ImmutableList.of( schemaName );
-        }
-
-
-        public List<String> getObjectPath() {
-            return null;
-        }
-
-
-        public PolyphenyDbConnectionConfig config() {
-            return connection.config();
-        }
-
-
-        public DataContext getDataContext() {
-            return connection.createDataContext( ImmutableMap.of(), rootSchema );
-        }
-
-
-        public RelRunner getRelRunner() {
-            final RelRunner runner;
-            try {
-                runner = connection.unwrap( RelRunner.class );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
-            }
-            if ( runner == null ) {
-                throw new UnsupportedOperationException();
-            }
-            return runner;
-        }
-
-
-        public PolyphenyDbPrepare.SparkHandler spark() {
-            final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
-            return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
-        }
-    }
 
 
     /**

@@ -33,11 +33,11 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType.PrimitiveTableType;
+import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType.PrimitiveTableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
@@ -50,11 +50,14 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -66,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import com.google.common.collect.ImmutableList;
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -78,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +91,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
@@ -239,18 +243,24 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    public MetaResultSet getTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
+    // TODO: typeList is ignored
+    public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, catalog, schemaPattern, tableNamePattern, typeList );
+            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
             List<TableType> types = null;
             if ( typeList != null ) {
-                types = Catalog.convertTableTypeList( typeList );
+                types = CatalogManager.convertTableTypeList( typeList );
             }
-            final List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables( xid, catalog, schemaPattern, tableNamePattern, types );
+            final List<CatalogTable> tables = CatalogManagerImpl.getInstance().getTables(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -272,16 +282,21 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-
     @Override
-    public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+    public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns( xid, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
+                    (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -299,26 +314,27 @@ public class DbmsMeta implements ProtobufMeta {
                     "NULLABLE",
                     "ENCODING",
                     "COLLATION",
-                    "AUTOINCREMENT_START_VALUE",
-                    "AUTOINCREMENT_NEXT_VALUE",
-                    "DEFAULT_VALUE",
                     "FORCE_DEFAULT"
             );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownEncodingException | UnknownColumnException | UnknownTypeException e ) {
             throw propagate( e );
         }
     }
 
 
     @Override
-    public MetaResultSet getSchemas( final ConnectionHandle ch, final String catalog, final Pat schemaPattern ) {
+    public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, catalog, schemaPattern );
+            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas( xid, catalog, schemaPattern );
+            final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas(
+                    xid,
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
+            );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -346,7 +362,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransaction( connection );
-            final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid );
+            final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid, null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -357,7 +373,8 @@ public class DbmsMeta implements ProtobufMeta {
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
-                    "CONNECTION_LIMIT"
+                    "CONNECTION_LIMIT",
+                    "DEFAULT_SCHEMA"
             );
         } catch ( GenericCatalogException e ) {
             throw propagate( e );
@@ -700,7 +717,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @param h Statement handle
      * @param sql SQL query
      * @param maxRowCount Maximum number of rows for the entire query. Negative for no limit (different meaning than JDBC).
-     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should always be less than or equal to {@code maxRowCount} as the number of results are guaranteed     * to be restricted by {@code maxRowCount} and the underlying database.
+     * @param maxRowsInFirstFrame Maximum number of rows for the first frame. This value should always be less than or equal to {@code maxRowCount} as the number of results are guaranteed to be restricted by {@code maxRowCount} and the underlying database.
      * @param callback Callback to lock, clear and assign cursor
      * @return Result containing statement ID, and if a query, a result set and first frame of data
      */
@@ -717,26 +734,28 @@ public class DbmsMeta implements ProtobufMeta {
         synchronized ( OPEN_STATEMENTS ) {
             if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
                 statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+                statement.unset();
             } else {
-                throw new RuntimeException( "Ok.... In this case there was no statement created before. Find out why." );
+                throw new RuntimeException( "There is no associated sstatement" );
             }
         }
+
+        PolyXid xid = getCurrentTransaction( connection );
 
         // //////////////////////////
         // For testing
         // /////////////////////////
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
+        PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent( xid );
 
-        // CSV
-        File csvDir = new File( "testTestCsv" );
-        rootSchema.add( "CSV", new CsvSchema( csvDir, Flavor.FILTERABLE ) );
-
-        ///////////////////
+        ////////////////////
         // (1)  Configure //
-        ///////////////////
+        ////////////////////
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( false );
         Config parserConfig = configConfigBuilder.build();
+
+        DataContext dataContext = statement.getDataContext( rootSchema );
+        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "" );
 
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
@@ -746,7 +765,8 @@ public class DbmsMeta implements ProtobufMeta {
         FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 //            .traitDefs( traitDefs )
-                .defaultSchema( rootSchema )
+                .defaultSchema( rootSchema.plus() )
+                .prepareContext( prepareContext )
                 //             .sqlToRelConverterConfig( sqlToRelConfig )
                 //             .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .build();
@@ -777,9 +797,8 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         /////////
-        // (2.5) TRANSACTION ID
+        // ((3) Execution
         ////////
-        PolyXid xid = getCurrentTransaction( connection );
 
 
         if ( LOG.isDebugEnabled() ) {
@@ -789,7 +808,7 @@ public class DbmsMeta implements ProtobufMeta {
         ExecuteResult result = null;
         switch ( parsed.getKind() ) {
             case SELECT:
-                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, (SqlSelect) parsed );
+                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, rootSchema, (SqlSelect) parsed );
                 break;
 
             case INSERT:
@@ -901,35 +920,29 @@ public class DbmsMeta implements ProtobufMeta {
             }
         }
 
-        PolyphenyDbResultSet openResultSet = statement.getOpenResultSet();
-        if ( openResultSet == null ) {
-            throw new MissingResultsException( h );
+        final PolyphenyDbSignature signature = statement.getSignature();
+        final Iterator<Object> iterator;
+        if ( statement.getOpenResultSet() == null ) {
+            final Iterable<Object> iterable = createIterable( statement, signature );
+            iterator = iterable.iterator();
+            statement.setOpenResultSet( iterator );
+        } else {
+            iterator = statement.getOpenResultSet();
         }
+        final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+        boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
+        @SuppressWarnings("unchecked")
+        List<Object> rows1 = (List<Object>) rows;
+        return new Meta.Frame( offset, done, rows1 );
+    }
 
-        final List<Object> rows = new LinkedList<>();
-        boolean done = false;
-        try {
-            int numberOfColumns = openResultSet.getMetaData().getColumnCount();
-            for ( int rowCount = 0; openResultSet.next() && (fetchMaxRowCount < 0 || rowCount < fetchMaxRowCount); ++rowCount ) {
-                Object[] array = new Object[numberOfColumns];
-                for ( int i = 0; i < numberOfColumns; i++ ) {
-                    array[i] = openResultSet.getObject( i + 1 );
-                }
-                rows.add( array );
-            }
-            done = openResultSet.isAfterLast();
-            return new Frame( offset, done, rows );
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), e.getErrorCode(), e.getSQLState(), AvaticaSeverity.ERROR );
-        } finally {
-            if ( done ) {
-                openResultSet.close();
-                statement.setOpenResultSet( null );
-                if ( connection.isAutoCommit() ) {
-//                commit( connection.getHandle() );
-                }
-            }
-        }
+
+    private Iterable<Object> createIterable( PolyphenyDbStatementHandle handle, PolyphenyDbSignature signature ) {
+        DataContext dataContext = handle.getDataContext( signature.rootSchema );
+        //noinspection unchecked
+        final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
+        return polyphenyDbSignature.enumerable( dataContext );
+
     }
 
 
@@ -987,7 +1000,7 @@ public class DbmsMeta implements ProtobufMeta {
         final PolyphenyDbStatementHandle statement;
         synchronized ( OPEN_STATEMENTS ) {
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id );
+            statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
             OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
         }
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -996,19 +1009,6 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    /*
-    private void registerMetaStatement( final StatementHandle statementHandle, final PolyphenyDbResultSet rs ) throws SQLException {
-        final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
-            } else {
-                throw new RuntimeException( "There is no corresponding statement" );
-            }
-        }
-        statement.setOpenResultSet( rs );
-    }
-*/
 
     /**
      * Closes a statement.
@@ -1025,7 +1025,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
         if ( toClose != null ) {
-            toClose.setOpenResultSet( null ); // closes the currently open ResultSet
+            toClose.unset();
         }
     }
 
@@ -1082,7 +1082,7 @@ public class DbmsMeta implements ProtobufMeta {
             // Create transaction id
             PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
 
-            final Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
+            final CatalogManager catalog = CatalogManagerImpl.getInstance();
             // Check database access
             final CatalogDatabase database;
             try {
@@ -1098,7 +1098,7 @@ public class DbmsMeta implements ProtobufMeta {
             final CatalogSchema schema;
             try {
                 schema = catalog.getSchema( xid, database.name, schemaName );
-            } catch ( GenericCatalogException | UnknownSchemaException e ) {
+            } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
                 throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             }
             assert schema != null;
@@ -1132,7 +1132,7 @@ public class DbmsMeta implements ProtobufMeta {
         synchronized ( OPEN_STATEMENTS ) {
             for ( final String key : OPEN_STATEMENTS.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    OPEN_STATEMENTS.remove( key ).setOpenResultSet( null );
+                    OPEN_STATEMENTS.remove( key ).unset();
                 }
             }
         }
@@ -1239,6 +1239,49 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         return connectionToSync.mergeConnectionProperties( connProps );
+    }
+
+
+    /**
+     * Iterator that returns at most {@code limit} rows from an underlying {@link Iterator}.
+     *
+     * @param <E> element type
+     */
+    private static class LimitIterator<E> implements Iterator<E> {
+
+        private final Iterator<E> iterator;
+        private final long limit;
+        int i = 0;
+
+
+        private LimitIterator( Iterator<E> iterator, long limit ) {
+            this.iterator = iterator;
+            this.limit = limit;
+        }
+
+
+        static <E> Iterator<E> of( Iterator<E> iterator, long limit ) {
+            if ( limit <= 0 ) {
+                return iterator;
+            }
+            return new LimitIterator<>( iterator, limit );
+        }
+
+
+        public boolean hasNext() {
+            return iterator.hasNext() && i < limit;
+        }
+
+
+        public E next() {
+            ++i;
+            return iterator.next();
+        }
+
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 
 

@@ -34,4 +34,7 @@ public class UnknownDatabaseException extends CatalogException {
     }
 
 
+    public UnknownDatabaseException( long databaseId ) {
+        super( "There is no database with the id " + databaseId );
+    }
 }

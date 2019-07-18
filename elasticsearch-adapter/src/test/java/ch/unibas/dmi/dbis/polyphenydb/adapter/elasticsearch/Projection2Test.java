@@ -45,21 +45,18 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertQuery;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
-
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.AssertQuery;
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
-
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -70,14 +67,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.PatternSyntaxException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 
 /**
  * Checks renaming of fields (also upper, lower cases) during projections
  */
+@Ignore
 public class Projection2Test {
 
     @ClassRule

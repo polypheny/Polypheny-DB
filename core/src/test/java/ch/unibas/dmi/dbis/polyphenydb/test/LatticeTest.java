@@ -218,6 +218,7 @@ public class LatticeTest {
      * Tests that it's OK for a lattice to have the same name as a table in the schema.
      */
     @Test
+    @Ignore
     public void testLatticeSql() throws Exception {
         modelWithLattice( "EMPLOYEES", "select * from \"foodmart\".\"days\"" )
                 .doWithConnection( c -> {
@@ -244,6 +245,7 @@ public class LatticeTest {
      * Tests some of the properties of the {@link Lattice} data structure.
      */
     @Test
+    @Ignore
     public void testLattice() throws Exception {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
@@ -269,6 +271,7 @@ public class LatticeTest {
      * Tests that it's OK for a lattice to have the same name as a table in the schema.
      */
     @Test
+    @Ignore
     public void testLatticeWithSameNameAsTable() {
         modelWithLattice( "EMPLOYEES", "select * from \"foodmart\".\"days\"" )
                 .query( "select count(*) from EMPLOYEES" )
@@ -280,6 +283,7 @@ public class LatticeTest {
      * Tests that it's an error to have two lattices with the same name in a schema.
      */
     @Test
+    @Ignore
     public void testTwoLatticesWithSameNameFails() {
         modelWithLattices(
                 "{name: 'Lattice1', sql: 'select * from \"foodmart\".\"days\"'}",
@@ -303,6 +307,7 @@ public class LatticeTest {
      * Tests a lattice whose SQL is invalid because it contains a GROUP BY.
      */
     @Test
+    @Ignore
     public void testLatticeSqlWithGroupByFails() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s group by \"product_id\"" )
@@ -314,6 +319,7 @@ public class LatticeTest {
      * Tests a lattice whose SQL is invalid because it contains a ORDER BY.
      */
     @Test
+    @Ignore
     public void testLatticeSqlWithOrderByFails() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s order by \"product_id\"" )
@@ -325,6 +331,7 @@ public class LatticeTest {
      * Tests a lattice whose SQL is invalid because it contains a UNION ALL.
      */
     @Test
+    @Ignore
     public void testLatticeSqlWithUnionFails() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
@@ -338,6 +345,7 @@ public class LatticeTest {
      * Tests a lattice with valid join SQL.
      */
     @Test
+    @Ignore
     public void testLatticeSqlWithJoin() {
         foodmartModel()
                 .query( "values 1" )
@@ -349,6 +357,7 @@ public class LatticeTest {
      * Tests a lattice with invalid SQL (for a lattice).
      */
     @Test
+    @Ignore
     public void testLatticeInvalidSql() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
@@ -362,6 +371,7 @@ public class LatticeTest {
      * Left join is invalid in a lattice.
      */
     @Test
+    @Ignore
     public void testLatticeInvalidSql2() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
@@ -375,6 +385,7 @@ public class LatticeTest {
      * Each lattice table must have a parent.
      */
     @Test
+    @Ignore
     public void testLatticeInvalidSql3() {
         modelWithLattice( "star",
                 "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
@@ -388,6 +399,7 @@ public class LatticeTest {
      * When a lattice is registered, there is a table with the same name. It can be used for explain, but not for queries.
      */
     @Test
+    @Ignore
     public void testLatticeStarTable() {
         final AtomicInteger counter = new AtomicInteger();
         try {
@@ -409,6 +421,7 @@ public class LatticeTest {
      * Tests that a 2-way join query can be mapped 4-way join lattice.
      */
     @Test
+    @Ignore
     public void testLatticeRecognizeJoin() {
         final AtomicInteger counter = new AtomicInteger();
         foodmartModel()
@@ -430,6 +443,7 @@ public class LatticeTest {
      * Tests an aggregate on a 2-way join query can use an aggregate table.
      */
     @Test
+    @Ignore
     public void testLatticeRecognizeGroupJoin() {
         final AtomicInteger counter = new AtomicInteger();
         PolyphenyDbAssert.AssertQuery that = foodmartModel()
@@ -473,6 +487,7 @@ public class LatticeTest {
      * Tests a model with pre-defined tiles.
      */
     @Test
+    @Ignore
     public void testLatticeWithPreDefinedTiles() {
         foodmartModel( " auto: false,\n"
                 + "  defaultMeasures: [ {\n"
@@ -495,6 +510,7 @@ public class LatticeTest {
      * A query that uses a pre-defined aggregate table, at the same granularity but fewer calls to aggregate functions.
      */
     @Test
+    @Ignore
     public void testLatticeWithPreDefinedTilesFewerMeasures() {
         foodmartModelWithOneTile()
                 .query( "select t.\"the_year\", t.\"quarter\", count(*) as c\n"
@@ -517,6 +533,7 @@ public class LatticeTest {
      * Tests a query that uses a pre-defined aggregate table at a lower granularity. Includes a measure computed from a grouping column, a measure based on COUNT rolled up using SUM, and an expression on a measure.
      */
     @Test
+    @Ignore
     public void testLatticeWithPreDefinedTilesRollUp() {
         foodmartModelWithOneTile()
                 .query( "select t.\"the_year\",\n"
@@ -543,6 +560,7 @@ public class LatticeTest {
      * <p>Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-428">[POLYPHENYDB-428] Use optimization algorithm to suggest which tiles of a lattice to materialize</a>.
      */
     @Test
+    @Ignore
     public void testTileAlgorithm() {
         final String explain = "EnumerableAggregate(group=[{2, 3}])\n" + "  EnumerableTableScan(table=[[adhoc, m{16, 17, 32, 36, 37}]])";
         checkTileAlgorithm( FoodMartLatticeStatisticProvider.class.getCanonicalName() + "#FACTORY", explain );
@@ -553,6 +571,7 @@ public class LatticeTest {
      * As {@link #testTileAlgorithm()}, but uses the {@link Lattices#CACHED_SQL} statistics provider.
      */
     @Test
+    @Ignore
     public void testTileAlgorithm2() {
         // Different explain than above, but note that it still selects columns (27, 31).
         final String explain = "EnumerableAggregate(group=[{4, 5}])\n"
@@ -565,6 +584,7 @@ public class LatticeTest {
      * As {@link #testTileAlgorithm()}, but uses the {@link Lattices#PROFILER} statistics provider.
      */
     @Test
+    @Ignore
     public void testTileAlgorithm3() {
         Assume.assumeTrue( "Yahoo sketches requires JDK 8 or higher", TestUtil.getJavaMajorVersion() >= 8 );
         final String explain = "EnumerableAggregate(group=[{4, 5}])\n"
@@ -648,6 +668,7 @@ public class LatticeTest {
      * Tests a query that uses no columns from the fact table.
      */
     @Test
+    @Ignore
     public void testGroupByEmpty() {
         foodmartModel()
                 .query( "select count(*) as c from \"foodmart\".\"sales_fact_1997\"" )
@@ -660,6 +681,7 @@ public class LatticeTest {
      * Calls {@link #testDistinctCount()} followed by {@link #testGroupByEmpty()}.
      */
     @Test
+    @Ignore
     public void testGroupByEmptyWithPrelude() {
         testDistinctCount();
         testGroupByEmpty();
@@ -670,6 +692,7 @@ public class LatticeTest {
      * Tests a query that uses no dimension columns and one measure column.
      */
     @Test
+    @Ignore
     public void testGroupByEmpty2() {
         foodmartModel()
                 .query( "select sum(\"unit_sales\") as s\n"
@@ -684,6 +707,7 @@ public class LatticeTest {
      * Tests that two queries of the same dimensionality that use different measures can use the same materialization.
      */
     @Test
+    @Ignore
     public void testGroupByEmpty3() {
         final List<String> mats = new ArrayList<>();
         final PolyphenyDbAssert.AssertThat that = foodmartModel().pooled();
@@ -711,6 +735,7 @@ public class LatticeTest {
      * Rolling up SUM.
      */
     @Test
+    @Ignore
     public void testSum() {
         foodmartModelWithOneTile()
                 .query( "select sum(\"unit_sales\") as c\n"
@@ -729,6 +754,7 @@ public class LatticeTest {
      * We can't just roll up count(distinct ...) as we do count(...), but we can still use the aggregate table if we're smart.
      */
     @Test
+    @Ignore
     public void testDistinctCount() {
         foodmartModelWithOneTile()
                 .query( "select count(distinct \"quarter\") as c\n"
@@ -744,6 +770,7 @@ public class LatticeTest {
 
 
     @Test
+    @Ignore
     public void testDistinctCount2() {
         foodmartModelWithOneTile()
                 .query( "select count(distinct \"the_year\") as c\n"
@@ -844,6 +871,7 @@ public class LatticeTest {
 
 
     @Test
+    @Ignore
     public void testTwoLattices() {
         final AtomicInteger counter = new AtomicInteger();
         // disable for MySQL; times out running star-join query disable for H2; it thinks our generated SQL has invalid syntax
@@ -870,6 +898,7 @@ public class LatticeTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-787">[POLYPHENYDB-787] Star table wrongly assigned to materialized view</a>.
      */
     @Test
+    @Ignore
     public void testOneLatticeOneMV() {
         final AtomicInteger counter = new AtomicInteger();
         final Class<JdbcTest.EmpDeptTableFactory> clazz = JdbcTest.EmpDeptTableFactory.class;
@@ -931,6 +960,7 @@ public class LatticeTest {
 
 
     @Test
+    @Ignore
     public void testSuggester() {
         final Class<JdbcTest.EmpDeptTableFactory> clazz = JdbcTest.EmpDeptTableFactory.class;
         final String model = ""

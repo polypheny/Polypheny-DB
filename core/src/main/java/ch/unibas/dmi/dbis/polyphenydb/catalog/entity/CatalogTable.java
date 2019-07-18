@@ -26,9 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -40,23 +40,31 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode
 public final class CatalogTable implements CatalogEntity {
 
-    private static final long serialVersionUID = 8764539164264008190L;
+    private static final long serialVersionUID = 5426944084650275437L;
 
+    public final long id;
     public final String name;
-    public final String schema;
-    public final String database;
-    public final String owner;
+    public final long schemaId;
+    public final String schemaName;
+    public final long databaseId;
+    public final String databaseName;
+    public final int ownerId;
+    public final String ownerName;
     public final Encoding encoding;
     public final Collation collation;
     public final String tableType;
     public final String definition;
 
 
-    public CatalogTable( @NonNull final String name, @NonNull final String schema, @NonNull final String database, final String owner, final Encoding encoding, final Collation collation, @NonNull final TableType type, final String definition ) {
+    public CatalogTable( final long id, @NonNull final String name, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final CatalogManager.TableType type, final String definition ) {
+        this.id = id;
         this.name = name;
-        this.schema = schema;
-        this.database = database;
-        this.owner = owner;
+        this.schemaId = schemaId;
+        this.schemaName = schemaName;
+        this.databaseId = databaseId;
+        this.databaseName = databaseName;
+        this.ownerId = ownerId;
+        this.ownerName = ownerName;
         this.encoding = encoding;
         this.collation = collation;
         this.tableType = type.name();
@@ -67,7 +75,7 @@ public final class CatalogTable implements CatalogEntity {
     // Used for creating ResultSets
     @Override
     public Object[] getParameterArray() {
-        return new Object[]{ name, schema, database, owner, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), tableType, definition };
+        return new Object[]{ name, schemaName, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), tableType, definition };
     }
 
 

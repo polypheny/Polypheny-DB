@@ -85,6 +85,7 @@ import org.junit.Test;
 /**
  * Tests for streaming queries.
  */
+@Ignore
 public class StreamTest {
 
     public static final String STREAM_SCHEMA_NAME = "STREAMS";

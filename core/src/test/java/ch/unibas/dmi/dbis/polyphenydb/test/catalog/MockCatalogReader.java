@@ -145,7 +145,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      * @param typeFactory Type factory
      */
     public MockCatalogReader( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
-        super( PolyphenyDbSchema.createRootSchema( false, false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory );
+        super( PolyphenyDbSchema.createRootSchema( false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory );
     }
 
 

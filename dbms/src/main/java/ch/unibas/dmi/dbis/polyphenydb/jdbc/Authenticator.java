@@ -26,9 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 
 
 /**
@@ -43,7 +43,7 @@ public class Authenticator {
 
     public static CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         try {
-            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getCatalog().getUser( username );
+            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );
             if ( catalogUser.password.equals( password ) ) {
                 return catalogUser;
             } else {

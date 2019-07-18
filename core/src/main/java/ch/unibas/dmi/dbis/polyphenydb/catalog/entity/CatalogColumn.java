@@ -27,9 +27,8 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
-import java.io.Serializable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +40,16 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode
 public final class CatalogColumn implements CatalogEntity {
 
-    private static final long serialVersionUID = 8175898370446385726L;
+    private static final long serialVersionUID = -6566756853822620430L;
 
+    public final long id;
     public final String name;
-    public final String table;
-    public final String schema;
-    public final String database;
+    public final long tableId;
+    public final String tableName;
+    public final long schemaId;
+    public final String schemaName;
+    public final long databaseId;
+    public final String databaseName;
     public final int position;
     public final PolySqlType type;
     public final Integer length;
@@ -54,17 +57,18 @@ public final class CatalogColumn implements CatalogEntity {
     public final boolean nullable;
     public final Encoding encoding;
     public final Collation collation;
-    public final Long autoincrementStartValue;
-    public final Long autoincrementNextValue;
-    public final Serializable defaultValue;
     public final boolean forceDefault;
 
 
-    public CatalogColumn( @NonNull final String name, @NonNull final String table, @NonNull final String schema, @NonNull final String database, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final Long autoincrementStartValue, final Long autoincrementNextValue, final Serializable defaultValue, final boolean forceDefault ) {
+    public CatalogColumn( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final boolean forceDefault ) {
+        this.id = id;
         this.name = name;
-        this.table = table;
-        this.schema = schema;
-        this.database = database;
+        this.tableId = tableId;
+        this.tableName = tableName;
+        this.schemaId = schemaId;
+        this.schemaName = schemaName;
+        this.databaseId = databaseId;
+        this.databaseName = databaseName;
         this.position = position;
         this.type = type;
         this.length = length;
@@ -72,28 +76,18 @@ public final class CatalogColumn implements CatalogEntity {
         this.nullable = nullable;
         this.encoding = encoding;
         this.collation = collation;
-        this.autoincrementStartValue = autoincrementStartValue;
-        this.autoincrementNextValue = autoincrementNextValue;
-        this.defaultValue = defaultValue;
         this.forceDefault = forceDefault;
     }
 
 
     @Override
     public Object[] getParameterArray() {
-        String dv = null;
-        if ( defaultValue != null ) {
-            if ( defaultValue instanceof String ) {
-                dv = (String) defaultValue;
-            } // TODO: Improve this
-        }
-        return new Object[]{ name, table, schema, database, position, CatalogEntity.getEnumNameOrNull( type ), length, precision, nullable, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), autoincrementStartValue, autoincrementNextValue, dv, forceDefault };
+        return new Object[]{ name, tableName, schemaName, databaseName, position, CatalogEntity.getEnumNameOrNull( type ), length, precision, nullable, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), forceDefault };
     }
 
 
     @RequiredArgsConstructor
     public class PrimitiveCatalogColumn {
-
         public final String name;
         public final String table;
         public final String schema;
@@ -105,9 +99,6 @@ public final class CatalogColumn implements CatalogEntity {
         public final boolean nullable;
         public final String encoding;
         public final String collation;
-        public final Long autoincrementStartValue;
-        public final Long autoincrementNextValue;
-        public final String defaultValue;
         public final boolean forceDefault;
     }
 }

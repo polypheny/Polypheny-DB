@@ -49,15 +49,11 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -70,8 +66,8 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     /**
      * Creates a CsvScannableTable.
      */
-    CsvScannableTable( Source source, RelProtoDataType protoRowType ) {
-        super( source, protoRowType );
+    CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
+        super( source, protoRowType, fieldTypes );
     }
 
 

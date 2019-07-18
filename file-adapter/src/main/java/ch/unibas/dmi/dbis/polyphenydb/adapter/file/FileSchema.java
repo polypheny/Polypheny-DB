@@ -45,13 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.JsonTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvFilterableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.JsonTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -60,10 +53,8 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.List;
@@ -179,7 +170,10 @@ class FileSchema extends AbstractSchema {
         }
         final Source sourceSansCsv = sourceSansGz.trimOrNull( ".csv" );
         if ( sourceSansCsv != null ) {
-            final Table table = new CsvFilterableTable( source, null );
+            //
+            // TODO: MV: This two nulls most properly introduce trouble. Fix to have the correct row details at this point.
+            //
+            final Table table = new CsvFilterableTable( source, null, null );
             builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
             return true;
         }

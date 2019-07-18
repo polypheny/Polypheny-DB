@@ -49,13 +49,18 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PlannerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.FoodMartQuerySet;
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.SlowTests;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
@@ -600,6 +605,12 @@ public class LatticeSuggesterTest {
         Tester() {
             this( Frameworks.newConfigBuilder()
                     .defaultSchema( schemaFrom( PolyphenyDbAssert.SchemaSpec.SCOTT ) )
+                    .prepareContext( new ContextImpl( PolyphenyDbSchema.from( schemaFrom( PolyphenyDbAssert.SchemaSpec.SCOTT ) ), new SlimDataContext() {
+                        @Override
+                        public JavaTypeFactory getTypeFactory() {
+                            return new JavaTypeFactoryImpl();
+                        }
+                    }, "" ) )
                     .build() );
         }
 
@@ -623,6 +634,12 @@ public class LatticeSuggesterTest {
         private Tester schema( PolyphenyDbAssert.SchemaSpec schemaSpec ) {
             return withConfig( builder()
                     .defaultSchema( schemaFrom( schemaSpec ) )
+                    .prepareContext( new ContextImpl( PolyphenyDbSchema.from( schemaFrom( schemaSpec ) ), new SlimDataContext() {
+                        @Override
+                        public JavaTypeFactory getTypeFactory() {
+                            return new JavaTypeFactoryImpl();
+                        }
+                    }, "" ) )
                     .build() );
         }
 
@@ -632,8 +649,7 @@ public class LatticeSuggesterTest {
         }
 
 
-        List<Lattice> addQuery( String q ) throws SqlParseException,
-                ValidationException, RelConversionException {
+        List<Lattice> addQuery( String q ) throws SqlParseException, ValidationException, RelConversionException {
             final Planner planner = new PlannerImpl( config );
             final SqlNode node = planner.parse( q );
             final SqlNode node2 = planner.validate( node );

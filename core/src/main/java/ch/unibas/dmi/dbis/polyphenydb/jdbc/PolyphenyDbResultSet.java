@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayEnumeratorCursor;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ObjectEnumeratorCursor;
@@ -59,7 +58,6 @@ import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaResultSetMetaData;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Handler;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.linq4j.Enumerator;
@@ -74,24 +72,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     /**
      * Creates a PolyphenyDbResultSet.
      */
-    PolyphenyDbResultSet( AvaticaStatement statement, PolyphenyDbSignature polyphenyDbSignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
+    public PolyphenyDbResultSet( AvaticaStatement statement, PolyphenyDbSignature polyphenyDbSignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
         super( statement, null, polyphenyDbSignature, resultSetMetaData, timeZone, firstFrame );
-    }
-
-
-    @Override
-    protected PolyphenyDbResultSet execute() throws SQLException {
-        // Call driver's callback. It is permitted to throw a RuntimeException.
-        PolyphenyDbEmbeddedConnectionImpl connection = getPolyphenyDbConnection();
-        Handler.ResultSink resultSink = null;
-        if ( RuntimeConfig.AUTO_TEMP.getBoolean() ) {
-            resultSink = () -> {
-            };
-        }
-        connection.getDriver().handler.onStatementExecute( statement, resultSink );
-
-        super.execute();
-        return this;
     }
 
 
@@ -139,10 +121,5 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
         return (PolyphenyDbSignature) signature;
     }
 
-
-    // do not make public
-    PolyphenyDbEmbeddedConnectionImpl getPolyphenyDbConnection() throws SQLException {
-        return (PolyphenyDbEmbeddedConnectionImpl) statement.getConnection();
-    }
 }
 

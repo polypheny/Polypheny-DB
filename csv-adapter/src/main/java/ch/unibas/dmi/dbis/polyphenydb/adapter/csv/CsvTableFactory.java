@@ -70,6 +70,7 @@ public class CsvTableFactory implements TableFactory<CsvTable> {
     }
 
 
+    @Override
     public CsvTable create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
         String fileName = (String) operand.get( "file" );
         final File base = (File) operand.get( ModelHandler.ExtraOperand.BASE_DIRECTORY.camelName );
@@ -78,7 +79,7 @@ public class CsvTableFactory implements TableFactory<CsvTable> {
                 rowType != null
                         ? RelDataTypeImpl.proto( rowType )
                         : null;
-        return new CsvScannableTable( source, protoRowType );
+        return new CsvScannableTable( source, protoRowType, null );
     }
 }
 

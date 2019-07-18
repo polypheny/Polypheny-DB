@@ -47,7 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -108,7 +108,8 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    @Override
+    public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         final SchemaPlus subSchema0 = pair.left.plus().getSubSchema( pair.right );
         if ( subSchema0 != null ) {

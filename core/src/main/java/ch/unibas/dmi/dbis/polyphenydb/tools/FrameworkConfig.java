@@ -148,5 +148,10 @@ public interface FrameworkConfig {
      * Returns a view expander.
      */
     RelOptTable.ViewExpander getViewExpander();
+
+    /**
+     * Returns a prepare context.
+     */
+    ch.unibas.dmi.dbis.polyphenydb.jdbc.Context getPrepareContext();
 }
 

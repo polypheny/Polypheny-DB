@@ -26,6 +26,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 
@@ -37,14 +45,17 @@ public class PolyphenyDbStatementHandle {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
-    private volatile transient PolyphenyDbResultSet openResultSet;
+    private volatile transient Iterator<Object> openResultSet;
+    private volatile transient PolyphenyDbSignature signature;
     @Getter
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
+    private final JavaTypeFactory typeFactory;
 
 
-    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
+    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId, final JavaTypeFactory typeFactory ) {
         this.connection = connection;
         this.statementId = statementId;
+        this.typeFactory = typeFactory;
     }
 
 
@@ -58,19 +69,54 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized void setOpenResultSet( PolyphenyDbResultSet result ) {
+    public synchronized void setOpenResultSet( Iterator<Object> result ) {
         if ( this.openResultSet != null ) {
-            this.openResultSet.close();
+            //  this.openResultSet.close();
         }
         this.openResultSet = result;
-
     }
 
 
-    public synchronized PolyphenyDbResultSet getOpenResultSet() {
+    public synchronized Iterator<Object> getOpenResultSet() {
         return openResultSet;
     }
 
 
+    public synchronized void setSignature( PolyphenyDbSignature signature ) {
+        this.signature = signature;
+    }
 
+
+    public synchronized PolyphenyDbSignature getSignature() {
+        return signature;
+    }
+
+
+    public JavaTypeFactory getTypeFactory() {
+        return typeFactory;
+    }
+
+
+    public void unset() {
+        this.openResultSet = null;
+        this.signature = null;
+    }
+
+
+    public DataContext getDataContext( final PolyphenyDbSchema rootSchema ) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        // Avoid overflow
+        int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
+        if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
+            map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
+        }
+
+        final AtomicBoolean cancelFlag;
+        cancelFlag = getCancelFlag();
+        map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
+        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
+            return new SlimDataContext();
+        }
+        return new DataContextImpl( new QueryProviderImpl(), map, rootSchema, typeFactory );
+    }
 }

@@ -45,20 +45,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Context;
-import org.apache.calcite.linq4j.function.Experimental;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 
 
 /**
- * Mix-in interface for {@link SqlNode} that allows DDL commands to be
- * executed directly.
- *
- * <p>NOTE: Subject to change without notice.
+ * Mix-in interface for {@link SqlNode} that allows DDL commands to be executed directly.
  */
-@Experimental
 public interface SqlExecutableStatement {
 
     void execute( Context context );
-}
 
-// End SqlExecutableStatement.java
+}

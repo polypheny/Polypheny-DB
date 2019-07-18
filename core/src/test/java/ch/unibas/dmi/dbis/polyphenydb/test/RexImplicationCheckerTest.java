@@ -51,8 +51,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -73,6 +76,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
+import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
@@ -593,13 +597,21 @@ public class RexImplicationCheckerTest {
                     .build();
 
             final Holder<RexExecutorImpl> holder = Holder.of( null );
+
+            PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
+            FrameworkConfig config = Frameworks.newConfigBuilder()
+                    .defaultSchema( rootSchema.plus() )
+                    .prepareContext( new ContextImpl( rootSchema, new SlimDataContext() {
+                        @Override
+                        public JavaTypeFactory getTypeFactory() {
+                            return new JavaTypeFactoryImpl();
+                        }
+                    }, "" ) )
+                    .build();
             Frameworks.withPrepare(
-                    new Frameworks.PrepareAction<Void>() {
-                        public Void apply( RelOptCluster cluster,
-                                RelOptSchema relOptSchema,
-                                SchemaPlus rootSchema,
-                                PolyphenyDbServerStatement statement ) {
-                            DataContext dataContext = Schemas.createDataContext( statement.getConnection(), rootSchema );
+                    new Frameworks.PrepareAction<Void>( config ) {
+                        public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                            DataContext dataContext = Schemas.createDataContext( null, rootSchema );
                             holder.set( new RexExecutorImpl( dataContext ) );
                             return null;
                         }

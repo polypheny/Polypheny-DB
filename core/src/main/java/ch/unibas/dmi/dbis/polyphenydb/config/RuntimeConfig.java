@@ -111,7 +111,14 @@ public enum RuntimeConfig {
     REL_WRITER_INSERT_FIELD_NAMES( "runtime/relWriterInsertFieldName",
             "If the rel writer should add the field names in brackets behind the ordinals in when printing query plans.",
             false,
-            ConfigType.BOOLEAN );
+            ConfigType.BOOLEAN ),
+
+    QUERY_TIMEOUT( "runtime/queryTimeout",
+            "Time after which queries are aborted. 0 means infinite.",
+            0,
+            ConfigType.INTEGER );
+
+
 
 
     private final String key;
