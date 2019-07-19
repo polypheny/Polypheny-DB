@@ -26,7 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-public class SchemaRequest extends UIRequest {
+public class SchemaTreeRequest extends UIRequest {
     public String routerLinkRoot;
     public boolean views;
     public int depth;

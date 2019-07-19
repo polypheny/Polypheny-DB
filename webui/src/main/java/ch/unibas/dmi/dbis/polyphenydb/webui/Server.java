@@ -171,6 +171,8 @@ public class Server {
 
         post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
 
+        post( "/schemaRequest", crud::schemaRequest, gson::toJson );
+
     }
 
 

@@ -32,6 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
@@ -42,7 +43,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
@@ -252,7 +253,7 @@ class Crud implements InformationObserver {
      * returns a Tree (in json format) with the Tables of a Database
      */
     ArrayList<SidebarElement> getSchemaTree ( final Request req, final Response res ) {
-        SchemaRequest request = this.gson.fromJson( req.body(), SchemaRequest.class );
+        SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
         LocalTransactionHandler handler = getHandler();
 
@@ -1097,6 +1098,15 @@ class Crud implements InformationObserver {
     Result executeRelAlg ( final Request req, final Response res ) {
         LOGGER.info( req.body() );
         return new Result( "RelAlg execution not implemented yet." );
+    }
+
+
+    /**
+     * Create or drop a schema
+     */
+    Result schemaRequest ( final Request req, final Response res ) {
+        Schema schema = this.gson.fromJson( req.body(), Schema.class );
+        return schema.executeCreateOrDrop( getHandler() );
     }
 
 
