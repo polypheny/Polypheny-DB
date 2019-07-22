@@ -88,7 +88,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 public abstract class PolyphenyDbSchema {
 
     private final PolyphenyDbSchema parent;
-    public final Schema schema;
+    public Schema schema;
     public final String name;
     /**
      * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.

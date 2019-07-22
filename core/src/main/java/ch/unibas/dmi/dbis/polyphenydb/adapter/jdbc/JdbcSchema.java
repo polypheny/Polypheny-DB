@@ -79,6 +79,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -94,7 +95,8 @@ public class JdbcSchema implements Schema {
     final String database;
     final String schema;
     public final SqlDialect dialect;
-    final JdbcConvention convention;
+    @Getter
+    private final JdbcConvention convention;
 
     private final Map<String, JdbcTable> tableMap;
 

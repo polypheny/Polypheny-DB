@@ -818,8 +818,7 @@ public class JdbcAdapterTest {
                 + " (\"store_id\", \"account_id\", \"exp_date\", \"time_id\","
                 + " \"category_id\", \"currency_id\", \"amount\")\n"
                 + "VALUES  (666, 666, TIMESTAMP '1997-01-01 00:00:00', 666, '666', 666, 666.0000)";
-        final AssertThat that =
-                PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL ).enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL );
+        final AssertThat that = PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL ).enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL );
         that.doWithConnection( connection -> {
             try ( LockWrapper ignore = exclusiveCleanDb( connection ) ) {
                 that.query( sql )

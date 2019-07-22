@@ -442,7 +442,9 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
+        // TODO: MV: Here the SQL target table name can be changed
+        //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
+        final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName().get( modify.getTable().getQualifiedName().size() - 1 ), POS ); // TODO: MV: This is not nice...
 
         switch ( modify.getOperation() ) {
             case INSERT: {

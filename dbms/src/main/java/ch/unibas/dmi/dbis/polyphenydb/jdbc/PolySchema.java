@@ -80,6 +80,8 @@ public class PolySchema {
             }
         }
 
+        polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.schema = StoreManager.getInstance().getStore( 0 ).getCurrentSchema() );
+
         return polyphenyDbSchema;
     }
 

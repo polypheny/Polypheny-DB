@@ -166,7 +166,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.convention );
+        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
     }
 
 
@@ -190,7 +190,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        jdbcSchema.convention.register( cluster.getPlanner() );
+        jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 

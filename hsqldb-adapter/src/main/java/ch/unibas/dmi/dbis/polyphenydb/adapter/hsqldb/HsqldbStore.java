@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import java.sql.Connection;
@@ -26,6 +27,9 @@ public class HsqldbStore implements Store {
         dataSource.setUsername( "sa" );
         dataSource.setPassword( "" );
 
+        // TODO: Change when implementing transaction support
+        dataSource.setDefaultAutoCommit( true );
+
         try {
             addDefaultSchema( dataSource );
         } catch ( SQLException e ) {
@@ -41,8 +45,8 @@ public class HsqldbStore implements Store {
     private void addDefaultSchema( BasicDataSource dataSource ) throws SQLException {
         Connection connection = dataSource.getConnection();
         Statement statement = connection.createStatement();
-        statement.executeUpdate( "CREATE TABLE \"test\"(id INTEGER, name VARCHAR(20))" );
-        statement.executeUpdate( "INSERT INTO \"test\"(id, name) VALUES (1, 'bob')" );
+        statement.executeUpdate( "CREATE TABLE \"test\"(\"id\" INTEGER, \"name\" VARCHAR(20))" );
+        statement.executeUpdate( "INSERT INTO \"test\"(\"id\", \"name\") VALUES (1, 'bob')" );
         connection.commit();
         statement.close();
         connection.close();
@@ -60,4 +64,11 @@ public class HsqldbStore implements Store {
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
         return currentJdbcSchema.createJdbcTable( combinedTable );
     }
+
+
+    @Override
+    public Schema getCurrentSchema() {
+        return currentJdbcSchema;
+    }
+
 }

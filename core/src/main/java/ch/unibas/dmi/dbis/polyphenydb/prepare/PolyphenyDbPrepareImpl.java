@@ -185,8 +185,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**
- * Shit just got real.
- *
  * This class is public so that projects that create their own JDBC driver and server can fine-tune preferences. However, this class and its methods are subject to change without notice.
  */
 public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
