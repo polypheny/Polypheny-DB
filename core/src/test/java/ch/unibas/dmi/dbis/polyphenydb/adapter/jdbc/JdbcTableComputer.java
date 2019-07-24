@@ -35,6 +35,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -86,7 +87,7 @@ public class JdbcTableComputer {
                 if ( tableType == TableType.OTHER && tableTypeName2 != null ) {
                     System.out.println( "Unknown table type: " + tableTypeName2 );
                 }
-                final JdbcTable table = new JdbcTable( null, catalogName, schemaName, tableName, tableType, getRelDataType( dataSource, catalogName, schemaName, tableName ) );
+                final JdbcTable table = new JdbcTable( null, catalogName, schemaName, tableName, tableType, getRelDataType( dataSource, catalogName, schemaName, tableName ), ImmutableList.of() );
                 builder.put( tableName, table );
             }
             return builder.build();

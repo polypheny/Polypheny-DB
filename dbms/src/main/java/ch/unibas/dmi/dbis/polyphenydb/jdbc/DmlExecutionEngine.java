@@ -56,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
@@ -322,11 +321,11 @@ public class DmlExecutionEngine {
         // 7: prepare to be executed
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Executing DML Statement ..." );
+            LOG.debug( "Prepare to execute DML Statement ..." );
         }
         stopWatch.start();
 
-        RelRoot root = RelRoot.of( optimalPlan, SqlKind.INSERT );
+        RelRoot root = RelRoot.of( optimalPlan, parsed.getKind() );
         EnumerableRel enumerable = (EnumerableRel) root.rel;
         if ( !root.isRefTrivial() ) {
             final List<RexNode> projects = new ArrayList<>();
@@ -338,15 +337,14 @@ public class DmlExecutionEngine {
             enumerable = EnumerableCalc.create( enumerable, program );
         }
 
-        //final Bindable bindable = Interpreters.bindable( optimalPlan );
         Bindable bindable = EnumerableInterpretable.toBindable( ImmutableMap.of(), null, enumerable, Prefer.ARRAY );
         Enumerable e = bindable.bind( statement.getDataContext( rootSchema ) );
 
-        /*
-        RelRoot root = RelRoot.of( optimalPlan, SqlKind.INSERT );
-        JdbcTableModify tableModify = (JdbcTableModify) root.rel;
-        Result result = tableModify.implement( new JdbcImplementor( HsqldbSqlDialect.DEFAULT, prepareContext.getTypeFactory() ) );
-        */
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Prepare to execute DML Statement ... done. [{}]", stopWatch );
+        }
+
 
         MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) e.iterator().next()).intValue() );
 
@@ -354,75 +352,6 @@ public class DmlExecutionEngine {
         resultSets.add( metaResultSet );
 
         return new ExecuteResult( resultSets );
-
-        /*
-
-                RelDataType type = RelOptUtil.createDmlRowType( parsed.getKind(), statement.getTypeFactory() );
-        RelDataType jdbcType = type;
-        if ( !type.isStruct() ) {
-            jdbcType = statement.getTypeFactory().builder().add( "$0", type ).build();
-        }
-
-
-        PolyphenyDbConnectionConfig connectionConfig = new PolyphenyDbConnectionConfigImpl( new Properties() );
-
-
-        ArrayBindable bindable = Interpreters.bindable( optimalPlan );
-
-        Enumerable<Object[]> enumerable = bindable.bind( statement.getDataContext( rootSchema ) );
-
-/*
-        PolyphenyDbSignature signature = prepare( optimalPlan, statement, rootSchema, connectionConfig );
-
-        DataContext dataContext = statement.getDataContext( signature.rootSchema );
-        statement.
-
-        LinkedList<MetaResultSet> resultSets = new LinkedList<>();
-        MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
-        resultSets.add( resultSet );
-
-        final Iterator<Object> iterator;
-
-
-        if ( statement.getOpenResultSet() == null ) {
-            final Iterable<Object> iterable = createIterable( statement, signature );
-            iterator = iterable.iterator();
-            statement.setOpenResultSet( iterator );
-        } else {
-            iterator = statement.getOpenResultSet();
-        }
-        final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
-        boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
-        @SuppressWarnings("unchecked")
-        List<Object> rows1 = (List<Object>) rows;
-        return new Meta.Frame( offset, done, rows1 );
-
-        stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Executing DML Statement ... done. [{}]", stopWatch );
-        }
-
-
-
-
-        // TODO: Implement DML support
-
-        switch ( parsed.getKind() ) {
-            case INSERT:
-                break;
-
-            case DELETE:
-                break;
-
-            case UPDATE:
-
-            case MERGE:
-            case PROCEDURE_CALL:
-
-            default:
-                throw new RuntimeException( "Unknown or unsupported dml query type: " + parsed.getKind().name() );
-        }
-*/
     }
 
 
