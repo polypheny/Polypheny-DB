@@ -45,10 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
@@ -61,7 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.List;
 import java.util.Objects;
 
@@ -90,26 +87,8 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        pair.left.add( pair.right, typeFactory -> {
-            if ( dataType != null ) {
-                return dataType.deriveType( typeFactory );
-            } else {
-                final RelDataTypeFactory.Builder builder = typeFactory.builder();
-                for ( SqlNode def : attributeDefs ) {
-                    final SqlAttributeDefinition attributeDef = (SqlAttributeDefinition) def;
-                    final SqlDataTypeSpec typeSpec = attributeDef.dataType;
-                    RelDataType type = typeSpec.deriveType( typeFactory );
-                    if ( type == null ) {
-                        Pair<PolyphenyDbSchema, String> pair1 = SqlDdlNodes.schema( context, false, typeSpec.getTypeName() );
-                        type = pair1.left.getType( pair1.right, false ).getType().apply( typeFactory );
-                    }
-                    builder.add( attributeDef.name.getSimple(), type );
-                }
-                return builder.build();
-            }
-        } );
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
     }
 
 
@@ -140,5 +119,29 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
             dataType.unparse( writer, leftPrec, rightPrec );
         }
     }
+
+/*
+    @Override
+    public void execute( Context context ) {
+        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
+        pair.left.add( pair.right, typeFactory -> {
+            if ( dataType != null ) {
+                return dataType.deriveType( typeFactory );
+            } else {
+                final RelDataTypeFactory.Builder builder = typeFactory.builder();
+                for ( SqlNode def : attributeDefs ) {
+                    final SqlAttributeDefinition attributeDef = (SqlAttributeDefinition) def;
+                    final SqlDataTypeSpec typeSpec = attributeDef.dataType;
+                    RelDataType type = typeSpec.deriveType( typeFactory );
+                    if ( type == null ) {
+                        Pair<PolyphenyDbSchema, String> pair1 = SqlDdlNodes.schema( context, false, typeSpec.getTypeName() );
+                        type = pair1.left.getType( pair1.right, false ).getType().apply( typeFactory );
+                    }
+                    builder.add( attributeDef.name.getSimple(), type );
+                }
+                return builder.build();
+            }
+        } );
+    } */
 }
 

@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
@@ -415,8 +416,9 @@ public final class Schemas {
             }
 
 
-            public PolyphenyDbSchema getMutableRootSchema() {
-                return getRootSchema();
+            @Override
+            public String getDefaultSchemaName() {
+                return null;
             }
 
 
@@ -446,6 +448,30 @@ public final class Schemas {
 
             public RelRunner getRelRunner() {
                 throw new UnsupportedOperationException();
+            }
+
+
+            @Override
+            public PolyXid getTransactionId() {
+                return null;
+            }
+
+
+            @Override
+            public long getDatabaseId() {
+                return 0;
+            }
+
+
+            @Override
+            public int getCurrentUserId() {
+                return 0;
+            }
+
+
+            @Override
+            public int getDefaultStore() {
+                return 0;
             }
 
 

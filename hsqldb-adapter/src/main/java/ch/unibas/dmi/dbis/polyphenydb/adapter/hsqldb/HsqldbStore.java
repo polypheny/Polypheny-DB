@@ -1,9 +1,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
@@ -69,6 +72,69 @@ public class HsqldbStore implements Store {
     @Override
     public Schema getCurrentSchema() {
         return currentJdbcSchema;
+    }
+
+
+    @Override
+    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) ).append( " ( " );
+        boolean first = true;
+        for ( CatalogColumn column : combinedTable.getColumns() ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( currentJdbcSchema.dialect.quoteIdentifier( column.name ) ).append( " " );
+            builder.append( getTypeString( column.type ) );
+            if ( column.precision != null ) {
+                builder.append( "(" ).append( column.precision );
+                if ( column.length != null ) {
+                    builder.append( "," ).append( column.length );
+                }
+                builder.append( ")" );
+            }
+
+        }
+        builder.append( " )" );
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private String getTypeString( PolySqlType polySqlType ) {
+        switch ( polySqlType ) {
+            case BOOLEAN:
+                return "BOOLEAN";
+            case VARBINARY:
+                return "VARBINARY";
+            case INTEGER:
+                return "INT";
+            case BIGINT:
+                return "BIGINT";
+            case REAL:
+                return "REAL";
+            case DOUBLE:
+                return "FLOAT";
+            case DECIMAL:
+                return "DECIMAL";
+            case MONEY:
+                return "MONEY";
+            case VARCHAR:
+                return "VARCHAR";
+            case TEXT:
+                return "TEXT";
+            case DATE:
+                return "DATE";
+            case TIME:
+                return "TIME";
+            case TIMESTAMP:
+                return "TIMESTAMP";
+        }
+        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
     }
 
 }

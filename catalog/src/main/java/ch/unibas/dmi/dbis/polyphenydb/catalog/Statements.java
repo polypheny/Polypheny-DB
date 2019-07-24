@@ -47,14 +47,17 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -471,6 +474,21 @@ final class Statements {
         return list.get( 0 );
     }
 
+
+    public static long addSchema( XATransactionHandler transactionHandler, String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "database", "" + databaseId );
+        data.put( "name", quoteString( name ) );
+        data.put( "owner", "" + ownerId );
+        data.put( "encoding", "" + encoding.getId() );
+        data.put( "collation", "" + collation.getId() );
+        data.put( "type", "" + schemaType.getId() );
+        return insertHandler( transactionHandler, "schema", data );
+    }
+
+
+
+
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
     //                                                                     Tables
@@ -647,6 +665,20 @@ final class Statements {
         return list.get( 0 );
     }
 
+
+    public static long addTable( XATransactionHandler transactionHandler, String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "schema", "" + schemaId );
+        data.put( "name", quoteString( name ) );
+        data.put( "owner", "" + ownerId );
+        data.put( "encoding", "" + encoding.getId() );
+        data.put( "collation", "" + collation.getId() );
+        data.put( "type", "" + tableType.getId() );
+        data.put( "definition", quoteString( definition ) );
+        return insertHandler( transactionHandler, "table", data );
+    }
+
+
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
     //                                                                     Columns
@@ -670,8 +702,8 @@ final class Statements {
                         rs.getString( 8 ),
                         rs.getInt( 9 ),
                         PolySqlType.getByTypeCode( rs.getInt( 10 ) ),
-                        rs.getInt( 11 ),
-                        rs.getInt( 12 ),
+                        getIntOrNull( rs, 11 ),
+                        getIntOrNull( rs, 12 ),
                         rs.getBoolean( 13 ),
                         Encoding.getById( rs.getInt( 14 ) ),
                         Collation.getById( rs.getInt( 15 ) ),
@@ -766,6 +798,23 @@ final class Statements {
         }
         return list.get( 0 );
     }
+
+
+    public static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "table", "" + tableId );
+        data.put( "name", quoteString( name ) );
+        data.put( "position", "" + position );
+        data.put( "type", "" + type.getTypeCode() );
+        data.put( "length", length == null ? null : "" + length );
+        data.put( "precision", precision == null ? null : "" + precision );
+        data.put( "nullable", "" + nullable );
+        data.put( "encoding", "" + encoding.getId() );
+        data.put( "collation", "" + collation.getId() );
+        data.put( "force_default", "" + forceDefault );
+        return insertHandler( transactionHandler, "column", data );
+    }
+
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
@@ -869,9 +918,15 @@ final class Statements {
 
 
     // Get Store by store id
-    public static List<CatalogStore> getStore( XATransactionHandler transactionHandler, int id ) throws GenericCatalogException {
-        String filter = " AND id = " + id;
-        return storeFilter( transactionHandler, filter );
+    public static CatalogStore getStore( XATransactionHandler transactionHandler, int id ) throws GenericCatalogException, UnknownStoreException {
+        String filter = " \"id\" = " + id;
+        List<CatalogStore> list = storeFilter( transactionHandler, filter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownStoreException( id );
+        }
+        return list.get( 0 );
     }
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -906,4 +961,79 @@ final class Statements {
     }
 
 
+    public static long addDataPlacement( XATransactionHandler transactionHandler, int store, long table ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "store", "" + store );
+        data.put( "table", "" + table );
+        return insertHandler( transactionHandler, "data_placement", data );
+    }
+
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+    //
+    //                                                                   Helpers
+    //
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+    public static long insertHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data ) throws GenericCatalogException {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "INSERT INTO " ).append( quoteIdentifier( tableName ) ).append( " ( " );
+        boolean first = true;
+        for ( String columnName : data.keySet() ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( quoteIdentifier( columnName ) );
+        }
+        builder.append( " ) VALUES ( " );
+        first = true;
+        for ( String value : data.values() ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( value );
+        }
+        builder.append( " );" );
+
+        try {
+            int rowCount = transactionHandler.executeUpdate( builder.toString() );
+            if ( rowCount != 1 ) {
+                throw new GenericCatalogException( "Expected row count of one but got " + rowCount );
+            }
+            // Get Schema Id (auto increment)
+            ResultSet rs = transactionHandler.getGeneratedKeys();
+            if ( rs.next() ) {
+                return rs.getLong( 1 );
+            } else {
+                throw new GenericCatalogException( "Something went wrong. Unable to retrieve inserted schema id." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    private static String quoteIdentifier( String identifier ) {
+        return "\"" + identifier + "\"";
+    }
+
+
+    private static String quoteString( String s ) {
+        if ( s == null ) {
+            return null;
+        } else {
+            return "'" + s + "'";
+        }
+    }
+
+
+    private static Integer getIntOrNull( ResultSet rs, int index ) throws SQLException {
+        int v = rs.getInt( index );
+        if ( rs.wasNull() ) {
+            return null;
+        }
+        return v;
+    }
 }

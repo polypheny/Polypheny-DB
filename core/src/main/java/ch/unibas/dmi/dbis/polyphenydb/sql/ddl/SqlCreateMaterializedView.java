@@ -45,19 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationKey;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -66,14 +58,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 
@@ -107,6 +95,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
 
 
     @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "CREATE" );
         writer.keyword( "MATERIALIZED VIEW" );
@@ -125,37 +119,6 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
         writer.keyword( "AS" );
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
-    }
-
-
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        if ( pair.left.plus().getTable( pair.right ) != null ) {
-            // Materialized view exists.
-            if ( !ifNotExists ) {
-                // They did not specify IF NOT EXISTS, so give error.
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( pair.right ) );
-            }
-            return;
-        }
-        final SqlNode q = SqlDdlNodes.renameColumns( columnList, query );
-        final String sql = q.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql();
-        final List<String> schemaPath = pair.left.path( null );
-        final ViewTableMacro viewTableMacro =
-                ViewTable.viewMacro(
-                        pair.left.plus(),
-                        sql,
-                        schemaPath,
-                        context.getObjectPath(),
-                        false );
-        final TranslatableTable x = viewTableMacro.apply( ImmutableList.of() );
-        final RelDataType rowType = x.getRowType( context.getTypeFactory() );
-
-        // Table does not exist. Create it.
-        final MaterializedViewTable table = new MaterializedViewTable( pair.right, RelDataTypeImpl.proto( rowType ) );
-        pair.left.add( pair.right, table );
-        SqlDdlNodes.populate( name, query, context );
-        table.key = MaterializationService.instance().defineMaterialization( pair.left, null, sql, schemaPath, pair.right, true, true );
     }
 
 
@@ -189,5 +152,37 @@ public class SqlCreateMaterializedView extends SqlCreate implements SqlExecutabl
             return super.unwrap( aClass );
         }
     }
+
+
+    /*
+    public void execute( Context context ) {
+        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
+        if ( pair.left.plus().getTable( pair.right ) != null ) {
+            // Materialized view exists.
+            if ( !ifNotExists ) {
+                // They did not specify IF NOT EXISTS, so give error.
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( pair.right ) );
+            }
+            return;
+        }
+        final SqlNode q = SqlDdlNodes.renameColumns( columnList, query );
+        final String sql = q.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql();
+        final List<String> schemaPath = pair.left.path( null );
+        final ViewTableMacro viewTableMacro =
+                ViewTable.viewMacro(
+                        pair.left.plus(),
+                        sql,
+                        schemaPath,
+                        context.getObjectPath(),
+                        false );
+        final TranslatableTable x = viewTableMacro.apply( ImmutableList.of() );
+        final RelDataType rowType = x.getRowType( context.getTypeFactory() );
+
+        // Table does not exist. Create it.
+        final MaterializedViewTable table = new MaterializedViewTable( pair.right, RelDataTypeImpl.proto( rowType ) );
+        pair.left.add( pair.right, table );
+        SqlDdlNodes.populate( name, query, context );
+        table.key = MaterializationService.instance().defineMaterialization( pair.left, null, sql, schemaPath, pair.right, true, true );
+    } */
 }
 

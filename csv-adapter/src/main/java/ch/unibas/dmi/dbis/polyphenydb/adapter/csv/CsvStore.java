@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
@@ -35,5 +36,11 @@ public class CsvStore implements Store {
     @Override
     public Schema getCurrentSchema() {
         return currentSchema;
+    }
+
+
+    @Override
+    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+        throw new RuntimeException( "CSV adapter does not support creating table" );
     }
 }

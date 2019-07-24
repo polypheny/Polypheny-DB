@@ -108,12 +108,18 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
                 .parserConfig( SqlParser.configBuilder().build() )
-                .prepareContext( new ContextImpl( rootSchema, new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) )
+                .prepareContext( new ContextImpl(
+                        rootSchema,
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
         try ( Closer closer = new Closer() ) {

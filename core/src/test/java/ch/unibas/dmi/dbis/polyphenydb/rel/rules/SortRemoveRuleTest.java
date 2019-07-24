@@ -97,12 +97,18 @@ public final class SortRemoveRuleTest {
                 .defaultSchema( defSchema )
                 .traitDefs( ConventionTraitDef.INSTANCE, RelCollationTraitDef.INSTANCE )
                 .programs( Programs.of( prepareRules ), Programs.ofRules( SortRemoveRule.INSTANCE ) )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         Planner planner = Frameworks.getPlanner( config );
         SqlNode parse = planner.parse( sql );

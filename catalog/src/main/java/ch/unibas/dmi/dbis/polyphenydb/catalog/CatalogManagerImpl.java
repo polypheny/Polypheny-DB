@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
@@ -47,6 +48,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
@@ -235,6 +237,19 @@ public class CatalogManagerImpl extends CatalogManager {
     }
 
 
+    @Override
+    public long addSchema( PolyXid xid, String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
+            CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
+            return Statements.addSchema( transactionHandler, name, database.id, owner.id, encoding, collation, schemaType );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
     /**
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
@@ -359,6 +374,32 @@ public class CatalogManagerImpl extends CatalogManager {
     }
 
 
+    @Override
+    public long addTable( PolyXid xid, String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
+            CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
+            return Statements.addTable( transactionHandler, name, schema.id, owner.id, encoding, collation, tableType, definition );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public long addDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogStore store = Statements.getStore( transactionHandler, storeId );
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            return Statements.addDataPlacement( transactionHandler, store.id, table.id );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
     /**
      * Get all columns of the specified table.
      *
@@ -436,6 +477,18 @@ public class CatalogManagerImpl extends CatalogManager {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, databaseName, schemaName, tableName, columnName );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public long addColumn( PolyXid xid, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, encoding, collation, forceDefault );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }

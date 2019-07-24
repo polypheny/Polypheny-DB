@@ -45,6 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
@@ -65,6 +67,12 @@ public class SqlDropView extends SqlDropObject {
      */
     SqlDropView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists, name );
+    }
+
+
+    @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
     }
 }
 

@@ -48,6 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema;
@@ -111,6 +112,13 @@ public class SqlCreateForeignSchema extends SqlCreate implements SqlExecutableSt
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, type, library, optionList );
     }
+
+
+    @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
 
 
     @Override
@@ -218,5 +226,6 @@ public class SqlCreateForeignSchema extends SqlCreate implements SqlExecutableSt
             }
         };
     }
+
 }
 

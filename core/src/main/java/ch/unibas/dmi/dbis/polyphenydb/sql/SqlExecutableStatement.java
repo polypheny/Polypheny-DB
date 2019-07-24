@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 
 
@@ -53,6 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
  */
 public interface SqlExecutableStatement {
 
-    void execute( Context context );
+    void execute( Context context, CatalogManager catalog );
 
 }

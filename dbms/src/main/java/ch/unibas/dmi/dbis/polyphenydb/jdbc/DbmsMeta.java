@@ -758,7 +758,7 @@ public class DbmsMeta implements ProtobufMeta {
         Config parserConfig = configConfigBuilder.build();
 
         DataContext dataContext = statement.getDataContext( rootSchema );
-        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "" );
+        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "public", connection.getDatabase().id, connection.getUser().id, xid );
 
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
@@ -841,7 +841,7 @@ public class DbmsMeta implements ProtobufMeta {
             case CREATE_INDEX:
             case ALTER_INDEX:
             case DROP_INDEX:
-                result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed );
+                result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
                 break;
 
             case EXPLAIN:

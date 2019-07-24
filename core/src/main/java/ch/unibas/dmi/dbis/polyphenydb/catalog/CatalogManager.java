@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
@@ -141,6 +142,9 @@ public abstract class CatalogManager {
     public abstract CatalogSchema getSchema( PolyXid xid, long databaseId, String schemaName ) throws GenericCatalogException, UnknownSchemaException;
 
 
+    public abstract long addSchema( PolyXid xid, String name, long databaseId, int owner, Encoding encoding, Collation collation, SchemaType relational ) throws GenericCatalogException;
+
+
     /**
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
@@ -217,6 +221,11 @@ public abstract class CatalogManager {
     public abstract CatalogTable getTable( PolyXid xid, long databaseId, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException;
 
 
+    public abstract long addTable( PolyXid xid, String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException;
+
+
+    public abstract long addDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException;
+
     /**
      * Get all columns of the specified table.
      *
@@ -267,6 +276,8 @@ public abstract class CatalogManager {
     public abstract CatalogColumn getColumn( PolyXid xid, String databaseName, String schemaName, String tableName, String columnName ) throws GenericCatalogException, UnknownColumnException;
 
 
+    public abstract long addColumn( PolyXid xid, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
+
     /**
      * Returns the user with the specified name.
      *
@@ -289,6 +300,8 @@ public abstract class CatalogManager {
 
 
     public abstract CatalogCombinedTable getCombinedTable( PolyXid xid, long tableId ) throws GenericCatalogException, UnknownTableException;
+
+
 
 
     /*

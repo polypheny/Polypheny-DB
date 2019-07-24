@@ -45,10 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -57,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
@@ -104,6 +101,13 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     }
 
 
+    @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
+
+    /*
     public void execute( Context context ) {
         final List<String> path = context.getDefaultSchemaPath();
         PolyphenyDbSchema schema = context.getRootSchema();
@@ -114,5 +118,5 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
         if ( !existed && !ifExists ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
         }
-    }
+    } */
 }

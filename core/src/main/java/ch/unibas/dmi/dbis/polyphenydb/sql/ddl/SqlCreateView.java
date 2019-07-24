@@ -45,15 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -62,14 +55,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 
@@ -103,6 +91,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         if ( getReplace() ) {
             writer.keyword( "CREATE OR REPLACE" );
@@ -125,6 +119,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     }
 
 
+    /*
     public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         final SchemaPlus schemaPlus = pair.left.plus();
@@ -142,7 +137,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         final TranslatableTable x = viewTableMacro.apply( ImmutableList.of() );
         Util.discard( x );
         schemaPlus.add( pair.right, viewTableMacro );
-    }
+    } */
 
 }
 

@@ -32,7 +32,7 @@ CREATE TABLE "column" (
   "nullable"                   BOOLEAN           NOT NULL,
   "encoding"                   INTEGER           NOT NULL,
   "collation"                  INTEGER           NOT NULL,
-  "force_default"              BOOLEAN        NOT NULL,
+  "force_default"              BOOLEAN           NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -174,7 +174,7 @@ CREATE TABLE "store" (
 
 CREATE TABLE "data_placement" (
   "store"    INTEGER   NOT NULL,
-  "table"    INTEGER   NOT NULL,
+  "table"    BIGINT    NOT NULL,
   PRIMARY KEY ("store", "table")
 );
 
