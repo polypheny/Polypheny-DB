@@ -75,10 +75,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -94,7 +97,8 @@ public class JdbcSchema implements Schema {
     final String database;
     final String schema;
     public final SqlDialect dialect;
-    final JdbcConvention convention;
+    @Getter
+    private final JdbcConvention convention;
 
     private final Map<String, JdbcTable> tableMap;
 
@@ -140,7 +144,9 @@ public class JdbcSchema implements Schema {
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
         }
-        JdbcTable table = new JdbcTable( this, database, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ) );
+        List<String> columnNames = new LinkedList<>();
+        combinedTable.getColumns().forEach( c -> columnNames.add( c.name ) );
+        JdbcTable table = new JdbcTable( this, database, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
         tableMap.put( combinedTable.getTable().name, table );
         return table;
     }
@@ -243,11 +249,13 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public boolean isMutable() {
         return false;
     }
 
 
+    @Override
     public Schema snapshot( SchemaVersion version ) {
         return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap );
     }
@@ -259,6 +267,7 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Expression getExpression( SchemaPlus parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
     }
@@ -270,16 +279,19 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public final Collection<Function> getFunctions( String name ) {
         return getFunctions().get( name ); // never null
     }
 
 
+    @Override
     public final Set<String> getFunctionNames() {
         return getFunctions().keySet();
     }
 
 
+    @Override
     public Table getTable( String name ) {
         return getTableMap().get( name );
     }
@@ -353,6 +365,7 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Set<String> getTableNames() {
         // This method is called during a cache refresh. We can take it as a signal that we need to re-build our own cache.
         return getTableMap().keySet();
@@ -377,12 +390,14 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Schema getSubSchema( String name ) {
         // JDBC does not support sub-schemas.
         return null;
     }
 
 
+    @Override
     public Set<String> getSubSchemaNames() {
         return ImmutableSet.of();
     }

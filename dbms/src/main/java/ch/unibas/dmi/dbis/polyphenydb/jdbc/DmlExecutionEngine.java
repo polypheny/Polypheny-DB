@@ -27,6 +27,11 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel.Prefer;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
@@ -37,22 +42,29 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -65,6 +77,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.ConnectionHandle;
@@ -111,41 +124,44 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, PolyphenyDbSchema rootSchema, SqlSelect parsed ) throws NoSuchStatementException {
+    public ExecuteResult executeSelect( final StatementHandle h, final PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlSelect parsed ) throws NoSuchStatementException {
         //
         // 3: Validation
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ..." );
+            LOG.debug( "Validating SELECT Statement ..." );
         }
         stopWatch.start();
-        SqlNode validated = validate( parsed, planner );
+        Pair<SqlNode, RelDataType> validatePair = validate( parsed, planner );
+        SqlNode validated = validatePair.left;
+        RelDataType type = validatePair.right;
+
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Validated query: [{}]", validated );
         }
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ... done. [{}]", stopWatch );
+            LOG.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 4: authorization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ..." );
+            LOG.debug( "Authorizing SELECT Statement ..." );
         }
         stopWatch.start();
         authorize( parsed );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ... done. [{}]", stopWatch );
+            LOG.debug( "Authorizing SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 5: planning
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ..." );
+            LOG.debug( "Planning SELECT Statement ..." );
         }
         stopWatch.start();
         RelNode logicalPlan = plan( validated, planner );
@@ -154,14 +170,14 @@ public class DmlExecutionEngine {
         }
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ... done. [{}]", stopWatch );
+            LOG.debug( "Planning SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 6: optimization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ..." );
+            LOG.debug( "Optimizing SELECT Statement ..." );
         }
         stopWatch.start();
         RelNode optimalPlan = optimize( logicalPlan );
@@ -170,21 +186,21 @@ public class DmlExecutionEngine {
         }
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ... done. [{}]", stopWatch );
+            LOG.debug( "Optimizing SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 7: prepare to be executed
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ..." );
+            LOG.debug( "Execution SELECT Statement ..." );
         }
         stopWatch.start();
         PolyphenyDbConnectionConfig connectionConfig = new PolyphenyDbConnectionConfigImpl( new Properties() );
-        PolyphenyDbSignature signature = prepare( optimalPlan, statement, rootSchema, connectionConfig );
+        PolyphenyDbSignature signature = prepareSelect( optimalPlan, statement, rootSchema, parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(), type );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ... done. [{}]", stopWatch );
+            LOG.debug( "Execution SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
@@ -230,44 +246,112 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final int maxRowsInFirstFrame, final long maxRowCount, final Planner planner, final StopWatch stopWatch, final SqlNode parsed ) {
+    public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlNode parsed, ContextImpl prepareContext ) {
 
         //
         // 3: Validation
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ..." );
+            LOG.debug( "Validating DML Statement ..." );
         }
         stopWatch.start();
-        SqlNode validated = validate( parsed, planner );
+        Pair<SqlNode, RelDataType> validatePair = validate( parsed, planner );
+        SqlNode validated = validatePair.left;
+
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Validated query: [{}]", validated );
         }
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ... done. [{}]", stopWatch );
+            LOG.debug( "Validating DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 4: authorization
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing DML Statement ..." );
+        }
+        stopWatch.start();
+        authorize( parsed );
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 5: planning
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning DML Statement ..." );
+        }
+        stopWatch.start();
+        RelNode logicalPlan = plan( validated, planner );
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 6: optimization
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing DML Statement  ..." );
+        }
+        stopWatch.start();
+        RelNode optimalPlan;
+        try {
+            //optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( StoreManager.getInstance().getStore( 0 ).getConvention() ), logicalPlan );
+            optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( EnumerableConvention.INSTANCE ), logicalPlan );
+        } catch ( RelConversionException e ) {
+            throw new RuntimeException( e );
+        }
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 7: prepare to be executed
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Prepare to execute DML Statement ..." );
+        }
+        stopWatch.start();
+
+        RelRoot root = RelRoot.of( optimalPlan, parsed.getKind() );
+        EnumerableRel enumerable = (EnumerableRel) root.rel;
+        if ( !root.isRefTrivial() ) {
+            final List<RexNode> projects = new ArrayList<>();
+            final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
+            for ( int field : Pair.left( root.fields ) ) {
+                projects.add( rexBuilder.makeInputRef( enumerable, field ) );
+            }
+            RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+            enumerable = EnumerableCalc.create( enumerable, program );
+        }
+
+        Bindable bindable = EnumerableInterpretable.toBindable( ImmutableMap.of(), null, enumerable, Prefer.ARRAY );
+        Enumerable e = bindable.bind( statement.getDataContext( rootSchema ) );
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Prepare to execute DML Statement ... done. [{}]", stopWatch );
         }
 
 
-        // TODO: Implement DML support
+        MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) e.iterator().next()).intValue() );
 
-        switch ( parsed.getKind() ) {
-            case INSERT:
-                break;
+        LinkedList<MetaResultSet> resultSets = new LinkedList<>();
+        resultSets.add( metaResultSet );
 
-            case DELETE:
-                break;
-
-            case UPDATE:
-
-            case MERGE:
-            case PROCEDURE_CALL:
-
-            default:
-                throw new RuntimeException( "Unknown or unsupported dml query type: " + parsed.getKind().name() );
-        }
-
-        return null;
+        return new ExecuteResult( resultSets );
     }
 
 
@@ -276,7 +360,9 @@ public class DmlExecutionEngine {
         SqlNode explicandum = explainQuery.getExplicandum();
 
         // 3: validation
-        SqlNode validated = validate( explicandum, planner );
+        Pair<SqlNode, RelDataType> validatePair = validate( explicandum, planner );
+        SqlNode validated = validatePair.left;
+        RelDataType type = validatePair.right;
 
         // 4: authorization
         authorize( explicandum );
@@ -320,10 +406,10 @@ public class DmlExecutionEngine {
     }
 
 
-    private SqlNode validate( final SqlNode parsed, final Planner planner ) {
-        SqlNode validated;
+    private Pair<SqlNode, RelDataType> validate( final SqlNode parsed, final Planner planner ) {
+        Pair<SqlNode, RelDataType> validated;
         try {
-            validated = planner.validate( parsed );
+            validated = planner.validateAndGetType( parsed );
         } catch ( ValidationException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
@@ -363,13 +449,34 @@ public class DmlExecutionEngine {
     }
 
 
-    private PolyphenyDbSignature prepare( final RelNode optimalPlan, final PolyphenyDbStatementHandle statementHandle, final PolyphenyDbSchema rootSchema, final PolyphenyDbConnectionConfig connectionConfig ) {
+    private PolyphenyDbSignature prepareSelect( final RelNode optimalPlan, final PolyphenyDbStatementHandle statementHandle, final PolyphenyDbSchema rootSchema, final String sql, RelDataType type ) {
         ArrayBindable bindable = Interpreters.bindable( optimalPlan );
         final CursorFactory cf = CursorFactory.ARRAY;
         final JavaTypeFactory typeFactory = statementHandle.getTypeFactory();
         final List<List<String>> origins = Collections.nCopies( optimalPlan.getRowType().getFieldCount(), null );
         List<ColumnMetaData> columnMetaData = getColumnMetaDataList( typeFactory, optimalPlan.getRowType(), optimalPlan.getRowType(), origins );
-        return new PolyphenyDbSignature( "", ImmutableList.of(), ImmutableMap.of(), optimalPlan.getRowType(), columnMetaData, cf, rootSchema, ImmutableList.of(), -1, bindable, StatementType.SELECT );
+
+        final List<AvaticaParameter> parameters = new ArrayList<>();
+        final RelDataType parameterRowType = optimalPlan.getRowType();
+        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
+            RelDataType fieldType = field.getType();
+            parameters.add(
+                    new AvaticaParameter(
+                            false,
+                            getPrecision( fieldType ),
+                            getScale( fieldType ),
+                            getTypeOrdinal( fieldType ),
+                            getTypeName( fieldType ),
+                            "",
+                            field.getName() ) );
+        }
+
+        RelDataType jdbcType = type;
+        if ( !type.isStruct() ) {
+            jdbcType = statementHandle.getTypeFactory().builder().add( "$0", type ).build();
+        }
+
+        return new PolyphenyDbSignature( sql, parameters, ImmutableMap.of(), jdbcType, columnMetaData, cf, rootSchema, ImmutableList.of(), -1, bindable, StatementType.SELECT );
     }
 
 

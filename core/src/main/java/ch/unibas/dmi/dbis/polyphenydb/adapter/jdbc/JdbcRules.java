@@ -878,7 +878,8 @@ public class JdbcRules {
             }
             final RelTraitSet traitSet = modify.getTraitSet().replace( out );
             return new JdbcTableModify(
-                    modify.getCluster(), traitSet,
+                    modify.getCluster(),
+                    traitSet,
                     modify.getTable(),
                     modify.getCatalogReader(),
                     RelOptRule.convert( modify.getInput(), traitSet ),

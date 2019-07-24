@@ -77,9 +77,11 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -104,8 +106,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private final String jdbcTableName;
     private final TableType jdbcTableType;
 
+    private final List<String> columnNames;
 
-    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType, RelProtoDataType protoRowType ) {
+
+    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType, RelProtoDataType protoRowType, List<String> columnNames ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.jdbcCatalogName = jdbcCatalogName;
@@ -113,6 +117,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         this.jdbcTableName = tableName;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
+        this.columnNames = columnNames;
     }
 
 
@@ -166,7 +171,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.convention );
+        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
     }
 
 
@@ -184,13 +189,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public Collection getModifiableCollection() {
-        return null;
+        return new DummyCollection();
     }
 
 
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        jdbcSchema.convention.register( cluster.getPlanner() );
+        jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
@@ -225,6 +230,41 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
             return enumerable.enumerator();
+        }
+    }
+
+
+    private class DummyCollection extends HashSet {
+
+        @Override
+        public boolean add( Object o ) {
+            if ( o instanceof Object[] ) {
+                super.add( o ); // Add to the hash set in case we need any other method like contains
+                StringBuilder builder = new StringBuilder();
+                builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
+                for ( String columnName : columnNames ) {
+                    builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) + "," );
+                }
+                builder.setLength( builder.length() - 1 ); // remove last comma
+                builder.append( ") VALUES ( " );
+                for ( Object object : (Object[]) o ) {
+                    if ( object instanceof String ) {
+                        builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
+                    } else {
+                        builder.append( object.toString() + "," );
+                    }
+                }
+                builder.setLength( builder.length() - 1 ); // remove last comma
+                builder.append( " )" );
+                try {
+                    int s = jdbcSchema.getDataSource().getConnection().createStatement().executeUpdate( builder.toString() );
+                    return s > 0;
+                } catch ( SQLException e ) {
+                    throw new RuntimeException( e );
+                }
+            } else {
+                throw new RuntimeException( "Not an array! " + o.getClass().getName() );
+            }
         }
     }
 }

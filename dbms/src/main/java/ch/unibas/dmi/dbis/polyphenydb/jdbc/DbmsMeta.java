@@ -58,6 +58,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -68,6 +70,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -760,15 +763,15 @@ public class DbmsMeta implements ProtobufMeta {
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
 
-        // List<RelTraitDef> traitDefs = new ArrayList<>();
-        //traitDefs.add( ConventionTraitDef.INSTANCE );
+        List<RelTraitDef> traitDefs = new ArrayList<>();
+        traitDefs.add( ConventionTraitDef.INSTANCE );
         FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                //            .traitDefs( traitDefs )
+                .traitDefs( traitDefs )
                 .defaultSchema( rootSchema.plus() )
                 .prepareContext( prepareContext )
                 //             .sqlToRelConverterConfig( sqlToRelConfig )
-                //             .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .build();
         //.programs( Programs.ofRules( Programs.CALC_RULES ) );
 
@@ -816,7 +819,7 @@ public class DbmsMeta implements ProtobufMeta {
             case UPDATE:
             case MERGE:
             case PROCEDURE_CALL:
-                result = DmlExecutionEngine.getInstance().executeDml( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, parsed );
+                result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
                 break;
 
             case COMMIT:
