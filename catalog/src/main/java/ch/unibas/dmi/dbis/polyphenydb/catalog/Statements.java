@@ -487,6 +487,19 @@ final class Statements {
     }
 
 
+    public static void deleteSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "schema" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + schemaId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
 
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1036,4 +1049,5 @@ final class Statements {
         }
         return v;
     }
+
 }

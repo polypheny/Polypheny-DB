@@ -758,7 +758,7 @@ public class DbmsMeta implements ProtobufMeta {
         Config parserConfig = configConfigBuilder.build();
 
         DataContext dataContext = statement.getDataContext( rootSchema );
-        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "public", connection.getDatabase().id, connection.getUser().id, xid );
+        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, connection.getDatabase().defaultSchemaName, connection.getDatabase().id, connection.getUser().id, xid );
 
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();

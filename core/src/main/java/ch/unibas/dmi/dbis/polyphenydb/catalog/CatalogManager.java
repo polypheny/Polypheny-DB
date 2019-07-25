@@ -144,6 +144,10 @@ public abstract class CatalogManager {
 
     public abstract long addSchema( PolyXid xid, String name, long databaseId, int owner, Encoding encoding, Collation collation, SchemaType relational ) throws GenericCatalogException;
 
+    public abstract boolean checkIfExistsSchema( PolyXid transactionId, long databaseId, String schemaName ) throws GenericCatalogException;
+
+    public abstract void deleteSchema( PolyXid transactionId, long id ) throws GenericCatalogException;
+
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.

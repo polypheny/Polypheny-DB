@@ -96,14 +96,6 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a CREATE FOREIGN SCHEMA.
-     */
-    public static SqlCreateForeignSchema createForeignSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode type, SqlNode library, SqlNodeList optionList ) {
-        return new SqlCreateForeignSchema( pos, replace, ifNotExists, name, type, library, optionList );
-    }
-
-
-    /**
      * Creates a CREATE TYPE.
      */
     public static SqlCreateType createType( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeList, SqlDataTypeSpec dataTypeSpec ) {
@@ -144,10 +136,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a DROP [ FOREIGN ] SCHEMA.
+     * Creates a DROP SCHEMA.
      */
-    public static SqlDropSchema dropSchema( SqlParserPos pos, boolean foreign, boolean ifExists, SqlIdentifier name ) {
-        return new SqlDropSchema( pos, foreign, ifExists, name );
+    public static SqlDropSchema dropSchema( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropSchema( pos, ifExists, name );
     }
 
 

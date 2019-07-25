@@ -162,9 +162,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             throw new RuntimeException( "Not supported yet" );
         }
 
+        String tableName;
+        long schemaId;
         try {
-            String tableName;
-            long schemaId;
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( context.getTransactionId(), name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
@@ -175,7 +175,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 schemaId = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
+        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        } catch ( UnknownSchemaException e ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return;
+            } else {
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( name.toString() ) );
+            }
+        }
 
+        try {
             long tableId = catalog.addTable(
                     context.getTransactionId(),
                     tableName,
@@ -218,8 +229,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = catalog.getCombinedTable( context.getTransactionId(), tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
-
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

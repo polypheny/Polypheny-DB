@@ -250,6 +250,32 @@ public class CatalogManagerImpl extends CatalogManager {
     }
 
 
+    @Override
+    public boolean checkIfExistsSchema( PolyXid xid, long databaseId, String schemaName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
+            Statements.getSchema( transactionHandler, database.id, schemaName );
+            return true;
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException | UnknownDatabaseException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownSchemaException e ) {
+            return false;
+        }
+    }
+
+
+    @Override
+    public void deleteSchema( PolyXid xid, long schemaId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteSchema( transactionHandler, schemaId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
     /**
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.

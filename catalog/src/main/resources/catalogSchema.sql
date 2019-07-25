@@ -21,146 +21,151 @@
 -- SOFTWARE.
 
 
+CREATE TABLE "user"
+(
+    "id"       INTEGER IDENTITY NOT NULL,
+    "username" VARCHAR(100)     NOT NULL,
+    "password" VARCHAR(100)     NOT NULL,
+    PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "database"
+(
+    "id"               BIGINT IDENTITY NOT NULL,
+    "name"             VARCHAR(100)    NOT NULL,
+    "owner"            INTEGER         NOT NULL REFERENCES "user" ("id"),
+    "encoding"         INTEGER         NOT NULL,
+    "collation"        INTEGER         NOT NULL,
+    "connection_limit" INTEGER         NOT NULL,
+    "default_schema"   BIGINT          NULL,
+    PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "schema"
+(
+    "id"        BIGINT IDENTITY NOT NULL,
+    "database"  BIGINT          NOT NULL REFERENCES "database" ("id"),
+    "name"      VARCHAR(100)    NOT NULL,
+    "owner"     INTEGER         NOT NULL REFERENCES "user" ("id"),
+    "encoding"  INTEGER         NULL,
+    "collation" INTEGER         NULL,
+    "type"      INTEGER         NULL,
+    PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "table"
+(
+    "id"         BIGINT IDENTITY NOT NULL,
+    "schema"     BIGINT          NOT NULL REFERENCES "schema" ("id"),
+    "name"       VARCHAR(100)    NOT NULL,
+    "owner"      INTEGER         NOT NULL REFERENCES "user" ("id"),
+    "encoding"   INTEGER         NULL,
+    "collation"  INTEGER         NULL,
+    "type"       INTEGER         NOT NULL,
+    "definition" VARCHAR(1000)   NULL,
+    PRIMARY KEY ("id")
+);
+
+
 CREATE TABLE "column" (
-  "id"                         BIGINT IDENTITY   NOT NULL,
-  "table"                      BIGINT            NOT NULL,
-  "name"                       VARCHAR(100)      NOT NULL,
-  "position"                   INTEGER           NOT NULL,
-  "type"                       INTEGER           NOT NULL,
-  "length"                     INTEGER           NULL,
-  "precision"                  INTEGER           NULL,
-  "nullable"                   BOOLEAN           NOT NULL,
-  "encoding"                   INTEGER           NOT NULL,
-  "collation"                  INTEGER           NOT NULL,
-  "force_default"              BOOLEAN           NOT NULL,
-  PRIMARY KEY ("id")
+                          "id"            BIGINT IDENTITY NOT NULL,
+                          "table"         BIGINT          NOT NULL REFERENCES "table" ("id"),
+                          "name"          VARCHAR(100)    NOT NULL,
+                          "position"      INTEGER         NOT NULL,
+                          "type"          INTEGER         NOT NULL,
+                          "length"        INTEGER         NULL,
+                          "precision"     INTEGER         NULL,
+                          "nullable"      BOOLEAN         NOT NULL,
+                          "encoding"      INTEGER         NOT NULL,
+                          "collation"     INTEGER         NOT NULL,
+                          "force_default" BOOLEAN         NOT NULL,
+                          PRIMARY KEY ("id")
+);
+
+
+CREATE TABLE "default_value"
+(
+    "column"                    BIGINT       NOT NULL REFERENCES "column" ("id"),
+    "type"                      INTEGER      NOT NULL,
+    "value"                     BLOB         NULL,
+    "function_name"             VARCHAR(100) NULL,
+    "autoincrement_start_value" BIGINT       NULL,
+    "autoincrement_next_value"  BIGINT       NULL,
+    PRIMARY KEY ("column")
 );
 
 
 CREATE TABLE "column_privilege" (
-  "column"      BIGINT      NOT NULL,
-  "user"        INTEGER     NOT NULL,
-  "privilege"   INTEGER     NOT NULL,
-  "grantable"   BOOLEAN     NOT NULL,
-  PRIMARY KEY ("column", "user", "privilege")
-);
-
-
-CREATE TABLE "default_value" (
-  "column"                      BIGINT         NOT NULL,
-  "type"                        INTEGER        NOT NULL,
-  "value"                       BLOB           NULL,
-  "function_name"               VARCHAR(100)   NULL,
-  "autoincrement_start_value"   BIGINT         NULL,
-  "autoincrement_next_value"    BIGINT         NULL,
-  PRIMARY KEY ("column")
-);
-
-
-CREATE TABLE "table" (
-  "id"                 BIGINT IDENTITY   NOT NULL,
-  "schema"             BIGINT            NOT NULL,
-  "name"               VARCHAR(100)      NOT NULL,
-  "owner"              INTEGER           NOT NULL,
-  "encoding"           INTEGER           NULL,
-  "collation"          INTEGER           NULL,
-  "type"               INTEGER           NOT NULL,
-  "definition"         VARCHAR(1000)     NULL,
-  PRIMARY KEY ("id")
+                                    "column"    BIGINT  NOT NULL REFERENCES "column" ("id"),
+                                    "user"      INTEGER NOT NULL REFERENCES "user" ("id"),
+                                    "privilege" INTEGER NOT NULL,
+                                    "grantable" BOOLEAN NOT NULL,
+                                    PRIMARY KEY ("column", "user", "privilege")
 );
 
 
 CREATE TABLE "table_privilege" (
-  "table"      BIGINT    NOT NULL,
-  "user"       INTEGER   NOT NULL,
-  "privilege"  INTEGER   NOT NULL,
-  "grantable"  BOOLEAN   NOT NULL,
-  PRIMARY KEY ("table", "user", "privilege")
-);
-
-
-CREATE TABLE "schema" (
-  "id"            BIGINT IDENTITY   NOT NULL,
-  "database"      BIGINT            NOT NULL,
-  "name"          VARCHAR(100)      NOT NULL,
-  "owner"         INTEGER           NOT NULL,
-  "encoding"      INTEGER           NULL,
-  "collation"     INTEGER           NULL,
-  "type"          INTEGER           NULL,
-  PRIMARY KEY ("id")
+                                   "table"     BIGINT  NOT NULL REFERENCES "table" ("id"),
+                                   "user"      INTEGER NOT NULL REFERENCES "user" ("id"),
+                                   "privilege" INTEGER NOT NULL,
+                                   "grantable" BOOLEAN NOT NULL,
+                                   PRIMARY KEY ("table", "user", "privilege")
 );
 
 
 CREATE TABLE "schema_privilege" (
-  "schema"     BIGINT    NOT NULL,
-  "user"       INTEGER   NOT NULL,
-  "privilege"  INTEGER   NOT NULL,
-  "grantable"  BOOLEAN   NOT NULL,
-  PRIMARY KEY ("schema", "user", "privilege")
-);
-
-
-CREATE TABLE "database" (
-  "id"                 BIGINT IDENTITY   NOT NULL,
-  "name"               VARCHAR(100)      NOT NULL,
-  "owner"              INTEGER           NOT NULL,
-  "encoding"           INTEGER           NOT NULL,
-  "collation"          INTEGER           NOT NULL,
-  "connection_limit"   INTEGER           NOT NULL,
-  "default_schema"     BIGINT            NOT NULL,
-  PRIMARY KEY ("id")
+                                    "schema"    BIGINT  NOT NULL REFERENCES "schema" ("id"),
+                                    "user"      INTEGER NOT NULL REFERENCES "user" ("id"),
+                                    "privilege" INTEGER NOT NULL,
+                                    "grantable" BOOLEAN NOT NULL,
+                                    PRIMARY KEY ("schema", "user", "privilege")
 );
 
 
 CREATE TABLE "database_privilege" (
-  "database"   BIGINT    NOT NULL,
-  "user"       INTEGER   NOT NULL,
-  "privilege"  INTEGER   NOT NULL,
-  "grantable"  BOOLEAN   NOT NULL,
-  PRIMARY KEY ("database", "user", "privilege")
+                                      "database"  BIGINT  NOT NULL REFERENCES "database" ("id"),
+                                      "user"      INTEGER NOT NULL REFERENCES "user" ("id"),
+                                      "privilege" INTEGER NOT NULL,
+                                      "grantable" BOOLEAN NOT NULL,
+                                      PRIMARY KEY ("database", "user", "privilege")
 );
 
 
 CREATE TABLE "global_privilege" (
-  "user"       INTEGER  NOT NULL,
-  "privilege"  INTEGER  NOT NULL,
-  "grantable"  BOOLEAN  NOT NULL,
-  PRIMARY KEY ("user", "privilege")
+                                    "user"      INTEGER NOT NULL REFERENCES "user" ("id"),
+                                    "privilege" INTEGER NOT NULL,
+                                    "grantable" BOOLEAN NOT NULL,
+                                    PRIMARY KEY ("user", "privilege")
 );
 
 
 CREATE TABLE "foreign_key" (
-  "column"      BIGINT         NOT NULL,
-  "references"  BIGINT         NOT NULL,
-  "on_update"   INTEGER        NOT NULL,
-  "on_delete"   INTEGER        NOT NULL,
-  "database"    VARCHAR(100)   NOT NULL,
-  "name"        VARCHAR(100)   NOT NULL,
-  PRIMARY KEY ("column", "references")
+                               "column"     BIGINT       NOT NULL REFERENCES "column" ("id"),
+                               "references" BIGINT       NOT NULL REFERENCES "column" ("id"),
+                               "on_update"  INTEGER      NOT NULL,
+                               "on_delete"  INTEGER      NOT NULL,
+                               "database"   BIGINT       NOT NULL REFERENCES "database" ("id"),
+                               "name"       VARCHAR(100) NOT NULL,
+                               PRIMARY KEY ("column", "references")
 );
 
 
 CREATE TABLE "index" (
-  "id"        BIGINT IDENTITY   NOT NULL,
-  "type"      INTEGER           NOT NULL,
-  "database"  VARCHAR(100)      NOT NULL,
-  "name"      VARCHAR(100)      NOT NULL,
-  PRIMARY KEY ("id")
+                         "id"       BIGINT IDENTITY NOT NULL,
+                         "type"     INTEGER         NOT NULL,
+                         "database" BIGINT          NOT NULL REFERENCES "database" ("id"),
+                         "name"     VARCHAR(100)    NOT NULL,
+                         PRIMARY KEY ("id")
 );
 
 
 CREATE TABLE "index_columns" (
-  "index"    BIGINT    NOT NULL,
-  "column"   BIGINT    NOT NULL,
-  PRIMARY KEY ("index", "column")
-);
-
-
-CREATE TABLE "user" (
-  "id"        INTEGER IDENTITY  NOT NULL,
-  "username"  VARCHAR(100)      NOT NULL,
-  "password"  VARCHAR(100)      NOT NULL,
-  PRIMARY KEY ("id")
+                                 "index"  BIGINT NOT NULL REFERENCES "index" ("id"),
+                                 "column" BIGINT NOT NULL REFERENCES "column" ("id"),
+                                 PRIMARY KEY ("index", "column")
 );
 
 
@@ -173,10 +178,17 @@ CREATE TABLE "store" (
 
 
 CREATE TABLE "data_placement" (
-  "store"    INTEGER   NOT NULL,
-  "table"    BIGINT    NOT NULL,
-  PRIMARY KEY ("store", "table")
+                                  "store" INTEGER NOT NULL REFERENCES "store" ("id"),
+                                  "table" BIGINT  NOT NULL REFERENCES "table" ("id"),
+                                  PRIMARY KEY ("store", "table")
 );
+
+
+-- -------------------------------------------------------------------
+
+
+ALTER TABLE "database"
+    ADD FOREIGN KEY ("default_schema") REFERENCES "schema" ("id");
 
 
 -- -------------------------------------------------------------------
@@ -200,6 +212,8 @@ CREATE INDEX "column_name"
   ON "column" ("name");
 CREATE UNIQUE INDEX "column_table_name"
   ON "column" ("table", "name");
+CREATE UNIQUE INDEX "column_position_table"
+    ON "column" ("table", "position");
 
 CREATE INDEX "column_privilege_column"
   ON "column_privilege" ("column");
@@ -280,6 +294,7 @@ CREATE INDEX "data_placement_table"
   ON "data_placement" ("table");
 
 
+
 -- ---------------------------------------------------------------
 
 
@@ -291,7 +306,8 @@ ALTER TABLE "user"
   RESTART WITH 2;
 
 
-INSERT INTO "database" ("id", "name", "owner", "encoding", "collation", "connection_limit", "default_schema" ) VALUES ( 0, 'APP', 0, 1, 2, 0, 0 );
+INSERT INTO "database" ("id", "name", "owner", "encoding", "collation", "connection_limit", "default_schema")
+VALUES (0, 'APP', 0, 1, 2, 0, NULL);
 
 ALTER TABLE "database"
   ALTER COLUMN "id"
@@ -299,19 +315,23 @@ ALTER TABLE "database"
 
 
 INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 0, 0, 'public', 0, 1, 2, 1 );
--- INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 1, 0, 'csv', 0, 1, 2, 1 );
--- INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type") VALUES ( 2, 0, 'hsqldb', 0, 1, 2, 1 );
 
 ALTER TABLE "schema"
   ALTER COLUMN "id"
   RESTART WITH 1;
 
+UPDATE "database"
+SET "default_schema" = 0
+WHERE "id" = 0;
 
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 0, 0, 'depts', 0, 1, 2, 1, '' );
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 1, 0, 'emps', 0, 1, 2, 1, '' );
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" ) VALUES ( 2, 0, 'test', 0, 1, 2, 1, '' );
+INSERT INTO "table" ("id", "schema", "name", "owner", "encoding", "collation", "type", "definition")
+VALUES (0, 0, 'depts', 0, 1, 2, 1, NULL);
+INSERT INTO "table" ("id", "schema", "name", "owner", "encoding", "collation", "type", "definition")
+VALUES (1, 0, 'emps', 0, 1, 2, 1, NULL);
+INSERT INTO "table" ("id", "schema", "name", "owner", "encoding", "collation", "type", "definition")
+VALUES (2, 0, 'test', 0, 1, 2, 1, NULL);
 
-ALTER TABLE "schema"
+ALTER TABLE "table"
   ALTER COLUMN "id"
   RESTART WITH 3;
 

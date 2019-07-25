@@ -45,6 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
+import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
@@ -58,6 +60,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
@@ -92,11 +95,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( getReplace() ) {
-            writer.keyword( "CREATE OR REPLACE" );
-        } else {
-            writer.keyword( "CREATE" );
-        }
+        writer.keyword( "CREATE" );
         writer.keyword( "SCHEMA" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );
@@ -108,31 +107,28 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
     @Override
     public void execute( Context context, CatalogManager catalog ) {
         try {
-            catalog.addSchema(
-                    context.getTransactionId(),
-                    name.getSimple(),
-                    context.getDatabaseId(),
-                    context.getCurrentUserId(),
-                    Encoding.UTF8,
-                    Collation.CASE_INSENSITIVE,
-                    SchemaType.RELATIONAL );
+            // Check if there is already a schema with this name
+            if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
+                if ( ifNotExists ) {
+                    // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
+                    return;
+                } else {
+                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
+                }
+            } else {
+                catalog.addSchema(
+                        context.getTransactionId(),
+                        name.getSimple(),
+                        context.getDatabaseId(),
+                        context.getCurrentUserId(),
+                        Encoding.UTF8,
+                        Collation.CASE_INSENSITIVE,
+                        SchemaType.RELATIONAL );
+            }
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }
 
-    /*
-    @Override
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        final SchemaPlus subSchema0 = pair.left.plus().getSubSchema( pair.right );
-        if ( subSchema0 != null ) {
-            if ( !getReplace() && !ifNotExists ) {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( pair.right ) );
-            }
-        }
-        final Schema subSchema = new AbstractSchema();
-        pair.left.add( pair.right, subSchema );
-    }*/
 }
 
