@@ -77,6 +77,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -263,8 +264,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             }
             builder.setLength( builder.length() - 1 ); // remove last comma
             builder.append( " )" );
-            try {
-                int s = jdbcSchema.getDataSource().getConnection().createStatement().executeUpdate( builder.toString() );
+            try ( Connection connection = jdbcSchema.getDataSource().getConnection() ) {
+                int s = connection.createStatement().executeUpdate( builder.toString() );
                 return s > 0;
             } catch ( SQLException e ) {
                 throw new RuntimeException( e );

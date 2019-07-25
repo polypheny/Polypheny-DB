@@ -59,7 +59,7 @@ class Database {
             Class.forName( "org.hsqldb.jdbcDriver" );
             logger.info( "Starting catalog database on port {} ...", DATABASE_PORT );
             HsqlProperties p = new HsqlProperties();
-            p.setProperty( "server.database.0", "mem:" + DATABASE_NAME );
+            p.setProperty( "server.database.0", "mem:" + DATABASE_NAME + ";hsqldb.tx=mvcc;hsqldb.tx_level=SERIALIZABLE" );
             p.setProperty( "server.dbname.0", DATABASE_NAME );
             p.setProperty( "server.port", DATABASE_PORT );
             p.setProperty( "server.shutdown", false );

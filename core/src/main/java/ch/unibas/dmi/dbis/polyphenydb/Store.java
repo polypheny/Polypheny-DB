@@ -17,4 +17,8 @@ public interface Store {
     Schema getCurrentSchema();
 
     void createTable( Context context, CatalogCombinedTable combinedTable );
+
+    boolean prepare( PolyXid xid );
+
+    void commit( PolyXid xid );
 }

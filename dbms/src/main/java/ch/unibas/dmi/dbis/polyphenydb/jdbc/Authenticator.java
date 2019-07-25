@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 
 
@@ -49,7 +50,7 @@ public class Authenticator {
             } else {
                 throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
             }
-        } catch ( UnknownUserException e ) {
+        } catch ( UnknownUserException | GenericCatalogException e ) {
             throw new AuthenticationException( e );
         }
     }

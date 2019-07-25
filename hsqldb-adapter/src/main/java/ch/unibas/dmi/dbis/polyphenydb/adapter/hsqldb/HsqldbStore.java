@@ -2,6 +2,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
@@ -14,10 +15,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class HsqldbStore implements Store {
 
+    private static final Logger LOG = LoggerFactory.getLogger( HsqldbStore.class );
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
@@ -102,6 +106,21 @@ public class HsqldbStore implements Store {
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    @Override
+    public boolean prepare( PolyXid xid ) {
+        // TODO: implement
+        LOG.warn( "Not implemented yet" );
+        return true;
+    }
+
+
+    @Override
+    public void commit( PolyXid xid ) {
+        // TODO: implement
+        LOG.warn( "Not implemented yet" );
     }
 
 

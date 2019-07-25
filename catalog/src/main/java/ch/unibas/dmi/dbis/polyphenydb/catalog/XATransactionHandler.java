@@ -115,6 +115,7 @@ class XATransactionHandler extends TransactionHandler {
     @Override
     void rollback() throws CatalogTransactionException {
         try {
+            xaResource.end( xid, XAResource.TMFAIL );
             xaResource.rollback( xid );
         } catch ( XAException e ) {
             throw new CatalogTransactionException( "Error while rollback transaction in catalog storage", e );

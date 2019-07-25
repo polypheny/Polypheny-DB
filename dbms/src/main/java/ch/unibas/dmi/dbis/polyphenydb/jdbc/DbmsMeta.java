@@ -33,6 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
@@ -49,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema.PrimitiveCata
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
@@ -71,6 +74,7 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -253,7 +257,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             List<TableType> types = null;
             if ( typeList != null ) {
                 types = CatalogManager.convertTableTypeList( typeList );
@@ -292,7 +296,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns(
                     xid,
                     database == null ? null : new Pattern( database ),
@@ -332,7 +336,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas(
                     xid,
                     database == null ? null : new Pattern( database ),
@@ -364,7 +368,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid, null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -734,21 +738,20 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-                statement.unset();
-            } else {
-                throw new RuntimeException( "There is no associated sstatement" );
-            }
+
+        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+            statement.unset();
+        } else {
+            throw new RuntimeException( "There is no associated sstatement" );
         }
 
-        PolyXid xid = getCurrentTransaction( connection );
+        // Get transaction id
+        PolyXid xid = getCurrentTransactionOrStartNew( connection );
 
-        // //////////////////////////
-        // For testing
-        // /////////////////////////
+        // Get schema
         PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent( xid );
+
 
         ////////////////////
         // (1)  Configure //
@@ -913,14 +916,11 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
         }
 
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-            } else {
-                throw new NoSuchStatementException( h );
-            }
+        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+        } else {
+            throw new NoSuchStatementException( h );
         }
 
         final PolyphenyDbSignature signature = statement.getSignature();
@@ -1001,11 +1001,11 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
-            OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
-        }
+
+        final int id = statementIdGenerator.getAndIncrement();
+        statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
+        OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
+
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
         LOG.trace( "created statement {}", h );
         return h;
@@ -1047,71 +1047,75 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
         }
 
-        final PolyphenyDbConnectionHandle connectionToOpen;
-        synchronized ( OPEN_CONNECTIONS ) {
-            if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
-                if ( LOG.isDebugEnabled() ) {
-                    LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
-                }
-                throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
-            }
-
+        if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
             if ( LOG.isDebugEnabled() ) {
-                LOG.debug( "Creating a new connection." );
+                LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
+            throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+        }
 
-            final CatalogUser user;
-            try {
-                user = Authenticator.authenticate(
-                        connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
-                        connectionParameters.getOrDefault( "password", "" ) );
-            } catch ( AuthenticationException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert user != null;
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Creating a new connection." );
+        }
 
-            String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
-            if ( databaseName == null || databaseName.isEmpty() ) {
-                databaseName = "APP";
-            }
-            String schemaName = connectionParameters.get( "schema" );
-            if ( schemaName == null || schemaName.isEmpty() ) {
-                schemaName = "public";
-            }
+        final CatalogUser user;
+        try {
+            user = Authenticator.authenticate(
+                    connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
+                    connectionParameters.getOrDefault( "password", "" ) );
+        } catch ( AuthenticationException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert user != null;
 
-            final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
-            final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
+        String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
+        if ( databaseName == null || databaseName.isEmpty() ) {
+            databaseName = "APP";
+        }
+        String schemaName = connectionParameters.get( "schema" );
+        if ( schemaName == null || schemaName.isEmpty() ) {
+            schemaName = "public";
+        }
 
-            // Create transaction id
-            PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+        final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
+        final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
 
-            final CatalogManager catalog = CatalogManagerImpl.getInstance();
-            // Check database access
-            final CatalogDatabase database;
-            try {
-                database = catalog.getDatabase( xid, databaseName );
-            } catch ( GenericCatalogException | UnknownDatabaseException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert database != null;
+        // Create transaction id
+        PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+
+        final CatalogManager catalog = CatalogManagerImpl.getInstance();
+        // Check database access
+        final CatalogDatabase database;
+        try {
+            database = catalog.getDatabase( xid, databaseName );
+        } catch ( GenericCatalogException | UnknownDatabaseException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert database != null;
 
 //            Authorizer.hasAccess( user, database );
 
-            // Check schema access
-            final CatalogSchema schema;
-            try {
-                schema = catalog.getSchema( xid, database.name, schemaName );
-            } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert schema != null;
+        // Check schema access
+        final CatalogSchema schema;
+        try {
+            schema = catalog.getSchema( xid, database.name, schemaName );
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert schema != null;
 
 //            Authorizer.hasAccess( user, schema );
 
-            connectionToOpen = new PolyphenyDbConnectionHandle( ch, nodeId, user, ch.id, database, schema, xid );
-
-            OPEN_CONNECTIONS.put( ch.id, connectionToOpen );
+        // commit transaction
+        try {
+            if ( CatalogManagerImpl.getInstance().prepare( xid ) ) {
+                CatalogManagerImpl.getInstance().commit( xid );
+            }
+        } catch ( CatalogTransactionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
+
+        OPEN_CONNECTIONS.put( ch.id, new PolyphenyDbConnectionHandle( ch, nodeId, user, ch.id, database, schema ) );
     }
 
 
@@ -1132,16 +1136,21 @@ public class DbmsMeta implements ProtobufMeta {
             return;
         }
 
-        synchronized ( OPEN_STATEMENTS ) {
-            for ( final String key : OPEN_STATEMENTS.keySet() ) {
-                if ( key.startsWith( ch.id ) ) {
-                    OPEN_STATEMENTS.remove( key ).unset();
-                }
+        // Check if there is an running transaction
+        PolyXid xid = connectionToClose.getCurrentTransaction();
+        if ( xid != null ) {
+            LOG.warn( "There is a running connection associated with this connection {}", connectionToClose );
+            LOG.warn( "Rollback transaction {}", xid );
+            rollback( ch );
+        }
+
+        for ( final String key : OPEN_STATEMENTS.keySet() ) {
+            if ( key.startsWith( ch.id ) ) {
+                OPEN_STATEMENTS.remove( key ).unset();
             }
         }
 
         // TODO: release all resources associated with this connection
-        LOG.error( "[NOT IMPLEMENTED YET] closeConnection( ConnectionHandle {} )", ch );
     }
 
 
@@ -1154,22 +1163,21 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyXid getCurrentTransaction( PolyphenyDbConnectionHandle connection ) {
+    private PolyXid getCurrentTransactionOrStartNew( PolyphenyDbConnectionHandle connection ) {
         final PolyXid currentTransaction;
         final boolean beginOfTransaction;
-        synchronized ( this ) {
-            if ( connection.getCurrentTransaction() == null ) {
-                currentTransaction = connection.startNewTransaction();
-                beginOfTransaction = true;
-                if ( LOG.isTraceEnabled() ) {
-                    LOG.trace( "Required a new TransactionId: {}", currentTransaction );
-                }
-            } else {
-                currentTransaction = connection.getCurrentTransaction();
-                beginOfTransaction = false;
-                if ( LOG.isTraceEnabled() ) {
-                    LOG.trace( "Reusing the current TransactionId: {}", currentTransaction );
-                }
+
+        if ( connection.getCurrentTransaction() == null ) {
+            currentTransaction = connection.startNewTransaction();
+            beginOfTransaction = true;
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Required a new TransactionId: {}", currentTransaction );
+            }
+        } else {
+            currentTransaction = connection.getCurrentTransaction();
+            beginOfTransaction = false;
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Reusing the current TransactionId: {}", currentTransaction );
             }
         }
         return currentTransaction;
@@ -1193,30 +1201,81 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     /**
-     * Makes all changes since the last commit/rollback permanent. Analogous to {@link Connection#commit()}.
-     *
-     * @param ch A reference to the real JDBC Connection
+     * Makes all changes since the last commit/rollback permanent.
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "commit( ConnectionHandle {} )", ch );
         }
-        throw new UnsupportedOperationException();
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        PolyXid xid = connection.getCurrentTransaction();
+
+        if ( xid == null ) {
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            }
+            return;
+        }
+
+        try {
+            // Prepare to commit changes on all involved stores and the catalog
+            boolean okToCommit = true;
+            okToCommit &= CatalogManagerImpl.getInstance().prepare( xid );
+            ImmutableCollection<Store> stores = StoreManager.getInstance().getStores().values();
+            for ( Store store : stores ) {
+                okToCommit &= store.prepare( xid );
+            }
+
+            if ( okToCommit ) {
+                // Commit changes
+                CatalogManagerImpl.getInstance().commit( xid );
+                for ( Store store : stores ) {
+                    store.commit( xid );
+                }
+            } else {
+                LOG.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
+                rollback( ch );
+                throw new RuntimeException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
+            }
+        } catch ( CatalogTransactionException e ) {
+            LOG.error( "Exception while committing changes. Execution rollback!" );
+            rollback( ch );
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        connection.endCurrentTransaction();
     }
 
 
     /**
-     * Undoes all changes since the last commit/rollback. Analogous to {@link Connection#rollback()};
-     *
-     * @param ch A reference to the real JDBC Connection
+     * Undoes all changes since the last commit/rollback.
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "rollback( ConnectionHandle {} )", ch );
         }
-        throw new UnsupportedOperationException();
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        PolyXid xid = connection.getCurrentTransaction();
+
+        if ( xid == null ) {
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            }
+            return;
+        }
+
+        // TODO: rollback changes to the stores
+
+        // Rollback changes to the catalog
+        try {
+            CatalogManagerImpl.getInstance().rollback( xid );
+        } catch ( CatalogTransactionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        connection.endCurrentTransaction();
     }
 
 

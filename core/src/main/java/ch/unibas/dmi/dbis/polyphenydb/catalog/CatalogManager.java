@@ -289,13 +289,12 @@ public abstract class CatalogManager {
      * @return The user
      * @throws UnknownUserException If there is no user with this name.
      */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException;
+    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
 
 
     /*
      *
      */
-
 
     public abstract CatalogCombinedDatabase getCombinedDatabase( PolyXid xid, long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
 

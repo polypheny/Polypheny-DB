@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,4 +38,8 @@ public class StoreManager {
         return storesById.get( id );
     }
 
+
+    public ImmutableMap<String, Store> getStores() {
+        return ImmutableMap.copyOf( storesByName );
+    }
 }

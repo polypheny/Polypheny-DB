@@ -528,8 +528,13 @@ public class CatalogManagerImpl extends CatalogManager {
      * @throws UnknownUserException If there is no user with this name.
      */
     @Override
-    public CatalogUser getUser( String username ) throws UnknownUserException {
-        return new CatalogUser( 0, "pa", "" );
+    public CatalogUser getUser( String username ) throws UnknownUserException, GenericCatalogException {
+        try {
+            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            return Statements.getUser( transactionHandler, username );
+        } catch ( CatalogConnectionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
 
