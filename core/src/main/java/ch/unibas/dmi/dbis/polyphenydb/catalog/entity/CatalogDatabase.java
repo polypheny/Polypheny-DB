@@ -74,11 +74,12 @@ public final class CatalogDatabase implements CatalogEntity {
 
     @RequiredArgsConstructor
     public class PrimitiveCatalogDatabase {
-        public final String name;
+
+        public final String tableCat;
         public final String owner;
         public final String encoding;
         public final String collation;
         public final int connectionLimit;
-        public final String defaultSchemaName;
+        public final String defaultSchema;
     }
 }

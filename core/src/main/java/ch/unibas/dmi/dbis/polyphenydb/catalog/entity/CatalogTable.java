@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -74,23 +75,28 @@ public final class CatalogTable implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name, schemaName, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), tableType, definition };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ databaseName, schemaName, name, tableType, "", null, null, null, null, null, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), definition };
     }
 
 
     @RequiredArgsConstructor
     public class PrimitiveCatalogTable {
 
-        public final String name;
-        public final String schema;
-        public final String database;
+        public final String tableCat;
+        public final String tableSchem;
+        public final String tableName;
+        public final String tableType;
+        public final String remarks;
+        public final String typeCat;
+        public final String typeSchem;
+        public final String typeName;
+        public final String selfReferencingColName;
+        public final String refGeneration;
         public final String owner;
         public final String encoding;
         public final String collation;
-        public final String tableType;
         public final String definition;
-
     }
 
 

@@ -76,8 +76,8 @@ public final class CatalogSchema implements CatalogEntity {
     @RequiredArgsConstructor
     public class PrimitiveCatalogSchema {
 
-        public final String name;
-        public final String database;
+        public final String tableSchem;
+        public final String tableCatalog;
         public final String owner;
         public final String encoding;
         public final String collation;

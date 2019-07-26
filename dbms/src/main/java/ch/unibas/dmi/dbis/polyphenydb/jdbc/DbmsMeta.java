@@ -274,13 +274,21 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( tables ),
                     PrimitiveCatalogTable.class,
-                    "NAME",
-                    "SCHEMA",
-                    "DATABASE",
+                    // According to JDBC standard:
+                    "TABLE_CAT",            // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",                  // The name of the schema
+                    "TABLE_NAME",                   // The name of the table
+                    "TABLE_TYPE",                   // The type of the table (Table, View, ...)
+                    "REMARKS",                      // The description of the table. --> Not used, always null
+                    "TYPE_CAT",                     // Always null
+                    "TYPE_SCHEM",                   // Always null
+                    "TYPE_NAME",                    // Always null
+                    "SELF_REFERENCING_COL_NAME",    // Name of the designated "identifier" column of a typed table  --> currently always null
+                    "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
-                    "TABLE_TYPE",
                     "DEFINITION"
             );
         } catch ( GenericCatalogException | UnknownTableTypeException e ) {
@@ -310,15 +318,26 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( columns ),
                     PrimitiveCatalogColumn.class,
-                    "NAME",
-                    "TABLE",
-                    "SCHEMA",
-                    "DATABASE",
-                    "POSITION",
-                    "TYPE",
-                    "LENGTH",
-                    "PRECISION",
-                    "NULLABLE",
+                    // According to JDBC standard:
+                    "TABLE_CAT",  // the database name
+                    "TABLE_SCHEM",        // the schema name
+                    "TABLE_NAME",         // the table name
+                    "COLUMN_NAME",        // the column name
+                    "DATA_TYPE",          // The SQL data type from java.sql.Types.
+                    "TYPE_NAME",          // The name of the data type.
+                    "COLUMN_SIZE",        // The precision of the column.
+                    "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
+                    "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
+                    "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
+                    "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
+                    "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
+                    "COLUMN_DEF",         // The default value of the column.
+                    "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
+                    "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
+                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types).
+                    "ORDINAL_POSITION",   // The index of the column within the table.
+                    "IS_NULLABLE",        // Indicates if the column allows null values.
+                    // Polypheny-DB specific extensions:
                     "ENCODING",
                     "COLLATION",
                     "FORCE_DEFAULT"
@@ -348,8 +367,10 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( schemas ),
                     PrimitiveCatalogSchema.class,
-                    "NAME",
-                    "DATABASE",
+                    // According to JDBC standard:
+                    "TABLE_SCHEM",
+                    "TABLE_CATALOG",
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
@@ -376,7 +397,9 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( databases ),
                     PrimitiveCatalogDatabase.class,
-                    "NAME",
+                    // According to JDBC standard:
+                    "TABLE_CAT",
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",

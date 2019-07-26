@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -81,22 +82,54 @@ public final class CatalogColumn implements CatalogEntity {
 
 
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name, tableName, schemaName, databaseName, position, CatalogEntity.getEnumNameOrNull( type ), length, precision, nullable, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), forceDefault };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{
+                databaseName,
+                schemaName,
+                tableName,
+                name,
+                type.getJavaSqlTypesValue(),
+                type.name(),
+                precision,
+                null,
+                length,
+                null,
+                nullable ? 1 : 0,
+                "",
+                "", // TODO: default value
+                null,
+                null,
+                precision,
+                position,
+                nullable ? "YES" : "NO",
+                CatalogEntity.getEnumNameOrNull( encoding ),
+                CatalogEntity.getEnumNameOrNull( collation ),
+                forceDefault };
     }
 
 
     @RequiredArgsConstructor
     public class PrimitiveCatalogColumn {
-        public final String name;
-        public final String table;
-        public final String schema;
-        public final String database;
-        public final int position;
-        public final String type;
-        public final Integer length;
-        public final Integer precision;
-        public final boolean nullable;
+
+        public final String tableCat;
+        public final String tableSchem;
+        public final String tableName;
+        public final String columnName;
+        public final int dataType;
+        public final String typeName;
+        public final Integer columnSize; // precision
+        public final Integer bufferLength; // always null
+        public final Integer decimalDigits; // length
+        public final Integer numPrecRadix;
+        public final int nullable;
+        public final String remarks;
+        public final String columnDef;
+        public final Integer sqlDataType; // always null
+        public final Integer sqlDatetimeSub; // always null
+        public final Integer charOctetLength;
+        public final int ordinalPosition; // position
+        public final String isNullable;
+
         public final String encoding;
         public final String collation;
         public final boolean forceDefault;
