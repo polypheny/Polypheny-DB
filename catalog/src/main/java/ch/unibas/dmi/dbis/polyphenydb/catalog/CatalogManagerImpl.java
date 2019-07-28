@@ -32,6 +32,8 @@ import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -46,6 +48,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
@@ -532,6 +535,28 @@ public class CatalogManagerImpl extends CatalogManager {
         try {
             val transactionHandler = LocalTransactionHandler.getTransactionHandler();
             return Statements.getUser( transactionHandler, username );
+        } catch ( CatalogConnectionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public CatalogKey getKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException {
+        try {
+            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            return Statements.getKey( transactionHandler, key );
+        } catch ( CatalogConnectionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public CatalogPrimaryKey getPrimaryKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException {
+        try {
+            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            return new CatalogPrimaryKey( Statements.getKey( transactionHandler, key ) );
         } catch ( CatalogConnectionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }

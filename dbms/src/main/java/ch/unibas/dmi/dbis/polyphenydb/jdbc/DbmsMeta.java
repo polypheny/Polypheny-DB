@@ -46,6 +46,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCata
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogEntity;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -57,12 +60,15 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -70,12 +76,14 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -100,6 +108,7 @@ import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
@@ -251,6 +260,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     // TODO: typeList is ignored
+    @Override
     public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
@@ -505,15 +515,38 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogPrimaryKeyColumn> primaryKeyColumns;
+            if ( catalogTable.primaryKey != null ) {
+                final CatalogPrimaryKey primaryKey = CatalogManagerImpl.getInstance().getPrimaryKey( xid, catalogTable.primaryKey );
+                primaryKeyColumns = primaryKey.getCatalogPrimaryKeyColumns();
+            } else {
+                primaryKeyColumns = new LinkedList<>();
+            }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( primaryKeyColumns ),
+                    PrimitiveCatalogPrimaryKeyColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",  // database name
+                    "TABLE_SCHEM",        // schema name
+                    "TABLE_NAME",         // table name
+                    "COLUMN_NAME",        // column name
+                    "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
+                    "PK_NAME"             // the name of the primary key
+            );
+        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
+            throw propagate( e );
+        }
     }
 
 
@@ -561,11 +594,54 @@ public class DbmsMeta implements ProtobufMeta {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getTypeInfo( ConnectionHandle {} )", ch );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getTypeInfo( ConnectionHandle {} )", ch );
-        return null;
+        final StatementHandle statementHandle = createStatement( ch );
+        final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
+        final List<Object> objects = new LinkedList<>();
+        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
+            objects.add(
+                    new Serializable[]{
+                            sqlTypeName.getName(),
+                            sqlTypeName.getJdbcOrdinal(),
+                            typeSystem.getMaxPrecision( sqlTypeName ),
+                            typeSystem.getLiteral( sqlTypeName, true ),
+                            typeSystem.getLiteral( sqlTypeName, false ),
+                            null,
+                            (short) DatabaseMetaData.typeNullable, // All types are nullable
+                            typeSystem.isCaseSensitive( sqlTypeName ),
+                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under SqlTypeName
+                            false,
+                            false,
+                            typeSystem.isAutoincrement( sqlTypeName ),
+                            sqlTypeName.getName(),
+                            (short) sqlTypeName.getMinScale(),
+                            (short) typeSystem.getMaxScale( sqlTypeName ),
+                            null,
+                            null,
+                            typeSystem.getNumTypeRadix( sqlTypeName ) == 0 ? null : typeSystem.getNumTypeRadix( sqlTypeName ) } );
+        }
+        return createMetaResultSet(
+                ch,
+                statementHandle,
+                Linq4j.asEnumerable( objects ),
+                MetaTypeInfo.class,
+                "TYPE_NAME",   // The name of the data type.
+                "DATA_TYPE",           // The SQL data type from java.sql.Types.
+                "PRECISION",           // The maximum number of significant digits.
+                "LITERAL_PREFIX",      // Prefix used to quote a literal
+                "LITERAL_SUFFIX",      // Suffix used to quote a literal
+                "CREATE_PARAMS",       // Parameters used in creating the type --> not used, allways null
+                "NULLABLE",            // Indicates if the column can contain a null value (1: means type can contain null, 0 not). --> Currently 1 for all types
+                "CASE_SENSITIVE",      // Indicates if the data type is case sensitive. "true" if the type is case sensitive; otherwise, "false".
+                "SEARCHABLE",          // Indicates if (and how) the column can be used in a SQL WHERE clause. 0: none, 1: char, 2: basic, 3: searchable
+                "UNSIGNED_ATTRIBUTE",  // Indicates the sign of the data type. "true" if the type is unsigned; otherwise, "false". --> Currently false for all types
+                "FIXED_PREC_SCALE",    // Indicates that the data type can be a money value. "true" if the data type is money type; otherwise, "false".
+                "AUTO_INCREMENT",      // Indicates that the data type can be automatically incremented. "true" if the type can be auto incremented; otherwise, "false".
+                "LOCAL_TYPE_NAME",     // The localized name of the data type. --> Same as TYPE_NAME
+                "MINIMUM_SCALE",       // The maximum number of digits to the right of the decimal point.
+                "MAXIMUM_SCALE",       // The minimum number of digits to the right of the decimal point.
+                "SQL_DATA_TYPE",       // Not used, always null
+                "SQL_DATETIME_SUB",    // Not used, always null
+                "NUM_PREC_RADIX" );    // The radix
     }
 
 
@@ -574,6 +650,8 @@ public class DbmsMeta implements ProtobufMeta {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
         }
+
+        // TODO
 
         LOG.error( "[NOT IMPLEMENTED YET] getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
         return null;

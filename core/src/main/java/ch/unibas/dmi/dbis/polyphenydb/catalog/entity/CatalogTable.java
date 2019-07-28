@@ -55,9 +55,10 @@ public final class CatalogTable implements CatalogEntity {
     public final Collation collation;
     public final String tableType;
     public final String definition;
+    public final Long primaryKey;
 
 
-    public CatalogTable( final long id, @NonNull final String name, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final CatalogManager.TableType type, final String definition ) {
+    public CatalogTable( final long id, @NonNull final String name, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final CatalogManager.TableType type, final String definition, final Long primaryKey ) {
         this.id = id;
         this.name = name;
         this.schemaId = schemaId;
@@ -70,6 +71,7 @@ public final class CatalogTable implements CatalogEntity {
         this.collation = collation;
         this.tableType = type.name();
         this.definition = definition;
+        this.primaryKey = primaryKey;
     }
 
 

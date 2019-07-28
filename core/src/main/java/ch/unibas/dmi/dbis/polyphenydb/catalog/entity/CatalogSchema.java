@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -68,8 +69,8 @@ public final class CatalogSchema implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), CatalogEntity.getEnumNameOrNull( schemaType ) };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ name, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), CatalogEntity.getEnumNameOrNull( schemaType ) };
     }
 
 

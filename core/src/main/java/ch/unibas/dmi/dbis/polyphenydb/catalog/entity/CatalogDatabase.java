@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -67,8 +68,8 @@ public final class CatalogDatabase implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name, ownerName, encoding.name(), collation.name(), connectionLimit, defaultSchemaName };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ name, ownerName, encoding.name(), collation.name(), connectionLimit, defaultSchemaName };
     }
 
 

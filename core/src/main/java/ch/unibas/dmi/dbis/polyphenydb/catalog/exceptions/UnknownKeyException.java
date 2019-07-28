@@ -23,40 +23,18 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import java.io.Serializable;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+public class UnknownKeyException extends CatalogException {
 
 
-public class CatalogStore implements CatalogEntity {
-
-    private static final long serialVersionUID = 4754069156177607149L;
-
-    public final int id;
-    public final String uniqueName;
-    public final String adapterClazz;
-
-
-    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz ) {
-        this.id = id;
-        this.uniqueName = uniqueName;
-        this.adapterClazz = adapterClazz;
+    public UnknownKeyException( String keyName ) {
+        super( "There is no key with this name: '" + keyName + "'." );
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{ uniqueName };
-    }
-
-
-    @RequiredArgsConstructor
-    public class PrimitiveCatalogUser {
-
-        public final String name;
+    public UnknownKeyException( long keyId ) {
+        super( "Unknown key id: " + keyId + ". There is no key with this id." );
     }
 }
