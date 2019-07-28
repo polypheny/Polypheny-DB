@@ -551,6 +551,7 @@ public class PolyphenyDbRemoteEmbeddedDriverTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-661">[POLYPHENYDB-661] Remote fetch in Polypheny-DB JDBC driver</a>.
      */
     @Test
+    @Ignore
     public void testRemotePrepareExecute() throws Exception {
         try ( Connection remoteConnection = getRemoteConnection() ) {
             final PreparedStatement preparedStatement = remoteConnection.prepareStatement( "select * from \"hr\".\"emps\"" );

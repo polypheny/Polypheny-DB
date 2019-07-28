@@ -34,6 +34,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
@@ -74,6 +77,7 @@ dependencies {
     compile group: "com.google.guava", name: "guava", version: "11.0.2"
     compile group: "org.apache.commons", name: "commons-dbcp2", version:"2.5.0"
     compile group: "org.apache.commons", name: "commons-lang3", version:"3.8"
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
 
     compile group: "com.esri.geometry", name: "esri-geometry-api", version:"2.2.0"
     compile group: "com.fasterxml.jackson.core", name: "jackson-core", version:"2.9.6"
@@ -88,14 +92,16 @@ dependencies {
     compile group: "org.codehaus.janino", name: "commons-compiler", version:"3.0.11"
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.13.0"
-
+    //compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.16.0-POLYPHENYDB"
+    compile name: "avatica-1.16.0-POLYPHENYDB-shaded"
+    
 
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
 
     testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version:"1.13.0"
+    //testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version:"1.16.0-POLYPHENYDB"
+    testCompile name: "avatica-server-1.16.0-POLYPHENYDB"
 
     testCompile group: "org.apache.commons", name: "commons-pool2", version:"2.6.0"
     testCompile group: "com.h2database", name: "h2", version:"1.4.197"

@@ -72,7 +72,7 @@ public class HttpServerDispatcher {
     protected final AvaticaHandler handler;
 
 
-    public HttpServerDispatcher( int port ) throws SQLException, ClassNotFoundException {
+    public HttpServerDispatcher( int port ) throws SQLException {
         this.port = port;
 
         this.handler = new HandlerFactory().getHandler(

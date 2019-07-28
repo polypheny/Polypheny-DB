@@ -2058,6 +2058,7 @@ public class JdbcTest {
 
 
     @Test
+    @Ignore
     public void testMultisetQueryWithSingleColumn() {
         PolyphenyDbAssert.hr()
                 .query( "select multiset(\n"

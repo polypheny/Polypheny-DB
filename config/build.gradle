@@ -23,6 +23,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     mavenCentral()
 }
 
