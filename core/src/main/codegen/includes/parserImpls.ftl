@@ -14,3 +14,21 @@
     }
   }
 -->
+
+<#-- @formatter:off -->
+
+/**
+* Parses a TRUNCATE TABLE statement.
+*/
+SqlTruncate SqlTruncateTable() :
+{
+    final Span s;
+    final SqlIdentifier table;
+}
+{
+    <TRUNCATE> { s = span(); }
+    <TABLE> table = CompoundIdentifier()
+    {
+        return new SqlTruncate(s.end(this), table);
+    }
+}

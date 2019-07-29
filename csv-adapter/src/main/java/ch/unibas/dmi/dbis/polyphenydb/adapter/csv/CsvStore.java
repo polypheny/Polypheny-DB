@@ -61,4 +61,10 @@ public class CsvStore implements Store {
     public void commit( PolyXid xid ) {
         LOG.warn( "CSV Store does not support distributed transactions." );
     }
+
+
+    @Override
+    public void truncate( PolyXid xid, CatalogCombinedTable table ) {
+        LOG.warn( "CSV Store does not support truncate." );
+    }
 }

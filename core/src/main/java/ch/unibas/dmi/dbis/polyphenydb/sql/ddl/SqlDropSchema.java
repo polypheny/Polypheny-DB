@@ -105,7 +105,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     @Override
     public void execute( Context context, CatalogManager catalog ) {
         try {
-            // Check if there is already a schema with this name
+            // Check if there is a schema with this name
             if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
                 CatalogSchema catalogSchema = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() );
 

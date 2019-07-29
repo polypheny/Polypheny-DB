@@ -33,7 +33,10 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel.Prefer;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -106,6 +109,10 @@ public class DmlExecutionEngine {
 
     private static DmlExecutionEngine INSTANCE;
 
+    private InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+    private InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
+    private InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+    private InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     static {
         INSTANCE = new DmlExecutionEngine();
@@ -166,7 +173,11 @@ public class DmlExecutionEngine {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        InformationManager.getInstance().addQueryPlan( "LogicalQueryPlan", RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                "LogicalQueryPlan",
+                informationGroupLogical.getId(),
+                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Planning SELECT Statement ... done. [{}]", stopWatch );
@@ -183,7 +194,11 @@ public class DmlExecutionEngine {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        InformationManager.getInstance().addQueryPlan( "PhysicalQueryPlan", RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        informationQueryPlan = new InformationQueryPlan(
+                "PhysicalQueryPlan",
+                informationGroupPhysical.getId(),
+                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimizing SELECT Statement ... done. [{}]", stopWatch );
@@ -289,7 +304,11 @@ public class DmlExecutionEngine {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        InformationManager.getInstance().addQueryPlan( "LogicalQueryPlan", RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                "LogicalQueryPlan",
+                informationGroupLogical.getId(),
+                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Planning DML Statement ... done. [{}]", stopWatch );
@@ -312,7 +331,11 @@ public class DmlExecutionEngine {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        InformationManager.getInstance().addQueryPlan( "PhysicalQueryPlan", RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        informationQueryPlan = new InformationQueryPlan(
+                "PhysicalQueryPlan",
+                informationGroupPhysical.getId(),
+                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimizing DML Statement ... done. [{}]", stopWatch );

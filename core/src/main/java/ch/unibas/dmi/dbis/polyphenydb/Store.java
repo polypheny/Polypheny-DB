@@ -21,4 +21,6 @@ public interface Store {
     boolean prepare( PolyXid xid );
 
     void commit( PolyXid xid );
+
+    void truncate( PolyXid xid, CatalogCombinedTable table );
 }

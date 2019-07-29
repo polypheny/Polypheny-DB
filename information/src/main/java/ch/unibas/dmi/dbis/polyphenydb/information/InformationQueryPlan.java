@@ -39,7 +39,7 @@ public class InformationQueryPlan extends Information {
      * @param id Unique id for this Information object
      * @param group The id of the InformationGroup to which this information belongs
      */
-    InformationQueryPlan( final String id, final String group, final String queryPlan ) {
+    public InformationQueryPlan( final String id, final String group, final String queryPlan ) {
         super( id, group );
         this.queryPlan = queryPlan;
     }

@@ -926,11 +926,6 @@ public class DbmsMeta implements ProtobufMeta {
                 result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
                 break;
 
-            case COMMIT:
-            case ROLLBACK:
-                System.out.println( ":) TRX Control" );
-                break;
-
             case CREATE_SCHEMA:
             case DROP_SCHEMA:
             case CREATE_TABLE:
@@ -945,6 +940,7 @@ public class DbmsMeta implements ProtobufMeta {
             case CREATE_INDEX:
             case ALTER_INDEX:
             case DROP_INDEX:
+            case TRUNCATE:
                 result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
                 break;
 

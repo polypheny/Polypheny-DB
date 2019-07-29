@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -59,7 +60,8 @@ class Database {
             Class.forName( "org.hsqldb.jdbcDriver" );
             logger.info( "Starting catalog database on port {} ...", DATABASE_PORT );
             HsqlProperties p = new HsqlProperties();
-            p.setProperty( "server.database.0", "mem:" + DATABASE_NAME + ";hsqldb.tx=mvcc;hsqldb.tx_level=SERIALIZABLE" );
+            String caseSensitive = RuntimeConfig.CASE_SENSITIVE.getBoolean() ? "sql.ignore_case=false" : "sql.ignore_case=true";
+            p.setProperty( "server.database.0", "mem:" + DATABASE_NAME + ";hsqldb.tx=mvcc;hsqldb.tx_level=SERIALIZABLE;" + caseSensitive );
             p.setProperty( "server.dbname.0", DATABASE_NAME );
             p.setProperty( "server.port", DATABASE_PORT );
             p.setProperty( "server.shutdown", false );

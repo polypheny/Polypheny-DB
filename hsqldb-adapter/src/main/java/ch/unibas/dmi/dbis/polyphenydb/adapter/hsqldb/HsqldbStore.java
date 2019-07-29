@@ -124,6 +124,18 @@ public class HsqldbStore implements Store {
     }
 
 
+    @Override
+    public void truncate( PolyXid xid, CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "TRUNCATE TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) );
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     private String getTypeString( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:

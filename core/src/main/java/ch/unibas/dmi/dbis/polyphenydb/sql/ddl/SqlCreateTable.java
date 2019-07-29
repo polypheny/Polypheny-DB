@@ -182,7 +182,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return;
             } else {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( name.toString() ) );
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
             }
         }
 
