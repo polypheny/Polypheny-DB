@@ -31,6 +31,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
@@ -298,6 +299,8 @@ public abstract class CatalogManager {
     public abstract CatalogKey getKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException;
 
     public abstract CatalogPrimaryKey getPrimaryKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException;
+
+    public abstract List<CatalogForeignKey> getForeignKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
 
 
     /*

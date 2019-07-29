@@ -32,6 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
@@ -544,9 +545,9 @@ public class CatalogManagerImpl extends CatalogManager {
     @Override
     public CatalogKey getKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException {
         try {
-            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getKey( transactionHandler, key );
-        } catch ( CatalogConnectionException | GenericCatalogException e ) {
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -555,9 +556,20 @@ public class CatalogManagerImpl extends CatalogManager {
     @Override
     public CatalogPrimaryKey getPrimaryKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException {
         try {
-            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return new CatalogPrimaryKey( Statements.getKey( transactionHandler, key ) );
-        } catch ( CatalogConnectionException | GenericCatalogException e ) {
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public List<CatalogForeignKey> getForeignKeys( PolyXid xid, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getForeignKeys( transactionHandler, tableId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }

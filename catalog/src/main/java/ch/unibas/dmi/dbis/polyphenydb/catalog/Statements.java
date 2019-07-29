@@ -36,6 +36,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
@@ -1012,7 +1013,7 @@ final class Statements {
             throw new GenericCatalogException( e );
         }
         for ( CatalogKey catalogKey : list ) {
-            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyFilter + ";";
+            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyColumnFilter + ";";
             try ( ResultSet rs = transactionHandler.executeSelect( keyColumnSql ) ) {
                 List<Long> columnIds = new LinkedList<>();
                 List<String> columnNames = new LinkedList<>();
@@ -1030,7 +1031,70 @@ final class Statements {
     }
 
 
-    public static CatalogKey getKey( LocalTransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
+    private static List<CatalogForeignKey> foreignKeyFilter( TransactionHandler transactionHandler, String keyFilter ) throws GenericCatalogException {
+        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\", fk.\"deferrability\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
+        List<CatalogForeignKey> list = new LinkedList<>();
+        try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
+            while ( rs.next() ) {
+                list.add( new CatalogForeignKey(
+                        getLongOrNull( rs, 1 ),
+                        rs.getString( 2 ),
+                        getLongOrNull( rs, 3 ),
+                        rs.getString( 4 ),
+                        getLongOrNull( rs, 5 ),
+                        rs.getString( 6 ),
+                        getLongOrNull( rs, 7 ),
+                        rs.getString( 8 ),
+                        rs.getBoolean( 9 ),
+                        getLongOrNull( rs, 10 ),
+                        rs.getString( 11 ),
+                        getLongOrNull( rs, 12 ),
+                        rs.getString( 13 ),
+                        getLongOrNull( rs, 14 ),
+                        rs.getString( 15 ),
+                        getLongOrNull( rs, 16 ),
+                        rs.getString( 17 ),
+                        getIntOrNull( rs, 18 ),
+                        getIntOrNull( rs, 19 ),
+                        getIntOrNull( rs, 20 )
+                ) );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+        for ( CatalogForeignKey catalogKey : list ) {
+            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + ";";
+            try ( ResultSet rs = transactionHandler.executeSelect( keyColumnSql ) ) {
+                List<Long> columnIds = new LinkedList<>();
+                List<String> columnNames = new LinkedList<>();
+                while ( rs.next() ) {
+                    columnIds.add( getLongOrNull( rs, 1 ) );
+                    columnNames.add( rs.getString( 2 ) );
+                }
+                catalogKey.columnIds = columnIds;
+                catalogKey.columnNames = columnNames;
+            } catch ( SQLException e ) {
+                throw new GenericCatalogException( e );
+            }
+            String refKeyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.referencedKeyId + ";";
+            try ( ResultSet rs = transactionHandler.executeSelect( refKeyColumnSql ) ) {
+                List<Long> columnIds = new LinkedList<>();
+                List<String> columnNames = new LinkedList<>();
+                while ( rs.next() ) {
+                    columnIds.add( getLongOrNull( rs, 1 ) );
+                    columnNames.add( rs.getString( 2 ) );
+                }
+                catalogKey.referencedKeyColumnIds = columnIds;
+                catalogKey.referencedKeyColumnNames = columnNames;
+            } catch ( SQLException e ) {
+                throw new GenericCatalogException( e );
+            }
+        }
+        return list;
+    }
+
+
+    public static CatalogKey getKey( TransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
         String keyFilter = " AND k.\"id\" = " + key;
         String keyColumnFilter = "";
         List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
@@ -1040,6 +1104,12 @@ final class Statements {
             throw new UnknownKeyException( key );
         }
         return list.get( 0 );
+    }
+
+
+    public static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String keyFilter = " AND t.\"id\" = " + tableId;
+        return foreignKeyFilter( transactionHandler, keyFilter );
     }
 
 
@@ -1120,5 +1190,6 @@ final class Statements {
         }
         return v;
     }
+
 
 }

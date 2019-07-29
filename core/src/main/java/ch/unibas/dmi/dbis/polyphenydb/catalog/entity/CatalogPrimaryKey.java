@@ -43,7 +43,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
     private static final long serialVersionUID = 5426944084650275437L;
 
 
-    public CatalogPrimaryKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique, @NonNull final List<Long> columnIds, @NonNull final List<String> columnNames ) {
+    public CatalogPrimaryKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique ) {
         super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
     }
 

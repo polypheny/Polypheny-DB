@@ -46,6 +46,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCata
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogEntity;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
@@ -551,15 +554,43 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
 
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogForeignKey> importedKeys = CatalogManagerImpl.getInstance().getForeignKeys( xid, catalogTable.id );
+            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( foreignKeyColumns ),
+                    PrimitiveCatalogForeignKeyColumn.class,
+                    // According to JDBC standard:
+                    "PKTABLE_CAT",    // The name of the database that contains the table with the referenced primary key.
+                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
+                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
+                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
+                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
+                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
+                    "FKTABLE_NAME",          // The name of the table containing the foreign key.
+                    "FKCOLUMN_NAME",          // The column name of the foreign key.
+                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
+                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
+                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
+                    "FK_NAME",                // The name of the foreign key.
+                    "PK_NAME",                // The name of the primary key.
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
+            );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw propagate( e );
+        }
     }
 
 

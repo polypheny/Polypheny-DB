@@ -170,10 +170,11 @@ CREATE TABLE "key_column" (
 
 
 CREATE TABLE "foreign_key" (
-    "key"        BIGINT  NOT NULL REFERENCES "key" ("id"),
-    "references" BIGINT  NOT NULL REFERENCES "key" ("id"),
-    "on_update"  INTEGER NULL,
-    "on_delete"  INTEGER NULL,
+    "key"           BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "references"    BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "on_update"     INTEGER DEFAULT NULL NULL,
+    "on_delete"     INTEGER DEFAULT NULL NULL,
+    "deferrability" INTEGER              NULL,
     PRIMARY KEY ("key")
 );
 
@@ -391,7 +392,7 @@ VALUES ( 0, 2 ),
 --
 INSERT INTO "key" ( "id", "table", "unique", "name" )
 VALUES ( 0, 0, TRUE, 'key_0' ),
-       ( 1, 0, TRUE, 'key_1' ),
+       ( 1, 1, TRUE, 'key_1' ),
        ( 2, 1, FALSE, 'key_2' );
 
 ALTER TABLE "key"
@@ -415,8 +416,8 @@ VALUES ( 0, 0 ),
 --
 -- foreign_key
 --
-INSERT INTO "foreign_key" ( "key", "references", "on_update", "on_delete" )
-VALUES ( 2, 0, NULL, NULL );
+INSERT INTO "foreign_key" ( "key", "references", "on_update", "on_delete", "deferrability" )
+VALUES ( 2, 0, NULL, NULL, 0 );
 
 
 --
