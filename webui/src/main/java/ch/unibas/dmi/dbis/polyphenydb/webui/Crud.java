@@ -169,7 +169,7 @@ class Crud implements InformationObserver {
         if( request.filter != null) where = filterTable( request.filter );
         String orderBy = "";
         if ( request.sortState != null ) orderBy = sortTable( request.sortState );
-        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( PAGESIZE ).append( " OFFSET " ).append( (request.currentPage - 1) * PAGESIZE );
+        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( PAGESIZE ).append( " OFFSET " ).append( ( Math.max( 0, request.currentPage - 1 )) * PAGESIZE );
 
         try ( ResultSet rs = handler.executeSelect( query.toString() ) ) {
             result = buildResult( rs, request );
@@ -489,7 +489,7 @@ class Crud implements InformationObserver {
 
 
     /**
-     * Run any query coming form the SQL console
+     * Run any query coming from the SQL console
      */
     ArrayList<Result> anyQuery( final Request req, final Response res ) {
         QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
