@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
@@ -36,14 +37,16 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode
 public final class CatalogUser implements CatalogEntity {
 
-    private static final long serialVersionUID = -6080759053881247269L;
+    private static final long serialVersionUID = -3456842618158263847L;
 
+    public final int id;
     public final String name;
     public final String password;
     //private final PUID userId;
 
 
-    public CatalogUser( final String name, final String password ) {
+    public CatalogUser( final int id, final String name, final String password ) {
+        this.id = id;
         this.name = name;
         this.password = password;
         //this.userId = new PUID( 0L, userId );
@@ -61,8 +64,8 @@ public final class CatalogUser implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ name };
     }
 
 

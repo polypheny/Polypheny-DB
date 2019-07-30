@@ -1872,6 +1872,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testModOperator() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
@@ -1901,6 +1902,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testModPrecedence() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
@@ -1911,6 +1913,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testModOperatorNull() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( SqlConformanceEnum.MYSQL_5 );
@@ -2837,6 +2840,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testNotEqualsOperator() {
         tester.setFor( SqlStdOperatorTable.NOT_EQUALS );
         tester.checkBoolean( "1<>1", Boolean.FALSE );
@@ -3733,6 +3737,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testTranslate3Func() {
         final SqlTester tester1 = oracleTester();
         tester1.setFor( OracleSqlOperatorTable.TRANSLATE3 );
@@ -5225,6 +5230,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testCurrentDateFunc() {
         tester.setFor( SqlStdOperatorTable.CURRENT_DATE, VM_FENNEL );
 
@@ -5391,6 +5397,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testTrimFunc() {
         tester.setFor( SqlStdOperatorTable.TRIM );
 
@@ -5443,6 +5450,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testRtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.RTRIM );
         final SqlTester tester1 = oracleTester();
@@ -5452,6 +5460,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testLtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.LTRIM );
         final SqlTester tester1 = oracleTester();
@@ -5461,6 +5470,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testGreatestFunc() {
         tester.setFor( OracleSqlOperatorTable.GREATEST );
         final SqlTester tester1 = oracleTester();
@@ -5476,6 +5486,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testLeastFunc() {
         tester.setFor( OracleSqlOperatorTable.LEAST );
         final SqlTester tester1 = oracleTester();
@@ -5491,6 +5502,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testNvlFunc() {
         tester.setFor( OracleSqlOperatorTable.NVL );
         final SqlTester tester1 = oracleTester();
@@ -5514,6 +5526,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     @Test
+    @Ignore
     public void testDecodeFunc() {
         tester.setFor( OracleSqlOperatorTable.DECODE );
         final SqlTester tester1 = oracleTester();

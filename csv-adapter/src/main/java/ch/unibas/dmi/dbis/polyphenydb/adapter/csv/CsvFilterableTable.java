@@ -54,21 +54,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -81,8 +71,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType ) {
-        super( source, protoRowType );
+    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
+        super( source, protoRowType, fieldTypes );
     }
 
 

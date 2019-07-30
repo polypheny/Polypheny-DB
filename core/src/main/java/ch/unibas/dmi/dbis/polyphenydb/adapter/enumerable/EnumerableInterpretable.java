@@ -115,6 +115,10 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
+        //
+        // TODO: Information: Add to query analyzer
+        //
+
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
             Util.debugCode( System.out, s );
         }

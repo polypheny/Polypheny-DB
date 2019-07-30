@@ -60,10 +60,10 @@ import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema.LatticeEntry;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
@@ -185,8 +185,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**
- * Shit just got real.
- *
  * This class is public so that projects that create their own JDBC driver and server can fine-tune preferences. However, this class and its methods are subject to change without notice.
  */
 public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
@@ -482,7 +480,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public void executeDdl( Context context, SqlNode node ) {
         if ( node instanceof SqlExecutableStatement ) {
             SqlExecutableStatement statement = (SqlExecutableStatement) node;
-            statement.execute( context );
+            statement.execute( context, null );
             return;
         }
         throw new UnsupportedOperationException();
@@ -546,7 +544,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected RelOptPlanner createPlanner( PolyphenyDbPrepare.Context prepareContext ) {
+    protected RelOptPlanner createPlanner( Context prepareContext ) {
         return createPlanner( prepareContext, null, null );
     }
 
@@ -554,7 +552,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected RelOptPlanner createPlanner( final PolyphenyDbPrepare.Context prepareContext, ch.unibas.dmi.dbis.polyphenydb.plan.Context externalContext, RelOptCostFactory costFactory ) {
+    protected RelOptPlanner createPlanner( final Context prepareContext, ch.unibas.dmi.dbis.polyphenydb.plan.Context externalContext, RelOptCostFactory costFactory ) {
         if ( externalContext == null ) {
             externalContext = Contexts.of( prepareContext.config() );
         }
@@ -1027,8 +1025,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Executes a prepare action.
      */
-    public <R> R perform( PolyphenyDbServerStatement statement, Frameworks.PrepareAction<R> action ) {
-        final PolyphenyDbPrepare.Context prepareContext = statement.createPrepareContext();
+    public <R> R perform( Frameworks.PrepareAction<R> action ) {
+        final Context prepareContext = action.getConfig().getPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
         final PolyphenyDbSchema schema =
                 action.getConfig().getDefaultSchema() != null
@@ -1038,7 +1036,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final RelOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
         final RelOptCluster cluster = createCluster( planner, rexBuilder );
-        return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus(), statement );
+        return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
     }
 
 

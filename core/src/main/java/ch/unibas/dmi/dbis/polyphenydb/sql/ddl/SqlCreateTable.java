@@ -47,10 +47,21 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
@@ -59,20 +70,14 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -83,15 +88,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerContext;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -157,7 +156,171 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        if ( query != null ) {
+            throw new RuntimeException( "Not supported yet" );
+        }
+
+        String tableName;
+        long schemaId;
+        try {
+            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+                schemaId = catalog.getSchema( context.getTransactionId(), name.names.get( 0 ), name.names.get( 1 ) ).id;
+                tableName = name.names.get( 2 );
+            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
+                schemaId = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), name.names.get( 0 ) ).id;
+                tableName = name.names.get( 1 );
+            } else { // TableName
+                schemaId = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                tableName = name.names.get( 0 );
+            }
+        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        } catch ( UnknownSchemaException e ) {
+            if ( ifNotExists ) {
+                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                return;
+            } else {
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+            }
+        }
+
+        try {
+            long tableId = catalog.addTable(
+                    context.getTransactionId(),
+                    tableName,
+                    schemaId,
+                    context.getCurrentUserId(),
+                    Encoding.UTF8,
+                    Collation.CASE_INSENSITIVE,
+                    TableType.TABLE,
+                    null );
+
+            catalog.addDataPlacement( context.getTransactionId(), context.getDefaultStore(), tableId );
+
+            if ( this.columnList == null ) {
+                // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+            }
+
+            List<SqlNode> columnList = this.columnList.getList();
+            int position = 1;
+            for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
+                if ( c.e instanceof SqlColumnDeclaration ) {
+                    final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
+                    catalog.addColumn(
+                            context.getTransactionId(),
+                            columnDeclaration.name.getSimple(),
+                            tableId,
+                            position++,
+                            PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() ),
+                            columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
+                            columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
+                            columnDeclaration.dataType.getNullable(),
+                            Encoding.UTF8,
+                            Collation.CASE_INSENSITIVE,
+                            false
+                    );
+                } else {
+                    throw new AssertionError( c.e.getClass() );
+                }
+            }
+
+            CatalogCombinedTable combinedTable = catalog.getCombinedTable( context.getTransactionId(), tableId );
+            StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    /**
+     * Abstract base class for implementations of {@link ModifiableTable}.
+     */
+    abstract static class AbstractModifiableTable extends AbstractTable implements ModifiableTable {
+
+        AbstractModifiableTable( String tableName ) {
+            super();
+        }
+
+
+        public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
+                boolean flattened ) {
+            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        }
+    }
+
+
+    /**
+     * Table backed by a Java list.
+     */
+    static class MutableArrayTable extends AbstractModifiableTable implements Wrapper {
+
+        final List rows = new ArrayList();
+        private final RelProtoDataType protoStoredRowType;
+        private final RelProtoDataType protoRowType;
+        private final InitializerExpressionFactory initializerExpressionFactory;
+
+
+        /**
+         * Creates a MutableArrayTable.
+         *
+         * @param name Name of table within its schema
+         * @param protoStoredRowType Prototype of row type of stored columns (all columns except virtual columns)
+         * @param protoRowType Prototype of row type (all columns)
+         * @param initializerExpressionFactory How columns are populated
+         */
+        MutableArrayTable( String name, RelProtoDataType protoStoredRowType, RelProtoDataType protoRowType, InitializerExpressionFactory initializerExpressionFactory ) {
+            super( name );
+            this.protoStoredRowType = Objects.requireNonNull( protoStoredRowType );
+            this.protoRowType = Objects.requireNonNull( protoRowType );
+            this.initializerExpressionFactory = Objects.requireNonNull( initializerExpressionFactory );
+        }
+
+
+        public Collection getModifiableCollection() {
+            return rows;
+        }
+
+
+        public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                public Enumerator<T> enumerator() {
+                    //noinspection unchecked
+                    return (Enumerator<T>) Linq4j.enumerator( rows );
+                }
+            };
+        }
+
+
+        public Type getElementType() {
+            return Object[].class;
+        }
+
+
+        public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
+            return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
+        }
+
+
+        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            return protoRowType.apply( typeFactory );
+        }
+
+
+        @Override
+        public <C> C unwrap( Class<C> aClass ) {
+            if ( aClass.isInstance( initializerExpressionFactory ) ) {
+                return aClass.cast( initializerExpressionFactory );
+            }
+            return super.unwrap( aClass );
+        }
+    }
+
+
+    /*
+    public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final RelDataType queryRowType;
@@ -262,10 +425,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
     }
 
-
-    /**
-     * Column definition.
-     */
+    // Column Definition
     private static class ColumnDef {
 
         final SqlNode expr;
@@ -289,88 +449,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
     }
 
-
-    /**
-     * Abstract base class for implementations of {@link ModifiableTable}.
-     */
-    abstract static class AbstractModifiableTable extends AbstractTable implements ModifiableTable {
-
-        AbstractModifiableTable( String tableName ) {
-            super();
-        }
-
-
-        public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
-                boolean flattened ) {
-            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
-        }
-    }
-
-
-    /**
-     * Table backed by a Java list.
-     */
-    static class MutableArrayTable extends AbstractModifiableTable implements Wrapper {
-
-        final List rows = new ArrayList();
-        private final RelProtoDataType protoStoredRowType;
-        private final RelProtoDataType protoRowType;
-        private final InitializerExpressionFactory initializerExpressionFactory;
-
-
-        /**
-         * Creates a MutableArrayTable.
-         *
-         * @param name Name of table within its schema
-         * @param protoStoredRowType Prototype of row type of stored columns (all columns except virtual columns)
-         * @param protoRowType Prototype of row type (all columns)
-         * @param initializerExpressionFactory How columns are populated
-         */
-        MutableArrayTable( String name, RelProtoDataType protoStoredRowType, RelProtoDataType protoRowType, InitializerExpressionFactory initializerExpressionFactory ) {
-            super( name );
-            this.protoStoredRowType = Objects.requireNonNull( protoStoredRowType );
-            this.protoRowType = Objects.requireNonNull( protoRowType );
-            this.initializerExpressionFactory = Objects.requireNonNull( initializerExpressionFactory );
-        }
-
-
-        public Collection getModifiableCollection() {
-            return rows;
-        }
-
-
-        public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-            return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
-                public Enumerator<T> enumerator() {
-                    //noinspection unchecked
-                    return (Enumerator<T>) Linq4j.enumerator( rows );
-                }
-            };
-        }
-
-
-        public Type getElementType() {
-            return Object[].class;
-        }
-
-
-        public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-            return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-        }
-
-
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            return protoRowType.apply( typeFactory );
-        }
-
-
-        @Override
-        public <C> C unwrap( Class<C> aClass ) {
-            if ( aClass.isInstance( initializerExpressionFactory ) ) {
-                return aClass.cast( initializerExpressionFactory );
-            }
-            return super.unwrap( aClass );
-        }
-    }
+    */
 }
 

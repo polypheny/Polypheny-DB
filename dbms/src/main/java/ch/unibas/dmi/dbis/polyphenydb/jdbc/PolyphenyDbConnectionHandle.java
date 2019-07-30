@@ -63,7 +63,7 @@ public class PolyphenyDbConnectionHandle {
     private volatile transient ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
 
 
-    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema, PolyXid xid ) {
+    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema ) {
         this.handle = handle;
 
         this.nodeId = nodeId;
@@ -72,11 +72,10 @@ public class PolyphenyDbConnectionHandle {
         this.connectionId = connectionId;
         this.database = database;
         this.schema = schema;
-        this.currentTransaction = xid;
     }
 
 
-    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema, PolyXid xid ) {
+    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema ) {
         this.handle = handle;
 
         this.nodeId = nodeId;
@@ -85,7 +84,6 @@ public class PolyphenyDbConnectionHandle {
         this.connectionId = ConnectionId.fromString( connectionId );
         this.database = database;
         this.schema = schema;
-        this.currentTransaction = xid;
     }
 
 
@@ -99,7 +97,6 @@ public class PolyphenyDbConnectionHandle {
             if ( currentTransaction != null ) {
                 throw new IllegalStateException( "Illegal attempt to start a new transaction prior closing the current transaction." );
             }
-
             return currentTransaction = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, connectionId );
         }
     }
@@ -146,23 +143,17 @@ public class PolyphenyDbConnectionHandle {
 
 
     public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {
-        synchronized ( this ) {
-            this.currentOpenResultSet = resultSet;
-        }
+        this.currentOpenResultSet = resultSet;
     }
 
 
     public ConnectionProperties mergeConnectionProperties( final ConnectionProperties connectionProperties ) {
-        synchronized ( this ) {
-            return this.connectionProperties.merge( connectionProperties );
-        }
+        return this.connectionProperties.merge( connectionProperties );
     }
 
 
     public boolean isAutoCommit() {
-        synchronized ( this ) {
-            return this.connectionProperties.isAutoCommit();
-        }
+        return this.connectionProperties.isAutoCommit();
     }
 
 

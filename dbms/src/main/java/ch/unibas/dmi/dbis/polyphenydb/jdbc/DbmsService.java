@@ -112,6 +112,42 @@ public class DbmsService implements Service {
 
 
     @Override
+    public ResultSetResponse apply( PrimaryKeysRequest request ) {
+        if ( LOGGER.isTraceEnabled() ) {
+            LOGGER.trace( "apply( PrimaryKeysRequest {} )", request );
+        }
+        return delegate.apply( request );
+    }
+
+
+    @Override
+    public ResultSetResponse apply( ImportedKeysRequest request ) {
+        if ( LOGGER.isTraceEnabled() ) {
+            LOGGER.trace( "apply( ImportedKeysRequest {} )", request );
+        }
+        return delegate.apply( request );
+    }
+
+
+    @Override
+    public ResultSetResponse apply( ExportedKeysRequest request ) {
+        if ( LOGGER.isTraceEnabled() ) {
+            LOGGER.trace( "apply( ExportedKeysRequest {} )", request );
+        }
+        return delegate.apply( request );
+    }
+
+
+    @Override
+    public ResultSetResponse apply( IndexInfoRequest request ) {
+        if ( LOGGER.isTraceEnabled() ) {
+            LOGGER.trace( "apply( IndexInfoRequest {} )", request );
+        }
+        return delegate.apply( request );
+    }
+
+
+    @Override
     public PrepareResponse apply( PrepareRequest request ) {
         if ( LOGGER.isTraceEnabled() ) {
             LOGGER.trace( "apply( PrepareRequest {} )", request );

@@ -45,15 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.Ordering;
-
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -66,10 +63,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Ignore;
+import org.junit.Test;
 
 
 /**
@@ -204,6 +201,7 @@ public class SqlTest {
      * Reads from a local file and checks the result.
      */
     @Test
+    @Ignore
     public void testFileSelect() throws SQLException {
         final String sql = "select H1 from T1 where H0 = 'R1C0'";
         sql( "testModel", sql ).returns( "H1=R1C1" ).ok();
@@ -214,6 +212,7 @@ public class SqlTest {
      * Reads from a local file without table headers &lt;TH&gt; and checks the result.
      */
     @Test
+    @Ignore
     public void testNoThSelect() throws SQLException {
         Assume.assumeTrue( FileSuite.hazNetwork() );
         final String sql = "select \"col1\" from T1_NO_TH where \"col0\" like 'R0%'";
@@ -225,6 +224,7 @@ public class SqlTest {
      * Reads from a local file - finds larger table even without &lt;TH&gt; elements.
      */
     @Test
+    @Ignore
     public void testFindBiggerNoTh() throws SQLException {
         final String sql = "select \"col4\" from TABLEX2 where \"col0\" like 'R1%'";
         sql( "testModel", sql ).returns( "col4=R1C4" ).ok();
@@ -247,6 +247,7 @@ public class SqlTest {
      * Reads the EMPS table.
      */
     @Test
+    @Ignore
     public void testSalesEmps() throws SQLException {
         final String sql = "select * from sales.emps";
         sql( "sales", sql )
@@ -259,6 +260,7 @@ public class SqlTest {
      * Reads the DEPTS table.
      */
     @Test
+    @Ignore
     public void testSalesDepts() throws SQLException {
         final String sql = "select * from sales.depts";
         sql( "sales", sql )
@@ -271,6 +273,7 @@ public class SqlTest {
      * Reads the DEPTS table from the CSV schema.
      */
     @Test
+    @Ignore
     public void testCsvSalesDepts() throws SQLException {
         final String sql = "select * from sales.depts";
         sql( "sales-csv", sql )
@@ -283,6 +286,7 @@ public class SqlTest {
      * Reads the EMPS table from the CSV schema.
      */
     @Test
+    @Ignore
     public void testCsvSalesEmps() throws SQLException {
         final String sql = "select * from sales.emps";
         final String[] lines = {
@@ -300,6 +304,7 @@ public class SqlTest {
      * Reads the HEADER_ONLY table from the CSV schema. The CSV file has one line - the column headers - but no rows of data.
      */
     @Test
+    @Ignore
     public void testCsvSalesHeaderOnly() throws SQLException {
         final String sql = "select * from sales.header_only";
         sql( "sales-csv", sql ).returns().ok();
@@ -310,6 +315,7 @@ public class SqlTest {
      * Reads the EMPTY table from the CSV schema. The CSV file has no lines, therefore the table has a system-generated column called "EmptyFileHasNoColumns".
      */
     @Test
+    @Ignore
     public void testCsvSalesEmpty() throws SQLException {
         final String sql = "select * from sales.\"EMPTY\"";
         checkSql( sql, "sales-csv", resultSet -> {
@@ -332,6 +338,7 @@ public class SqlTest {
      * In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long</a>.
      */
     @Test
+    @Ignore
     public void testGroupByTimestampAdd() throws SQLException {
         final String sql = "select count(*) as c,\n"
                 + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"

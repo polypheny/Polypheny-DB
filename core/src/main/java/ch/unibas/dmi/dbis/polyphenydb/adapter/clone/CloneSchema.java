@@ -49,7 +49,7 @@ import static ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable.M
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
@@ -174,7 +174,7 @@ public class CloneSchema extends AbstractSchema {
     public static class Factory implements SchemaFactory {
 
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            SchemaPlus schema = parentSchema.add( name, JdbcSchema.create( parentSchema, name + "$source", operand ) );
+            SchemaPlus schema = parentSchema.add( name, JdbcSchema.create( parentSchema, name + "$source", operand, null ) );
             return new CloneSchema( schema );
         }
     }

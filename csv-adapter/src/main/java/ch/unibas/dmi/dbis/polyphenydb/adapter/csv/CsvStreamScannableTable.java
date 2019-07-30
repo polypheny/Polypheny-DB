@@ -45,13 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.StreamableTable;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
@@ -59,9 +54,12 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.StreamableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 
 
 /**
@@ -74,8 +72,8 @@ public class CsvStreamScannableTable extends CsvScannableTable implements Stream
     /**
      * Creates a CsvScannableTable.
      */
-    CsvStreamScannableTable( Source source, RelProtoDataType protoRowType ) {
-        super( source, protoRowType );
+    CsvStreamScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
+        super( source, protoRowType, fieldTypes );
     }
 
 

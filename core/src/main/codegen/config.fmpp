@@ -354,6 +354,7 @@ data: {
         # List of methods for parsing custom SQL statements. Return type of method implementation should be 'SqlNode'.
         # Example: SqlShowDatabases(), SqlShowTables().
         statementParserMethods: [
+            "SqlTruncateTable()"
         ]
 
         # List of methods for parsing custom literals. Return type of method implementation should be "SqlNode".
@@ -373,7 +374,6 @@ data: {
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
         createStatementParserMethods: [
-            "SqlCreateForeignSchema"
             "SqlCreateMaterializedView"
             "SqlCreateSchema"
             "SqlCreateTable"

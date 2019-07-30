@@ -32,10 +32,8 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
-import org.apache.calcite.avatica.remote.LocalService;
 import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
@@ -74,10 +72,9 @@ public class HttpServerDispatcher {
     protected final AvaticaHandler handler;
 
 
-    public HttpServerDispatcher( int port ) throws SQLException, ClassNotFoundException {
+    public HttpServerDispatcher( int port ) throws SQLException {
         this.port = port;
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
         this.handler = new HandlerFactory().getHandler(
                 new DbmsService(),
                 Serialization.PROTOBUF,

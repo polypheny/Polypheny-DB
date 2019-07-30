@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -81,6 +81,7 @@ import java.util.function.Function;
 import net.hydromatic.quidem.CommandHandler;
 import net.hydromatic.quidem.Quidem;
 import org.apache.calcite.avatica.AvaticaUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,6 +91,7 @@ import org.junit.runners.Parameterized;
  * Test that runs every Quidem file as a test.
  */
 @RunWith(Parameterized.class)
+@Ignore
 public abstract class QuidemTest {
 
     protected final String path;

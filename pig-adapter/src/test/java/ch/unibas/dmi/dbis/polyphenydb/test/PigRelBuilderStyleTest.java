@@ -45,8 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+
 import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigAggregate;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigFilter;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigTable;
@@ -64,51 +68,23 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigFilter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRel;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRules;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule.FilterIntoJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-
+import java.io.File;
 import org.apache.hadoop.fs.Path;
 import org.apache.pig.pigunit.Cluster;
 import org.apache.pig.pigunit.PigTest;
 import org.apache.pig.pigunit.pig.PigServer;
 import org.apache.pig.test.Util;
-
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
-
-import static ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule.TRUE_PREDICATE;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.EQUALS;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.GREATER_THAN;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-
 
 /**
  * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.pig} package that tests the building of {@link PigRel} relational expressions using {@link RelBuilder} and associated factories in {@link PigRelFactories}.
  */
+@Ignore
 public class PigRelBuilderStyleTest extends AbstractPigTest {
 
     public PigRelBuilderStyleTest() {

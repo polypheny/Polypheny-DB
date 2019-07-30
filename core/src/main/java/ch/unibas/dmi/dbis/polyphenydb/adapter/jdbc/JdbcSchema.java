@@ -45,6 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
@@ -68,18 +70,19 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
-import java.util.Locale;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaUtils;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
@@ -91,12 +94,25 @@ import org.apache.calcite.linq4j.tree.Expression;
 public class JdbcSchema implements Schema {
 
     final DataSource dataSource;
-    final String catalog;
+    final String database;
     final String schema;
     public final SqlDialect dialect;
-    final JdbcConvention convention;
-    private ImmutableMap<String, JdbcTable> tableMap;
-    private final boolean snapshot;
+    @Getter
+    private final JdbcConvention convention;
+
+    private final Map<String, JdbcTable> tableMap;
+
+
+    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
+        super();
+        this.dataSource = Objects.requireNonNull( dataSource );
+        this.dialect = Objects.requireNonNull( dialect );
+        this.convention = convention;
+        this.database = catalog;
+        this.schema = schema;
+
+        this.tableMap = tableMap;
+    }
 
 
     /**
@@ -105,23 +121,34 @@ public class JdbcSchema implements Schema {
      * @param dataSource Data source
      * @param dialect SQL dialect
      * @param convention Calling convention
-     * @param catalog Catalog name, or null
+     * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema ) {
-        this( dataSource, dialect, convention, catalog, schema, null );
-    }
-
-
-    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
         super();
         this.dataSource = Objects.requireNonNull( dataSource );
         this.dialect = Objects.requireNonNull( dialect );
         this.convention = convention;
-        this.catalog = catalog;
+        this.database = database;
         this.schema = schema;
-        this.tableMap = tableMap;
-        this.snapshot = tableMap != null;
+        this.tableMap = new HashMap<>();
+    }
+
+
+    public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
+        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
+        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
+        }
+        List<String> columnNames = new LinkedList<>();
+        combinedTable.getColumns().forEach( c -> columnNames.add( c.name ) );
+        JdbcTable table = new JdbcTable( this, database, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
+        tableMap.put( combinedTable.getTable().name, table );
+        return table;
     }
 
 
@@ -138,6 +165,21 @@ public class JdbcSchema implements Schema {
     }
 
 
+    // For unit testing only
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, tableMap );
+    }
+
+
+    // For unit testing only
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
+        final SqlDialect dialect = createDialect( dialectFactory, dataSource );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
+    }
+
+
     /**
      * Creates a JdbcSchema, taking credentials from a map.
      *
@@ -146,7 +188,7 @@ public class JdbcSchema implements Schema {
      * @param operand Map of property/value pairs
      * @return A JdbcSchema
      */
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand, ImmutableMap<String, JdbcTable> tableMap ) {
         DataSource dataSource;
         try {
             final String dataSourceName = (String) operand.get( "dataSource" );
@@ -167,10 +209,10 @@ public class JdbcSchema implements Schema {
         String sqlDialectFactory = (String) operand.get( "sqlDialectFactory" );
 
         if ( sqlDialectFactory == null || sqlDialectFactory.isEmpty() ) {
-            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema, tableMap );
         } else {
             SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, sqlDialectFactory );
-            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema );
+            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema, tableMap );
         }
     }
 
@@ -207,13 +249,15 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public boolean isMutable() {
         return false;
     }
 
 
+    @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
+        return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap );
     }
 
 
@@ -223,6 +267,7 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Expression getExpression( SchemaPlus parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
     }
@@ -234,124 +279,32 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public final Collection<Function> getFunctions( String name ) {
         return getFunctions().get( name ); // never null
     }
 
 
+    @Override
     public final Set<String> getFunctionNames() {
         return getFunctions().keySet();
     }
 
 
-    private ImmutableMap<String, JdbcTable> computeTables() {
-        Connection connection = null;
-        ResultSet resultSet = null;
-        try {
-            connection = dataSource.getConnection();
-            DatabaseMetaData metaData = connection.getMetaData();
-            String catalog;
-            String schema;
-            if ( metaData.getJDBCMajorVersion() > 4 || (metaData.getJDBCMajorVersion() == 4 && metaData.getJDBCMinorVersion() >= 1) ) {
-                // From JDBC 4.1, catalog and schema can be retrieved from the connection object, hence try to get it from there if it was not specified by user
-                catalog = Util.first( this.catalog, connection.getCatalog() );
-                schema = Util.first( this.schema, connection.getSchema() );
-            } else {
-                catalog = this.catalog;
-                schema = this.schema;
-            }
-            resultSet = metaData.getTables( catalog, schema, null, null );
-            final ImmutableMap.Builder<String, JdbcTable> builder = ImmutableMap.builder();
-            while ( resultSet.next() ) {
-                final String tableName = resultSet.getString( 3 );
-                final String catalogName = resultSet.getString( 1 );
-                final String schemaName = resultSet.getString( 2 );
-                final String tableTypeName = resultSet.getString( 4 );
-                // Clean up table type. In particular, this ensures that 'SYSTEM TABLE', returned by Phoenix among others, maps to TableType.SYSTEM_TABLE.
-                // We know enum constants are upper-case without spaces, so we can't make things worse.
-                //
-                // PostgreSQL returns tableTypeName==null for pg_toast* tables. This can happen if you start JdbcSchema off a "public" PG schema.
-                // The tables are not designed to be queried by users, however we do not filter them as we keep all the other table types.
-                final String tableTypeName2 =
-                        tableTypeName == null
-                                ? null
-                                : tableTypeName.toUpperCase( Locale.ROOT ).replace( ' ', '_' );
-                final TableType tableType = Util.enumVal( TableType.OTHER, tableTypeName2 );
-                if ( tableType == TableType.OTHER && tableTypeName2 != null ) {
-                    System.out.println( "Unknown table type: " + tableTypeName2 );
-                }
-                final JdbcTable table = new JdbcTable( this, catalogName, schemaName, tableName, tableType );
-                builder.put( tableName, table );
-            }
-            return builder.build();
-        } catch ( SQLException e ) {
-            throw new RuntimeException( "Exception while reading tables", e );
-        } finally {
-            close( connection, null, resultSet );
-        }
-    }
-
-
+    @Override
     public Table getTable( String name ) {
-        return getTableMap( false ).get( name );
+        return getTableMap().get( name );
     }
 
 
-    private synchronized ImmutableMap<String, JdbcTable> getTableMap( boolean force ) {
-        if ( force || tableMap == null ) {
-            tableMap = computeTables();
-        }
-        return tableMap;
+    public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
+        return ImmutableMap.copyOf( tableMap );
     }
 
 
-    RelProtoDataType getRelDataType( String catalogName, String schemaName, String tableName ) throws SQLException {
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
-            DatabaseMetaData metaData = connection.getMetaData();
-            return getRelDataType( metaData, catalogName, schemaName, tableName );
-        } finally {
-            close( connection, null, null );
-        }
-    }
-
-
-    RelProtoDataType getRelDataType( DatabaseMetaData metaData, String catalogName, String schemaName, String tableName ) throws SQLException {
-        final ResultSet resultSet = metaData.getColumns( catalogName, schemaName, tableName, null );
-
-        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        while ( resultSet.next() ) {
-            final String columnName = resultSet.getString( 4 );
-            final int dataType = resultSet.getInt( 5 );
-            final String typeString = resultSet.getString( 6 );
-            final int precision;
-            final int scale;
-            switch ( SqlType.valueOf( dataType ) ) {
-                case TIMESTAMP:
-                case TIME:
-                    precision = resultSet.getInt( 9 ); // SCALE
-                    scale = 0;
-                    break;
-                default:
-                    precision = resultSet.getInt( 7 ); // SIZE
-                    scale = resultSet.getInt( 9 ); // SCALE
-                    break;
-            }
-            RelDataType sqlType = sqlType( typeFactory, dataType, precision, scale, typeString );
-            boolean nullable = resultSet.getInt( 11 ) != DatabaseMetaData.columnNoNulls;
-            fieldInfo.add( columnName, sqlType ).nullable( nullable );
-        }
-        resultSet.close();
-        return RelDataTypeImpl.proto( fieldInfo.build() );
-    }
-
-
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, int dataType, int precision, int scale, String typeString ) {
+    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, Integer precision, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
-        final SqlTypeName sqlTypeName = Util.first( SqlTypeName.getNameForJdbcType( dataType ), SqlTypeName.ANY );
+        final SqlTypeName sqlTypeName = Util.first( dataTypeName, SqlTypeName.ANY );
         switch ( sqlTypeName ) {
             case ARRAY:
                 RelDataType component = null;
@@ -365,9 +318,9 @@ public class JdbcSchema implements Schema {
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
-        if ( precision >= 0 && scale >= 0 && sqlTypeName.allowsPrecScale( true, true ) ) {
+        if ( precision != null && scale != null && sqlTypeName.allowsPrecScale( true, true ) ) {
             return typeFactory.createSqlType( sqlTypeName, precision, scale );
-        } else if ( precision >= 0 && sqlTypeName.allowsPrecNoScale() ) {
+        } else if ( precision != null && sqlTypeName.allowsPrecNoScale() ) {
             return typeFactory.createSqlType( sqlTypeName, precision );
         } else {
             assert sqlTypeName.allowsNoPrecNoScale();
@@ -412,9 +365,10 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Set<String> getTableNames() {
         // This method is called during a cache refresh. We can take it as a signal that we need to re-build our own cache.
-        return getTableMap( !snapshot ).keySet();
+        return getTableMap().keySet();
     }
 
 
@@ -436,12 +390,14 @@ public class JdbcSchema implements Schema {
     }
 
 
+    @Override
     public Schema getSubSchema( String name ) {
         // JDBC does not support sub-schemas.
         return null;
     }
 
 
+    @Override
     public Set<String> getSubSchemaNames() {
         return ImmutableSet.of();
     }
@@ -506,7 +462,7 @@ public class JdbcSchema implements Schema {
 
 
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            return JdbcSchema.create( parentSchema, name, operand );
+            return JdbcSchema.create( parentSchema, name, operand, null );
         }
     }
 }

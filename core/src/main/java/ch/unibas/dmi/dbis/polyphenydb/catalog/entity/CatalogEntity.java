@@ -34,7 +34,7 @@ import java.io.Serializable;
  */
 public interface CatalogEntity extends Serializable {
 
-    Object[] getParameterArray();
+    Serializable[] getParameterArray();
 
 
     static String getEnumNameOrNull( Enum theEnum ) {

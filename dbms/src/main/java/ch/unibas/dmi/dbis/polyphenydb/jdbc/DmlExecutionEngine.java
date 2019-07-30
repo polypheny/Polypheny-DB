@@ -27,29 +27,51 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel.Prefer;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,16 +86,18 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.ExecuteResult;
 import org.apache.calcite.avatica.Meta.Frame;
 import org.apache.calcite.avatica.Meta.MetaResultSet;
-import org.apache.calcite.avatica.Meta.Signature;
 import org.apache.calcite.avatica.Meta.StatementHandle;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
-import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.calcite.linq4j.BaseQueryable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +109,10 @@ public class DmlExecutionEngine {
 
     private static DmlExecutionEngine INSTANCE;
 
+    private InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+    private InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
+    private InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+    private InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     static {
         INSTANCE = new DmlExecutionEngine();
@@ -101,79 +129,92 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeSelect( StatementHandle h, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, Planner planner, StopWatch stopWatch, SqlSelect parsed ) throws NoSuchStatementException {
+    public ExecuteResult executeSelect( final StatementHandle h, final PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlSelect parsed ) throws NoSuchStatementException {
         //
         // 3: Validation
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ..." );
+            LOG.debug( "Validating SELECT Statement ..." );
         }
         stopWatch.start();
-        SqlNode validated = validate( parsed, planner );
+        Pair<SqlNode, RelDataType> validatePair = validate( parsed, planner );
+        SqlNode validated = validatePair.left;
+        RelDataType type = validatePair.right;
+
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Validated query: [{}]", validated );
         }
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating ... done. [{}]", stopWatch );
+            LOG.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 4: authorization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ..." );
+            LOG.debug( "Authorizing SELECT Statement ..." );
         }
         stopWatch.start();
         authorize( parsed );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Authorizing ... done. [{}]", stopWatch );
+            LOG.debug( "Authorizing SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 5: planning
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ..." );
+            LOG.debug( "Planning SELECT Statement ..." );
         }
         stopWatch.start();
         RelNode logicalPlan = plan( validated, planner );
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                "LogicalQueryPlan",
+                informationGroupLogical.getId(),
+                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning ... done. [{}]", stopWatch );
+            LOG.debug( "Planning SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // 6: optimization
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ..." );
+            LOG.debug( "Optimizing SELECT Statement ..." );
         }
         stopWatch.start();
         RelNode optimalPlan = optimize( logicalPlan );
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
+        informationQueryPlan = new InformationQueryPlan(
+                "PhysicalQueryPlan",
+                informationGroupPhysical.getId(),
+                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimization ... done. [{}]", stopWatch );
+            LOG.debug( "Optimizing SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
-        // 7: execution
+        // 7: prepare to be executed
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ..." );
+            LOG.debug( "Execution SELECT Statement ..." );
         }
         stopWatch.start();
-        PolyphenyDbResultSet resultSet = execute( optimalPlan );
+        PolyphenyDbSignature signature = prepareSelect( optimalPlan, statement, rootSchema, parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(), type );
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Execution ... done. [{}]", stopWatch );
+            LOG.debug( "Execution SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
@@ -186,6 +227,7 @@ public class DmlExecutionEngine {
             connection.endCurrentTransaction();
         }*/
 
+
         //
         // 8:  marshalling
         stopWatch.reset();
@@ -194,15 +236,9 @@ public class DmlExecutionEngine {
         }
         stopWatch.start();
 
-        Signature signature;
-        try {
-            signature = signature( resultSet.getMetaData(), null, parsed.toSqlString( null ).getSql(), StatementType.SELECT );
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-        }
+        statement.setSignature( signature );
 
         List<MetaResultSet> resultSets;
-        statement.setOpenResultSet( resultSet );
         try {
             resultSets = Collections.singletonList( MetaResultSet.create(
                     h.connectionId,
@@ -224,9 +260,122 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final int maxRowsInFirstFrame, final long maxRowCount, final Planner planner, final StopWatch stopWatch, final SqlNode parsed ) {
-        // TODO: Implement DML support
-        return null;
+    public ExecuteResult executeDml( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlNode parsed, ContextImpl prepareContext ) {
+
+        //
+        // 3: Validation
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating DML Statement ..." );
+        }
+        stopWatch.start();
+        Pair<SqlNode, RelDataType> validatePair = validate( parsed, planner );
+        SqlNode validated = validatePair.left;
+
+        stopWatch.stop();
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Validated query: [{}]", validated );
+        }
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Validating DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 4: authorization
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing DML Statement ..." );
+        }
+        stopWatch.start();
+        authorize( parsed );
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Authorizing DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 5: planning
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning DML Statement ..." );
+        }
+        stopWatch.start();
+        RelNode logicalPlan = plan( validated, planner );
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                "LogicalQueryPlan",
+                informationGroupLogical.getId(),
+                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Planning DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 6: optimization
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing DML Statement  ..." );
+        }
+        stopWatch.start();
+        RelNode optimalPlan;
+        try {
+            //optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( StoreManager.getInstance().getStore( 0 ).getConvention() ), logicalPlan );
+            optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( EnumerableConvention.INSTANCE ), logicalPlan );
+        } catch ( RelConversionException e ) {
+            throw new RuntimeException( e );
+        }
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        informationQueryPlan = new InformationQueryPlan(
+                "PhysicalQueryPlan",
+                informationGroupPhysical.getId(),
+                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing DML Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // 7: prepare to be executed
+        stopWatch.reset();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Prepare to execute DML Statement ..." );
+        }
+        stopWatch.start();
+
+        RelRoot root = RelRoot.of( optimalPlan, parsed.getKind() );
+        EnumerableRel enumerable = (EnumerableRel) root.rel;
+        if ( !root.isRefTrivial() ) {
+            final List<RexNode> projects = new ArrayList<>();
+            final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
+            for ( int field : Pair.left( root.fields ) ) {
+                projects.add( rexBuilder.makeInputRef( enumerable, field ) );
+            }
+            RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+            enumerable = EnumerableCalc.create( enumerable, program );
+        }
+
+        Bindable bindable = EnumerableInterpretable.toBindable( ImmutableMap.of(), null, enumerable, Prefer.ARRAY );
+        Enumerable e = bindable.bind( statement.getDataContext( rootSchema ) );
+
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Prepare to execute DML Statement ... done. [{}]", stopWatch );
+        }
+
+
+        MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) e.iterator().next()).intValue() );
+
+        LinkedList<MetaResultSet> resultSets = new LinkedList<>();
+        resultSets.add( metaResultSet );
+
+        return new ExecuteResult( resultSets );
     }
 
 
@@ -235,7 +384,9 @@ public class DmlExecutionEngine {
         SqlNode explicandum = explainQuery.getExplicandum();
 
         // 3: validation
-        SqlNode validated = validate( explicandum, planner );
+        Pair<SqlNode, RelDataType> validatePair = validate( explicandum, planner );
+        SqlNode validated = validatePair.left;
+        RelDataType type = validatePair.right;
 
         // 4: authorization
         authorize( explicandum );
@@ -279,10 +430,10 @@ public class DmlExecutionEngine {
     }
 
 
-    private SqlNode validate( final SqlNode parsed, final Planner planner ) {
-        SqlNode validated;
+    private Pair<SqlNode, RelDataType> validate( final SqlNode parsed, final Planner planner ) {
+        Pair<SqlNode, RelDataType> validated;
         try {
-            validated = planner.validate( parsed );
+            validated = planner.validateAndGetType( parsed );
         } catch ( ValidationException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
@@ -322,95 +473,175 @@ public class DmlExecutionEngine {
     }
 
 
-    private PolyphenyDbResultSet execute( final RelNode optimalPlan ) {
-        PolyphenyDbResultSet resultSet;
-        try {
-            PreparedStatement preparedStatement = RelRunners.run( optimalPlan );
-            resultSet = (PolyphenyDbResultSet) preparedStatement.executeQuery();
-        } catch ( SQLException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+    private PolyphenyDbSignature prepareSelect( final RelNode optimalPlan, final PolyphenyDbStatementHandle statementHandle, final PolyphenyDbSchema rootSchema, final String sql, RelDataType type ) {
+        ArrayBindable bindable = Interpreters.bindable( optimalPlan );
+        final CursorFactory cf = CursorFactory.ARRAY;
+        final JavaTypeFactory typeFactory = statementHandle.getTypeFactory();
+        final List<List<String>> origins = Collections.nCopies( optimalPlan.getRowType().getFieldCount(), null );
+        List<ColumnMetaData> columnMetaData = getColumnMetaDataList( typeFactory, optimalPlan.getRowType(), optimalPlan.getRowType(), origins );
+
+        final List<AvaticaParameter> parameters = new ArrayList<>();
+        final RelDataType parameterRowType = optimalPlan.getRowType();
+        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
+            RelDataType fieldType = field.getType();
+            parameters.add(
+                    new AvaticaParameter(
+                            false,
+                            getPrecision( fieldType ),
+                            getScale( fieldType ),
+                            getTypeOrdinal( fieldType ),
+                            getTypeName( fieldType ),
+                            "",
+                            field.getName() ) );
         }
 
-        //connection.setCurrentOpenResultSet(resultSet);
-        return resultSet;
+        RelDataType jdbcType = type;
+        if ( !type.isStruct() ) {
+            jdbcType = statementHandle.getTypeFactory().builder().add( "$0", type ).build();
+        }
+
+        return new PolyphenyDbSignature( sql, parameters, ImmutableMap.of(), jdbcType, columnMetaData, cf, rootSchema, ImmutableList.of(), -1, bindable, StatementType.SELECT );
     }
 
 
-    /*
-     *
-     *  ///// Helpers /////
-     *
-     */
-
-
-    /**
-     * Converts from JDBC metadata to Avatica columns.
-     */
-    private static List<ColumnMetaData> columns( final ResultSetMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
-        }
+    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, RelDataType x, RelDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
-            final SqlType sqlType = SqlType.valueOf( metaData.getColumnType( i ) );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( sqlType.internal );
-            final ColumnMetaData.AvaticaType t;
-            if ( sqlType == SqlType.ARRAY || sqlType == SqlType.STRUCT || sqlType == SqlType.MULTISET ) {
-                ColumnMetaData.AvaticaType arrayValueType = ColumnMetaData.scalar( Types.JAVA_OBJECT, metaData.getColumnTypeName( i ), ColumnMetaData.Rep.OBJECT );
-                t = ColumnMetaData.array( arrayValueType, metaData.getColumnTypeName( i ), rep );
-            } else {
-                t = ColumnMetaData.scalar( metaData.getColumnType( i ), metaData.getColumnTypeName( i ), rep );
-            }
-            ColumnMetaData md =
-                    new ColumnMetaData(
-                            i - 1,
-                            metaData.isAutoIncrement( i ),
-                            metaData.isCaseSensitive( i ), metaData.isSearchable( i ),
-                            metaData.isCurrency( i ), metaData.isNullable( i ),
-                            metaData.isSigned( i ), metaData.getColumnDisplaySize( i ),
-                            metaData.getColumnLabel( i ), metaData.getColumnName( i ),
-                            metaData.getSchemaName( i ), metaData.getPrecision( i ),
-                            metaData.getScale( i ), metaData.getTableName( i ),
-                            metaData.getCatalogName( i ), t, metaData.isReadOnly( i ),
-                            metaData.isWritable( i ), metaData.isDefinitelyWritable( i ),
-                            metaData.getColumnClassName( i ) );
-            columns.add( md );
+        for ( Ord<RelDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+            final RelDataTypeField field = pair.e;
+            final RelDataType type = field.getType();
+            final RelDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+            columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
     }
 
 
+    private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, RelDataType type, RelDataType fieldType, List<String> origins ) {
+        final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
+        return new ColumnMetaData(
+                ordinal,
+                false,
+                true,
+                false,
+                false,
+                type.isNullable()
+                        ? DatabaseMetaData.columnNullable
+                        : DatabaseMetaData.columnNoNulls,
+                true,
+                type.getPrecision(),
+                fieldName,
+                origin( origins, 0 ),
+                origin( origins, 2 ),
+                getPrecision( type ),
+                getScale( type ),
+                origin( origins, 1 ),
+                null,
+                avaticaType,
+                true,
+                false,
+                false,
+                avaticaType.columnClassName() );
+    }
+
+
+    private static String origin( List<String> origins, int offsetFromEnd ) {
+        return origins == null || offsetFromEnd >= origins.size()
+                ? null
+                : origins.get( origins.size() - 1 - offsetFromEnd );
+    }
+
+
+    private static int getScale( RelDataType type ) {
+        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+                ? 0
+                : type.getScale();
+    }
+
+
+    private static int getPrecision( RelDataType type ) {
+        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                ? 0
+                : type.getPrecision();
+    }
+
+
+    private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
+        final String typeName = getTypeName( type );
+        if ( type.getComponentType() != null ) {
+            final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
+            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            assert rep != null;
+            return ColumnMetaData.array( componentType, typeName, rep );
+        } else {
+            int typeOrdinal = getTypeOrdinal( type );
+            switch ( typeOrdinal ) {
+                case Types.STRUCT:
+                    final List<ColumnMetaData> columns = new ArrayList<>();
+                    for ( RelDataTypeField field : type.getFieldList() ) {
+                        columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
+                    }
+                    return ColumnMetaData.struct( columns );
+                case ExtraSqlTypes.GEOMETRY:
+                    typeOrdinal = Types.VARCHAR;
+                    // fall through
+                default:
+                    final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
+                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+                    assert rep != null;
+                    return ColumnMetaData.scalar( typeOrdinal, typeName, rep );
+            }
+        }
+    }
+
     /**
-     * Converts from JDBC metadata to Avatica parameters
+     * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
+     * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
-    private static List<AvaticaParameter> parameters( final ParameterMetaData metaData ) throws SQLException {
-        if ( metaData == null ) {
-            return Collections.emptyList();
+    private static String getTypeName( RelDataType type ) {
+        final SqlTypeName sqlTypeName = type.getSqlTypeName();
+        switch ( sqlTypeName ) {
+            case ARRAY:
+            case MULTISET:
+            case MAP:
+            case ROW:
+                return type.toString(); // e.g. "INTEGER ARRAY"
+            case INTERVAL_YEAR_MONTH:
+                return "INTERVAL_YEAR_TO_MONTH";
+            case INTERVAL_DAY_HOUR:
+                return "INTERVAL_DAY_TO_HOUR";
+            case INTERVAL_DAY_MINUTE:
+                return "INTERVAL_DAY_TO_MINUTE";
+            case INTERVAL_DAY_SECOND:
+                return "INTERVAL_DAY_TO_SECOND";
+            case INTERVAL_HOUR_MINUTE:
+                return "INTERVAL_HOUR_TO_MINUTE";
+            case INTERVAL_HOUR_SECOND:
+                return "INTERVAL_HOUR_TO_SECOND";
+            case INTERVAL_MINUTE_SECOND:
+                return "INTERVAL_MINUTE_TO_SECOND";
+            default:
+                return sqlTypeName.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
         }
-        final List<AvaticaParameter> params = new ArrayList<>();
-        for ( int i = 1; i <= metaData.getParameterCount(); i++ ) {
-            params.add(
-                    new AvaticaParameter(
-                            metaData.isSigned( i ),
-                            metaData.getPrecision( i ),
-                            metaData.getScale( i ),
-                            metaData.getParameterType( i ),
-                            metaData.getParameterTypeName( i ),
-                            metaData.getParameterClassName( i ),
-                            "?" + i ) );
-        }
-        return params;
     }
 
 
-    private static Signature signature( final ResultSetMetaData metaData, final ParameterMetaData parameterMetaData, final String sql, final StatementType statementType ) throws SQLException {
-        final CursorFactory cf = CursorFactory.LIST;  // because JdbcResultSet#frame
-        return new Signature( columns( metaData ), sql, parameters( parameterMetaData ), null, cf, statementType );
+    private int getTypeOrdinal( RelDataType type ) {
+        return type.getSqlTypeName().getJdbcOrdinal();
     }
 
 
-    protected static Signature signature( final ResultSetMetaData metaData ) throws SQLException {
-        return signature( metaData, null, null, null );
+    /**
+     * Implementation of Queryable.
+     *
+     * @param <T> element type
+     */
+    static class PolyphenyDbQueryable<T> extends BaseQueryable<T> {
+
+        PolyphenyDbQueryable( QueryProvider queryProvider, Type elementType, Expression expression ) {
+            super( queryProvider, elementType, expression );
+        }
+
     }
 
 

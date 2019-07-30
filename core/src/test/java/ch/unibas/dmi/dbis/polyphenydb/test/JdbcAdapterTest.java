@@ -62,6 +62,7 @@ import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.hsqldb.jdbcDriver;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -80,6 +81,7 @@ public class JdbcAdapterTest {
      * VALUES is not pushed down, currently.
      */
     @Test
+    @Ignore
     public void testValuesPlan() {
         final String sql = "select * from \"days\", (values 1, 2) as t(c)";
         final String explain = "PLAN="
@@ -99,6 +101,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testUnionPlan() {
         PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL )
                 .query( "select * from \"sales_fact_1997\"\n"
@@ -119,6 +122,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testFilterUnionPlan() {
         PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL )
                 .query( "select * from (\n"
@@ -139,6 +143,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testInPlan() {
         PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL )
                 .query( "select \"store_id\", \"store_name\" from \"store\"\n" + "where \"store_name\" in ('Store 1', 'Store 10', 'Store 11', 'Store 15', 'Store 16', 'Store 24', 'Store 3', 'Store 7')" )
@@ -159,6 +164,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testEquiJoinPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, e.deptno, dname \n"
@@ -187,6 +193,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-631">[POLYPHENYDB-631] Push theta joins down to JDBC adapter</a>.
      */
     @Test
+    @Ignore
     public void testNonEquiJoinPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, grade \n"
@@ -210,6 +217,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testNonEquiJoinReverseConditionPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, grade \n"
@@ -232,6 +240,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testMixedJoinPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select e.empno, e.ename, e.empno, e.ename  \n"
@@ -257,6 +266,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testMixedJoinWithOrPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select e.empno, e.ename, e.empno, e.ename  \n"
@@ -283,6 +293,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testJoin3TablesPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select  empno, ename, dname, grade \n"
@@ -313,6 +324,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testCrossJoinWithJoinKeyPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, d.deptno, dname \n"
@@ -337,6 +349,7 @@ public class JdbcAdapterTest {
 
     // JdbcJoin not used for this
     @Test
+    @Ignore
     public void testCartesianJoinWithoutKeyPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, d.deptno, dname \n"
@@ -355,6 +368,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testCrossJoinWithJoinKeyAndFilterPlan() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "select empno, ename, d.deptno, dname \n"
@@ -385,6 +399,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-893">[POLYPHENYDB-893] Theta join in JdbcAdapter</a>.
      */
     @Test
+    @Ignore
     public void testJoinPlan() {
         final String sql = "SELECT T1.\"brand_name\"\n"
                 + "FROM \"foodmart\".\"product\" AS T1\n"
@@ -403,6 +418,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1372">[POLYPHENYDB-1372] JDBC adapter generates SQL with wrong field names</a>.
      */
     @Test
+    @Ignore
     public void testJoinPlan2() {
         final String sql = "SELECT v1.deptno, v2.deptno\n"
                 + "FROM Scott.dept v1 LEFT JOIN Scott.emp v2 ON v1.deptno = v2.deptno\n"
@@ -415,6 +431,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testJoinCartesian() {
         final String sql = "SELECT *\n" + "FROM Scott.dept, Scott.emp";
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL ).query( sql ).returnsCount( 56 );
@@ -422,6 +439,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testJoinCartesianCount() {
         final String sql = "SELECT count(*) as c\n" + "FROM Scott.dept, Scott.emp";
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL ).query( sql ).returns( "C=56\n" );
@@ -432,6 +450,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-657">[POLYPHENYDB-657] NullPointerException when executing JdbcAggregate implement method</a>.
      */
     @Test
+    @Ignore
     public void testJdbcAggregate() throws Exception {
         final String url = MultiJdbcSchemaJoinTest.TempDb.INSTANCE.getUrl();
         Connection baseConnection = DriverManager.getConnection( url );
@@ -476,6 +495,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2206">[POLYPHENYDB-2206] JDBC adapter incorrectly pushes windowed aggregates down to HSQLDB</a>.
      */
     @Test
+    @Ignore
     public void testOverNonSupportedDialect() {
         final String sql = "select \"store_id\", \"account_id\", \"exp_date\",\n"
                 + " \"time_id\", \"category_id\", \"currency_id\", \"amount\",\n"
@@ -684,6 +704,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-259">[POLYPHENYDB-259] Using sub-queries in CASE statement against JDBC tables generates invalid Oracle SQL</a>.
      */
     @Test
+    @Ignore
     public void testSubQueryWithSingleValue() {
         final String expected;
         switch ( PolyphenyDbAssert.DB ) {
@@ -704,6 +725,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-865">[POLYPHENYDB-865] Unknown table type causes NullPointerException in JdbcSchema</a>. The issue occurred because of the "SYSTEM_INDEX" table type when run against PostgreSQL.
      */
     @Test
+    @Ignore
     public void testMetadataTables() throws Exception {
         // The troublesome tables occur in PostgreSQL's system schema.
         final String model =
@@ -725,6 +747,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-666">[POLYPHENYDB-666] Anti-semi-joins against JDBC adapter give wrong results</a>.
      */
     @Test
+    @Ignore
     public void testScalarSubQuery() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "SELECT COUNT(empno) AS cEmpNo FROM \"SCOTT\".\"EMP\" WHERE DEPTNO <> (SELECT * FROM (VALUES 1))" )
@@ -781,6 +804,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1527">[POLYPHENYDB-1527] Support DML in the JDBC adapter</a>.
      */
     @Test
+    @Ignore
     public void testTableModifyInsert() throws Exception {
         final String sql = "INSERT INTO \"foodmart\".\"expense_fact\"(\n"
                 + " \"store_id\", \"account_id\", \"exp_date\", \"time_id\","
@@ -794,8 +818,7 @@ public class JdbcAdapterTest {
                 + " (\"store_id\", \"account_id\", \"exp_date\", \"time_id\","
                 + " \"category_id\", \"currency_id\", \"amount\")\n"
                 + "VALUES  (666, 666, TIMESTAMP '1997-01-01 00:00:00', 666, '666', 666, 666.0000)";
-        final AssertThat that =
-                PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL ).enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL );
+        final AssertThat that = PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL ).enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL );
         that.doWithConnection( connection -> {
             try ( LockWrapper ignore = exclusiveCleanDb( connection ) ) {
                 that.query( sql )
@@ -809,6 +832,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testTableModifyInsertMultiValues() throws Exception {
         final String sql = "INSERT INTO \"foodmart\".\"expense_fact\"(\n"
                 + " \"store_id\", \"account_id\", \"exp_date\", \"time_id\","
@@ -841,6 +865,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testTableModifyInsertWithSubQuery() throws Exception {
         final AssertThat that = PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
@@ -880,6 +905,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testTableModifyUpdate() throws Exception {
         final AssertThat that = PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
@@ -910,6 +936,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void testTableModifyDelete() throws Exception {
         final AssertThat that = PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
@@ -939,6 +966,7 @@ public class JdbcAdapterTest {
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1572">[POLYPHENYDB-1572] JdbcSchema throws exception when detecting nullable columns</a>.
      */
     @Test
+    @Ignore
     public void testColumnNullability() throws Exception {
         final String sql = "select \"employee_id\", \"position_id\"\n"
                 + "from \"foodmart\".\"employee\" limit 10";
@@ -951,6 +979,7 @@ public class JdbcAdapterTest {
 
 
     @Test
+    @Ignore
     public void pushBindParameters() throws Exception {
         final String sql = "select empno, ename from emp where empno = ?";
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )

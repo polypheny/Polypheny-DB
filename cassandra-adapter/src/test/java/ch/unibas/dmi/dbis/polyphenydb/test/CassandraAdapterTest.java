@@ -45,27 +45,24 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import static org.junit.Assume.assumeTrue;
+
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
-import org.apache.cassandra.config.DatabaseDescriptor;
-
 import com.google.common.collect.ImmutableMap;
-
+import java.util.concurrent.TimeUnit;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.cassandraunit.CassandraCQLUnit;
 import org.cassandraunit.dataset.cql.ClassPathCQLDataSet;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assume.assumeTrue;
 
 
 /**
@@ -76,6 +73,7 @@ import static org.junit.Assume.assumeTrue;
  * Note that tests will be skipped if running on JDK11 and JDK12 (which is not yet supported by cassandra) see
  * <a href="https://issues.apache.org/jira/browse/CASSANDRA-9608">CASSANDRA-9608</a>.
  */
+@Ignore
 public class CassandraAdapterTest {
 
     @ClassRule

@@ -45,15 +45,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -98,7 +97,7 @@ public class RelationalJdbcExample {
                 + "   ]\n"
                 + "}";
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.EmbeddedDriver" );
+        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
 
         Properties info = new Properties();
         info.put( "model", geodeModelJson );

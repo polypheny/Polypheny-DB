@@ -45,16 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
@@ -93,7 +88,8 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
     }
 
 
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    /*
+    public void execute( Context context ) {
         final List<String> path = context.getDefaultSchemaPath();
         PolyphenyDbSchema schema = context.getRootSchema();
         for ( String p : path ) {
@@ -125,5 +121,5 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
             default:
                 throw new AssertionError( getKind() );
         }
-    }
+    }*/
 }

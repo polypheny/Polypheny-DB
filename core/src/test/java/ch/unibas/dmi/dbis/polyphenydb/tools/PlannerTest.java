@@ -54,15 +54,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableProject;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -231,6 +236,18 @@ public class PlannerTest {
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
                 .operatorTable( opTab )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
         SqlNode parse =
@@ -270,6 +287,18 @@ public class PlannerTest {
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
                 .traitDefs( traitDefs )
                 .programs( programs )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         return Frameworks.getPlanner( config );
     }
@@ -982,12 +1011,24 @@ public class PlannerTest {
      * Checks that a query returns a particular plan, using a planner with MultiJoinOptimizeBushyRule enabled.
      */
     private void checkBushy( String sql, String expected ) throws Exception {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.CLONE_FOODMART ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         Planner planner = Frameworks.getPlanner( config );
         SqlNode parse = planner.parse( sql );
@@ -1099,12 +1140,24 @@ public class PlannerTest {
 
 
     public String checkTpchQuery( String tpchTestQuery ) throws Exception {
-        final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "tpch", new ReflectiveSchema( new TpchSchema() ) );
+        final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "tpch", new ReflectiveSchema( new TpchSchema() ) );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.configBuilder().setLex( Lex.MYSQL ).build() )
                 .defaultSchema( schema )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( schema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         String plan;
         try ( Planner p = Frameworks.getPlanner( config ) ) {
@@ -1173,6 +1226,18 @@ public class PlannerTest {
                 .defaultSchema( schema )
                 .traitDefs( traitDefs )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( schema ),
+                        new SlimDataContext() {
+                    @Override
+                    public JavaTypeFactory getTypeFactory() {
+                        return new JavaTypeFactoryImpl();
+                    }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         String plan;
         try ( Planner p = Frameworks.getPlanner( config ) ) {
@@ -1225,6 +1290,18 @@ public class PlannerTest {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.POST ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
         SqlNode parse = planner.parse( sql );

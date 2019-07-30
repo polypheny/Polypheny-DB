@@ -23,6 +23,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
@@ -55,6 +58,7 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
     compile project(":csv-adapter")
+    compile project(":hsqldb-adapter")
     compile project(":catalog")
     compile project(":webui")
 
@@ -76,14 +80,15 @@ dependencies {
     compile group: "org.hsqldb", name: "hsqldb", version: "2.5.0"
 
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.13.0"
-    
+    //compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.16.0-POLYPHENYDB"
+    compile name: "avatica-server-1.16.0-POLYPHENYDB"
     
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version:"4.12"
+    
 }
 
 

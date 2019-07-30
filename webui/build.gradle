@@ -22,6 +22,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     mavenLocal()
     maven {
         // DBIS Artifactory

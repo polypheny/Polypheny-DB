@@ -45,18 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationKey;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 
 
 /**
@@ -76,7 +71,14 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
 
     @Override
-    public void execute( PolyphenyDbPrepare.Context context ) {
+    public void execute( Context context, CatalogManager catalog ) {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
+
+    /*
+    @Override
+    public void execute( Context context ) {
         final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
         final Table table = pair.left.plus().getTable( pair.right );
         if ( table != null ) {
@@ -89,6 +91,6 @@ public class SqlDropMaterializedView extends SqlDropObject {
                 }
             }
         }
-    }
+    } */
 }
 

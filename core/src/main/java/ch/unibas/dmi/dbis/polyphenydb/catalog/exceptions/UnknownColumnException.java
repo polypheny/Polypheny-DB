@@ -28,7 +28,12 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 public class UnknownColumnException extends CatalogException {
 
-    public UnknownColumnException( String columnName, String tableName, String schemaName, String databaseName ) {
+    public UnknownColumnException( String databaseName, String schemaName, String tableName, String columnName ) {
         super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
+    }
+
+
+    public UnknownColumnException( long tableId, String columnName ) {
+        super( "There is no column with name '" + columnName + "' in the table with the id '" + tableId + "'" );
     }
 }

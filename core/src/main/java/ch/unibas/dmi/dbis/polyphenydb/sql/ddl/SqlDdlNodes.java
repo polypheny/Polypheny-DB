@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
@@ -96,14 +96,6 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a CREATE FOREIGN SCHEMA.
-     */
-    public static SqlCreateForeignSchema createForeignSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode type, SqlNode library, SqlNodeList optionList ) {
-        return new SqlCreateForeignSchema( pos, replace, ifNotExists, name, type, library, optionList );
-    }
-
-
-    /**
      * Creates a CREATE TYPE.
      */
     public static SqlCreateType createType( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList attributeList, SqlDataTypeSpec dataTypeSpec ) {
@@ -144,10 +136,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a DROP [ FOREIGN ] SCHEMA.
+     * Creates a DROP SCHEMA.
      */
-    public static SqlDropSchema dropSchema( SqlParserPos pos, boolean foreign, boolean ifExists, SqlIdentifier name ) {
-        return new SqlDropSchema( pos, foreign, ifExists, name );
+    public static SqlDropSchema dropSchema( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropSchema( pos, ifExists, name );
     }
 
 
@@ -239,7 +231,7 @@ public class SqlDdlNodes {
     /**
      * Returns the schema in which to create an object.
      */
-    static Pair<PolyphenyDbSchema, String> schema( PolyphenyDbPrepare.Context context, boolean mutable, SqlIdentifier id ) {
+    static Pair<PolyphenyDbSchema, String> schema( Context context, boolean mutable, SqlIdentifier id ) {
         final String name;
         final List<String> path;
         if ( id.isSimple() ) {
@@ -249,7 +241,7 @@ public class SqlDdlNodes {
             path = Util.skipLast( id.names );
             name = Util.last( id.names );
         }
-        PolyphenyDbSchema schema = mutable ? context.getMutableRootSchema() : context.getRootSchema();
+        PolyphenyDbSchema schema = context.getRootSchema();
         for ( String p : path ) {
             schema = schema.getSubSchema( p, true );
         }
@@ -281,12 +273,13 @@ public class SqlDdlNodes {
     /**
      * Populates the table called {@code name} by executing {@code query}.
      */
-    protected static void populate( SqlIdentifier name, SqlNode query, PolyphenyDbPrepare.Context context ) {
+    protected static void populate( SqlIdentifier name, SqlNode query, Context context ) {
         // Generate, prepare and execute an "INSERT INTO table query" statement.
         // (It's a bit inefficient that we convert from SqlNode to SQL and back again.)
         final FrameworkConfig config =
                 Frameworks.newConfigBuilder()
                         .defaultSchema( context.getRootSchema().plus() )
+                        .prepareContext( context )
                         .build();
         final Planner planner = Frameworks.getPlanner( config );
         try {

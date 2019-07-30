@@ -25,13 +25,19 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.dispatching.HttpServerDispatcher;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.Server;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +57,21 @@ public class PolyphenyDb {
         try {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
+            }
+
+            // TODO
+
+            PolyXid xid = Utils.generateGlobalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.USER ), PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( PUID.Type.TRANSACTION ) );
+            List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores( xid );
+            for ( CatalogStore store : stores ) {
+                try {
+                    Class<?> clazz = Class.forName( store.adapterClazz );
+                    Constructor<?> ctor = clazz.getConstructor();
+                    Store instance = (Store) ctor.newInstance();
+                    StoreManager.getInstance().register( store.id, store.uniqueName, instance );
+                } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
+                    throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
+                }
             }
 
             new PolyphenyDb().runPolyphenyDb();

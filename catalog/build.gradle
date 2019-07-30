@@ -23,6 +23,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
@@ -58,7 +61,7 @@ dependencies {
     compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
 
     // https://mvnrepository.com/artifact/org.hsqldb/hsqldb
-    compile group: "org.hsqldb", name: "hsqldb", version: "2.4.1"
+    compile group: "org.hsqldb", name: "hsqldb", version: "2.5.0"
 
 
 

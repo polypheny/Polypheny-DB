@@ -71,6 +71,11 @@ abstract class TransactionHandler {
     }
 
 
+    ResultSet getGeneratedKeys() throws SQLException {
+        return statement.executeQuery( "CALL IDENTITY();" );
+    }
+
+
     abstract boolean prepare() throws CatalogTransactionException;
 
     abstract void commit() throws CatalogTransactionException;

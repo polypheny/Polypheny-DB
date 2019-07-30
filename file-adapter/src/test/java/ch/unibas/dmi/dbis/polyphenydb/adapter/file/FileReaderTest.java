@@ -45,18 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
-
-import org.jsoup.select.Elements;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
@@ -64,6 +52,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import ch.unibas.dmi.dbis.polyphenydb.util.Source;
+import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
+import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.sql.Connection;
@@ -72,6 +63,10 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.Properties;
+import org.jsoup.select.Elements;
+import org.junit.Assume;
+import org.junit.Ignore;
+import org.junit.Test;
 
 
 /**
@@ -275,6 +270,7 @@ public class FileReaderTest {
      * Tests reading a CSV file via the file adapter. Based on the test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1952">[POLYPHENYDB-1952] NPE in planner</a>.
      */
     @Test
+    @Ignore
     public void testCsvFile() throws Exception {
         Properties info = new Properties();
         final String path = resourcePath( "sales-csv" );

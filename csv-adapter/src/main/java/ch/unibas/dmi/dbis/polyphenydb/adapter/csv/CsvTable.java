@@ -45,14 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,9 +68,10 @@ public abstract class CsvTable extends AbstractTable {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, RelProtoDataType protoRowType ) {
+    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
         this.source = source;
         this.protoRowType = protoRowType;
+        this.fieldTypes = fieldTypes;
     }
 
 

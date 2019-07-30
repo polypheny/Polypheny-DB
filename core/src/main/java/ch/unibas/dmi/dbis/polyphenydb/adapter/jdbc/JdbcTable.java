@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -77,10 +77,12 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -99,20 +101,24 @@ import org.apache.calcite.linq4j.Queryable;
 public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
     private RelProtoDataType protoRowType;
-    private final JdbcSchema jdbcSchema;
+    private JdbcSchema jdbcSchema;
     private final String jdbcCatalogName;
     private final String jdbcSchemaName;
     private final String jdbcTableName;
     private final TableType jdbcTableType;
 
+    private final List<String> columnNames;
 
-    JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType ) {
+
+    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType, RelProtoDataType protoRowType, List<String> columnNames ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.jdbcCatalogName = jdbcCatalogName;
         this.jdbcSchemaName = jdbcSchemaName;
         this.jdbcTableName = tableName;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
+        this.protoRowType = protoRowType;
+        this.columnNames = columnNames;
     }
 
 
@@ -128,13 +134,6 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        if ( protoRowType == null ) {
-            try {
-                protoRowType = jdbcSchema.getRelDataType( jdbcCatalogName, jdbcSchemaName, jdbcTableName );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( "Exception while reading definition of table '" + jdbcTableName + "'", e );
-            }
-        }
         return protoRowType.apply( typeFactory );
     }
 
@@ -161,10 +160,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlIdentifier tableName() {
         final List<String> strings = new ArrayList<>();
-        if ( jdbcSchema.catalog != null ) {
-            strings.add( jdbcSchema.catalog );
+        if ( jdbcSchema != null && jdbcSchema.database != null ) {
+            strings.add( jdbcSchema.database );
         }
-        if ( jdbcSchema.schema != null ) {
+        if ( jdbcSchema != null && jdbcSchema.schema != null ) {
             strings.add( jdbcSchema.schema );
         }
         strings.add( jdbcTableName );
@@ -173,7 +172,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.convention );
+        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
     }
 
 
@@ -191,14 +190,20 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public Collection getModifiableCollection() {
-        return null;
+        return new DummyCollection();
     }
 
 
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        jdbcSchema.convention.register( cluster.getPlanner() );
+        jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+    }
+
+
+    // For unit testing only
+    public void setSchema( JdbcSchema jdbcSchema ) {
+        this.jdbcSchema = jdbcSchema;
     }
 
 
@@ -226,6 +231,45 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
             return enumerable.enumerator();
+        }
+    }
+
+
+    private class DummyCollection extends HashSet {
+
+        @Override
+        public boolean add( Object obj ) {
+            Object[] o;
+            if ( obj instanceof Object[] ) {
+                o = (Object[]) obj;
+            } else {
+                o = new Object[1];
+                o[0] = obj;
+            }
+
+            super.add( o ); // Add to the hash set in case we need any other method like contains
+            StringBuilder builder = new StringBuilder();
+            builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
+            for ( String columnName : columnNames ) {
+                builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) + "," );
+            }
+            builder.setLength( builder.length() - 1 ); // remove last comma
+            builder.append( ") VALUES ( " );
+            for ( Object object : o ) {
+                if ( object instanceof String ) {
+                    builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
+                } else {
+                    builder.append( object.toString() + "," );
+                }
+            }
+            builder.setLength( builder.length() - 1 ); // remove last comma
+            builder.append( " )" );
+            try ( Connection connection = jdbcSchema.getDataSource().getConnection() ) {
+                int s = connection.createStatement().executeUpdate( builder.toString() );
+                return s > 0;
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }
         }
     }
 }

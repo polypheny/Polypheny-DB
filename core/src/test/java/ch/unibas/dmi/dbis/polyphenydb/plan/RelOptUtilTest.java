@@ -48,6 +48,11 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -85,7 +90,19 @@ public class RelOptUtilTest {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
         return Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
-                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.SCOTT ) );
+                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.SCOTT ) )
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) );
     }
 
 
