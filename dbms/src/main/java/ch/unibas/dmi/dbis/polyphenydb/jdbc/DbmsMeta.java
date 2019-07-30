@@ -691,7 +691,7 @@ public class DbmsMeta implements ProtobufMeta {
                 "PRECISION",           // The maximum number of significant digits.
                 "LITERAL_PREFIX",      // Prefix used to quote a literal
                 "LITERAL_SUFFIX",      // Suffix used to quote a literal
-                "CREATE_PARAMS",       // Parameters used in creating the type --> not used, allways null
+                "CREATE_PARAMS",       // Parameters used in creating the type --> not used, always null
                 "NULLABLE",            // Indicates if the column can contain a null value (1: means type can contain null, 0 not). --> Currently 1 for all types
                 "CASE_SENSITIVE",      // Indicates if the data type is case sensitive. "true" if the type is case sensitive; otherwise, "false".
                 "SEARCHABLE",          // Indicates if (and how) the column can be used in a SQL WHERE clause. 0: none, 1: char, 2: basic, 3: searchable
