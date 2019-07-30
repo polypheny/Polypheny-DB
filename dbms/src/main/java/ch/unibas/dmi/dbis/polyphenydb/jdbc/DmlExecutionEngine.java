@@ -59,7 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
@@ -129,7 +128,7 @@ public class DmlExecutionEngine {
     }
 
 
-    public ExecuteResult executeSelect( final StatementHandle h, final PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlSelect parsed ) throws NoSuchStatementException {
+    public ExecuteResult executeSelect( final StatementHandle h, final PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame, long maxRowCount, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final SqlNode parsed ) throws NoSuchStatementException {
         //
         // 3: Validation
         stopWatch.reset();
@@ -192,7 +191,7 @@ public class DmlExecutionEngine {
         stopWatch.start();
         RelNode optimalPlan = optimize( logicalPlan );
         if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         informationQueryPlan = new InformationQueryPlan(
                 "PhysicalQueryPlan",
@@ -329,7 +328,7 @@ public class DmlExecutionEngine {
             throw new RuntimeException( e );
         }
         if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Optimized query plan: [{}]", RelOptUtil.dumpPlan( "-- Best Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         informationQueryPlan = new InformationQueryPlan(
                 "PhysicalQueryPlan",

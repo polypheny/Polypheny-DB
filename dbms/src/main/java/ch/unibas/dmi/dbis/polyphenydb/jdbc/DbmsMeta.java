@@ -78,7 +78,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
@@ -996,57 +995,29 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
         }
 
+
         /////////
         // ((3) Execution
         ////////
-
-
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Building response ... done. [{}]", stopWatch );
         }
 
         ExecuteResult result = null;
-        switch ( parsed.getKind() ) {
-            case SELECT:
-                result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, rootSchema, (SqlSelect) parsed );
-                break;
-
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case MERGE:
-            case PROCEDURE_CALL:
-                result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
-                break;
-
-            case CREATE_SCHEMA:
-            case DROP_SCHEMA:
-            case CREATE_TABLE:
-            case ALTER_TABLE:
-            case DROP_TABLE:
-            case CREATE_VIEW:
-            case ALTER_VIEW:
-            case DROP_VIEW:
-            case CREATE_MATERIALIZED_VIEW:
-            case ALTER_MATERIALIZED_VIEW:
-            case DROP_MATERIALIZED_VIEW:
-            case CREATE_INDEX:
-            case ALTER_INDEX:
-            case DROP_INDEX:
-            case TRUNCATE:
-                result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
-                break;
-
-            case EXPLAIN:
-                if ( ((SqlExplain) parsed).getExplicandum().getKind() == SqlKind.SELECT ) {
-                    result = DmlExecutionEngine.getInstance().explain( h, statement, planner, stopWatch, (SqlExplain) parsed );
-                } else {
-                    throw new RuntimeException( "EXPLAIN is currently only supported for SELECT queries!" );
-                }
-                break;
-
-            default:
-                throw new RuntimeException( "Unknown or unsupported query type: " + parsed.getKind().name() );
+        if ( parsed.getKind() == SqlKind.EXPLAIN ) {
+            if ( ((SqlExplain) parsed).getExplicandum().isA( SqlKind.QUERY ) ) {
+                result = DmlExecutionEngine.getInstance().explain( h, statement, planner, stopWatch, (SqlExplain) parsed );
+            } else {
+                throw new RuntimeException( "EXPLAIN is currently only supported for SELECT queries!" );
+            }
+        } else if ( parsed.isA( SqlKind.QUERY ) ) {
+            result = DmlExecutionEngine.getInstance().executeSelect( h, statement, maxRowsInFirstFrame, maxRowCount, planner, stopWatch, rootSchema, parsed );
+        } else if ( parsed.isA( SqlKind.DML ) ) {
+            result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
+        } else if ( parsed.isA( SqlKind.DDL ) ) {
+            result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
+        } else {
+            throw new RuntimeException( "Unknown or unsupported query type: " + parsed.getKind().name() );
         }
 
         return result;
