@@ -462,6 +462,41 @@ public class CatalogManagerImpl extends CatalogManager {
 
 
     /**
+     * Delete the specified table. Columns, Keys and Data Placements need to be deleted before.
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table to delete
+     */
+    @Override
+    public void deleteTable( PolyXid xid, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteTable( transactionHandler, tableId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Set the primary key of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @param keyId The id of the key to set as primary key. Set null to set no primary key.
+     */
+    @Override
+    public void setPrimaryKey( PolyXid xid, long tableId, Long keyId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Adds a placement for a table
      *
      * @param xid The transaction identifier
@@ -477,6 +512,24 @@ public class CatalogManagerImpl extends CatalogManager {
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
             Statements.addDataPlacement( transactionHandler, store.id, table.id );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Deletes a data placement
+     *
+     * @param xid The transaction identifier
+     * @param storeId The id of the store
+     * @param tableId The id of the table
+     */
+    @Override
+    public void deleteDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteDataPlacement( transactionHandler, storeId, tableId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -593,6 +646,23 @@ public class CatalogManagerImpl extends CatalogManager {
 
 
     /**
+     * Delete the specified column. A potential default value has to be delete before.
+     *
+     * @param xid The transaction identifier
+     * @param columnId The id of the column to delete
+     */
+    @Override
+    public void deleteColumn( PolyXid xid, long columnId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteColumn( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns the user with the specified name.
      *
      * @param username The username
@@ -622,6 +692,24 @@ public class CatalogManagerImpl extends CatalogManager {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getKey( transactionHandler, key );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Returns all keys of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the key
+     * @return List of keys
+     */
+    @Override
+    public List<CatalogKey> getKeys( PolyXid xid, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getKeys( transactionHandler, tableId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -665,6 +753,24 @@ public class CatalogManagerImpl extends CatalogManager {
 
 
     /**
+     * Returns all foreign keys that reference the specified table (exported keys).
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @return List of foreign keys
+     */
+    @Override
+    public List<CatalogForeignKey> getExportedKeys( PolyXid xid, long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getExportedKeys( transactionHandler, tableId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns all indexes of a table
      *
      * @param xid The transaction identifier
@@ -677,6 +783,58 @@ public class CatalogManagerImpl extends CatalogManager {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getIndexes( transactionHandler, tableId, onlyUnique );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Delete the specified index
+     *
+     * @param xid The transaction identifier
+     * @param indexId The id of the index to drop
+     */
+    @Override
+    public void deleteIndex( PolyXid xid, long indexId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteIndex( transactionHandler, indexId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Delete the specified key
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    @Override
+    public void deleteKey( PolyXid xid, long keyId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteKey( transactionHandler, keyId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    @Override
+    public void deleteForeignKey( PolyXid xid, long keyId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteForeignKey( transactionHandler, keyId );
+            Statements.deleteKey( transactionHandler, keyId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -778,7 +936,8 @@ public class CatalogManagerImpl extends CatalogManager {
             CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, table.ownerId );
             List<CatalogDataPlacement> placements = Statements.getDataPlacements( transactionHandler, tableId );
-            return new CatalogCombinedTable( table, columns, schema, database, owner, placements );
+            List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
+            return new CatalogCombinedTable( table, columns, schema, database, owner, placements, keys );
         } catch ( UnknownEncodingException | UnknownCollationException | UnknownTypeException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }

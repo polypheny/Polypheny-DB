@@ -110,6 +110,18 @@ public class HsqldbStore implements Store {
 
 
     @Override
+    public void dropTable( CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) );
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         // TODO: implement
         LOG.warn( "Not implemented yet" );

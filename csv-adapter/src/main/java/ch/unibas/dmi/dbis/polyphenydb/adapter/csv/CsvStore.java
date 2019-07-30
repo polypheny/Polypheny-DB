@@ -51,6 +51,11 @@ public class CsvStore implements Store {
 
 
     @Override
+    public void dropTable( CatalogCombinedTable combinedTable ) {
+        LOG.warn( "CSV adapter does not support drooping tables!" );
+    }
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         LOG.warn( "CSV Store does not support distributed transactions." );
         return true;

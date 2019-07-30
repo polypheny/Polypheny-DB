@@ -82,5 +82,21 @@ public class PolyphenyDbException extends RuntimeException {
             LOGGER.error( toString() );
         }
     }
+
+
+    /**
+     * Creates a new PolyphenyDbException object.
+     *
+     * @param message error message
+     */
+    public PolyphenyDbException( String message ) {
+        super( message );
+
+        // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
+        LOGGER.trace( "PolyphenyDbException", this );
+        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+            LOGGER.error( toString() );
+        }
+    }
 }
 

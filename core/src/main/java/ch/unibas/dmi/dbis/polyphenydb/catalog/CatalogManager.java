@@ -277,6 +277,25 @@ public abstract class CatalogManager {
 
 
     /**
+     * Delete the specified table. Columns need to be deleted before.
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table to delete
+     */
+    public abstract void deleteTable( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Set the primary key of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @param keyId The id of the key to set as primary key. Set null to set no primary key.
+     */
+    public abstract void setPrimaryKey( PolyXid xid, long tableId, Long keyId ) throws GenericCatalogException;
+
+
+    /**
      * Adds a placement for a table
      *
      * @param xid The transaction identifier
@@ -285,6 +304,16 @@ public abstract class CatalogManager {
      * @throws GenericCatalogException A generic catalog exception
      */
     public abstract void addDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException;
+
+    /**
+     * Deletes a data placement
+     *
+     * @param xid The transaction identifier
+     * @param storeId The id of the store
+     * @param tableId The id of the table
+     */
+    public abstract void deleteDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException;
+
 
     /**
      * Get all columns of the specified table.
@@ -355,6 +384,15 @@ public abstract class CatalogManager {
     public abstract long addColumn( PolyXid xid, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
 
     /**
+     * Delete the specified column. A potential default value has to be delete before.
+     *
+     * @param xid The transaction identifier
+     * @param columnId The id of the column to delete
+     */
+    public abstract void deleteColumn( PolyXid xid, long columnId ) throws GenericCatalogException;
+
+
+    /**
      * Returns the user with the specified name.
      *
      * @param userName The name of the database
@@ -372,6 +410,16 @@ public abstract class CatalogManager {
      * @return The key
      */
     public abstract CatalogKey getKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException;
+
+
+    /**
+     * Returns all keys of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the key
+     * @return List of keys
+     */
+    public abstract List<CatalogKey> getKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
 
 
     /**
@@ -395,6 +443,16 @@ public abstract class CatalogManager {
 
 
     /**
+     * Returns all foreign keys that reference the specified table (exported keys).
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @return List of foreign keys
+     */
+    public abstract List<CatalogForeignKey> getExportedKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
      * Returns all indexes of a table
      *
      * @param xid The transaction identifier
@@ -404,6 +462,32 @@ public abstract class CatalogManager {
      */
     public abstract List<CatalogIndex> getIndexes( PolyXid xid, long tableId, boolean onlyUnique ) throws GenericCatalogException;
 
+
+    /**
+     * Delete the specified index
+     *
+     * @param xid The transaction identifier
+     * @param indexId The id of the index to drop
+     */
+    public abstract void deleteIndex( PolyXid xid, long indexId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified key
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    public abstract void deleteKey( PolyXid xid, long keyId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    public abstract void deleteForeignKey( PolyXid xid, long keyId ) throws GenericCatalogException;
 
     /*
      *

@@ -697,6 +697,28 @@ final class Statements {
     }
 
 
+    public static void deleteTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "table" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + tableId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void setPrimaryKey( XATransactionHandler transactionHandler, long tableId, Long keyId ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "primary_key", keyId == null ? null : "" + keyId );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + tableId );
+        updateHandler( transactionHandler, "table", data, where );
+    }
+
+
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
     //                                                                     Columns
@@ -831,6 +853,19 @@ final class Statements {
         data.put( "collation", "" + collation.getId() );
         data.put( "force_default", "" + forceDefault );
         return insertHandler( transactionHandler, "column", data );
+    }
+
+
+    public static void deleteColumn( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "column" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + columnId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
 
@@ -1128,8 +1163,20 @@ final class Statements {
     }
 
 
+    public static List<CatalogKey> getKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String filter = " AND k.\"table\" = " + tableId;
+        return keyFilter( transactionHandler, filter, "" );
+    }
+
+
     public static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND t.\"id\" = " + tableId;
+        return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
+    public static List<CatalogForeignKey> getExportedKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String keyFilter = " AND refTab.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
     }
 
@@ -1148,6 +1195,66 @@ final class Statements {
             indexes.addAll( indexesOfKey );
         }
         return indexes;
+    }
+
+
+    public static void deleteIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "index" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + indexId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void deleteKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+        // Delete key columns
+        String sql = "DELETE FROM " + quoteIdentifier( "key_column" ) + " WHERE " + quoteIdentifier( "key" ) + " = " + keyId;
+        try {
+            transactionHandler.executeUpdate( sql );
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+        // Delete key
+        sql = "DELETE FROM " + quoteIdentifier( "key" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + keyId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void deleteForeignKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "foreign_key" ) + " WHERE " + quoteIdentifier( "key" ) + " = " + keyId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void deleteDataPlacement( XATransactionHandler transactionHandler, int storeId, long tableId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "data_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "table" ) + " = " + tableId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
 
@@ -1191,6 +1298,38 @@ final class Statements {
                 return getLongOrNull( rs, 1 );
             } else {
                 throw new GenericCatalogException( "Something went wrong. Unable to retrieve inserted schema id." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void updateHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data, Map<String, String> where ) throws GenericCatalogException {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "UPDATE " ).append( quoteIdentifier( tableName ) ).append( " SET " );
+        boolean first = true;
+        for ( Map.Entry<String, String> entry : data.entrySet() ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( quoteIdentifier( entry.getKey() ) ).append( "=" ).append( entry.getValue() );
+        }
+        first = true;
+        for ( Map.Entry<String, String> entry : where.entrySet() ) {
+            if ( first ) {
+                builder.append( " WHERE " );
+                first = false;
+            } else {
+                builder.append( ", " );
+            }
+            builder.append( quoteIdentifier( entry.getKey() ) ).append( "=" ).append( entry.getValue() );
+        }
+        try {
+            int rowCount = transactionHandler.executeUpdate( builder.toString() );
+            if ( rowCount != 1 ) {
+                throw new GenericCatalogException( "Expected row count of one but got " + rowCount );
             }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );

@@ -18,9 +18,12 @@ public interface Store {
 
     void createTable( Context context, CatalogCombinedTable combinedTable );
 
+    void dropTable( CatalogCombinedTable combinedTable );
+
     boolean prepare( PolyXid xid );
 
     void commit( PolyXid xid );
 
     void truncate( PolyXid xid, CatalogCombinedTable table );
+
 }
