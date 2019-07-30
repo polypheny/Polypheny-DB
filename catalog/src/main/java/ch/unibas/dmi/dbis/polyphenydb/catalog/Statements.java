@@ -37,6 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
@@ -993,7 +994,7 @@ final class Statements {
 
 
     private static List<CatalogKey> keyFilter( TransactionHandler transactionHandler, String keyFilter, String keyColumnFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"id\" = t.\"primary_key\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\"" + keyFilter + ";";
         List<CatalogKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
@@ -1094,8 +1095,28 @@ final class Statements {
     }
 
 
+    private static List<CatalogIndex> indexFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String keySql = "SELECT i.\"id\", i.\"name\", i.\"type\", i.\"location\", i.\"key\" FROM \"index\" i WHERE " + filter + ";";
+        List<CatalogIndex> list = new LinkedList<>();
+        try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
+            while ( rs.next() ) {
+                list.add( new CatalogIndex(
+                        getLongOrNull( rs, 1 ),
+                        rs.getString( 2 ),
+                        getIntOrNull( rs, 3 ),
+                        getIntOrNull( rs, 4 ),
+                        getLongOrNull( rs, 5 )
+                ) );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+        return list;
+    }
+
+
     public static CatalogKey getKey( TransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
-        String keyFilter = " AND k.\"id\" = " + key;
+        String keyFilter = " AND k.\"id\" = t.\"primary_key\" AND k.\"id\" = " + key;
         String keyColumnFilter = "";
         List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
         if ( list.size() > 1 ) {
@@ -1110,6 +1131,23 @@ final class Statements {
     public static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND t.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
+    public static List<CatalogIndex> getIndexes( XATransactionHandler transactionHandler, long tableId, boolean onlyUnique ) throws GenericCatalogException {
+        String keyFilter = " AND k.\"table\" = " + tableId;
+        if ( onlyUnique ) {
+            keyFilter += " AND k.\"unique\" = true";
+        }
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogIndex> indexes = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String indexFilter = " i.\"key\" = " + key.id;
+            List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
+            indexesOfKey.forEach( i -> i.key = key );
+            indexes.addAll( indexesOfKey );
+        }
+        return indexes;
     }
 
 
@@ -1190,6 +1228,5 @@ final class Statements {
         }
         return v;
     }
-
 
 }

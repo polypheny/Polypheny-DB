@@ -393,11 +393,12 @@ VALUES ( 0, 2 ),
 INSERT INTO "key" ( "id", "table", "unique", "name" )
 VALUES ( 0, 0, TRUE, 'key_0' ),
        ( 1, 1, TRUE, 'key_1' ),
-       ( 2, 1, FALSE, 'key_2' );
+       ( 2, 1, FALSE, 'key_2' ),
+       ( 3, 1, TRUE, 'key_3' );
 
 ALTER TABLE "key"
     ALTER COLUMN "id"
-        RESTART WITH 3;
+        RESTART WITH 4;
 
 UPDATE "table"
 SET "primary_key" = 0
@@ -410,7 +411,9 @@ WHERE "id" = 0;
 INSERT INTO "key_column" ( "key", "column" )
 VALUES ( 0, 0 ),
        ( 1, 1 ),
-       ( 2, 3 );
+       ( 2, 3 ),
+       ( 3, 3 ),
+       ( 3, 4 );
 
 
 --
@@ -423,9 +426,11 @@ VALUES ( 2, 0, NULL, NULL, 0 );
 --
 -- index
 --
-INSERT INTO "index" ( "key", "type", "location", "name" )
-VALUES ( 0, 0, NULL, 'i_0_0' );
+INSERT INTO "index" ( "id", "key", "type", "location", "name" )
+VALUES ( 0, 0, 0, NULL, 'i_0_0' ),
+       ( 1, 2, 0, NULL, 'i_2_0' ),
+       ( 2, 3, 0, NULL, 'i_3_0' );
 
 ALTER TABLE "key"
     ALTER COLUMN "id"
-        RESTART WITH 1;
+        RESTART WITH 2;

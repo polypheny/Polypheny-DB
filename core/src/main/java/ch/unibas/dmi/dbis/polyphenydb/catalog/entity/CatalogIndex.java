@@ -38,27 +38,39 @@ import lombok.RequiredArgsConstructor;
  *
  */
 @EqualsAndHashCode(callSuper = false)
-public final class CatalogPrimaryKey extends CatalogKey {
+public final class CatalogIndex {
 
-    private static final long serialVersionUID = 5426944084650275437L;
+    private static final long serialVersionUID = -5596459769680478780L;
+
+    public final long id;
+    public final String name;
+    public final int type;
+    public final Integer location;
+
+    public CatalogKey key;
+    public long keyId;
 
 
-    public CatalogPrimaryKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique ) {
-        super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
-    }
-
-
-    public CatalogPrimaryKey( @NonNull final CatalogKey catalogKey ) {
-        super( catalogKey.id, catalogKey.name, catalogKey.tableId, catalogKey.tableName, catalogKey.schemaId, catalogKey.schemaName, catalogKey.databaseId, catalogKey.databaseName, catalogKey.unique, catalogKey.columnIds, catalogKey.columnNames );
+    public CatalogIndex(
+            final long id,
+            @NonNull final String name,
+            final int type,
+            final Integer location,
+            final long keyId ) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.location = location;
+        this.keyId = keyId;
     }
 
 
     // Used for creating ResultSets
-    public List<CatalogPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
+    public List<CatalogIndexColumn> getCatalogIndexColumns() {
         int i = 1;
-        LinkedList<CatalogPrimaryKeyColumn> list = new LinkedList<>();
-        for ( String columnName : columnNames ) {
-            list.add( new CatalogPrimaryKeyColumn( i++, columnName ) );
+        LinkedList<CatalogIndexColumn> list = new LinkedList<>();
+        for ( String columnName : key.columnNames ) {
+            list.add( new CatalogIndexColumn( i++, columnName ) );
         }
         return list;
     }
@@ -66,27 +78,37 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public class CatalogPrimaryKeyColumn implements CatalogEntity {
+    public class CatalogIndexColumn implements CatalogEntity {
 
-        private final int keySeq;
+        private final int ordinalPosition;
         private final String columnName;
 
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ databaseName, schemaName, tableName, columnName, keySeq, name };
+            return new Serializable[]{ key.databaseName, key.schemaName, key.tableName, !key.unique, null, name, 0, ordinalPosition, columnName, null, -1, null, null, location, type, key.name };
         }
 
 
         @RequiredArgsConstructor
-        public class PrimitiveCatalogPrimaryKeyColumn {
+        public class PrimitiveCatalogIndexColumn {
 
             public final String tableCat;
             public final String tableSchem;
             public final String tableName;
+            public final boolean nonUnique;
+            public final String indexQualifier;
+            public final String indexName;
+            public final int type;
+            public final int ordinalPosition;
             public final String columnName;
-            public final int keySeq;
-            public final String pkName;
+            public final Integer ascOrDesc;
+            public final int cardinality;
+            public final String pages;
+            public final String filterCondition;
+            public final int location;
+            public final String indexType;
+            public final String keyName;
         }
 
     }

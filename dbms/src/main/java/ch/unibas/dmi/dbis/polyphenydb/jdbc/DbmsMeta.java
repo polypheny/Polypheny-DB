@@ -49,6 +49,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogEntity;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex.CatalogIndexColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
@@ -677,15 +680,46 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
+            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
         }
 
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogIndex> catalogIndexInfos = CatalogManagerImpl.getInstance().getIndexes( xid, catalogTable.id, unique );
+            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
+            catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( catalogIndexColumns ),
+                    PrimitiveCatalogIndexColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",    // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",          // The name of the schema in which the specified table resides.
+                    "TABLE_NAME",           // The name of the table in which the index resides.
+                    "NON_UNIQUE",           // Indicates whether the index values can be non-unique.
+                    "INDEX_QUALIFIER",      // --> currently always returns null
+                    "INDEX_NAME",           // The name of the index.
+                    "TYPE",                 // The type of the index. (integer between 0 and 3) --> currently always returns 0
+                    "ORDINAL_POSITION",     // The ordinal position of the column in the index. The first column in the index is 1.
+                    "COLUMN_NAME",          // The name of the column.
+                    "ASC_OR_DESC",          // The order used in the collation of the index.--> currently always returns null
+                    "CARDINALITY",          // The number of rows in the table or unique values in the index. --> currently always returns -1
+                    "PAGES",                // The number of pages used to store the index or table. --> currently always returns null
+                    "FILTER_CONDITION",     // The filter condition. --> currently always returns null
+                    // Polypheny-DB specific extensions
+                    "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
+                    "INDEX_TYPE",           // Polypheny-DB specific index type
+                    "KEY_NAME"              // The name of the associated key
+            );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw propagate( e );
+        }
     }
 
 
