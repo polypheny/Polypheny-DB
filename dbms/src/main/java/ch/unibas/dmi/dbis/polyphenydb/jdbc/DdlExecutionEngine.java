@@ -26,7 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -65,13 +65,11 @@ public class DdlExecutionEngine {
     }
 
 
-    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final Config parserConfig, final SqlNode parsed ) {
+    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final Config parserConfig, final SqlNode parsed, final ContextImpl prepareContext ) {
         if ( parsed instanceof SqlExecutableStatement ) {
-            DataContext dataContext = statement.getDataContext( rootSchema );
-            ContextImpl context = new ContextImpl( rootSchema, dataContext, "C" );
 
             try {
-                ((SqlExecutableStatement) parsed).execute( context );
+                ((SqlExecutableStatement) parsed).execute( prepareContext, CatalogManagerImpl.getInstance() );
 
                 // Marshalling
                 LinkedList<MetaResultSet> resultSets = new LinkedList<>();

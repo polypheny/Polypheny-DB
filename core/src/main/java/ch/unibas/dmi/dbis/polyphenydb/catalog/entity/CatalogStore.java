@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -48,8 +49,8 @@ public class CatalogStore implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ uniqueName };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ uniqueName };
     }
 
 

@@ -605,12 +605,18 @@ public class LatticeSuggesterTest {
         Tester() {
             this( Frameworks.newConfigBuilder()
                     .defaultSchema( schemaFrom( PolyphenyDbAssert.SchemaSpec.SCOTT ) )
-                    .prepareContext( new ContextImpl( PolyphenyDbSchema.from( schemaFrom( PolyphenyDbAssert.SchemaSpec.SCOTT ) ), new SlimDataContext() {
-                        @Override
-                        public JavaTypeFactory getTypeFactory() {
-                            return new JavaTypeFactoryImpl();
-                        }
-                    }, "" ) )
+                    .prepareContext( new ContextImpl(
+                            PolyphenyDbSchema.from( schemaFrom( PolyphenyDbAssert.SchemaSpec.SCOTT ) ),
+                            new SlimDataContext() {
+                                @Override
+                                public JavaTypeFactory getTypeFactory() {
+                                    return new JavaTypeFactoryImpl();
+                                }
+                            },
+                            "",
+                            0,
+                            0,
+                            null ) )
                     .build() );
         }
 
@@ -634,12 +640,18 @@ public class LatticeSuggesterTest {
         private Tester schema( PolyphenyDbAssert.SchemaSpec schemaSpec ) {
             return withConfig( builder()
                     .defaultSchema( schemaFrom( schemaSpec ) )
-                    .prepareContext( new ContextImpl( PolyphenyDbSchema.from( schemaFrom( schemaSpec ) ), new SlimDataContext() {
-                        @Override
-                        public JavaTypeFactory getTypeFactory() {
-                            return new JavaTypeFactoryImpl();
-                        }
-                    }, "" ) )
+                    .prepareContext( new ContextImpl(
+                            PolyphenyDbSchema.from( schemaFrom( schemaSpec ) ),
+                            new SlimDataContext() {
+                                @Override
+                                public JavaTypeFactory getTypeFactory() {
+                                    return new JavaTypeFactoryImpl();
+                                }
+                            },
+                            "",
+                            0,
+                            0,
+                            null ) )
                     .build() );
         }
 

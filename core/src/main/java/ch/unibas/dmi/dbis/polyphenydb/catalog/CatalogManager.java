@@ -26,10 +26,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
@@ -42,6 +47,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -142,6 +148,42 @@ public abstract class CatalogManager {
 
 
     /**
+     * Adds a schema in a specified database
+     *
+     * @param xid The transaction identifier
+     * @param name The name of the schema
+     * @param databaseId The id of the associated database
+     * @param ownerId The owner of this schema
+     * @param encoding The default encoding of the schema
+     * @param collation The default collation of the schema
+     * @param schemaType The type of this schema
+     * @return The id of the inserted schema
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract long addSchema( PolyXid xid, String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException;
+
+    /**
+     * Checks weather a schema with the specified name exists in a database.
+     *
+     * @param xid The transaction identifier
+     * @param databaseId The if of the database
+     * @param schemaName The name of the schema to check
+     * @return True if there is a schema with this name. False if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsSchema( PolyXid xid, long databaseId, String schemaName ) throws GenericCatalogException;
+
+    /**
+     * Delete a schema from the catalog
+     *
+     * @param xid The transaction identifier
+     * @param schemaId The if of the schema to delete
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void deleteSchema( PolyXid xid, long schemaId ) throws GenericCatalogException;
+
+
+    /**
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
      *
@@ -218,6 +260,62 @@ public abstract class CatalogManager {
 
 
     /**
+     * Adds a table to a specified schema.
+     *
+     * @param xid The transaction identifier
+     * @param name The name of the table to add
+     * @param schemaId The id of the schema
+     * @param ownerId The if of the owner
+     * @param encoding The default encoding of this table
+     * @param collation The default collation of this table
+     * @param tableType The table type
+     * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
+     * @return The id of the inserted table
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract long addTable( PolyXid xid, String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified table. Columns need to be deleted before.
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table to delete
+     */
+    public abstract void deleteTable( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Set the primary key of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @param keyId The id of the key to set as primary key. Set null to set no primary key.
+     */
+    public abstract void setPrimaryKey( PolyXid xid, long tableId, Long keyId ) throws GenericCatalogException;
+
+
+    /**
+     * Adds a placement for a table
+     *
+     * @param xid The transaction identifier
+     * @param storeId The store on which the table should be placed on
+     * @param tableId The id of the table to be placed
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void addDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException;
+
+    /**
+     * Deletes a data placement
+     *
+     * @param xid The transaction identifier
+     * @param storeId The id of the store
+     * @param tableId The id of the table
+     */
+    public abstract void deleteDataPlacement( PolyXid xid, int storeId, long tableId ) throws GenericCatalogException;
+
+
+    /**
      * Get all columns of the specified table.
      *
      * @param xid The transaction identifier
@@ -268,19 +366,132 @@ public abstract class CatalogManager {
 
 
     /**
+     * Adds a column.
+     *
+     * @param xid The transaction identifier
+     * @param name The name of the column
+     * @param tableId The id of the corresponding table
+     * @param position The ordinal position of the column (starting with 1)
+     * @param type The type of the column
+     * @param length The length of the field (if applicable, else null)
+     * @param precision The precision of the field (if applicable, else null)
+     * @param nullable Weather the column can contain null values
+     * @param encoding The encoding of the field (if applicable, else null)
+     * @param collation The collation of the field (if applicable, else null)
+     * @param forceDefault Weather to force the default value
+     * @return The id of the inserted column
+     */
+    public abstract long addColumn( PolyXid xid, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
+
+    /**
+     * Delete the specified column. A potential default value has to be delete before.
+     *
+     * @param xid The transaction identifier
+     * @param columnId The id of the column to delete
+     */
+    public abstract void deleteColumn( PolyXid xid, long columnId ) throws GenericCatalogException;
+
+
+    /**
      * Returns the user with the specified name.
      *
      * @param userName The name of the database
      * @return The user
      * @throws UnknownUserException If there is no user with this name.
      */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException;
+    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
 
+
+    /**
+     * Returns a specified key
+     *
+     * @param xid The transaction identifier
+     * @param key The id of the key
+     * @return The key
+     */
+    public abstract CatalogKey getKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException;
+
+
+    /**
+     * Returns all keys of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the key
+     * @return List of keys
+     */
+    public abstract List<CatalogKey> getKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Returns a specified primary key
+     *
+     * @param xid The transaction identifier
+     * @param key The id of the primary key
+     * @return The primary key
+     */
+    public abstract CatalogPrimaryKey getPrimaryKey( PolyXid xid, long key ) throws GenericCatalogException, UnknownKeyException;
+
+
+    /**
+     * Returns all (imported) foreign keys of a specified table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @return List of foreign keys
+     */
+    public abstract List<CatalogForeignKey> getForeignKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Returns all foreign keys that reference the specified table (exported keys).
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @return List of foreign keys
+     */
+    public abstract List<CatalogForeignKey> getExportedKeys( PolyXid xid, long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Returns all indexes of a table
+     *
+     * @param xid The transaction identifier
+     * @param tableId The id of the table
+     * @param onlyUnique true if only indexes for unique values are returned. false if all indexes are returned.
+     * @return List of indexes
+     */
+    public abstract List<CatalogIndex> getIndexes( PolyXid xid, long tableId, boolean onlyUnique ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified index
+     *
+     * @param xid The transaction identifier
+     * @param indexId The id of the index to drop
+     */
+    public abstract void deleteIndex( PolyXid xid, long indexId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified key
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    public abstract void deleteKey( PolyXid xid, long keyId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     *
+     * @param xid The transaction identifier
+     * @param keyId The id of the key to drop
+     */
+    public abstract void deleteForeignKey( PolyXid xid, long keyId ) throws GenericCatalogException;
 
     /*
      *
      */
-
 
     public abstract CatalogCombinedDatabase getCombinedDatabase( PolyXid xid, long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
 
@@ -289,6 +500,8 @@ public abstract class CatalogManager {
 
 
     public abstract CatalogCombinedTable getCombinedTable( PolyXid xid, long tableId ) throws GenericCatalogException, UnknownTableException;
+
+
 
 
     /*

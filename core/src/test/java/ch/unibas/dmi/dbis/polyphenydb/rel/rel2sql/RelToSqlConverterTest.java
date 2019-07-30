@@ -136,12 +136,17 @@ public class RelToSqlConverterTest {
                 .traitDefs( traitDefs )
                 .sqlToRelConverterConfig( sqlToRelConf )
                 .programs( programs )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) )
+                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         return Frameworks.getPlanner( config );
     }

@@ -155,12 +155,18 @@ public class RelBuilderTest {
                 .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.SCOTT ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ), new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) );
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) );
     }
 
 
@@ -182,12 +188,18 @@ public class RelBuilderTest {
 
         return Frameworks.newConfigBuilder()
                 .defaultSchema( root )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( root ), new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) );
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( root ),
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) );
     }
 
 

@@ -23,6 +23,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"

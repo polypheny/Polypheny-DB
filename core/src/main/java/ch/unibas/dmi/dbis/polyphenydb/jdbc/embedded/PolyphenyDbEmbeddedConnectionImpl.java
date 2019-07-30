@@ -181,7 +181,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
 
 
     public Context createPrepareContext() {
-        return new ContextImpl( rootSchema, new DataContextImpl( this, ImmutableMap.of(), rootSchema ), "" );
+        return new ContextImpl( rootSchema, new DataContextImpl( this, ImmutableMap.of(), rootSchema ), "", 0, 0, null );
     }
 
 

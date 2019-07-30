@@ -302,7 +302,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, int precision, int scale, String typeString ) {
+    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, Integer precision, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final SqlTypeName sqlTypeName = Util.first( dataTypeName, SqlTypeName.ANY );
         switch ( sqlTypeName ) {
@@ -318,9 +318,9 @@ public class JdbcSchema implements Schema {
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
-        if ( precision >= 0 && scale >= 0 && sqlTypeName.allowsPrecScale( true, true ) ) {
+        if ( precision != null && scale != null && sqlTypeName.allowsPrecScale( true, true ) ) {
             return typeFactory.createSqlType( sqlTypeName, precision, scale );
-        } else if ( precision >= 0 && sqlTypeName.allowsPrecNoScale() ) {
+        } else if ( precision != null && sqlTypeName.allowsPrecNoScale() ) {
             return typeFactory.createSqlType( sqlTypeName, precision );
         } else {
             assert sqlTypeName.allowsNoPrecNoScale();

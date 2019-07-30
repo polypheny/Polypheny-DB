@@ -23,6 +23,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs "../libs"
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
@@ -56,8 +59,9 @@ dependencies {
     compile project(":core")
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.13.0"
-
+    //compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.16.0-POLYPHENYDB"
+    compile name: "avatica-1.16.0-POLYPHENYDB-shaded"
+    
 	compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
 	
     compile group: "com.google.guava", name: "guava", version:"19.0"

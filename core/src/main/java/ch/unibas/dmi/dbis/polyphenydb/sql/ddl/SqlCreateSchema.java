@@ -47,11 +47,12 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -63,7 +64,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.List;
 import java.util.Objects;
 
@@ -95,11 +95,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( getReplace() ) {
-            writer.keyword( "CREATE OR REPLACE" );
-        } else {
-            writer.keyword( "CREATE" );
-        }
+        writer.keyword( "CREATE" );
         writer.keyword( "SCHEMA" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );
@@ -109,16 +105,30 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
 
     @Override
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        final SchemaPlus subSchema0 = pair.left.plus().getSubSchema( pair.right );
-        if ( subSchema0 != null ) {
-            if ( !getReplace() && !ifNotExists ) {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( pair.right ) );
+    public void execute( Context context, CatalogManager catalog ) {
+        try {
+            // Check if there is already a schema with this name
+            if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
+                if ( ifNotExists ) {
+                    // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
+                    return;
+                } else {
+                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
+                }
+            } else {
+                catalog.addSchema(
+                        context.getTransactionId(),
+                        name.getSimple(),
+                        context.getDatabaseId(),
+                        context.getCurrentUserId(),
+                        Encoding.UTF8,
+                        Collation.CASE_INSENSITIVE,
+                        SchemaType.RELATIONAL );
             }
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
         }
-        final Schema subSchema = new AbstractSchema();
-        pair.left.add( pair.right, subSchema );
     }
+
 }
 

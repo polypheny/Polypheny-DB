@@ -47,13 +47,16 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
@@ -61,15 +64,15 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.List;
 
 
 /**
- * Parse tree for {@code DROP TABLE} statement.
+ * Parse tree for {@code DROP SCHEMA} statement.
  */
 public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
 
-    private final boolean foreign;
     private final SqlIdentifier name;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP SCHEMA", SqlKind.DROP_TABLE );
@@ -78,25 +81,20 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     /**
      * Creates a SqlDropSchema.
      */
-    SqlDropSchema( SqlParserPos pos, boolean foreign, boolean ifExists, SqlIdentifier name ) {
+    SqlDropSchema( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
         super( OPERATOR, pos, ifExists );
-        this.foreign = foreign;
         this.name = name;
     }
 
 
     public List<SqlNode> getOperandList() {
-        return ImmutableList.of( SqlLiteral.createBoolean( foreign, SqlParserPos.ZERO ), name );
+        return ImmutableList.of( name );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        writer.keyword( "DROP" );
-        if ( foreign ) {
-            writer.keyword( "FOREIGN" );
-        }
-        writer.keyword( "SCHEMA" );
+        writer.keyword( "DROP SCHEMA" );
         if ( ifExists ) {
             writer.keyword( "IF EXISTS" );
         }
@@ -104,15 +102,36 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     }
 
 
-    public void execute( Context context ) {
-        final List<String> path = context.getDefaultSchemaPath();
-        PolyphenyDbSchema schema = context.getRootSchema();
-        for ( String p : path ) {
-            schema = schema.getSubSchema( p, true );
-        }
-        final boolean existed = schema.removeSubSchema( name.getSimple() );
-        if ( !existed && !ifExists ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
+    @Override
+    public void execute( Context context, CatalogManager catalog ) {
+        try {
+            // Check if there is a schema with this name
+            if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
+                CatalogSchema catalogSchema = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() );
+
+                // Drop all tables in this schema
+                List<CatalogTable> catalogTables = catalog.getTables( context.getTransactionId(), catalogSchema.id, null );
+                catalogTables.forEach( catalogTable -> {
+                    new SqlDropTable(
+                            SqlParserPos.ZERO,
+                            false,
+                            new SqlIdentifier( Arrays.asList( catalogTable.databaseName, catalogTable.schemaName, catalogTable.name ), SqlParserPos.ZERO )
+                    ).execute( context, catalog );
+                } );
+
+                // Drop schema
+                catalog.deleteSchema( context.getTransactionId(), catalogSchema.id );
+            } else {
+                if ( ifExists ) {
+                    // This is ok because "IF EXISTS" was specified
+                    return;
+                } else {
+                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
+                }
+            }
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+            throw new RuntimeException( e );
         }
     }
+
 }

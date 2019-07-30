@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
@@ -63,8 +64,8 @@ public final class CatalogUser implements CatalogEntity {
 
     // Used for creating ResultSets
     @Override
-    public Object[] getParameterArray() {
-        return new Object[]{ name };
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ name };
     }
 
 

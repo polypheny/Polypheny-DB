@@ -33,6 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
@@ -44,22 +46,35 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn.PrimitiveCata
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogEntity;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex.CatalogIndexColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -67,11 +82,14 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -96,6 +114,7 @@ import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
 import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
@@ -247,13 +266,14 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     // TODO: typeList is ignored
+    @Override
     public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             List<TableType> types = null;
             if ( typeList != null ) {
                 types = CatalogManager.convertTableTypeList( typeList );
@@ -270,13 +290,21 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( tables ),
                     PrimitiveCatalogTable.class,
-                    "NAME",
-                    "SCHEMA",
-                    "DATABASE",
+                    // According to JDBC standard:
+                    "TABLE_CAT",            // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",                  // The name of the schema
+                    "TABLE_NAME",                   // The name of the table
+                    "TABLE_TYPE",                   // The type of the table (Table, View, ...)
+                    "REMARKS",                      // The description of the table. --> Not used, always null
+                    "TYPE_CAT",                     // Always null
+                    "TYPE_SCHEM",                   // Always null
+                    "TYPE_NAME",                    // Always null
+                    "SELF_REFERENCING_COL_NAME",    // Name of the designated "identifier" column of a typed table  --> currently always null
+                    "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
-                    "TABLE_TYPE",
                     "DEFINITION"
             );
         } catch ( GenericCatalogException | UnknownTableTypeException e ) {
@@ -292,7 +320,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogColumn> columns = CatalogManagerImpl.getInstance().getColumns(
                     xid,
                     database == null ? null : new Pattern( database ),
@@ -306,15 +334,26 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( columns ),
                     PrimitiveCatalogColumn.class,
-                    "NAME",
-                    "TABLE",
-                    "SCHEMA",
-                    "DATABASE",
-                    "POSITION",
-                    "TYPE",
-                    "LENGTH",
-                    "PRECISION",
-                    "NULLABLE",
+                    // According to JDBC standard:
+                    "TABLE_CAT",  // the database name
+                    "TABLE_SCHEM",        // the schema name
+                    "TABLE_NAME",         // the table name
+                    "COLUMN_NAME",        // the column name
+                    "DATA_TYPE",          // The SQL data type from java.sql.Types.
+                    "TYPE_NAME",          // The name of the data type.
+                    "COLUMN_SIZE",        // The precision of the column.
+                    "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
+                    "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
+                    "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
+                    "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
+                    "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
+                    "COLUMN_DEF",         // The default value of the column.
+                    "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
+                    "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
+                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types).
+                    "ORDINAL_POSITION",   // The index of the column within the table.
+                    "IS_NULLABLE",        // Indicates if the column allows null values.
+                    // Polypheny-DB specific extensions:
                     "ENCODING",
                     "COLLATION",
                     "FORCE_DEFAULT"
@@ -332,7 +371,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogSchema> schemas = CatalogManagerImpl.getInstance().getSchemas(
                     xid,
                     database == null ? null : new Pattern( database ),
@@ -344,8 +383,10 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( schemas ),
                     PrimitiveCatalogSchema.class,
-                    "NAME",
-                    "DATABASE",
+                    // According to JDBC standard:
+                    "TABLE_SCHEM",
+                    "TABLE_CATALOG",
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
@@ -364,7 +405,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final PolyXid xid = getCurrentTransaction( connection );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
             final List<CatalogDatabase> databases = CatalogManagerImpl.getInstance().getDatabases( xid, null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -372,7 +413,9 @@ public class DbmsMeta implements ProtobufMeta {
                     statementHandle,
                     toEnumerable( databases ),
                     PrimitiveCatalogDatabase.class,
-                    "NAME",
+                    // According to JDBC standard:
+                    "TABLE_CAT",
+                    // Polypheny-DB specific extensions:
                     "OWNER",
                     "ENCODING",
                     "COLLATION",
@@ -478,41 +521,120 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogPrimaryKeyColumn> primaryKeyColumns;
+            if ( catalogTable.primaryKey != null ) {
+                final CatalogPrimaryKey primaryKey = CatalogManagerImpl.getInstance().getPrimaryKey( xid, catalogTable.primaryKey );
+                primaryKeyColumns = primaryKey.getCatalogPrimaryKeyColumns();
+            } else {
+                primaryKeyColumns = new LinkedList<>();
+            }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( primaryKeyColumns ),
+                    PrimitiveCatalogPrimaryKeyColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",  // database name
+                    "TABLE_SCHEM",        // schema name
+                    "TABLE_NAME",         // table name
+                    "COLUMN_NAME",        // column name
+                    "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
+                    "PK_NAME"             // the name of the primary key
+            );
+        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
+            throw propagate( e );
+        }
     }
 
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogForeignKey> importedKeys = CatalogManagerImpl.getInstance().getForeignKeys( xid, catalogTable.id );
+            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( foreignKeyColumns ),
+                    PrimitiveCatalogForeignKeyColumn.class,
+                    // According to JDBC standard:
+                    "PKTABLE_CAT",    // The name of the database that contains the table with the referenced primary key.
+                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
+                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
+                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
+                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
+                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
+                    "FKTABLE_NAME",          // The name of the table containing the foreign key.
+                    "FKCOLUMN_NAME",          // The column name of the foreign key.
+                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
+                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
+                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
+                    "FK_NAME",                // The name of the foreign key.
+                    "PK_NAME",                // The name of the primary key.
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
+            );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw propagate( e );
+        }
     }
 
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            LOG.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogForeignKey> exportedKeys = CatalogManagerImpl.getInstance().getExportedKeys( xid, catalogTable.id );
+            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( foreignKeyColumns ),
+                    PrimitiveCatalogForeignKeyColumn.class,
+                    // According to JDBC standard:
+                    "PKTABLE_CAT",            // The name of the database that contains the table with the referenced primary key.
+                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
+                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
+                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
+                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
+                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
+                    "FKTABLE_NAME",           // The name of the table containing the foreign key.
+                    "FKCOLUMN_NAME",          // The column name of the foreign key.
+                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
+                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
+                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
+                    "FK_NAME",                // The name of the foreign key.
+                    "PK_NAME",                // The name of the primary key.
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
+            );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw propagate( e );
+        }
     }
 
 
@@ -534,22 +656,98 @@ public class DbmsMeta implements ProtobufMeta {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getTypeInfo( ConnectionHandle {} )", ch );
         }
-
-        // TODO
-
-        LOG.error( "[NOT IMPLEMENTED YET] getTypeInfo( ConnectionHandle {} )", ch );
-        return null;
+        final StatementHandle statementHandle = createStatement( ch );
+        final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
+        final List<Object> objects = new LinkedList<>();
+        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
+            objects.add(
+                    new Serializable[]{
+                            sqlTypeName.getName(),
+                            sqlTypeName.getJdbcOrdinal(),
+                            typeSystem.getMaxPrecision( sqlTypeName ),
+                            typeSystem.getLiteral( sqlTypeName, true ),
+                            typeSystem.getLiteral( sqlTypeName, false ),
+                            null,
+                            (short) DatabaseMetaData.typeNullable, // All types are nullable
+                            typeSystem.isCaseSensitive( sqlTypeName ),
+                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under SqlTypeName
+                            false,
+                            false,
+                            typeSystem.isAutoincrement( sqlTypeName ),
+                            sqlTypeName.getName(),
+                            (short) sqlTypeName.getMinScale(),
+                            (short) typeSystem.getMaxScale( sqlTypeName ),
+                            null,
+                            null,
+                            typeSystem.getNumTypeRadix( sqlTypeName ) == 0 ? null : typeSystem.getNumTypeRadix( sqlTypeName ) } );
+        }
+        return createMetaResultSet(
+                ch,
+                statementHandle,
+                Linq4j.asEnumerable( objects ),
+                MetaTypeInfo.class,
+                "TYPE_NAME",   // The name of the data type.
+                "DATA_TYPE",           // The SQL data type from java.sql.Types.
+                "PRECISION",           // The maximum number of significant digits.
+                "LITERAL_PREFIX",      // Prefix used to quote a literal
+                "LITERAL_SUFFIX",      // Suffix used to quote a literal
+                "CREATE_PARAMS",       // Parameters used in creating the type --> not used, allways null
+                "NULLABLE",            // Indicates if the column can contain a null value (1: means type can contain null, 0 not). --> Currently 1 for all types
+                "CASE_SENSITIVE",      // Indicates if the data type is case sensitive. "true" if the type is case sensitive; otherwise, "false".
+                "SEARCHABLE",          // Indicates if (and how) the column can be used in a SQL WHERE clause. 0: none, 1: char, 2: basic, 3: searchable
+                "UNSIGNED_ATTRIBUTE",  // Indicates the sign of the data type. "true" if the type is unsigned; otherwise, "false". --> Currently false for all types
+                "FIXED_PREC_SCALE",    // Indicates that the data type can be a money value. "true" if the data type is money type; otherwise, "false".
+                "AUTO_INCREMENT",      // Indicates that the data type can be automatically incremented. "true" if the type can be auto incremented; otherwise, "false".
+                "LOCAL_TYPE_NAME",     // The localized name of the data type. --> Same as TYPE_NAME
+                "MINIMUM_SCALE",       // The maximum number of digits to the right of the decimal point.
+                "MAXIMUM_SCALE",       // The minimum number of digits to the right of the decimal point.
+                "SQL_DATA_TYPE",       // Not used, always null
+                "SQL_DATETIME_SUB",    // Not used, always null
+                "NUM_PREC_RADIX" );    // The radix
     }
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
         if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
+            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, catalog, schema, table, unique, approximate );
-        return null;
+        try {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            final PolyXid xid = getCurrentTransactionOrStartNew( connection );
+            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
+            List<CatalogIndex> catalogIndexInfos = CatalogManagerImpl.getInstance().getIndexes( xid, catalogTable.id, unique );
+            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
+            catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( catalogIndexColumns ),
+                    PrimitiveCatalogIndexColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",    // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",          // The name of the schema in which the specified table resides.
+                    "TABLE_NAME",           // The name of the table in which the index resides.
+                    "NON_UNIQUE",           // Indicates whether the index values can be non-unique.
+                    "INDEX_QUALIFIER",      // --> currently always returns null
+                    "INDEX_NAME",           // The name of the index.
+                    "TYPE",                 // The type of the index. (integer between 0 and 3) --> currently always returns 0
+                    "ORDINAL_POSITION",     // The ordinal position of the column in the index. The first column in the index is 1.
+                    "COLUMN_NAME",          // The name of the column.
+                    "ASC_OR_DESC",          // The order used in the collation of the index.--> currently always returns null
+                    "CARDINALITY",          // The number of rows in the table or unique values in the index. --> currently always returns -1
+                    "PAGES",                // The number of pages used to store the index or table. --> currently always returns null
+                    "FILTER_CONDITION",     // The filter condition. --> currently always returns null
+                    // Polypheny-DB specific extensions
+                    "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
+                    "INDEX_TYPE",           // Polypheny-DB specific index type
+                    "KEY_NAME"              // The name of the associated key
+            );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw propagate( e );
+        }
     }
 
 
@@ -734,21 +932,20 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-                statement.unset();
-            } else {
-                throw new RuntimeException( "There is no associated sstatement" );
-            }
+
+        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+            statement.unset();
+        } else {
+            throw new RuntimeException( "There is no associated sstatement" );
         }
 
-        PolyXid xid = getCurrentTransaction( connection );
+        // Get transaction id
+        PolyXid xid = getCurrentTransactionOrStartNew( connection );
 
-        // //////////////////////////
-        // For testing
-        // /////////////////////////
+        // Get schema
         PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent( xid );
+
 
         ////////////////////
         // (1)  Configure //
@@ -758,7 +955,7 @@ public class DbmsMeta implements ProtobufMeta {
         Config parserConfig = configConfigBuilder.build();
 
         DataContext dataContext = statement.getDataContext( rootSchema );
-        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, "" );
+        ContextImpl prepareContext = new ContextImpl( rootSchema, dataContext, connection.getDatabase().defaultSchemaName, connection.getDatabase().id, connection.getUser().id, xid );
 
         // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
@@ -822,11 +1019,6 @@ public class DbmsMeta implements ProtobufMeta {
                 result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
                 break;
 
-            case COMMIT:
-            case ROLLBACK:
-                System.out.println( ":) TRX Control" );
-                break;
-
             case CREATE_SCHEMA:
             case DROP_SCHEMA:
             case CREATE_TABLE:
@@ -841,7 +1033,8 @@ public class DbmsMeta implements ProtobufMeta {
             case CREATE_INDEX:
             case ALTER_INDEX:
             case DROP_INDEX:
-                result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed );
+            case TRUNCATE:
+                result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
                 break;
 
             case EXPLAIN:
@@ -913,14 +1106,11 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
         }
 
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-                statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-            } else {
-                throw new NoSuchStatementException( h );
-            }
+        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+        } else {
+            throw new NoSuchStatementException( h );
         }
 
         final PolyphenyDbSignature signature = statement.getSignature();
@@ -1001,11 +1191,11 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
         final PolyphenyDbStatementHandle statement;
-        synchronized ( OPEN_STATEMENTS ) {
-            final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
-            OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
-        }
+
+        final int id = statementIdGenerator.getAndIncrement();
+        statement = new PolyphenyDbStatementHandle( connection, id, new JavaTypeFactoryImpl() );
+        OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
+
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
         LOG.trace( "created statement {}", h );
         return h;
@@ -1047,71 +1237,75 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
         }
 
-        final PolyphenyDbConnectionHandle connectionToOpen;
-        synchronized ( OPEN_CONNECTIONS ) {
-            if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
-                if ( LOG.isDebugEnabled() ) {
-                    LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
-                }
-                throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
-            }
-
+        if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
             if ( LOG.isDebugEnabled() ) {
-                LOG.debug( "Creating a new connection." );
+                LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
+            throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+        }
 
-            final CatalogUser user;
-            try {
-                user = Authenticator.authenticate(
-                        connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
-                        connectionParameters.getOrDefault( "password", "" ) );
-            } catch ( AuthenticationException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert user != null;
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Creating a new connection." );
+        }
 
-            String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
-            if ( databaseName == null || databaseName.isEmpty() ) {
-                databaseName = "APP";
-            }
-            String schemaName = connectionParameters.get( "schema" );
-            if ( schemaName == null || schemaName.isEmpty() ) {
-                schemaName = "public";
-            }
+        final CatalogUser user;
+        try {
+            user = Authenticator.authenticate(
+                    connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
+                    connectionParameters.getOrDefault( "password", "" ) );
+        } catch ( AuthenticationException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert user != null;
 
-            final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
-            final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
+        String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
+        if ( databaseName == null || databaseName.isEmpty() ) {
+            databaseName = "APP";
+        }
+        String schemaName = connectionParameters.get( "schema" );
+        if ( schemaName == null || schemaName.isEmpty() ) {
+            schemaName = "public";
+        }
 
-            // Create transaction id
-            PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+        final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
+        final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: get real user id -- connectionParameters.get("user")
 
-            final CatalogManager catalog = CatalogManagerImpl.getInstance();
-            // Check database access
-            final CatalogDatabase database;
-            try {
-                database = catalog.getDatabase( xid, databaseName );
-            } catch ( GenericCatalogException | UnknownDatabaseException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert database != null;
+        // Create transaction id
+        PolyXid xid = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, ConnectionId.fromString( ch.id ) );
+
+        final CatalogManager catalog = CatalogManagerImpl.getInstance();
+        // Check database access
+        final CatalogDatabase database;
+        try {
+            database = catalog.getDatabase( xid, databaseName );
+        } catch ( GenericCatalogException | UnknownDatabaseException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert database != null;
 
 //            Authorizer.hasAccess( user, database );
 
-            // Check schema access
-            final CatalogSchema schema;
-            try {
-                schema = catalog.getSchema( xid, database.name, schemaName );
-            } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-            }
-            assert schema != null;
+        // Check schema access
+        final CatalogSchema schema;
+        try {
+            schema = catalog.getSchema( xid, database.name, schemaName );
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        assert schema != null;
 
 //            Authorizer.hasAccess( user, schema );
 
-            connectionToOpen = new PolyphenyDbConnectionHandle( ch, nodeId, user, ch.id, database, schema, xid );
-
-            OPEN_CONNECTIONS.put( ch.id, connectionToOpen );
+        // commit transaction
+        try {
+            if ( CatalogManagerImpl.getInstance().prepare( xid ) ) {
+                CatalogManagerImpl.getInstance().commit( xid );
+            }
+        } catch ( CatalogTransactionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
+
+        OPEN_CONNECTIONS.put( ch.id, new PolyphenyDbConnectionHandle( ch, nodeId, user, ch.id, database, schema ) );
     }
 
 
@@ -1132,16 +1326,21 @@ public class DbmsMeta implements ProtobufMeta {
             return;
         }
 
-        synchronized ( OPEN_STATEMENTS ) {
-            for ( final String key : OPEN_STATEMENTS.keySet() ) {
-                if ( key.startsWith( ch.id ) ) {
-                    OPEN_STATEMENTS.remove( key ).unset();
-                }
+        // Check if there is an running transaction
+        PolyXid xid = connectionToClose.getCurrentTransaction();
+        if ( xid != null ) {
+            LOG.warn( "There is a running connection associated with this connection {}", connectionToClose );
+            LOG.warn( "Rollback transaction {}", xid );
+            rollback( ch );
+        }
+
+        for ( final String key : OPEN_STATEMENTS.keySet() ) {
+            if ( key.startsWith( ch.id ) ) {
+                OPEN_STATEMENTS.remove( key ).unset();
             }
         }
 
         // TODO: release all resources associated with this connection
-        LOG.error( "[NOT IMPLEMENTED YET] closeConnection( ConnectionHandle {} )", ch );
     }
 
 
@@ -1154,22 +1353,21 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyXid getCurrentTransaction( PolyphenyDbConnectionHandle connection ) {
+    private PolyXid getCurrentTransactionOrStartNew( PolyphenyDbConnectionHandle connection ) {
         final PolyXid currentTransaction;
         final boolean beginOfTransaction;
-        synchronized ( this ) {
-            if ( connection.getCurrentTransaction() == null ) {
-                currentTransaction = connection.startNewTransaction();
-                beginOfTransaction = true;
-                if ( LOG.isTraceEnabled() ) {
-                    LOG.trace( "Required a new TransactionId: {}", currentTransaction );
-                }
-            } else {
-                currentTransaction = connection.getCurrentTransaction();
-                beginOfTransaction = false;
-                if ( LOG.isTraceEnabled() ) {
-                    LOG.trace( "Reusing the current TransactionId: {}", currentTransaction );
-                }
+
+        if ( connection.getCurrentTransaction() == null ) {
+            currentTransaction = connection.startNewTransaction();
+            beginOfTransaction = true;
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Required a new TransactionId: {}", currentTransaction );
+            }
+        } else {
+            currentTransaction = connection.getCurrentTransaction();
+            beginOfTransaction = false;
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Reusing the current TransactionId: {}", currentTransaction );
             }
         }
         return currentTransaction;
@@ -1193,30 +1391,81 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     /**
-     * Makes all changes since the last commit/rollback permanent. Analogous to {@link Connection#commit()}.
-     *
-     * @param ch A reference to the real JDBC Connection
+     * Makes all changes since the last commit/rollback permanent.
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "commit( ConnectionHandle {} )", ch );
         }
-        throw new UnsupportedOperationException();
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        PolyXid xid = connection.getCurrentTransaction();
+
+        if ( xid == null ) {
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            }
+            return;
+        }
+
+        try {
+            // Prepare to commit changes on all involved stores and the catalog
+            boolean okToCommit = true;
+            okToCommit &= CatalogManagerImpl.getInstance().prepare( xid );
+            ImmutableCollection<Store> stores = StoreManager.getInstance().getStores().values();
+            for ( Store store : stores ) {
+                okToCommit &= store.prepare( xid );
+            }
+
+            if ( okToCommit ) {
+                // Commit changes
+                CatalogManagerImpl.getInstance().commit( xid );
+                for ( Store store : stores ) {
+                    store.commit( xid );
+                }
+            } else {
+                LOG.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
+                rollback( ch );
+                throw new RuntimeException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
+            }
+        } catch ( CatalogTransactionException e ) {
+            LOG.error( "Exception while committing changes. Execution rollback!" );
+            rollback( ch );
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        connection.endCurrentTransaction();
     }
 
 
     /**
-     * Undoes all changes since the last commit/rollback. Analogous to {@link Connection#rollback()};
-     *
-     * @param ch A reference to the real JDBC Connection
+     * Undoes all changes since the last commit/rollback.
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "rollback( ConnectionHandle {} )", ch );
         }
-        throw new UnsupportedOperationException();
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        PolyXid xid = connection.getCurrentTransaction();
+
+        if ( xid == null ) {
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            }
+            return;
+        }
+
+        // TODO: rollback changes to the stores
+
+        // Rollback changes to the catalog
+        try {
+            CatalogManagerImpl.getInstance().rollback( xid );
+        } catch ( CatalogTransactionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+
+        connection.endCurrentTransaction();
     }
 
 

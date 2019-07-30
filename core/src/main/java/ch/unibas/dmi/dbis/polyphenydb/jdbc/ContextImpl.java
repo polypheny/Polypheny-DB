@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
@@ -35,41 +36,47 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
+import lombok.Getter;
 
 
 public class ContextImpl implements Context {
 
+    @Getter
     private final PolyphenyDbSchema rootSchema;
+    @Getter
     private final JavaTypeFactory typeFactory;
+    @Getter
     private final DataContext dataContext;
-    private final String schemaName;
+    @Getter
+    private final PolyXid transactionId;
+    @Getter
+    private final String defaultSchemaName;
+    @Getter
+    private final long databaseId;
+    @Getter
+    private final int currentUserId;
 
 
-    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String schemaName ) {
+    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, PolyXid transactionId ) {
         this.rootSchema = rootSchema;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
-        this.schemaName = schemaName;
+        this.defaultSchemaName = defaultSchemaName;
+        this.transactionId = transactionId;
+        this.currentUserId = currentUserId;
+        this.databaseId = databaseId;
     }
 
 
-    public JavaTypeFactory getTypeFactory() {
-        return typeFactory;
-    }
-
-
-    public PolyphenyDbSchema getRootSchema() {
-        return rootSchema;
-    }
-
-
+    @Override
     public List<String> getDefaultSchemaPath() {
-        return schemaName == null
+        return defaultSchemaName == null
                 ? ImmutableList.of()
-                : ImmutableList.of( schemaName );
+                : ImmutableList.of( defaultSchemaName );
     }
 
 
+    @Override
     public List<String> getObjectPath() {
         return null;
     }
@@ -80,16 +87,19 @@ public class ContextImpl implements Context {
     }
 
 
-    public DataContext getDataContext() {
-        return dataContext;
-    }
-
-
+    @Override
     public RelRunner getRelRunner() {
         return null;
     }
 
 
+    @Override
+    public int getDefaultStore() {
+        return 0;
+    }
+
+
+    @Override
     public PolyphenyDbPrepare.SparkHandler spark() {
         final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
         return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );

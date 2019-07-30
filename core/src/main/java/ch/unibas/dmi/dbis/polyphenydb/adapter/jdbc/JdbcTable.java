@@ -77,6 +77,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -237,33 +238,37 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private class DummyCollection extends HashSet {
 
         @Override
-        public boolean add( Object o ) {
-            if ( o instanceof Object[] ) {
-                super.add( o ); // Add to the hash set in case we need any other method like contains
-                StringBuilder builder = new StringBuilder();
-                builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
-                for ( String columnName : columnNames ) {
-                    builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) + "," );
-                }
-                builder.setLength( builder.length() - 1 ); // remove last comma
-                builder.append( ") VALUES ( " );
-                for ( Object object : (Object[]) o ) {
-                    if ( object instanceof String ) {
-                        builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
-                    } else {
-                        builder.append( object.toString() + "," );
-                    }
-                }
-                builder.setLength( builder.length() - 1 ); // remove last comma
-                builder.append( " )" );
-                try {
-                    int s = jdbcSchema.getDataSource().getConnection().createStatement().executeUpdate( builder.toString() );
-                    return s > 0;
-                } catch ( SQLException e ) {
-                    throw new RuntimeException( e );
-                }
+        public boolean add( Object obj ) {
+            Object[] o;
+            if ( obj instanceof Object[] ) {
+                o = (Object[]) obj;
             } else {
-                throw new RuntimeException( "Not an array! " + o.getClass().getName() );
+                o = new Object[1];
+                o[0] = obj;
+            }
+
+            super.add( o ); // Add to the hash set in case we need any other method like contains
+            StringBuilder builder = new StringBuilder();
+            builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
+            for ( String columnName : columnNames ) {
+                builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) + "," );
+            }
+            builder.setLength( builder.length() - 1 ); // remove last comma
+            builder.append( ") VALUES ( " );
+            for ( Object object : o ) {
+                if ( object instanceof String ) {
+                    builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
+                } else {
+                    builder.append( object.toString() + "," );
+                }
+            }
+            builder.setLength( builder.length() - 1 ); // remove last comma
+            builder.append( " )" );
+            try ( Connection connection = jdbcSchema.getDataSource().getConnection() ) {
+                int s = connection.createStatement().executeUpdate( builder.toString() );
+                return s > 0;
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
             }
         }
     }

@@ -45,13 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser.parserextensiontesting;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
@@ -110,6 +107,12 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
     @Override
+    public void execute( Context context, CatalogManager catalog ) {
+
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
@@ -134,22 +137,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         final List list = columnList.getList();
         //noinspection unchecked
         return Pair.zip( (List<SqlIdentifier>) Util.quotientList( list, 2, 0 ), Util.quotientList( (List<SqlDataTypeSpec>) list, 2, 1 ) );
-    }
-
-
-    public void execute( Context context ) {
-        final List<String> path = context.getDefaultSchemaPath();
-        PolyphenyDbSchema schema = context.getRootSchema();
-        for ( String p : path ) {
-            schema = schema.getSubSchema( p, true );
-        }
-        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
-        for ( Pair<SqlIdentifier, SqlDataTypeSpec> pair : nameTypes() ) {
-            builder.add( pair.left.getSimple(), pair.right.deriveType( typeFactory, true ) );
-        }
-        final RelDataType rowType = builder.build();
-        schema.add( name.getSimple(), new MutableArrayTable( name.getSimple(), RelDataTypeImpl.proto( rowType ) ) );
     }
 
 
@@ -197,5 +184,22 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             return protoRowType.apply( typeFactory );
         }
     }
+
+
+    /*
+    public void execute( Context context ) {
+        final List<String> path = context.getDefaultSchemaPath();
+        PolyphenyDbSchema schema = context.getRootSchema();
+        for ( String p : path ) {
+            schema = schema.getSubSchema( p, true );
+        }
+        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        for ( Pair<SqlIdentifier, SqlDataTypeSpec> pair : nameTypes() ) {
+            builder.add( pair.left.getSimple(), pair.right.deriveType( typeFactory, true ) );
+        }
+        final RelDataType rowType = builder.build();
+        schema.add( name.getSimple(), new MutableArrayTable( name.getSimple(), RelDataTypeImpl.proto( rowType ) ) );
+    } */
 }
 

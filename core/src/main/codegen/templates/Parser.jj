@@ -102,6 +102,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMatchRecognize;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMerge;
+import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlTruncate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNumericLiteral;
@@ -938,8 +939,7 @@ void Arg(List list, ExprContext exprContext) :
     {
         if (e != null) {
             if (name != null) {
-                e = SqlStdOperatorTable.ARGUMENT_ASSIGNMENT.createCall(
-                    Span.of(name, e).pos(), e, name);
+                e = SqlStdOperatorTable.ARGUMENT_ASSIGNMENT.createCall( Span.of(name, e).pos(), e, name );
             }
             list.add(e);
         }
@@ -1357,8 +1357,7 @@ SqlNode SqlInsert() :
         }
     ]
     source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new SqlInsert(s.end(source), keywordList, table, source,
-            columnList);
+        return new SqlInsert(s.end(source), keywordList, table, source, columnList);
     }
 }
 
@@ -1548,13 +1547,10 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
     rowConstructor = RowConstructor()
     [ <RPAREN> ]
     {
-        // TODO zfong 5/26/06: note that extra parentheses are accepted above
-        // around the VALUES clause as a hack for unparse, but this is
+        // TODO zfong 5/26/06: note that extra parentheses are accepted above around the VALUES clause as a hack for unparse, but this is
         // actually invalid SQL; should fix unparse
-        insertValues = SqlStdOperatorTable.VALUES.createCall(
-            valuesSpan.end(this), rowConstructor);
-        return new SqlInsert(insertSpan.end(this), keywordList,
-            table, insertValues, insertColumnList);
+        insertValues = SqlStdOperatorTable.VALUES.createCall(valuesSpan.end(this), rowConstructor);
+        return new SqlInsert(insertSpan.end(this), keywordList, table, insertValues, insertColumnList);
     }
 }
 
@@ -5846,8 +5842,7 @@ SqlNode JdbcFunctionCall() :
         )
     )
     <RBRACE> {
-        return new SqlJdbcFunctionCall(name).createCall(s.end(this),
-            args.getList());
+        return new SqlJdbcFunctionCall(name).createCall(s.end(this), args.getList());
     }
 }
 

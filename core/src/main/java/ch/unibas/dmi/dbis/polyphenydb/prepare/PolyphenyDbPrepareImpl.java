@@ -480,7 +480,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public void executeDdl( Context context, SqlNode node ) {
         if ( node instanceof SqlExecutableStatement ) {
             SqlExecutableStatement statement = (SqlExecutableStatement) node;
-            statement.execute( context );
+            statement.execute( context, null );
             return;
         }
         throw new UnsupportedOperationException();

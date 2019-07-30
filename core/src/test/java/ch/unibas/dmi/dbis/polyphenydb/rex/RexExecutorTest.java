@@ -102,12 +102,18 @@ public class RexExecutorTest {
         PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
-                .prepareContext( new ContextImpl( rootSchema, new SlimDataContext() {
-                    @Override
-                    public JavaTypeFactory getTypeFactory() {
-                        return new JavaTypeFactoryImpl();
-                    }
-                }, "" ) )
+                .prepareContext( new ContextImpl(
+                        rootSchema,
+                        new SlimDataContext() {
+                            @Override
+                            public JavaTypeFactory getTypeFactory() {
+                                return new JavaTypeFactoryImpl();
+                            }
+                        },
+                        "",
+                        0,
+                        0,
+                        null ) )
                 .build();
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
