@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
@@ -45,18 +46,32 @@ public class LocalTransactionHandler extends TransactionHandler {
     private static final Queue<LocalTransactionHandler> freeInstances = new ConcurrentLinkedQueue<>();
 
 
-    private LocalTransactionHandler( final String url, final String user, final String pass ) throws CatalogConnectionException {
+    private LocalTransactionHandler( final String driver, final String url, final String user, final String pass ) throws CatalogConnectionException {
         super();
         try {
-            Class.forName( "org.postgresql.Driver" );
-            connection = DriverManager.getConnection( url, user, pass );
+            Class.forName( driver );
+        } catch ( ClassNotFoundException e ) {
+            throw new CatalogConnectionException( "Could not load postgres driver.", e );
+        }
+
+        Properties props = new Properties();
+        props.setProperty( user, pass );
+        //props.setProperty( "ssl", sslEnabled );
+        props.setProperty( "wire_protocol", "PROTO3" );
+
+        try {
+            connection = DriverManager.getConnection( url, props );
+        } catch ( SQLException e ) {
+            throw new CatalogConnectionException( "Could not establish connection to driver", e );
+        }
+
+        try {
             connection.setAutoCommit( false );
             statement = connection.createStatement();
         } catch ( SQLException e ) {
             throw new CatalogConnectionException( "Error while connecting to catalog storage", e );
-        } catch ( ClassNotFoundException e ) {
-            throw new CatalogConnectionException( "Could not load postgres driver.", e );
         }
+
     }
 
 
@@ -108,10 +123,16 @@ public class LocalTransactionHandler extends TransactionHandler {
     }
 
 
-    public static LocalTransactionHandler getTransactionHandler( final String url, final String user, final String pass ) throws CatalogConnectionException {
+    /**
+     * @param driver driver name
+     * @param url url
+     * @param user user name
+     * @param pass password
+     */
+    public static LocalTransactionHandler getTransactionHandler( final String driver, final String url, final String user, final String pass ) throws CatalogConnectionException {
         LocalTransactionHandler handler = freeInstances.poll();
         if ( handler == null ) {
-            handler = new LocalTransactionHandler( url, user, pass );
+            handler = new LocalTransactionHandler( driver, url, user, pass );
         }
         return handler;
     }

@@ -33,10 +33,7 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.webSocket;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,31 +55,8 @@ public class Server {
     private final ConfigManager cm = ConfigManager.getInstance();
     private Gson gson = new Gson();
 
-    public static void main( String[] args ) {
-        if ( args.length < 4) {
-            LOGGER.error( "Missing command-line arguments. Please provied the following information:\n"
-                    + "java Server <host> <port> <database> <user> <password>\n"
-                    + "e.g. java Server localhost 8080 myDatabase root secret" );
-            System.exit( 1 );
-        }
 
-        ConfigManager cm = ConfigManager.getInstance();
-        WebUiPage configPage = new WebUiPage( "ports", "ports", "Ports for the ConfigurationServer, InformationServer and the WebUi" );
-        WebUiGroup portsGroup = new WebUiGroup( "portsGroup", "ports" ).withTitle( "ports" );
-        cm.registerWebUiPage( configPage );
-        cm.registerWebUiGroup( portsGroup );
-        cm.registerConfig( new ConfigInteger( "configServer.port", "port of the ConfigServer", 8081 ).withUi( "portsGroup", 1 ) );
-        cm.registerConfig( new ConfigInteger( "informationServer.port", "port of the InformationServer", 8082 ).withUi( "portsGroup", 2 ) );
-        cm.registerConfig( new ConfigInteger( "webUI.port", "port of the webUI server", 8083 ).withUi( "portsGroup", 3 ) );
-
-        //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
-        ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
-        InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
-        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt(), args );
-    }
-
-
-    public Server( final int port, String[] args ) {
+    public Server( final int port, Crud crud ) {
 
         port( port );
 
@@ -104,7 +78,7 @@ public class Server {
             }
         } );
 
-        crudRoutes( args );
+        crudRoutes( crud );
 
         LOGGER.info( "HTTP Server started." );
 
@@ -112,16 +86,14 @@ public class Server {
 
 
     public Server ( final int port ) {
-        this( port, null );
+        this( port, new CrudPolypheny( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver", "jdbc:polypheny://", "localhost", 20591, "app", "user", "pa" ) );
     }
 
 
     /**
      * defines the routes for this Server
      */
-    private void crudRoutes( String[] args ) {
-
-        Crud crud = new Crud( args );
+    private void crudRoutes( Crud crud ) {
 
         post( "/getTable", crud::getTable, gson::toJson );
 
@@ -172,6 +144,8 @@ public class Server {
         post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
 
         post( "/schemaRequest", crud::schemaRequest, gson::toJson );
+
+        get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
 
     }
 

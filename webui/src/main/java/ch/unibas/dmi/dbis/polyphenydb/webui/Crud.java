@@ -32,23 +32,21 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogConnectionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
@@ -58,13 +56,14 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Getter;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,63 +71,56 @@ import spark.Request;
 import spark.Response;
 
 
-/**
- * Create, read, update and delete elements from a database
- * contains only demo data so far
- */
-class Crud implements InformationObserver {
+public abstract class Crud implements InformationObserver {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Crud.class );
-    private String driver = "jdbc:postgresql://";
-    private final String dbName;
-    private final String URL;
+    static final Logger LOGGER = LoggerFactory.getLogger( CrudPostgres.class );
+    final String dbName;
+    protected final String URL;
     private final String USER;
     private final String PASS;
-    private final int PAGESIZE = 4;
-    private Gson gson = new Gson();
+    @Getter
+    private final int PORT;
+    final int PAGESIZE = 4;
+    private String driver;
+    Gson gson = new Gson();
 
 
     /**
-     * @param args from command line: "host port database user password"
+     * Constructor
+     * @param jdbc jdbc url
+     * @param driver driver name
+     * @param host host name
+     * @param port port
+     * @param dbName database name
+     * @param user user name
+     * @param pass password
      */
-    Crud( final String[] args ) {
+     Crud( final String driver, final String jdbc, final String host, final int port, final String dbName, final String user, final String pass ) {
+        this.driver = driver;
+        this.dbName = dbName;
+        //Time zone: https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
+        this.URL = jdbc + host + ":" + port + "/" + dbName;//"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
 
-        if( args.length < 4 ) {
-            LOGGER.error( "Missing command-line arguments. Please provied the following information:\n"
-                    + "java Server <host> <port> <database> <user> <password>\n"
-                    + "e.g. java Server localhost 8080 myDatabase root secret" );
-            System.exit( 1 );
-        }
-        String host = args[0];
-        int port = Integer.parseInt( args[1] );
-        this.dbName = args[2];
-        this.USER = args[3];
-        String pass = "";
-        if ( args.length > 4 ) {
-            pass = args[4];
-        }
+        this.USER = user;
         this.PASS = pass;
+        this.PORT = port;
 
         try {
-            //Class.forName( "com.mysql.cj.jdbc.Driver" );
-            Class.forName( "org.postgresql.Driver" );
+            Class.forName( driver );
         } catch ( ClassNotFoundException e ) {
             LOGGER.error( "Could not load driver class." );
             LOGGER.error( e.getMessage() );
         }
-
-        //Time zone: https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
-        this.URL = driver + host + ":" + port + "/" + dbName;//"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
     }
 
 
     /**
      * Get an instance of the LocalTransactionHandler
      */
-    private LocalTransactionHandler getHandler() {
+    LocalTransactionHandler getHandler() {
         LocalTransactionHandler handler = null;
         try {
-            handler = LocalTransactionHandler.getTransactionHandler( this.URL, this.USER, this.PASS );
+            handler = LocalTransactionHandler.getTransactionHandler( this.driver, this.URL, this.USER, this.PASS );
         } catch ( CatalogConnectionException e ) {
             LOGGER.error( "Could not get TransactionHandler", e );
         }
@@ -139,8 +131,8 @@ class Crud implements InformationObserver {
     /**
      * get the Number of rows in a table
      */
-    private Integer getTableSize ( final UIRequest request ) {
-        Integer size = null;
+     int getTableSize ( final UIRequest request ) {
+        int size = 0;
         String query = "SELECT count(*) FROM " + request.tableId;
         if( request.filter != null) query += " " + filterTable( request.filter );
         LocalTransactionHandler handler = getHandler();
@@ -175,10 +167,11 @@ class Crud implements InformationObserver {
             result = buildResult( rs, request );
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() );
+            //result = new Result( e.getMessage() );
+            result = new Result( "Could not fetch table " + request.tableId );
             try {
                 handler.rollback();
-                return new Result( e.getMessage() );
+                return result;
             } catch ( CatalogTransactionException ex ) {
                 LOGGER.error( "Could not rollback", ex );
             }
@@ -199,10 +192,7 @@ class Crud implements InformationObserver {
         }
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
-        Integer tableSize = getTableSize( request );
-        if( tableSize == null ){
-            return new Result( String.format( "The table %s does not exist.", t[1] ));
-        }
+        int tableSize = getTableSize( request );
         result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
         return result;
     }
@@ -211,7 +201,7 @@ class Crud implements InformationObserver {
     /**
      * From a ResultSet: build a Result object that the UI can understand
      */
-    private Result buildResult( final ResultSet rs, final UIRequest request ) {
+     Result buildResult( final ResultSet rs, final UIRequest request ) {
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<DbColumn> header = new ArrayList<>();
         Result result;
@@ -249,61 +239,7 @@ class Crud implements InformationObserver {
     }
 
 
-    /**
-     * returns a Tree (in json format) with the Tables of a Database
-     */
-    ArrayList<SidebarElement> getSchemaTree ( final Request req, final Response res ) {
-        SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
-        ArrayList<SidebarElement> result = new ArrayList<>();
-        LocalTransactionHandler handler = getHandler();
-
-        if( request.depth < 1 ){
-            LOGGER.error( "Trying to fetch a schemaTree with depth < 1" );
-            return new ArrayList<>();
-        }
-
-        try ( ResultSet schemas = handler.getMetaData().getSchemas() ) {
-            while ( schemas.next() ){
-                String schema = schemas.getString( 1 );
-                if( schema.equals( "pg_catalog" ) || schema.equals( "information_schema" )) continue;
-                SidebarElement schemaTree = new SidebarElement( schema, schema, "", "cui-layers" );
-
-                if( request.depth > 1 ){
-                    ResultSet tablesRs = handler.getMetaData().getTables( this.dbName, schema, null, null );
-                    ArrayList<SidebarElement> tables = new ArrayList<>();
-                    ArrayList<SidebarElement> views = new ArrayList<>();
-                    while ( tablesRs.next() ){
-                        String tableName = tablesRs.getString( 3 );
-                        SidebarElement table = new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" );
-
-                        if( request.depth > 2){
-                            ResultSet columnsRs = handler.getMetaData().getColumns( this.dbName, schema, tableName, null );
-                            while ( columnsRs.next() ){
-                                String columnName = columnsRs.getString( 4 );
-                                table.addChild( new SidebarElement( schema + "." + tableName + "." + columnName, columnName, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
-                            }
-                        }
-
-                        if( tablesRs.getString( 4 ).equals("TABLE") ){
-                            tables.add( table );
-                        } else if ( request.views && tablesRs.getString( 4 ).equals("VIEW") ){
-                            views.add( table );
-                        }
-                    }
-                    schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                    if( request.views ) {
-                        schemaTree.addChild( new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
-                    }
-                    tablesRs.close();
-                }
-                result.add( schemaTree );
-            }
-        } catch ( SQLException e ) {
-            LOGGER.error( e.getMessage() );
-        }
-
-        return result;
-    }
+    abstract ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res );
 
 
     /**
@@ -352,63 +288,7 @@ class Crud implements InformationObserver {
     }
 
 
-    /**
-     * Create a new table
-     */
-    Result createTable( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        StringBuilder query = new StringBuilder();
-        StringJoiner colJoiner = new StringJoiner( "," );
-        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
-        StringBuilder colBuilder;
-        Result result;
-        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        int primaryCounter = 0;
-        for ( DbColumn col : request.columns ) {
-            colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.dataType);
-            if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", col.maxLength ) );
-            }
-            if ( !col.nullable ) {
-                colBuilder.append( " NOT NULL" );
-            }
-            if( col.defaultValue != null ) {
-                switch ( col.dataType ) {
-                    case "int8":
-                    case "int4":
-                        int a = Integer.parseInt( col.defaultValue );
-                        colBuilder.append( " DEFAULT " ).append( a );
-                        break;
-                    case "varchar":
-                        colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
-                        break;
-                    default:
-                        //varchar, timestamptz, bool
-                        colBuilder.append( " DEFAULT " ).append( col.defaultValue );
-                }
-            }
-            if ( col.primary ) {
-                primaryKeys.add( col.name );
-                primaryCounter++;
-            }
-            colJoiner.add( colBuilder.toString() );
-        }
-        if ( primaryCounter > 0 ) {
-            colJoiner.add( primaryKeys.toString() );
-        }
-        query.append( colJoiner.toString() );
-        query.append( ")" );
-        LocalTransactionHandler handler = getHandler();
-        try {
-            int a = handler.executeUpdate( query.toString() );
-            result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
-            handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-        }
-        return result;
-    }
+    abstract Result createTable( final Request req, final Response res );
 
 
     /**
@@ -449,31 +329,13 @@ class Crud implements InformationObserver {
     }
 
 
-    /**
-     * Filter a table with a keyword
-     * Show only entries where the value of that column starts with the keyword
-     *
-     * @return the generated condition for the query
-     */
-    private String filterTable ( Map<String, String> filter ) {
-        StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
-        int counter = 0;
-        for ( Map.Entry<String, String> entry : filter.entrySet() ) {
-            if ( ! entry.getValue().equals( "" )) {
-                joiner.add( entry.getKey() + "::TEXT LIKE '" + entry.getValue() + "%'"  );//:TEXT to cast number to text if necessary (see https://stackoverflow.com/questions/1684291/sql-like-condition-to-check-for-integer#answer-40537672)
-                counter++;
-            }
-        }
-        String out = "";
-        if( counter > 0 ) out = joiner.toString();
-        return out;
-    }
+    protected abstract String filterTable( final Map<String, String> filter );
 
 
     /**
      * Generates the ORDER BY clause of a query if a sorted column is requested by the UI
      */
-    private String sortTable ( Map<String, SortState> sorting) {
+    protected String sortTable( final Map<String, SortState> sorting ) {
         StringJoiner joiner = new StringJoiner( ",", " ORDER BY ", "" );
         int counter = 0;
         for ( Map.Entry<String, SortState> entry : sorting.entrySet() ) {
@@ -691,189 +553,42 @@ class Crud implements InformationObserver {
         LocalTransactionHandler handler = getHandler();
         Result result;
 
-        //query inspired from: https://stackoverflow.com/questions/1214576/how-do-i-get-the-primary-keys-of-a-table-from-postgres-via-plpgsql
-
+        ArrayList<String> primaryColumns = new ArrayList<>();
         String[] t = request.tableId.split( "\\." );
-        String query = "SELECT column_name, is_nullable, udt_name, character_maximum_length, column_default, "
-            + "constraint_type, constraint_name "
-            + "FROM( "
-            + "select DISTINCT ON (col.column_name) col.column_name, col.is_nullable, col.udt_name, col.character_maximum_length, col.column_default, "
-            + "tc.constraint_type, kc.constraint_name, col.ordinal_position "
-            + "FROM information_schema.columns col "
-            + "LEFT JOIN information_schema.key_column_usage AS kc "
-            + "ON col.column_name = kc.column_name "
-            + "LEFT JOIN information_schema.table_constraints tc "
-            + "ON tc.constraint_name = kc.constraint_name "
-            + String.format( "WHERE col.table_schema = '%s' ", t[0])
-            + String.format( "AND col.table_name = '%s' ", t[1])
-            + "AND (tc.constraint_type = 'PRIMARY KEY' OR tc.constraint_type IS NULL)"
-            + ") AS q1 "
-            + "ORDER BY ordinal_position ASC";
-        //todo use prepared statement
+        ArrayList<DbColumn> cols = new ArrayList<>();
 
-        try ( ResultSet rs = handler.executeSelect( query ) ) {
-            ArrayList<DbColumn> cols = new ArrayList<>();
-            while ( rs.next() ) {
-                boolean isPrimary = false;
-                if( rs.getString( "constraint_type" ) != null ){
-                    isPrimary = rs.getString( "constraint_type" ).equals( "PRIMARY KEY" );
-                }
-                //getObject, so you get null and not 0 if the field is NULL
-                cols.add( new DbColumn( rs.getString( "column_name" ), rs.getString( "udt_name" ), rs.getBoolean( "is_nullable" ), (Integer) rs.getObject("character_maximum_length"), isPrimary, rs.getString( "column_default" ) ) );
-            }
-            result = new Result( cols.toArray( new DbColumn[0] ), null );
-            handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.toString() );
-            LOGGER.error( e.toString() );
-        }
-        return result;
-    }
-
-
-    /**
-     * Update a column of a table
-     */
-    Result updateColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        DbColumn oldColumn = request.oldColumn;
-        DbColumn newColumn = request.newColumn;
-        Result result;
-        ArrayList<String> queries = new ArrayList<>();
-        StringBuilder sBuilder = new StringBuilder();
-        LocalTransactionHandler handler = getHandler();
-
-        //rename column if needed
-        if ( !oldColumn.name.equals( newColumn.name ) ) {
-            String query = String.format( "ALTER TABLE %s RENAME COLUMN %s TO %s", request.tableId, oldColumn.name, newColumn.name );
-            queries.add( query );
-        }
-
-        //change type + length
-        //todo cast if needed
-        if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
-            if ( newColumn.maxLength != null ) {
-                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s) USING %s::%s;", request.tableId, newColumn.name, newColumn.dataType, newColumn.maxLength, newColumn.name, newColumn.dataType );
-                queries.add( query );
-            } else {
-                //todo drop maxlength if requested
-                String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s::%s;", request.tableId, newColumn.name, newColumn.dataType, newColumn.name, newColumn.dataType );
-                queries.add( query );
-            }
-        }
-
-        //set/drop nullable
-        if ( oldColumn.nullable != newColumn.nullable ) {
-            String nullable = "SET";
-            if ( newColumn.nullable ) {
-                nullable = "DROP";
-            }
-            String query = "ALTER TABLE " + request.tableId + " ALTER COLUMN " + newColumn.name + " " + nullable + " NOT NULL";
-            queries.add( query );
-        }
-
-        //change default value
-        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ){
-            String query;
-            if( newColumn.defaultValue == null ){
-                query = String.format( "ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", request.tableId, newColumn.name );
-            }
-            else{
-                query = String.format( "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
-                switch ( newColumn.dataType ) {
-                    case "int8":
-                    case "int4":
-                        int a = Integer.parseInt( request.newColumn.defaultValue );
-                        query = query + a;
-                        break;
-                    case "varchar":
-                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
-                        break;
-                    default:
-                        //varchar, timestamptz, bool
-                        query = query + request.newColumn.defaultValue;
-                }
-            }
-            queries.add( query );
-        }
-
-        result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
-        try{
-            for ( String query : queries ){
-                handler.executeUpdate( query );
-                sBuilder.append( query );
+        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] )) {
+            while( rs.next() ){
+                primaryColumns.add( rs.getString( 4 ) );
             }
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
-            try {
-                handler.rollback();
-            } catch ( CatalogTransactionException  e2 ) {
-                result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
-            }
-        }
-
-        return result;
-    }
-
-
-    /**
-     * Add a column to an existing table
-     */
-    Result addColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        LocalTransactionHandler handler = getHandler();
-        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
-        if ( request.newColumn.maxLength != null ) {
-            query = query + String.format( "(%d)", request.newColumn.maxLength );
-        }
-        if ( !request.newColumn.nullable ) {
-            query = query + " NOT NULL";
-        }
-        if ( request.newColumn.defaultValue != null ){
-            switch ( request.newColumn.dataType ) {
-                case "int8":
-                case "int4":
-                    int a = Integer.parseInt( request.newColumn.defaultValue );
-                    query = query + " DEFAULT "+a;
-                    break;
-                case "varchar":
-                    query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
-                    break;
-                default:
-                    //varchar, timestamptz, bool
-                    query = query + " DEFAULT " + request.newColumn.defaultValue;
-            }
-        }
-        Result result;
-        try {
-            int affectedRows = handler.executeUpdate( query );
-            handler.commit();
-            result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
-        return result;
-    }
 
-
-    /**
-     * Delete a column of a table
-     */
-    Result dropColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        LocalTransactionHandler handler = getHandler();
-        Result result;
-        String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
-        try {
-            int affectedRows = handler.executeUpdate( query );
+        handler = getHandler();
+        try ( ResultSet rs = handler.getMetaData().getColumns( this.dbName, t[0], t[1], "" ) ) {
+            while( rs.next() ){
+                cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), "" ) );
+            }
             handler.commit();
-            result = new Result( new Debug().setAffectedRows( affectedRows ) );
         } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.toString() );
+            result = new Result( e.getMessage() );
         }
+
+        result = new Result( cols.toArray( new DbColumn[0] ), null );
+
         return result;
     }
+
+
+    abstract Result updateColumn( final Request req, final Response res );
+
+
+    abstract Result addColumn( final Request req, final Response res );
+
+
+    abstract Result dropColumn( final Request req, final Response res );
 
 
     /**
@@ -884,64 +599,59 @@ class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         Result result;
         LocalTransactionHandler handler = getHandler();
-        String query = "SELECT constraint_name, constraint_type, is_deferrable, initially_deferred "
-            + "FROM information_schema.table_constraints tc "
-            + String.format("WHERE table_schema = '%s' AND table_name = '%s' ", t[0], t[1])
-            + "AND constraint_name NOT LIKE '%not_null'";
-        //todo use prepared statement
-        try ( ResultSet rs = handler.executeSelect( query ) ) {
-            result = buildResult( rs, request );
+        ArrayList<TableConstraint> constraints = new ArrayList<>();
+        Map<String, ArrayList<String>> temp = new HashMap<>();
+
+        //get primary keys
+        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] )) {
+            while ( rs.next() ){
+                if( ! temp.containsKey( rs.getString( 6 ))){
+                    temp.put( rs.getString( 6 ), new ArrayList<>() );
+                }
+                temp.get( rs.getString( 6 ) ).add( rs.getString( 4 ) );
+            }
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
         }
-        return result;
-    }
 
+        for ( Map.Entry<String, ArrayList<String>> entry: temp.entrySet()) {
+            constraints.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ));
+        }
 
-    /**
-     * Drop constraint of a table
-     */
-    Result dropConstraint ( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        LocalTransactionHandler handler= getHandler();
-        String query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
-        Result result;
-        try{
-            int rows = handler.executeUpdate( query );
-            handler.commit();
-            result = new Result( new Debug().setAffectedRows( rows ) );
-        } catch ( SQLException | CatalogTransactionException e ){
+        //get foreign keys
+        temp.clear();
+        handler = getHandler();
+        try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, t[0], t[1] )) {
+            while ( rs.next() ){
+                if( ! temp.containsKey( rs.getString( 12 ))){
+                    temp.put( rs.getString( 12 ), new ArrayList<>() );
+                }
+                temp.get( rs.getString( 12 ) ).add( rs.getString( 8 ) );
+            }
+        } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
         }
+
+        for ( Map.Entry<String, ArrayList<String>> entry: temp.entrySet()) {
+            constraints.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ));
+        }
+
+        DbColumn[] header = { new DbColumn( "constraint name" ), new DbColumn( "constraint type" ), new DbColumn( "columns" ) };
+        ArrayList<String[]> data = new ArrayList<>();
+        constraints.forEach( (c) -> {
+            data.add( c.asRow() );
+        } );
+
+        result = new Result( header, data.toArray( new String[0][2] ));
         return result;
     }
 
-    /**
-     * Add a primary key to a table
-     */
-    Result addPrimaryKey ( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        LocalTransactionHandler handler = getHandler();
-        Result result;
-        if( request.constraint.columns.length > 0 ){
-            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-            for( String s : request.constraint.columns ){
-                joiner.add( s );
-            }
-            String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
-            try{
-                int rows = handler.executeUpdate( query );
-                handler.commit();
-                result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | CatalogTransactionException e ){
-                result = new Result( e.getMessage() );
-            }
-        }else{
-            result = new Result( "Cannot add primary key if no columns are provided." );
-        }
-        return result;
-    }
+
+    abstract Result dropConstraint( final Request req, final Response res );
+
+
+    abstract Result addPrimaryKey( final Request req, final Response res );
 
 
     /**
@@ -949,25 +659,29 @@ class Crud implements InformationObserver {
      */
     Result getIndexes( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        String query = String.format( "SELECT indexname, indexdef FROM pg_indexes WHERE schemaname ='%s' AND tablename = '%s'", request.schema, request.table );
-        //todo use prepared statement
-        LocalTransactionHandler handler = getHandler();
         Result result;
-        ArrayList<String[]> data = new ArrayList<>();
-        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "method" ), new DbColumn( "columns" ) };
-        try ( ResultSet rs = handler.executeSelect( query ) ) {
-            while ( rs.next() ) {
-                String indexDef = rs.getString( "indexDef" );
-                Pattern p = Pattern.compile( "\\((.*?)\\)" );
-                Matcher m = p.matcher( indexDef );
-                if ( !m.find() ) {
-                    continue;
+        LocalTransactionHandler handler = getHandler();
+
+        try {
+            ResultSet indexInfo = handler.getMetaData().getIndexInfo( this.dbName, request.schema, request.table, false, true );
+            DbColumn[] header = {new DbColumn( "name" ), new DbColumn( "columns" )};
+            Map<String, StringJoiner> indexes = new HashMap<>();
+            ArrayList<String[]> data = new ArrayList<>();
+            while ( indexInfo.next() ) {
+                String name = indexInfo.getString( 6 );
+                String col = indexInfo.getString( 9 );
+                if( ! indexes.containsKey( name )){
+                    indexes.put( name, new StringJoiner( ", " ) );
                 }
-                String colsRaw = m.group( 1 );
-                String[] cols = colsRaw.split( ",\\s*" );
-                data.add( new Index( request.schema, request.table, rs.getString( "indexname" ), "btree", cols ).asRow() );
+                indexes.get( name ).add( col );
             }
-            result = new Result( header, data.toArray( new String[data.size()][3] ) );
+            for ( Map.Entry<String, StringJoiner> entry: indexes.entrySet() ){
+                String[] insert = new String[2];
+                insert[0] = entry.getKey();
+                insert[1] = entry.getValue().toString();
+                data.add( insert );
+            }
+            result = new Result( header, data.toArray( new String[0][2] ) );
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
             result = new Result( e.getMessage() );
@@ -1107,6 +821,33 @@ class Crud implements InformationObserver {
     Result schemaRequest ( final Request req, final Response res ) {
         Schema schema = this.gson.fromJson( req.body(), Schema.class );
         return schema.executeCreateOrDrop( getHandler() );
+    }
+
+
+    /**
+     * Get all supported data types of the DBMS.
+     */
+    public Result getTypeInfo ( final Request req, final Response res ) {
+        LocalTransactionHandler handler = getHandler();
+        ArrayList<String[]> data = new ArrayList<>();
+        Result result;
+        try ( ResultSet rs = handler.getMetaData().getTypeInfo() ) {
+            while( rs.next() ){
+                // ignore types that are not relevant
+                if( rs.getInt( 2 ) < -500 || rs.getInt( 2 ) > 500 ) continue;
+                String[] row = new String[1];
+                for( int i = 1; i<=18; i++){
+                    row[0] = rs.getString( 1 );
+                }
+                data.add( row );
+            }
+            DbColumn[] header = { new DbColumn( "TYPE_NAME" ) };
+            result = new Result( header, data.toArray( new String[0][1]) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+            e.printStackTrace();
+        }
+        return result;
     }
 
 
