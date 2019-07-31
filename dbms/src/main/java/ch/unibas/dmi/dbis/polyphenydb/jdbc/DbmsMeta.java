@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
@@ -533,13 +532,16 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransactionOrStartNew( connection );
-            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
-            List<CatalogPrimaryKeyColumn> primaryKeyColumns;
-            if ( catalogTable.primaryKey != null ) {
-                final CatalogPrimaryKey primaryKey = CatalogManagerImpl.getInstance().getPrimaryKey( xid, catalogTable.primaryKey );
-                primaryKeyColumns = primaryKey.getCatalogPrimaryKeyColumns();
-            } else {
-                primaryKeyColumns = new LinkedList<>();
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = CatalogManagerImpl.getInstance().getTables( xid, databasePattern, schemaPattern, tablePattern );
+            List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
+            for ( CatalogTable catalogTable : catalogTables ) {
+                if ( catalogTable.primaryKey != null ) {
+                    final CatalogPrimaryKey primaryKey = CatalogManagerImpl.getInstance().getPrimaryKey( xid, catalogTable.primaryKey );
+                    primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
+                }
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -555,7 +557,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
                     "PK_NAME"             // the name of the primary key
             );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw propagate( e );
         }
     }
@@ -570,10 +572,15 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransactionOrStartNew( connection );
-            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
-            List<CatalogForeignKey> importedKeys = CatalogManagerImpl.getInstance().getForeignKeys( xid, catalogTable.id );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = CatalogManagerImpl.getInstance().getTables( xid, databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogForeignKey> importedKeys = CatalogManagerImpl.getInstance().getForeignKeys( xid, catalogTable.id );
+                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -596,7 +603,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "PK_NAME",                // The name of the primary key.
                     "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
             );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException e ) {
             throw propagate( e );
         }
     }
@@ -611,10 +618,15 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransactionOrStartNew( connection );
-            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
-            List<CatalogForeignKey> exportedKeys = CatalogManagerImpl.getInstance().getExportedKeys( xid, catalogTable.id );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = CatalogManagerImpl.getInstance().getTables( xid, databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogForeignKey> exportedKeys = CatalogManagerImpl.getInstance().getExportedKeys( xid, catalogTable.id );
+                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -637,7 +649,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "PK_NAME",                // The name of the primary key.
                     "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
             );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException e ) {
             throw propagate( e );
         }
     }
@@ -717,14 +729,18 @@ public class DbmsMeta implements ProtobufMeta {
         if ( LOG.isTraceEnabled() ) {
             LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
         }
-
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
             final PolyXid xid = getCurrentTransactionOrStartNew( connection );
-            final CatalogTable catalogTable = CatalogManagerImpl.getInstance().getTable( xid, database, schema, table );
-            List<CatalogIndex> catalogIndexInfos = CatalogManagerImpl.getInstance().getIndexes( xid, catalogTable.id, unique );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = CatalogManagerImpl.getInstance().getTables( xid, databasePattern, schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-            catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogIndex> catalogIndexInfos = CatalogManagerImpl.getInstance().getIndexes( xid, catalogTable.id, unique );
+                catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -750,7 +766,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "INDEX_TYPE",           // Polypheny-DB specific index type
                     "KEY_NAME"              // The name of the associated key
             );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException e ) {
             throw propagate( e );
         }
     }
