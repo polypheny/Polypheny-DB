@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MapSqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.SqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
@@ -64,6 +63,8 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PlannerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
@@ -211,7 +212,7 @@ public class Frameworks {
      * @param cache Whether to create a caching schema.
      */
     public static SchemaPlus createRootSchema( boolean cache ) {
-        return PolyphenyDbSchema.createRootSchema( cache ).plus();
+        return AbstractPolyphenyDbSchema.createRootSchema( cache ).plus();
     }
 
 

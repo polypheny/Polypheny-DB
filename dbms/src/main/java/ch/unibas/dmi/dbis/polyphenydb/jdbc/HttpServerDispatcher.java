@@ -1,10 +1,10 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2018 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,12 +20,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.dispatching;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.DbmsService;
 import com.jakewharton.byteunits.BinaryByteUnit;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -95,7 +95,6 @@ public class HttpServerDispatcher {
 
         final ServerConnector connector = new ServerConnector( jettyServer, new HttpConnectionFactory( httpConfiguration ) );
         connector.setIdleTimeout( connectionIdleTimeoutMillis );
-        connector.setSoLingerTime( -1 ); // -1 = "disabled"
         connector.setPort( port );
 
         jettyServer.setConnectors( new Connector[]{ connector } );

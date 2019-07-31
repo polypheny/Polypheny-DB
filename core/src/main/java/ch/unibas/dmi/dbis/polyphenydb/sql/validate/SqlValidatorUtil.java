@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema.TableEntry;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema.TypeEntry;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchemaWithSampling;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
@@ -58,6 +55,9 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFieldImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.CustomColumnResolvingTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ExtensibleTable;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.TableEntry;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.TypeEntry;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;

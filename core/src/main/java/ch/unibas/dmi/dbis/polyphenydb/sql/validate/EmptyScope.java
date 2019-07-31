@@ -45,12 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.RelOptTableImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
@@ -145,13 +145,13 @@ class EmptyScope implements SqlValidatorScope {
         SqlValidatorNamespace namespace = null;
         List<String> remainingNames = concat;
         for ( String schemaName : concat ) {
-            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.name ) ) {
+            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
                 remainingNames = Util.skip( remainingNames );
                 continue;
             }
             final PolyphenyDbSchema subSchema = schema.getSubSchema( schemaName, nameMatcher.isCaseSensitive() );
             if ( subSchema != null ) {
-                path = path.plus( null, -1, subSchema.name, StructKind.NONE );
+                path = path.plus( null, -1, subSchema.getName(), StructKind.NONE );
                 remainingNames = Util.skip( remainingNames );
                 schema = subSchema;
                 namespace = new SchemaNamespace( validator, ImmutableList.copyOf( path.stepNames() ) );

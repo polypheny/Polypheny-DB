@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -55,9 +54,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.AggregateFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
@@ -205,7 +206,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         final List<SqlMoniker> result = new ArrayList<>();
 
         // Add root schema if not anonymous
-        if ( !schema.name.equals( "" ) ) {
+        if ( !schema.getName().equals( "" ) ) {
             result.add( moniker( schema, null, SqlMonikerType.SCHEMA ) );
         }
 
@@ -229,7 +230,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     private SqlMonikerImpl moniker( PolyphenyDbSchema schema, String name, SqlMonikerType type ) {
         final List<String> path = schema.path( name );
-        if ( path.size() == 1 && !schema.root().name.equals( "" ) && type == SqlMonikerType.SCHEMA ) {
+        if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == SqlMonikerType.SCHEMA ) {
             type = SqlMonikerType.CATALOG;
         }
         return new SqlMonikerImpl( path, type );
@@ -291,7 +292,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
      */
     public static SqlOperatorTable operatorTable( String className ) {
         // Dummy schema to collect the functions
-        final PolyphenyDbSchema schema = PolyphenyDbSchema.createRootSchema( false );
+        final PolyphenyDbSchema schema = AbstractPolyphenyDbSchema.createRootSchema( false );
         ModelHandler.addFunctions( schema.plus(), null, ImmutableList.of(), className, "*", true );
 
         // The following is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor

@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.materialize;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;

@@ -46,9 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;

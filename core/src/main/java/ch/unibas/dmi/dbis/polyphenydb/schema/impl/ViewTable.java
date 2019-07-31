@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -56,6 +55,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;

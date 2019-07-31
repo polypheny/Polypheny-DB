@@ -23,22 +23,21 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbStatementHandle;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import java.util.LinkedList;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.Meta.ExecuteResult;
 import org.apache.calcite.avatica.Meta.MetaResultSet;
 import org.apache.calcite.avatica.Meta.StatementHandle;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
-import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,9 +64,8 @@ public class DdlExecutionEngine {
     }
 
 
-    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final Planner planner, final StopWatch stopWatch, final PolyphenyDbSchema rootSchema, final Config parserConfig, final SqlNode parsed, final ContextImpl prepareContext ) {
+    public ExecuteResult execute( final StatementHandle h, final PolyphenyDbStatementHandle statement, final SqlNode parsed, final ContextImpl prepareContext ) {
         if ( parsed instanceof SqlExecutableStatement ) {
-
             try {
                 ((SqlExecutableStatement) parsed).execute( prepareContext, CatalogManagerImpl.getInstance() );
 

@@ -50,13 +50,13 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
@@ -308,7 +308,7 @@ public class MaterializationService {
     public List<Prepare.Materialization> query( PolyphenyDbSchema rootSchema ) {
         final List<Prepare.Materialization> list = new ArrayList<>();
         for ( MaterializationActor.Materialization materialization : actor.keyMap.values() ) {
-            if ( materialization.rootSchema.schema == rootSchema.schema && materialization.materializedTable != null ) {
+            if ( materialization.rootSchema.getSchema() == rootSchema.getSchema() && materialization.materializedTable != null ) {
                 list.add( new Prepare.Materialization( materialization.materializedTable, materialization.sql, materialization.viewSchemaPath ) );
             }
         }

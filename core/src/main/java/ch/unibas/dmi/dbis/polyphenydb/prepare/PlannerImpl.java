@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -60,6 +59,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
