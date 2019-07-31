@@ -78,7 +78,6 @@ import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
@@ -101,8 +100,10 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableView;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
@@ -6640,7 +6641,7 @@ public class JdbcTest {
     @Test
     @Ignore
     public void testExplicitImplicitSchemaSameName() throws Exception {
-        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false ).plus();
+        final SchemaPlus rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false ).plus();
 
         // create schema "/a"
         final Map<String, Schema> aSubSchemaMap = new HashMap<>();
@@ -6666,7 +6667,7 @@ public class JdbcTest {
 
     @Test
     public void testSimplePolyphenyDbSchema() throws Exception {
-        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false ).plus();
+        final SchemaPlus rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false ).plus();
 
         // create schema "/a"
         final Map<String, Schema> aSubSchemaMap = new HashMap<>();
@@ -6695,7 +6696,7 @@ public class JdbcTest {
 
     @Test
     public void testSimplePolyphenyDbSchemaWithView() throws Exception {
-        final SchemaPlus rootSchema = PolyphenyDbSchema.createRootSchema( false ).plus();
+        final SchemaPlus rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false ).plus();
 
         final Multimap<String, ch.unibas.dmi.dbis.polyphenydb.schema.Function> functionMap = LinkedListMultimap.create();
         // create schema "/a"

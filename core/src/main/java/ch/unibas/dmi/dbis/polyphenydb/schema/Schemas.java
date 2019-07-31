@@ -56,14 +56,15 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.ParseResult;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema.FunctionEntry;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema.LatticeEntry;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.FunctionEntry;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.LatticeEntry;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.TableEntry;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
@@ -82,6 +83,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -506,11 +508,11 @@ public final class Schemas {
      */
     public static List<PolyphenyDbSchema.TableEntry> getStarTables( PolyphenyDbSchema schema ) {
         final List<PolyphenyDbSchema.LatticeEntry> list = getLatticeEntries( schema );
-        return Lists.transform( list, entry -> {
-            final PolyphenyDbSchema.TableEntry starTable = Objects.requireNonNull( entry ).getStarTable();
-            assert starTable.getTable().getJdbcTableType() == Schema.TableType.STAR;
+        return list.stream().map( entry -> {
+            final TableEntry starTable = Objects.requireNonNull( entry ).getStarTable();
+            assert starTable.getTable().getJdbcTableType() == TableType.STAR;
             return entry.getStarTable();
-        } );
+        } ).collect( Collectors.toList() );
     }
 
 
@@ -583,8 +585,8 @@ public final class Schemas {
         if ( !iterator.hasNext() ) {
             return PathImpl.EMPTY;
         }
-        if ( !rootSchema.name.isEmpty() ) {
-            Preconditions.checkState( rootSchema.name.equals( iterator.next() ) );
+        if ( !rootSchema.getName().isEmpty() ) {
+            Preconditions.checkState( rootSchema.getName().equals( iterator.next() ) );
         }
         for ( ; ; ) {
             final String name = iterator.next();

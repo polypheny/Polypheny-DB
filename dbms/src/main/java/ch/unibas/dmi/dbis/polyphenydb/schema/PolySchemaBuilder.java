@@ -1,4 +1,29 @@
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
+package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
@@ -12,9 +37,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTab
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import java.util.HashMap;
@@ -23,19 +45,19 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 
 
-public class PolySchema {
+public class PolySchemaBuilder {
 
-    private final static PolySchema INSTANCE = new PolySchema();
+    private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
-    private Map<PolyXid, PolyphenyDbSchema> cache = new HashMap<>();
+    private Map<PolyXid, AbstractPolyphenyDbSchema> cache = new HashMap<>();
 
 
-    public static PolySchema getInstance() {
+    public static PolySchemaBuilder getInstance() {
         return INSTANCE;
     }
 
 
-    public PolyphenyDbSchema getCurrent( PolyXid xid ) {
+    public AbstractPolyphenyDbSchema getCurrent( PolyXid xid ) {
         if ( !cache.containsValue( xid ) ) {
             cache.put( xid, update( xid ) );
         }
@@ -43,8 +65,8 @@ public class PolySchema {
     }
 
 
-    public PolyphenyDbSchema update( PolyXid xid ) {
-        final PolyphenyDbSchema polyphenyDbSchema;
+    public AbstractPolyphenyDbSchema update( PolyXid xid ) {
+        final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
             polyphenyDbSchema = new CachingPolyphenyDbSchema( null, schema, "" );
@@ -80,7 +102,7 @@ public class PolySchema {
             }
         }
 
-        polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.schema = StoreManager.getInstance().getStore( 0 ).getCurrentSchema() );
+        polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.setSchema( StoreManager.getInstance().getStore( 0 ).getCurrentSchema() ) );
 
         return polyphenyDbSchema;
     }

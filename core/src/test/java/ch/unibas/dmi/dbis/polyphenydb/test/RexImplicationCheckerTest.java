@@ -55,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -71,6 +70,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
@@ -598,7 +599,7 @@ public class RexImplicationCheckerTest {
 
             final Holder<RexExecutorImpl> holder = Holder.of( null );
 
-            PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
+            PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false );
             FrameworkConfig config = Frameworks.newConfigBuilder()
                     .defaultSchema( rootSchema.plus() )
                     .prepareContext( new ContextImpl(

@@ -1,24 +1,4 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
- *
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- *
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
@@ -40,17 +20,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
@@ -62,26 +38,27 @@ import java.util.List;
 
 
 /**
- * A concrete implementation of {@link PolyphenyDbSchema} that maintains minimal state.
+ * A concrete implementation of {@link AbstractPolyphenyDbSchema} that maintains minimal state.
  */
-class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
+class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     /**
      * Creates a SimplePolyphenyDbSchema.
      *
-     * Use {@link PolyphenyDbSchema#createRootSchema(boolean)} or {@link #add(String, Schema)}.
+     * Use {@link AbstractPolyphenyDbSchema#createRootSchema(boolean)} or {@link #add(String, Schema)}.
      */
-    SimplePolyphenyDbSchema( PolyphenyDbSchema parent, Schema schema, String name ) {
+    SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name ) {
         this( parent, schema, name, null, null, null, null, null, null, null, null );
     }
 
 
-    private SimplePolyphenyDbSchema( PolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap,
+    private SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap,
             NameMap<TypeEntry> typeMap, NameMultimap<FunctionEntry> functionMap, NameSet functionNames, NameMap<FunctionEntry> nullaryFunctionMap, List<? extends List<String>> path ) {
         super( parent, schema, name, subSchemaMap, tableMap, latticeMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
     }
 
 
+    @Override
     public void setCache( boolean cache ) {
         throw new UnsupportedOperationException();
     }
@@ -94,7 +71,8 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
-    protected PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive ) {
+    @Override
+    protected AbstractPolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive ) {
         // Check implicit schemas.
         Schema s = schema.getSubSchema( schemaName );
         if ( s != null ) {
@@ -104,6 +82,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected TableEntry getImplicitTable( String tableName, boolean caseSensitive ) {
         // Check implicit tables.
         Table table = schema.getTable( tableName );
@@ -114,6 +93,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected TypeEntry getImplicitType( String name, boolean caseSensitive ) {
         // Check implicit types.
         RelProtoDataType type = schema.getType( name );
@@ -124,6 +104,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected void addImplicitSubSchemaToBuilder( ImmutableSortedMap.Builder<String, PolyphenyDbSchema> builder ) {
         ImmutableSortedMap<String, PolyphenyDbSchema> explicitSubSchemas = builder.build();
         for ( String schemaName : schema.getSubSchemaNames() ) {
@@ -140,11 +121,13 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected void addImplicitTableToBuilder( ImmutableSortedSet.Builder<String> builder ) {
         builder.addAll( schema.getTableNames() );
     }
 
 
+    @Override
     protected void addImplicitFunctionsToBuilder( ImmutableList.Builder<Function> builder, String name, boolean caseSensitive ) {
         Collection<Function> functions = schema.getFunctions( name );
         if ( functions != null ) {
@@ -153,6 +136,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected void addImplicitFuncNamesToBuilder( ImmutableSortedSet.Builder<String> builder ) {
         builder.addAll( schema.getFunctionNames() );
     }
@@ -164,6 +148,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder( ImmutableSortedMap.Builder<String, Table> builder ) {
         ImmutableSortedMap<String, Table> explicitTables = builder.build();
 
@@ -182,6 +167,7 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
+    @Override
     protected TableEntry getImplicitTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
         Collection<Function> functions = schema.getFunctions( tableName );
         if ( functions != null ) {
@@ -196,11 +182,11 @@ class SimplePolyphenyDbSchema extends PolyphenyDbSchema {
     }
 
 
-    protected PolyphenyDbSchema snapshot( PolyphenyDbSchema parent, SchemaVersion version ) {
-        PolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema( parent, schema.snapshot( version ), name, null, tableMap, latticeMap, typeMap, functionMap, functionNames, nullaryFunctionMap, getPath() );
+    protected PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version ) {
+        AbstractPolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema( parent, schema.snapshot( version ), name, null, tableMap, latticeMap, typeMap, functionMap, functionNames, nullaryFunctionMap, getPath() );
         for ( PolyphenyDbSchema subSchema : subSchemaMap.map().values() ) {
-            PolyphenyDbSchema subSchemaSnapshot = subSchema.snapshot( snapshot, version );
-            snapshot.subSchemaMap.put( subSchema.name, subSchemaSnapshot );
+            PolyphenyDbSchema subSchemaSnapshot = ((AbstractPolyphenyDbSchema) subSchema).snapshot( snapshot, version );
+            snapshot.subSchemaMap.put( subSchema.getName(), subSchemaSnapshot );
         }
         return snapshot;
     }

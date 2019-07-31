@@ -43,7 +43,7 @@
  */
 
 /**
- * Contains generated code for the {@link ch.unibas.dmi.dbis.polyphenydb.sql.parser Polypheny-DB SQL parser}.
+ * Contains generated code for the Polypheny-DB SQL parser.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl;

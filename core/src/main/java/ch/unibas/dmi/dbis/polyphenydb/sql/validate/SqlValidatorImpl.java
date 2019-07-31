@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil.stripAs;
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
@@ -67,6 +66,7 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ModifiableViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.JoinConditionType;

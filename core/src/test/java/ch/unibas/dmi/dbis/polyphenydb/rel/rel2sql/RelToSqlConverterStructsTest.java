@@ -45,13 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -219,7 +219,7 @@ public class RelToSqlConverterStructsTest {
         }
     };
 
-    private static final SchemaPlus ROOT_SCHEMA = PolyphenyDbSchema.createRootSchema( false ).add( "myDb", SCHEMA ).plus();
+    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( false ).add( "myDb", SCHEMA ).plus();
 
 
     private RelToSqlConverterTest.Sql sql( String sql ) {

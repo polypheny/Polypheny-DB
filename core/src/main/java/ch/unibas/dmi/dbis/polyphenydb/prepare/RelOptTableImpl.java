@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -68,6 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Path;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ProjectableFilterableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
@@ -462,6 +462,12 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
                 parent = create( path.parent() );
             }
             return new MySchemaPlus( parent, pair.left, pair.right );
+        }
+
+
+        @Override
+        public PolyphenyDbSchema polyphenyDbSchema() {
+            return null;
         }
 
 

@@ -27,10 +27,9 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbResultSet;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import java.io.InputStream;
 import java.io.Reader;
 import java.sql.NClob;

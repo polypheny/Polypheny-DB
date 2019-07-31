@@ -74,7 +74,13 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeExcepti
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticationException;
+import ch.unibas.dmi.dbis.polyphenydb.processing.Authenticator;
+import ch.unibas.dmi.dbis.polyphenydb.processing.DdlExecutionEngine;
+import ch.unibas.dmi.dbis.polyphenydb.processing.DmlExecutionEngine;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -943,7 +949,7 @@ public class DbmsMeta implements ProtobufMeta {
         PolyXid xid = getCurrentTransactionOrStartNew( connection );
 
         // Get schema
-        PolyphenyDbSchema rootSchema = PolySchema.getInstance().getCurrent( xid );
+        PolyphenyDbSchema rootSchema = PolySchemaBuilder.getInstance().getCurrent( xid );
 
 
         ////////////////////
@@ -970,6 +976,7 @@ public class DbmsMeta implements ProtobufMeta {
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
                 .build();
         //.programs( Programs.ofRules( Programs.CALC_RULES ) );
+
 
         ///////////////////
         // (2)  PARSING  //
@@ -1003,7 +1010,7 @@ public class DbmsMeta implements ProtobufMeta {
             LOG.debug( "Building response ... done. [{}]", stopWatch );
         }
 
-        ExecuteResult result = null;
+        ExecuteResult result;
         if ( parsed.getKind() == SqlKind.EXPLAIN ) {
             if ( ((SqlExplain) parsed).getExplicandum().isA( SqlKind.QUERY ) ) {
                 result = DmlExecutionEngine.getInstance().explain( h, statement, planner, stopWatch, (SqlExplain) parsed );
@@ -1015,7 +1022,7 @@ public class DbmsMeta implements ProtobufMeta {
         } else if ( parsed.isA( SqlKind.DML ) ) {
             result = DmlExecutionEngine.getInstance().executeDml( h, statement, planner, stopWatch, rootSchema, parsed, prepareContext );
         } else if ( parsed.isA( SqlKind.DDL ) ) {
-            result = DdlExecutionEngine.getInstance().execute( h, statement, planner, stopWatch, rootSchema, parserConfig, parsed, prepareContext );
+            result = DdlExecutionEngine.getInstance().execute( h, statement, parsed, prepareContext );
         } else {
             throw new RuntimeException( "Unknown or unsupported query type: " + parsed.getKind().name() );
         }
@@ -1106,7 +1113,6 @@ public class DbmsMeta implements ProtobufMeta {
         //noinspection unchecked
         final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
         return polyphenyDbSignature.enumerable( dataContext );
-
     }
 
 

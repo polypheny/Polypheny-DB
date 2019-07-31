@@ -46,20 +46,18 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExpandDistinctAggregatesRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-
-import org.apache.pig.data.DataType;
-
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.pig.data.DataType;
 
 
 /**

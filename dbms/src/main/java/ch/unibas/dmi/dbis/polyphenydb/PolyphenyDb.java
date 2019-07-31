@@ -29,7 +29,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.dispatching.HttpServerDispatcher;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.HttpServerDispatcher;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.Server;

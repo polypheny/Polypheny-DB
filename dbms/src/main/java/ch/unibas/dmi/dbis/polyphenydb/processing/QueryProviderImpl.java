@@ -23,10 +23,10 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.DmlExecutionEngine.PolyphenyDbQueryable;
+import ch.unibas.dmi.dbis.polyphenydb.processing.DmlExecutionEngine.PolyphenyDbQueryable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
