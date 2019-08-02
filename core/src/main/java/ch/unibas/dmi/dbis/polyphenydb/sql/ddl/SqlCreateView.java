@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
@@ -91,7 +91,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, CatalogManager catalog ) {
+    public void execute( Context context, Transaction transaction ) {
         throw new RuntimeException( "Not supported yet" );
     }
 

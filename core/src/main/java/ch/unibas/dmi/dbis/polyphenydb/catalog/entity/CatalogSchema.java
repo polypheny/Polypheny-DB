@@ -26,9 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;

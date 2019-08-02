@@ -23,25 +23,16 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+public abstract class QueryInterface implements Runnable {
+
+    protected final TransactionManager transactionManager;
 
 
-public abstract class CatalogManager {
+    public QueryInterface( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
+    }
 
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param userName The name of the database
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
-
-    public abstract Catalog getCatalog( PolyXid xid );
 }

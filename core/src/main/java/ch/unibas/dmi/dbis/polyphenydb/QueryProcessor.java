@@ -23,25 +23,21 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 
 
-public abstract class CatalogManager {
+public interface QueryProcessor {
 
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param userName The name of the database
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
+    PolyphenyDbSignature processSqlQuery( String sql, Config parserConfig );
 
-    public abstract Catalog getCatalog( PolyXid xid );
+
+    PolyphenyDbSignature processQuery( RelNode logicalPlan );
+
+    PolyphenyDbSignature processQuery( RelNode logicalPlan, RelOptPlanner planner );
 }

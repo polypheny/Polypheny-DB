@@ -32,11 +32,8 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
-import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.server.AvaticaHandler;
-import org.apache.calcite.avatica.server.HandlerFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -57,28 +54,23 @@ public class HttpServerDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( HttpServerDispatcher.class );
 
+    private int threadPoolMinThreads = 10;
+    private int threadPoolMaxThreads = 100;
+    private int threadPoolIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
 
-    protected int threadPoolMinThreads = 10;
-    protected int threadPoolMaxThreads = 100;
-    protected int threadPoolIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
+    private Server jettyServer;
+    private int port;
 
-    protected Server jettyServer;
-    protected int port;
+    private final int httpMaxAllowedHeaderSize = (int) Math.min( BinaryByteUnit.KIBIBYTES.toBytes( 64 ), Integer.MAX_VALUE );
 
-    protected final int httpMaxAllowedHeaderSize = (int) Math.min( BinaryByteUnit.KIBIBYTES.toBytes( 64 ), Integer.MAX_VALUE );
+    private final int connectionIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
 
-    protected final int connectionIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
-
-    protected final AvaticaHandler handler;
+    private final AvaticaHandler handler;
 
 
-    public HttpServerDispatcher( int port ) throws SQLException {
+    public HttpServerDispatcher( int port, final AvaticaHandler handler ) throws SQLException {
         this.port = port;
-
-        this.handler = new HandlerFactory().getHandler(
-                new DbmsService(),
-                Serialization.PROTOBUF,
-                NoopMetricsSystemConfiguration.getInstance() );
+        this.handler = handler;
     }
 
 

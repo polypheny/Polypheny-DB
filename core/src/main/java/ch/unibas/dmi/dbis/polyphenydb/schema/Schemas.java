@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
@@ -454,7 +454,7 @@ public final class Schemas {
 
 
             @Override
-            public PolyXid getTransactionId() {
+            public Transaction getTransaction() {
                 return null;
             }
 

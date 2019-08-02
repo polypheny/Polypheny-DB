@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
@@ -49,7 +49,7 @@ public class ContextImpl implements Context {
     @Getter
     private final DataContext dataContext;
     @Getter
-    private final PolyXid transactionId;
+    private final Transaction transaction;
     @Getter
     private final String defaultSchemaName;
     @Getter
@@ -58,12 +58,12 @@ public class ContextImpl implements Context {
     private final int currentUserId;
 
 
-    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, PolyXid transactionId ) {
+    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Transaction transaction ) {
         this.rootSchema = rootSchema;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultSchemaName = defaultSchemaName;
-        this.transactionId = transactionId;
+        this.transaction = transaction;
         this.currentUserId = currentUserId;
         this.databaseId = databaseId;
     }

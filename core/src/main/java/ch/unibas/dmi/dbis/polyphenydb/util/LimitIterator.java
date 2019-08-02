@@ -23,25 +23,50 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import java.util.Iterator;
 
 
-public abstract class CatalogManager {
+/**
+ * Iterator that returns at most {@code limit} rows from an underlying {@link Iterator}.
+ *
+ * @param <E> element type
+ */
+public class LimitIterator<E> implements Iterator<E> {
 
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param userName The name of the database
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
+    private final Iterator<E> iterator;
+    private final long limit;
+    int i = 0;
 
-    public abstract Catalog getCatalog( PolyXid xid );
+
+    private LimitIterator( Iterator<E> iterator, long limit ) {
+        this.iterator = iterator;
+        this.limit = limit;
+    }
+
+
+    public static <E> Iterator<E> of( Iterator<E> iterator, long limit ) {
+        if ( limit <= 0 ) {
+            return iterator;
+        }
+        return new LimitIterator<>( iterator, limit );
+    }
+
+
+    public boolean hasNext() {
+        return iterator.hasNext() && i < limit;
+    }
+
+
+    public E next() {
+        ++i;
+        return iterator.next();
+    }
+
+
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 }

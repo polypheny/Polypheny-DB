@@ -192,7 +192,7 @@ task generateTestFmppSources {
 task generateTestParser (type: CompileJavaccTask) {
     dependsOn("generateTestFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
-	arguments = [grammar_encoding: "UTF-8", static: "false", lookahead: "2"]
+	arguments = [static: "false", lookahead: "2"]
     inputDirectory = file(project.buildDir.absolutePath + "/generated-test-sources/fmpp/javacc")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-test-sources/ch/unibas/dmi/dbis/polyphenydb/sql/parser/parserextensiontesting")
 }

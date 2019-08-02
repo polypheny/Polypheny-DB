@@ -26,9 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -58,7 +58,7 @@ public final class CatalogTable implements CatalogEntity {
     public final Long primaryKey;
 
 
-    public CatalogTable( final long id, @NonNull final String name, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final CatalogManager.TableType type, final String definition, final Long primaryKey ) {
+    public CatalogTable( final long id, @NonNull final String name, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final Catalog.TableType type, final String definition, final Long primaryKey ) {
         this.id = id;
         this.name = name;
         this.schemaId = schemaId;
