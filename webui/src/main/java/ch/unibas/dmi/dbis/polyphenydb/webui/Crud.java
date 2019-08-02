@@ -869,18 +869,22 @@ public abstract class Crud implements InformationObserver {
      */
     @Override
     public void observePageList( final String analyzerId, final InformationPage[] pages ) {
-        SidebarElement[] nodes = new SidebarElement[ pages.length + 2 ];
+        ArrayList<SidebarElement> nodes = new ArrayList<>();
         int counter = 0;
         for( InformationPage page: pages ){
-            nodes[counter] = new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ) );
             counter++;
         }
         InformationPage logicalPlan = InformationManager.getInstance().getPage( "informationPageLogicalQueryPlan" );
-        nodes[ pages.length ] = new SidebarElement( logicalPlan.getId(), logicalPlan.getName(), "0/", logicalPlan.getIcon() );
+        if ( logicalPlan != null ) {
+            nodes.add( new SidebarElement( logicalPlan.getId(), logicalPlan.getName(), "0/", logicalPlan.getIcon() ) );
+        }
         InformationPage physicalPlan = InformationManager.getInstance().getPage( "informationPagePhysicalQueryPlan" );
-        nodes[ pages.length + 1] = new SidebarElement( physicalPlan.getId(), physicalPlan.getName(), "0/", physicalPlan.getIcon() );
+        if ( physicalPlan != null ) {
+            nodes.add( new SidebarElement( physicalPlan.getId(), physicalPlan.getName(), "0/", physicalPlan.getIcon() ) );
+        }
         try{
-            CrudWebSocket.sendPageList( this.gson.toJson( nodes ) );
+            CrudWebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
         } catch ( IOException e ) {
             LOGGER.error( e.getMessage() );
         }
