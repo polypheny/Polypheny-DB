@@ -128,7 +128,10 @@ public class DmlExecutionEngine {
 
 
     private DmlExecutionEngine() {
-
+        InformationManager.getInstance().addPage( this.informationPageLogical );
+        InformationManager.getInstance().addGroup( this.informationGroupLogical );
+        InformationManager.getInstance().addPage( this.informationPagePhysical );
+        InformationManager.getInstance().addGroup( this.informationGroupPhysical );
     }
 
 
