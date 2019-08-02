@@ -136,25 +136,23 @@ import org.slf4j.LoggerFactory;
 
 public class DbmsMeta implements ProtobufMeta {
 
-    private static DbmsMeta INSTANCE;
-
-    private static final Logger LOG = LoggerFactory.getLogger( DbmsMeta.class );
-
-    private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
-
-
-    static {
-        INSTANCE = new DbmsMeta();
-    }
-
-
     /**
      * Special value for {@code Statement#getLargeMaxRows()} that means fetch an unlimited number of rows in a single batch.
      *
      * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
      */
     public static final int UNLIMITED_COUNT = -2;
+    private static final Logger LOG = LoggerFactory.getLogger( DbmsMeta.class );
+
+    private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
+    private static DbmsMeta INSTANCE;
+
+
+    static {
+        INSTANCE = new DbmsMeta();
+    }
+
 
     final Calendar calendar = Unsafe.localCalendar();
 
@@ -164,11 +162,6 @@ public class DbmsMeta implements ProtobufMeta {
     private final AtomicInteger statementIdGenerator = new AtomicInteger();
 
 
-    public static DbmsMeta getInstance() {
-        return INSTANCE;
-    }
-
-
     /**
      * Creates a DbmsMeta
      */
@@ -176,6 +169,10 @@ public class DbmsMeta implements ProtobufMeta {
 
     }
 
+
+    public static DbmsMeta getInstance() {
+        return INSTANCE;
+    }
 
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -967,7 +964,6 @@ public class DbmsMeta implements ProtobufMeta {
         // Get schema
         PolyphenyDbSchema rootSchema = PolySchemaBuilder.getInstance().getCurrent( xid );
 
-
         ////////////////////
         // (1)  Configure //
         ////////////////////
@@ -993,7 +989,6 @@ public class DbmsMeta implements ProtobufMeta {
                 .build();
         //.programs( Programs.ofRules( Programs.CALC_RULES ) );
 
-
         ///////////////////
         // (2)  PARSING  //
         ///////////////////
@@ -1017,7 +1012,6 @@ public class DbmsMeta implements ProtobufMeta {
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
         }
-
 
         /////////
         // ((3) Execution
@@ -1045,7 +1039,6 @@ public class DbmsMeta implements ProtobufMeta {
 
         return result;
     }
-
 
 
     /**
@@ -1193,7 +1186,6 @@ public class DbmsMeta implements ProtobufMeta {
         LOG.trace( "created statement {}", h );
         return h;
     }
-
 
 
     /**
@@ -1462,7 +1454,6 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-
     /**
      * Synchronizes client and server view of connection properties.
      *
@@ -1484,6 +1475,17 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         return connectionToSync.mergeConnectionProperties( connProps );
+    }
+
+
+    private RuntimeException propagate( Throwable e ) {
+        if ( e instanceof RuntimeException ) {
+            throw (RuntimeException) e;
+        } else if ( e instanceof Error ) {
+            throw (Error) e;
+        } else {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -1526,17 +1528,6 @@ public class DbmsMeta implements ProtobufMeta {
 
         public void remove() {
             throw new UnsupportedOperationException();
-        }
-    }
-
-
-    private RuntimeException propagate( Throwable e ) {
-        if ( e instanceof RuntimeException ) {
-            throw (RuntimeException) e;
-        } else if ( e instanceof Error ) {
-            throw (Error) e;
-        } else {
-            throw new RuntimeException( e );
         }
     }
 
