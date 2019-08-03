@@ -26,6 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
@@ -80,7 +84,6 @@ public abstract class Crud implements InformationObserver {
     private final String PASS;
     @Getter
     private final int PORT;
-    final int PAGESIZE = 4;
     private String driver;
     Gson gson = new Gson();
 
@@ -111,6 +114,19 @@ public abstract class Crud implements InformationObserver {
             LOGGER.error( "Could not load driver class." );
             LOGGER.error( e.getMessage() );
         }
+
+        ConfigManager cm = ConfigManager.getInstance();
+        cm.registerWebUiPage( new WebUiPage( "webUi", "WebUi", "Settings for the WebUi." ) );
+        cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "data view" ) );
+        cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows that should be displayed in one page in the data view", 10 ).withUi( "dataView" ) );
+    }
+
+
+    /**
+     * Get the number of rows that should be displayed in one page in the data view
+     */
+    private int getPageSize () {
+        return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
     }
 
 
@@ -161,7 +177,7 @@ public abstract class Crud implements InformationObserver {
         if( request.filter != null) where = filterTable( request.filter );
         String orderBy = "";
         if ( request.sortState != null ) orderBy = sortTable( request.sortState );
-        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( PAGESIZE ).append( " OFFSET " ).append( ( Math.max( 0, request.currentPage - 1 )) * PAGESIZE );
+        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( getPageSize() ).append( " OFFSET " ).append( ( Math.max( 0, request.currentPage - 1 )) * getPageSize() );
 
         try ( ResultSet rs = handler.executeSelect( query.toString() ) ) {
             result = buildResult( rs, request );
@@ -193,7 +209,7 @@ public abstract class Crud implements InformationObserver {
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         int tableSize = getTableSize( request );
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / PAGESIZE ) );
+        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
         return result;
     }
 
@@ -398,7 +414,7 @@ public abstract class Crud implements InformationObserver {
             } else if( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
                 //Add limit if not specified
                 if( ! Pattern.matches(".*?(?si:limit)[\\s\\S]*", query )){
-                    query = query + " LIMIT " + this.PAGESIZE;
+                    query = query + " LIMIT " + getPageSize();
                 }
                 //decrease limit if it is too large
                 else{
@@ -406,9 +422,9 @@ public abstract class Crud implements InformationObserver {
                     Matcher limitMatcher = pattern.matcher( query );
                     if( limitMatcher.find() ){
                         int limit = Integer.parseInt( limitMatcher.group(2) );
-                        if( limit > this.PAGESIZE ){
+                        if( limit > getPageSize() ){
                             //see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
-                            query = limitMatcher.replaceFirst("$1 " + this.PAGESIZE);
+                            query = limitMatcher.replaceFirst("$1 " + getPageSize());
                         }
                     }
                 }
@@ -569,6 +585,7 @@ public abstract class Crud implements InformationObserver {
         handler = getHandler();
         try ( ResultSet rs = handler.getMetaData().getColumns( this.dbName, t[0], t[1], "" ) ) {
             while( rs.next() ){
+                //todo get default value
                 cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), "" ) );
             }
             handler.commit();
