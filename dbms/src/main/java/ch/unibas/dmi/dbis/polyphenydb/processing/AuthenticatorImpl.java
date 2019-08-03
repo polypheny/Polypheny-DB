@@ -23,18 +23,32 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
-public abstract class QueryInterface implements Runnable {
+import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 
-    protected final TransactionManager transactionManager;
-    protected final Authenticator authenticator;
 
+/**
+ *
+ */
+public class AuthenticatorImpl implements Authenticator {
 
-    public QueryInterface( TransactionManager transactionManager, Authenticator authenticator ) {
-        this.transactionManager = transactionManager;
-        this.authenticator = authenticator;
+    public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
+        try {
+            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );
+            if ( catalogUser.password.equals( password ) ) {
+                return catalogUser;
+            } else {
+                throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
+            }
+        } catch ( UnknownUserException | GenericCatalogException e ) {
+            throw new AuthenticationException( e );
+        }
     }
-
 }

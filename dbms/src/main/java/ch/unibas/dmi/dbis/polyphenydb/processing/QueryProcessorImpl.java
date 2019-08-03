@@ -114,20 +114,13 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     private static final Logger LOG = LoggerFactory.getLogger( QueryProcessorImpl.class );
 
-    private static InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
-    private static InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
-    private static InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
-    private static InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
+    private InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+    private InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
+    private InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+    private InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     private final Transaction transaction;
 
-    static {
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPageLogical );
-        im.addGroup( informationGroupLogical );
-        im.addPage( informationPagePhysical );
-        im.addGroup( informationGroupPhysical );
-    }
 
     QueryProcessorImpl( Transaction transaction ) {
         this.transaction = transaction;

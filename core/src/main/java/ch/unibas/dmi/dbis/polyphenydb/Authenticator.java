@@ -23,35 +23,16 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 
 
 /**
  *
  */
-public class Authenticator {
+public interface Authenticator {
 
-    private Authenticator() {
-        throw new IllegalAccessError( "This is a utility class" );
-    }
-
-
-    public static CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
-        try {
-            CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );
-            if ( catalogUser.password.equals( password ) ) {
-                return catalogUser;
-            } else {
-                throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
-            }
-        } catch ( UnknownUserException | GenericCatalogException e ) {
-            throw new AuthenticationException( e );
-        }
-    }
+    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
 }
