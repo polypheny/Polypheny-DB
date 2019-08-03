@@ -23,24 +23,15 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.relInterface;
+package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
-import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
@@ -48,36 +39,17 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
-public class RelInterface extends QueryInterface {
+public class QueryPlanBuilder {
 
-    private static final Logger LOG = LoggerFactory.getLogger( RelInterface.class );
-
-
-    public RelInterface( TransactionManager transactionManager ) {
-        super( transactionManager );
+    private QueryPlanBuilder() {
+        // This is a utility class
     }
 
 
-    @Override
-    public void run() {
-        CatalogUser user = null;
-        try {
-            user = CatalogManagerImpl.getInstance().getUser( "pa" );
-        } catch ( UnknownUserException | GenericCatalogException e ) {
-            e.printStackTrace();
-        }
-        Transaction transaction = transactionManager.startTransaction( user, null, null );
-
+    public static RelBuilder createRelBuilder( final Transaction transaction ) {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
@@ -96,27 +68,7 @@ public class RelInterface extends QueryInterface {
                         0,
                         0,
                         null ) ).build();
-
-        final RelBuilder builder = RelBuilder.create( config );
-        final RelNode node = builder
-                .scan( "test" )
-                .build();
-
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( node );
-
-        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
-        Iterator<Object> iterator = iterable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 100 ), new ArrayList<>() );
-
-        for ( List<Object> row : rows ) {
-            System.out.println( StringUtils.join( row, ", " ) );
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        return RelBuilder.create( config );
     }
 
 }

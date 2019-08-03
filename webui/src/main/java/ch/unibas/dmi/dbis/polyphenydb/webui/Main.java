@@ -68,7 +68,7 @@ public class Main {
         //Spark.ignite: see https://stackoverflow.com/questions/41452156/multiple-spark-servers-in-a-single-jvm
         ConfigServer configServer = new ConfigServer( cm.getConfig( "configServer.port" ).getInt() );
         InformationServer informationServer = new InformationServer( cm.getConfig( "informationServer.port" ).getInt() );
-        Server webUIServer = new Server( cm.getConfig( "webUI.port" ).getInt(), crud );
+        WebUiInterface webUIWebUiInterface = new WebUiInterface( null, null, cm.getConfig( "webUI.port" ).getInt(), crud );
     }
 
 }

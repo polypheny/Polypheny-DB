@@ -33,7 +33,16 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.webSocket;
 
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
+import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,6 +50,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.calcite.avatica.MetaImpl;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -49,14 +63,15 @@ import spark.Spark;
 /**
  * HTTP server for serving the Polypheny-DB UI
  */
-public class Server {
+public class WebUiInterface extends QueryInterface {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WebUiInterface.class );
     private final ConfigManager cm = ConfigManager.getInstance();
     private Gson gson = new Gson();
 
 
-    public Server( final int port, Crud crud ) {
+    public WebUiInterface( final TransactionManager transactionManager, final Authenticator authenticator, final int port, Crud crud ) {
+        super( transactionManager, authenticator );
 
         port( port );
 
@@ -66,7 +81,7 @@ public class Server {
 
         enableCORS();
 
-        //get modified index.html
+        // get modified index.html
         get( "/", ( req, res ) -> {
             res.type( "text/html" );
             try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream()) {
@@ -81,12 +96,52 @@ public class Server {
         crudRoutes( crud );
 
         LOGGER.info( "HTTP Server started." );
-
     }
 
 
-    public Server ( final int port ) {
-        this( port, new CrudPolypheny( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver", "jdbc:polypheny://", "localhost", 20591, "app", "user", "pa" ) );
+    public WebUiInterface( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
+        this(
+                transactionManager,
+                authenticator,
+                port,
+                new CrudPolypheny(
+                        "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver",
+                        "jdbc:polypheny://",
+                        "localhost",
+                        20591,
+                        "app",
+                        "user",
+                        "pa" ) );
+    }
+
+
+    @Override
+    public void run() {
+        // TODO: Start server
+
+        // Example code:
+        Transaction transaction = transactionManager.startTransaction( null, null, null );
+        RelBuilder relBuilder = QueryPlanBuilder.createRelBuilder( transaction );
+
+        final RelNode logicalPlan = relBuilder
+                .scan( "test" )
+                .build();
+
+        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( logicalPlan );
+
+        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
+        Iterator<Object> iterator = iterable.iterator();
+        final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 100 ), new ArrayList<>() );
+
+        for ( List<Object> row : rows ) {
+            System.out.println( StringUtils.join( row, ", " ) );
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -146,7 +201,6 @@ public class Server {
         post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
         get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
-
     }
 
 
@@ -178,7 +232,7 @@ public class Server {
     /**
      * Define websocket paths
      */
-    private void webSockets(  ) {
+    private void webSockets() {
         webSocket( "/queryAnalyzer", CrudWebSocket.class );
     }
 
