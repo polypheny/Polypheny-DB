@@ -30,7 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
@@ -57,15 +57,16 @@ public class PolySchemaBuilder {
     }
 
 
-    public AbstractPolyphenyDbSchema getCurrent( PolyXid xid ) {
-        if ( !cache.containsValue( xid ) ) {
-            cache.put( xid, update( xid ) );
+    public AbstractPolyphenyDbSchema getCurrent( Transaction transaction ) {
+        /*if ( !cache.containsKey( transaction.getXid() ) ) {
+            cache.put( transaction.getXid(), update( transaction ) );
         }
-        return cache.get( xid );
+        return cache.get( transaction.getXid() ); */
+        return update( transaction );
     }
 
 
-    public AbstractPolyphenyDbSchema update( PolyXid xid ) {
+    public AbstractPolyphenyDbSchema update( Transaction transaction ) {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
@@ -79,7 +80,7 @@ public class PolySchemaBuilder {
         // Build schema
         CatalogCombinedDatabase combinedDatabase;
         try {
-            combinedDatabase = CatalogManagerImpl.getInstance().getCombinedDatabase( xid, 0 );
+            combinedDatabase = transaction.getCatalog().getCombinedDatabase( 0 );
         } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException e ) {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }

@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
@@ -137,7 +138,7 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public void truncate( PolyXid xid, CatalogCombinedTable combinedTable ) {
+    public void truncate( Transaction transaction, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) );
         try {

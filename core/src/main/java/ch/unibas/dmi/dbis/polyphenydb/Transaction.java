@@ -23,25 +23,37 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 
 
-public abstract class CatalogManager {
+public interface Transaction {
 
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param userName The name of the database
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
+    PolyXid getXid();
 
-    public abstract Catalog getCatalog( PolyXid xid );
+    QueryProcessor getQueryProcessor();
+
+    Catalog getCatalog();
+
+    void commit() throws TransactionException;
+
+    void rollback() throws TransactionException;
+
+    PolyphenyDbSchema getSchema();
+
+    abstract DataContext getDataContext();
+
+    JavaTypeFactory getTypeFactory();
+
+    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
+
+    Context getPrepareContext();
+
+    CatalogSchema getDefaultSchema();
 }

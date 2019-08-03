@@ -26,9 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import java.sql.SQLException;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
-import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
 import org.apache.calcite.avatica.remote.LocalService;
 import org.apache.calcite.avatica.remote.Service;
 import org.slf4j.Logger;
@@ -46,14 +44,8 @@ public class DbmsService implements Service {
     private RpcMetadataResponse rpcMetaData;
 
 
-    public DbmsService() throws SQLException {
-        this( NoopMetricsSystem.getInstance() );
-
-    }
-
-
-    public DbmsService( MetricsSystem metrics ) throws SQLException {
-        this.delegate = new LocalService( DbmsMeta.getInstance(), metrics );
+    public DbmsService( DbmsMeta meta, MetricsSystem metrics ) {
+        this.delegate = new LocalService( meta, metrics );
     }
 
 

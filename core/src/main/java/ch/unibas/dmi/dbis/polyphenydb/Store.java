@@ -24,6 +24,6 @@ public interface Store {
 
     void commit( PolyXid xid );
 
-    void truncate( PolyXid xid, CatalogCombinedTable table );
+    void truncate( Transaction transaction, CatalogCombinedTable table );
 
 }
