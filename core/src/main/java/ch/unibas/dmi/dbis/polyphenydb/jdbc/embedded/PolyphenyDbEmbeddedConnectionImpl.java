@@ -55,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
@@ -63,6 +62,8 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.DelegatingTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
@@ -161,7 +162,7 @@ abstract class PolyphenyDbEmbeddedConnectionImpl extends AvaticaConnection imple
         this.rootSchema =
                 Objects.requireNonNull( rootSchema != null
                         ? rootSchema
-                        : PolyphenyDbSchema.createRootSchema( true ) );
+                        : AbstractPolyphenyDbSchema.createRootSchema( true ) );
         Preconditions.checkArgument( this.rootSchema.isRoot(), "must be root schema" );
         this.properties.put( InternalProperty.CASE_SENSITIVE, RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         this.properties.put( InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing() );

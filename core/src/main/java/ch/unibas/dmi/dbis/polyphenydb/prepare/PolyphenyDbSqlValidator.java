@@ -56,9 +56,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
 /**
  * Validator.
  */
-class PolyphenyDbSqlValidator extends SqlValidatorImpl {
+public class PolyphenyDbSqlValidator extends SqlValidatorImpl {
 
-    PolyphenyDbSqlValidator( SqlOperatorTable opTab, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, SqlConformance conformance ) {
+    public PolyphenyDbSqlValidator( SqlOperatorTable opTab, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, SqlConformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 

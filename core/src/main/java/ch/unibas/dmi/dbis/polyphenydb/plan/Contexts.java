@@ -179,7 +179,7 @@ public class Contexts {
     /**
      * Empty context.
      */
-    static class EmptyContext implements Context {
+    public static class EmptyContext implements Context {
 
         public <T> T unwrap( Class<T> clazz ) {
             return null;

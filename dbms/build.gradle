@@ -61,6 +61,7 @@ dependencies {
     compile project(":hsqldb-adapter")
     compile project(":catalog")
     compile project(":webui")
+    compile project(":jdbc-interface")
 
     ////// Logging
     compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2" // License: Apache 2.0
@@ -71,17 +72,17 @@ dependencies {
     compile group: "com.github.rvesse", name: "airline", version: "2.7.0"
 
     ////// APACHE COMMONS LANG
-    compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
+    //compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
     ////// BYTE UNITS
-    compile group: "com.jakewharton.byteunits", name: "byteunits", version: "0.9.1" // License: Apache 2.0
+    //compile group: "com.jakewharton.byteunits", name: "byteunits", version: "0.9.1" // License: Apache 2.0
     
     // HSQLDB
-    compile group: "org.hsqldb", name: "hsqldb", version: "2.5.0"
+    //compile group: "org.hsqldb", name: "hsqldb", version: "2.5.0"
 
     ////// APACHE CALCITE AVATICA
     //compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.16.0-POLYPHENYDB"
-    compile name: "avatica-server-1.16.0-POLYPHENYDB"
+    //compile name: "avatica-server-1.16.0-POLYPHENYDB"
     
 
     // --- Test Compile ---
@@ -89,6 +90,7 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version:"4.12"
     
+    testCompile group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version:"1.0-SNAPSHOT"
 }
 
 

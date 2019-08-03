@@ -25,11 +25,12 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.dispatching.HttpServerDispatcher;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
+import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
+import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.Server;
@@ -61,8 +62,7 @@ public class PolyphenyDb {
 
             // TODO
 
-            PolyXid xid = Utils.generateGlobalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.USER ), PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( PUID.Type.TRANSACTION ) );
-            List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores( xid );
+            List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores();
             for ( CatalogStore store : stores ) {
                 try {
                     Class<?> clazz = Class.forName( store.adapterClazz );
@@ -135,14 +135,6 @@ public class PolyphenyDb {
         final ShutdownHelper sh = new ShutdownHelper();
        // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
-        final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( RuntimeConfig.JDBC_PORT.getInteger() );
-        try {
-            httpServerDispatcher.start();
-        } catch ( Exception e ) {
-            GLOBAL_LOGGER.error( "", e );
-            return; // RETURN - no need to continue!
-        }
-
         final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
         final Server webUiServer = new Server( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
@@ -155,8 +147,15 @@ public class PolyphenyDb {
             }
         } );*/
 
+        final TransactionManager transactionManager = new TransactionManagerImpl();
+        final Authenticator authenticator = new AuthenticatorImpl();
+        JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
+
+        Thread jdbcInterfaceThread = new Thread( jdbcInterface );
+        jdbcInterfaceThread.start();
+
         try {
-            httpServerDispatcher.join();
+            jdbcInterfaceThread.join();
         } catch ( InterruptedException e ) {
             GLOBAL_LOGGER.warn( "Interrupted on ServerSocketDispatcher.join()", e );
         }

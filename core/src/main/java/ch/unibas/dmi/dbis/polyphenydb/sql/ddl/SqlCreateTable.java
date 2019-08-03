@@ -49,10 +49,10 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
@@ -157,7 +157,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
     @Override
-    public void execute( Context context, CatalogManager catalog ) {
+    public void execute( Context context, Transaction transaction ) {
         if ( query != null ) {
             throw new RuntimeException( "Not supported yet" );
         }
@@ -166,13 +166,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         long schemaId;
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = catalog.getSchema( context.getTransactionId(), name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = transaction.getCatalog().getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), name.names.get( 0 ) ).id;
+                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
                 tableName = name.names.get( 1 );
             } else { // TableName
-                schemaId = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
@@ -187,8 +187,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
-            long tableId = catalog.addTable(
-                    context.getTransactionId(),
+            long tableId = transaction.getCatalog().addTable(
                     tableName,
                     schemaId,
                     context.getCurrentUserId(),
@@ -197,7 +196,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     TableType.TABLE,
                     null );
 
-            catalog.addDataPlacement( context.getTransactionId(), context.getDefaultStore(), tableId );
+            transaction.getCatalog().addDataPlacement( context.getDefaultStore(), tableId );
 
             if ( this.columnList == null ) {
                 // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
@@ -209,8 +208,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    catalog.addColumn(
-                            context.getTransactionId(),
+                    transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
@@ -227,7 +225,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 }
             }
 
-            CatalogCombinedTable combinedTable = catalog.getCombinedTable( context.getTransactionId(), tableId );
+            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );

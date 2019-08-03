@@ -28,11 +28,11 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Pattern;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Pattern;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
@@ -965,7 +965,7 @@ final class Statements {
 
 
     // Get all Stores
-    public static List<CatalogStore> getStores( XATransactionHandler transactionHandler ) throws GenericCatalogException {
+    public static List<CatalogStore> getStores( TransactionHandler transactionHandler ) throws GenericCatalogException {
         return storeFilter( transactionHandler, "" );
     }
 

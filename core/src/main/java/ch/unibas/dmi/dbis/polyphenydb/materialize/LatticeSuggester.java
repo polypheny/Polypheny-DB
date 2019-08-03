@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.materialize;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
@@ -62,6 +61,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.CompositeList;
@@ -226,7 +227,7 @@ public class LatticeSuggester {
             if ( rootNode.isCyclic() ) {
                 continue;
             }
-            final PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
+            final PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false );
             final Lattice.Builder latticeBuilder = new Lattice.Builder( space, rootSchema, rootNode );
 
             final List<MutableNode> flatNodes = new ArrayList<>();
@@ -342,7 +343,7 @@ public class LatticeSuggester {
                     // TODO: assign alias based on node in bestMatch
                     mutableNode.addPath( path, null );
                 }
-                final PolyphenyDbSchema rootSchema = PolyphenyDbSchema.createRootSchema( false );
+                final PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false );
                 final Lattice.Builder builder = new Lattice.Builder( space, rootSchema, mutableNode );
                 for ( Lattice.Measure measure : bestMatch.defaultMeasures ) {
                     builder.addMeasure( measure.copy( mapper( bestMatch, builder ) ) );

@@ -115,7 +115,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ databaseName, schemaName, tableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, deferrability };
+            return new Serializable[]{ referencedKeyDatabaseName, referencedKeySchemaName, referencedKeyTableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, deferrability };
         }
 
 

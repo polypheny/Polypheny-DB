@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser.parserextensiontesting;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -107,7 +107,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
     @Override
-    public void execute( Context context, CatalogManager catalog ) {
+    public void execute( Context context, Transaction transaction ) {
 
     }
 

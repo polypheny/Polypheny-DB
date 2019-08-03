@@ -1,10 +1,10 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2018 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,23 +20,20 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.dispatching;
+package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.DbmsService;
 import com.jakewharton.byteunits.BinaryByteUnit;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
-import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.server.AvaticaHandler;
-import org.apache.calcite.avatica.server.HandlerFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -57,28 +54,23 @@ public class HttpServerDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( HttpServerDispatcher.class );
 
+    private int threadPoolMinThreads = 10;
+    private int threadPoolMaxThreads = 100;
+    private int threadPoolIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
 
-    protected int threadPoolMinThreads = 10;
-    protected int threadPoolMaxThreads = 100;
-    protected int threadPoolIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
+    private Server jettyServer;
+    private int port;
 
-    protected Server jettyServer;
-    protected int port;
+    private final int httpMaxAllowedHeaderSize = (int) Math.min( BinaryByteUnit.KIBIBYTES.toBytes( 64 ), Integer.MAX_VALUE );
 
-    protected final int httpMaxAllowedHeaderSize = (int) Math.min( BinaryByteUnit.KIBIBYTES.toBytes( 64 ), Integer.MAX_VALUE );
+    private final int connectionIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
 
-    protected final int connectionIdleTimeoutMillis = (int) Math.min( TimeUnit.MINUTES.toMillis( 1 ), Integer.MAX_VALUE );
-
-    protected final AvaticaHandler handler;
+    private final AvaticaHandler handler;
 
 
-    public HttpServerDispatcher( int port ) throws SQLException {
+    public HttpServerDispatcher( int port, final AvaticaHandler handler ) throws SQLException {
         this.port = port;
-
-        this.handler = new HandlerFactory().getHandler(
-                new DbmsService(),
-                Serialization.PROTOBUF,
-                NoopMetricsSystemConfiguration.getInstance() );
+        this.handler = handler;
     }
 
 
@@ -95,7 +87,6 @@ public class HttpServerDispatcher {
 
         final ServerConnector connector = new ServerConnector( jettyServer, new HttpConnectionFactory( httpConfiguration ) );
         connector.setIdleTimeout( connectionIdleTimeoutMillis );
-        connector.setSoLingerTime( -1 ); // -1 = "disabled"
         connector.setPort( port );
 
         jettyServer.setConnectors( new Connector[]{ connector } );

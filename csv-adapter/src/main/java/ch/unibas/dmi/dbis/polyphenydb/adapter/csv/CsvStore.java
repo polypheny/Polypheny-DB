@@ -3,6 +3,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -69,7 +70,7 @@ public class CsvStore implements Store {
 
 
     @Override
-    public void truncate( PolyXid xid, CatalogCombinedTable table ) {
+    public void truncate( Transaction transaction, CatalogCombinedTable table ) {
         LOG.warn( "CSV Store does not support truncate." );
     }
 }

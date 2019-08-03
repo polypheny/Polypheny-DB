@@ -26,12 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PUID;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.ConnectionId;
-import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Utils;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
@@ -49,7 +47,6 @@ public class PolyphenyDbConnectionHandle {
 
     private final Meta.ConnectionHandle handle;
 
-    private final NodeId nodeId;
     private final UserId userId;
 
     private final CatalogUser user;
@@ -57,33 +54,35 @@ public class PolyphenyDbConnectionHandle {
     private final CatalogSchema schema;
 
     private final ConnectionId connectionId;
-    private volatile transient PolyXid currentTransaction;
+    private volatile transient Transaction currentTransaction;
     private volatile transient PolyphenyDbResultSet currentOpenResultSet;
+
+    private final TransactionManager transactionManager;
 
     private volatile transient ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
 
 
-    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema ) {
+    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema, final TransactionManager transactionManager ) {
         this.handle = handle;
 
-        this.nodeId = nodeId;
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
         this.user = catalogUser;
         this.connectionId = connectionId;
         this.database = database;
         this.schema = schema;
+        this.transactionManager = transactionManager;
     }
 
 
-    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final NodeId nodeId, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema ) {
+    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final CatalogSchema schema, final TransactionManager transactionManager ) {
         this.handle = handle;
 
-        this.nodeId = nodeId;
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
         this.user = catalogUser;
         this.connectionId = ConnectionId.fromString( connectionId );
         this.database = database;
         this.schema = schema;
+        this.transactionManager = transactionManager;
     }
 
 
@@ -92,54 +91,31 @@ public class PolyphenyDbConnectionHandle {
     }
 
 
-    public PolyXid startNewTransaction() {
-        synchronized ( this ) {
-            if ( currentTransaction != null ) {
-                throw new IllegalStateException( "Illegal attempt to start a new transaction prior closing the current transaction." );
-            }
-            return currentTransaction = PolyphenyDbConnectionHandle.generateNewTransactionId( nodeId, userId, connectionId );
-        }
-    }
-
-
-    //
-    // DO NOT CALL THIS EXCEPT YOU KNOW WHAT YOU ARE DOING!!!!!!
-    //
-    // This method is only protected so that it can be called from the openConnection method in the DbmsMeta class. Do not call from elsewhere!
-    protected static PolyXid generateNewTransactionId( final NodeId nodeId, final UserId userId, final ConnectionId connectionId ) {
-        return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
-    }
-
-
-    public PolyXid getCurrentTransaction() {
+    public Transaction getCurrentTransaction() {
         synchronized ( this ) {
             return currentTransaction;
         }
     }
 
 
-    public PolyXid endCurrentTransaction() {
+    public Transaction endCurrentTransaction() {
         synchronized ( this ) {
-            PolyXid endedTransaction = currentTransaction;
+            Transaction endedTransaction = currentTransaction;
             currentTransaction = null;
             return endedTransaction;
         }
     }
 
 
-    public CatalogUser getUser() {
-        return user;
+    public Transaction getCurrentOrCreateNewTransaction() {
+        synchronized ( this ) {
+            if ( currentTransaction == null ) {
+                currentTransaction = transactionManager.startTransaction( user, schema, database );
+            }
+            return currentTransaction;
+        }
     }
 
-
-    public CatalogDatabase getDatabase() {
-        return database;
-    }
-
-
-    public CatalogSchema getSchema() {
-        return schema;
-    }
 
 
     public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {

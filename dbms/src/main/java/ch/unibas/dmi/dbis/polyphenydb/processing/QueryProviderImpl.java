@@ -23,10 +23,11 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.DmlExecutionEngine.PolyphenyDbQueryable;
+import java.lang.reflect.Type;
+import org.apache.calcite.linq4j.BaseQueryable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -97,6 +98,20 @@ public class QueryProviderImpl implements QueryProvider {
     @Override
     public <T> Enumerator<T> executeQuery( Queryable<T> queryable ) {
         return null;
+    }
+
+
+    /**
+     * Implementation of Queryable.
+     *
+     * @param <T> element type
+     */
+    static class PolyphenyDbQueryable<T> extends BaseQueryable<T> {
+
+        PolyphenyDbQueryable( QueryProvider queryProvider, Type elementType, Expression expression ) {
+            super( queryProvider, elementType, expression );
+        }
+
     }
 
 }

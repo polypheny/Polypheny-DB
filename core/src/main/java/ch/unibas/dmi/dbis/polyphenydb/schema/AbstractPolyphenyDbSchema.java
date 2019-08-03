@@ -1,24 +1,4 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
- *
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- *
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
@@ -40,24 +20,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable.MaterializedViewTableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.StarTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
@@ -75,9 +45,10 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
@@ -85,10 +56,14 @@ import org.apache.calcite.linq4j.tree.Expressions;
  *
  * Wrapper around user-defined schema used internally.
  */
-public abstract class PolyphenyDbSchema {
+public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
-    private final PolyphenyDbSchema parent;
+    @Getter
+    private final AbstractPolyphenyDbSchema parent;
+    @Getter
+    @Setter
     public Schema schema;
+    @Getter
     public final String name;
     /**
      * Tables explicitly defined in this schema. Does not include tables in {@link #schema}.
@@ -103,7 +78,7 @@ public abstract class PolyphenyDbSchema {
     private List<? extends List<String>> path;
 
 
-    protected PolyphenyDbSchema( PolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap, NameMap<TypeEntry> typeMap,
+    protected AbstractPolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap, NameMap<TypeEntry> typeMap,
             NameMultimap<FunctionEntry> functionMap, NameSet functionNames, NameMap<FunctionEntry> nullaryFunctionMap, List<? extends List<String>> path ) {
         this.parent = parent;
         this.schema = schema;
@@ -139,6 +114,34 @@ public abstract class PolyphenyDbSchema {
             this.typeMap = Objects.requireNonNull( typeMap );
         }
         this.path = path;
+    }
+
+
+    /**
+     * Creates a root schema.
+     *
+     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
+     */
+    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
+        return createRootSchema( cache, "" );
+    }
+
+
+    /**
+     * Creates a root schema.
+     *
+     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
+     * @param name Schema name
+     */
+    public static PolyphenyDbSchema createRootSchema( boolean cache, String name ) {
+        PolyphenyDbSchema rootSchema;
+        final Schema schema = new RootSchema();
+        if ( cache ) {
+            rootSchema = new CachingPolyphenyDbSchema( null, schema, name );
+        } else {
+            rootSchema = new SimplePolyphenyDbSchema( null, schema, name );
+        }
+        return rootSchema;
     }
 
 
@@ -195,11 +198,9 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns a snapshot representation of this PolyphenyDbSchema.
      */
-    protected abstract PolyphenyDbSchema snapshot( PolyphenyDbSchema parent, SchemaVersion version );
+    protected abstract PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version );
 
     protected abstract boolean isCacheEnabled();
-
-    public abstract void setCache( boolean cache );
 
 
     /**
@@ -221,6 +222,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Defines a table within this schema.
      */
+    @Override
     public TableEntry add( String tableName, Table table ) {
         return add( tableName, table, ImmutableList.of() );
     }
@@ -229,6 +231,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Defines a table within this schema.
      */
+    @Override
     public TableEntry add( String tableName, Table table, ImmutableList<String> sqls ) {
         final TableEntryImpl entry = new TableEntryImpl( this, tableName, table, sqls );
         tableMap.put( tableName, entry );
@@ -239,6 +242,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Defines a type within this schema.
      */
+    @Override
     public TypeEntry add( String name, RelProtoDataType type ) {
         final TypeEntry entry = new TypeEntryImpl( this, name, type );
         typeMap.put( name, entry );
@@ -267,8 +271,9 @@ public abstract class PolyphenyDbSchema {
     }
 
 
-    public PolyphenyDbSchema root() {
-        for ( PolyphenyDbSchema schema = this; ; ) {
+    @Override
+    public AbstractPolyphenyDbSchema root() {
+        for ( AbstractPolyphenyDbSchema schema = this; ; ) {
             if ( schema.parent == null ) {
                 return schema;
             }
@@ -280,6 +285,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns whether this is a root schema.
      */
+    @Override
     public boolean isRoot() {
         return parent == null;
     }
@@ -288,12 +294,13 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns the path of an object in this schema.
      */
+    @Override
     public List<String> path( String name ) {
         final List<String> list = new ArrayList<>();
         if ( name != null ) {
             list.add( name );
         }
-        for ( PolyphenyDbSchema s = this; s != null; s = s.parent ) {
+        for ( AbstractPolyphenyDbSchema s = this; s != null; s = s.parent ) {
             if ( s.parent != null || !s.name.equals( "" ) ) {
                 // Omit the root schema's name from the path if it's the empty string, which it usually is.
                 list.add( s.name );
@@ -303,6 +310,7 @@ public abstract class PolyphenyDbSchema {
     }
 
 
+    @Override
     public final PolyphenyDbSchema getSubSchema( String schemaName, boolean caseSensitive ) {
         // Check explicit schemas.
         //noinspection LoopStatementThatDoesntLoop
@@ -314,14 +322,9 @@ public abstract class PolyphenyDbSchema {
 
 
     /**
-     * Adds a child schema of this schema.
-     */
-    public abstract PolyphenyDbSchema add( String name, Schema schema );
-
-
-    /**
      * Returns a table that materializes the given SQL statement.
      */
+    @Override
     public final TableEntry getTableBySql( String sql ) {
         for ( TableEntry tableEntry : tableMap.map().values() ) {
             if ( tableEntry.sqls.contains( sql ) ) {
@@ -335,6 +338,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns a table with the given name. Does not look for views.
      */
+    @Override
     public final TableEntry getTable( String tableName, boolean caseSensitive ) {
         // Check explicit tables.
         //noinspection LoopStatementThatDoesntLoop
@@ -345,18 +349,9 @@ public abstract class PolyphenyDbSchema {
     }
 
 
-    public String getName() {
-        return name;
-    }
-
-
+    @Override
     public SchemaPlus plus() {
         return new SchemaPlusImpl();
-    }
-
-
-    public static PolyphenyDbSchema from( SchemaPlus plus ) {
-        return ((SchemaPlusImpl) plus).polyphenyDbSchema();
     }
 
 
@@ -368,6 +363,7 @@ public abstract class PolyphenyDbSchema {
      *
      * @return Path of this schema; never null, may be empty
      */
+    @Override
     public List<? extends List<String>> getPath() {
         if ( path != null ) {
             return path;
@@ -381,6 +377,7 @@ public abstract class PolyphenyDbSchema {
      * Returns a collection of sub-schemas, both explicit (defined using {@link #add(String, Schema)})
      * and implicit (defined using {@link Schema#getSubSchemaNames()} and {@link Schema#getSubSchema(String)}).
      */
+    @Override
     public final NavigableMap<String, PolyphenyDbSchema> getSubSchemaMap() {
         // Build a map of implicit sub-schemas first, then explicit sub-schemas.
         // If there are implicit and explicit with the same name, explicit wins.
@@ -396,6 +393,7 @@ public abstract class PolyphenyDbSchema {
      *
      * All are explicit (defined using {@link #add(String, Lattice)}).
      */
+    @Override
     public NavigableMap<String, LatticeEntry> getLatticeMap() {
         return ImmutableSortedMap.copyOf( latticeMap.map() );
     }
@@ -404,6 +402,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns the set of all table names. Includes implicit and explicit tables and functions with zero parameters.
      */
+    @Override
     public final NavigableSet<String> getTableNames() {
         final ImmutableSortedSet.Builder<String> builder = new ImmutableSortedSet.Builder<>( NameSet.COMPARATOR );
         // Add explicit tables, case-sensitive.
@@ -417,6 +416,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns the set of all types names.
      */
+    @Override
     public final NavigableSet<String> getTypeNames() {
         final ImmutableSortedSet.Builder<String> builder = new ImmutableSortedSet.Builder<>( NameSet.COMPARATOR );
         // Add explicit types.
@@ -430,6 +430,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns a type, explicit and implicit, with a given name. Never null.
      */
+    @Override
     public final TypeEntry getType( String name, boolean caseSensitive ) {
         for ( Map.Entry<String, TypeEntry> entry : typeMap.range( name, caseSensitive ).entrySet() ) {
             return entry.getValue();
@@ -441,6 +442,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns a collection of all functions, explicit and implicit, with a given name. Never null.
      */
+    @Override
     public final Collection<Function> getFunctions( String name, boolean caseSensitive ) {
         final ImmutableList.Builder<Function> builder = ImmutableList.builder();
         // Add explicit functions.
@@ -456,6 +458,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns the list of function names in this schema, both implicit and explicit, never null.
      */
+    @Override
     public final NavigableSet<String> getFunctionNames() {
         final ImmutableSortedSet.Builder<String> builder = new ImmutableSortedSet.Builder<>( NameSet.COMPARATOR );
         // Add explicit functions, case-sensitive.
@@ -469,6 +472,7 @@ public abstract class PolyphenyDbSchema {
     /**
      * Returns tables derived from explicit and implicit functions that take zero parameters.
      */
+    @Override
     public final NavigableMap<String, Table> getTablesBasedOnNullaryFunctions() {
         ImmutableSortedMap.Builder<String, Table> builder = new ImmutableSortedMap.Builder<>( NameSet.COMPARATOR );
         for ( Map.Entry<String, FunctionEntry> entry : nullaryFunctionMap.map().entrySet() ) {
@@ -489,6 +493,7 @@ public abstract class PolyphenyDbSchema {
      * Returns a tables derived from explicit and implicit functions
      * that take zero parameters.
      */
+    @Override
     public final TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
         for ( Map.Entry<String, FunctionEntry> entry : nullaryFunctionMap.range( tableName, caseSensitive ).entrySet() ) {
             final Function function = entry.getValue().getFunction();
@@ -511,6 +516,7 @@ public abstract class PolyphenyDbSchema {
      * @param version The current schema version
      * @return the schema snapshot.
      */
+    @Override
     public PolyphenyDbSchema createSnapshot( SchemaVersion version ) {
         Preconditions.checkArgument( this.isRoot(), "must be root schema" );
         return snapshot( null, version );
@@ -539,46 +545,21 @@ public abstract class PolyphenyDbSchema {
     }
 
 
-    /**
-     * Creates a root schema.
-     *
-     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
-     */
-    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
-        return createRootSchema( cache, "" );
-    }
-
-
-    /**
-     * Creates a root schema.
-     *
-     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
-     * @param name Schema name
-     */
-    public static PolyphenyDbSchema createRootSchema( boolean cache, String name ) {
-        PolyphenyDbSchema rootSchema;
-        final Schema schema = new RootSchema();
-        if ( cache ) {
-            rootSchema = new CachingPolyphenyDbSchema( null, schema, name );
-        } else {
-            rootSchema = new SimplePolyphenyDbSchema( null, schema, name );
-        }
-        return rootSchema;
-    }
-
-
+    @Override
     @Experimental
     public boolean removeSubSchema( String name ) {
         return subSchemaMap.remove( name ) != null;
     }
 
 
+    @Override
     @Experimental
     public boolean removeTable( String name ) {
         return tableMap.remove( name ) != null;
     }
 
 
+    @Override
     @Experimental
     public boolean removeFunction( String name ) {
         final FunctionEntry remove = nullaryFunctionMap.remove( name );
@@ -590,6 +571,7 @@ public abstract class PolyphenyDbSchema {
     }
 
 
+    @Override
     @Experimental
     public boolean removeType( String name ) {
         return typeMap.remove( name ) != null;
@@ -597,359 +579,161 @@ public abstract class PolyphenyDbSchema {
 
 
     /**
-     * Entry in a schema, such as a table or sub-schema.
-     *
-     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several schemas, or even the same schema several times, with different names. In this
-     * respect, it is like an inode in a Unix file system.
-     *
-     * The members of a schema must have unique names.
-     */
-    public abstract static class Entry {
-
-        public final PolyphenyDbSchema schema;
-        public final String name;
-
-
-        public Entry( PolyphenyDbSchema schema, String name ) {
-            this.schema = Objects.requireNonNull( schema );
-            this.name = Objects.requireNonNull( name );
-        }
-
-
-        /**
-         * Returns this object's path. For example ["hr", "emps"].
-         */
-        public final List<String> path() {
-            return schema.path( name );
-        }
-    }
-
-
-    /**
-     * Membership of a table in a schema.
-     */
-    public abstract static class TableEntry extends Entry {
-
-        public final ImmutableList<String> sqls;
-
-
-        public TableEntry( PolyphenyDbSchema schema, String name, ImmutableList<String> sqls ) {
-            super( schema, name );
-            this.sqls = Objects.requireNonNull( sqls );
-        }
-
-
-        public abstract Table getTable();
-    }
-
-
-    /**
-     * Membership of a type in a schema.
-     */
-    public abstract static class TypeEntry extends Entry {
-
-        public TypeEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract RelProtoDataType getType();
-    }
-
-
-    /**
-     * Membership of a function in a schema.
-     */
-    public abstract static class FunctionEntry extends Entry {
-
-        public FunctionEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract Function getFunction();
-
-        /**
-         * Whether this represents a materialized view. (At a given point in time, it may or may not be materialized as a table.)
-         */
-        public abstract boolean isMaterialization();
-    }
-
-
-    /**
-     * Membership of a lattice in a schema.
-     */
-    public abstract static class LatticeEntry extends Entry {
-
-        public LatticeEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract Lattice getLattice();
-
-        public abstract TableEntry getStarTable();
-    }
-
-
-    /**
-     * Implementation of {@link SchemaPlus} based on a {@link PolyphenyDbSchema}.
+     * Implementation of {@link SchemaPlus} based on a {@link AbstractPolyphenyDbSchema}.
      */
     private class SchemaPlusImpl implements SchemaPlus {
 
-        PolyphenyDbSchema polyphenyDbSchema() {
-            return PolyphenyDbSchema.this;
+        @Override
+        public AbstractPolyphenyDbSchema polyphenyDbSchema() {
+            return AbstractPolyphenyDbSchema.this;
         }
 
 
+        @Override
         public SchemaPlus getParentSchema() {
             return parent == null ? null : parent.plus();
         }
 
 
+        @Override
         public String getName() {
-            return PolyphenyDbSchema.this.getName();
+            return AbstractPolyphenyDbSchema.this.getName();
         }
 
 
+        @Override
         public boolean isMutable() {
             return schema.isMutable();
         }
 
 
+        @Override
         public void setCacheEnabled( boolean cache ) {
-            PolyphenyDbSchema.this.setCache( cache );
+            AbstractPolyphenyDbSchema.this.setCache( cache );
         }
 
 
+        @Override
         public boolean isCacheEnabled() {
-            return PolyphenyDbSchema.this.isCacheEnabled();
+            return AbstractPolyphenyDbSchema.this.isCacheEnabled();
         }
 
 
+        @Override
         public Schema snapshot( SchemaVersion version ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus parentSchema, String name ) {
             return schema.getExpression( parentSchema, name );
         }
 
 
+        @Override
         public Table getTable( String name ) {
-            final TableEntry entry = PolyphenyDbSchema.this.getTable( name, true );
+            final TableEntry entry = AbstractPolyphenyDbSchema.this.getTable( name, true );
             return entry == null ? null : entry.getTable();
         }
 
 
+        @Override
         public NavigableSet<String> getTableNames() {
-            return PolyphenyDbSchema.this.getTableNames();
+            return AbstractPolyphenyDbSchema.this.getTableNames();
         }
 
 
         @Override
         public RelProtoDataType getType( String name ) {
-            final TypeEntry entry = PolyphenyDbSchema.this.getType( name, true );
+            final TypeEntry entry = AbstractPolyphenyDbSchema.this.getType( name, true );
             return entry == null ? null : entry.getType();
         }
 
 
         @Override
         public Set<String> getTypeNames() {
-            return PolyphenyDbSchema.this.getTypeNames();
+            return AbstractPolyphenyDbSchema.this.getTypeNames();
         }
 
 
+        @Override
         public Collection<Function> getFunctions( String name ) {
-            return PolyphenyDbSchema.this.getFunctions( name, true );
+            return AbstractPolyphenyDbSchema.this.getFunctions( name, true );
         }
 
 
+        @Override
         public NavigableSet<String> getFunctionNames() {
-            return PolyphenyDbSchema.this.getFunctionNames();
+            return AbstractPolyphenyDbSchema.this.getFunctionNames();
         }
 
 
+        @Override
         public SchemaPlus getSubSchema( String name ) {
-            final PolyphenyDbSchema subSchema = PolyphenyDbSchema.this.getSubSchema( name, true );
+            final PolyphenyDbSchema subSchema = AbstractPolyphenyDbSchema.this.getSubSchema( name, true );
             return subSchema == null ? null : subSchema.plus();
         }
 
 
+        @Override
         public Set<String> getSubSchemaNames() {
-            return PolyphenyDbSchema.this.getSubSchemaMap().keySet();
+            return AbstractPolyphenyDbSchema.this.getSubSchemaMap().keySet();
         }
 
 
+        @Override
         public SchemaPlus add( String name, Schema schema ) {
-            final PolyphenyDbSchema polyphenyDbSchema = PolyphenyDbSchema.this.add( name, schema );
+            final PolyphenyDbSchema polyphenyDbSchema = AbstractPolyphenyDbSchema.this.add( name, schema );
             return polyphenyDbSchema.plus();
         }
 
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             if ( clazz.isInstance( this ) ) {
                 return clazz.cast( this );
             }
-            if ( clazz.isInstance( PolyphenyDbSchema.this ) ) {
-                return clazz.cast( PolyphenyDbSchema.this );
+            if ( clazz.isInstance( AbstractPolyphenyDbSchema.this ) ) {
+                return clazz.cast( AbstractPolyphenyDbSchema.this );
             }
-            if ( clazz.isInstance( PolyphenyDbSchema.this.schema ) ) {
-                return clazz.cast( PolyphenyDbSchema.this.schema );
+            if ( clazz.isInstance( AbstractPolyphenyDbSchema.this.schema ) ) {
+                return clazz.cast( AbstractPolyphenyDbSchema.this.schema );
             }
             throw new ClassCastException( "not a " + clazz );
         }
 
 
+        @Override
         public void setPath( ImmutableList<ImmutableList<String>> path ) {
-            PolyphenyDbSchema.this.path = path;
-        }
-
-
-        public void add( String name, Table table ) {
-            PolyphenyDbSchema.this.add( name, table );
-        }
-
-
-        public void add( String name, Function function ) {
-            PolyphenyDbSchema.this.add( name, function );
-        }
-
-
-        public void add( String name, RelProtoDataType type ) {
-            PolyphenyDbSchema.this.add( name, type );
-        }
-
-
-        public void add( String name, Lattice lattice ) {
-            PolyphenyDbSchema.this.add( name, lattice );
-        }
-    }
-
-
-    /**
-     * Implementation of {@link PolyphenyDbSchema.TableEntry} where all properties are held in fields.
-     */
-    public static class TableEntryImpl extends TableEntry {
-
-        private final Table table;
-
-
-        /**
-         * Creates a TableEntryImpl.
-         */
-        public TableEntryImpl( PolyphenyDbSchema schema, String name, Table table, ImmutableList<String> sqls ) {
-            super( schema, name, sqls );
-            this.table = Objects.requireNonNull( table );
-        }
-
-
-        public Table getTable() {
-            return table;
-        }
-    }
-
-
-    /**
-     * Implementation of {@link TypeEntry} where all properties are held in fields.
-     */
-    public static class TypeEntryImpl extends TypeEntry {
-
-        private final RelProtoDataType protoDataType;
-
-
-        /**
-         * Creates a TypeEntryImpl.
-         */
-        public TypeEntryImpl( PolyphenyDbSchema schema, String name, RelProtoDataType protoDataType ) {
-            super( schema, name );
-            this.protoDataType = protoDataType;
-        }
-
-
-        public RelProtoDataType getType() {
-            return protoDataType;
-        }
-    }
-
-
-    /**
-     * Implementation of {@link FunctionEntry} where all properties are held in fields.
-     */
-    public static class FunctionEntryImpl extends FunctionEntry {
-
-        private final Function function;
-
-
-        /**
-         * Creates a FunctionEntryImpl.
-         */
-        public FunctionEntryImpl( PolyphenyDbSchema schema, String name, Function function ) {
-            super( schema, name );
-            this.function = function;
-        }
-
-
-        public Function getFunction() {
-            return function;
-        }
-
-
-        public boolean isMaterialization() {
-            return function instanceof MaterializedViewTableMacro;
-        }
-    }
-
-
-    /**
-     * Implementation of {@link LatticeEntry} where all properties are held in fields.
-     */
-    public static class LatticeEntryImpl extends LatticeEntry {
-
-        private final Lattice lattice;
-        private final PolyphenyDbSchema.TableEntry starTableEntry;
-
-
-        /**
-         * Creates a LatticeEntryImpl.
-         */
-        public LatticeEntryImpl( PolyphenyDbSchema schema, String name, Lattice lattice ) {
-            super( schema, name );
-            this.lattice = lattice;
-
-            // Star table has same name as lattice and is in same schema.
-            final StarTable starTable = lattice.createStarTable();
-            starTableEntry = schema.add( name, starTable );
-        }
-
-
-        public Lattice getLattice() {
-            return lattice;
-        }
-
-
-        public TableEntry getStarTable() {
-            return starTableEntry;
-        }
-    }
-
-
-    /**
-     * Schema that has no parents.
-     */
-    static class RootSchema extends AbstractSchema {
-
-        RootSchema() {
-            super();
+            AbstractPolyphenyDbSchema.this.path = path;
         }
 
 
         @Override
-        public Expression getExpression( SchemaPlus parentSchema, String name ) {
-            return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
+        public void add( String name, Table table ) {
+            AbstractPolyphenyDbSchema.this.add( name, table );
+        }
+
+
+        @Override
+        public void add( String name, Function function ) {
+            AbstractPolyphenyDbSchema.this.add( name, function );
+        }
+
+
+        @Override
+        public void add( String name, RelProtoDataType type ) {
+            AbstractPolyphenyDbSchema.this.add( name, type );
+        }
+
+
+        @Override
+        public void add( String name, Lattice lattice ) {
+            AbstractPolyphenyDbSchema.this.add( name, lattice );
         }
     }
+
 
 }
 

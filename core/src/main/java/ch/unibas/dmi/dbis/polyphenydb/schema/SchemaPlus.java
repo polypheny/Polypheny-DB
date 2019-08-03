@@ -65,6 +65,9 @@ import com.google.common.collect.ImmutableList;
  */
 public interface SchemaPlus extends Schema {
 
+
+    PolyphenyDbSchema polyphenyDbSchema();
+
     /**
      * Returns the parent schema, or null if this schema has no parent.
      */

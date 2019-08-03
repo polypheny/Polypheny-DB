@@ -47,10 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.Encoding;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager.SchemaType;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate;
@@ -105,10 +105,10 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
 
     @Override
-    public void execute( Context context, CatalogManager catalog ) {
+    public void execute( Context context, Transaction transaction ) {
         try {
             // Check if there is already a schema with this name
-            if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
+            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
                 if ( ifNotExists ) {
                     // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                     return;
@@ -116,8 +116,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
                     throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
                 }
             } else {
-                catalog.addSchema(
-                        context.getTransactionId(),
+                transaction.getCatalog().addSchema(
                         name.getSimple(),
                         context.getDatabaseId(),
                         context.getCurrentUserId(),

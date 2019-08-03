@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
@@ -76,9 +75,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.CustomColumnResolvingTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ExtensibleTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Path;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
@@ -145,7 +146,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      * @param typeFactory Type factory
      */
     public MockCatalogReader( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
-        super( PolyphenyDbSchema.createRootSchema( false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory );
+        super( AbstractPolyphenyDbSchema.createRootSchema( false, DEFAULT_CATALOG ), SqlNameMatchers.withCaseSensitive( caseSensitive ), ImmutableList.of( PREFIX, ImmutableList.of() ), typeFactory );
     }
 
 

@@ -47,7 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManager;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -103,24 +103,24 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, CatalogManager catalog ) {
+    public void execute( Context context, Transaction transaction ) {
         try {
             // Check if there is a schema with this name
-            if ( catalog.checkIfExistsSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() ) ) {
-                CatalogSchema catalogSchema = catalog.getSchema( context.getTransactionId(), context.getDatabaseId(), name.getSimple() );
+            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
+                CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), name.getSimple() );
 
                 // Drop all tables in this schema
-                List<CatalogTable> catalogTables = catalog.getTables( context.getTransactionId(), catalogSchema.id, null );
+                List<CatalogTable> catalogTables = transaction.getCatalog().getTables( catalogSchema.id, null );
                 catalogTables.forEach( catalogTable -> {
                     new SqlDropTable(
                             SqlParserPos.ZERO,
                             false,
                             new SqlIdentifier( Arrays.asList( catalogTable.databaseName, catalogTable.schemaName, catalogTable.name ), SqlParserPos.ZERO )
-                    ).execute( context, catalog );
+                    ).execute( context, transaction );
                 } );
 
                 // Drop schema
-                catalog.deleteSchema( context.getTransactionId(), catalogSchema.id );
+                transaction.getCatalog().deleteSchema( catalogSchema.id );
             } else {
                 if ( ifExists ) {
                     // This is ok because "IF EXISTS" was specified
