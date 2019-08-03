@@ -26,10 +26,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel.Prefer;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
@@ -44,7 +47,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
@@ -52,14 +54,16 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbSqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
@@ -67,21 +71,20 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Program;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
@@ -99,6 +102,7 @@ import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
+import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
@@ -125,6 +129,21 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     @Override
     public PolyphenyDbSignature processSqlQuery( final String sql, final Config parserConfig ) {
+        PolyphenyDbSchema rootSchema = transaction.getSchema();
+        Context prepareContext = transaction.getPrepareContext();
+
+        List<RelTraitDef> traitDefs = new ArrayList<>();
+        traitDefs.add( ConventionTraitDef.INSTANCE );
+        FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
+                .parserConfig( parserConfig )
+                .traitDefs( traitDefs )
+                .defaultSchema( rootSchema.plus() )
+                .prepareContext( prepareContext )
+                //.sqlToRelConverterConfig( sqlToRelConfig )
+                .programs( Programs.ofRules( Programs.RULE_SET ) )
+                .build();
+        Planner planner = Frameworks.getPlanner( frameworkConfig );
+
         //
         // Parsing
         final StopWatch stopWatch = new StopWatch();
@@ -134,10 +153,15 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         stopWatch.start();
         SqlNode parsed;
         try {
-            parsed = parseSql( sql, parserConfig );
+            parsed = planner.parse( sql );
         } catch ( SqlParseException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
+        }/*
+        try {
+            parsed = parseSql( sql, frameworkConfig );
+        } catch ( SqlParseException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }*/
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Parsed query: [{}]", parsed );
@@ -157,12 +181,13 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             LOG.debug( "Validating SQL ..." );
         }
         stopWatch.start();
-        final SqlConformance conformance = parserConfig.conformance();
+        /*final SqlConformance conformance = parserConfig.conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
         PolyphenyDbSqlValidator validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
-        Pair<SqlNode, RelDataType> validatePair;
+        Pair<SqlNode, RelDataType> validatePair;*/
+        Pair<SqlNode, RelDataType> validatePair = null;
         try {
-            validatePair = validateSql( validator, parsed );
+            validatePair = planner.validateAndGetType( parsed );
         } catch ( ValidationException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
@@ -177,25 +202,19 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         }
 
         //
-        //
-        HepProgram hepProgram =
-                new HepProgramBuilder()
-                        .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INTERPRETER )
-                        .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
-                        .build();
-        RelOptPlanner planner = new HepPlanner( hepProgram );
-
-        //
         // Plan
         stopWatch.reset();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Planning Statement ..." );
         }
         stopWatch.start();
-        RelNode logicalPlan = plan( planner, validated, validator );
+        RelNode logicalPlan;
+        try {
+            logicalPlan = planner.rel( validated ).rel;
+        } catch ( RelConversionException e ) {
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+        }
+        //RelNode logicalPlan = plan( validated, validator );
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -204,7 +223,11 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             LOG.debug( "Planning Statement ... done. [{}]", stopWatch );
         }
 
-        return processQuery( logicalPlan, planner );
+        if ( parsed.isA( SqlKind.DML ) ) {
+            return processQuery( logicalPlan, planner, parsed.getKind() );
+        } else {
+            return processQuery( logicalPlan );
+        }
     }
 
 
@@ -240,16 +263,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         stopWatch.start();
         planner.setRoot( logicalPlan );
         RelNode optimalPlan;
-        if ( planner instanceof HepPlanner ) {
-            optimalPlan = planner.findBestExp();
-        } else {
-            logicalPlan.getCluster().setMetadataProvider(
-                    new CachingRelMetadataProvider(
-                            logicalPlan.getCluster().getMetadataProvider(),
-                            logicalPlan.getCluster().getPlanner() ) );
-            Program program = Programs.ofRules( Programs.RULE_SET );
-            optimalPlan = program.run( planner, logicalPlan, RelTraitSet.createEmpty().replace( EnumerableConvention.INSTANCE ), ImmutableList.of(), ImmutableList.of() );
-        }
+        optimalPlan = planner.findBestExp();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -284,6 +298,71 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         }
         */
         return signature;
+    }
+
+
+    @Override
+    public PolyphenyDbSignature processQuery( final RelNode logicalPlan, Planner planner, SqlKind kind ) {
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                "LogicalQueryPlan",
+                informationGroupLogical.getId(),
+                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
+
+        final StopWatch stopWatch = new StopWatch();
+        //
+        // Optimization
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing Statement  ..." );
+        }
+        stopWatch.start();
+        RelNode optimalPlan;
+        try {
+            optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( EnumerableConvention.INSTANCE ), logicalPlan );
+        } catch ( RelConversionException e ) {
+            throw new RuntimeException( e );
+        }
+        if ( LOG.isTraceEnabled() ) {
+            LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        informationQueryPlan = new InformationQueryPlan(
+                "PhysicalQueryPlan",
+                informationGroupPhysical.getId(),
+                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        stopWatch.stop();
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug( "Optimizing Statement ... done. [{}]", stopWatch );
+        }
+
+        //
+        // Prepare to be executed
+        RelRoot root = RelRoot.of( optimalPlan, kind );
+        EnumerableRel enumerable = (EnumerableRel) root.rel;
+        if ( !root.isRefTrivial() ) {
+            final List<RexNode> projects = new ArrayList<>();
+            final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
+            for ( int field : Pair.left( root.fields ) ) {
+                projects.add( rexBuilder.makeInputRef( enumerable, field ) );
+            }
+            RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+            enumerable = EnumerableCalc.create( enumerable, program );
+        }
+
+        Bindable bindable = EnumerableInterpretable.toBindable( ImmutableMap.of(), null, enumerable, Prefer.ARRAY );
+
+        return new PolyphenyDbSignature(
+                "",
+                ImmutableList.of(),
+                ImmutableMap.of(),
+                null,
+                null,
+                CursorFactory.ARRAY,
+                transaction.getSchema(),
+                ImmutableList.of(),
+                -1,
+                bindable,
+                StatementType.IS_DML );
     }
 
 
@@ -329,27 +408,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     }
 
 
-    private SqlNode parseSql( String sql, Config parserConfig ) throws SqlParseException {
-        PolyphenyDbSchema rootSchema = transaction.getSchema();
-        DataContext dataContext = transaction.getDataContext();
-        Context prepareContext = transaction.getPrepareContext();
-
-        // SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
-        // SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
-
-        List<RelTraitDef> traitDefs = new ArrayList<>();
-        traitDefs.add( ConventionTraitDef.INSTANCE );
-        FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
-                .parserConfig( parserConfig )
-                .traitDefs( traitDefs )
-                .defaultSchema( rootSchema.plus() )
-                .prepareContext( prepareContext )
-                //.sqlToRelConverterConfig( sqlToRelConfig )
-                .programs( Programs.ofRules( Programs.RULE_SET ) )
-                .build();
-        //.programs( Programs.ofRules( Programs.CALC_RULES ) );
-
-        SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
+    private SqlNode parseSql( String sql, FrameworkConfig config ) throws SqlParseException {
+        SqlParser parser = SqlParser.create( new SourceStringReader( sql ), config.getParserConfig() );
         return parser.parseStmt();
     }
 
