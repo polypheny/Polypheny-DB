@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -35,14 +37,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 /**
  *
  */
-public class Authenticator {
+public class AuthenticatorImpl implements Authenticator {
 
-    private Authenticator() {
-        throw new IllegalAccessError( "This is a utility class" );
-    }
-
-
-    public static CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
+    public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         try {
             CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );
             if ( catalogUser.password.equals( password ) ) {

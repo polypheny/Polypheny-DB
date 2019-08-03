@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
 import java.security.PrivilegedActionException;

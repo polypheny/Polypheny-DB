@@ -29,8 +29,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
+import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.relInterface.RelInterface;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.Server;
@@ -148,14 +148,11 @@ public class PolyphenyDb {
         } );*/
 
         final TransactionManager transactionManager = new TransactionManagerImpl();
-        JdbcInterface jdbcInterface = new JdbcInterface( transactionManager );
-        RelInterface relInterface = new RelInterface( transactionManager );
+        final Authenticator authenticator = new AuthenticatorImpl();
+        JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
-
-        Thread relInterfaceThread = new Thread( relInterface );
-        relInterfaceThread.start();
 
         try {
             jdbcInterfaceThread.join();

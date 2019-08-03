@@ -26,7 +26,13 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-public class QueryInterfaceManager {
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 
 
+/**
+ *
+ */
+public interface Authenticator {
+
+    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
 }

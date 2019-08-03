@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
@@ -49,8 +50,8 @@ public class JdbcInterface extends QueryInterface {
     private final MetricsSystem metricsSystem;
 
 
-    public JdbcInterface( TransactionManager transactionManager ) {
-        super( transactionManager );
+    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator ) {
+        super( transactionManager, authenticator );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
     }
@@ -59,7 +60,7 @@ public class JdbcInterface extends QueryInterface {
     @Override
     public void run() {
         try {
-            final DbmsMeta meta = new DbmsMeta( transactionManager );
+            final DbmsMeta meta = new DbmsMeta( transactionManager, authenticator );
             AvaticaHandler handler = new HandlerFactory().getHandler(
                     new DbmsService( meta, metricsSystem ),
                     Serialization.PROTOBUF,

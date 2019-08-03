@@ -85,6 +85,4 @@ public class PolyphenyDbStatementHandle {
         this.signature = null;
     }
 
-
-
 }

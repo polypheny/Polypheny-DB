@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
@@ -63,8 +65,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticationException;
-import ch.unibas.dmi.dbis.polyphenydb.processing.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
@@ -128,6 +128,7 @@ public class DbmsMeta implements ProtobufMeta {
     final Calendar calendar = Unsafe.localCalendar();
 
     private final TransactionManager transactionManager;
+    private final Authenticator authenticator;
 
     /**
      * Generates ids for statements. The ids are unique across all connections created by this JdbcMeta.
@@ -138,8 +139,9 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Creates a DbmsMeta
      */
-    DbmsMeta( TransactionManager transactionManager ) {
+    DbmsMeta( TransactionManager transactionManager, Authenticator authenticator ) {
         this.transactionManager = transactionManager;
+        this.authenticator = authenticator;
     }
 
 
@@ -1139,7 +1141,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         final CatalogUser user;
         try {
-            user = Authenticator.authenticate(
+            user = authenticator.authenticate(
                     connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
                     connectionParameters.getOrDefault( "password", "" ) );
         } catch ( AuthenticationException e ) {

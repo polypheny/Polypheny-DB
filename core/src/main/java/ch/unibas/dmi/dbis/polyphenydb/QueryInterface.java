@@ -29,10 +29,12 @@ package ch.unibas.dmi.dbis.polyphenydb;
 public abstract class QueryInterface implements Runnable {
 
     protected final TransactionManager transactionManager;
+    protected final Authenticator authenticator;
 
 
-    public QueryInterface( TransactionManager transactionManager ) {
+    public QueryInterface( TransactionManager transactionManager, Authenticator authenticator ) {
         this.transactionManager = transactionManager;
+        this.authenticator = authenticator;
     }
 
 }
