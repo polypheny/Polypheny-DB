@@ -45,12 +45,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 
 /**
@@ -67,8 +70,6 @@ import java.util.List;
  * RESET `option`.`name`;<br>
  * RESET ALL;
  * </code></blockquote>
- *
- * If {@link #scope} is null, assume a default scope. (The default scope is defined by the project using Polypheny-DB, but is typically SESSION.)
  *
  * If {@link #value} is null, assume RESET; if {@link #value} is not null, assume SET.
  *
@@ -111,6 +112,9 @@ public class SqlSetOption extends SqlAlter {
      */
     SqlNode value;
 
+    @Getter
+    String scope;
+
 
     /**
      * Creates a node.
@@ -121,10 +125,10 @@ public class SqlSetOption extends SqlAlter {
      * @param value Value of option, as an identifier or literal, may be null. If null, assume RESET command, else assume SET command.
      */
     public SqlSetOption( SqlParserPos pos, String scope, SqlIdentifier name, SqlNode value ) {
-        super( pos, scope );
-        this.scope = scope;
+        super( OPERATOR, pos );
         this.name = name;
         this.value = value;
+        this.scope = scope;
         assert name != null;
     }
 
@@ -178,7 +182,9 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    protected void unparseAlterOperation( SqlWriter writer, int leftPrec, int rightPrec ) {
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        writer.keyword( "ALTER" );
+        writer.literal( scope );
         if ( value != null ) {
             writer.keyword( "SET" );
         } else {
@@ -217,6 +223,12 @@ public class SqlSetOption extends SqlAlter {
 
     public void setValue( SqlNode value ) {
         this.value = value;
+    }
+
+
+    @Override
+    public void execute( Context context, Transaction transaction ) {
+        // TODO: Implement
     }
 }
 

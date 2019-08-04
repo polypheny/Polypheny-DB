@@ -18,8 +18,8 @@
 <#-- @formatter:off -->
 
 /**
-* Parses a TRUNCATE TABLE statement.
-*/
+ * Parses a TRUNCATE TABLE statement.
+ */
 SqlTruncate SqlTruncateTable() :
 {
     final Span s;
@@ -32,3 +32,31 @@ SqlTruncate SqlTruncateTable() :
         return new SqlTruncate(s.end(this), table);
     }
 }
+
+/**
+ * Parses a ALTER SCHEMA statement.
+ */
+SqlAlterSchema SqlAlterSchema(Span s) :
+{
+    final SqlIdentifier schema;
+    final SqlIdentifier name;
+    final SqlIdentifier owner;
+}
+{
+    <SCHEMA>
+    schema = CompoundIdentifier()
+    (
+        <RENAME> <TO>
+        name = CompoundIdentifier()
+        {
+            return new SqlAlterSchemaRename(s.end(this), schema, name);
+        }
+        |
+        <OWNER> <TO>
+        owner = CompoundIdentifier()
+        {
+            return new SqlAlterSchemaOwner(s.end(this), schema, owner);
+        }
+    )
+}
+

@@ -37,6 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
@@ -51,6 +52,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
@@ -169,6 +171,24 @@ public abstract class Catalog {
      * @throws GenericCatalogException A generic catalog exception
      */
     public abstract boolean checkIfExistsSchema( long databaseId, String schemaName ) throws GenericCatalogException;
+
+    /**
+     * Renames a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param name New name of the schema
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException;
+
+    /**
+     * Change owner of a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void changeSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException;
 
     /**
      * Delete a schema from the catalog
@@ -448,6 +468,17 @@ public abstract class Catalog {
      * @param keyId The id of the key to drop
      */
     public abstract void deleteForeignKey( long keyId ) throws GenericCatalogException;
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param userName The name of the user
+     * @return The user
+     * @throws UnknownUserException If there is no user with the specified name
+     */
+    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
+
 
     /*
      *

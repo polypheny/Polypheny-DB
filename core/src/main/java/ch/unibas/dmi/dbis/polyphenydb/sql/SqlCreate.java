@@ -75,12 +75,6 @@ public abstract class SqlCreate extends SqlDdl {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public SqlCreate( SqlParserPos pos, boolean replace ) {
-        this( SqlDdl.DDL_OPERATOR, pos, replace, false );
-    }
-
-
     public boolean getReplace() {
         return replace;
     }

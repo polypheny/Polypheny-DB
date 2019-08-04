@@ -602,12 +602,7 @@ public class Resources {
         public void validate( EnumSet<Validation> validations ) {
             super.validate( validations );
             if ( validations.contains( Validation.CREATE_EXCEPTION ) ) {
-                validateException(
-                        new Callable<Exception>() {
-                            public Exception call() throws Exception {
-                                return ex( new NullPointerException( "test" ) );
-                            }
-                        } );
+                validateException( () -> ex( new NullPointerException( "test" ) ) );
             }
         }
     }
@@ -632,12 +627,7 @@ public class Resources {
         public void validate( EnumSet<Validation> validations ) {
             super.validate( validations );
             if ( validations.contains( Validation.CREATE_EXCEPTION ) ) {
-                validateException(
-                        new Callable<Exception>() {
-                            public Exception call() throws Exception {
-                                return ex();
-                            }
-                        } );
+                validateException( this::ex );
             }
         }
     }

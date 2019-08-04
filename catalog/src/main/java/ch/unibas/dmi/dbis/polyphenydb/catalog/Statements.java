@@ -491,6 +491,24 @@ final class Statements {
     }
 
 
+    public static void renameSchema( XATransactionHandler transactionHandler, long schemaId, String name ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "name", quoteString( name ) );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + schemaId );
+        updateHandler( transactionHandler, "schema", data, where );
+    }
+
+
+    public static void changeSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "owner", "" + ownerId );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + schemaId );
+        updateHandler( transactionHandler, "schema", data, where );
+    }
+
+
     public static void deleteSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "schema" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + schemaId;
         try {

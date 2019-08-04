@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbResource;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ConsList;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbResource;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
 import java.util.List;
 
@@ -56,18 +56,16 @@ import java.util.List;
  *
  * <h3>Note to developers</h3>
  *
- * <p>Please give careful consideration before including an object in this
- * class. Pros:
+ * Please give careful consideration before including an object in this class. Pros:
  * <ul>
- * <li>Code that uses these objects will be terser.
+ * <li>Code that uses these objects will be terser.</li>
  * </ul>
  *
- * <p>Cons:</p>
+ * Cons:
  * <ul>
- * <li>Namespace pollution,
- * <li>code that is difficult to understand (a general problem with static
- * imports),
- * <li>potential cyclic initialization.
+ * <li>Namespace pollution,</li>
+ * <li>code that is difficult to understand (a general problem with static imports),</li>
+ * <li>potential cyclic initialization.</li>
  * </ul>
  */
 public abstract class Static {
@@ -79,8 +77,7 @@ public abstract class Static {
     /**
      * Resources.
      */
-    public static final PolyphenyDbResource RESOURCE =
-            Resources.create( PolyphenyDbResource.class );
+    public static final PolyphenyDbResource RESOURCE = Resources.create( PolyphenyDbResource.class );
 
 
     /**
@@ -91,4 +88,3 @@ public abstract class Static {
     }
 }
 
-// End Static.java

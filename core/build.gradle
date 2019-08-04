@@ -135,7 +135,7 @@ sourceSets {
     }
     test {
         java {
-            srcDirs = ["src/test/java","build/generated-test-sources"]
+            srcDirs = ["src/test/java"]
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
@@ -173,31 +173,6 @@ task generateJdbcVersionProperties(type: Copy) {
 }
 compileJava {
     dependsOn("generateParser", "generateJdbcVersionProperties")
-}
-
-
-
-/**
- * Compile Test Pipline
- */
-task generateTestFmppSources {
-    inputs.dir("src/main/codegen/templates")
-    outputs.dir(project.buildDir.absolutePath + "/generated-test-sources/fmpp")
-    doLast {
-        ant.fmpp(configuration: "src/test/codegen/config.fmpp",
-                sourceRoot: "src/main/codegen/templates",
-                outputRoot: project.buildDir.absolutePath + "/generated-test-sources/fmpp")
-    }
-}
-task generateTestParser (type: CompileJavaccTask) {
-    dependsOn("generateTestFmppSources")
-    getConventionMapping().map("classpath", { configurations.javacc })
-	arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-test-sources/fmpp/javacc")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-test-sources/ch/unibas/dmi/dbis/polyphenydb/sql/parser/parserextensiontesting")
-}
-compileTestJava {
-    dependsOn("generateTestParser")
 }
 
 

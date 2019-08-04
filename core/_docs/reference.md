@@ -68,8 +68,7 @@ form.
 
 {% highlight sql %}
 statement:
-      setStatement
-  |   resetStatement
+      alterStatement
   |   explain
   |   describe
   |   insert
@@ -78,12 +77,13 @@ statement:
   |   delete
   |   query
 
-setStatement:
-      [ ALTER ( SYSTEM | SESSION ) ] SET identifier '=' expression
-
-resetStatement:
-      [ ALTER ( SYSTEM | SESSION ) ] RESET identifier
-  |   [ ALTER ( SYSTEM | SESSION ) ] RESET ALL
+alterStatement:
+       ALTER ( SYSTEM | SESSION ) SET identifier '=' expression
+     | ALTER ( SYSTEM | SESSION ) RESET identifier
+     | ALTER ( SYSTEM | SESSION ) RESET ALL
+     | ALTER SCHEMA [ databaseName . ] schemaName RENAME TO newSchemaName  
+     | ALTER SCHEMA [ databaseName . ] schemaName OWNER TO ownerName  
+             
 
 explain:
       EXPLAIN PLAN
@@ -660,6 +660,7 @@ OUTPUT,
 **OVERLAPS**,
 **OVERLAY**,
 OVERRIDING,
+OWNER,
 PAD,
 **PARAMETER**,
 PARAMETER_MODE,
@@ -722,6 +723,7 @@ READ,
 **REGR_SYY**,
 RELATIVE,
 **RELEASE**,
+RENAME,
 REPEATABLE,
 REPLACE,
 **RESET**,

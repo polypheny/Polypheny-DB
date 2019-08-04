@@ -780,6 +780,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Schema ''{0}'' not found")
     ExInst<SqlValidatorException> schemaNotFound( String name );
 
+    @BaseMessage("User ''{0}'' not found")
+    ExInst<SqlValidatorException> userNotFound( String name );
+
     @BaseMessage("View ''{0}'' not found")
     ExInst<SqlValidatorException> viewNotFound( String name );
 

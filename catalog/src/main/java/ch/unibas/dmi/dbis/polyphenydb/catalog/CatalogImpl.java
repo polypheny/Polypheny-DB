@@ -252,6 +252,42 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Rename a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param name New name of the schema
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameSchema( transactionHandler, schemaId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change owner of a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void changeSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.changeSchemaOwner( transactionHandler, schemaId, ownerId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete a schema from the catalog
      *
      * @param schemaId The if of the schema to delete
@@ -750,6 +786,24 @@ public class CatalogImpl extends Catalog {
             Statements.deleteForeignKey( transactionHandler, keyId );
             Statements.deleteKey( transactionHandler, keyId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param userName The name of the user
+     * @return The user
+     * @throws UnknownUserException If there is no user with the specified name
+     */
+    @Override
+    public CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
+            return Statements.getUser( transactionHandler, userName );
+        } catch ( GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }

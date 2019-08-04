@@ -6289,29 +6289,11 @@ public class SqlParserTest {
 
         check( "alter system set \"a\".\"number\" = 1",
                 "ALTER SYSTEM SET `a`.`number` = 1" );
-        sql( "set approx = -12.3450" )
-                .ok( "SET `APPROX` = -12.3450" )
-                .node( isDdl() );
 
-        node = getSqlParser( "reset schema" ).parseStmt();
-        opt = (SqlSetOption) node;
-        assertThat( opt.getScope(), equalTo( null ) );
-        writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT );
-        assertThat( writer.format( opt.getName() ), equalTo( "\"SCHEMA\"" ) );
-        assertThat( opt.getValue(), equalTo( null ) );
-        writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT );
-        assertThat( writer.format( opt ), equalTo( "RESET \"SCHEMA\"" ) );
-
-        check( "alter system RESET flag", "ALTER SYSTEM RESET `FLAG`" );
-        sql( "reset onOff" )
-                .ok( "RESET `ONOFF`" )
-                .node( isDdl() );
-        check( "reset \"this\".\"is\".\"sparta\"",
-                "RESET `this`.`is`.`sparta`" );
+        check( "alter system RESET flag",
+                "ALTER SYSTEM RESET `FLAG`" );
         check( "alter system reset all",
                 "ALTER SYSTEM RESET `ALL`" );
-        check( "reset all",
-                "RESET `ALL`" );
 
         // expressions not allowed
         checkFails( "alter system set aString = 'abc' ^||^ 'def' ",
