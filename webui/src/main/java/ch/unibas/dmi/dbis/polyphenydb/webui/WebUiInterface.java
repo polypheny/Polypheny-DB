@@ -39,6 +39,7 @@ import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
@@ -214,9 +215,9 @@ public class WebUiInterface extends QueryInterface {
         try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ))) {
             while (( line = bufferedReader.readLine() ) != null ) {
                 if( line.contains( "//SPARK-REPLACE" )){
-                    stringBuilder.append( "\nlocalStorage.setItem('configServer.port', '" ).append( this.cm.getConfig( "configServer.port" ).getInt() ).append( "');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('informationServer.port', '" ).append( this.cm.getConfig( "informationServer.port" ).getInt() ).append( "');" );
-                    stringBuilder.append( "\nlocalStorage.setItem('webUI.port', '" ).append( this.cm.getConfig( "webUI.port" ).getInt() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('configServer.port', '" ).append( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('informationServer.port', '" ).append( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() ).append( "');" );
+                    stringBuilder.append( "\nlocalStorage.setItem('webUI.port', '" ).append( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ).append( "');" );
                 }else {
                     stringBuilder.append(line);
                 }
