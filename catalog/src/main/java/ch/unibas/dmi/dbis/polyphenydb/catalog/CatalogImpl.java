@@ -449,6 +449,47 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Checks if there is a table with the specified name in the specified schema.
+     *
+     * @param schemaId The id of the schema
+     * @param tableName The name to check for
+     * @return true if there is a table with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
+            Statements.getTable( transactionHandler, schema.id, tableName );
+            return true;
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownTableException e ) {
+            return false;
+        }
+    }
+
+
+    /**
+     * Renames a table
+     *
+     * @param tableId The if of the table to rename
+     * @param name New name of the table
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameTable( long tableId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameTable( transactionHandler, tableId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete the specified table. Columns, Keys and Data Placements need to be deleted before.
      *
      * @param tableId The id of the table to delete
@@ -459,6 +500,24 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteTable( transactionHandler, tableId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change owner of a table
+     *
+     * @param tableId The if of the table
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void changeTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.changeTableOwner( transactionHandler, tableId, ownerId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -546,11 +605,29 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownColumnException, UnknownTypeException {
+    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern, columnNamePattern );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Returns the column with the specified id.
+     *
+     * @param columnId The id of the column
+     * @return A CatalogColumn
+     * @throws UnknownColumnException If there is no column with this id
+     */
+    @Override
+    public CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumn( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -619,6 +696,64 @@ public class CatalogImpl extends Catalog {
             return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, encoding, collation, forceDefault );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Renames a column
+     *
+     * @param columnId The if of the column to rename
+     * @param name New name of the column
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameColumn( long columnId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameColumn( transactionHandler, columnId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change move the column to the specified position. Make sure, that there is no other column with this position in the table.
+     *
+     * @param columnId The id of the column for which to change the position
+     * @param position The new position of the column
+     */
+    @Override
+    public void changeColumnPosition( long columnId, int position ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.changeColumnPosition( transactionHandler, columnId, position );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param columnName The name to check for
+     * @return true if there is a column with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            Statements.getColumn( transactionHandler, table.id, columnName );
+            return true;
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException | UnknownTypeException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownColumnException e ) {
+            return false;
         }
     }
 

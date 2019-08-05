@@ -123,6 +123,50 @@ public class HsqldbStore implements Store {
 
 
     @Override
+    public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogTable.getTable().name ) );
+        builder.append( " ADD " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
+        builder.append( catalogColumn.type.name() );
+        if ( catalogColumn.precision != null ) {
+            builder.append( "(" );
+            builder.append( catalogColumn.precision );
+            if ( catalogColumn.length != null ) {
+                builder.append( "," ).append( catalogColumn.length );
+            }
+            builder.append( ")" );
+        }
+        if ( catalogColumn.nullable ) {
+            builder.append( " NULL" );
+        } else {
+            builder.append( " NOT NULL" );
+        }
+        if ( catalogColumn.position <= catalogTable.getColumns().size() ) {
+            String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
+            builder.append( " BEFORE " ).append( currentJdbcSchema.dialect.quoteIdentifier( beforeColumnName ) );
+        }
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Override
+    public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogTable.getTable().name ) );
+        builder.append( " DROP " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogColumn.name ) );
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         // TODO: implement
         LOG.warn( "Not implemented yet" );

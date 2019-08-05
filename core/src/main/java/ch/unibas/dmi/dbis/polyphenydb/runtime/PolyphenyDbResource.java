@@ -196,6 +196,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot assign to target field ''{0}'' of type {1} from source field ''{2}'' of type {3}")
     ExInst<SqlValidatorException> typeNotAssignable( String a0, String a1, String a2, String a3 );
 
+    @BaseMessage("Database ''{0}'' not found")
+    ExInst<SqlValidatorException> databaseNotFound( String a0 );
+
     @BaseMessage("Table ''{0}'' not found")
     ExInst<SqlValidatorException> tableNameNotFound( String a0 );
 
@@ -759,6 +762,9 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("Schema ''{0}'' already exists")
     ExInst<SqlValidatorException> schemaExists( String name );
+
+    @BaseMessage("Column ''{0}'' already exists")
+    ExInst<SqlValidatorException> columnExists( String name );
 
     @BaseMessage("Invalid schema type ''{0}''; valid values: {1}")
     ExInst<SqlValidatorException> schemaInvalidType( String type, String values );

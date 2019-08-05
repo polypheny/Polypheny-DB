@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
@@ -20,10 +21,13 @@ public interface Store {
 
     void dropTable( CatalogCombinedTable combinedTable );
 
+    void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+
+    void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+
     boolean prepare( PolyXid xid );
 
     void commit( PolyXid xid );
 
     void truncate( Transaction transaction, CatalogCombinedTable table );
-
 }

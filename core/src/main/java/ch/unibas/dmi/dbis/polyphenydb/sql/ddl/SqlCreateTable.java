@@ -127,6 +127,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }
@@ -243,6 +244,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
@@ -277,13 +279,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Collection getModifiableCollection() {
             return rows;
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 public Enumerator<T> enumerator() {
                     //noinspection unchecked
                     return (Enumerator<T>) Linq4j.enumerator( rows );
@@ -292,16 +297,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Type getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return protoRowType.apply( typeFactory );
         }

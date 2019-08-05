@@ -394,11 +394,12 @@ INSERT INTO "key" ( "id", "table", "unique", "name" )
 VALUES ( 0, 0, TRUE, 'key_0' ),
        ( 1, 1, TRUE, 'key_1' ),
        ( 2, 1, FALSE, 'key_2' ),
-       ( 3, 1, TRUE, 'key_3' );
+       ( 3, 1, TRUE, 'key_3' ),
+       ( 4, 2, TRUE, 'key_4' );
 
 ALTER TABLE "key"
     ALTER COLUMN "id"
-        RESTART WITH 4;
+        RESTART WITH 5;
 
 UPDATE "table"
 SET "primary_key" = 0
@@ -413,7 +414,8 @@ VALUES ( 0, 0 ),
        ( 1, 1 ),
        ( 2, 3 ),
        ( 3, 3 ),
-       ( 3, 4 );
+       ( 3, 4 ),
+       ( 4, 8 );
 
 
 --

@@ -28,7 +28,9 @@ data: {
             "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlDdlNodes"
             "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlTruncate"
             "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterSchema"
-            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.alterSchema.*"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.alterschema.*"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable.*"
             "java.util.Map"
             "java.util.HashMap"
         ]
@@ -377,6 +379,7 @@ data: {
         alterStatementParserMethods: [
             "SqlSetOption"
             "SqlAlterSchema"
+            "SqlAlterTable"
         ]
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".

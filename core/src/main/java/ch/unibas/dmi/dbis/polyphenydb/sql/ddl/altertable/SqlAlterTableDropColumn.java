@@ -1,0 +1,138 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
+
+
+import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
+import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import java.util.List;
+import java.util.Objects;
+
+
+/**
+ * Parse tree for {@code ALTER TABLE name DROP COLUMN name} statement.
+ */
+public class SqlAlterTableDropColumn extends SqlAlterTable {
+
+    private final SqlIdentifier table;
+    private final SqlIdentifier column;
+
+
+    public SqlAlterTableDropColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier column ) {
+        super( pos );
+        this.table = Objects.requireNonNull( table );
+        this.column = Objects.requireNonNull( column );
+    }
+
+
+    @Override
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( table, column );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        writer.keyword( "ALTER" );
+        writer.keyword( "TABLE" );
+        table.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "DROP" );
+        writer.keyword( "COLUMN" );
+        column.unparse( writer, leftPrec, rightPrec );
+    }
+
+
+    @Override
+    public void execute( Context context, Transaction transaction ) {
+        CatalogCombinedTable catalogTable;
+        try {
+            catalogTable = transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, table ).id );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+
+        if ( catalogTable.getColumns().size() < 2 ) {
+            throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.getTable().name );
+        }
+
+        if ( column.names.size() != 1 ) {
+            throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
+        }
+
+        CatalogColumn catalogColumn;
+        try {
+            catalogColumn = transaction.getCatalog().getColumn( catalogTable.getTable().id, column.getSimple() );
+
+            // Check if column is part of an key
+            for ( CatalogKey key : catalogTable.getKeys() ) {
+                if ( key.columnIds.contains( catalogColumn.id ) ) {
+                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the following key: '" + key.name + "'." );
+                }
+            }
+
+            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
+            transaction.getCatalog().deleteColumn( catalogColumn.id );
+            if ( catalogColumn.position != columns.size() ) {
+                // Update position of the other columns
+                for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
+                    transaction.getCatalog().changeColumnPosition( columns.get( i ).id, i );
+                }
+            }
+        } catch ( UnknownEncodingException | UnknownTypeException | UnknownCollationException | GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        } catch ( UnknownColumnException e ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnNotFound( column.getSimple() ) );
+        }
+
+        // Delete column from underlying data stores
+        for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
+            StoreManager.getInstance().getStore( dp.storeId ).dropColumn( catalogTable, catalogColumn );
+        }
+    }
+
+}
+

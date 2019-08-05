@@ -184,7 +184,7 @@ public abstract class Catalog {
     /**
      * Change owner of a schema
      *
-     * @param schemaId The if of the schema to rename
+     * @param schemaId The if of the schema
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
@@ -284,6 +284,24 @@ public abstract class Catalog {
      */
     public abstract long addTable( String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException;
 
+    /**
+     * Checks if there is a table with the specified name in the specified schema.
+     *
+     * @param schemaId The id of the schema
+     * @param tableName The name to check for
+     * @return true if there is a table with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException;
+
+    /**
+     * Renames a table
+     *
+     * @param tableId The if of the table to rename
+     * @param name New name of the table
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void renameTable( long tableId, String name ) throws GenericCatalogException;
 
     /**
      * Delete the specified table. Columns need to be deleted before.
@@ -292,6 +310,14 @@ public abstract class Catalog {
      */
     public abstract void deleteTable( long tableId ) throws GenericCatalogException;
 
+    /**
+     * Change owner of a table
+     *
+     * @param tableId The if of the table
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void changeTableOwner( long tableId, int ownerId ) throws GenericCatalogException;
 
     /**
      * Set the primary key of a table
@@ -300,7 +326,6 @@ public abstract class Catalog {
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
     public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException;
-
 
     /**
      * Adds a placement for a table
@@ -341,6 +366,14 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownColumnException, UnknownTypeException;
 
+    /**
+     * Returns the column with the specified id.
+     *
+     * @param columnId The id of the column
+     * @return A CatalogColumn
+     * @throws UnknownColumnException If there is no column with this id
+     */
+    public abstract CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException;
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -382,6 +415,33 @@ public abstract class Catalog {
      * @return The id of the inserted column
      */
     public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
+
+    /**
+     * Renames a column
+     *
+     * @param columnId The if of the column to rename
+     * @param name New name of the column
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException;
+
+    /**
+     * Change the position of the column.
+     *
+     * @param columnId The id of the column for which to change the position
+     * @param position The new position of the column
+     */
+    public abstract void changeColumnPosition( long columnId, int position ) throws GenericCatalogException;
+
+    /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param columnName The name to check for
+     * @return true if there is a column with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException;
 
     /**
      * Delete the specified column. A potential default value has to be delete before.
@@ -506,6 +566,7 @@ public abstract class Catalog {
     public abstract void commit() throws CatalogTransactionException;
 
     public abstract void rollback() throws CatalogTransactionException;
+
 
 
     /*

@@ -174,6 +174,7 @@ final class JdbcUtils {
         }
 
 
+        @Override
         public Object[] apply() {
             try {
                 final Object[] values = new Object[columnCount];

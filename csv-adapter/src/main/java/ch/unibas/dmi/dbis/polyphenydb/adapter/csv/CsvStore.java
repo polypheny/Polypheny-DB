@@ -5,6 +5,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
@@ -53,8 +54,21 @@ public class CsvStore implements Store {
 
     @Override
     public void dropTable( CatalogCombinedTable combinedTable ) {
-        LOG.warn( "CSV adapter does not support drooping tables!" );
+        LOG.warn( "CSV adapter does not support dropping tables!" );
     }
+
+
+    @Override
+    public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        LOG.warn( "CSV adapter does not support adding columns!" );
+    }
+
+
+    @Override
+    public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        LOG.warn( "CSV adapter does not support dropping columns!" );
+    }
+
 
     @Override
     public boolean prepare( PolyXid xid ) {

@@ -23,15 +23,17 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.alterSchema;
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.alterschema;
 
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -45,27 +47,27 @@ import java.util.Objects;
 
 
 /**
- * Parse tree for {@code ALTER SCHEMA name RENAME TO} statement.
+ * Parse tree for {@code ALTER SCHEMA name OWNER TO} statement.
  */
-public class SqlAlterSchemaRename extends SqlAlterSchema {
+public class SqlAlterSchemaOwner extends SqlAlterSchema {
 
-    private final SqlIdentifier oldName;
-    private final SqlIdentifier newName;
+    private final SqlIdentifier schema;
+    private final SqlIdentifier owner;
 
 
     /**
-     * Creates a SqlCreateSchema.
+     * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterSchemaRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
+    public SqlAlterSchemaOwner( SqlParserPos pos, SqlIdentifier schema, SqlIdentifier owner ) {
         super( pos );
-        this.oldName = Objects.requireNonNull( oldName );
-        this.newName = Objects.requireNonNull( newName );
+        this.schema = Objects.requireNonNull( schema );
+        this.owner = Objects.requireNonNull( owner );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( oldName, newName );
+        return ImmutableNullableList.of( schema, owner );
     }
 
 
@@ -73,25 +75,25 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "SCHEMA" );
-        oldName.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "RENAME" );
+        schema.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "OWNER" );
         writer.keyword( "TO" );
-        newName.unparse( writer, leftPrec, rightPrec );
+        owner.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
-            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), newName.getSimple() ) ) {
-                throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
-            }
-            CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), oldName.getSimple() );
-            transaction.getCatalog().renameSchema( catalogSchema.id, newName.getSimple() );
+            CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), schema.getSimple() );
+            CatalogUser catalogUser = transaction.getCatalog().getUser( owner.getSimple() );
+            transaction.getCatalog().changeSchemaOwner( catalogSchema.id, catalogUser.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
+            throw SqlUtil.newContextException( schema.getParserPosition(), RESOURCE.schemaNotFound( schema.getSimple() ) );
+        } catch ( UnknownUserException e ) {
+            throw SqlUtil.newContextException( owner.getParserPosition(), RESOURCE.userNotFound( owner.getSimple() ) );
         }
     }
 
