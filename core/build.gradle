@@ -34,12 +34,9 @@ buildscript {
 
 
 repositories {
-    flatDir {
-        dirs "../libs"
-    }
     maven {
-        // DBIS Artifactory
-        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+        // DBIS Nexus
+        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     mavenCentral()
 }
@@ -92,16 +89,14 @@ dependencies {
     compile group: "org.codehaus.janino", name: "commons-compiler", version:"3.0.11"
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    //compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.16.0-POLYPHENYDB"
-    compile name: "avatica-1.16.0-POLYPHENYDB-shaded"
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.16.0-POLYPHENYDB"
     
 
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
 
     testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    //testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version:"1.16.0-POLYPHENYDB"
-    testCompile name: "avatica-server-1.16.0-POLYPHENYDB"
+    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version:"1.16.0-POLYPHENYDB"
 
     testCompile group: "org.apache.commons", name: "commons-pool2", version:"2.6.0"
     testCompile group: "com.h2database", name: "h2", version:"1.4.197"

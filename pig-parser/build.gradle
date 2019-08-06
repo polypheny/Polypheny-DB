@@ -31,12 +31,9 @@ buildscript {
 
 
 repositories {
-    flatDir {
-        dirs "../libs"
-    }
     maven {
-        // DBIS Artifactory
-        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+        // DBIS Nexus
+        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     mavenCentral()
 }
@@ -120,7 +117,7 @@ sourceSets {
  */
 task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [grammar_encoding: 'UTF-8', static: 'false', lookahead: '2']
+    arguments = [static: 'false', lookahead: '2']
     inputDirectory = file('src/main/codegen/javacc')
     outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/ch/unibas/dmi/dbis/polyphenydb/piglet/parser')
 }

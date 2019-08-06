@@ -23,8 +23,9 @@ buildscript {
 
 
 repositories {
-    flatDir {
-        dirs "../libs"
+    maven {
+        // DBIS Nexus
+        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     mavenCentral()
 }
