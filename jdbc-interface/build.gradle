@@ -23,12 +23,9 @@ buildscript {
 
 
 repositories {
-    flatDir {
-        dirs "../libs"
-    }
     maven {
-        // DBIS Artifactory
-        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+        // DBIS Nexus
+        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     mavenCentral()
 }
@@ -71,8 +68,7 @@ dependencies {
 
 
     ////// APACHE CALCITE AVATICA
-    //compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.16.0-POLYPHENYDB"
-    compile name: "avatica-server-1.16.0-POLYPHENYDB"
+    compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.16.0-POLYPHENYDB"
     
 
     // --- Test Compile ---
