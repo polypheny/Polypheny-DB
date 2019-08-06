@@ -178,6 +178,7 @@ data: {
             "MILLISECOND"
             "MILLENNIUM"
             "MINVALUE"
+            "MODIFY"
             "MORE_"
             "MUMPS"
             "NAME"

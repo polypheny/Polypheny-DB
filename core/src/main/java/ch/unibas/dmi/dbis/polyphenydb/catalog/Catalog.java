@@ -431,7 +431,23 @@ public abstract class Catalog {
      * @param columnId The id of the column for which to change the position
      * @param position The new position of the column
      */
-    public abstract void changeColumnPosition( long columnId, int position ) throws GenericCatalogException;
+    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException;
+
+    /**
+     * Change the data type of an column.
+     *
+     * @param columnId The id of the column
+     * @param type The new type of the column
+     */
+    public abstract void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException;
+
+    /**
+     * Change nullability of the column (weather the column allows null values).
+     *
+     * @param columnId The id of the column
+     * @param nullable True if the column should allow null values, false if not.
+     */
+    public abstract void setNullable( long columnId, boolean nullable ) throws GenericCatalogException;
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -450,6 +466,22 @@ public abstract class Catalog {
      */
     public abstract void deleteColumn( long columnId ) throws GenericCatalogException;
 
+
+    /**
+     * Adds a default value for a column. If there already is a default values, it being replaced.
+     *
+     * @param columnId The id of the column
+     * @param type The type of the default value
+     * @param defaultValue True if the column should allow null values, false if not.
+     */
+    public abstract void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException;
+
+    /**
+     * Deletes an existing default value of a column. NoOp if there is no default value defined.
+     *
+     * @param columnId The id of the column
+     */
+    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
 
     /**
      * Returns a specified key

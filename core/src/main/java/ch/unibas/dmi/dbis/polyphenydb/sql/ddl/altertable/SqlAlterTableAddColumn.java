@@ -41,7 +41,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -111,41 +110,19 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable catalogTable;
-        try {
-            catalogTable = transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, table ).id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogCombinedTable catalogTable = getCatalogCombinedTable( context, transaction, table );
 
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
+
         CatalogColumn beforeColumn = null;
         if ( beforeColumnName != null ) {
-            if ( beforeColumnName.names.size() != 1 ) {
-                throw new RuntimeException( "No FQDN allowed here: " + beforeColumnName.toString() );
-            }
-            try {
-                beforeColumn = transaction.getCatalog().getColumn( catalogTable.getTable().id, beforeColumnName.getSimple() );
-            } catch ( GenericCatalogException e ) {
-                throw new RuntimeException( e );
-            } catch ( UnknownColumnException e ) {
-                throw SqlUtil.newContextException( beforeColumnName.getParserPosition(), RESOURCE.columnNotFound( beforeColumnName.getSimple() ) );
-            }
+            beforeColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, beforeColumnName );
         }
         CatalogColumn afterColumn = null;
         if ( afterColumnName != null ) {
-            if ( afterColumnName.names.size() != 1 ) {
-                throw new RuntimeException( "No FQDN allowed here: " + afterColumnName.toString() );
-            }
-            try {
-                afterColumn = transaction.getCatalog().getColumn( catalogTable.getTable().id, afterColumnName.getSimple() );
-            } catch ( GenericCatalogException e ) {
-                throw new RuntimeException( e );
-            } catch ( UnknownColumnException e ) {
-                throw SqlUtil.newContextException( afterColumnName.getParserPosition(), RESOURCE.columnNotFound( afterColumnName.getSimple() ) );
-            }
+            afterColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, afterColumnName );
         }
 
         // TODO: Check if the column either allows null values or has a default value defined.
@@ -165,7 +142,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
                 // Update position of the other columns
                 for ( int i = columns.size(); i >= position; i-- ) {
-                    transaction.getCatalog().changeColumnPosition( columns.get( i - 1 ).id, i + 1 );
+                    transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
                 }
             }
             long columnId = transaction.getCatalog().addColumn(

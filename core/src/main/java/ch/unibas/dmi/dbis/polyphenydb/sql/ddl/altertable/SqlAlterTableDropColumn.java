@@ -26,8 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
@@ -37,14 +35,11 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
@@ -88,12 +83,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable catalogTable;
-        try {
-            catalogTable = transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, table ).id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogCombinedTable catalogTable = getCatalogCombinedTable( context, transaction, table );
 
         if ( catalogTable.getColumns().size() < 2 ) {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.getTable().name );
@@ -103,10 +93,8 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn catalogColumn;
+        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, column );
         try {
-            catalogColumn = transaction.getCatalog().getColumn( catalogTable.getTable().id, column.getSimple() );
-
             // Check if column is part of an key
             for ( CatalogKey key : catalogTable.getKeys() ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
@@ -119,13 +107,11 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             if ( catalogColumn.position != columns.size() ) {
                 // Update position of the other columns
                 for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
-                    transaction.getCatalog().changeColumnPosition( columns.get( i ).id, i );
+                    transaction.getCatalog().setColumnPosition( columns.get( i ).id, i );
                 }
             }
         } catch ( UnknownEncodingException | UnknownTypeException | UnknownCollationException | GenericCatalogException e ) {
             throw new RuntimeException( e );
-        } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnNotFound( column.getSimple() ) );
         }
 
         // Delete column from underlying data stores

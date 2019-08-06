@@ -26,17 +26,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
@@ -85,20 +81,11 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
     @Override
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, transaction, table );
-
-        if ( columnOldName.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + columnOldName.toString() );
-        }
-        if ( columnNewName.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + columnNewName.toString() );
-        }
+        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.id, columnOldName );
         try {
-            CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnOldName.getSimple() );
             transaction.getCatalog().renameColumn( catalogColumn.id, columnNewName.getSimple() );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
-        } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFound( columnOldName.getSimple() ) );
         }
     }
 

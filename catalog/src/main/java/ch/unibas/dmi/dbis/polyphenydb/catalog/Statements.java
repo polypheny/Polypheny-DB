@@ -36,6 +36,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
@@ -767,6 +768,19 @@ final class Statements {
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogColumn> list = new LinkedList<>();
             while ( rs.next() ) {
+                String defaultValueSql = "SELECT dv.\"column\", dv.\"type\", dv.\"value\", dv.\"function_name\" FROM \"default_value\" dv where dv.\"column\" = " + getLongOrNull( rs, 1 );
+                CatalogDefaultValue defaultValue = null;
+                try ( ResultSet rsdv = transactionHandler.executeSelect( defaultValueSql ) ) {
+                    if ( rsdv.next() ) {
+                        defaultValue = new CatalogDefaultValue(
+                                getLongOrNull( rsdv, 1 ),
+                                PolySqlType.getByTypeCode( getIntOrNull( rsdv, 2 ) ),
+                                rsdv.getString( 3 ),
+                                rsdv.getString( 4 )
+                        );
+                    }
+                }
+
                 list.add( new CatalogColumn(
                         getLongOrNull( rs, 1 ),
                         rs.getString( 2 ),
@@ -783,7 +797,8 @@ final class Statements {
                         rs.getBoolean( 13 ),
                         Encoding.getById( getIntOrNull( rs, 14 ) ),
                         Collation.getById( getIntOrNull( rs, 15 ) ),
-                        rs.getBoolean( 16 )
+                        rs.getBoolean( 16 ),
+                        defaultValue
                 ) );
             }
             return list;
@@ -913,9 +928,29 @@ final class Statements {
     }
 
 
-    public static void changeColumnPosition( XATransactionHandler transactionHandler, long columnId, int position ) throws GenericCatalogException {
+    public static void setColumnPosition( XATransactionHandler transactionHandler, long columnId, int position ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "position", "" + position );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer precision ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "type", "" + type.getTypeCode() );
+        data.put( "length", length == null ? null : "" + length );
+        data.put( "precision", precision == null ? null : "" + precision );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setNullable( XATransactionHandler transactionHandler, long columnId, boolean nullable ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "nullable", "" + nullable );
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "id", "" + columnId );
         updateHandler( transactionHandler, "column", data, where );
@@ -928,6 +963,28 @@ final class Statements {
             int rowsEffected = transactionHandler.executeUpdate( sql );
             if ( rowsEffected != 1 ) {
                 throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "column", "" + columnId );
+        data.put( "type", "" + type.getTypeCode() );
+        data.put( "value", quoteString( defaultValue ) );
+        insertHandler( transactionHandler, "default_value", data );
+    }
+
+
+    public static void deleteDefaultValue( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "default_value" ) + " WHERE " + quoteIdentifier( "column" ) + " = " + columnId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected > 1 ) {
+                throw new GenericCatalogException( "Expected zero or one effected row, but " + rowsEffected + " have been effected." );
             }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );
@@ -1433,4 +1490,5 @@ final class Statements {
         }
         return v;
     }
+
 }

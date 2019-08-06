@@ -84,12 +84,10 @@ CREATE TABLE "column" (
 
 
 CREATE TABLE "default_value" (
-    "column"                    BIGINT       NOT NULL REFERENCES "column" ("id"),
-    "type"                      INTEGER      NOT NULL,
-    "value"                     BLOB         NULL,
-    "function_name"             VARCHAR(100) NULL,
-    "autoincrement_start_value" BIGINT       NULL,
-    "autoincrement_next_value"  BIGINT       NULL,
+    "column"        BIGINT        NOT NULL REFERENCES "column" ("id"),
+    "type"          INTEGER       NOT NULL,
+    "value"         VARCHAR(1000) NULL,
+    "function_name" VARCHAR(100)  NULL,
     PRIMARY KEY ("column")
 );
 

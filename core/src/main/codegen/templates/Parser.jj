@@ -6342,6 +6342,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MINUTE: "MINUTE" >
 |   < MINVALUE: "MINVALUE" >
 |   < MOD: "MOD" >
+|   < MODIFY: "MODIFY" >
 |   < MODIFIES: "MODIFIES" >
 |   < MODULE: "MODULE" >
 |   < MONTH: "MONTH" >

@@ -75,6 +75,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final boolean nullable;
     final SqlIdentifier beforeColumn;
     final SqlIdentifier afterColumn;
+    final SqlAlterTable statement;
 }
 {
     <TABLE>
@@ -126,6 +127,55 @@ SqlAlterTable SqlAlterTable(Span s) :
             {
                 return new SqlAlterTableDropColumn(s.end(this), table, column);
             }
+        |
+            <MODIFY> <COLUMN>
+            column = SimpleIdentifier()
+            statement = AlterTableModifyColumn(s, table, column)
+            {
+                return statement;
+            }
     )
 }
 
+/**
+ * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
+ */
+SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, SqlIdentifier column) :
+{
+    SqlDataTypeSpec type = null;
+    Boolean nullable = null;
+    SqlIdentifier beforeColumn = null;
+    SqlIdentifier afterColumn = null;
+    SqlNode defaultValue = null;
+    Boolean dropDefault = null;
+}
+{
+    (
+            <SET> <NOT> <NULL>
+            { nullable = false; }
+        |
+            <DROP> <NOT> <NULL>
+            { nullable = true; }
+        |
+            <SET> <TYPE>
+            type = DataType()
+        |
+            <SET> <POSITION>
+            (
+                <BEFORE>
+                beforeColumn = SimpleIdentifier()
+                |
+                <AFTER>
+                afterColumn = SimpleIdentifier()
+            )
+        |
+            <SET> <DEFAULT_>
+            defaultValue = Literal()
+        |
+            <DROP> <DEFAULT_>
+            { dropDefault = true; }
+    )
+    {
+        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, defaultValue, dropDefault);
+    }
+}

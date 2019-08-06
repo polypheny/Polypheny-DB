@@ -725,10 +725,44 @@ public class CatalogImpl extends Catalog {
      * @param position The new position of the column
      */
     @Override
-    public void changeColumnPosition( long columnId, int position ) throws GenericCatalogException {
+    public void setColumnPosition( long columnId, int position ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.changeColumnPosition( transactionHandler, columnId, position );
+            Statements.setColumnPosition( transactionHandler, columnId, position );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change the data type of an column.
+     *
+     * @param columnId The id of the column
+     * @param type The new type of the column
+     */
+    @Override
+    public void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setColumnType( transactionHandler, columnId, type, length, precision );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change nullability of the column (weather the column allows null values).
+     *
+     * @param columnId The id of the column
+     * @param nullable True if the column should allow null values, false if not.
+     */
+    @Override
+    public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setNullable( transactionHandler, columnId, nullable );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
@@ -768,6 +802,44 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumn( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    // TODO: String is only a temporary solution
+
+
+    /**
+     * Adds a default value for a column. If there already is a default values, it being replaced.
+     *
+     * @param columnId The id of the column
+     * @param type The type of the default value
+     * @param defaultValue The default value
+     */
+    @Override
+    public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+        try {
+            deleteDefaultValue( columnId );
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setDefaultValue( transactionHandler, columnId, type, defaultValue );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Deletes an existing default value of a column. NoOp if there is no default value defined.
+     *
+     * @param columnId The id of the column
+     */
+    @Override
+    public void deleteDefaultValue( long columnId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteDefaultValue( transactionHandler, columnId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
