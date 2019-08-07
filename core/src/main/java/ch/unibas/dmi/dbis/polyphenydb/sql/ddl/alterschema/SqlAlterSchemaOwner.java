@@ -87,7 +87,7 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
         try {
             CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), schema.getSimple() );
             CatalogUser catalogUser = transaction.getCatalog().getUser( owner.getSimple() );
-            transaction.getCatalog().changeSchemaOwner( catalogSchema.id, catalogUser.id );
+            transaction.getCatalog().setSchemaOwner( catalogSchema.id, catalogUser.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {

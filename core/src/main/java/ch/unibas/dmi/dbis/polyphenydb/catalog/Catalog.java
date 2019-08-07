@@ -188,7 +188,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void changeSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException;
+    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException;
 
     /**
      * Delete a schema from the catalog
@@ -317,7 +317,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void changeTableOwner( long tableId, int ownerId ) throws GenericCatalogException;
+    public abstract void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException;
 
     /**
      * Set the primary key of a table

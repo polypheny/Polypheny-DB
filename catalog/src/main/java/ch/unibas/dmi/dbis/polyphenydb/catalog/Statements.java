@@ -501,7 +501,7 @@ final class Statements {
     }
 
 
-    public static void changeSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
+    public static void setSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "owner", "" + ownerId );
         Map<String, String> where = new LinkedHashMap<>();
@@ -725,7 +725,7 @@ final class Statements {
     }
 
 
-    public static void changeTableOwner( XATransactionHandler transactionHandler, long tableId, int ownerId ) throws GenericCatalogException {
+    public static void setTableOwner( XATransactionHandler transactionHandler, long tableId, int ownerId ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "owner", "" + ownerId );
         Map<String, String> where = new LinkedHashMap<>();

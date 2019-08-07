@@ -277,10 +277,10 @@ public class CatalogImpl extends Catalog {
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void changeSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
+    public void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.changeSchemaOwner( transactionHandler, schemaId, ownerId );
+            Statements.setSchemaOwner( transactionHandler, schemaId, ownerId );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
@@ -513,10 +513,10 @@ public class CatalogImpl extends Catalog {
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void changeTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
+    public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.changeTableOwner( transactionHandler, tableId, ownerId );
+            Statements.setTableOwner( transactionHandler, tableId, ownerId );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }

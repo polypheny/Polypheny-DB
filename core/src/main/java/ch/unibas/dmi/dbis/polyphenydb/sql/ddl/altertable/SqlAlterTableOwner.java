@@ -88,7 +88,7 @@ public class SqlAlterTableOwner extends SqlAlterTable {
         String newOwnerName = owner.getSimple();
         try {
             CatalogUser catalogUser = transaction.getCatalog().getUser( newOwnerName );
-            transaction.getCatalog().changeTableOwner( catalogTable.id, catalogUser.id );
+            transaction.getCatalog().setTableOwner( catalogTable.id, catalogUser.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownUserException e ) {
