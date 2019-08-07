@@ -36,6 +36,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
@@ -491,6 +492,24 @@ final class Statements {
     }
 
 
+    public static void renameSchema( XATransactionHandler transactionHandler, long schemaId, String name ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "name", quoteString( name ) );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + schemaId );
+        updateHandler( transactionHandler, "schema", data, where );
+    }
+
+
+    public static void setSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "owner", "" + ownerId );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + schemaId );
+        updateHandler( transactionHandler, "schema", data, where );
+    }
+
+
     public static void deleteSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "schema" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + schemaId;
         try {
@@ -552,7 +571,7 @@ final class Statements {
     static List<CatalogTable> getTables( TransactionHandler transactionHandler, long schemaId, Pattern tableNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownTableTypeException {
         String filter = " AND s.\"id\" = " + schemaId;
         if ( tableNamePattern != null ) {
-            filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "';";
+            filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "'";
         }
         return tableFilter( transactionHandler, filter );
     }
@@ -697,6 +716,24 @@ final class Statements {
     }
 
 
+    public static void renameTable( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "name", quoteString( name ) );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + tableId );
+        updateHandler( transactionHandler, "table", data, where );
+    }
+
+
+    public static void setTableOwner( XATransactionHandler transactionHandler, long tableId, int ownerId ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "owner", "" + ownerId );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + tableId );
+        updateHandler( transactionHandler, "table", data, where );
+    }
+
+
     public static void deleteTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "table" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + tableId;
         try {
@@ -731,6 +768,19 @@ final class Statements {
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogColumn> list = new LinkedList<>();
             while ( rs.next() ) {
+                String defaultValueSql = "SELECT dv.\"column\", dv.\"type\", dv.\"value\", dv.\"function_name\" FROM \"default_value\" dv where dv.\"column\" = " + getLongOrNull( rs, 1 );
+                CatalogDefaultValue defaultValue = null;
+                try ( ResultSet rsdv = transactionHandler.executeSelect( defaultValueSql ) ) {
+                    if ( rsdv.next() ) {
+                        defaultValue = new CatalogDefaultValue(
+                                getLongOrNull( rsdv, 1 ),
+                                PolySqlType.getByTypeCode( getIntOrNull( rsdv, 2 ) ),
+                                rsdv.getString( 3 ),
+                                rsdv.getString( 4 )
+                        );
+                    }
+                }
+
                 list.add( new CatalogColumn(
                         getLongOrNull( rs, 1 ),
                         rs.getString( 2 ),
@@ -747,7 +797,8 @@ final class Statements {
                         rs.getBoolean( 13 ),
                         Encoding.getById( getIntOrNull( rs, 14 ) ),
                         Collation.getById( getIntOrNull( rs, 15 ) ),
-                        rs.getBoolean( 16 )
+                        rs.getBoolean( 16 ),
+                        defaultValue
                 ) );
             }
             return list;
@@ -791,10 +842,22 @@ final class Statements {
         if ( schemaNamePattern != null ) {
             filter += " AND s.\"name\" LIKE '" + schemaNamePattern.pattern + "'";
         }
-        if ( schemaNamePattern != null ) {
+        if ( databaseNamePattern != null ) {
             filter += " AND d.\"name\" LIKE '" + databaseNamePattern.pattern + "'";
         }
         return columnFilter( transactionHandler, filter );
+    }
+
+
+    public static CatalogColumn getColumn( XATransactionHandler transactionHandler, long columnId ) throws UnknownCollationException, UnknownEncodingException, UnknownTypeException, GenericCatalogException, UnknownColumnException {
+        String filter = " AND c.\"id\" = " + columnId;
+        List<CatalogColumn> list = columnFilter( transactionHandler, filter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownColumnException( columnId );
+        }
+        return list.get( 0 );
     }
 
 
@@ -807,7 +870,7 @@ final class Statements {
      * @return A CatalogColumn
      */
     static CatalogColumn getColumn( TransactionHandler transactionHandler, long tableId, String columnName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
-        String filter = " AND c.\"table\" = " + tableId + " AND c.\"name\" = '" + columnName + "';";
+        String filter = " AND c.\"table\" = " + tableId + " AND c.\"name\" = '" + columnName + "'";
         List<CatalogColumn> list = columnFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -829,7 +892,7 @@ final class Statements {
      * @return A CatalogColumn
      */
     static CatalogColumn getColumn( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName, String columnName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
-        String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "' AND c.\"name\" = '" + columnName + "';";
+        String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "' AND c.\"name\" = '" + columnName + "'";
         List<CatalogColumn> list = columnFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -856,12 +919,72 @@ final class Statements {
     }
 
 
+    public static void renameColumn( XATransactionHandler transactionHandler, long columnId, String name ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "name", quoteString( name ) );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setColumnPosition( XATransactionHandler transactionHandler, long columnId, int position ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "position", "" + position );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer precision ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "type", "" + type.getTypeCode() );
+        data.put( "length", length == null ? null : "" + length );
+        data.put( "precision", precision == null ? null : "" + precision );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setNullable( XATransactionHandler transactionHandler, long columnId, boolean nullable ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "nullable", "" + nullable );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
     public static void deleteColumn( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "column" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + columnId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
             if ( rowsEffected != 1 ) {
                 throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    public static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "column", "" + columnId );
+        data.put( "type", "" + type.getTypeCode() );
+        data.put( "value", quoteString( defaultValue ) );
+        insertHandler( transactionHandler, "default_value", data );
+    }
+
+
+    public static void deleteDefaultValue( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "default_value" ) + " WHERE " + quoteIdentifier( "column" ) + " = " + columnId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected > 1 ) {
+                throw new GenericCatalogException( "Expected zero or one effected row, but " + rowsEffected + " have been effected." );
             }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );

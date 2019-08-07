@@ -23,22 +23,34 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-public class UnknownColumnException extends CatalogException {
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 
-    public UnknownColumnException( String databaseName, String schemaName, String tableName, String columnName ) {
-        super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
+
+/**
+ *
+ */
+@EqualsAndHashCode
+public class CatalogDefaultValue {
+
+    private static final long serialVersionUID = 6085682952587659184L;
+
+    public final long columnId;
+    public final PolySqlType type;
+    public final String value;
+    public final String functionName;
+
+
+    public CatalogDefaultValue( final long columnId, @NonNull final PolySqlType type, final String value, final String functionName ) {
+        this.columnId = columnId;
+        this.type = type;
+        this.value = value;
+        this.functionName = functionName;
     }
 
 
-    public UnknownColumnException( long tableId, String columnName ) {
-        super( "There is no column with name '" + columnName + "' in the table with the id '" + tableId + "'" );
-    }
-
-
-    public UnknownColumnException( long columnId ) {
-        super( "There is no column with id '" + columnId + "';" );
-    }
 }

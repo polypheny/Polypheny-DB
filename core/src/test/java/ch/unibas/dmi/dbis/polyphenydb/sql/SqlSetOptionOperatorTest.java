@@ -72,22 +72,8 @@ public class SqlSetOptionOperatorTest {
 
 
     @Test
-    public void testSqlSetOptionOperatorSet() throws SqlParseException {
-        SqlNode node = parse( "set optionA.optionB.optionC = true" );
-        checkSqlSetOptionSame( node );
-    }
-
-
-    @Test
     public void testSqlSetOptionOperatorScopeReset() throws SqlParseException {
         SqlNode node = parse( "alter session reset param1.param2.param3" );
-        checkSqlSetOptionSame( node );
-    }
-
-
-    @Test
-    public void testSqlSetOptionOperatorReset() throws SqlParseException {
-        SqlNode node = parse( "reset param1.param2.param3" );
         checkSqlSetOptionSame( node );
     }
 

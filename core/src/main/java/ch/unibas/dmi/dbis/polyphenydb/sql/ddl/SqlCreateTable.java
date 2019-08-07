@@ -127,6 +127,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }
@@ -208,7 +209,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    transaction.getCatalog().addColumn(
+                    long addedColumnId = transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
@@ -220,6 +221,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             Collation.CASE_INSENSITIVE,
                             false
                     );
+
+                    // Add default value
+                    if ( ((SqlColumnDeclaration) c.e).expression != null ) {
+                        // TODO: String is only a temporal solution for default values
+                        String v = ((SqlColumnDeclaration) c.e).expression.toString();
+                        if ( v.startsWith( "'" ) ) {
+                            v = v.substring( 1, v.length() - 1 );
+                        }
+                        transaction.getCatalog().setDefaultValue( addedColumnId, PolySqlType.VARCHAR, v );
+                    }
                 } else {
                     throw new AssertionError( c.e.getClass() );
                 }
@@ -243,6 +254,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
@@ -277,13 +289,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Collection getModifiableCollection() {
             return rows;
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 public Enumerator<T> enumerator() {
                     //noinspection unchecked
                     return (Enumerator<T>) Linq4j.enumerator( rows );
@@ -292,16 +307,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Type getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return protoRowType.apply( typeFactory );
         }

@@ -23,22 +23,31 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-public class UnknownColumnException extends CatalogException {
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAlter;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 
-    public UnknownColumnException( String databaseName, String schemaName, String tableName, String columnName ) {
-        super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
+
+/**
+ * Parse tree for {@code ALTER SCHEMA} statement.
+ */
+public abstract class SqlAlterSchema extends SqlAlter {
+
+
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER SCHEMA", SqlKind.ALTER_SCHEMA );
+
+
+    /**
+     * Creates a SqlAlterSchema.
+     */
+    public SqlAlterSchema( SqlParserPos pos ) {
+        super( OPERATOR, pos );
     }
 
-
-    public UnknownColumnException( long tableId, String columnName ) {
-        super( "There is no column with name '" + columnName + "' in the table with the id '" + tableId + "'" );
-    }
-
-
-    public UnknownColumnException( long columnId ) {
-        super( "There is no column with id '" + columnId + "';" );
-    }
 }
+

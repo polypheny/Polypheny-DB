@@ -68,8 +68,7 @@ form.
 
 {% highlight sql %}
 statement:
-      setStatement
-  |   resetStatement
+      alterStatement
   |   explain
   |   describe
   |   insert
@@ -78,12 +77,24 @@ statement:
   |   delete
   |   query
 
-setStatement:
-      [ ALTER ( SYSTEM | SESSION ) ] SET identifier '=' expression
+alterStatement:
+       ALTER ( SYSTEM | SESSION ) SET identifier '=' expression
+     | ALTER ( SYSTEM | SESSION ) RESET identifier
+     | ALTER ( SYSTEM | SESSION ) RESET ALL
+     | ALTER SCHEMA [ databaseName . ] schemaName RENAME TO newSchemaName  
+     | ALTER SCHEMA [ databaseName . ] schemaName OWNER TO userName  
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME TO newTableName  
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName OWNER TO userName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME COLUMN columnName TO newColumnName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP COLUMN columnName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET NOT NULL
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP NOT NULL
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET DEFAULT value
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP DEFAULT
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET TYPE type
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET POSITION ( BEFORE | AFTER ) columnName
 
-resetStatement:
-      [ ALTER ( SYSTEM | SESSION ) ] RESET identifier
-  |   [ ALTER ( SYSTEM | SESSION ) ] RESET ALL
 
 explain:
       EXPLAIN PLAN
@@ -606,6 +617,7 @@ MILLISECOND,
 MINVALUE,
 **MOD**,
 **MODIFIES**,
+MODIFY,
 **MODULE**,
 **MONTH**,
 MORE,
@@ -660,6 +672,7 @@ OUTPUT,
 **OVERLAPS**,
 **OVERLAY**,
 OVERRIDING,
+OWNER,
 PAD,
 **PARAMETER**,
 PARAMETER_MODE,
@@ -722,6 +735,7 @@ READ,
 **REGR_SYY**,
 RELATIVE,
 **RELEASE**,
+RENAME,
 REPEATABLE,
 REPLACE,
 **RESET**,

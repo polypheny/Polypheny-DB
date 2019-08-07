@@ -102,7 +102,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMatchRecognize;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMerge;
-import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlTruncate;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNumericLiteral;
@@ -981,8 +980,8 @@ SqlNode SqlStmt() :
         stmt = ${method}
     |
 </#list>
-        stmt = SqlSetOption(Span.of(), null)
-    |
+//        stmt = SqlSetOption(Span.of())
+//    |
         stmt = SqlAlter()
     |
 <#if parser.createStatementParserMethods?size != 0>
@@ -2679,8 +2678,7 @@ SqlNode PatternExpression() :
     (
         <VERTICAL_BAR>
         right = PatternTerm() {
-            left = SqlStdOperatorTable.PATTERN_ALTER.createCall(
-                Span.of(left).end(right), left, right);
+            left = SqlStdOperatorTable.PATTERN_ALTER.createCall(Span.of(left).end(right), left, right);
         }
     )*
     {
@@ -3505,16 +3503,26 @@ SqlCall SequenceExpression() :
     }
 }
 
+
+String Scope() :
+{
+}
+{
+    ( <SYSTEM> | <SESSION> ) { return token.image.toUpperCase(Locale.ROOT); }
+}
+
 /**
  * Parses "SET &lt;NAME&gt; = VALUE" or "RESET &lt;NAME&gt;", without a leading
  * "ALTER &lt;SCOPE&gt;".
  */
-SqlSetOption SqlSetOption(Span s, String scope) :
+SqlSetOption SqlSetOption(Span s) :
 {
     SqlIdentifier name;
     final SqlNode val;
+    final String scope;
 }
 {
+    scope = Scope()
     (
         <SET> {
             s.add(this);
@@ -3528,8 +3536,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         |
             <ON> {
                 // OFF is handled by SimpleIdentifier, ON handled here.
-                val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT),
-                    getPos());
+                val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
             }
         )
         {
@@ -3543,8 +3550,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             name = CompoundIdentifier()
         |
             <ALL> {
-                name = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT),
-                    getPos());
+                name = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
             }
         )
         {
@@ -3560,31 +3566,20 @@ SqlSetOption SqlSetOption(Span s, String scope) :
 SqlAlter SqlAlter() :
 {
     final Span s;
-    final String scope;
     final SqlAlter alterNode;
 }
 {
     <ALTER> { s = span(); }
-    scope = Scope()
     (
 <#-- additional literal parser methods are included here -->
 <#list parser.alterStatementParserMethods as method>
-        alterNode = ${method}(s, scope)
-    |
+        alterNode = ${method}(s)
+        <#sep>|</#sep>
 </#list>
-
-        alterNode = SqlSetOption(s, scope)
     )
     {
         return alterNode;
     }
-}
-
-String Scope() :
-{
-}
-{
-    ( <SYSTEM> | <SESSION> ) { return token.image.toUpperCase(Locale.ROOT); }
 }
 
 <#if parser.createStatementParserMethods?size != 0>
@@ -6347,6 +6342,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MINUTE: "MINUTE" >
 |   < MINVALUE: "MINVALUE" >
 |   < MOD: "MOD" >
+|   < MODIFY: "MODIFY" >
 |   < MODIFIES: "MODIFIES" >
 |   < MODULE: "MODULE" >
 |   < MONTH: "MONTH" >
@@ -6402,6 +6398,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < OVERLAPS: "OVERLAPS" >
 |   < OVERLAY: "OVERLAY" >
 |   < OVERRIDING: "OVERRIDING" >
+|   < OWNER: "OWNER" >
 |   < PAD: "PAD" >
 |   < PARAMETER: "PARAMETER" >
 |   < PARAMETER_MODE: "PARAMETER_MODE" >
@@ -6464,6 +6461,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REGR_SYY: "REGR_SYY" >
 |   < RELATIVE: "RELATIVE" >
 |   < RELEASE: "RELEASE" >
+|   < RENAME: "RENAME" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
 |   < RESET: "RESET" >

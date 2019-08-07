@@ -49,48 +49,15 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 
 
 /**
- * Base class for an ALTER statements parse tree nodes. The portion of the statement covered by this class is "ALTER &lt;SCOPE&gt;. Subclasses handle
- * whatever comes after the scope.
+ * Base class for an ALTER statements parse tree nodes.
  */
-public abstract class SqlAlter extends SqlCall {
+public abstract class SqlAlter extends SqlDdl implements SqlExecutableStatement {
 
     /**
-     * Scope of the operation. Values "SYSTEM" and "SESSION" are typical.
+     * Creates a SqlDdl.
      */
-    String scope;
-
-
-    public SqlAlter( SqlParserPos pos ) {
-        this( pos, null );
-    }
-
-
-    public SqlAlter( SqlParserPos pos, String scope ) {
-        super( pos );
-        this.scope = scope;
-    }
-
-
-    @Override
-    public final void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( scope != null ) {
-            writer.keyword( "ALTER" );
-            writer.keyword( scope );
-        }
-        unparseAlterOperation( writer, leftPrec, rightPrec );
-    }
-
-
-    protected abstract void unparseAlterOperation( SqlWriter writer, int leftPrec, int rightPrec );
-
-
-    public String getScope() {
-        return scope;
-    }
-
-
-    public void setScope( String scope ) {
-        this.scope = scope;
+    public SqlAlter( SqlOperator operator, SqlParserPos pos ) {
+        super( operator, pos );
     }
 
 }
