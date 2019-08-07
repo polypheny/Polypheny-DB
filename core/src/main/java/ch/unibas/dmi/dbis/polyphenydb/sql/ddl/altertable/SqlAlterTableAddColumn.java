@@ -63,16 +63,18 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     private final SqlIdentifier column;
     private final SqlDataTypeSpec type;
     private final boolean nullable;
+    private final SqlNode defaultValue; // Can be null
     private final SqlIdentifier beforeColumnName; // Can be null
     private final SqlIdentifier afterColumnName; // Can be null
 
 
-    public SqlAlterTableAddColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier column, SqlDataTypeSpec type, boolean nullable, SqlIdentifier beforeColumnName, SqlIdentifier afterColumnName ) {
+    public SqlAlterTableAddColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier column, SqlDataTypeSpec type, boolean nullable, SqlNode defaultValue, SqlIdentifier beforeColumnName, SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.column = Objects.requireNonNull( column );
         this.type = Objects.requireNonNull( type );
         this.nullable = nullable;
+        this.defaultValue = defaultValue;
         this.beforeColumnName = beforeColumnName;
         this.afterColumnName = afterColumnName;
     }
@@ -97,6 +99,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             writer.keyword( "NULL" );
         } else {
             writer.keyword( "NOT NULL" );
+        }
+        if ( defaultValue != null ) {
+            writer.keyword( "DEFAULT" );
+            defaultValue.unparse( writer, leftPrec, rightPrec );
         }
         if ( beforeColumnName != null ) {
             writer.keyword( "BEFORE" );
@@ -158,6 +164,16 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     false
             );
             addedColumn = transaction.getCatalog().getColumn( columnId );
+
+            // Add default value
+            if ( defaultValue != null ) {
+                // TODO: String is only a temporal solution for default values
+                String v = defaultValue.toString();
+                if ( v.startsWith( "'" ) ) {
+                    v = v.substring( 1, v.length() - 1 );
+                }
+                transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
+            }
         } catch ( GenericCatalogException | UnknownTypeException | UnknownEncodingException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

@@ -209,7 +209,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    transaction.getCatalog().addColumn(
+                    long addedColumnId = transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
@@ -221,6 +221,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             Collation.CASE_INSENSITIVE,
                             false
                     );
+
+                    // Add default value
+                    if ( ((SqlColumnDeclaration) c.e).expression != null ) {
+                        // TODO: String is only a temporal solution for default values
+                        String v = ((SqlColumnDeclaration) c.e).expression.toString();
+                        if ( v.startsWith( "'" ) ) {
+                            v = v.substring( 1, v.length() - 1 );
+                        }
+                        transaction.getCatalog().setDefaultValue( addedColumnId, PolySqlType.VARCHAR, v );
+                    }
                 } else {
                     throw new AssertionError( c.e.getClass() );
                 }

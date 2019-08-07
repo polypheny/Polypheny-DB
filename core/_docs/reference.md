@@ -87,7 +87,7 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName OWNER TO userName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME COLUMN columnName TO newColumnName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP COLUMN columnName
-     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL] [(BEFORE | AFTER) columnName]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET NOT NULL
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP NOT NULL
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET DEFAULT value

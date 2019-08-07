@@ -73,6 +73,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier owner;
     final SqlDataTypeSpec type;
     final boolean nullable;
+    final SqlNode defaultValue;
     final SqlIdentifier beforeColumn;
     final SqlIdentifier afterColumn;
     final SqlAlterTable statement;
@@ -112,6 +113,12 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { nullable = true; }
             )
             (
+                <DEFAULT_>
+                defaultValue = Literal()
+                |
+                { defaultValue = null; }
+            )
+            (
                 <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
                 |
                 <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
@@ -119,7 +126,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { afterColumn = null; beforeColumn = null; }
             )
             {
-                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, beforeColumn, afterColumn);
+                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
             }
         |
             <DROP> <COLUMN>
