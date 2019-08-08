@@ -511,6 +511,15 @@ public abstract class Catalog {
 
 
     /**
+     * Adds a primary key
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of key which will be part of the primary keys
+     */
+    public abstract void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException;
+
+
+    /**
      * Returns all (imported) foreign keys of a specified table
      *
      * @param tableId The id of the table
@@ -552,6 +561,14 @@ public abstract class Catalog {
      * @param keyId The id of the key to drop
      */
     public abstract void deleteKey( long keyId ) throws GenericCatalogException;
+
+
+    /**
+     * Deletes the specified foreign key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
+     *
+     * @param tableId The id of the key to drop
+     */
+    public abstract void deletePrimaryKey( long tableId ) throws GenericCatalogException;
 
 
     /**

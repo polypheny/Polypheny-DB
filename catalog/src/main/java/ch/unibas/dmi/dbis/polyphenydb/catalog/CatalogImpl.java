@@ -898,6 +898,30 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Adds a primary key to a specified table. If there is already a primary key defined for this table it is replaced.
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of key which will be part of the primary keys
+     */
+    @Override
+    public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
+            // Check if there is already a primary key defined for this table and if so, delete it.
+            if ( catalogTable.primaryKey != null ) {
+                Statements.setPrimaryKey( transactionHandler, tableId, null );
+                Statements.deleteKey( transactionHandler, catalogTable.primaryKey );
+            }
+            long keyId = Statements.addKey( transactionHandler, tableId, true, "pk_" + tableId, columnIds );
+            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns all (imported) foreign keys of a specified table
      *
      * @param tableId The id of the table
@@ -976,6 +1000,27 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteKey( transactionHandler, keyId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Deletes the specified foreign key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
+     * If there is no primary key, this operation is a NoOp.
+     *
+     * @param tableId The id of the key to drop
+     */
+    @Override
+    public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
+            if ( catalogTable.primaryKey != null ) {
+                Statements.setPrimaryKey( transactionHandler, tableId, null );
+                Statements.deleteKey( transactionHandler, catalogTable.primaryKey );
+            }
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }

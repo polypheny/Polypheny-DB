@@ -431,6 +431,6 @@ VALUES ( 0, 0, 0, NULL, 'i_0_0' ),
        ( 1, 2, 0, NULL, 'i_2_0' ),
        ( 2, 3, 0, NULL, 'i_3_0' );
 
-ALTER TABLE "key"
+ALTER TABLE "index"
     ALTER COLUMN "id"
         RESTART WITH 2;

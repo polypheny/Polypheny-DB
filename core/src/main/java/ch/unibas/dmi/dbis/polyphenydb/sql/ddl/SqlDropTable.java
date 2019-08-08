@@ -160,7 +160,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete keys
         try {
             // Remove primary key
-            transaction.getCatalog().setPrimaryKey( table.getTable().id, null );
+            transaction.getCatalog().deletePrimaryKey( table.getTable().id );
             // Delete all foreign keys of the table
             List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.getTable().id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {

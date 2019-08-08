@@ -1292,6 +1292,24 @@ final class Statements {
     }
 
 
+    public static long addKey( XATransactionHandler transactionHandler, long tableId, boolean unique, String name, List<Long> columnIds ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "table", "" + tableId );
+        data.put( "unique", "" + unique );
+        data.put( "name", quoteString( name ) );
+        long keyId = insertHandler( transactionHandler, "key", data );
+
+        for ( long columnId : columnIds ) {
+            Map<String, String> columnData = new LinkedHashMap<>();
+            columnData.put( "key", "" + keyId );
+            columnData.put( "column", "" + columnId );
+            insertHandler( transactionHandler, "key_column", columnData );
+        }
+
+        return keyId;
+    }
+
+
     public static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND t.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
@@ -1490,5 +1508,6 @@ final class Statements {
         }
         return v;
     }
+
 
 }

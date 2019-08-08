@@ -182,8 +182,7 @@ SqlNodeList AttributeDefList() :
 {
     final Span s;
     final List
-    <SqlNode> list = new ArrayList
-    <SqlNode>();
+    <SqlNode> list = new ArrayList<SqlNode>();
 }
 {
     <LPAREN> { s = span(); }

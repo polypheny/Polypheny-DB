@@ -77,6 +77,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier beforeColumn;
     final SqlIdentifier afterColumn;
     final SqlAlterTable statement;
+    final SqlNodeList columnList;
 }
 {
     <TABLE>
@@ -133,6 +134,23 @@ SqlAlterTable SqlAlterTable(Span s) :
             column = SimpleIdentifier()
             {
                 return new SqlAlterTableDropColumn(s.end(this), table, column);
+            }
+        |
+            <ADD> <PRIMARY> <KEY>
+            (
+                columnList = ParenthesizedSimpleIdentifierList()
+                |
+                column = SimpleIdentifier() {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+            {
+                return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
+            }
+        |
+            <DROP> <PRIMARY> <KEY>
+            {
+                return new SqlAlterTableDropPrimaryKey(s.end(this), table);
             }
         |
             <MODIFY> <COLUMN>
