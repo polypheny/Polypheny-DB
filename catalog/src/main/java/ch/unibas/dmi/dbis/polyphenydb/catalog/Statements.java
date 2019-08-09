@@ -30,6 +30,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.IndexType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Pattern;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
@@ -49,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -1191,7 +1194,7 @@ final class Statements {
 
 
     private static List<CatalogForeignKey> foreignKeyFilter( TransactionHandler transactionHandler, String keyFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\", fk.\"deferrability\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
         List<CatalogForeignKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
@@ -1214,8 +1217,7 @@ final class Statements {
                         getLongOrNull( rs, 16 ),
                         rs.getString( 17 ),
                         getIntOrNull( rs, 18 ),
-                        getIntOrNull( rs, 19 ),
-                        getIntOrNull( rs, 20 )
+                        getIntOrNull( rs, 19 )
                 ) );
             }
         } catch ( SQLException e ) {
@@ -1286,9 +1288,40 @@ final class Statements {
     }
 
 
+    public static CatalogKey getKey( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException, UnknownKeyException {
+        String keyFilter = " AND k.\"name\" = " + quoteString( name ) + " AND k.\"table\" = " + tableId;
+        String keyColumnFilter = "";
+        List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownKeyException( name );
+        }
+        return list.get( 0 );
+    }
+
+
     public static List<CatalogKey> getKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND k.\"table\" = " + tableId;
         return keyFilter( transactionHandler, filter, "" );
+    }
+
+
+    public static long addKey( XATransactionHandler transactionHandler, long tableId, boolean unique, String name, List<Long> columnIds ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "table", "" + tableId );
+        data.put( "unique", "" + unique );
+        data.put( "name", quoteString( name ) );
+        long keyId = insertHandler( transactionHandler, "key", data );
+
+        for ( long columnId : columnIds ) {
+            Map<String, String> columnData = new LinkedHashMap<>();
+            columnData.put( "key", "" + keyId );
+            columnData.put( "column", "" + columnId );
+            insertHandler( transactionHandler, "key_column", columnData );
+        }
+
+        return keyId;
     }
 
 
@@ -1298,9 +1331,25 @@ final class Statements {
     }
 
 
+    public static List<CatalogForeignKey> getForeignKeysByReference( XATransactionHandler transactionHandler, long referencedKeyId ) throws GenericCatalogException {
+        String keyFilter = " AND fk.\"references\" = " + referencedKeyId;
+        return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
     public static List<CatalogForeignKey> getExportedKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND refTab.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
+    public static long addForeignKey( XATransactionHandler transactionHandler, long keyId, long refKey, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "key", "" + keyId );
+        data.put( "references", "" + refKey );
+        data.put( "on_update", "" + onUpdate.getId() );
+        data.put( "on_delete", "" + onDelete.getId() );
+        return insertHandler( transactionHandler, "foreign_key", data );
     }
 
 
@@ -1318,6 +1367,80 @@ final class Statements {
             indexes.addAll( indexesOfKey );
         }
         return indexes;
+    }
+
+
+    public static CatalogIndex getIndex( XATransactionHandler transactionHandler, long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
+        String keyFilter = " AND k.\"table\" = " + tableId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogIndex> indexes = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String indexFilter = " i.\"key\" = " + key.id + " AND i.\"name\" = " + quoteString( indexName );
+            List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
+            indexesOfKey.forEach( i -> i.key = key );
+            indexes.addAll( indexesOfKey );
+        }
+        if ( indexes.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( indexes.size() == 0 ) {
+            throw new UnknownIndexException( indexName );
+        }
+        return indexes.get( 0 );
+    }
+
+
+    public static CatalogIndex getIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException, UnknownIndexException {
+        String indexFilter = " i.\"id\" = " + indexId;
+        List<CatalogIndex> indexes = indexFilter( transactionHandler, indexFilter );
+        if ( indexes.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( indexes.size() == 0 ) {
+            throw new UnknownIndexException( indexId );
+        }
+        CatalogIndex index = indexes.get( 0 );
+        // Get corresponding key
+        String keyFilter = " AND k.\"id\" = " + index.keyId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        if ( indexes.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( indexes.size() == 0 ) {
+            throw new UnknownIndexException( indexId );
+        }
+        index.key = keys.get( 0 );
+        return index;
+    }
+
+
+    public static List<CatalogIndex> getIndexesByKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+        String keyFilter = " AND k.\"id\" = " + keyId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogIndex> indexes = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String indexFilter = " i.\"key\" = " + key.id;
+            List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
+            indexesOfKey.forEach( i -> i.key = key );
+            indexes.addAll( indexesOfKey );
+        }
+        return indexes;
+    }
+
+
+    public static long addIndex( XATransactionHandler transactionHandler, long keyId, IndexType type, Long location, String indexName ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "key", "" + keyId );
+        data.put( "type", "" + type.getId() );
+        data.put( "location", "" + location );
+        data.put( "name", quoteString( indexName ) );
+        return insertHandler( transactionHandler, "index", data );
+    }
+
+
+    public static void setKeyUnique( XATransactionHandler transactionHandler, long keyId, boolean unique ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "unique", "" + unique );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + keyId );
+        updateHandler( transactionHandler, "key", data, where );
     }
 
 

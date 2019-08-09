@@ -56,6 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.List;
+import lombok.Getter;
 
 
 /**
@@ -65,11 +66,13 @@ import java.util.List;
  */
 public class SqlKeyConstraint extends SqlCall {
 
-    private static final SqlSpecialOperator UNIQUE = new SqlSpecialOperator( "UNIQUE", SqlKind.UNIQUE );
+    public static final SqlSpecialOperator UNIQUE = new SqlSpecialOperator( "UNIQUE", SqlKind.UNIQUE );
 
     protected static final SqlSpecialOperator PRIMARY = new SqlSpecialOperator( "PRIMARY KEY", SqlKind.PRIMARY_KEY );
 
+    @Getter
     private final SqlIdentifier name;
+    @Getter
     private final SqlNodeList columnList;
 
 

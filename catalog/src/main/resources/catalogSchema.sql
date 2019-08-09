@@ -172,7 +172,6 @@ CREATE TABLE "foreign_key" (
     "references"    BIGINT               NOT NULL REFERENCES "key" ("id"),
     "on_update"     INTEGER DEFAULT NULL NULL,
     "on_delete"     INTEGER DEFAULT NULL NULL,
-    "deferrability" INTEGER              NULL,
     PRIMARY KEY ("key")
 );
 
@@ -384,53 +383,3 @@ VALUES ( 0, 2 ),
        ( 1, 0 ),
        ( 1, 1 );
 
-
---
--- keys
---
-INSERT INTO "key" ( "id", "table", "unique", "name" )
-VALUES ( 0, 0, TRUE, 'key_0' ),
-       ( 1, 1, TRUE, 'key_1' ),
-       ( 2, 1, FALSE, 'key_2' ),
-       ( 3, 1, TRUE, 'key_3' ),
-       ( 4, 2, TRUE, 'key_4' );
-
-ALTER TABLE "key"
-    ALTER COLUMN "id"
-        RESTART WITH 5;
-
-UPDATE "table"
-SET "primary_key" = 0
-WHERE "id" = 0;
-
-
---
--- key columns
---
-INSERT INTO "key_column" ( "key", "column" )
-VALUES ( 0, 0 ),
-       ( 1, 1 ),
-       ( 2, 3 ),
-       ( 3, 3 ),
-       ( 3, 4 ),
-       ( 4, 8 );
-
-
---
--- foreign_key
---
-INSERT INTO "foreign_key" ( "key", "references", "on_update", "on_delete", "deferrability" )
-VALUES ( 2, 0, NULL, NULL, 0 );
-
-
---
--- index
---
-INSERT INTO "index" ( "id", "key", "type", "location", "name" )
-VALUES ( 0, 0, 0, NULL, 'i_0_0' ),
-       ( 1, 2, 0, NULL, 'i_2_0' ),
-       ( 2, 3, 0, NULL, 'i_3_0' );
-
-ALTER TABLE "key"
-    ALTER COLUMN "id"
-        RESTART WITH 2;

@@ -47,6 +47,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -511,6 +514,15 @@ public abstract class Catalog {
 
 
     /**
+     * Adds a primary key
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of key which will be part of the primary keys
+     */
+    public abstract void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException;
+
+
+    /**
      * Returns all (imported) foreign keys of a specified table
      *
      * @param tableId The id of the table
@@ -529,6 +541,29 @@ public abstract class Catalog {
 
 
     /**
+     * Adds a unique foreign key constraint.
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of the columns which are part of the foreign key
+     * @param referencesTableId The if of the referenced table
+     * @param referencesIds The id of columns forming the key referenced by this key
+     * @param constraintName The name of the constraint
+     * @param onUpdate The option for updates
+     * @param onDelete The option for deletes
+     */
+    public abstract void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException;
+
+
+    /**
+     * Adds a unique constraint.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param columnIds A list of column ids
+     */
+    public abstract void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException;
+
+    /**
      * Returns all indexes of a table
      *
      * @param tableId The id of the table
@@ -539,11 +574,33 @@ public abstract class Catalog {
 
 
     /**
+     * Returns the index with the specified name in the specified table
+     *
+     * @param tableId The id of the table
+     * @param indexName The name of the index
+     * @return The Index
+     */
+    public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
+
+
+    /**
+     * Adds an index over the specified columns
+     *
+     * @param tableId The id of the table
+     * @param columnIds A list of column ids
+     * @param unique Weather the index should be unique
+     * @param indexName The name of the index
+     * @return The id of the created index
+     */
+    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException;
+
+
+    /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
-    public abstract void deleteIndex( long indexId ) throws GenericCatalogException;
+    public abstract void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException;
 
 
     /**
@@ -555,11 +612,20 @@ public abstract class Catalog {
 
 
     /**
-     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
      *
-     * @param keyId The id of the key to drop
+     * @param tableId The id of the key to drop
      */
-    public abstract void deleteForeignKey( long keyId ) throws GenericCatalogException;
+    public abstract void deletePrimaryKey( long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified constraint (foreign key, unique) (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it first.
+     *
+     * @param tableId The id of the table the constraint belongs to
+     * @param constraintName The name of the constraint to delete
+     */
+    public abstract void deleteConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownKeyException;
 
 
     /**
@@ -749,6 +815,79 @@ public abstract class Catalog {
             throw new UnknownEncodingException( id );
         }
     }
+
+
+    public enum IndexType {
+        BTREE( 1 );
+
+        private final int id;
+
+
+        IndexType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static IndexType getById( int id ) throws UnknownIndexTypeException {
+            for ( IndexType e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownIndexTypeException( id );
+        }
+    }
+
+
+    public enum ForeignKeyOption {
+        // IDs according to JDBC standard
+        CASCADE( 0 ),
+        RESTRICT( 1 ),
+        SET_NULL( 2 ),
+        SET_DEFAULT( 4 );
+
+        private final int id;
+
+
+        ForeignKeyOption( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static ForeignKeyOption getById( int id ) throws UnknownForeignKeyOptionException {
+            for ( ForeignKeyOption e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownForeignKeyOptionException( id );
+        }
+
+
+        public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
+            if ( str.equalsIgnoreCase( "CASCADE" ) ) {
+                return ForeignKeyOption.CASCADE;
+            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
+                return ForeignKeyOption.RESTRICT;
+            } else if ( str.equalsIgnoreCase( "SET NULL" ) ) {
+                return ForeignKeyOption.SET_NULL;
+            } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
+                return ForeignKeyOption.SET_DEFAULT;
+            }
+            throw new UnknownForeignKeyOptionException( str );
+        }
+    }
+
 
 
     public static class Pattern {

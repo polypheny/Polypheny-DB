@@ -87,14 +87,20 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName OWNER TO userName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME COLUMN columnName TO newColumnName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP COLUMN columnName
-     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL ] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET NOT NULL
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP NOT NULL
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET DEFAULT value
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP DEFAULT
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET TYPE type
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET POSITION ( BEFORE | AFTER ) columnName
-
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PRIMARY KEY ( columnName | '(' columnName [ , columnName ]* ')' )
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PRIMARY KEY
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName UNIQUE ( columnName| '(' columnName [ , columnName ]* ')' )
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName FOREIGN KEY ( columnName | '(' columnName [ , columnName ]* ')' ) REFERENCES [ databaseName . ] [ schemaName . ] tableName '(' columnName [ , columnName ]* ')' [ ON UPDATE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ] [ ON DELETE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP CONSTRAINT constraintName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) 
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
 
 explain:
       EXPLAIN PLAN
@@ -533,6 +539,7 @@ IMPLEMENTATION,
 **IN**,
 INCLUDING,
 INCREMENT,
+INDEX,
 **INDICATOR**,
 **INITIAL**,
 INITIALLY,

@@ -53,9 +53,11 @@ import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -94,14 +96,17 @@ import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -231,6 +236,27 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         }
                         transaction.getCatalog().setDefaultValue( addedColumnId, PolySqlType.VARCHAR, v );
                     }
+                } else if ( c.e instanceof SqlKeyConstraint ) {
+                    SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
+                    List<Long> columnIds = new LinkedList<>();
+                    for ( SqlNode node : constraint.getColumnList().getList() ) {
+                        String columnName = node.toString();
+                        CatalogColumn catalogColumn = transaction.getCatalog().getColumn( tableId, columnName );
+                        columnIds.add( catalogColumn.id );
+                    }
+                    if ( constraint.getOperator() == SqlKeyConstraint.PRIMARY ) {
+                        transaction.getCatalog().addPrimaryKey( tableId, columnIds );
+                    } else if ( constraint.getOperator() == SqlKeyConstraint.UNIQUE ) {
+                        String constraintName;
+                        if ( constraint.getName() == null ) {
+                            Random rand = new Random();
+                            int x = rand.nextInt( 1000 );
+                            constraintName = "auto_" + x + "_unique_" + tableName + "_" + StringUtils.join( columnIds, "_" );
+                        } else {
+                            constraintName = constraint.getName().getSimple();
+                        }
+                        transaction.getCatalog().addUniqueConstraint( tableId, constraintName, columnIds );
+                    }
                 } else {
                     throw new AssertionError( c.e.getClass() );
                 }
@@ -238,7 +264,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

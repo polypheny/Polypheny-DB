@@ -59,6 +59,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -153,24 +155,24 @@ public class SqlDropTable extends SqlDropObject {
             for ( CatalogIndex index : indexes ) {
                 transaction.getCatalog().deleteIndex( index.id );
             }
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownIndexException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
         }
 
         // Delete keys
         try {
             // Remove primary key
-            transaction.getCatalog().setPrimaryKey( table.getTable().id, null );
+            transaction.getCatalog().deletePrimaryKey( table.getTable().id );
             // Delete all foreign keys of the table
             List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.getTable().id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                transaction.getCatalog().deleteConstraint( table.getTable().id, foreignKey.name );
             }
             // Delete all remaining keys (unique keys and the primary key) of the table
             for ( CatalogKey key : transaction.getCatalog().getKeys( table.getTable().id ) ) {
                 transaction.getCatalog().deleteKey( key.id );
             }
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
         }
 
