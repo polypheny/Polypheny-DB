@@ -99,6 +99,8 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName UNIQUE ( columnName| '(' columnName [ , columnName ]* ')' )
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName FOREIGN KEY ( columnName | '(' columnName [ , columnName ]* ')' ) REFERENCES [ databaseName . ] [ schemaName . ] tableName '(' columnName [ , columnName ]* ')' [ ON UPDATE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ] [ ON DELETE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ]
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP CONSTRAINT constraintName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) 
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
 
 explain:
       EXPLAIN PLAN
@@ -537,6 +539,7 @@ IMPLEMENTATION,
 **IN**,
 INCLUDING,
 INCREMENT,
+INDEX,
 **INDICATOR**,
 **INITIAL**,
 INITIALLY,

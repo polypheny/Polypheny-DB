@@ -27,39 +27,46 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name DROP CONSTRAINT} statement.
+ * Parse tree for {@code ALTER TABLE name ADD INDEX} statement.
  */
-public class SqlAlterTableDropConstraint extends SqlAlterTable {
+public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     private final SqlIdentifier table;
-    private final SqlIdentifier constraintName;
+    private final SqlIdentifier indexName;
+    private final SqlNodeList columnList;
+    private final boolean unique;
 
 
-    public SqlAlterTableDropConstraint( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName ) {
+    public SqlAlterTableAddIndex( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, boolean unique, SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
-        this.constraintName = Objects.requireNonNull( constraintName );
+        this.columnList = Objects.requireNonNull( columnList );
+        this.unique = unique;
+        this.indexName = indexName;
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, constraintName );
+        return ImmutableNullableList.of( table, columnList, indexName );
     }
 
 
@@ -68,9 +75,14 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "DROP" );
-        writer.keyword( "CONSTRAINT" );
-        constraintName.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "ADD" );
+        if ( unique ) {
+            writer.keyword( "UNIQUE" );
+        }
+        writer.keyword( "INDEX" );
+        indexName.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "ON" );
+        columnList.unparse( writer, leftPrec, rightPrec );
     }
 
 
@@ -78,8 +90,14 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, transaction, table );
         try {
-            transaction.getCatalog().deleteConstraint( catalogTable.id, constraintName.getSimple() );
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+            List<Long> columnIds = new LinkedList<>();
+            for ( SqlNode node : columnList.getList() ) {
+                String columnName = node.toString();
+                CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
+                columnIds.add( catalogColumn.id );
+            }
+            transaction.getCatalog().addIndex( catalogTable.id, columnIds, unique, indexName.getSimple() );
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -82,8 +82,10 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier refColumn;
     final SqlIdentifier refTable;
     final SqlIdentifier constraintName;
+    final SqlIdentifier indexName;
     final String onUpdate;
     final String onDelete;
+    final boolean unique;
 }
 {
     <TABLE>
@@ -220,6 +222,32 @@ SqlAlterTable SqlAlterTable(Span s) :
             constraintName = SimpleIdentifier()
             {
                 return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+            }
+        |
+            <ADD>
+            (
+                <UNIQUE> { unique = true; }
+                |
+                { unique = false; }
+            )
+            <INDEX>
+            indexName = SimpleIdentifier()
+            <ON>
+            (
+                columnList = ParenthesizedSimpleIdentifierList()
+                |
+                column = SimpleIdentifier() {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+            {
+                return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexName);
+            }
+        |
+            <DROP> <INDEX>
+            indexName = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropIndex(s.end(this), table, indexName);
             }
         |
             <MODIFY> <COLUMN>

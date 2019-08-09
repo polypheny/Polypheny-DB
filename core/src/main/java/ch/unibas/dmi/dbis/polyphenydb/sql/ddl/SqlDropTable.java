@@ -59,6 +59,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -154,7 +155,7 @@ public class SqlDropTable extends SqlDropObject {
             for ( CatalogIndex index : indexes ) {
                 transaction.getCatalog().deleteIndex( index.id );
             }
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownIndexException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
         }
 

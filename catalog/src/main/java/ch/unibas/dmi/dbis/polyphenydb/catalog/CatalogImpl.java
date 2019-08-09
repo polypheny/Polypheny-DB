@@ -50,6 +50,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -989,7 +990,7 @@ public class CatalogImpl extends Catalog {
      *
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
-     * @param columnIds The id of key which will be part of the primary keys
+     * @param columnIds A list of column ids
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
@@ -1021,15 +1022,91 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the index with the specified name in the specified table
+     *
+     * @param tableId The id of the table
+     * @param indexName The name of the index
+     * @return The Index
+     */
+    @Override
+    public CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getIndex( transactionHandler, tableId, indexName );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Adds an index over the specified columns
+     *
+     * @param tableId The id of the table
+     * @param columnIds A list of column ids
+     * @param unique Weather the index should be unique
+     * @param indexName The name of the index
+     * @return The id of the created index
+     */
+    @Override
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            long keyId = -1;
+            // Check if there is already a key
+            List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
+            for ( CatalogKey key : keys ) {
+                if ( key.columnIds.size() == columnIds.size() && key.columnIds.containsAll( columnIds ) && columnIds.containsAll( key.columnIds ) ) {
+                    // If the index has the unique flag set, set the key unique if this is not already case
+                    if ( unique && !key.unique ) {
+                        Statements.setKeyUnique( transactionHandler, keyId, true );
+                    }
+                    keyId = key.id;
+                }
+            }
+            if ( keyId == -1 ) {
+                // There is no key, create it
+                keyId = Statements.addKey( transactionHandler, tableId, unique, indexName, columnIds );
+            }
+            IndexType type = IndexType.BTREE;
+            return Statements.addIndex( transactionHandler, keyId, type, null, indexName );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
     @Override
-    public void deleteIndex( long indexId ) throws GenericCatalogException {
+    public void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteIndex( transactionHandler, indexId );
+            CatalogIndex index = Statements.getIndex( transactionHandler, indexId );
+            Statements.deleteIndex( transactionHandler, index.id );
+
+            // Check if the key is used by a foreign key constraint.
+            List<CatalogForeignKey> foreignKeys = Statements.getForeignKeys( transactionHandler, index.key.tableId );
+            for ( CatalogForeignKey fk : foreignKeys ) {
+                if ( fk.id == index.keyId ) {
+                    return;
+                }
+            }
+            // Check if the key is used by a unique constraint or primary key
+            if ( index.key.unique ) {
+                return;
+            }
+            // Check if key is used by another index
+            List<CatalogIndex> indexes = Statements.getIndexesByKey( transactionHandler, index.key.id );
+            if ( indexes.size() > 0 ) {
+                return;
+            }
+
+            // This key is not used anymore. Delete it.
+            Statements.deleteKey( transactionHandler, index.key.id );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }

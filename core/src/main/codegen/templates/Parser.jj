@@ -6262,6 +6262,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < IN: "IN" >
 |   < INCLUDING: "INCLUDING" >
 |   < INCREMENT: "INCREMENT" >
+|   < INDEX: "INDEX" >
 |   < INDICATOR: "INDICATOR" >
 |   < INITIAL: "INITIAL" >
 |   < INITIALLY: "INITIALLY" >

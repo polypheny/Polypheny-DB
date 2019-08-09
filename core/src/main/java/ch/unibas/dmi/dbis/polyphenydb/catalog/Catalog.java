@@ -48,6 +48,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -557,7 +559,7 @@ public abstract class Catalog {
      *
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
-     * @param columnIds The id of key which will be part of the primary keys
+     * @param columnIds A list of column ids
      */
     public abstract void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException;
 
@@ -572,11 +574,33 @@ public abstract class Catalog {
 
 
     /**
+     * Returns the index with the specified name in the specified table
+     *
+     * @param tableId The id of the table
+     * @param indexName The name of the index
+     * @return The Index
+     */
+    public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
+
+
+    /**
+     * Adds an index over the specified columns
+     *
+     * @param tableId The id of the table
+     * @param columnIds A list of column ids
+     * @param unique Weather the index should be unique
+     * @param indexName The name of the index
+     * @return The id of the created index
+     */
+    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException;
+
+
+    /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
-    public abstract void deleteIndex( long indexId ) throws GenericCatalogException;
+    public abstract void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException;
 
 
     /**
@@ -789,6 +813,33 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownEncodingException( id );
+        }
+    }
+
+
+    public enum IndexType {
+        BTREE( 1 );
+
+        private final int id;
+
+
+        IndexType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static IndexType getById( int id ) throws UnknownIndexTypeException {
+            for ( IndexType e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownIndexTypeException( id );
         }
     }
 
