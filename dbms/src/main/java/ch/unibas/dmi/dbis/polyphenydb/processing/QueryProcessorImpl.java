@@ -55,8 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbSqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
@@ -244,10 +242,10 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
+                        /*.addRuleInstance( FilterTableScanRule.INSTANCE )
                         .addRuleInstance( FilterTableScanRule.INTERPRETER )
                         .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectTableScanRule.INTERPRETER ) */
                         .build();
         RelOptPlanner planner = new HepPlanner( hepProgram );
         return processQuery( logicalPlan, planner );
