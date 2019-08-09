@@ -995,8 +995,7 @@ public class CatalogImpl extends Catalog {
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            long keyId = Statements.addKey( transactionHandler, tableId, true, constraintName, columnIds );
-            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
+            Statements.addKey( transactionHandler, tableId, true, constraintName, columnIds );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
