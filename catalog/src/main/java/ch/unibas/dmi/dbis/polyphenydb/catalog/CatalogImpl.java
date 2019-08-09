@@ -956,6 +956,54 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Adds a unique foreign key constraint.
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of the columns which are part of the foreign key
+     * @param referencesIds The id of columns forming the key referenced by this key
+     * @param constraintName The name of the constraint
+     * @param onUpdate The option for updates
+     * @param onDelete The option for deletes
+     */
+    @Override
+    public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            List<CatalogKey> keys = Statements.getKeys( transactionHandler, referencesTableId );
+            for ( CatalogKey refKey : keys ) {
+                if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) && refKey.unique ) {
+                    long keyId = Statements.addKey( transactionHandler, tableId, false, constraintName, columnIds );
+                    Statements.addForeignKey( transactionHandler, keyId, refKey.id, onUpdate, onDelete );
+                    return;
+                }
+            }
+            throw new RuntimeException( "The referenced columns do not define a primary or unique key." );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Adds a unique constraint.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param columnIds The id of key which will be part of the primary keys
+     */
+    @Override
+    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            long keyId = Statements.addKey( transactionHandler, tableId, true, constraintName, columnIds );
+            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns all indexes of a table
      *
      * @param tableId The id of the table
@@ -1006,7 +1054,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Deletes the specified foreign key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
+     * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
      * If there is no primary key, this operation is a NoOp.
      *
      * @param tableId The id of the key to drop
@@ -1027,17 +1075,35 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     * Delete the specified constraint (foreign key, unique) (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it first.
      *
-     * @param keyId The id of the key to drop
+     * @param tableId The id of the table the constraint belongs to
+     * @param constraintName The name of the constraint to delete
      */
     @Override
-    public void deleteForeignKey( long keyId ) throws GenericCatalogException {
+    public void deleteConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownKeyException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteForeignKey( transactionHandler, keyId );
-            Statements.deleteKey( transactionHandler, keyId );
-        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            CatalogKey key = Statements.getKey( transactionHandler, tableId, constraintName );
+            // Check if it is a primary key
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            if ( table.primaryKey != null && table.primaryKey == key.id ) {
+                throw new RuntimeException( "Illegal attempt to delete a primary key using delete constraint" );
+            }
+            // Check if it is referenced from a foreign key of a different table
+            List<CatalogForeignKey> foreignKeysReferencingThisKey = Statements.getForeignKeysByReference( transactionHandler, key.id );
+            if ( foreignKeysReferencingThisKey.size() > 0 ) {
+                throw new RuntimeException( "Cannot delete this constraint because it is referenced in the following foreign key: table: " + foreignKeysReferencingThisKey.get( 0 ).schemaName + "." + foreignKeysReferencingThisKey.get( 0 ).tableName + " foreign key constraint name: " + foreignKeysReferencingThisKey.get( 0 ).name );
+            }
+            // Check if it is a foreign key constraint. In this case we have to delete the corresponding entry in the foreign key table
+            List<CatalogForeignKey> foreignKeys = Statements.getForeignKeys( transactionHandler, tableId );
+            for ( CatalogForeignKey fk : foreignKeys ) {
+                if ( fk.id == key.id ) {
+                    Statements.deleteForeignKey( transactionHandler, fk.id );
+                }
+            }
+            Statements.deleteKey( transactionHandler, key.id );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }

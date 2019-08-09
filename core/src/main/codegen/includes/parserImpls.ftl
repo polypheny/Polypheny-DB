@@ -78,6 +78,12 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier afterColumn;
     final SqlAlterTable statement;
     final SqlNodeList columnList;
+    final SqlNodeList referencesList;
+    final SqlIdentifier refColumn;
+    final SqlIdentifier refTable;
+    final SqlIdentifier constraintName;
+    final String onUpdate;
+    final String onDelete;
 }
 {
     <TABLE>
@@ -151,6 +157,69 @@ SqlAlterTable SqlAlterTable(Span s) :
             <DROP> <PRIMARY> <KEY>
             {
                 return new SqlAlterTableDropPrimaryKey(s.end(this), table);
+            }
+        |
+            <ADD> <CONSTRAINT>
+            constraintName = SimpleIdentifier()
+            (
+                    <UNIQUE>
+                    (
+                        columnList = ParenthesizedSimpleIdentifierList()
+                        |
+                        column = SimpleIdentifier() {
+                            columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                        }
+                    )
+                    {
+                        return new SqlAlterTableAddUniqueConstraint(s.end(this), table, constraintName, columnList);
+                    }
+                |
+                    <FOREIGN> <KEY>
+                    (
+                        columnList = ParenthesizedSimpleIdentifierList()
+                        |
+                        column = SimpleIdentifier() {
+                            columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                        }
+                    )
+                    <REFERENCES>
+                    refTable = CompoundIdentifier()
+                    referencesList = ParenthesizedSimpleIdentifierList()
+                    (
+                        <ON> <UPDATE> (
+                            <CASCADE> { onUpdate = "CASCADE"; }
+                            |
+                            <RESTRICT> { onUpdate = "RESTRICT"; }
+                            |
+                            <SET> <NULL> { onUpdate = "SET NULL"; }
+                            |
+                            <SET> <DEFAULT_> { onUpdate = "SET DEFAULT"; }
+                        )
+                        |
+                        { onUpdate = null; }
+                    )
+                    (
+                        <ON> <DELETE> (
+                            <CASCADE> { onDelete = "CASCADE"; }
+                            |
+                            <RESTRICT> { onDelete = "RESTRICT"; }
+                            |
+                            <SET> <NULL> { onDelete = "SET NULL"; }
+                            |
+                            <SET> <DEFAULT_> { onDelete = "SET DEFAULT"; }
+                        )
+                        |
+                        { onDelete = null; }
+                    )
+                    {
+                        return new SqlAlterTableAddForeignKeyConstraint(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+                    }
+                )
+        |
+            <DROP> <CONSTRAINT>
+            constraintName = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
             }
         |
             <MODIFY> <COLUMN>

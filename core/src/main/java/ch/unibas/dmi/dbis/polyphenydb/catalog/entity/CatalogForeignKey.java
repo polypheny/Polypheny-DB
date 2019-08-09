@@ -52,7 +52,6 @@ public final class CatalogForeignKey extends CatalogKey {
     public final String referencedKeyTableName;
     public final Integer updateRule;
     public final Integer deleteRule;
-    public final int deferrability;
     public List<Long> referencedKeyColumnIds;
     public List<String> referencedKeyColumnNames;
 
@@ -76,8 +75,7 @@ public final class CatalogForeignKey extends CatalogKey {
             final long referencedKeyDatabaseId,
             @NonNull final String referencedKeyDatabaseName,
             final Integer updateRule,
-            final Integer deleteRule,
-            final int deferrability ) {
+            final Integer deleteRule ) {
         super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyName = referencedKeyName;
@@ -89,7 +87,6 @@ public final class CatalogForeignKey extends CatalogKey {
         this.referencedKeyDatabaseName = referencedKeyDatabaseName;
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
-        this.deferrability = deferrability;
     }
 
 
@@ -115,7 +112,7 @@ public final class CatalogForeignKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ referencedKeyDatabaseName, referencedKeySchemaName, referencedKeyTableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, deferrability };
+            return new Serializable[]{ referencedKeyDatabaseName, referencedKeySchemaName, referencedKeyTableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, null };
         }
 
 
@@ -135,7 +132,7 @@ public final class CatalogForeignKey extends CatalogKey {
             public final Integer deleteRule;
             public final String fkName;
             public final String pkName;
-            public final int deferrability;
+            public final Integer deferrability;
         }
 
     }

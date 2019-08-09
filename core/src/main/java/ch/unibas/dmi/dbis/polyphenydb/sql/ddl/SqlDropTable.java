@@ -59,6 +59,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -164,13 +165,13 @@ public class SqlDropTable extends SqlDropObject {
             // Delete all foreign keys of the table
             List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.getTable().id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                transaction.getCatalog().deleteConstraint( table.getTable().id, foreignKey.name );
             }
             // Delete all remaining keys (unique keys and the primary key) of the table
             for ( CatalogKey key : transaction.getCatalog().getKeys( table.getTable().id ) ) {
                 transaction.getCatalog().deleteKey( key.id );
             }
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
         }
 

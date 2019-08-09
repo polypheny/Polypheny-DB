@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Pattern;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
@@ -1191,7 +1192,7 @@ final class Statements {
 
 
     private static List<CatalogForeignKey> foreignKeyFilter( TransactionHandler transactionHandler, String keyFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\", fk.\"deferrability\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
         List<CatalogForeignKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
@@ -1214,8 +1215,7 @@ final class Statements {
                         getLongOrNull( rs, 16 ),
                         rs.getString( 17 ),
                         getIntOrNull( rs, 18 ),
-                        getIntOrNull( rs, 19 ),
-                        getIntOrNull( rs, 20 )
+                        getIntOrNull( rs, 19 )
                 ) );
             }
         } catch ( SQLException e ) {
@@ -1286,6 +1286,19 @@ final class Statements {
     }
 
 
+    public static CatalogKey getKey( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException, UnknownKeyException {
+        String keyFilter = " AND k.\"name\" = " + quoteString( name ) + " AND k.\"table\" = " + tableId;
+        String keyColumnFilter = "";
+        List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownKeyException( name );
+        }
+        return list.get( 0 );
+    }
+
+
     public static List<CatalogKey> getKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND k.\"table\" = " + tableId;
         return keyFilter( transactionHandler, filter, "" );
@@ -1316,9 +1329,25 @@ final class Statements {
     }
 
 
+    public static List<CatalogForeignKey> getForeignKeysByReference( XATransactionHandler transactionHandler, long referencedKeyId ) throws GenericCatalogException {
+        String keyFilter = " AND fk.\"references\" = " + referencedKeyId;
+        return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
     public static List<CatalogForeignKey> getExportedKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND refTab.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
+    }
+
+
+    public static long addForeignKey( XATransactionHandler transactionHandler, long keyId, long refKey, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "key", "" + keyId );
+        data.put( "references", "" + refKey );
+        data.put( "on_update", "" + onUpdate.getId() );
+        data.put( "on_delete", "" + onDelete.getId() );
+        return insertHandler( transactionHandler, "foreign_key", data );
     }
 
 
@@ -1508,6 +1537,5 @@ final class Statements {
         }
         return v;
     }
-
 
 }
