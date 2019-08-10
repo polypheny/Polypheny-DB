@@ -180,7 +180,7 @@ public class CrudPolypheny extends Crud {
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             if ( ! entry.getValue().equals( "" )) {
-                joiner.add( "CAST (" + entry.getKey() + " AS VARCHAR) LIKE '" + entry.getValue() + "%'"  );//:TEXT to cast number to text if necessary (see https://stackoverflow.com/questions/1684291/sql-like-condition-to-check-for-integer#answer-40537672)
+                joiner.add( "CAST (" + entry.getKey() + " AS VARCHAR) LIKE '" + entry.getValue() + "%'"  );
                 counter++;
             }
         }

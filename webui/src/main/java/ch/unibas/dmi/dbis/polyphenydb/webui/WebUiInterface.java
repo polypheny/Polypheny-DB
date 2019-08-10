@@ -35,15 +35,9 @@ import static spark.Spark.webSocket;
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,11 +45,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -112,37 +101,14 @@ public class WebUiInterface extends QueryInterface {
                         20591,
                         "app",
                         "user",
-                        "pa" ) );
+                        "pa" )
+                        .setTransactionManager( transactionManager ) );
     }
 
 
     @Override
     public void run() {
         // TODO: Start server
-
-        // Example code:
-        Transaction transaction = transactionManager.startTransaction( null, null, null );
-        RelBuilder relBuilder = QueryPlanBuilder.createRelBuilder( transaction );
-
-        final RelNode logicalPlan = relBuilder
-                .scan( "test" )
-                .build();
-
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( logicalPlan );
-
-        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
-        Iterator<Object> iterator = iterable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 100 ), new ArrayList<>() );
-
-        for ( List<Object> row : rows ) {
-            System.out.println( StringUtils.join( row, ", " ) );
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
     }
 
 
@@ -155,7 +121,7 @@ public class WebUiInterface extends QueryInterface {
 
         post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
-        post( "/insertRow", crud::insertIntoTable, gson::toJson );
+        post( "/insertRow", crud::insertRow, gson::toJson );
 
         post( "/deleteRow", crud::deleteRow, gson::toJson );
 

@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
@@ -36,6 +39,11 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -59,15 +67,23 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +102,7 @@ public abstract class Crud implements InformationObserver {
     private final int PORT;
     private String driver;
     Gson gson = new Gson();
+    private TransactionManager transactionManager;
 
 
     /**
@@ -310,7 +327,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * insert data into a table
      */
-    Result insertIntoTable( final Request req, final Response res ) {
+    Result insertRow( final Request req, final Response res ) {
         int rowsAffected = 0;
         Result result;
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
@@ -413,7 +430,8 @@ public abstract class Crud implements InformationObserver {
                 }
             } else if( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
                 //Add limit if not specified
-                if( ! Pattern.matches(".*?(?si:limit)[\\s\\S]*", query )){
+                Pattern p2 = Pattern.compile(".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+                if( ! p2.matcher( query ).find() ){
                     query = query + " LIMIT " + getPageSize();
                 }
                 //decrease limit if it is too large
@@ -465,10 +483,12 @@ public abstract class Crud implements InformationObserver {
             if( executionTime < 1e4 ) {
                 html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %d nanoseconds", executionTime) );
             } else {
-                double execTime = Math.round( executionTime / 1e6 ) + (executionTime % 1e6)/1e6;
-                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %.2f milliseconds", execTime) );
+                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
+                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                DateFormat df = new SimpleDateFormat("m 'min' s 'sec' S 'ms'");
+                String durationText = df.format( new Date(millis) );
+                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %s", durationText) );
             }
-            //todo convert to seconds / minutes if needed
             queryAnalyzer.addPage( p1 );
             queryAnalyzer.addGroup( g1 );
             queryAnalyzer.registerInformation( html );
@@ -585,8 +605,7 @@ public abstract class Crud implements InformationObserver {
         handler = getHandler();
         try ( ResultSet rs = handler.getMetaData().getColumns( this.dbName, t[0], t[1], "" ) ) {
             while( rs.next() ){
-                //todo get default value
-                cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), "" ) );
+                cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), rs.getString( 13 ) ) );
             }
             handler.commit();
         } catch ( SQLException | CatalogTransactionException e ) {
@@ -823,12 +842,63 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * Prototype to execute Relational Algebra
+     * Execute a logical plan coming from the Web-Ui plan builder
      */
-    // todo implement execution of relational algebra
     Result executeRelAlg ( final Request req, final Response res ) {
-        LOGGER.info( req.body() );
-        return new Result( "RelAlg execution not implemented yet." );
+        UiRelNode topNode = gson.fromJson( req.body(), UiRelNode.class );
+
+        Transaction transaction = this.transactionManager.startTransaction( null, null, null );
+
+        RelNode result;
+        try{
+            result = QueryPlanBuilder.buildFromTree( topNode, transaction );
+        } catch( Exception e ) {
+            return new Result( e.getMessage() );
+        }
+
+        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( result );
+
+        List<List<Object>> rows;
+        try{
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
+            Iterator<Object> iterator = iterable.iterator();
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+        } catch( Exception e ){
+            return new Result( e.getMessage() );
+        }
+
+        ArrayList<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[ row.size() ];
+            int counter = 0;
+            for( Object o: row ){
+                temp[ counter ] = o.toString();
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
+
+        DbColumn[] header = new DbColumn[ signature.columns.size() ];
+        int counter = 0;
+        for( ColumnMetaData col : signature.columns ){
+            header[counter++] = new DbColumn( col.columnName );
+        }
+        return new Result( header, data.toArray( new String[0][] ) );
+    }
+
+
+    /**
+     * Set the transactionManager that is needed for the relational algebra execution
+     */
+    Crud setTransactionManager ( final TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
+        return this;
     }
 
 

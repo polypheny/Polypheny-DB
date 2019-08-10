@@ -32,14 +32,18 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import java.util.List;
+import org.apache.commons.lang.math.NumberUtils;
 
 
 public class QueryPlanBuilder {
@@ -69,6 +73,76 @@ public class QueryPlanBuilder {
                         0,
                         null ) ).build();
         return RelBuilder.create( config );
+    }
+
+
+    /**
+     * Build a tree using the RelBuilder
+     * @param topNode top node from the tree from the user interface, with its children
+     * @param transaction transaction
+     */
+    public static RelNode buildFromTree ( final UiRelNode topNode, final Transaction transaction ) {
+        RelBuilder b = createRelBuilder( transaction );
+        b = buildStep( b, topNode );
+        return b.build();
+    }
+
+
+    /**
+     * Set up the RelBuilder recursively
+     */
+    private static RelBuilder buildStep ( RelBuilder builder, final UiRelNode node ) {
+        if( node.children != null ){
+            for( UiRelNode n: node.children ){
+                builder = buildStep( builder, n );
+            }
+        }
+
+        String[] field1 = null;
+        String[] field2 = null;
+        if( node.col1 != null ) field1 = node.col1.split( "\\." );
+        if( node.col2 != null ) field2 = node.col2.split( "\\." );
+        switch ( node.type ) {
+            case "TableScan":
+                return builder.scan( node.table ).as ( node.table );
+            case "Join":
+                return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] )));
+            case "Filter":
+                String[] field = node.field.split( "\\." );
+                if( NumberUtils.isNumber( node.filter ) ){
+                    double filter = Double.parseDouble( node.filter );
+                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( filter ) ));
+                } else{
+                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ));
+                }
+            default:
+                throw new IllegalArgumentException( "Node of type " + node.type + " is not supported yet." );
+        }
+    }
+
+
+    /**
+     * Parse an operator and return it as SqlOperator
+     * @param operator operator for a filter condition
+     * @return parsed operator as SqlOperator
+     */
+    private static SqlOperator getOperator( final String operator ) {
+        switch ( operator ) {
+            case "=":
+                return SqlStdOperatorTable.EQUALS;
+            case "!=":
+                return SqlStdOperatorTable.NOT_EQUALS;
+            case "<":
+                return SqlStdOperatorTable.LESS_THAN;
+            case "<=":
+                return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+            case ">":
+                return SqlStdOperatorTable.GREATER_THAN;
+            case ">=":
+                return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+            default:
+                throw new IllegalArgumentException( "Operator '" + operator + "' is not supported.") ;
+        }
     }
 
 }
