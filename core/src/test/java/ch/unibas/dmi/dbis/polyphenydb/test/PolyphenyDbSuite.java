@@ -73,7 +73,6 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.EnumerablesTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSetOptionOperatorTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlUnParserTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.parserextensiontesting.ExtensionSqlParserTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlAdvisorTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlOperatorTest;
 import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlPrettyWriterTest;
@@ -156,7 +155,6 @@ import org.junit.runners.Suite;
         // medium tests (above 0.1s)
         SqlParserTest.class,
         SqlUnParserTest.class,
-        ExtensionSqlParserTest.class,
         SqlSetOptionOperatorTest.class,
         SqlPrettyWriterTest.class,
         SqlValidatorTest.class,

@@ -53,9 +53,11 @@ import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -94,14 +96,17 @@ import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -127,6 +132,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }
@@ -208,7 +214,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    transaction.getCatalog().addColumn(
+                    long addedColumnId = transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
@@ -220,6 +226,37 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             Collation.CASE_INSENSITIVE,
                             false
                     );
+
+                    // Add default value
+                    if ( ((SqlColumnDeclaration) c.e).expression != null ) {
+                        // TODO: String is only a temporal solution for default values
+                        String v = ((SqlColumnDeclaration) c.e).expression.toString();
+                        if ( v.startsWith( "'" ) ) {
+                            v = v.substring( 1, v.length() - 1 );
+                        }
+                        transaction.getCatalog().setDefaultValue( addedColumnId, PolySqlType.VARCHAR, v );
+                    }
+                } else if ( c.e instanceof SqlKeyConstraint ) {
+                    SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
+                    List<Long> columnIds = new LinkedList<>();
+                    for ( SqlNode node : constraint.getColumnList().getList() ) {
+                        String columnName = node.toString();
+                        CatalogColumn catalogColumn = transaction.getCatalog().getColumn( tableId, columnName );
+                        columnIds.add( catalogColumn.id );
+                    }
+                    if ( constraint.getOperator() == SqlKeyConstraint.PRIMARY ) {
+                        transaction.getCatalog().addPrimaryKey( tableId, columnIds );
+                    } else if ( constraint.getOperator() == SqlKeyConstraint.UNIQUE ) {
+                        String constraintName;
+                        if ( constraint.getName() == null ) {
+                            Random rand = new Random();
+                            int x = rand.nextInt( 1000 );
+                            constraintName = "auto_" + x + "_unique_" + tableName + "_" + StringUtils.join( columnIds, "_" );
+                        } else {
+                            constraintName = constraint.getName().getSimple();
+                        }
+                        transaction.getCatalog().addUniqueConstraint( tableId, constraintName, columnIds );
+                    }
                 } else {
                     throw new AssertionError( c.e.getClass() );
                 }
@@ -227,7 +264,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -243,6 +280,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
@@ -277,13 +315,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Collection getModifiableCollection() {
             return rows;
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 public Enumerator<T> enumerator() {
                     //noinspection unchecked
                     return (Enumerator<T>) Linq4j.enumerator( rows );
@@ -292,16 +333,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
 
+        @Override
         public Type getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return protoRowType.apply( typeFactory );
         }

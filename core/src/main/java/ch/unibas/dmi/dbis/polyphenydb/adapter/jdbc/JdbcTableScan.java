@@ -77,6 +77,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
     }
 
 
+    @Override
     public Result implement( JdbcImplementor implementor ) {
         return implementor.result( jdbcTable.tableName(), ImmutableList.of( JdbcImplementor.Clause.FROM ), this, null );
     }

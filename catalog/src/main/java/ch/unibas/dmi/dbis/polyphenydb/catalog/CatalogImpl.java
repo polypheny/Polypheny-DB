@@ -50,6 +50,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -252,6 +253,42 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Rename a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param name New name of the schema
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameSchema( transactionHandler, schemaId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change owner of a schema
+     *
+     * @param schemaId The if of the schema to rename
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setSchemaOwner( transactionHandler, schemaId, ownerId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete a schema from the catalog
      *
      * @param schemaId The if of the schema to delete
@@ -413,6 +450,47 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Checks if there is a table with the specified name in the specified schema.
+     *
+     * @param schemaId The id of the schema
+     * @param tableName The name to check for
+     * @return true if there is a table with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
+            Statements.getTable( transactionHandler, schema.id, tableName );
+            return true;
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownTableException e ) {
+            return false;
+        }
+    }
+
+
+    /**
+     * Renames a table
+     *
+     * @param tableId The if of the table to rename
+     * @param name New name of the table
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameTable( long tableId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameTable( transactionHandler, tableId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete the specified table. Columns, Keys and Data Placements need to be deleted before.
      *
      * @param tableId The id of the table to delete
@@ -423,6 +501,24 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteTable( transactionHandler, tableId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change owner of a table
+     *
+     * @param tableId The if of the table
+     * @param ownerId Id of the new owner
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setTableOwner( transactionHandler, tableId, ownerId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -510,11 +606,29 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownColumnException, UnknownTypeException {
+    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern, columnNamePattern );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Returns the column with the specified id.
+     *
+     * @param columnId The id of the column
+     * @return A CatalogColumn
+     * @throws UnknownColumnException If there is no column with this id
+     */
+    @Override
+    public CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumn( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -588,6 +702,98 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Renames a column
+     *
+     * @param columnId The if of the column to rename
+     * @param name New name of the column
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public void renameColumn( long columnId, String name ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.renameColumn( transactionHandler, columnId, name );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change move the column to the specified position. Make sure, that there is no other column with this position in the table.
+     *
+     * @param columnId The id of the column for which to change the position
+     * @param position The new position of the column
+     */
+    @Override
+    public void setColumnPosition( long columnId, int position ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setColumnPosition( transactionHandler, columnId, position );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change the data type of an column.
+     *
+     * @param columnId The id of the column
+     * @param type The new type of the column
+     */
+    @Override
+    public void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setColumnType( transactionHandler, columnId, type, length, precision );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change nullability of the column (weather the column allows null values).
+     *
+     * @param columnId The id of the column
+     * @param nullable True if the column should allow null values, false if not.
+     */
+    @Override
+    public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setNullable( transactionHandler, columnId, nullable );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param columnName The name to check for
+     * @return true if there is a column with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            Statements.getColumn( transactionHandler, table.id, columnName );
+            return true;
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException | UnknownTypeException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownColumnException e ) {
+            return false;
+        }
+    }
+
+
+    /**
      * Delete the specified column. A potential default value has to be delete before.
      *
      * @param columnId The id of the column to delete
@@ -597,6 +803,44 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumn( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    // TODO: String is only a temporary solution
+
+
+    /**
+     * Adds a default value for a column. If there already is a default values, it being replaced.
+     *
+     * @param columnId The id of the column
+     * @param type The type of the default value
+     * @param defaultValue The default value
+     */
+    @Override
+    public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+        try {
+            deleteDefaultValue( columnId );
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.setDefaultValue( transactionHandler, columnId, type, defaultValue );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Deletes an existing default value of a column. NoOp if there is no default value defined.
+     *
+     * @param columnId The id of the column
+     */
+    @Override
+    public void deleteDefaultValue( long columnId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteDefaultValue( transactionHandler, columnId );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -655,6 +899,30 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Adds a primary key to a specified table. If there is already a primary key defined for this table it is replaced.
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of key which will be part of the primary keys
+     */
+    @Override
+    public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
+            // Check if there is already a primary key defined for this table and if so, delete it.
+            if ( catalogTable.primaryKey != null ) {
+                Statements.setPrimaryKey( transactionHandler, tableId, null );
+                Statements.deleteKey( transactionHandler, catalogTable.primaryKey );
+            }
+            long keyId = Statements.addKey( transactionHandler, tableId, true, "pk_" + tableId, columnIds );
+            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns all (imported) foreign keys of a specified table
      *
      * @param tableId The id of the table
@@ -689,6 +957,53 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Adds a unique foreign key constraint.
+     *
+     * @param tableId The id of the table
+     * @param columnIds The id of the columns which are part of the foreign key
+     * @param referencesIds The id of columns forming the key referenced by this key
+     * @param constraintName The name of the constraint
+     * @param onUpdate The option for updates
+     * @param onDelete The option for deletes
+     */
+    @Override
+    public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            List<CatalogKey> keys = Statements.getKeys( transactionHandler, referencesTableId );
+            for ( CatalogKey refKey : keys ) {
+                if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) && refKey.unique ) {
+                    long keyId = Statements.addKey( transactionHandler, tableId, false, constraintName, columnIds );
+                    Statements.addForeignKey( transactionHandler, keyId, refKey.id, onUpdate, onDelete );
+                    return;
+                }
+            }
+            throw new RuntimeException( "The referenced columns do not define a primary or unique key." );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Adds a unique constraint.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param columnIds A list of column ids
+     */
+    @Override
+    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.addKey( transactionHandler, tableId, true, constraintName, columnIds );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Returns all indexes of a table
      *
      * @param tableId The id of the table
@@ -707,15 +1022,91 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the index with the specified name in the specified table
+     *
+     * @param tableId The id of the table
+     * @param indexName The name of the index
+     * @return The Index
+     */
+    @Override
+    public CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getIndex( transactionHandler, tableId, indexName );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Adds an index over the specified columns
+     *
+     * @param tableId The id of the table
+     * @param columnIds A list of column ids
+     * @param unique Weather the index should be unique
+     * @param indexName The name of the index
+     * @return The id of the created index
+     */
+    @Override
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            long keyId = -1;
+            // Check if there is already a key
+            List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
+            for ( CatalogKey key : keys ) {
+                if ( key.columnIds.size() == columnIds.size() && key.columnIds.containsAll( columnIds ) && columnIds.containsAll( key.columnIds ) ) {
+                    // If the index has the unique flag set, set the key unique if this is not already case
+                    if ( unique && !key.unique ) {
+                        Statements.setKeyUnique( transactionHandler, keyId, true );
+                    }
+                    keyId = key.id;
+                }
+            }
+            if ( keyId == -1 ) {
+                // There is no key, create it
+                keyId = Statements.addKey( transactionHandler, tableId, unique, indexName, columnIds );
+            }
+            IndexType type = IndexType.BTREE;
+            return Statements.addIndex( transactionHandler, keyId, type, null, indexName );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
     @Override
-    public void deleteIndex( long indexId ) throws GenericCatalogException {
+    public void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteIndex( transactionHandler, indexId );
+            CatalogIndex index = Statements.getIndex( transactionHandler, indexId );
+            Statements.deleteIndex( transactionHandler, index.id );
+
+            // Check if the key is used by a foreign key constraint.
+            List<CatalogForeignKey> foreignKeys = Statements.getForeignKeys( transactionHandler, index.key.tableId );
+            for ( CatalogForeignKey fk : foreignKeys ) {
+                if ( fk.id == index.keyId ) {
+                    return;
+                }
+            }
+            // Check if the key is used by a unique constraint or primary key
+            if ( index.key.unique ) {
+                return;
+            }
+            // Check if key is used by another index
+            List<CatalogIndex> indexes = Statements.getIndexesByKey( transactionHandler, index.key.id );
+            if ( indexes.size() > 0 ) {
+                return;
+            }
+
+            // This key is not used anymore. Delete it.
+            Statements.deleteKey( transactionHandler, index.key.id );
         } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -739,17 +1130,74 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified foreign key (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it before.
+     * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
+     * If there is no primary key, this operation is a NoOp.
      *
-     * @param keyId The id of the key to drop
+     * @param tableId The id of the key to drop
      */
     @Override
-    public void deleteForeignKey( long keyId ) throws GenericCatalogException {
+    public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteForeignKey( transactionHandler, keyId );
-            Statements.deleteKey( transactionHandler, keyId );
-        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException e ) {
+            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
+            if ( catalogTable.primaryKey != null ) {
+                Statements.setPrimaryKey( transactionHandler, tableId, null );
+                Statements.deleteKey( transactionHandler, catalogTable.primaryKey );
+            }
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Delete the specified constraint (foreign key, unique) (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it first.
+     *
+     * @param tableId The id of the table the constraint belongs to
+     * @param constraintName The name of the constraint to delete
+     */
+    @Override
+    public void deleteConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownKeyException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogKey key = Statements.getKey( transactionHandler, tableId, constraintName );
+            // Check if it is a primary key
+            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            if ( table.primaryKey != null && table.primaryKey == key.id ) {
+                throw new RuntimeException( "Illegal attempt to delete a primary key using delete constraint" );
+            }
+            // Check if it is referenced from a foreign key of a different table
+            List<CatalogForeignKey> foreignKeysReferencingThisKey = Statements.getForeignKeysByReference( transactionHandler, key.id );
+            if ( foreignKeysReferencingThisKey.size() > 0 ) {
+                throw new RuntimeException( "Cannot delete this constraint because it is referenced in the following foreign key: table: " + foreignKeysReferencingThisKey.get( 0 ).schemaName + "." + foreignKeysReferencingThisKey.get( 0 ).tableName + " foreign key constraint name: " + foreignKeysReferencingThisKey.get( 0 ).name );
+            }
+            // Check if it is a foreign key constraint. In this case we have to delete the corresponding entry in the foreign key table
+            List<CatalogForeignKey> foreignKeys = Statements.getForeignKeys( transactionHandler, tableId );
+            for ( CatalogForeignKey fk : foreignKeys ) {
+                if ( fk.id == key.id ) {
+                    Statements.deleteForeignKey( transactionHandler, fk.id );
+                }
+            }
+            Statements.deleteKey( transactionHandler, key.id );
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param userName The name of the user
+     * @return The user
+     * @throws UnknownUserException If there is no user with the specified name
+     */
+    @Override
+    public CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
+            return Statements.getUser( transactionHandler, userName );
+        } catch ( GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }

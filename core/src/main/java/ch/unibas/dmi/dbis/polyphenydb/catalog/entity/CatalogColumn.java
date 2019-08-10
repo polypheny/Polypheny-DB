@@ -59,9 +59,10 @@ public final class CatalogColumn implements CatalogEntity {
     public final Encoding encoding;
     public final Collation collation;
     public final boolean forceDefault;
+    public final CatalogDefaultValue defaultValue;
 
 
-    public CatalogColumn( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final boolean forceDefault ) {
+    public CatalogColumn( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final boolean forceDefault, CatalogDefaultValue defaultValue ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
@@ -78,6 +79,7 @@ public final class CatalogColumn implements CatalogEntity {
         this.encoding = encoding;
         this.collation = collation;
         this.forceDefault = forceDefault;
+        this.defaultValue = defaultValue;
     }
 
 
@@ -96,7 +98,7 @@ public final class CatalogColumn implements CatalogEntity {
                 null,
                 nullable ? 1 : 0,
                 "",
-                "", // TODO: default value
+                defaultValue == null ? null : defaultValue.value,
                 null,
                 null,
                 precision,

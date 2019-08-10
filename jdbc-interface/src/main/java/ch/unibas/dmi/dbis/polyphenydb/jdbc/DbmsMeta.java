@@ -556,7 +556,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
                     "FK_NAME",                // The name of the foreign key.
                     "PK_NAME",                // The name of the primary key.
-                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit. --> always null
             );
         } catch ( GenericCatalogException e ) {
             throw propagate( e );

@@ -26,6 +26,11 @@ data: {
             "ch.unibas.dmi.dbis.polyphenydb.sql.SqlCreate"
             "ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop"
             "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlDdlNodes"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlTruncate"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterSchema"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.alterschema.*"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable"
+            "ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable.*"
             "java.util.Map"
             "java.util.HashMap"
         ]
@@ -142,6 +147,7 @@ data: {
             "IMPLEMENTATION"
             "INCLUDING"
             "INCREMENT"
+            "INDEX"
             "INITIALLY"
             "INPUT"
             "INSTANCE"
@@ -173,6 +179,7 @@ data: {
             "MILLISECOND"
             "MILLENNIUM"
             "MINVALUE"
+            "MODIFY"
             "MORE_"
             "MUMPS"
             "NAME"
@@ -192,6 +199,7 @@ data: {
             "OTHERS"
             "OUTPUT"
             "OVERRIDING"
+            "OWNER"
             "PAD"
             "PARAMETER_MODE"
             "PARAMETER_NAME"
@@ -216,6 +224,7 @@ data: {
             "QUARTER"
             "READ"
             "RELATIVE"
+            "RENAME"
             "REPEATABLE"
             "REPLACE"
             "RESTART"
@@ -367,9 +376,12 @@ data: {
         dataTypeParserMethods: [
         ]
 
-        # List of methods for parsing extensions to "ALTER <scope>" calls. Each must accept arguments "(SqlParserPos pos, String scope)".
+        # List of methods for parsing extensions to "ALTER" calls. Each must accept arguments "(SqlParserPos pos)".
         # Example: "SqlUploadJarNode"
         alterStatementParserMethods: [
+            "SqlSetOption"
+            "SqlAlterSchema"
+            "SqlAlterTable"
         ]
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
