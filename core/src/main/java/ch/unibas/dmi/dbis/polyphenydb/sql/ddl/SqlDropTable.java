@@ -179,7 +179,9 @@ public class SqlDropTable extends SqlDropObject {
         // Delete columns
         try {
             for ( CatalogColumn catalogColumn : table.getColumns() ) {
-                // TODO: delete default values
+                // delete default values
+                transaction.getCatalog().deleteDefaultValue( catalogColumn.id );
+                // delete the column itself
                 transaction.getCatalog().deleteColumn( catalogColumn.id );
             }
         } catch ( GenericCatalogException e ) {
