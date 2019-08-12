@@ -28,9 +28,11 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
@@ -38,6 +40,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import spark.Request;
 import spark.Response;
@@ -113,66 +116,6 @@ public class CrudPolypheny extends Crud {
         return result;
     }
 
-    @Override
-    Result createTable( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        StringBuilder query = new StringBuilder();
-        StringJoiner colJoiner = new StringJoiner( "," );
-        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
-        StringBuilder colBuilder;
-        Result result;
-        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        int primaryCounter = 0;
-        for ( DbColumn col : request.columns ) {
-            colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.dataType);
-            if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", col.maxLength ) );
-            }
-            if ( !col.nullable ) {
-                colBuilder.append( " NOT NULL" );
-            }
-            /*if( col.defaultValue != null ) {
-                switch ( col.dataType ) {
-                    case "int8":
-                    case "int4":
-                        int a = Integer.parseInt( col.defaultValue );
-                        colBuilder.append( " DEFAULT " ).append( a );
-                        break;
-                    case "varchar":
-                        colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
-                        break;
-                    default:
-                        //varchar, timestamptz, bool
-                        colBuilder.append( " DEFAULT " ).append( col.defaultValue );
-                }
-            }*/
-            if ( col.primary ) {
-                primaryKeys.add( col.name );
-                primaryCounter++;
-            }
-            colJoiner.add( colBuilder.toString() );
-        }
-        if ( primaryCounter > 0 ) {
-            colJoiner.add( primaryKeys.toString() );
-        }
-        query.append( colJoiner.toString() );
-        query.append( ")" );
-        LocalTransactionHandler handler = getHandler();
-        try {
-            int a = handler.executeUpdate( query.toString() );
-            result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
-            handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-            try {
-                handler.rollback();
-            } catch ( CatalogTransactionException ex ) {
-                LOGGER.error( "Could not rollback CREATE TABLE statement: " + ex.getMessage(), ex );
-            }
-        }
-        return result;
-    }
 
     @Override
     protected String filterTable( final Map<String, String> filter ) {
@@ -191,27 +134,209 @@ public class CrudPolypheny extends Crud {
 
     @Override
     Result updateColumn( final Request req, final Response res ) {
-        return null;
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        DbColumn oldColumn = request.oldColumn;
+        DbColumn newColumn = request.newColumn;
+        Result result;
+        ArrayList<String> queries = new ArrayList<>();
+        StringBuilder sBuilder = new StringBuilder();
+        LocalTransactionHandler handler = getHandler();
+
+        //rename column if needed
+        if ( !oldColumn.name.equals( newColumn.name ) ) {
+            String query = String.format( "ALTER TABLE %s RENAME COLUMN %s TO %s", request.tableId, oldColumn.name, newColumn.name );
+            queries.add( query );
+        }
+
+        //change type + length
+        //todo cast if needed
+        if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
+            if ( newColumn.maxLength != null ) {
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET TYPE %s(%s)", request.tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
+                queries.add( query );
+            } else {
+                //todo drop maxlength if requested
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET TYPE %s", request.tableId, newColumn.name, newColumn.dataType  );
+                queries.add( query );
+            }
+        }
+
+        //set/drop nullable
+        if ( oldColumn.nullable != newColumn.nullable ) {
+            String nullable = "SET";
+            if ( newColumn.nullable ) {
+                nullable = "DROP";
+            }
+            String query = "ALTER TABLE " + request.tableId + " MODIFY COLUMN " + newColumn.name + " " + nullable + " NOT NULL";
+            queries.add( query );
+        }
+
+        //change default value
+        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ){
+            String query;
+            if( newColumn.defaultValue == null ){
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN %s DROP DEFAULT", request.tableId, newColumn.name );
+            }
+            else{
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
+                switch ( newColumn.dataType ) {
+                    case "BIGINT":
+                    case "INTEGER":
+                    case "DECIMAL":
+                    case "DOUBLE":
+                    case "FLOAT":
+                    case "SMALLINT":
+                    case "TINYINT":
+                        int a = Integer.parseInt( request.newColumn.defaultValue );
+                        query = query + a;
+                        break;
+                    case "VARCHAR":
+                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                        break;
+                    default:
+                        //varchar, timestamptz, bool
+                        query = query + request.newColumn.defaultValue;
+                }
+            }
+            queries.add( query );
+        }
+
+        result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
+        try{
+            for ( String query : queries ){
+                handler.executeUpdate( query );
+                sBuilder.append( query );
+            }
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
+            try {
+                handler.rollback();
+            } catch ( CatalogTransactionException  e2 ) {
+                result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
+            }
+        }
+
+        return result;
     }
 
+
+    /**
+     * Add a column to an existing table
+     */
     @Override
     Result addColumn( final Request req, final Response res ) {
-        return null;
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        LocalTransactionHandler handler = getHandler();
+        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
+        if ( request.newColumn.maxLength != null ) {
+            query = query + String.format( "(%d)", request.newColumn.maxLength );
+        }
+        if ( !request.newColumn.nullable ) {
+            query = query + " NOT NULL";
+        }
+        if ( request.newColumn.defaultValue != null ){
+            switch ( request.newColumn.dataType ) {
+                case "BIGINT":
+                case "INTEGER":
+                case "DECIMAL":
+                case "DOUBLE":
+                case "FLOAT":
+                case "SMALLINT":
+                case "TINYINT":
+                    int a = Integer.parseInt( request.newColumn.defaultValue );
+                    query = query + " DEFAULT "+a;
+                    break;
+                case "VARCHAR":
+                    query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                    break;
+                default:
+                    //varchar, timestamptz, bool
+                    query = query + " DEFAULT " + request.newColumn.defaultValue;
+            }
+        }
+        Result result;
+        try {
+            int affectedRows = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
     }
 
-    @Override
-    Result dropColumn( final Request req, final Response res ) {
-        return null;
-    }
 
     @Override
     Result dropConstraint( final Request req, final Response res ) {
-        return null;
+        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+        LocalTransactionHandler handler= getHandler();
+        String query;
+        if ( request.constraint.type.equals( "PRIMARY KEY" )){
+            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", request.table );
+        } else {
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
+        }
+        Result result;
+        try{
+            int rows = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( rows ) );
+        } catch ( SQLException | CatalogTransactionException e ){
+            result = new Result( e.getMessage() );
+        }
+        return result;
     }
 
+
+    /**
+     * Drop an index of a table
+     */
+    Result dropIndex( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
+        LocalTransactionHandler handler = getHandler();
+        String query = String.format( "ALTER TABLE %s DROP INDEX %s", index.getTable(), index.getName() );
+        Result result;
+        try {
+            int a = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
+    }
+
+
+    /**
+     * Create an index for a table
+     */
+    Result createIndex( final Request req, final Response res ) {
+        Index index = this.gson.fromJson( req.body(), Index.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
+        for( String col: index.getColumns() ){
+            colJoiner.add( col );
+        }
+        String query = String.format( "ALTER TABLE %s ADD INDEX %s ON %s", index.getTable(), index.getName(), colJoiner.toString() );
+        try {
+            int a = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( a ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
+    }
+
+
+    /**
+     * Get available actions for foreign key constraints
+     */
     @Override
-    Result addPrimaryKey( final Request req, final Response res ) {
-        return null;
+    String[] getForeignKeyActions( Request req, Response res ) {
+        return new String[]{ "CASCADE", "RESTRICT", "SET NULL", "SET DEFAULT" };
     }
 
 }

@@ -41,14 +41,11 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
@@ -56,6 +53,8 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
@@ -321,7 +320,68 @@ public abstract class Crud implements InformationObserver {
     }
 
 
-    abstract Result createTable( final Request req, final Response res );
+    /**
+     * Create a new table
+     */
+    Result createTable( final Request req, final Response res ) {
+        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        StringBuilder query = new StringBuilder();
+        StringJoiner colJoiner = new StringJoiner( "," );
+        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
+        StringBuilder colBuilder;
+        Result result;
+        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
+        int primaryCounter = 0;
+        for ( DbColumn col : request.columns ) {
+            colBuilder = new StringBuilder();
+            colBuilder.append( col.name ).append( " " ).append( col.dataType);
+            if ( col.maxLength != null ) {
+                colBuilder.append( String.format( "(%d)", col.maxLength ) );
+            }
+            if ( !col.nullable ) {
+                colBuilder.append( " NOT NULL" );
+            }
+            if( col.defaultValue != null ) {
+                switch ( col.dataType ) {
+                    case "int8":
+                    case "int4":
+                        int a = Integer.parseInt( col.defaultValue );
+                        colBuilder.append( " DEFAULT " ).append( a );
+                        break;
+                    case "varchar":
+                        colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
+                        break;
+                    default:
+                        //varchar, timestamptz, bool
+                        colBuilder.append( " DEFAULT " ).append( col.defaultValue );
+                }
+            }
+            if ( col.primary ) {
+                primaryKeys.add( col.name );
+                primaryCounter++;
+            }
+            colJoiner.add( colBuilder.toString() );
+        }
+        if ( primaryCounter > 0 ) {
+            colJoiner.add( primaryKeys.toString() );
+        }
+        query.append( colJoiner.toString() );
+        query.append( ")" );
+        LocalTransactionHandler handler = getHandler();
+        try {
+            int a = handler.executeUpdate( query.toString() );
+            result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
+            handler.commit();
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            try {
+                handler.rollback();
+            } catch ( CatalogTransactionException ex ) {
+                LOGGER.error( "Could not rollback CREATE TABLE statement: " + ex.getMessage(), ex );
+            }
+        }
+        return result;
+    }
 
 
     /**
@@ -621,10 +681,29 @@ public abstract class Crud implements InformationObserver {
     abstract Result updateColumn( final Request req, final Response res );
 
 
+    /**
+     * Add a column to an existing table
+     */
     abstract Result addColumn( final Request req, final Response res );
 
 
-    abstract Result dropColumn( final Request req, final Response res );
+    /**
+     * Delete a column of a table
+     */
+    Result dropColumn( final Request req, final Response res ) {
+        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
+        try {
+            int affectedRows = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( affectedRows ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
+    }
 
 
     /**
@@ -687,7 +766,31 @@ public abstract class Crud implements InformationObserver {
     abstract Result dropConstraint( final Request req, final Response res );
 
 
-    abstract Result addPrimaryKey( final Request req, final Response res );
+    /**
+     * Add a primary key to a table
+     */
+    Result addPrimaryKey ( final Request req, final Response res ) {
+        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        if( request.constraint.columns.length > 0 ){
+            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+            for( String s : request.constraint.columns ){
+                joiner.add( s );
+            }
+            String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
+            try{
+                int rows = handler.executeUpdate( query );
+                handler.commit();
+                result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
+            } catch ( SQLException | CatalogTransactionException e ){
+                result = new Result( e.getMessage() );
+            }
+        }else{
+            result = new Result( "Cannot add primary key if no columns are provided." );
+        }
+        return result;
+    }
 
 
     /**
@@ -729,38 +832,13 @@ public abstract class Crud implements InformationObserver {
     /**
      * Drop an index of a table
      */
-    Result dropIndex( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        LocalTransactionHandler handler = getHandler();
-        String query = String.format( "DROP INDEX %s.%s", request.schema, request.action );
-        Result result;
-        try {
-            int a = handler.executeUpdate( query );
-            handler.commit();
-            result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() );
-        }
-        return result;
-    }
+    abstract Result dropIndex( final Request req, final Response res );
 
 
     /**
      * Create an index for a table
      */
-    Result createIndex( final Request req, final Response res ) {
-        Index index = this.gson.fromJson( req.body(), Index.class );
-        LocalTransactionHandler handler = getHandler();
-        Result result;
-        try {
-            int a = handler.executeUpdate( index.create() );
-            handler.commit();
-            result = new Result( new Debug().setAffectedRows( a ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() );
-        }
-        return result;
-    }
+    abstract Result createIndex( final Request req, final Response res );
 
 
     /**
@@ -995,5 +1073,11 @@ public abstract class Crud implements InformationObserver {
         InformationManager.close( id );
         return "";
     }
+
+
+    /**
+     * Get available actions for foreign key constraints
+     */
+    abstract String[] getForeignKeyActions( final Request req, final Response res );
 
 }

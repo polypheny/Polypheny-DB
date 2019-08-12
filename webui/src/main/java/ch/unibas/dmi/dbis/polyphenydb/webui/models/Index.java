@@ -27,18 +27,20 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import java.util.StringJoiner;
+import lombok.Getter;
 
 
 /**
  * Schema for the index of a table
  */
+@Getter
 public class Index {
 
-    String schema;
-    String table;
-    String name;
-    String method;
-    String[] columns;
+    private String schema;
+    private String table;
+    private String name;
+    private String method;
+    private String[] columns;
 
     public Index( final String schema, final String table, final String name, final String method, final String[] columns ) {
         this.schema = schema;
@@ -46,25 +48,6 @@ public class Index {
         this.name = name;
         this.method = method;
         this.columns = columns;
-    }
-
-    /**
-     * Generate the query to create an index
-     */
-    public String create() {
-        StringJoiner joiner = new StringJoiner( "," );
-        for ( String col : columns ) {
-            joiner.add( col );
-        }
-        return String.format( "CREATE INDEX %s ON %s.%s USING %s (%s)", this.name, this.schema, this.table, this.method, joiner.toString() );
-    }
-
-
-    /**
-     * Generate the query to drop an index
-     */
-    public String drop() {
-        return String.format( "DROP INDEX %s", this.name );
     }
 
 

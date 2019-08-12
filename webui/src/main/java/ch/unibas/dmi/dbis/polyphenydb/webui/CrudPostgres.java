@@ -26,10 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
@@ -126,66 +126,6 @@ public class CrudPostgres extends Crud {
 
 
     /**
-     * Create a new table
-     */
-    @Override
-    Result createTable( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        StringBuilder query = new StringBuilder();
-        StringJoiner colJoiner = new StringJoiner( "," );
-        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
-        StringBuilder colBuilder;
-        Result result;
-        StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
-        int primaryCounter = 0;
-        for ( DbColumn col : request.columns ) {
-            colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.dataType);
-            if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", col.maxLength ) );
-            }
-            if ( !col.nullable ) {
-                colBuilder.append( " NOT NULL" );
-            }
-            if( col.defaultValue != null ) {
-                switch ( col.dataType ) {
-                    case "int8":
-                    case "int4":
-                        int a = Integer.parseInt( col.defaultValue );
-                        colBuilder.append( " DEFAULT " ).append( a );
-                        break;
-                    case "varchar":
-                        colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
-                        break;
-                    default:
-                        //varchar, timestamptz, bool
-                        colBuilder.append( " DEFAULT " ).append( col.defaultValue );
-                }
-            }
-            if ( col.primary ) {
-                primaryKeys.add( col.name );
-                primaryCounter++;
-            }
-            colJoiner.add( colBuilder.toString() );
-        }
-        if ( primaryCounter > 0 ) {
-            colJoiner.add( primaryKeys.toString() );
-        }
-        query.append( colJoiner.toString() );
-        query.append( ")" );
-        LocalTransactionHandler handler = getHandler();
-        try {
-            int a = handler.executeUpdate( query.toString() );
-            result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
-            handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-        }
-        return result;
-    }
-
-
-    /**
      * Filter a table with a keyword
      * Show only entries where the value of that column starts with the keyword
      *
@@ -227,7 +167,6 @@ public class CrudPostgres extends Crud {
         }
 
         //change type + length
-        //todo cast if needed
         if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
             if ( newColumn.maxLength != null ) {
                 String query = String.format( "ALTER TABLE %s ALTER COLUMN %s TYPE %s(%s) USING %s::%s;", request.tableId, newColumn.name, newColumn.dataType, newColumn.maxLength, newColumn.name, newColumn.dataType );
@@ -336,26 +275,6 @@ public class CrudPostgres extends Crud {
 
 
     /**
-     * Delete a column of a table
-     */
-    @Override
-    Result dropColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        LocalTransactionHandler handler = getHandler();
-        Result result;
-        String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
-        try {
-            int affectedRows = handler.executeUpdate( query );
-            handler.commit();
-            result = new Result( new Debug().setAffectedRows( affectedRows ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
-            result = new Result( e.toString() );
-        }
-        return result;
-    }
-
-
-    /**
      * Drop constraint of a table
      */
     @Override
@@ -374,31 +293,54 @@ public class CrudPostgres extends Crud {
         return result;
     }
 
+
     /**
-     * Add a primary key to a table
+     * Drop an index of a table
      */
-    @Override
-    Result addPrimaryKey ( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+    Result dropIndex( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
         LocalTransactionHandler handler = getHandler();
+        String query = String.format( "DROP INDEX %s.%s", index.getSchema(), index.getName() );
         Result result;
-        if( request.constraint.columns.length > 0 ){
-            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-            for( String s : request.constraint.columns ){
-                joiner.add( s );
-            }
-            String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
-            try{
-                int rows = handler.executeUpdate( query );
-                handler.commit();
-                result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | CatalogTransactionException e ){
-                result = new Result( e.getMessage() );
-            }
-        }else{
-            result = new Result( "Cannot add primary key if no columns are provided." );
+        try {
+            int a = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
         }
         return result;
     }
 
+
+    /**
+     * Create an index for a table
+     */
+    Result createIndex( final Request req, final Response res ) {
+        Index index = this.gson.fromJson( req.body(), Index.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+        for ( String col : index.getColumns() ) {
+            joiner.add( col );
+        }
+        String query = String.format( "CREATE INDEX %s ON %s.%s USING %s %s", index.getName(), index.getSchema(), index.getTable(), index.getMethod(), joiner.toString() );
+        try {
+            int a = handler.executeUpdate( query );
+            handler.commit();
+            result = new Result( new Debug().setAffectedRows( a ) );
+        } catch ( SQLException | CatalogTransactionException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
+    }
+
+
+    /**
+     * Get available actions for foreign key constraints
+     */
+    @Override
+    String[] getForeignKeyActions( Request req, Response res ) {
+        return new String[]{ "NO ACTION", "RESTRICT", "CASCADE" };
+    }
 }

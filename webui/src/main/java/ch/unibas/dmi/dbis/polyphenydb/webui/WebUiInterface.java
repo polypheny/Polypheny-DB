@@ -168,6 +168,8 @@ public class WebUiInterface extends QueryInterface {
         post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
         get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
+
+        get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
     }
 
 
