@@ -33,9 +33,6 @@ CREATE TABLE "database" (
     "id"               BIGINT IDENTITY NOT NULL,
     "name"             VARCHAR(100)    NOT NULL,
     "owner"            INTEGER         NOT NULL REFERENCES "user" ("id"),
-    "encoding"         INTEGER         NOT NULL,
-    "collation"        INTEGER         NOT NULL,
-    "connection_limit" INTEGER         NOT NULL,
     "default_schema"   BIGINT          NULL,
     PRIMARY KEY ("id")
 );
@@ -46,8 +43,6 @@ CREATE TABLE "schema" (
     "database"  BIGINT          NOT NULL REFERENCES "database" ("id"),
     "name"      VARCHAR(100)    NOT NULL,
     "owner"     INTEGER         NOT NULL REFERENCES "user" ("id"),
-    "encoding"  INTEGER         NULL,
-    "collation" INTEGER         NULL,
     "type"      INTEGER         NULL,
     PRIMARY KEY ("id")
 );
@@ -58,8 +53,6 @@ CREATE TABLE "table" (
     "schema"      BIGINT                     NOT NULL REFERENCES "schema" ("id"),
     "name"        VARCHAR(100)               NOT NULL,
     "owner"       INTEGER                    NOT NULL REFERENCES "user" ("id"),
-    "encoding"    INTEGER       DEFAULT 0    NULL,
-    "collation"   INTEGER       DEFAULT 0    NULL,
     "type"        INTEGER                    NOT NULL,
     "definition"  VARCHAR(1000) DEFAULT NULL NULL,
     "primary_key" BIGINT        DEFAULT NULL NULL,
@@ -76,9 +69,7 @@ CREATE TABLE "column" (
     "length"        INTEGER         NULL,
     "precision"     INTEGER         NULL,
     "nullable"      BOOLEAN         NOT NULL,
-    "encoding"      INTEGER         NOT NULL,
     "collation"     INTEGER         NOT NULL,
-    "force_default" BOOLEAN         NOT NULL,
     PRIMARY KEY ("id")
 );
 
@@ -308,8 +299,8 @@ ALTER TABLE "user"
 --
 -- database
 --
-INSERT INTO "database" ( "id", "name", "owner", "encoding", "collation", "connection_limit", "default_schema" )
-VALUES ( 0, 'APP', 0, 1, 2, 0, NULL );
+INSERT INTO "database" ( "id", "name", "owner", "default_schema" )
+VALUES ( 0, 'APP', 0, NULL );
 
 ALTER TABLE "database"
     ALTER COLUMN "id"
@@ -319,8 +310,8 @@ ALTER TABLE "database"
 --
 -- schema
 --
-INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type" )
-VALUES ( 0, 0, 'public', 0, 1, 2, 1 );
+INSERT INTO "schema" ( "id", "database", "name", "owner", "type" )
+VALUES ( 0, 0, 'public', 0, 1 );
 
 ALTER TABLE "schema"
     ALTER COLUMN "id"
@@ -334,10 +325,10 @@ WHERE "id" = 0;
 --
 -- table
 --
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" )
-VALUES ( 0, 0, 'depts', 0, 1, 2, 1, NULL ),
-       ( 1, 0, 'emps', 0, 1, 2, 1, NULL ),
-       ( 2, 0, 'test', 0, 1, 2, 1, NULL );
+INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
+VALUES ( 0, 0, 'depts', 0, 1, NULL ),
+       ( 1, 0, 'emps', 0, 1, NULL ),
+       ( 2, 0, 'test', 0, 1, NULL );
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
@@ -347,16 +338,16 @@ ALTER TABLE "table"
 --
 -- column
 --
-INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "precision", "nullable", "encoding", "collation", "force_default" )
-VALUES ( 0, 0, 'deptno', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 1, 0, 'name', 2, 9, 20, 0, FALSE, 1, 2, FALSE ),
-       ( 2, 1, 'empid', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 3, 1, 'deptno', 2, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 4, 1, 'name', 3, 9, 20, 0, FALSE, 1, 2, FALSE ),
-       ( 5, 1, 'salary', 4, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 6, 1, 'commission', 5, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 8, 2, 'id', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 9, 2, 'name', 2, 9, 20, 0, FALSE, 1, 2, FALSE );
+INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "precision", "nullable", "collation" )
+VALUES ( 0, 0, 'deptno', 1, 3, 11, 0, FALSE, 2 ),
+       ( 1, 0, 'name', 2, 9, 20, 0, FALSE, 2 ),
+       ( 2, 1, 'empid', 1, 3, 11, 0, FALSE, 2 ),
+       ( 3, 1, 'deptno', 2, 3, 11, 0, FALSE, 2 ),
+       ( 4, 1, 'name', 3, 9, 20, 0, FALSE, 2 ),
+       ( 5, 1, 'salary', 4, 3, 11, 0, FALSE, 2 ),
+       ( 6, 1, 'commission', 5, 3, 11, 0, FALSE, 2 ),
+       ( 8, 2, 'id', 1, 3, 11, 0, FALSE, 2 ),
+       ( 9, 2, 'name', 2, 9, 20, 0, FALSE, 2 );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"

@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -86,7 +85,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getDatabases( transactionHandler, pattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownEncodingException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -104,7 +103,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getDatabase( transactionHandler, databaseName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -122,7 +121,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getDatabase( transactionHandler, databaseId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -141,7 +140,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getSchemas( transactionHandler, databaseNamePattern, schemaNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -160,7 +159,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getSchemas( transactionHandler, databaseId, schemaNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -179,7 +178,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getSchema( transactionHandler, databaseName, schemaName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -198,7 +197,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getSchema( transactionHandler, databaseId, schemaName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -210,20 +209,18 @@ public class CatalogImpl extends Catalog {
      * @param name The name of the schema
      * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
-     * @param encoding The default encoding of the schema
-     * @param collation The default collation of the schema
      * @param schemaType The type of this schema
      * @return The id of the inserted schema
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException {
+    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
-            return Statements.addSchema( transactionHandler, name, database.id, owner.id, encoding, collation, schemaType );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
+            return Statements.addSchema( transactionHandler, name, database.id, owner.id, schemaType );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -244,7 +241,7 @@ public class CatalogImpl extends Catalog {
             CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
             Statements.getSchema( transactionHandler, database.id, schemaName );
             return true;
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException | UnknownDatabaseException | GenericCatalogException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException | UnknownDatabaseException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         } catch ( UnknownSchemaException e ) {
             return false;
@@ -318,7 +315,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTables( transactionHandler, schemaId, tableNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -338,7 +335,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTables( transactionHandler, databaseId, schemaNamePattern, tableNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -358,7 +355,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTables( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -377,7 +374,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTable( transactionHandler, schemaId, tableName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -397,7 +394,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTable( transactionHandler, databaseId, schemaName, tableName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -417,7 +414,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getTable( transactionHandler, databaseName, schemaName, tableName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -429,21 +426,19 @@ public class CatalogImpl extends Catalog {
      * @param name The name of the table to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
-     * @param encoding The default encoding of this table
-     * @param collation The default collation of this table
      * @param tableType The table type
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
-            return Statements.addTable( transactionHandler, name, schema.id, owner.id, encoding, collation, tableType, definition );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
+            return Statements.addTable( transactionHandler, name, schema.id, owner.id, tableType, definition );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -464,7 +459,7 @@ public class CatalogImpl extends Catalog {
             CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
             Statements.getTable( transactionHandler, schema.id, tableName );
             return true;
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownSchemaTypeException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaException e ) {
             throw new GenericCatalogException( e );
         } catch ( UnknownTableException e ) {
             return false;
@@ -555,7 +550,7 @@ public class CatalogImpl extends Catalog {
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
             Statements.addDataPlacement( transactionHandler, store.id, table.id );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -585,7 +580,7 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException {
+    public List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, tableId );
@@ -606,7 +601,7 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException {
+    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern, columnNamePattern );
@@ -628,7 +623,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, columnId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -647,7 +642,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, tableId, columnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -668,7 +663,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, databaseName, schemaName, tableName, columnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -684,18 +679,16 @@ public class CatalogImpl extends Catalog {
      * @param length The length of the field (if applicable, else null)
      * @param precision The precision of the field (if applicable, else null)
      * @param nullable Weather the column can contain null values
-     * @param encoding The encoding of the field (if applicable, else null)
      * @param collation The collation of the field (if applicable, else null)
-     * @param forceDefault Weather to force the default value
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, encoding, collation, forceDefault );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
+            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, collation );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -785,7 +778,7 @@ public class CatalogImpl extends Catalog {
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
             Statements.getColumn( transactionHandler, table.id, columnName );
             return true;
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException | UnknownTypeException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownTableException | UnknownTypeException e ) {
             throw new GenericCatalogException( e );
         } catch ( UnknownColumnException e ) {
             return false;
@@ -916,7 +909,7 @@ public class CatalogImpl extends Catalog {
             }
             long keyId = Statements.addKey( transactionHandler, tableId, true, "pk_" + tableId, columnIds );
             Statements.setPrimaryKey( transactionHandler, tableId, keyId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1144,7 +1137,7 @@ public class CatalogImpl extends Catalog {
                 Statements.setPrimaryKey( transactionHandler, tableId, null );
                 Statements.deleteKey( transactionHandler, catalogTable.primaryKey );
             }
-        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1179,7 +1172,7 @@ public class CatalogImpl extends Catalog {
                 }
             }
             Statements.deleteKey( transactionHandler, key.id );
-        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownEncodingException | UnknownCollationException | UnknownTableTypeException | UnknownTableException e ) {
+        } catch ( CatalogConnectionException | GenericCatalogException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1229,7 +1222,7 @@ public class CatalogImpl extends Catalog {
             }
             CatalogUser owner = Statements.getUser( transactionHandler, database.ownerId );
             return new CatalogCombinedDatabase( database, combinedSchemas, defaultSchema, owner );
-        } catch ( UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1258,7 +1251,7 @@ public class CatalogImpl extends Catalog {
             CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, schema.ownerId );
             return new CatalogCombinedSchema( schema, combinedTables, database, owner );
-        } catch ( UnknownEncodingException | UnknownCollationException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1285,7 +1278,7 @@ public class CatalogImpl extends Catalog {
             List<CatalogDataPlacement> placements = Statements.getDataPlacements( transactionHandler, tableId );
             List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
             return new CatalogCombinedTable( table, columns, schema, database, owner, placements, keys );
-        } catch ( UnknownEncodingException | UnknownCollationException | UnknownTypeException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
+        } catch ( UnknownCollationException | UnknownTypeException | GenericCatalogException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
     }

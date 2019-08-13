@@ -58,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTab
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -110,7 +109,7 @@ public class SqlDropTable extends SqlDropObject {
                 tableName = name.names.get( 0 );
             }
             table = transaction.getCatalog().getCombinedTable( transaction.getCatalog().getTable( schemaId, tableName ).id );
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
+        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {
             if ( ifExists ) {

@@ -46,7 +46,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
@@ -137,7 +136,7 @@ public abstract class Catalog {
      * @return The schema
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException, UnknownCollationException, UnknownEncodingException, UnknownDatabaseException, UnknownSchemaTypeException;
+    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException, UnknownCollationException, UnknownDatabaseException, UnknownSchemaTypeException;
 
 
     /**
@@ -157,13 +156,11 @@ public abstract class Catalog {
      * @param name The name of the schema
      * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
-     * @param encoding The default encoding of the schema
-     * @param collation The default collation of the schema
      * @param schemaType The type of this schema
      * @return The id of the inserted schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException;
+    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException;
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -278,14 +275,12 @@ public abstract class Catalog {
      * @param name The name of the table to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
-     * @param encoding The default encoding of this table
-     * @param collation The default collation of this table
      * @param tableType The table type
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException;
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException;
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -354,7 +349,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException;
 
 
     /**
@@ -367,7 +362,7 @@ public abstract class Catalog {
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownColumnException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException;
 
     /**
      * Returns the column with the specified id.
@@ -412,12 +407,10 @@ public abstract class Catalog {
      * @param length The length of the field (if applicable, else null)
      * @param precision The precision of the field (if applicable, else null)
      * @param nullable Weather the column can contain null values
-     * @param encoding The encoding of the field (if applicable, else null)
      * @param collation The collation of the field (if applicable, else null)
-     * @param forceDefault Weather to force the default value
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -787,33 +780,6 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownCollationException( id );
-        }
-    }
-
-
-    public enum Encoding {
-        UTF8( 1 );
-
-        private final int id;
-
-
-        Encoding( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static Encoding getById( int id ) throws UnknownEncodingException {
-            for ( Encoding e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
-            }
-            throw new UnknownEncodingException( id );
         }
     }
 

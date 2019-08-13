@@ -37,10 +37,8 @@ import lombok.RequiredArgsConstructor;
 /**
  *
  */
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 public final class CatalogForeignKey extends CatalogKey {
-
-    private static final long serialVersionUID = -1496390493702171203L;
 
     public final long referencedKeyId;
     public final String referencedKeyName;
@@ -105,6 +103,8 @@ public final class CatalogForeignKey extends CatalogKey {
     @RequiredArgsConstructor
     public class CatalogForeignKeyColumn implements CatalogEntity {
 
+        private static final long serialVersionUID = -1496390493702171203L;
+
         private final int keySeq;
         private final String referencedKeyColumnName;
         private final String foreignKeyColumnName;
@@ -112,7 +112,21 @@ public final class CatalogForeignKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ referencedKeyDatabaseName, referencedKeySchemaName, referencedKeyTableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, null };
+            return new Serializable[]{
+                    referencedKeyDatabaseName,
+                    referencedKeySchemaName,
+                    referencedKeyTableName,
+                    referencedKeyColumnName,
+                    databaseName,
+                    schemaName,
+                    tableName,
+                    foreignKeyColumnName,
+                    keySeq,
+                    updateRule,
+                    deleteRule,
+                    name,
+                    referencedKeyName,
+                    null };
         }
 
 

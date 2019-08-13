@@ -37,19 +37,37 @@ import lombok.RequiredArgsConstructor;
 /**
  *
  */
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 public final class CatalogPrimaryKey extends CatalogKey {
 
-    private static final long serialVersionUID = 5426944084650275437L;
 
-
-    public CatalogPrimaryKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique ) {
+    public CatalogPrimaryKey(
+            final long id,
+            @NonNull final String name,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final boolean unique ) {
         super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
     }
 
 
     public CatalogPrimaryKey( @NonNull final CatalogKey catalogKey ) {
-        super( catalogKey.id, catalogKey.name, catalogKey.tableId, catalogKey.tableName, catalogKey.schemaId, catalogKey.schemaName, catalogKey.databaseId, catalogKey.databaseName, catalogKey.unique, catalogKey.columnIds, catalogKey.columnNames );
+        super(
+                catalogKey.id,
+                catalogKey.name,
+                catalogKey.tableId,
+                catalogKey.tableName,
+                catalogKey.schemaId,
+                catalogKey.schemaName,
+                catalogKey.databaseId,
+                catalogKey.databaseName,
+                catalogKey.unique,
+                catalogKey.columnIds,
+                catalogKey.columnNames );
     }
 
 
@@ -67,6 +85,8 @@ public final class CatalogPrimaryKey extends CatalogKey {
     // Used for creating ResultSets
     @RequiredArgsConstructor
     public class CatalogPrimaryKeyColumn implements CatalogEntity {
+
+        private static final long serialVersionUID = 5426944084650275437L;
 
         private final int keySeq;
         private final String columnName;

@@ -90,7 +90,7 @@ public class JdbcTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 14, totalColumns );
+            Assert.assertEquals( "Wrong number of columns", 12, totalColumns );
 
             // Check column names
             Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
@@ -104,16 +104,14 @@ public class JdbcTest {
             Assert.assertEquals( "Wrong column name", "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ) );
             Assert.assertEquals( "Wrong column name", "REF_GENERATION", rsmd.getColumnName( 10 ) );
             Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "ENCODING", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "COLLATION", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "DEFINITION", rsmd.getColumnName( 14 ) );
+            Assert.assertEquals( "Wrong column name", "DEFINITION", rsmd.getColumnName( 12 ) );
         } catch ( SQLException e ) {
             LOG.error( "Exception while testing getTables()", e );
         }
     }
 
 
-    class PolyphenyDbConnection implements AutoCloseable {
+    static class PolyphenyDbConnection implements AutoCloseable {
 
         private Connection conn;
 

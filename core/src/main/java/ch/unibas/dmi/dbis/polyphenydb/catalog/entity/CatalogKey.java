@@ -37,8 +37,6 @@ import lombok.NonNull;
 @EqualsAndHashCode
 public class CatalogKey {
 
-    private static final long serialVersionUID = 5426944084650275437L;
-
     public final long id;
     public final String name;
     public final long tableId;
@@ -52,7 +50,18 @@ public class CatalogKey {
     public List<String> columnNames;
 
 
-    public CatalogKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique, final List<Long> columnIds, final List<String> columnNames ) {
+    public CatalogKey(
+            final long id,
+            @NonNull final String name,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final boolean unique,
+            final List<Long> columnIds,
+            final List<String> columnNames ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
@@ -67,7 +76,16 @@ public class CatalogKey {
     }
 
 
-    public CatalogKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique ) {
+    public CatalogKey(
+            final long id,
+            @NonNull final String name,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final boolean unique ) {
         this( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique, null, null );
     }
 

@@ -35,7 +35,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -110,7 +109,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                     transaction.getCatalog().setColumnPosition( columns.get( i ).id, i );
                 }
             }
-        } catch ( UnknownEncodingException | UnknownTypeException | UnknownCollationException | GenericCatalogException e ) {
+        } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
 

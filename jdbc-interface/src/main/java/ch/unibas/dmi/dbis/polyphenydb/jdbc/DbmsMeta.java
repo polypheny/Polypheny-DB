@@ -60,7 +60,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
@@ -269,8 +268,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
                     "DEFINITION"
             );
         } catch ( GenericCatalogException e ) {
@@ -318,11 +315,9 @@ public class DbmsMeta implements ProtobufMeta {
                     "ORDINAL_POSITION",   // The index of the column within the table.
                     "IS_NULLABLE",        // Indicates if the column allows null values.
                     // Polypheny-DB specific extensions:
-                    "ENCODING",
-                    "COLLATION",
-                    "FORCE_DEFAULT"
+                    "COLLATION"
             );
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownEncodingException | UnknownColumnException | UnknownTypeException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException e ) {
             throw propagate( e );
         }
     }
@@ -350,8 +345,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_CATALOG",
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
                     "SCHEMA_TYPE"
             );
         } catch ( GenericCatalogException e ) {
@@ -378,9 +371,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_CAT",
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
-                    "CONNECTION_LIMIT",
                     "DEFAULT_SCHEMA"
             );
         } catch ( GenericCatalogException e ) {
@@ -1177,7 +1167,7 @@ public class DbmsMeta implements ProtobufMeta {
         final CatalogSchema schema;
         try {
             schema = catalog.getSchema( database.name, defaultSchemaName );
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         assert schema != null;

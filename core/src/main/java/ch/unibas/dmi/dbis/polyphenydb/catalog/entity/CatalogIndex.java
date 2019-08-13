@@ -40,8 +40,6 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 public final class CatalogIndex {
 
-    private static final long serialVersionUID = -5596459769680478780L;
-
     public final long id;
     public final String name;
     public final int type;
@@ -80,13 +78,31 @@ public final class CatalogIndex {
     @RequiredArgsConstructor
     public class CatalogIndexColumn implements CatalogEntity {
 
+        private static final long serialVersionUID = -5596459769680478780L;
+
         private final int ordinalPosition;
         private final String columnName;
 
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ key.databaseName, key.schemaName, key.tableName, !key.unique, null, name, 0, ordinalPosition, columnName, null, -1, null, null, location, type, key.name };
+            return new Serializable[]{
+                    key.databaseName,
+                    key.schemaName,
+                    key.tableName,
+                    !key.unique,
+                    null,
+                    name,
+                    0,
+                    ordinalPosition,
+                    columnName,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    location,
+                    type,
+                    key.name };
         }
 
 

@@ -33,7 +33,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -199,7 +198,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Unknown option" );
             }
-        } catch ( GenericCatalogException | UnknownEncodingException | UnknownTypeException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -26,8 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
@@ -49,20 +47,23 @@ public final class CatalogSchema implements CatalogEntity {
     public final String databaseName;
     public final int ownerId;
     public final String ownerName;
-    public final Encoding encoding;
-    public final Collation collation;
     public final SchemaType schemaType;
 
 
-    public CatalogSchema( final long id, @NonNull final String name, final long databaseId, @NonNull final String databaseName, final int ownerId, @NonNull final String ownerName, final Encoding encoding, final Collation collation, @NonNull final SchemaType schemaType ) {
+    public CatalogSchema(
+            final long id,
+            @NonNull final String name,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final int ownerId,
+            @NonNull final String ownerName,
+            @NonNull final SchemaType schemaType ) {
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;
         this.databaseName = databaseName;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
-        this.encoding = encoding;
-        this.collation = collation;
         this.schemaType = schemaType;
     }
 
@@ -70,7 +71,7 @@ public final class CatalogSchema implements CatalogEntity {
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( encoding ), CatalogEntity.getEnumNameOrNull( collation ), CatalogEntity.getEnumNameOrNull( schemaType ) };
+        return new Serializable[]{ name, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( schemaType ) };
     }
 
 
@@ -80,8 +81,6 @@ public final class CatalogSchema implements CatalogEntity {
         public final String tableSchem;
         public final String tableCatalog;
         public final String owner;
-        public final String encoding;
-        public final String collation;
         public final String schemaType;
     }
 }

@@ -28,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -56,13 +55,26 @@ public final class CatalogColumn implements CatalogEntity {
     public final Integer length;
     public final Integer precision;
     public final boolean nullable;
-    public final Encoding encoding;
     public final Collation collation;
-    public final boolean forceDefault;
     public final CatalogDefaultValue defaultValue;
 
 
-    public CatalogColumn( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final int position, @NonNull final PolySqlType type, final Integer length, final Integer precision, final boolean nullable, final Encoding encoding, final Collation collation, final boolean forceDefault, CatalogDefaultValue defaultValue ) {
+    public CatalogColumn(
+            final long id,
+            @NonNull final String name,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final int position,
+            @NonNull final PolySqlType type,
+            final Integer length,
+            final Integer precision,
+            final boolean nullable,
+            final Collation collation,
+            CatalogDefaultValue defaultValue ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
@@ -76,9 +88,7 @@ public final class CatalogColumn implements CatalogEntity {
         this.length = length;
         this.precision = precision;
         this.nullable = nullable;
-        this.encoding = encoding;
         this.collation = collation;
-        this.forceDefault = forceDefault;
         this.defaultValue = defaultValue;
     }
 
@@ -104,14 +114,12 @@ public final class CatalogColumn implements CatalogEntity {
                 precision,
                 position,
                 nullable ? "YES" : "NO",
-                CatalogEntity.getEnumNameOrNull( encoding ),
-                CatalogEntity.getEnumNameOrNull( collation ),
-                forceDefault };
+                CatalogEntity.getEnumNameOrNull( collation ) };
     }
 
 
     @RequiredArgsConstructor
-    public class PrimitiveCatalogColumn {
+    public static class PrimitiveCatalogColumn {
 
         public final String tableCat;
         public final String tableSchem;
@@ -132,8 +140,6 @@ public final class CatalogColumn implements CatalogEntity {
         public final int ordinalPosition; // position
         public final String isNullable;
 
-        public final String encoding;
         public final String collation;
-        public final boolean forceDefault;
     }
 }
