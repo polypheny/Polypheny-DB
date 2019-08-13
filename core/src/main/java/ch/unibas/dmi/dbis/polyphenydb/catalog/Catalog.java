@@ -589,10 +589,11 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @param columnIds A list of column ids
      * @param unique Weather the index should be unique
+     * @param type The type of index
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException;
+    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException;
 
 
     /**
@@ -818,7 +819,8 @@ public abstract class Catalog {
 
 
     public enum IndexType {
-        BTREE( 1 );
+        BTREE( 1 ),
+        HASH( 2 );
 
         private final int id;
 
@@ -840,6 +842,16 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownIndexTypeException( id );
+        }
+
+
+        public static IndexType parse( @NonNull String str ) throws UnknownIndexTypeException {
+            if ( str.equalsIgnoreCase( "btree" ) ) {
+                return IndexType.BTREE;
+            } else if ( str.equalsIgnoreCase( "hash" ) ) {
+                return IndexType.HASH;
+            }
+            throw new UnknownIndexTypeException( str );
         }
     }
 

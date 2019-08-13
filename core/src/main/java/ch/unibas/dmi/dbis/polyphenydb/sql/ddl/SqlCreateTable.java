@@ -193,6 +193,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
+            // Check if there is already a table with this name
+            if ( transaction.getCatalog().checkIfExistsTable( schemaId, tableName ) ) {
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
+            }
+
             long tableId = transaction.getCatalog().addTable(
                     tableName,
                     schemaId,

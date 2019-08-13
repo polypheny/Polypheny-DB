@@ -1045,11 +1045,12 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table
      * @param columnIds A list of column ids
      * @param unique Weather the index should be unique
+     * @param type The type of index
      * @param indexName The name of the index
      * @return The id of the created index
      */
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String indexName ) throws GenericCatalogException {
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             long keyId = -1;
@@ -1068,7 +1069,6 @@ public class CatalogImpl extends Catalog {
                 // There is no key, create it
                 keyId = Statements.addKey( transactionHandler, tableId, unique, indexName, columnIds );
             }
-            IndexType type = IndexType.BTREE;
             return Statements.addIndex( transactionHandler, keyId, type, null, indexName );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
