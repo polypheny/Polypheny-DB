@@ -116,8 +116,12 @@ public enum RuntimeConfig {
     QUERY_TIMEOUT( "runtime/queryTimeout",
             "Time after which queries are aborted. 0 means infinite.",
             0,
-            ConfigType.INTEGER );
+            ConfigType.INTEGER ),
 
+    DEFAULT_INDEX_TYPE( "runtime/defaultIndexType",
+            "Index type to use if no type is specified in the create index statement.",
+            1,
+            ConfigType.INTEGER );
 
 
 

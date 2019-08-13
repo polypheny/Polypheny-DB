@@ -27,10 +27,13 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.IndexType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -51,22 +54,24 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier indexName;
+    private final SqlIdentifier indexType;
     private final SqlNodeList columnList;
     private final boolean unique;
 
 
-    public SqlAlterTableAddIndex( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, boolean unique, SqlIdentifier indexName ) {
+    public SqlAlterTableAddIndex( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, boolean unique, SqlIdentifier indexType, SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.unique = unique;
         this.indexName = indexName;
+        this.indexType = indexType;
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, columnList, indexName );
+        return ImmutableNullableList.of( table, columnList, indexType, indexName );
     }
 
 
@@ -83,6 +88,10 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         indexName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ON" );
         columnList.unparse( writer, leftPrec, rightPrec );
+        if ( indexType != null ) {
+            writer.keyword( "USING" );
+            indexType.unparse( writer, leftPrec, rightPrec );
+        }
     }
 
 
@@ -96,8 +105,14 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
-            transaction.getCatalog().addIndex( catalogTable.id, columnIds, unique, indexName.getSimple() );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+            IndexType type;
+            if ( indexType != null ) {
+                type = IndexType.parse( indexType.getSimple() );
+            } else {
+                type = IndexType.getById( RuntimeConfig.DEFAULT_INDEX_TYPE.getInteger() );
+            }
+            transaction.getCatalog().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException e ) {
             throw new RuntimeException( e );
         }
     }
