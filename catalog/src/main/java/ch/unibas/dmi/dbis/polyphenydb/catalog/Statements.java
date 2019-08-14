@@ -231,7 +231,7 @@ final class Statements {
                         String columnName = columnResultSet.getString( "name" );
                         PolySqlType columnType = PolySqlType.getByTypeCode( columnResultSet.getInt( "type" ) );
                         long length = columnResultSet.getLong( "length" );
-                        long precision = columnResultSet.getLong( "precision" );
+                        long scale = columnResultSet.getLong( "scale" );
                         boolean nullable = columnResultSet.getBoolean( "nullable" );
                         Collation collation = Collation.getById( columnResultSet.getInt( "collation" ) );
                         java.io.Serializable defaultValue = columnResultSet.getString( "default_value" );
@@ -239,11 +239,11 @@ final class Statements {
 
                         System.out.print( "    " + columnName + " " + columnType.name() );
 
-                        // type arguments (length and precision)
+                        // type arguments (length and scale)
                         if ( length != 0 ) {
                             System.out.print( "(" + length );
-                            if ( precision != 0 ) {
-                                System.out.print( ", " + precision );
+                            if ( scale != 0 ) {
+                                System.out.print( ", " + scale );
                             }
                             System.out.print( ")" );
                         }
@@ -762,7 +762,7 @@ final class Statements {
 
 
     private static List<CatalogColumn> columnFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException, UnknownTypeException, UnknownCollationException {
-        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"length\", c.\"precision\", c.\"nullable\", c.\"collation\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
+        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"length\", c.\"scale\", c.\"nullable\", c.\"collation\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogColumn> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -905,14 +905,14 @@ final class Statements {
     }
 
 
-    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException {
+    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "table", "" + tableId );
         data.put( "name", quoteString( name ) );
         data.put( "position", "" + position );
         data.put( "type", "" + type.getTypeCode() );
         data.put( "length", length == null ? null : "" + length );
-        data.put( "precision", precision == null ? null : "" + precision );
+        data.put( "scale", scale == null ? null : "" + scale );
         data.put( "nullable", "" + nullable );
         if ( collation != null ) {
             data.put( "collation", "" + collation.getId() );
@@ -939,11 +939,12 @@ final class Statements {
     }
 
 
-    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer precision ) throws GenericCatalogException {
+    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer scale, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "type", "" + type.getTypeCode() );
         data.put( "length", length == null ? null : "" + length );
-        data.put( "precision", precision == null ? null : "" + precision );
+        data.put( "scale", scale == null ? null : "" + scale );
+        data.put( "collation", "" + collation.getId() );
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "id", "" + columnId );
         updateHandler( transactionHandler, "column", data, where );

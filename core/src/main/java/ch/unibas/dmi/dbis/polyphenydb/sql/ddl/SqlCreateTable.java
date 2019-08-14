@@ -230,8 +230,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             tableId,
                             position++,
                             polySqlType,
-                            columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
+                            columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
                             columnDeclaration.dataType.getNullable(),
                             collation
                     );

@@ -12,9 +12,7 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,27 +36,9 @@ public class HsqldbStore implements Store {
         // TODO: Change when implementing transaction support
         dataSource.setDefaultAutoCommit( true );
 
-        try {
-            addDefaultSchema( dataSource );
-        } catch ( SQLException e ) {
-            e.printStackTrace();
-        }
-
         this.dataSource = dataSource;
-
-
     }
 
-
-    private void addDefaultSchema( BasicDataSource dataSource ) throws SQLException {
-        Connection connection = dataSource.getConnection();
-        Statement statement = connection.createStatement();
-        statement.executeUpdate( "CREATE TABLE \"test\"(\"id\" INTEGER, \"name\" VARCHAR(20))" );
-        statement.executeUpdate( "INSERT INTO \"test\"(\"id\", \"name\") VALUES (1, 'bob')" );
-        connection.commit();
-        statement.close();
-        connection.close();
-    }
 
 
     @Override
@@ -92,10 +72,10 @@ public class HsqldbStore implements Store {
             first = false;
             builder.append( currentJdbcSchema.dialect.quoteIdentifier( column.name ) ).append( " " );
             builder.append( getTypeString( column.type ) );
-            if ( column.precision != null ) {
-                builder.append( "(" ).append( column.precision );
-                if ( column.length != null ) {
-                    builder.append( "," ).append( column.length );
+            if ( column.length != null ) {
+                builder.append( "(" ).append( column.length );
+                if ( column.scale != null ) {
+                    builder.append( "," ).append( column.scale );
                 }
                 builder.append( ")" );
             }
@@ -128,11 +108,11 @@ public class HsqldbStore implements Store {
         builder.append( "ALTER TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogTable.getTable().name ) );
         builder.append( " ADD " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
         builder.append( catalogColumn.type.name() );
-        if ( catalogColumn.precision != null ) {
+        if ( catalogColumn.length != null ) {
             builder.append( "(" );
-            builder.append( catalogColumn.precision );
-            if ( catalogColumn.length != null ) {
-                builder.append( "," ).append( catalogColumn.length );
+            builder.append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
             }
             builder.append( ")" );
         }

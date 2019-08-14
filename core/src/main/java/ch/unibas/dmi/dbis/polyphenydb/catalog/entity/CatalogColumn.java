@@ -52,8 +52,8 @@ public final class CatalogColumn implements CatalogEntity {
     public final String databaseName;
     public final int position;
     public final PolySqlType type;
-    public final Integer length;
-    public final Integer precision;
+    public final Integer length; // JDBC length or precision depending on type
+    public final Integer scale; // decimal digits
     public final boolean nullable;
     public final Collation collation;
     public final CatalogDefaultValue defaultValue;
@@ -71,7 +71,7 @@ public final class CatalogColumn implements CatalogEntity {
             final int position,
             @NonNull final PolySqlType type,
             final Integer length,
-            final Integer precision,
+            final Integer scale,
             final boolean nullable,
             final Collation collation,
             CatalogDefaultValue defaultValue ) {
@@ -86,7 +86,7 @@ public final class CatalogColumn implements CatalogEntity {
         this.position = position;
         this.type = type;
         this.length = length;
-        this.precision = precision;
+        this.scale = scale;
         this.nullable = nullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
@@ -102,16 +102,16 @@ public final class CatalogColumn implements CatalogEntity {
                 name,
                 type.getJavaSqlTypesValue(),
                 type.name(),
-                precision,
-                null,
                 length,
+                null,
+                scale,
                 null,
                 nullable ? 1 : 0,
                 "",
                 defaultValue == null ? null : defaultValue.value,
                 null,
                 null,
-                precision,
+                null,
                 position,
                 nullable ? "YES" : "NO",
                 CatalogEntity.getEnumNameOrNull( collation ) };
@@ -127,16 +127,16 @@ public final class CatalogColumn implements CatalogEntity {
         public final String columnName;
         public final int dataType;
         public final String typeName;
-        public final Integer columnSize; // precision
+        public final Integer columnSize; // precision or length
         public final Integer bufferLength; // always null
-        public final Integer decimalDigits; // length
+        public final Integer decimalDigits; // scale
         public final Integer numPrecRadix;
         public final int nullable;
         public final String remarks;
         public final String columnDef;
         public final Integer sqlDataType; // always null
         public final Integer sqlDatetimeSub; // always null
-        public final Integer charOctetLength;
+        public final Integer charOctetLength; // always null
         public final int ordinalPosition; // position
         public final String isNullable;
 

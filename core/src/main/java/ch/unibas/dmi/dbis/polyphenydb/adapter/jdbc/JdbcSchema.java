@@ -141,7 +141,7 @@ public class JdbcSchema implements Schema {
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
         }
         List<String> columnNames = new LinkedList<>();

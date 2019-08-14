@@ -67,7 +67,7 @@ CREATE TABLE "column" (
     "position"  INTEGER         NOT NULL,
     "type"      INTEGER         NOT NULL,
     "length"    INTEGER         NULL,
-    "precision" INTEGER         NULL,
+    "scale"     INTEGER         NULL,
     "nullable"  BOOLEAN         NOT NULL,
     "collation" INTEGER         NULL,
     PRIMARY KEY ("id")
@@ -327,31 +327,28 @@ WHERE "id" = 0;
 --
 INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
 VALUES ( 0, 0, 'depts', 0, 1, NULL ),
-       ( 1, 0, 'emps', 0, 1, NULL ),
-       ( 2, 0, 'test', 0, 1, NULL );
+       ( 1, 0, 'emps', 0, 1, NULL );
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
-        RESTART WITH 3;
+        RESTART WITH 2;
 
 
 --
 -- column
 --
-INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "precision", "nullable", "collation" )
-VALUES ( 0, 0, 'deptno', 1, 3, 11, 0, FALSE, 2 ),
-       ( 1, 0, 'name', 2, 9, 20, 0, FALSE, 2 ),
-       ( 2, 1, 'empid', 1, 3, 11, 0, FALSE, 2 ),
-       ( 3, 1, 'deptno', 2, 3, 11, 0, FALSE, 2 ),
-       ( 4, 1, 'name', 3, 9, 20, 0, FALSE, 2 ),
-       ( 5, 1, 'salary', 4, 3, 11, 0, FALSE, 2 ),
-       ( 6, 1, 'commission', 5, 3, 11, 0, FALSE, 2 ),
-       ( 8, 2, 'id', 1, 3, 11, 0, FALSE, 2 ),
-       ( 9, 2, 'name', 2, 9, 20, 0, FALSE, 2 );
+INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "scale", "nullable", "collation" )
+VALUES ( 0, 0, 'deptno', 1, 3, 11, NULL, FALSE, NULL ),
+       ( 1, 0, 'name', 2, 9, 20, NULL, FALSE, 2 ),
+       ( 2, 1, 'empid', 1, 3, 11, NULL, FALSE, NULL ),
+       ( 3, 1, 'deptno', 2, 3, 11, NULL, FALSE, NULL ),
+       ( 4, 1, 'name', 3, 9, 20, NULL, FALSE, 2 ),
+       ( 5, 1, 'salary', 4, 3, 11, NULL, FALSE, NULL ),
+       ( 6, 1, 'commission', 5, 3, 11, NULL, FALSE, NULL );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
-        RESTART WITH 10;
+        RESTART WITH 7;
 
 
 --
@@ -370,7 +367,6 @@ ALTER TABLE "store"
 -- data placement
 --
 INSERT INTO "data_placement" ( "store", "table" )
-VALUES ( 0, 2 ),
-       ( 1, 0 ),
+VALUES ( 1, 0 ),
        ( 1, 1 );
 

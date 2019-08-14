@@ -57,6 +57,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.val;
@@ -677,20 +678,23 @@ public class CatalogImpl extends Catalog {
      * @param position The ordinal position of the column (starting with 1)
      * @param type The type of the column
      * @param length The length of the field (if applicable, else null)
-     * @param precision The precision of the field (if applicable, else null)
+     * @param scale The number of digits after the decimal point (if applicable)
      * @param nullable Weather the column can contain null values
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
             if ( type.isCharType() && collation == null ) {
                 throw new RuntimeException( "Collation is not allowed to be null for char types." );
             }
-            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, collation );
+            if ( scale != null && scale > length ) {
+                throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
+            }
+            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, scale, nullable, collation );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
@@ -739,11 +743,15 @@ public class CatalogImpl extends Catalog {
      * @param type The new type of the column
      */
     @Override
-    public void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException {
+    public void setColumnType( long columnId, PolySqlType type, Integer length, Integer scale ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.setColumnType( transactionHandler, columnId, type, length, precision );
-        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            if ( scale != null && scale > length ) {
+                throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
+            }
+            Collation collation = type.isCharType() ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
+            Statements.setColumnType( transactionHandler, columnId, type, length, scale, collation );
+        } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownCollationException e ) {
             throw new GenericCatalogException( e );
         }
     }

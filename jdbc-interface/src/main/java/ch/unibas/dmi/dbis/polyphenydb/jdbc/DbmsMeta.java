@@ -302,7 +302,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "COLUMN_NAME",        // the column name
                     "DATA_TYPE",          // The SQL data type from java.sql.Types.
                     "TYPE_NAME",          // The name of the data type.
-                    "COLUMN_SIZE",        // The precision of the column.
+                    "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
                     "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
                     "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
                     "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
@@ -311,7 +311,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "COLUMN_DEF",         // The default value of the column.
                     "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
                     "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
-                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types).
+                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
                     "ORDINAL_POSITION",   // The index of the column within the table.
                     "IS_NULLABLE",        // Indicates if the column allows null values.
                     // Polypheny-DB specific extensions:
