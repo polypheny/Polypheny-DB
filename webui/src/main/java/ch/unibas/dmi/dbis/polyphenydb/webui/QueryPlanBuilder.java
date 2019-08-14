@@ -110,7 +110,12 @@ public class QueryPlanBuilder {
             case "Filter":
                 String[] field = node.field.split( "\\." );
                 if( NumberUtils.isNumber( node.filter ) ){
-                    double filter = Double.parseDouble( node.filter );
+                    Number filter;
+                    Double dbl = Double.parseDouble( node.filter );
+                    filter = dbl;
+                    if( dbl % 1 == 0 ){
+                        filter = Integer.parseInt( node.filter );
+                    }
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( filter ) ));
                 } else{
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ));
@@ -131,6 +136,7 @@ public class QueryPlanBuilder {
             case "=":
                 return SqlStdOperatorTable.EQUALS;
             case "!=":
+            case "<>":
                 return SqlStdOperatorTable.NOT_EQUALS;
             case "<":
                 return SqlStdOperatorTable.LESS_THAN;

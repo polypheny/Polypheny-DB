@@ -336,6 +336,12 @@ public class CrudPostgres extends Crud {
     }
 
 
+    @Override
+    Result executeRelAlg ( final Request req, final Response res ) {
+        return new Result ( "The execution of a relational algebra is not supported by Postgres." );
+    }
+
+
     /**
      * Get available actions for foreign key constraints
      */

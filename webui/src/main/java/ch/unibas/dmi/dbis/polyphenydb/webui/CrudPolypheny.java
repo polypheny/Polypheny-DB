@@ -26,6 +26,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
@@ -39,9 +44,13 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransacti
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.MetaImpl;
 import spark.Request;
 import spark.Response;
 
@@ -319,7 +328,7 @@ public class CrudPolypheny extends Crud {
         for( String col: index.getColumns() ){
             colJoiner.add( col );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX %s ON %s", index.getTable(), index.getName(), colJoiner.toString() );
+        String query = String.format( "ALTER TABLE %s ADD INDEX %s ON %s USING %s", index.getTable(), index.getName(), colJoiner.toString(), index.getMethod() );
         try {
             int a = handler.executeUpdate( query );
             handler.commit();
@@ -328,6 +337,59 @@ public class CrudPolypheny extends Crud {
             result = new Result( e.getMessage() );
         }
         return result;
+    }
+
+
+    /**
+     * Execute a logical plan coming from the Web-Ui plan builder
+     */
+    @Override
+    Result executeRelAlg ( final Request req, final Response res ) {
+        UiRelNode topNode = gson.fromJson( req.body(), UiRelNode.class );
+
+        Transaction transaction = this.transactionManager.startTransaction( null, null, null );
+
+        RelNode result;
+        try{
+            result = QueryPlanBuilder.buildFromTree( topNode, transaction );
+        } catch( Exception e ) {
+            return new Result( e.getMessage() );
+        }
+
+        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( result );
+
+        List<List<Object>> rows;
+        try{
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
+            Iterator<Object> iterator = iterable.iterator();
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+        } catch( Exception e ){
+            return new Result( e.getMessage() );
+        }
+
+        ArrayList<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[ row.size() ];
+            int counter = 0;
+            for( Object o: row ){
+                temp[ counter ] = o.toString();
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
+
+        DbColumn[] header = new DbColumn[ signature.columns.size() ];
+        int counter = 0;
+        for( ColumnMetaData col : signature.columns ){
+            header[counter++] = new DbColumn( col.columnName );
+        }
+        return new Result( header, data.toArray( new String[0][] ) );
     }
 
 

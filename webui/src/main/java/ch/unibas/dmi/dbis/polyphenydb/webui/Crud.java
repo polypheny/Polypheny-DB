@@ -101,7 +101,7 @@ public abstract class Crud implements InformationObserver {
     private final int PORT;
     private String driver;
     Gson gson = new Gson();
-    private TransactionManager transactionManager;
+    TransactionManager transactionManager;
 
 
     /**
@@ -141,7 +141,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * Get the number of rows that should be displayed in one page in the data view
      */
-    private int getPageSize () {
+    int getPageSize () {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
     }
 
@@ -305,7 +305,7 @@ public abstract class Crud implements InformationObserver {
         if ( request.action.toLowerCase().equals( "drop" ) ) {
             query.append( "DROP TABLE " );
         } else if ( request.action.toLowerCase().equals( "truncate" ) ) {
-            query.append( "TRUNCATE " );
+            query.append( "TRUNCATE TABLE " );
         }
         query.append( request.schema ).append( "." ).append( request.table );
         LocalTransactionHandler handler = getHandler();
@@ -496,7 +496,7 @@ public abstract class Crud implements InformationObserver {
                 }
                 //decrease limit if it is too large
                 else{
-                    Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)" );
+                    Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                     Matcher limitMatcher = pattern.matcher( query );
                     if( limitMatcher.find() ){
                         int limit = Integer.parseInt( limitMatcher.group(2) );
@@ -922,53 +922,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    Result executeRelAlg ( final Request req, final Response res ) {
-        UiRelNode topNode = gson.fromJson( req.body(), UiRelNode.class );
-
-        Transaction transaction = this.transactionManager.startTransaction( null, null, null );
-
-        RelNode result;
-        try{
-            result = QueryPlanBuilder.buildFromTree( topNode, transaction );
-        } catch( Exception e ) {
-            return new Result( e.getMessage() );
-        }
-
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( result );
-
-        List<List<Object>> rows;
-        try{
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-        } catch( Exception e ){
-            return new Result( e.getMessage() );
-        }
-
-        ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[ row.size() ];
-            int counter = 0;
-            for( Object o: row ){
-                temp[ counter ] = o.toString();
-                counter++;
-            }
-            data.add( temp );
-        }
-
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
-
-        DbColumn[] header = new DbColumn[ signature.columns.size() ];
-        int counter = 0;
-        for( ColumnMetaData col : signature.columns ){
-            header[counter++] = new DbColumn( col.columnName );
-        }
-        return new Result( header, data.toArray( new String[0][] ) );
-    }
+    abstract Result executeRelAlg ( final Request req, final Response res );
 
 
     /**
