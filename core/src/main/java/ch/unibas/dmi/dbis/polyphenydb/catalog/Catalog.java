@@ -446,6 +446,15 @@ public abstract class Catalog {
     public abstract void setNullable( long columnId, boolean nullable ) throws GenericCatalogException;
 
     /**
+     * Set the collation of a column.
+     * If the column already has the specified collation set, this method is a NoOp.
+     *
+     * @param columnId The id of the column
+     * @param collation The collation to set
+     */
+    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException;
+
+    /**
      * Checks if there is a column with the specified name in the specified table.
      *
      * @param tableId The id of the table
@@ -780,6 +789,16 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownCollationException( id );
+        }
+
+
+        public static Collation parse( @NonNull String str ) throws UnknownCollationException {
+            if ( str.equalsIgnoreCase( "CASE SENSITIVE" ) ) {
+                return Collation.CASE_SENSITIVE;
+            } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
+                return Collation.CASE_INSENSITIVE;
+            }
+            throw new UnknownCollationException( str );
         }
     }
 

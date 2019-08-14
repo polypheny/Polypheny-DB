@@ -111,6 +111,7 @@ void TableElement(List<SqlNode> list) :
     final SqlNodeList columnList;
     final Span s = Span.of();
     final ColumnStrategy strategy;
+    final String collation;
 }
 {
     id = SimpleIdentifier()
@@ -145,8 +146,20 @@ void TableElement(List<SqlNode> list) :
                     strategy = nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE;
                 }
         )
+        (
+                <COLLATE>
+                (
+                    <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                    |
+                    <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+                )
+            |
+                {
+                  collation = null;
+                }
+        )
         {
-            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), e, strategy));
+            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
         }
         |
             { list.add(id); }

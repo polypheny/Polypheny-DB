@@ -61,15 +61,15 @@ CREATE TABLE "table" (
 
 
 CREATE TABLE "column" (
-    "id"            BIGINT IDENTITY NOT NULL,
-    "table"         BIGINT          NOT NULL REFERENCES "table" ("id"),
-    "name"          VARCHAR(100)    NOT NULL,
-    "position"      INTEGER         NOT NULL,
-    "type"          INTEGER         NOT NULL,
-    "length"        INTEGER         NULL,
-    "precision"     INTEGER         NULL,
-    "nullable"      BOOLEAN         NOT NULL,
-    "collation"     INTEGER         NOT NULL,
+    "id"        BIGINT IDENTITY NOT NULL,
+    "table"     BIGINT          NOT NULL REFERENCES "table" ("id"),
+    "name"      VARCHAR(100)    NOT NULL,
+    "position"  INTEGER         NOT NULL,
+    "type"      INTEGER         NOT NULL,
+    "length"    INTEGER         NULL,
+    "precision" INTEGER         NULL,
+    "nullable"  BOOLEAN         NOT NULL,
+    "collation" INTEGER         NULL,
     PRIMARY KEY ("id")
 );
 

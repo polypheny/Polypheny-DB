@@ -72,17 +72,19 @@ public class SqlColumnDeclaration extends SqlCall {
     final SqlDataTypeSpec dataType;
     final SqlNode expression;
     final ColumnStrategy strategy;
+    final String collation;
 
 
     /**
      * Creates a SqlColumnDeclaration; use {@link SqlDdlNodes#column}.
      */
-    SqlColumnDeclaration( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, SqlNode expression, ColumnStrategy strategy ) {
+    SqlColumnDeclaration( SqlParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
         super( pos );
         this.name = name;
         this.dataType = dataType;
         this.expression = expression;
         this.strategy = strategy;
+        this.collation = collation;
     }
 
 
@@ -120,6 +122,10 @@ public class SqlColumnDeclaration extends SqlCall {
                 default:
                     throw new AssertionError( "unexpected: " + strategy );
             }
+        }
+        if ( collation != null ) {
+            writer.keyword( "COLLATE" );
+            writer.literal( collation );
         }
     }
 

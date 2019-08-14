@@ -779,6 +779,12 @@ final class Statements {
                     }
                 }
 
+                Collation collation = null;
+                Integer collationId = getIntOrNull( rs, 14 );
+                if ( collationId != null ) {
+                    collation = Collation.getById( collationId );
+                }
+
                 list.add( new CatalogColumn(
                         getLong( rs, 1 ),
                         rs.getString( 2 ),
@@ -793,7 +799,7 @@ final class Statements {
                         getIntOrNull( rs, 11 ),
                         getIntOrNull( rs, 12 ),
                         rs.getBoolean( 13 ),
-                        Collation.getById( getInt( rs, 14 ) ),
+                        collation,
                         defaultValue
                 ) );
             }
@@ -908,7 +914,9 @@ final class Statements {
         data.put( "length", length == null ? null : "" + length );
         data.put( "precision", precision == null ? null : "" + precision );
         data.put( "nullable", "" + nullable );
-        data.put( "collation", "" + collation.getId() );
+        if ( collation != null ) {
+            data.put( "collation", "" + collation.getId() );
+        }
         return insertHandler( transactionHandler, "column", data );
     }
 
@@ -945,6 +953,15 @@ final class Statements {
     static void setNullable( XATransactionHandler transactionHandler, long columnId, boolean nullable ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "nullable", "" + nullable );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    public static void setCollation( XATransactionHandler transactionHandler, long columnId, Collation collation ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "collation", "" + collation.getId() );
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "id", "" + columnId );
         updateHandler( transactionHandler, "column", data, where );

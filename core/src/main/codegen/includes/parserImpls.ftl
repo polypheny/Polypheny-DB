@@ -276,6 +276,7 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
     SqlIdentifier afterColumn = null;
     SqlNode defaultValue = null;
     Boolean dropDefault = null;
+    String collation = null;
 }
 {
     (
@@ -297,6 +298,13 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
                 afterColumn = SimpleIdentifier()
             )
         |
+            <SET> <COLLATION>
+            (
+                <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                |
+                <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+            )
+        |
             <SET> <DEFAULT_>
             defaultValue = Literal()
         |
@@ -304,6 +312,6 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
             { dropDefault = true; }
     )
     {
-        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, defaultValue, dropDefault);
+        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
     }
 }

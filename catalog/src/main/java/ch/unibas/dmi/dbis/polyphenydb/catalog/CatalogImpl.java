@@ -687,6 +687,9 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            if ( type.isCharType() && collation == null ) {
+                throw new RuntimeException( "Collation is not allowed to be null for char types." );
+            }
             return Statements.addColumn( transactionHandler, name, table.id, position, type, length, precision, nullable, collation );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
@@ -758,6 +761,28 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.setNullable( transactionHandler, columnId, nullable );
         } catch ( CatalogConnectionException | CatalogTransactionException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Set the collation of a column.
+     * If the column already has the specified collation set, this method is a NoOp.
+     *
+     * @param columnId The id of the column
+     * @param collation The collation to set
+     */
+    @Override
+    public void setCollation( long columnId, Collation collation ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
+            if ( !catalogColumn.type.isCharType() ) {
+                throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
+            }
+            Statements.setCollation( transactionHandler, columnId, collation );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownColumnException | UnknownTypeException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }

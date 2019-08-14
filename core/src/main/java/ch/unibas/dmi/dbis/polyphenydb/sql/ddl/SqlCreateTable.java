@@ -61,6 +61,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -215,15 +216,24 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
+                    final PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() );
+                    Collation collation = null;
+                    if ( polySqlType.isCharType() ) {
+                        if ( columnDeclaration.collation != null ) {
+                            collation = Collation.parse( columnDeclaration.collation );
+                        } else {
+                            collation = Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ); // Set default collation
+                        }
+                    }
                     long addedColumnId = transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
-                            PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() ),
+                            polySqlType,
                             columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
                             columnDeclaration.dataType.getNullable(),
-                            Collation.CASE_INSENSITIVE
+                            collation
                     );
 
                     // Add default value
@@ -263,7 +273,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }
