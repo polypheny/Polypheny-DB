@@ -27,10 +27,12 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
@@ -150,8 +152,11 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
                         polySqlType,
-                        type.getScale() == -1 ? null : type.getScale(),
-                        type.getPrecision() == -1 ? null : type.getPrecision() );
+                        type.getPrecision() == -1 ? null : type.getPrecision(),
+                        type.getScale() == -1 ? null : type.getScale() );
+                for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
+                    StoreManager.getInstance().getStore( dp.storeId ).updateColumnType( getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
+                }
             } else if ( nullable != null ) {
                 transaction.getCatalog().setNullable( catalogColumn.id, nullable );
             } else if ( beforeColumn != null || afterColumn != null ) {

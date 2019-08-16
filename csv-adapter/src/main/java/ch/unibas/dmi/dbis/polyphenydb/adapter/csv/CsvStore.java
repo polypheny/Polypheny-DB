@@ -87,4 +87,10 @@ public class CsvStore implements Store {
     public void truncate( Transaction transaction, CatalogCombinedTable table ) {
         LOG.warn( "CSV Store does not support truncate." );
     }
+
+
+    @Override
+    public void updateColumnType( CatalogColumn catalogColumn ) {
+        throw new RuntimeException( "CSV adapter does not support updating column types!" );
+    }
 }

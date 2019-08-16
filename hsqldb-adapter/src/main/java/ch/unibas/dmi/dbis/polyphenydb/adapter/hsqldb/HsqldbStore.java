@@ -177,6 +177,26 @@ public class HsqldbStore implements Store {
     }
 
 
+    @Override
+    public void updateColumnType( CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( catalogColumn.tableName ) ).append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " ).append( catalogColumn.type );
+        if ( catalogColumn.length != null ) {
+            builder.append( "(" );
+            builder.append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
+            }
+            builder.append( ")" );
+        }
+        try {
+            dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     private String getTypeString( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:
