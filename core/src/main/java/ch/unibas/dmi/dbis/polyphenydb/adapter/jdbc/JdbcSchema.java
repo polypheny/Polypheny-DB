@@ -219,18 +219,6 @@ public class JdbcSchema implements Schema {
 
     /**
      * Returns a suitable SQL dialect for the given data source.
-     *
-     * @param dataSource The data source
-     * @deprecated Use {@link #createDialect(SqlDialectFactory, DataSource)} instead
-     */
-    @Deprecated // to be removed before 2.0
-    public static SqlDialect createDialect( DataSource dataSource ) {
-        return createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
-    }
-
-
-    /**
-     * Returns a suitable SQL dialect for the given data source.
      */
     public static SqlDialect createDialect( SqlDialectFactory dialectFactory, DataSource dataSource ) {
         return JdbcUtils.DialectPool.INSTANCE.get( dialectFactory, dataSource );

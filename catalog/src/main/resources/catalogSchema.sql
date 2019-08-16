@@ -145,8 +145,6 @@ CREATE TABLE "data_placement" (
 CREATE TABLE "key" (
     "id"     BIGINT IDENTITY NOT NULL,
     "table"  BIGINT          NOT NULL REFERENCES "table" ("id"),
-    "unique" BOOLEAN         NOT NULL,
-    "name"   VARCHAR(100)    NOT NULL,
     PRIMARY KEY ("id")
 );
 
@@ -158,11 +156,21 @@ CREATE TABLE "key_column" (
 );
 
 
+CREATE TABLE "constraint" (
+    "id"   BIGINT IDENTITY NOT NULL,
+    "key"  BIGINT          NOT NULL REFERENCES "key" ("id"),
+    "type" INTEGER         NOT NULL,
+    "name" VARCHAR(100)    NOT NULL,
+    PRIMARY KEY ("id")
+);
+
+
 CREATE TABLE "foreign_key" (
-    "key"           BIGINT               NOT NULL REFERENCES "key" ("id"),
-    "references"    BIGINT               NOT NULL REFERENCES "key" ("id"),
-    "on_update"     INTEGER DEFAULT NULL NULL,
-    "on_delete"     INTEGER DEFAULT NULL NULL,
+    "key"        BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "references" BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "on_update"  INTEGER DEFAULT NULL NULL,
+    "on_delete"  INTEGER DEFAULT NULL NULL,
+    "name"       VARCHAR(100)         NOT NULL,
     PRIMARY KEY ("key")
 );
 
@@ -171,6 +179,7 @@ CREATE TABLE "index" (
     "id"       BIGINT IDENTITY NOT NULL,
     "key"      BIGINT          NOT NULL REFERENCES "key" ("id"),
     "type"     INTEGER         NOT NULL,
+    "unique"   BOOLEAN         NOT NULL,
     "location" INTEGER         NULL REFERENCES "store" ("id"),
     "name"     VARCHAR(100)    NOT NULL,
     PRIMARY KEY ("id")
@@ -255,16 +264,21 @@ CREATE INDEX "schema_privilege_user_schema"
 
 CREATE INDEX "key_table"
     ON "key" ("table");
-CREATE UNIQUE INDEX "key_name"
-    ON "key" ("name");
 
 CREATE INDEX "key_column_key"
     ON "key_column" ("key");
 
+CREATE INDEX "constraint_key"
+    ON "constraint" ("key");
+CREATE UNIQUE INDEX "constraint_name"
+    ON "constraint" ("name");
+
 CREATE INDEX "foreign_key_references"
     ON "foreign_key" ("references");
+CREATE UNIQUE INDEX "foreign_key_name"
+    ON "foreign_key" ("name");
 
-CREATE UNIQUE INDEX "index_key"
+CREATE INDEX "index_key"
     ON "index" ("key");
 CREATE UNIQUE INDEX "index_name"
     ON "index" ("name");

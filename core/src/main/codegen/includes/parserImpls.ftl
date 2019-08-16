@@ -215,7 +215,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                         { onDelete = null; }
                     )
                     {
-                        return new SqlAlterTableAddForeignKeyConstraint(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+                        return new SqlAlterTableAddForeignKey(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
                     }
                 )
         |
@@ -223,6 +223,12 @@ SqlAlterTable SqlAlterTable(Span s) :
             constraintName = SimpleIdentifier()
             {
                 return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+            }
+        |
+            <DROP> <FOREIGN> <KEY>
+            constraintName = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
             }
         |
             <ADD>

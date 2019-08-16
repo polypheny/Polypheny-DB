@@ -42,6 +42,7 @@ public final class CatalogIndex {
 
     public final long id;
     public final String name;
+    public final boolean unique;
     public final int type;
     public final Integer location;
 
@@ -52,11 +53,13 @@ public final class CatalogIndex {
     public CatalogIndex(
             final long id,
             @NonNull final String name,
+            final boolean unique,
             final int type,
             final Integer location,
             final long keyId ) {
         this.id = id;
         this.name = name;
+        this.unique = unique;
         this.type = type;
         this.location = location;
         this.keyId = keyId;
@@ -90,7 +93,7 @@ public final class CatalogIndex {
                     key.databaseName,
                     key.schemaName,
                     key.tableName,
-                    !key.unique,
+                    unique,
                     null,
                     name,
                     0,
@@ -101,8 +104,7 @@ public final class CatalogIndex {
                     null,
                     null,
                     location,
-                    type,
-                    key.name };
+                    type };
         }
 
 
@@ -124,7 +126,6 @@ public final class CatalogIndex {
             public final String filterCondition;
             public final int location;
             public final String indexType;
-            public final String keyName;
         }
 
     }

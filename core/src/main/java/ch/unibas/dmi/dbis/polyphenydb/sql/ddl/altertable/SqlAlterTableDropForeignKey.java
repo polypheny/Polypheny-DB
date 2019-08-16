@@ -27,10 +27,9 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -43,24 +42,24 @@ import java.util.Objects;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name DROP CONSTRAINT} statement.
+ * Parse tree for {@code ALTER TABLE name DROP FOREIGN KEY} statement.
  */
-public class SqlAlterTableDropConstraint extends SqlAlterTable {
+public class SqlAlterTableDropForeignKey extends SqlAlterTable {
 
     private final SqlIdentifier table;
-    private final SqlIdentifier constraintName;
+    private final SqlIdentifier foreignKeyName;
 
 
-    public SqlAlterTableDropConstraint( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName ) {
+    public SqlAlterTableDropForeignKey( SqlParserPos pos, SqlIdentifier table, SqlIdentifier foreignKeyName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
-        this.constraintName = Objects.requireNonNull( constraintName );
+        this.foreignKeyName = Objects.requireNonNull( foreignKeyName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, constraintName );
+        return ImmutableNullableList.of( table, foreignKeyName );
     }
 
 
@@ -70,8 +69,9 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "DROP" );
-        writer.keyword( "CONSTRAINT" );
-        constraintName.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "FOREIGN" );
+        writer.keyword( "KEY" );
+        foreignKeyName.unparse( writer, leftPrec, rightPrec );
     }
 
 
@@ -79,9 +79,9 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, transaction, table );
         try {
-            CatalogConstraint constraint = transaction.getCatalog().getConstraint( catalogTable.id, constraintName.getSimple() );
-            transaction.getCatalog().deleteConstraint( constraint.id );
-        } catch ( GenericCatalogException | UnknownConstraintException e ) {
+            CatalogForeignKey foreignKey = transaction.getCatalog().getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
+            transaction.getCatalog().deleteForeignKey( foreignKey.id );
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

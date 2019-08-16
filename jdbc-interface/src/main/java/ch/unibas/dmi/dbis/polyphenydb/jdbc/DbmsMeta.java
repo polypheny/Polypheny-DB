@@ -503,7 +503,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_NAME",         // table name
                     "COLUMN_NAME",        // column name
                     "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
-                    "PK_NAME"             // the name of the primary key
+                    "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
             );
         } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw propagate( e );
@@ -592,7 +592,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
                     "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
                     "FK_NAME",                // The name of the foreign key.
-                    "PK_NAME",                // The name of the primary key.
+                    "PK_NAME",                // The name of the primary key. --> always null
                     "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
             );
         } catch ( GenericCatalogException e ) {
@@ -708,8 +708,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "FILTER_CONDITION",     // The filter condition. --> currently always returns null
                     // Polypheny-DB specific extensions
                     "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
-                    "INDEX_TYPE",           // Polypheny-DB specific index type
-                    "KEY_NAME"              // The name of the associated key
+                    "INDEX_TYPE"            // Polypheny-DB specific index type
             );
         } catch ( GenericCatalogException e ) {
             throw propagate( e );

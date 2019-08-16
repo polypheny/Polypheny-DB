@@ -26,7 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import java.util.List;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
@@ -35,50 +35,25 @@ import lombok.NonNull;
  *
  */
 @EqualsAndHashCode
-public class CatalogKey {
+public class CatalogConstraint {
 
     public final long id;
-    public final long tableId;
-    public final String tableName;
-    public final long schemaId;
-    public final String schemaName;
-    public final long databaseId;
-    public final String databaseName;
-    public List<Long> columnIds;
-    public List<String> columnNames;
+    public final long keyId;
+    public final ConstraintType type;
+    public final String name;
+
+    public CatalogKey key;
 
 
-    public CatalogKey(
+    public CatalogConstraint(
             final long id,
-            final long tableId,
-            @NonNull final String tableName,
-            final long schemaId,
-            @NonNull final String schemaName,
-            final long databaseId,
-            @NonNull final String databaseName,
-            final List<Long> columnIds,
-            final List<String> columnNames ) {
+            final long keyId,
+            @NonNull final ConstraintType constraintType,
+            final String name ) {
         this.id = id;
-        this.tableId = tableId;
-        this.tableName = tableName;
-        this.schemaId = schemaId;
-        this.schemaName = schemaName;
-        this.databaseId = databaseId;
-        this.databaseName = databaseName;
-        this.columnIds = columnIds;
-        this.columnNames = columnNames;
-    }
-
-
-    public CatalogKey(
-            final long id,
-            final long tableId,
-            @NonNull final String tableName,
-            final long schemaId,
-            @NonNull final String schemaName,
-            final long databaseId,
-            @NonNull final String databaseName ) {
-        this( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null );
+        this.keyId = keyId;
+        this.type = constraintType;
+        this.name = name;
     }
 
 

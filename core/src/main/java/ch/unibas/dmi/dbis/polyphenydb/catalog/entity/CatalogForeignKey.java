@@ -40,8 +40,8 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public final class CatalogForeignKey extends CatalogKey {
 
+    public final String name;
     public final long referencedKeyId;
-    public final String referencedKeyName;
     public final long referencedKeyDatabaseId;
     public final String referencedKeyDatabaseName;
     public final long referencedKeySchemaId;
@@ -63,9 +63,7 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String schemaName,
             final long databaseId,
             @NonNull final String databaseName,
-            final boolean unique,
             final long referencedKeyId,
-            @NonNull final String referencedKeyName,
             final long referencedKeyTableId,
             @NonNull final String referencedKeyTableName,
             final long referencedKeySchemaId,
@@ -74,9 +72,9 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String referencedKeyDatabaseName,
             final Integer updateRule,
             final Integer deleteRule ) {
-        super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
+        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
+        this.name = name;
         this.referencedKeyId = referencedKeyId;
-        this.referencedKeyName = referencedKeyName;
         this.referencedKeyTableId = referencedKeyTableId;
         this.referencedKeyTableName = referencedKeyTableName;
         this.referencedKeySchemaId = referencedKeySchemaId;
@@ -125,7 +123,7 @@ public final class CatalogForeignKey extends CatalogKey {
                     updateRule,
                     deleteRule,
                     name,
-                    referencedKeyName,
+                    null,
                     null };
         }
 

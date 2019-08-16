@@ -43,29 +43,25 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
     public CatalogPrimaryKey(
             final long id,
-            @NonNull final String name,
             final long tableId,
             @NonNull final String tableName,
             final long schemaId,
             @NonNull final String schemaName,
             final long databaseId,
-            @NonNull final String databaseName,
-            final boolean unique ) {
-        super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
+            @NonNull final String databaseName ) {
+        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
     }
 
 
     public CatalogPrimaryKey( @NonNull final CatalogKey catalogKey ) {
         super(
                 catalogKey.id,
-                catalogKey.name,
                 catalogKey.tableId,
                 catalogKey.tableName,
                 catalogKey.schemaId,
                 catalogKey.schemaName,
                 catalogKey.databaseId,
                 catalogKey.databaseName,
-                catalogKey.unique,
                 catalogKey.columnIds,
                 catalogKey.columnNames );
     }
@@ -94,7 +90,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ databaseName, schemaName, tableName, columnName, keySeq, name };
+            return new Serializable[]{ databaseName, schemaName, tableName, columnName, keySeq, null };
         }
 
 

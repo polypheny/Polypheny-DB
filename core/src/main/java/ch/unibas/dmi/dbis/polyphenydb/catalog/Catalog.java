@@ -30,21 +30,24 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
@@ -488,23 +491,6 @@ public abstract class Catalog {
      */
     public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
 
-    /**
-     * Returns a specified key
-     *
-     * @param key The id of the key
-     * @return The key
-     */
-    public abstract CatalogKey getKey( long key ) throws GenericCatalogException, UnknownKeyException;
-
-
-    /**
-     * Returns all keys of a table
-     *
-     * @param tableId The id of the key
-     * @return List of keys
-     */
-    public abstract List<CatalogKey> getKeys( long tableId ) throws GenericCatalogException;
-
 
     /**
      * Returns a specified primary key
@@ -540,6 +526,35 @@ public abstract class Catalog {
      * @return List of foreign keys
      */
     public abstract List<CatalogForeignKey> getExportedKeys( long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Get all constraints of the specified table
+     *
+     * @param tableId The id of the table
+     * @return List of constraints
+     */
+    public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Returns the constraint with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @return The constraint
+     */
+    public abstract CatalogConstraint getConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownConstraintException;
+
+
+    /**
+     * Return the foreign key with the specified name from the specified table
+     *
+     * @param tableId The id of the table
+     * @param foreignKeyName The name of the foreign key
+     * @return The foreign key
+     */
+    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException;
 
 
     /**
@@ -607,14 +622,6 @@ public abstract class Catalog {
 
 
     /**
-     * Delete the specified key
-     *
-     * @param keyId The id of the key to drop
-     */
-    public abstract void deleteKey( long keyId ) throws GenericCatalogException;
-
-
-    /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
      *
      * @param tableId The id of the key to drop
@@ -623,12 +630,20 @@ public abstract class Catalog {
 
 
     /**
-     * Delete the specified constraint (foreign key, unique) (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it first.
+     * Delete the specified foreign key (does not delete the referenced key).
      *
-     * @param tableId The id of the table the constraint belongs to
-     * @param constraintName The name of the constraint to delete
+     * @param foreignKeyId The id of the foreign key to delete
      */
-    public abstract void deleteConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownKeyException;
+    public abstract void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified constraint.
+     * For deleting foreign keys, use {@link #deleteForeignKey(long)}.
+     *
+     * @param constraintId The id of the constraint to delete
+     */
+    public abstract void deleteConstraint( long constraintId ) throws GenericCatalogException;
 
 
     /**
@@ -654,6 +669,8 @@ public abstract class Catalog {
 
     public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
+
+    public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
 
 
@@ -837,6 +854,41 @@ public abstract class Catalog {
                 return IndexType.HASH;
             }
             throw new UnknownIndexTypeException( str );
+        }
+    }
+
+
+    public enum ConstraintType {
+        UNIQUE( 1 );
+
+        private final int id;
+
+
+        ConstraintType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static ConstraintType getById( int id ) throws UnknownConstraintTypeException {
+            for ( ConstraintType e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownConstraintTypeException( id );
+        }
+
+
+        public static ConstraintType parse( @NonNull String str ) throws UnknownConstraintTypeException {
+            if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
+                return ConstraintType.UNIQUE;
+            }
+            throw new UnknownConstraintTypeException( str );
         }
     }
 

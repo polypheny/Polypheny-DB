@@ -12,6 +12,8 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
 import java.sql.SQLException;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ public class HsqldbStore implements Store {
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
+    private SqlDialect dialect;
 
 
     public HsqldbStore() {
@@ -37,6 +40,7 @@ public class HsqldbStore implements Store {
         dataSource.setDefaultAutoCommit( true );
 
         this.dataSource = dataSource;
+        dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
     }
 
 
@@ -63,14 +67,14 @@ public class HsqldbStore implements Store {
     @Override
     public void createTable( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "CREATE TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) ).append( " ( " );
+        builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( combinedTable.getTable().name ) ).append( " ( " );
         boolean first = true;
         for ( CatalogColumn column : combinedTable.getColumns() ) {
             if ( !first ) {
                 builder.append( ", " );
             }
             first = false;
-            builder.append( currentJdbcSchema.dialect.quoteIdentifier( column.name ) ).append( " " );
+            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
             builder.append( getTypeString( column.type ) );
             if ( column.length != null ) {
                 builder.append( "(" ).append( column.length );
@@ -93,7 +97,7 @@ public class HsqldbStore implements Store {
     @Override
     public void dropTable( CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "DROP TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) );
+        builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( combinedTable.getTable().name ) );
         try {
             dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
         } catch ( SQLException e ) {
@@ -105,8 +109,8 @@ public class HsqldbStore implements Store {
     @Override
     public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogTable.getTable().name ) );
-        builder.append( " ADD " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( catalogTable.getTable().name ) );
+        builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
         builder.append( catalogColumn.type.name() );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
@@ -123,7 +127,7 @@ public class HsqldbStore implements Store {
         }
         if ( catalogColumn.position <= catalogTable.getColumns().size() ) {
             String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
-            builder.append( " BEFORE " ).append( currentJdbcSchema.dialect.quoteIdentifier( beforeColumnName ) );
+            builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
         try {
             dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
@@ -136,8 +140,8 @@ public class HsqldbStore implements Store {
     @Override
     public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogTable.getTable().name ) );
-        builder.append( " DROP " ).append( currentJdbcSchema.dialect.quoteIdentifier( catalogColumn.name ) );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( catalogTable.getTable().name ) );
+        builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
         try {
             dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
         } catch ( SQLException e ) {
@@ -164,7 +168,7 @@ public class HsqldbStore implements Store {
     @Override
     public void truncate( Transaction transaction, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "TRUNCATE TABLE " ).append( currentJdbcSchema.dialect.quoteIdentifier( combinedTable.getTable().name ) );
+        builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( combinedTable.getTable().name ) );
         try {
             dataSource.getConnection().createStatement().executeUpdate( builder.toString() );
         } catch ( SQLException e ) {
