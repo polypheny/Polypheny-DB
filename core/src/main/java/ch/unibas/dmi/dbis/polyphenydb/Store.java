@@ -30,4 +30,6 @@ public interface Store {
     void commit( PolyXid xid );
 
     void truncate( Transaction transaction, CatalogCombinedTable table );
+
+    void updateColumnType( CatalogColumn catalogColumn );
 }
