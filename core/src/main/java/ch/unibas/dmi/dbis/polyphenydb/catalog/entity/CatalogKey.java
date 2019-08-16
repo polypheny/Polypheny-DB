@@ -37,38 +37,48 @@ import lombok.NonNull;
 @EqualsAndHashCode
 public class CatalogKey {
 
-    private static final long serialVersionUID = 5426944084650275437L;
-
     public final long id;
-    public final String name;
     public final long tableId;
     public final String tableName;
     public final long schemaId;
     public final String schemaName;
     public final long databaseId;
     public final String databaseName;
-    public final boolean unique;
     public List<Long> columnIds;
     public List<String> columnNames;
 
 
-    public CatalogKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique, final List<Long> columnIds, final List<String> columnNames ) {
+    public CatalogKey(
+            final long id,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final List<Long> columnIds,
+            final List<String> columnNames ) {
         this.id = id;
-        this.name = name;
         this.tableId = tableId;
         this.tableName = tableName;
         this.schemaId = schemaId;
         this.schemaName = schemaName;
         this.databaseId = databaseId;
         this.databaseName = databaseName;
-        this.unique = unique;
         this.columnIds = columnIds;
         this.columnNames = columnNames;
     }
 
 
-    public CatalogKey( final long id, @NonNull final String name, final long tableId, @NonNull final String tableName, final long schemaId, @NonNull final String schemaName, final long databaseId, @NonNull final String databaseName, final boolean unique ) {
-        this( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique, null, null );
+    public CatalogKey(
+            final long id,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName ) {
+        this( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null );
     }
 
 

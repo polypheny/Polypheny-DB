@@ -198,6 +198,12 @@ public enum PolySqlType {
     private final Class[] parameterTypes;
 
 
+    public boolean isCharType() {
+        return this == VARCHAR || this == TEXT;
+    }
+
+
+
     PolySqlType( final int javaSqlTypesConstant, final int typeCode, final Class... parameterTypes ) {
         this.javaSqlTypesConstant = javaSqlTypesConstant;
         this.typeCode = typeCode;

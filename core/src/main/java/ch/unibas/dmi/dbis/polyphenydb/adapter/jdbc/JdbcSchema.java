@@ -141,7 +141,7 @@ public class JdbcSchema implements Schema {
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
         }
         List<String> columnNames = new LinkedList<>();
@@ -214,18 +214,6 @@ public class JdbcSchema implements Schema {
             SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, sqlDialectFactory );
             return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema, tableMap );
         }
-    }
-
-
-    /**
-     * Returns a suitable SQL dialect for the given data source.
-     *
-     * @param dataSource The data source
-     * @deprecated Use {@link #createDialect(SqlDialectFactory, DataSource)} instead
-     */
-    @Deprecated // to be removed before 2.0
-    public static SqlDialect createDialect( DataSource dataSource ) {
-        return createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
     }
 
 

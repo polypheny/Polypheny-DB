@@ -26,16 +26,19 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
+import static org.hsqldb.persist.HsqlProperties.indexName;
+
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.IndexType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Pattern;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
@@ -49,8 +52,10 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -108,21 +113,23 @@ final class Statements {
     static void dropSchema( TransactionHandler transactionHandler ) {
         logger.debug( "Dropping the catalog schema" );
         try {
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"column\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"column_privilege\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"default_value\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"table\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"table_privilege\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"schema\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"schema_privilege\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"user\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"database\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"schema\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"table\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"column\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"default_value\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"column_privilege\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"table_privilege\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"schema_privilege\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"database_privilege\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"global_privilege\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"store\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"data_placement\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"key\";" );
+            transactionHandler.execute( "DROP TABLE IF EXISTS \"key_column\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"foreign_key\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"index\";" );
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"index_columns\";" );
-
-            transactionHandler.execute( "DROP TABLE IF EXISTS \"user\";" );
         } catch ( SQLException e ) {
             logger.error( "Exception while dropping catalog schema", e );
         }
@@ -180,16 +187,28 @@ final class Statements {
             resultSet = transactionHandler.executeSelect( "SELECT * FROM \"column_privilege\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
 
+            System.out.println( "Store:" );
+            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"store\";" );
+            System.out.println( TablePrinter.processResultSet( resultSet ) );
+
+            System.out.println( "Data Placement:" );
+            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"data_placement\";" );
+            System.out.println( TablePrinter.processResultSet( resultSet ) );
+
+            System.out.println( "Key:" );
+            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"key\";" );
+            System.out.println( TablePrinter.processResultSet( resultSet ) );
+
+            System.out.println( "Key Column:" );
+            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"key_column\";" );
+            System.out.println( TablePrinter.processResultSet( resultSet ) );
+
             System.out.println( "Foreign Key:" );
             resultSet = transactionHandler.executeSelect( "SELECT * FROM \"foreign_key\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
 
             System.out.println( "Index:" );
             resultSet = transactionHandler.executeSelect( "SELECT * FROM \"index\";" );
-            System.out.println( TablePrinter.processResultSet( resultSet ) );
-
-            System.out.println( "Index Columns:" );
-            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"index_columns\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
         } catch ( SQLException e ) {
             e.printStackTrace();
@@ -219,21 +238,19 @@ final class Statements {
                         String columnName = columnResultSet.getString( "name" );
                         PolySqlType columnType = PolySqlType.getByTypeCode( columnResultSet.getInt( "type" ) );
                         long length = columnResultSet.getLong( "length" );
-                        long precision = columnResultSet.getLong( "precision" );
+                        long scale = columnResultSet.getLong( "scale" );
                         boolean nullable = columnResultSet.getBoolean( "nullable" );
-                        Encoding encoding = Encoding.getById( columnResultSet.getInt( "encoding" ) );
                         Collation collation = Collation.getById( columnResultSet.getInt( "collation" ) );
                         java.io.Serializable defaultValue = columnResultSet.getString( "default_value" );
                         int autoIncrementStartValue = columnResultSet.getInt( "autoIncrement_start_value" );
-                        boolean forceDefault = columnResultSet.getBoolean( "force_default" );
 
                         System.out.print( "    " + columnName + " " + columnType.name() );
 
-                        // type arguments (length and precision)
+                        // type arguments (length and scale)
                         if ( length != 0 ) {
                             System.out.print( "(" + length );
-                            if ( precision != 0 ) {
-                                System.out.print( ", " + precision );
+                            if ( scale != 0 ) {
+                                System.out.print( ", " + scale );
                             }
                             System.out.print( ")" );
                         }
@@ -253,19 +270,15 @@ final class Statements {
                             System.out.print( "DEFAULT AUTO INCREMENT STARTING WITH " + autoIncrementStartValue + " " );
                         }
 
-                        if ( forceDefault ) {
-                            System.out.print( "FORCE " );
-                        }
-
-                        // encoding and collation
-                        System.out.print( "ENCODING " + encoding.name() + " COLLATION " + collation.name() );
+                        // collation
+                        System.out.print( " COLLATION " + collation.name() );
 
                         System.out.println( "," );
                     }
                     System.out.println( ");" );
                 }
             }
-        } catch ( SQLException | UnknownTableTypeException | UnknownTypeException | UnknownEncodingException | UnknownCollationException e ) {
+        } catch ( SQLException | UnknownTableTypeException | UnknownTypeException | UnknownCollationException e ) {
             e.printStackTrace();
         }
     }
@@ -277,21 +290,18 @@ final class Statements {
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    private static List<CatalogDatabase> databaseFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException {
-        String sql = "SELECT d.\"id\", d.\"name\", u.\"id\", u.\"username\", d.\"encoding\", d.\"collation\", d.\"connection_limit\", s.\"id\", s.\"name\" FROM \"database\" d, \"schema\" s, \"user\" u WHERE d.\"owner\" = u.\"id\" AND d.\"default_schema\" = s.\"id\"" + filter + ";";
+    private static List<CatalogDatabase> databaseFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String sql = "SELECT d.\"id\", d.\"name\", u.\"id\", u.\"username\", s.\"id\", s.\"name\" FROM \"database\" d, \"schema\" s, \"user\" u WHERE d.\"owner\" = u.\"id\" AND d.\"default_schema\" = s.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogDatabase> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogDatabase(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getIntOrNull( rs, 3 ),
+                        getInt( rs, 3 ),
                         rs.getString( 4 ),
-                        Encoding.getById( getIntOrNull( rs, 5 ) ),
-                        Collation.getById( getIntOrNull( rs, 6 ) ),
-                        getIntOrNull( rs, 7 ),
-                        getLongOrNull( rs, 8 ),
-                        rs.getString( 9 )
+                        getLongOrNull( rs, 5 ),
+                        rs.getString( 6 )
                 ) );
             }
             return list;
@@ -308,7 +318,7 @@ final class Statements {
      * @param namePattern A pattern for the database name. Set null to get all databases.
      * @return A List of CatalogDatabase
      */
-    static List<CatalogDatabase> getDatabases( TransactionHandler transactionHandler, Pattern namePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException {
+    static List<CatalogDatabase> getDatabases( TransactionHandler transactionHandler, Pattern namePattern ) throws GenericCatalogException {
         String filter = "";
         if ( namePattern != null ) {
             filter = " AND \"name\" LIKE '" + namePattern.pattern + "'";
@@ -324,7 +334,7 @@ final class Statements {
      * @param databaseName The name of the database
      * @return A CatalogDatabase
      */
-    static CatalogDatabase getDatabase( TransactionHandler transactionHandler, String databaseName ) throws UnknownEncodingException, UnknownCollationException, UnknownDatabaseException, GenericCatalogException {
+    static CatalogDatabase getDatabase( TransactionHandler transactionHandler, String databaseName ) throws UnknownDatabaseException, GenericCatalogException {
         String filter = " AND \"name\" = '" + databaseName + "'";
         List<CatalogDatabase> list = databaseFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -343,7 +353,7 @@ final class Statements {
      * @param databaseId The id of the database
      * @return A CatalogDatabase
      */
-    static CatalogDatabase getDatabase( TransactionHandler transactionHandler, long databaseId ) throws UnknownEncodingException, UnknownCollationException, UnknownDatabaseException, GenericCatalogException {
+    static CatalogDatabase getDatabase( TransactionHandler transactionHandler, long databaseId ) throws UnknownDatabaseException, GenericCatalogException {
         String filter = " AND \"id\" = " + databaseId;
         List<CatalogDatabase> list = databaseFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -361,21 +371,19 @@ final class Statements {
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    private static List<CatalogSchema> schemaFilter( TransactionHandler transactionHandler, String filter ) throws UnknownEncodingException, UnknownCollationException, UnknownSchemaTypeException, GenericCatalogException {
-        String sql = "SELECT s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", s.\"encoding\", s.\"collation\", s.\"type\" FROM \"schema\" s, \"database\" d, \"user\" u WHERE s.\"database\" = d.\"id\" AND s.\"owner\" = u.\"id\"" + filter + ";";
+    private static List<CatalogSchema> schemaFilter( TransactionHandler transactionHandler, String filter ) throws UnknownSchemaTypeException, GenericCatalogException {
+        String sql = "SELECT s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", s.\"type\" FROM \"schema\" s, \"database\" d, \"user\" u WHERE s.\"database\" = d.\"id\" AND s.\"owner\" = u.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogSchema> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogSchema(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getLongOrNull( rs, 3 ),
+                        getLong( rs, 3 ),
                         rs.getString( 4 ),
-                        getIntOrNull( rs, 5 ),
+                        getInt( rs, 5 ),
                         rs.getString( 6 ),
-                        Encoding.getById( getIntOrNull( rs, 7 ) ),
-                        Collation.getById( getIntOrNull( rs, 8 ) ),
-                        SchemaType.getById( getIntOrNull( rs, 9 ) )
+                        SchemaType.getById( getInt( rs, 7 ) )
                 ) );
             }
             return list;
@@ -393,7 +401,7 @@ final class Statements {
      * @param schemaNamePattern A pattern for the schema name. Set null to get all schemas.
      * @return A List of CatalogSchemas
      */
-    static List<CatalogSchema> getSchemas( TransactionHandler transactionHandler, long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownSchemaTypeException {
+    static List<CatalogSchema> getSchemas( TransactionHandler transactionHandler, long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaTypeException {
         String filter;
         if ( schemaNamePattern != null ) {
             filter = " AND \"database\" = " + databaseId + " AND \"name\" LIKE '" + schemaNamePattern.pattern + "'";
@@ -412,7 +420,7 @@ final class Statements {
      * @param schemaNamePattern A pattern for the schema name. Set null to get all schemas.
      * @return A List of CatalogSchemas
      */
-    static List<CatalogSchema> getSchemas( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownSchemaTypeException {
+    static List<CatalogSchema> getSchemas( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaTypeException {
         String filter = "";
         if ( schemaNamePattern != null ) {
             filter += " AND s.\"name\" LIKE '" + schemaNamePattern.pattern + "'";
@@ -431,7 +439,7 @@ final class Statements {
      * @param schemaId The id of the schema
      * @return A CatalogSchema
      */
-    static CatalogSchema getSchema( TransactionHandler transactionHandler, long schemaId ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
+    static CatalogSchema getSchema( TransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
         String filter = " AND \"id\" = " + schemaId;
         List<CatalogSchema> list = schemaFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -451,7 +459,7 @@ final class Statements {
      * @param schemaName The name of the schema
      * @return A CatalogSchema
      */
-    static CatalogSchema getSchema( TransactionHandler transactionHandler, long databaseId, String schemaName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
+    static CatalogSchema getSchema( TransactionHandler transactionHandler, long databaseId, String schemaName ) throws GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
         String filter = " AND \"database\" = " + databaseId + " AND \"name\" = '" + schemaName + "'";
         List<CatalogSchema> list = schemaFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -471,7 +479,7 @@ final class Statements {
      * @param schemaName The name of the schema
      * @return A CatalogSchema
      */
-    static CatalogSchema getSchema( TransactionHandler transactionHandler, String databaseName, String schemaName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
+    static CatalogSchema getSchema( TransactionHandler transactionHandler, String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaTypeException, UnknownSchemaException {
         String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "'";
         List<CatalogSchema> list = schemaFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -483,19 +491,17 @@ final class Statements {
     }
 
 
-    public static long addSchema( XATransactionHandler transactionHandler, String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException {
+    static long addSchema( XATransactionHandler transactionHandler, String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "database", "" + databaseId );
         data.put( "name", quoteString( name ) );
         data.put( "owner", "" + ownerId );
-        data.put( "encoding", "" + encoding.getId() );
-        data.put( "collation", "" + collation.getId() );
         data.put( "type", "" + schemaType.getId() );
         return insertHandler( transactionHandler, "schema", data );
     }
 
 
-    public static void renameSchema( XATransactionHandler transactionHandler, long schemaId, String name ) throws GenericCatalogException {
+    static void renameSchema( XATransactionHandler transactionHandler, long schemaId, String name ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "name", quoteString( name ) );
         Map<String, String> where = new LinkedHashMap<>();
@@ -504,7 +510,7 @@ final class Statements {
     }
 
 
-    public static void setSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
+    static void setSchemaOwner( XATransactionHandler transactionHandler, long schemaId, long ownerId ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "owner", "" + ownerId );
         Map<String, String> where = new LinkedHashMap<>();
@@ -513,7 +519,7 @@ final class Statements {
     }
 
 
-    public static void deleteSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException {
+    static void deleteSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "schema" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + schemaId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -535,25 +541,23 @@ final class Statements {
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    private static List<CatalogTable> tableFilter( TransactionHandler transactionHandler, String filter ) throws UnknownEncodingException, UnknownCollationException, UnknownTableTypeException, GenericCatalogException {
-        final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"encoding\", t.\"collation\", t.\"type\", t.\"definition\", t.\"primary_key\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter + ";";
+    private static List<CatalogTable> tableFilter( TransactionHandler transactionHandler, String filter ) throws UnknownTableTypeException, GenericCatalogException {
+        final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"type\", t.\"definition\", t.\"primary_key\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogTable> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogTable(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getLongOrNull( rs, 3 ),
+                        getLong( rs, 3 ),
                         rs.getString( 4 ),
-                        getLongOrNull( rs, 5 ),
+                        getLong( rs, 5 ),
                         rs.getString( 6 ),
-                        getIntOrNull( rs, 7 ),
+                        getInt( rs, 7 ),
                         rs.getString( 8 ),
-                        Encoding.getById( getIntOrNull( rs, 9 ) ),
-                        Collation.getById( getIntOrNull( rs, 10 ) ),
-                        TableType.getById( getIntOrNull( rs, 11 ) ),
-                        rs.getString( 12 ),
-                        getLongOrNull( rs, 13 )
+                        TableType.getById( getInt( rs, 9 ) ),
+                        rs.getString( 10 ),
+                        getLongOrNull( rs, 11 )
                 ) );
             }
             return list;
@@ -571,7 +575,7 @@ final class Statements {
      * @param tableNamePattern A pattern for the table name. Set null to get all tables.
      * @return A List of CatalogTables
      */
-    static List<CatalogTable> getTables( TransactionHandler transactionHandler, long schemaId, Pattern tableNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownTableTypeException {
+    static List<CatalogTable> getTables( TransactionHandler transactionHandler, long schemaId, Pattern tableNamePattern ) throws GenericCatalogException, UnknownTableTypeException {
         String filter = " AND s.\"id\" = " + schemaId;
         if ( tableNamePattern != null ) {
             filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "'";
@@ -589,7 +593,7 @@ final class Statements {
      * @param tableNamePattern A pattern for the table name. Set null to get all.
      * @return A List of CatalogTables
      */
-    static List<CatalogTable> getTables( TransactionHandler transactionHandler, long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownTableTypeException {
+    static List<CatalogTable> getTables( TransactionHandler transactionHandler, long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException, UnknownTableTypeException {
         String filter = " AND s.\"database\" = " + databaseId;
         if ( tableNamePattern != null ) {
             filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "'";
@@ -610,7 +614,7 @@ final class Statements {
      * @param tableNamePattern A pattern for the table name. Set null to get all.
      * @return A List of CatalogTables
      */
-    static List<CatalogTable> getTables( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException, UnknownEncodingException, UnknownCollationException, UnknownTableTypeException {
+    static List<CatalogTable> getTables( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException, UnknownTableTypeException {
         String filter = "";
         if ( tableNamePattern != null ) {
             filter += " AND t.\"name\" LIKE '" + tableNamePattern.pattern + "'";
@@ -632,7 +636,7 @@ final class Statements {
      * @param tableId The id of the table
      * @return A CatalogTable
      */
-    static CatalogTable getTable( TransactionHandler transactionHandler, long tableId ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
+    static CatalogTable getTable( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException, UnknownTableTypeException, UnknownTableException {
         String filter = " AND \"id\" = " + tableId;
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -652,7 +656,7 @@ final class Statements {
      * @param tableName The name of the table
      * @return A CatalogTable
      */
-    static CatalogTable getTable( TransactionHandler transactionHandler, long schemaId, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
+    static CatalogTable getTable( TransactionHandler transactionHandler, long schemaId, String tableName ) throws GenericCatalogException, UnknownTableTypeException, UnknownTableException {
         String filter = " AND \"schema\" = " + schemaId + " AND \"name\" = '" + tableName + "'";
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -673,7 +677,7 @@ final class Statements {
      * @param tableName The name of the table
      * @return A CatalogTable
      */
-    static CatalogTable getTable( TransactionHandler transactionHandler, long databaseId, String schemaName, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
+    static CatalogTable getTable( TransactionHandler transactionHandler, long databaseId, String schemaName, String tableName ) throws GenericCatalogException, UnknownTableTypeException, UnknownTableException {
         String filter = " AND s.\"database\" = " + databaseId + " AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "'";
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -694,7 +698,7 @@ final class Statements {
      * @param tableName The name of the table
      * @return A CatalogTable
      */
-    static CatalogTable getTable( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTableTypeException, UnknownTableException {
+    static CatalogTable getTable( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName ) throws GenericCatalogException, UnknownTableTypeException, UnknownTableException {
         String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "'";
         List<CatalogTable> list = tableFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -706,20 +710,18 @@ final class Statements {
     }
 
 
-    public static long addTable( XATransactionHandler transactionHandler, String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException {
+    static long addTable( XATransactionHandler transactionHandler, String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "schema", "" + schemaId );
         data.put( "name", quoteString( name ) );
         data.put( "owner", "" + ownerId );
-        data.put( "encoding", "" + encoding.getId() );
-        data.put( "collation", "" + collation.getId() );
         data.put( "type", "" + tableType.getId() );
         data.put( "definition", quoteString( definition ) );
         return insertHandler( transactionHandler, "table", data );
     }
 
 
-    public static void renameTable( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException {
+    static void renameTable( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "name", quoteString( name ) );
         Map<String, String> where = new LinkedHashMap<>();
@@ -728,7 +730,7 @@ final class Statements {
     }
 
 
-    public static void setTableOwner( XATransactionHandler transactionHandler, long tableId, int ownerId ) throws GenericCatalogException {
+    static void setTableOwner( XATransactionHandler transactionHandler, long tableId, int ownerId ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "owner", "" + ownerId );
         Map<String, String> where = new LinkedHashMap<>();
@@ -737,7 +739,7 @@ final class Statements {
     }
 
 
-    public static void deleteTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static void deleteTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "table" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + tableId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -750,7 +752,7 @@ final class Statements {
     }
 
 
-    public static void setPrimaryKey( XATransactionHandler transactionHandler, long tableId, Long keyId ) throws GenericCatalogException {
+    static void setPrimaryKey( XATransactionHandler transactionHandler, long tableId, Long keyId ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "primary_key", keyId == null ? null : "" + keyId );
         Map<String, String> where = new LinkedHashMap<>();
@@ -766,8 +768,8 @@ final class Statements {
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    private static List<CatalogColumn> columnFilter( TransactionHandler transactionHandler, String filter ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException {
-        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"length\", c.\"precision\", c.\"nullable\", c.\"encoding\", c.\"collation\", c.\"force_default\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
+    private static List<CatalogColumn> columnFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException, UnknownTypeException, UnknownCollationException {
+        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"length\", c.\"scale\", c.\"nullable\", c.\"collation\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogColumn> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -776,31 +778,35 @@ final class Statements {
                 try ( ResultSet rsdv = transactionHandler.executeSelect( defaultValueSql ) ) {
                     if ( rsdv.next() ) {
                         defaultValue = new CatalogDefaultValue(
-                                getLongOrNull( rsdv, 1 ),
-                                PolySqlType.getByTypeCode( getIntOrNull( rsdv, 2 ) ),
+                                getLong( rsdv, 1 ),
+                                PolySqlType.getByTypeCode( getInt( rsdv, 2 ) ),
                                 rsdv.getString( 3 ),
                                 rsdv.getString( 4 )
                         );
                     }
                 }
 
+                Collation collation = null;
+                Integer collationId = getIntOrNull( rs, 14 );
+                if ( collationId != null ) {
+                    collation = Collation.getById( collationId );
+                }
+
                 list.add( new CatalogColumn(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getLongOrNull( rs, 3 ),
+                        getLong( rs, 3 ),
                         rs.getString( 4 ),
-                        getLongOrNull( rs, 5 ),
+                        getLong( rs, 5 ),
                         rs.getString( 6 ),
-                        getLongOrNull( rs, 7 ),
+                        getLong( rs, 7 ),
                         rs.getString( 8 ),
-                        getIntOrNull( rs, 9 ),
-                        PolySqlType.getByTypeCode( getIntOrNull( rs, 10 ) ),
+                        getInt( rs, 9 ),
+                        PolySqlType.getByTypeCode( getInt( rs, 10 ) ),
                         getIntOrNull( rs, 11 ),
                         getIntOrNull( rs, 12 ),
                         rs.getBoolean( 13 ),
-                        Encoding.getById( getIntOrNull( rs, 14 ) ),
-                        Collation.getById( getIntOrNull( rs, 15 ) ),
-                        rs.getBoolean( 16 ),
+                        collation,
                         defaultValue
                 ) );
             }
@@ -818,7 +824,7 @@ final class Statements {
      * @param tableId The id of the table
      * @return A CatalogColumn
      */
-    static List<CatalogColumn> getColumns( TransactionHandler transactionHandler, long tableId ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException {
+    static List<CatalogColumn> getColumns( TransactionHandler transactionHandler, long tableId ) throws UnknownCollationException, GenericCatalogException, UnknownTypeException {
         String filter = " AND c.\"table\" = " + tableId;
         return columnFilter( transactionHandler, filter );
     }
@@ -834,7 +840,7 @@ final class Statements {
      * @param columnNamePattern Pattern for the column name
      * @return A CatalogColumn
      */
-    static List<CatalogColumn> getColumns( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException {
+    static List<CatalogColumn> getColumns( TransactionHandler transactionHandler, Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws UnknownCollationException, GenericCatalogException, UnknownTypeException {
         String filter = "";
         if ( columnNamePattern != null ) {
             filter += " AND c.\"name\" LIKE '" + columnNamePattern.pattern + "'";
@@ -852,7 +858,7 @@ final class Statements {
     }
 
 
-    public static CatalogColumn getColumn( XATransactionHandler transactionHandler, long columnId ) throws UnknownCollationException, UnknownEncodingException, UnknownTypeException, GenericCatalogException, UnknownColumnException {
+    static CatalogColumn getColumn( XATransactionHandler transactionHandler, long columnId ) throws UnknownCollationException, UnknownTypeException, GenericCatalogException, UnknownColumnException {
         String filter = " AND c.\"id\" = " + columnId;
         List<CatalogColumn> list = columnFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -872,7 +878,7 @@ final class Statements {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    static CatalogColumn getColumn( TransactionHandler transactionHandler, long tableId, String columnName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
+    static CatalogColumn getColumn( TransactionHandler transactionHandler, long tableId, String columnName ) throws UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
         String filter = " AND c.\"table\" = " + tableId + " AND c.\"name\" = '" + columnName + "'";
         List<CatalogColumn> list = columnFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -894,7 +900,7 @@ final class Statements {
      * @param columnName The name of the column
      * @return A CatalogColumn
      */
-    static CatalogColumn getColumn( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName, String columnName ) throws UnknownEncodingException, UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
+    static CatalogColumn getColumn( TransactionHandler transactionHandler, String databaseName, String schemaName, String tableName, String columnName ) throws UnknownCollationException, GenericCatalogException, UnknownTypeException, UnknownColumnException {
         String filter = " AND d.\"name\" = '" + databaseName + "' AND s.\"name\" = '" + schemaName + "' AND t.\"name\" = '" + tableName + "' AND c.\"name\" = '" + columnName + "'";
         List<CatalogColumn> list = columnFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -906,23 +912,23 @@ final class Statements {
     }
 
 
-    public static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException {
+    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "table", "" + tableId );
         data.put( "name", quoteString( name ) );
         data.put( "position", "" + position );
         data.put( "type", "" + type.getTypeCode() );
         data.put( "length", length == null ? null : "" + length );
-        data.put( "precision", precision == null ? null : "" + precision );
+        data.put( "scale", scale == null ? null : "" + scale );
         data.put( "nullable", "" + nullable );
-        data.put( "encoding", "" + encoding.getId() );
-        data.put( "collation", "" + collation.getId() );
-        data.put( "force_default", "" + forceDefault );
+        if ( collation != null ) {
+            data.put( "collation", "" + collation.getId() );
+        }
         return insertHandler( transactionHandler, "column", data );
     }
 
 
-    public static void renameColumn( XATransactionHandler transactionHandler, long columnId, String name ) throws GenericCatalogException {
+    static void renameColumn( XATransactionHandler transactionHandler, long columnId, String name ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "name", quoteString( name ) );
         Map<String, String> where = new LinkedHashMap<>();
@@ -931,7 +937,7 @@ final class Statements {
     }
 
 
-    public static void setColumnPosition( XATransactionHandler transactionHandler, long columnId, int position ) throws GenericCatalogException {
+    static void setColumnPosition( XATransactionHandler transactionHandler, long columnId, int position ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "position", "" + position );
         Map<String, String> where = new LinkedHashMap<>();
@@ -940,18 +946,19 @@ final class Statements {
     }
 
 
-    public static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer precision ) throws GenericCatalogException {
+    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolySqlType type, final Integer length, final Integer scale, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "type", "" + type.getTypeCode() );
         data.put( "length", length == null ? null : "" + length );
-        data.put( "precision", precision == null ? null : "" + precision );
+        data.put( "scale", scale == null ? null : "" + scale );
+        data.put( "collation", collation == null ? null : "" + collation.getId() );
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "id", "" + columnId );
         updateHandler( transactionHandler, "column", data, where );
     }
 
 
-    public static void setNullable( XATransactionHandler transactionHandler, long columnId, boolean nullable ) throws GenericCatalogException {
+    static void setNullable( XATransactionHandler transactionHandler, long columnId, boolean nullable ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "nullable", "" + nullable );
         Map<String, String> where = new LinkedHashMap<>();
@@ -960,7 +967,16 @@ final class Statements {
     }
 
 
-    public static void deleteColumn( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+    public static void setCollation( XATransactionHandler transactionHandler, long columnId, Collation collation ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "collation", "" + collation.getId() );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "id", "" + columnId );
+        updateHandler( transactionHandler, "column", data, where );
+    }
+
+
+    static void deleteColumn( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "column" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + columnId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -973,7 +989,7 @@ final class Statements {
     }
 
 
-    public static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+    static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "column", "" + columnId );
         data.put( "type", "" + type.getTypeCode() );
@@ -982,7 +998,7 @@ final class Statements {
     }
 
 
-    public static void deleteDefaultValue( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+    static void deleteDefaultValue( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "default_value" ) + " WHERE " + quoteIdentifier( "column" ) + " = " + columnId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -1012,7 +1028,7 @@ final class Statements {
             List<CatalogUser> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogUser(
-                        getIntOrNull( rs, 1 ),
+                        getInt( rs, 1 ),
                         rs.getString( 2 ),
                         rs.getString( 3 )
                 ) );
@@ -1078,7 +1094,7 @@ final class Statements {
             List<CatalogStore> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogStore(
-                        getIntOrNull( rs, 1 ),
+                        getInt( rs, 1 ),
                         rs.getString( 2 ),
                         rs.getString( 3 )
                 ) );
@@ -1091,13 +1107,13 @@ final class Statements {
 
 
     // Get all Stores
-    public static List<CatalogStore> getStores( TransactionHandler transactionHandler ) throws GenericCatalogException {
+    static List<CatalogStore> getStores( TransactionHandler transactionHandler ) throws GenericCatalogException {
         return storeFilter( transactionHandler, "" );
     }
 
 
     // Get Store by store id
-    public static CatalogStore getStore( XATransactionHandler transactionHandler, int id ) throws GenericCatalogException, UnknownStoreException {
+    static CatalogStore getStore( XATransactionHandler transactionHandler, int id ) throws GenericCatalogException, UnknownStoreException {
         String filter = " \"id\" = " + id;
         List<CatalogStore> list = storeFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
@@ -1116,14 +1132,14 @@ final class Statements {
 
 
     private static List<CatalogDataPlacement> dataPlacementFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String sql = "SELECT t.\"id\", t.\"name\", st.\"id\", st.\"unique_name\" FROM \"data_placement\" dp, \"store\" st, \"table\" t WHERE dp.\"store\" = st.\"id\" AND dp.\"table\" = t.\"id\"" + filter + ";";
+        String sql = "SELECT t.\"id\", t.\"name\", st.\"id\", st.\"unique_name\" FROM \"data_placement\" dp, \"store\" st, \"table\" t WHERE dp.\"store\" = st.\"id\" AND dp.\"table\" = t.\"id\"" + filter;
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogDataPlacement> list = new LinkedList<>();
             while ( rs.next() ) {
                 list.add( new CatalogDataPlacement(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getIntOrNull( rs, 3 ),
+                        getInt( rs, 3 ),
                         rs.getString( 4 )
                 ) );
             }
@@ -1134,17 +1150,30 @@ final class Statements {
     }
 
 
-    public static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND t.\"id\" = " + tableId;
         return dataPlacementFilter( transactionHandler, filter );
     }
 
 
-    public static long addDataPlacement( XATransactionHandler transactionHandler, int store, long table ) throws GenericCatalogException {
+    static long addDataPlacement( XATransactionHandler transactionHandler, int store, long table ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "store", "" + store );
         data.put( "table", "" + table );
         return insertHandler( transactionHandler, "data_placement", data );
+    }
+
+
+    static void deleteDataPlacement( XATransactionHandler transactionHandler, int storeId, long tableId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "data_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "table" ) + " = " + tableId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1155,27 +1184,25 @@ final class Statements {
 
 
     private static List<CatalogKey> keyFilter( TransactionHandler transactionHandler, String keyFilter, String keyColumnFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\"" + keyFilter;
         List<CatalogKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
                 list.add( new CatalogKey(
-                        getLongOrNull( rs, 1 ),
-                        rs.getString( 2 ),
-                        getLongOrNull( rs, 3 ),
-                        rs.getString( 4 ),
-                        getLongOrNull( rs, 5 ),
-                        rs.getString( 6 ),
-                        getLongOrNull( rs, 7 ),
-                        rs.getString( 8 ),
-                        rs.getBoolean( 9 )
+                        getLong( rs, 1 ),
+                        getLong( rs, 2 ),
+                        rs.getString( 3 ),
+                        getLong( rs, 4 ),
+                        rs.getString( 5 ),
+                        getLong( rs, 6 ),
+                        rs.getString( 7 )
                 ) );
             }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );
         }
         for ( CatalogKey catalogKey : list ) {
-            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyColumnFilter + ";";
+            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyColumnFilter;
             try ( ResultSet rs = transactionHandler.executeSelect( keyColumnSql ) ) {
                 List<Long> columnIds = new LinkedList<>();
                 List<String> columnNames = new LinkedList<>();
@@ -1194,30 +1221,28 @@ final class Statements {
 
 
     private static List<CatalogForeignKey> foreignKeyFilter( TransactionHandler transactionHandler, String keyFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", k.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", k.\"unique\", refKey.\"id\", refKey.\"name\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", fk.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", refKey.\"id\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
         List<CatalogForeignKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
                 list.add( new CatalogForeignKey(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getLongOrNull( rs, 3 ),
+                        getLong( rs, 3 ),
                         rs.getString( 4 ),
-                        getLongOrNull( rs, 5 ),
+                        getLong( rs, 5 ),
                         rs.getString( 6 ),
-                        getLongOrNull( rs, 7 ),
+                        getLong( rs, 7 ),
                         rs.getString( 8 ),
-                        rs.getBoolean( 9 ),
-                        getLongOrNull( rs, 10 ),
+                        getLong( rs, 9 ),
+                        getLong( rs, 10 ),
                         rs.getString( 11 ),
-                        getLongOrNull( rs, 12 ),
+                        getLong( rs, 12 ),
                         rs.getString( 13 ),
-                        getLongOrNull( rs, 14 ),
+                        getLong( rs, 14 ),
                         rs.getString( 15 ),
-                        getLongOrNull( rs, 16 ),
-                        rs.getString( 17 ),
-                        getIntOrNull( rs, 18 ),
-                        getIntOrNull( rs, 19 )
+                        getIntOrNull( rs, 16 ),
+                        getIntOrNull( rs, 17 )
                 ) );
             }
         } catch ( SQLException e ) {
@@ -1256,16 +1281,17 @@ final class Statements {
 
 
     private static List<CatalogIndex> indexFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String keySql = "SELECT i.\"id\", i.\"name\", i.\"type\", i.\"location\", i.\"key\" FROM \"index\" i WHERE " + filter + ";";
+        String keySql = "SELECT i.\"id\", i.\"name\", i.\"unique\", i.\"type\", i.\"location\", i.\"key\" FROM \"index\" i WHERE " + filter;
         List<CatalogIndex> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
                 list.add( new CatalogIndex(
-                        getLongOrNull( rs, 1 ),
+                        getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getIntOrNull( rs, 3 ),
-                        getIntOrNull( rs, 4 ),
-                        getLongOrNull( rs, 5 )
+                        rs.getBoolean( 3 ),
+                        getInt( rs, 4 ),
+                        getIntOrNull( rs, 5 ),
+                        getLong( rs, 6 )
                 ) );
             }
         } catch ( SQLException e ) {
@@ -1275,7 +1301,39 @@ final class Statements {
     }
 
 
-    public static CatalogKey getKey( TransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
+    private static List<CatalogConstraint> constraintFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String keySql = "SELECT co.\"id\", co.\"key\", co.\"type\", co.\"name\" FROM \"constraint\" co WHERE " + filter;
+        List<CatalogConstraint> list = new LinkedList<>();
+        try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
+            while ( rs.next() ) {
+                list.add( new CatalogConstraint(
+                        getLong( rs, 1 ),
+                        getLong( rs, 2 ),
+                        ConstraintType.getById( getInt( rs, 3 ) ),
+                        rs.getString( 4 )
+                ) );
+            }
+        } catch ( SQLException | UnknownConstraintTypeException e ) {
+            throw new GenericCatalogException( e );
+        }
+        return list;
+    }
+
+
+    static CatalogKey getKey( TransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
+        String keyFilter = " AND k.\"id\" = " + key;
+        String keyColumnFilter = "";
+        List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownKeyException( key );
+        }
+        return list.get( 0 );
+    }
+
+
+    static CatalogKey getPrimaryKey( TransactionHandler transactionHandler, long key ) throws GenericCatalogException, UnknownKeyException {
         String keyFilter = " AND k.\"id\" = t.\"primary_key\" AND k.\"id\" = " + key;
         String keyColumnFilter = "";
         List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
@@ -1288,30 +1346,15 @@ final class Statements {
     }
 
 
-    public static CatalogKey getKey( XATransactionHandler transactionHandler, long tableId, String name ) throws GenericCatalogException, UnknownKeyException {
-        String keyFilter = " AND k.\"name\" = " + quoteString( name ) + " AND k.\"table\" = " + tableId;
-        String keyColumnFilter = "";
-        List<CatalogKey> list = keyFilter( transactionHandler, keyFilter, keyColumnFilter );
-        if ( list.size() > 1 ) {
-            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
-        } else if ( list.size() == 0 ) {
-            throw new UnknownKeyException( name );
-        }
-        return list.get( 0 );
-    }
-
-
-    public static List<CatalogKey> getKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static List<CatalogKey> getKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND k.\"table\" = " + tableId;
         return keyFilter( transactionHandler, filter, "" );
     }
 
 
-    public static long addKey( XATransactionHandler transactionHandler, long tableId, boolean unique, String name, List<Long> columnIds ) throws GenericCatalogException {
+    static long addKey( XATransactionHandler transactionHandler, long tableId, List<Long> columnIds ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "table", "" + tableId );
-        data.put( "unique", "" + unique );
-        data.put( "name", quoteString( name ) );
         long keyId = insertHandler( transactionHandler, "key", data );
 
         for ( long columnId : columnIds ) {
@@ -1325,27 +1368,52 @@ final class Statements {
     }
 
 
-    public static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static List<CatalogForeignKey> getForeignKeys( TransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND t.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
     }
 
 
-    public static List<CatalogForeignKey> getForeignKeysByReference( XATransactionHandler transactionHandler, long referencedKeyId ) throws GenericCatalogException {
+    static List<CatalogForeignKey> getForeignKeysByReference( XATransactionHandler transactionHandler, long referencedKeyId ) throws GenericCatalogException {
         String keyFilter = " AND fk.\"references\" = " + referencedKeyId;
         return foreignKeyFilter( transactionHandler, keyFilter );
     }
 
 
-    public static List<CatalogForeignKey> getExportedKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static List<CatalogForeignKey> getExportedKeys( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String keyFilter = " AND refTab.\"id\" = " + tableId;
         return foreignKeyFilter( transactionHandler, keyFilter );
     }
 
 
-    public static long addForeignKey( XATransactionHandler transactionHandler, long keyId, long refKey, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+    static CatalogForeignKey getForeignKey( XATransactionHandler transactionHandler, long tableId, String foreignKeyName ) throws GenericCatalogException, UnknownForeignKeyException {
+        String keyFilter = " AND t.\"id\" = " + tableId + " AND fk.\"name\" = " + quoteString( foreignKeyName );
+        List<CatalogForeignKey> foreignKeys = foreignKeyFilter( transactionHandler, keyFilter );
+        if ( foreignKeys.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( foreignKeys.size() == 0 ) {
+            throw new UnknownForeignKeyException( foreignKeyName );
+        }
+        return foreignKeys.get( 0 );
+    }
+
+
+    static CatalogForeignKey getForeignKey( XATransactionHandler transactionHandler, long foreignKeyId ) throws GenericCatalogException, UnknownForeignKeyException {
+        String keyFilter = " AND fk.\"id\" = " + foreignKeyId;
+        List<CatalogForeignKey> foreignKeys = foreignKeyFilter( transactionHandler, keyFilter );
+        if ( foreignKeys.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( foreignKeys.size() == 0 ) {
+            throw new UnknownForeignKeyException( foreignKeyId );
+        }
+        return foreignKeys.get( 0 );
+    }
+
+
+    static long addForeignKey( XATransactionHandler transactionHandler, long keyId, long refKey, String name, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "key", "" + keyId );
+        data.put( "name", quoteString( name ) );
         data.put( "references", "" + refKey );
         data.put( "on_update", "" + onUpdate.getId() );
         data.put( "on_delete", "" + onDelete.getId() );
@@ -1353,10 +1421,80 @@ final class Statements {
     }
 
 
-    public static List<CatalogIndex> getIndexes( XATransactionHandler transactionHandler, long tableId, boolean onlyUnique ) throws GenericCatalogException {
+    public static List<CatalogConstraint> getConstraints( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+        String keyFilter = " AND k.\"table\" = " + tableId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogConstraint> constraints = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String constraintFilter = " co.\"key\" = " + key.id;
+            List<CatalogConstraint> constraintsOfKey = constraintFilter( transactionHandler, constraintFilter );
+            constraintsOfKey.forEach( co -> co.key = key );
+            constraints.addAll( constraintsOfKey );
+        }
+        return constraints;
+    }
+
+
+    static List<CatalogConstraint> getConstraintsByKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+        String keyFilter = " AND k.\"id\" = " + keyId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogConstraint> constraints = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String constraintFilter = " co.\"key\" = " + key.id;
+            List<CatalogConstraint> constraintsOfKey = constraintFilter( transactionHandler, constraintFilter );
+            constraintsOfKey.forEach( co -> co.key = key );
+            constraints.addAll( constraintsOfKey );
+        }
+        return constraints;
+    }
+
+
+    static CatalogConstraint getConstraint( XATransactionHandler transactionHandler, long constraintId ) throws GenericCatalogException, UnknownKeyException, UnknownConstraintException {
+        String constraintFilter = " co.\"id\" = " + constraintId;
+        List<CatalogConstraint> constraints = constraintFilter( transactionHandler, constraintFilter );
+        if ( constraints.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( constraints.size() == 0 ) {
+            throw new UnknownConstraintException( constraintId );
+        }
+        CatalogConstraint constraint = constraints.get( 0 );
+        constraint.key = getKey( transactionHandler, constraint.keyId );
+        return constraint;
+    }
+
+
+    static CatalogConstraint getConstraint( XATransactionHandler transactionHandler, long tableId, String constraintName ) throws GenericCatalogException, UnknownConstraintException {
+        String keyFilter = " AND k.\"table\" = " + tableId;
+        List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
+        List<CatalogConstraint> constraints = new LinkedList<>();
+        for ( CatalogKey key : keys ) {
+            String constraintFilter = " co.\"key\" = " + key.id + " AND co.\"name\" = " + quoteString( constraintName );
+            List<CatalogConstraint> constraintOfKey = constraintFilter( transactionHandler, constraintFilter );
+            constraintOfKey.forEach( i -> i.key = key );
+            constraints.addAll( constraintOfKey );
+        }
+        if ( constraints.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( constraints.size() == 0 ) {
+            throw new UnknownConstraintException( indexName );
+        }
+        return constraints.get( 0 );
+    }
+
+
+    static long addConstraint( XATransactionHandler transactionHandler, long keyId, ConstraintType type, String constraintName ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "key", "" + keyId );
+        data.put( "type", "" + type.getId() );
+        data.put( "name", quoteString( constraintName ) );
+        return insertHandler( transactionHandler, "constraint", data );
+    }
+
+
+    static List<CatalogIndex> getIndexes( XATransactionHandler transactionHandler, long tableId, boolean onlyUnique ) throws GenericCatalogException {
         String keyFilter = " AND k.\"table\" = " + tableId;
         if ( onlyUnique ) {
-            keyFilter += " AND k.\"unique\" = true";
+            keyFilter += " AND i.\"unique\" = true";
         }
         List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
         List<CatalogIndex> indexes = new LinkedList<>();
@@ -1370,7 +1508,7 @@ final class Statements {
     }
 
 
-    public static CatalogIndex getIndex( XATransactionHandler transactionHandler, long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
+    static CatalogIndex getIndex( XATransactionHandler transactionHandler, long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
         String keyFilter = " AND k.\"table\" = " + tableId;
         List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
         List<CatalogIndex> indexes = new LinkedList<>();
@@ -1389,7 +1527,7 @@ final class Statements {
     }
 
 
-    public static CatalogIndex getIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException, UnknownIndexException {
+    static CatalogIndex getIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException, UnknownIndexException {
         String indexFilter = " i.\"id\" = " + indexId;
         List<CatalogIndex> indexes = indexFilter( transactionHandler, indexFilter );
         if ( indexes.size() > 1 ) {
@@ -1411,7 +1549,7 @@ final class Statements {
     }
 
 
-    public static List<CatalogIndex> getIndexesByKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+    static List<CatalogIndex> getIndexesByKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
         String keyFilter = " AND k.\"id\" = " + keyId;
         List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
         List<CatalogIndex> indexes = new LinkedList<>();
@@ -1425,26 +1563,18 @@ final class Statements {
     }
 
 
-    public static long addIndex( XATransactionHandler transactionHandler, long keyId, IndexType type, Long location, String indexName ) throws GenericCatalogException {
+    static long addIndex( XATransactionHandler transactionHandler, long keyId, IndexType type, boolean unique, Long location, String indexName ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "key", "" + keyId );
         data.put( "type", "" + type.getId() );
+        data.put( "unique", "" + unique );
         data.put( "location", "" + location );
         data.put( "name", quoteString( indexName ) );
         return insertHandler( transactionHandler, "index", data );
     }
 
 
-    public static void setKeyUnique( XATransactionHandler transactionHandler, long keyId, boolean unique ) throws GenericCatalogException {
-        Map<String, String> data = new LinkedHashMap<>();
-        data.put( "unique", "" + unique );
-        Map<String, String> where = new LinkedHashMap<>();
-        where.put( "id", "" + keyId );
-        updateHandler( transactionHandler, "key", data, where );
-    }
-
-
-    public static void deleteIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException {
+    static void deleteIndex( XATransactionHandler transactionHandler, long indexId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "index" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + indexId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -1457,7 +1587,7 @@ final class Statements {
     }
 
 
-    public static void deleteKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+    static void deleteKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
         // Delete key columns
         String sql = "DELETE FROM " + quoteIdentifier( "key_column" ) + " WHERE " + quoteIdentifier( "key" ) + " = " + keyId;
         try {
@@ -1478,7 +1608,7 @@ final class Statements {
     }
 
 
-    public static void deleteForeignKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
+    static void deleteForeignKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException {
         String sql = "DELETE FROM " + quoteIdentifier( "foreign_key" ) + " WHERE " + quoteIdentifier( "key" ) + " = " + keyId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
@@ -1491,8 +1621,8 @@ final class Statements {
     }
 
 
-    public static void deleteDataPlacement( XATransactionHandler transactionHandler, int storeId, long tableId ) throws GenericCatalogException {
-        String sql = "DELETE FROM " + quoteIdentifier( "data_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "table" ) + " = " + tableId;
+    static void deleteConstraint( XATransactionHandler transactionHandler, long constraintId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "constraint" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + constraintId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
             if ( rowsEffected != 1 ) {
@@ -1511,7 +1641,7 @@ final class Statements {
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    public static long insertHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data ) throws GenericCatalogException {
+    private static long insertHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data ) throws GenericCatalogException {
         StringBuilder builder = new StringBuilder();
         builder.append( "INSERT INTO " ).append( quoteIdentifier( tableName ) ).append( " ( " );
         boolean first = true;
@@ -1541,7 +1671,7 @@ final class Statements {
             // Get Schema Id (auto increment)
             ResultSet rs = transactionHandler.getGeneratedKeys();
             if ( rs.next() ) {
-                return getLongOrNull( rs, 1 );
+                return getLong( rs, 1 );
             } else {
                 throw new GenericCatalogException( "Something went wrong. Unable to retrieve inserted schema id." );
             }
@@ -1551,7 +1681,7 @@ final class Statements {
     }
 
 
-    public static void updateHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data, Map<String, String> where ) throws GenericCatalogException {
+    private static void updateHandler( XATransactionHandler transactionHandler, String tableName, Map<String, String> data, Map<String, String> where ) throws GenericCatalogException {
         StringBuilder builder = new StringBuilder();
         builder.append( "UPDATE " ).append( quoteIdentifier( tableName ) ).append( " SET " );
         boolean first = true;
@@ -1597,10 +1727,28 @@ final class Statements {
     }
 
 
+    private static int getInt( ResultSet rs, int index ) throws SQLException {
+        int v = rs.getInt( index );
+        if ( rs.wasNull() ) {
+            throw new NullPointerException( "Not expecting null here!" );
+        }
+        return v;
+    }
+
+
     private static Integer getIntOrNull( ResultSet rs, int index ) throws SQLException {
         int v = rs.getInt( index );
         if ( rs.wasNull() ) {
             return null;
+        }
+        return v;
+    }
+
+
+    private static long getLong( ResultSet rs, int index ) throws SQLException {
+        long v = rs.getLong( index );
+        if ( rs.wasNull() ) {
+            throw new NullPointerException( "Not expecting null here!" );
         }
         return v;
     }

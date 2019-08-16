@@ -208,8 +208,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     {
         synchronized (${parser.class}.class) {
             if (metadata == null) {
-                metadata = new MetadataImpl(
-                    new ${parser.class}(new java.io.StringReader("")));
+                metadata = new MetadataImpl(new ${parser.class}(new java.io.StringReader("")));
             }
             return metadata;
         }
@@ -222,8 +221,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
 
     public void switchTo(String stateName)
     {
-        int state = Arrays.asList(${parser.class}TokenManager.lexStateNames)
-            .indexOf(stateName);
+        int state = Arrays.asList(${parser.class}TokenManager.lexStateNames).indexOf(stateName);
         token_source.SwitchTo(state);
     }
 
@@ -4192,18 +4190,15 @@ String Identifier() :
         }
     |
         <QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.strip(getToken(0).image, DQ, DQ, DQDQ,
-                quotedCasing);
+            id = SqlParserUtil.strip(getToken(0).image, DQ, DQ, DQDQ, quotedCasing);
         }
     |
         <BACK_QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.strip(getToken(0).image, "`", "`", "``",
-                quotedCasing);
+            id = SqlParserUtil.strip(getToken(0).image, "`", "`", "``", quotedCasing);
         }
     |
         <BRACKET_QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.strip(getToken(0).image, "[", "]", "]]",
-                quotedCasing);
+            id = SqlParserUtil.strip(getToken(0).image, "[", "]", "]]", quotedCasing);
         }
     |
         <UNICODE_QUOTED_IDENTIFIER> {
@@ -4227,8 +4222,7 @@ String Identifier() :
     )
     {
         if (id.length() > this.identifierMaxLength) {
-            throw SqlUtil.newContextException(getPos(),
-                RESOURCE.identifierTooLong(id, this.identifierMaxLength));
+            throw SqlUtil.newContextException(getPos(), RESOURCE.identifierTooLong(id, this.identifierMaxLength));
         }
         return id;
     }

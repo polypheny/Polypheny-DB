@@ -33,9 +33,6 @@ CREATE TABLE "database" (
     "id"               BIGINT IDENTITY NOT NULL,
     "name"             VARCHAR(100)    NOT NULL,
     "owner"            INTEGER         NOT NULL REFERENCES "user" ("id"),
-    "encoding"         INTEGER         NOT NULL,
-    "collation"        INTEGER         NOT NULL,
-    "connection_limit" INTEGER         NOT NULL,
     "default_schema"   BIGINT          NULL,
     PRIMARY KEY ("id")
 );
@@ -46,8 +43,6 @@ CREATE TABLE "schema" (
     "database"  BIGINT          NOT NULL REFERENCES "database" ("id"),
     "name"      VARCHAR(100)    NOT NULL,
     "owner"     INTEGER         NOT NULL REFERENCES "user" ("id"),
-    "encoding"  INTEGER         NULL,
-    "collation" INTEGER         NULL,
     "type"      INTEGER         NULL,
     PRIMARY KEY ("id")
 );
@@ -58,8 +53,6 @@ CREATE TABLE "table" (
     "schema"      BIGINT                     NOT NULL REFERENCES "schema" ("id"),
     "name"        VARCHAR(100)               NOT NULL,
     "owner"       INTEGER                    NOT NULL REFERENCES "user" ("id"),
-    "encoding"    INTEGER       DEFAULT 0    NULL,
-    "collation"   INTEGER       DEFAULT 0    NULL,
     "type"        INTEGER                    NOT NULL,
     "definition"  VARCHAR(1000) DEFAULT NULL NULL,
     "primary_key" BIGINT        DEFAULT NULL NULL,
@@ -68,17 +61,15 @@ CREATE TABLE "table" (
 
 
 CREATE TABLE "column" (
-    "id"            BIGINT IDENTITY NOT NULL,
-    "table"         BIGINT          NOT NULL REFERENCES "table" ("id"),
-    "name"          VARCHAR(100)    NOT NULL,
-    "position"      INTEGER         NOT NULL,
-    "type"          INTEGER         NOT NULL,
-    "length"        INTEGER         NULL,
-    "precision"     INTEGER         NULL,
-    "nullable"      BOOLEAN         NOT NULL,
-    "encoding"      INTEGER         NOT NULL,
-    "collation"     INTEGER         NOT NULL,
-    "force_default" BOOLEAN         NOT NULL,
+    "id"        BIGINT IDENTITY NOT NULL,
+    "table"     BIGINT          NOT NULL REFERENCES "table" ("id"),
+    "name"      VARCHAR(100)    NOT NULL,
+    "position"  INTEGER         NOT NULL,
+    "type"      INTEGER         NOT NULL,
+    "length"    INTEGER         NULL,
+    "scale"     INTEGER         NULL,
+    "nullable"  BOOLEAN         NOT NULL,
+    "collation" INTEGER         NULL,
     PRIMARY KEY ("id")
 );
 
@@ -154,8 +145,6 @@ CREATE TABLE "data_placement" (
 CREATE TABLE "key" (
     "id"     BIGINT IDENTITY NOT NULL,
     "table"  BIGINT          NOT NULL REFERENCES "table" ("id"),
-    "unique" BOOLEAN         NOT NULL,
-    "name"   VARCHAR(100)    NOT NULL,
     PRIMARY KEY ("id")
 );
 
@@ -167,11 +156,21 @@ CREATE TABLE "key_column" (
 );
 
 
+CREATE TABLE "constraint" (
+    "id"   BIGINT IDENTITY NOT NULL,
+    "key"  BIGINT          NOT NULL REFERENCES "key" ("id"),
+    "type" INTEGER         NOT NULL,
+    "name" VARCHAR(100)    NOT NULL,
+    PRIMARY KEY ("id")
+);
+
+
 CREATE TABLE "foreign_key" (
-    "key"           BIGINT               NOT NULL REFERENCES "key" ("id"),
-    "references"    BIGINT               NOT NULL REFERENCES "key" ("id"),
-    "on_update"     INTEGER DEFAULT NULL NULL,
-    "on_delete"     INTEGER DEFAULT NULL NULL,
+    "key"        BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "references" BIGINT               NOT NULL REFERENCES "key" ("id"),
+    "on_update"  INTEGER DEFAULT NULL NULL,
+    "on_delete"  INTEGER DEFAULT NULL NULL,
+    "name"       VARCHAR(100)         NOT NULL,
     PRIMARY KEY ("key")
 );
 
@@ -180,6 +179,7 @@ CREATE TABLE "index" (
     "id"       BIGINT IDENTITY NOT NULL,
     "key"      BIGINT          NOT NULL REFERENCES "key" ("id"),
     "type"     INTEGER         NOT NULL,
+    "unique"   BOOLEAN         NOT NULL,
     "location" INTEGER         NULL REFERENCES "store" ("id"),
     "name"     VARCHAR(100)    NOT NULL,
     PRIMARY KEY ("id")
@@ -264,16 +264,21 @@ CREATE INDEX "schema_privilege_user_schema"
 
 CREATE INDEX "key_table"
     ON "key" ("table");
-CREATE UNIQUE INDEX "key_name"
-    ON "key" ("name");
 
 CREATE INDEX "key_column_key"
     ON "key_column" ("key");
 
+CREATE INDEX "constraint_key"
+    ON "constraint" ("key");
+CREATE UNIQUE INDEX "constraint_name"
+    ON "constraint" ("name");
+
 CREATE INDEX "foreign_key_references"
     ON "foreign_key" ("references");
+CREATE UNIQUE INDEX "foreign_key_name"
+    ON "foreign_key" ("name");
 
-CREATE UNIQUE INDEX "index_key"
+CREATE INDEX "index_key"
     ON "index" ("key");
 CREATE UNIQUE INDEX "index_name"
     ON "index" ("name");
@@ -308,8 +313,8 @@ ALTER TABLE "user"
 --
 -- database
 --
-INSERT INTO "database" ( "id", "name", "owner", "encoding", "collation", "connection_limit", "default_schema" )
-VALUES ( 0, 'APP', 0, 1, 2, 0, NULL );
+INSERT INTO "database" ( "id", "name", "owner", "default_schema" )
+VALUES ( 0, 'APP', 0, NULL );
 
 ALTER TABLE "database"
     ALTER COLUMN "id"
@@ -319,8 +324,8 @@ ALTER TABLE "database"
 --
 -- schema
 --
-INSERT INTO "schema" ( "id", "database", "name", "owner", "encoding", "collation", "type" )
-VALUES ( 0, 0, 'public', 0, 1, 2, 1 );
+INSERT INTO "schema" ( "id", "database", "name", "owner", "type" )
+VALUES ( 0, 0, 'public', 0, 1 );
 
 ALTER TABLE "schema"
     ALTER COLUMN "id"
@@ -334,33 +339,30 @@ WHERE "id" = 0;
 --
 -- table
 --
-INSERT INTO "table" ( "id", "schema", "name", "owner", "encoding", "collation", "type", "definition" )
-VALUES ( 0, 0, 'depts', 0, 1, 2, 1, NULL ),
-       ( 1, 0, 'emps', 0, 1, 2, 1, NULL ),
-       ( 2, 0, 'test', 0, 1, 2, 1, NULL );
+INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
+VALUES ( 0, 0, 'depts', 0, 1, NULL ),
+       ( 1, 0, 'emps', 0, 1, NULL );
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
-        RESTART WITH 3;
+        RESTART WITH 2;
 
 
 --
 -- column
 --
-INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "precision", "nullable", "encoding", "collation", "force_default" )
-VALUES ( 0, 0, 'deptno', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 1, 0, 'name', 2, 9, 20, 0, FALSE, 1, 2, FALSE ),
-       ( 2, 1, 'empid', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 3, 1, 'deptno', 2, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 4, 1, 'name', 3, 9, 20, 0, FALSE, 1, 2, FALSE ),
-       ( 5, 1, 'salary', 4, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 6, 1, 'commission', 5, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 8, 2, 'id', 1, 3, 11, 0, FALSE, 1, 2, FALSE ),
-       ( 9, 2, 'name', 2, 9, 20, 0, FALSE, 1, 2, FALSE );
+INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "scale", "nullable", "collation" )
+VALUES ( 0, 0, 'deptno', 1, 3, 11, NULL, FALSE, NULL ),
+       ( 1, 0, 'name', 2, 9, 20, NULL, FALSE, 2 ),
+       ( 2, 1, 'empid', 1, 3, 11, NULL, FALSE, NULL ),
+       ( 3, 1, 'deptno', 2, 3, 11, NULL, FALSE, NULL ),
+       ( 4, 1, 'name', 3, 9, 20, NULL, FALSE, 2 ),
+       ( 5, 1, 'salary', 4, 3, 11, NULL, FALSE, NULL ),
+       ( 6, 1, 'commission', 5, 3, 11, NULL, FALSE, NULL );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
-        RESTART WITH 10;
+        RESTART WITH 7;
 
 
 --
@@ -379,7 +381,6 @@ ALTER TABLE "store"
 -- data placement
 --
 INSERT INTO "data_placement" ( "store", "table" )
-VALUES ( 0, 2 ),
-       ( 1, 0 ),
+VALUES ( 1, 0 ),
        ( 1, 1 );
 

@@ -258,8 +258,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             for ( Object object : o ) {
                 if ( object instanceof String ) {
                     builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
-                } else {
+                } else if ( object != null ) {
                     builder.append( object.toString() + "," );
+                } else {
+                    builder.append( " NULL," );
                 }
             }
             builder.setLength( builder.length() - 1 ); // remove last comma

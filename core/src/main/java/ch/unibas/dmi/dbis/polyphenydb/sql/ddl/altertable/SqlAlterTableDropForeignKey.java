@@ -23,67 +23,68 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
+package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDdl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
+import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import com.google.common.collect.ImmutableList;
+import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
- * Parse tree for {@code TRUNCATE TABLE } statement.
+ * Parse tree for {@code ALTER TABLE name DROP FOREIGN KEY} statement.
  */
-public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
+public class SqlAlterTableDropForeignKey extends SqlAlterTable {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "TRUNCATE", SqlKind.TRUNCATE );
+    private final SqlIdentifier table;
+    private final SqlIdentifier foreignKeyName;
 
-    protected final SqlIdentifier name;
 
-
-    /**
-     * Creates a SqlDropTable.
-     */
-    public SqlTruncate( SqlParserPos pos, SqlIdentifier name ) {
-        super( OPERATOR, pos );
-        this.name = name;
+    public SqlAlterTableDropForeignKey( SqlParserPos pos, SqlIdentifier table, SqlIdentifier foreignKeyName ) {
+        super( pos );
+        this.table = Objects.requireNonNull( table );
+        this.foreignKeyName = Objects.requireNonNull( foreignKeyName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableList.of( name );
+        return ImmutableNullableList.of( table, foreignKeyName );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        writer.keyword( getOperator().getName() );
+        writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
-        name.unparse( writer, leftPrec, rightPrec );
+        table.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "DROP" );
+        writer.keyword( "FOREIGN" );
+        writer.keyword( "KEY" );
+        foreignKeyName.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable table = getCatalogCombinedTable( context, transaction, name );
-
-        //  Execute truncate on all placements
-        table.getPlacements().forEach( catalogDataPlacement -> {
-            StoreManager.getInstance().getStore( catalogDataPlacement.storeId ).truncate( transaction, table );
-        } );
+        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        try {
+            CatalogForeignKey foreignKey = transaction.getCatalog().getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
+            transaction.getCatalog().deleteForeignKey( foreignKey.id );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
     }
+
 }
 

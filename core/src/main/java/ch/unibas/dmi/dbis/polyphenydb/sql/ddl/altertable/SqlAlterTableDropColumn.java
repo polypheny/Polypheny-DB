@@ -32,10 +32,11 @@ import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -98,7 +99,17 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             // Check if column is part of an key
             for ( CatalogKey key : catalogTable.getKeys() ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the following key: '" + key.name + "'." );
+                    CatalogCombinedKey combinedKey = transaction.getCatalog().getCombinedKey( key.id );
+                    if ( combinedKey.isPrimaryKey() ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
+                    } else if ( combinedKey.getIndexes().size() > 0 ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + combinedKey.getIndexes().get( 0 ).name + "'." );
+                    } else if ( combinedKey.getForeignKeys().size() > 0 ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + combinedKey.getForeignKeys().get( 0 ).name + "'." );
+                    } else if ( combinedKey.getConstraints().size() > 0 ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + combinedKey.getConstraints().get( 0 ).name + "'." );
+                    }
+                    throw new PolyphenyDbException( "Ok, strange... Here is something going wrong." );
                 }
             }
 
@@ -110,7 +121,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                     transaction.getCatalog().setColumnPosition( columns.get( i ).id, i );
                 }
             }
-        } catch ( UnknownEncodingException | UnknownTypeException | UnknownCollationException | GenericCatalogException e ) {
+        } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
 

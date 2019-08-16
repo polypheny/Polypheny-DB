@@ -215,7 +215,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                         { onDelete = null; }
                     )
                     {
-                        return new SqlAlterTableAddForeignKeyConstraint(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+                        return new SqlAlterTableAddForeignKey(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
                     }
                 )
         |
@@ -223,6 +223,12 @@ SqlAlterTable SqlAlterTable(Span s) :
             constraintName = SimpleIdentifier()
             {
                 return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+            }
+        |
+            <DROP> <FOREIGN> <KEY>
+            constraintName = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
             }
         |
             <ADD>
@@ -276,6 +282,7 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
     SqlIdentifier afterColumn = null;
     SqlNode defaultValue = null;
     Boolean dropDefault = null;
+    String collation = null;
 }
 {
     (
@@ -297,6 +304,13 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
                 afterColumn = SimpleIdentifier()
             )
         |
+            <SET> <COLLATION>
+            (
+                <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                |
+                <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+            )
+        |
             <SET> <DEFAULT_>
             defaultValue = Literal()
         |
@@ -304,6 +318,6 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
             { dropDefault = true; }
     )
     {
-        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, defaultValue, dropDefault);
+        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
     }
 }

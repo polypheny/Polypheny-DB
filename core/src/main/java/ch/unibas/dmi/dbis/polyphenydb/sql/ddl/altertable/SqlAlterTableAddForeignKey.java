@@ -49,7 +49,7 @@ import java.util.Objects;
 /**
  * Parse tree for {@code ALTER TABLE name ADD CONSTRAINT FOREIGN KEY} statement.
  */
-public class SqlAlterTableAddForeignKeyConstraint extends SqlAlterTable {
+public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier constraintName;
@@ -60,7 +60,7 @@ public class SqlAlterTableAddForeignKeyConstraint extends SqlAlterTable {
     private final ForeignKeyOption onDelete;
 
 
-    public SqlAlterTableAddForeignKeyConstraint( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete ) {
+    public SqlAlterTableAddForeignKey( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.constraintName = Objects.requireNonNull( constraintName );
@@ -88,6 +88,7 @@ public class SqlAlterTableAddForeignKeyConstraint extends SqlAlterTable {
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ADD" );
+        writer.keyword( "CONSTRAINT" );
         constraintName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "FOREIGN" );
         writer.keyword( "KEY" );

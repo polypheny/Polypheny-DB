@@ -45,25 +45,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
@@ -71,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import java.util.List;
 
@@ -95,36 +85,15 @@ public class SqlDropTable extends SqlDropObject {
     @Override
     public void execute( Context context, Transaction transaction ) {
         // Get table
-        String tableName;
-        long schemaId;
         final CatalogCombinedTable table;
         try {
-            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
-                tableName = name.names.get( 2 );
-            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
-                tableName = name.names.get( 1 );
-            } else { // TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
-                tableName = name.names.get( 0 );
-            }
-            table = transaction.getCatalog().getCombinedTable( transaction.getCatalog().getTable( schemaId, tableName ).id );
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        } catch ( UnknownSchemaException e ) {
+            table = getCatalogCombinedTable( context, transaction, name );
+        } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
-                // It is ok that there is no schema with this name because "IF EXISTS" was specified
+                // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
-            }
-        } catch ( UnknownTableException e ) {
-            if ( ifExists ) {
-                // It is ok that there is no table with this name because "IF EXISTS" was specified
-                return;
-            } else {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableNotFound( name.toString() ) );
+                throw e;
             }
         }
 
@@ -132,7 +101,7 @@ public class SqlDropTable extends SqlDropObject {
         try {
             List<CatalogForeignKey> exportedKeys = transaction.getCatalog().getExportedKeys( table.getTable().id );
             if ( exportedKeys.size() > 0 ) {
-                throw new PolyphenyDbException( "Cannot drop table '" + table.getSchema().name + "." + tableName + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
+                throw new PolyphenyDbException( "Cannot drop table '" + table.getSchema().name + "." + table.getTable().name + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
@@ -159,20 +128,20 @@ public class SqlDropTable extends SqlDropObject {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
         }
 
-        // Delete keys
+        // Delete keys and constraints
         try {
             // Remove primary key
             transaction.getCatalog().deletePrimaryKey( table.getTable().id );
             // Delete all foreign keys of the table
             List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.getTable().id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                transaction.getCatalog().deleteConstraint( table.getTable().id, foreignKey.name );
+                transaction.getCatalog().deleteForeignKey( foreignKey.id );
             }
-            // Delete all remaining keys (unique keys and the primary key) of the table
-            for ( CatalogKey key : transaction.getCatalog().getKeys( table.getTable().id ) ) {
-                transaction.getCatalog().deleteKey( key.id );
+            // Delete all constraints of the table
+            for ( CatalogConstraint constraint : transaction.getCatalog().getConstraints( table.getTable().id ) ) {
+                transaction.getCatalog().deleteConstraint( constraint.id );
             }
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
         }
 

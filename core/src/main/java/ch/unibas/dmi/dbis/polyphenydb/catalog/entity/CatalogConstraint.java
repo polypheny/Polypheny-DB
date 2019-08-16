@@ -23,17 +23,38 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-public class UnknownEncodingException extends CatalogException {
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 
-    public UnknownEncodingException( String name ) {
-        super( "There is no Encoding with name: " + name );
+
+/**
+ *
+ */
+@EqualsAndHashCode
+public class CatalogConstraint {
+
+    public final long id;
+    public final long keyId;
+    public final ConstraintType type;
+    public final String name;
+
+    public CatalogKey key;
+
+
+    public CatalogConstraint(
+            final long id,
+            final long keyId,
+            @NonNull final ConstraintType constraintType,
+            final String name ) {
+        this.id = id;
+        this.keyId = keyId;
+        this.type = constraintType;
+        this.name = name;
     }
 
 
-    public UnknownEncodingException( int id ) {
-        super( "There is no Encoding with id: " + id );
-    }
 }

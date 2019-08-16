@@ -95,7 +95,7 @@ public class CsvSchema extends AbstractSchema {
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.precision, null );
+            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
 
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
@@ -130,7 +130,7 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, int precision, int scale, String typeString ) {
+    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final SqlTypeName sqlTypeName = Util.first( dataTypeName, SqlTypeName.ANY );
         switch ( sqlTypeName ) {
@@ -146,10 +146,10 @@ public class CsvSchema extends AbstractSchema {
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
-        if ( precision >= 0 && scale >= 0 && sqlTypeName.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( sqlTypeName, precision, scale );
-        } else if ( precision >= 0 && sqlTypeName.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( sqlTypeName, precision );
+        if ( scale != null && length != null && length >= 0 && scale >= 0 && sqlTypeName.allowsPrecScale( true, true ) ) {
+            return typeFactory.createSqlType( sqlTypeName, length, scale );
+        } else if ( length != null && length >= 0 && sqlTypeName.allowsPrecNoScale() ) {
+            return typeFactory.createSqlType( sqlTypeName, length );
         } else {
             assert sqlTypeName.allowsNoPrecNoScale();
             return typeFactory.createSqlType( sqlTypeName );

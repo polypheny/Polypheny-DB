@@ -30,23 +30,25 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
@@ -137,7 +139,7 @@ public abstract class Catalog {
      * @return The schema
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
-    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException, UnknownCollationException, UnknownEncodingException, UnknownDatabaseException, UnknownSchemaTypeException;
+    public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException, UnknownCollationException, UnknownDatabaseException, UnknownSchemaTypeException;
 
 
     /**
@@ -157,13 +159,11 @@ public abstract class Catalog {
      * @param name The name of the schema
      * @param databaseId The id of the associated database
      * @param ownerId The owner of this schema
-     * @param encoding The default encoding of the schema
-     * @param collation The default collation of the schema
      * @param schemaType The type of this schema
      * @return The id of the inserted schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, Encoding encoding, Collation collation, SchemaType schemaType ) throws GenericCatalogException;
+    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException;
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -278,14 +278,12 @@ public abstract class Catalog {
      * @param name The name of the table to add
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
-     * @param encoding The default encoding of this table
-     * @param collation The default collation of this table
      * @param tableType The table type
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, Encoding encoding, Collation collation, TableType tableType, String definition ) throws GenericCatalogException;
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException;
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -354,7 +352,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException;
 
 
     /**
@@ -367,7 +365,7 @@ public abstract class Catalog {
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownEncodingException, UnknownColumnException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException;
 
     /**
      * Returns the column with the specified id.
@@ -412,12 +410,10 @@ public abstract class Catalog {
      * @param length The length of the field (if applicable, else null)
      * @param precision The precision of the field (if applicable, else null)
      * @param nullable Weather the column can contain null values
-     * @param encoding The encoding of the field (if applicable, else null)
      * @param collation The collation of the field (if applicable, else null)
-     * @param forceDefault Weather to force the default value
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Encoding encoding, Collation collation, boolean forceDefault ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -453,6 +449,15 @@ public abstract class Catalog {
     public abstract void setNullable( long columnId, boolean nullable ) throws GenericCatalogException;
 
     /**
+     * Set the collation of a column.
+     * If the column already has the specified collation set, this method is a NoOp.
+     *
+     * @param columnId The id of the column
+     * @param collation The collation to set
+     */
+    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException;
+
+    /**
      * Checks if there is a column with the specified name in the specified table.
      *
      * @param tableId The id of the table
@@ -485,23 +490,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
-
-    /**
-     * Returns a specified key
-     *
-     * @param key The id of the key
-     * @return The key
-     */
-    public abstract CatalogKey getKey( long key ) throws GenericCatalogException, UnknownKeyException;
-
-
-    /**
-     * Returns all keys of a table
-     *
-     * @param tableId The id of the key
-     * @return List of keys
-     */
-    public abstract List<CatalogKey> getKeys( long tableId ) throws GenericCatalogException;
 
 
     /**
@@ -538,6 +526,35 @@ public abstract class Catalog {
      * @return List of foreign keys
      */
     public abstract List<CatalogForeignKey> getExportedKeys( long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Get all constraints of the specified table
+     *
+     * @param tableId The id of the table
+     * @return List of constraints
+     */
+    public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
+
+
+    /**
+     * Returns the constraint with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @return The constraint
+     */
+    public abstract CatalogConstraint getConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownConstraintException;
+
+
+    /**
+     * Return the foreign key with the specified name from the specified table
+     *
+     * @param tableId The id of the table
+     * @param foreignKeyName The name of the foreign key
+     * @return The foreign key
+     */
+    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException;
 
 
     /**
@@ -605,14 +622,6 @@ public abstract class Catalog {
 
 
     /**
-     * Delete the specified key
-     *
-     * @param keyId The id of the key to drop
-     */
-    public abstract void deleteKey( long keyId ) throws GenericCatalogException;
-
-
-    /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
      *
      * @param tableId The id of the key to drop
@@ -621,12 +630,20 @@ public abstract class Catalog {
 
 
     /**
-     * Delete the specified constraint (foreign key, unique) (deletes the corresponding key but does not delete the referenced key). If there is an index on this key, make sure to delete it first.
+     * Delete the specified foreign key (does not delete the referenced key).
      *
-     * @param tableId The id of the table the constraint belongs to
-     * @param constraintName The name of the constraint to delete
+     * @param foreignKeyId The id of the foreign key to delete
      */
-    public abstract void deleteConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownKeyException;
+    public abstract void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException;
+
+
+    /**
+     * Delete the specified constraint.
+     * For deleting foreign keys, use {@link #deleteForeignKey(long)}.
+     *
+     * @param constraintId The id of the constraint to delete
+     */
+    public abstract void deleteConstraint( long constraintId ) throws GenericCatalogException;
 
 
     /**
@@ -652,6 +669,8 @@ public abstract class Catalog {
 
     public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
+
+    public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
 
 
@@ -788,32 +807,15 @@ public abstract class Catalog {
             }
             throw new UnknownCollationException( id );
         }
-    }
 
 
-    public enum Encoding {
-        UTF8( 1 );
-
-        private final int id;
-
-
-        Encoding( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-
-        public static Encoding getById( int id ) throws UnknownEncodingException {
-            for ( Encoding e : values() ) {
-                if ( e.id == id ) {
-                    return e;
-                }
+        public static Collation parse( @NonNull String str ) throws UnknownCollationException {
+            if ( str.equalsIgnoreCase( "CASE SENSITIVE" ) ) {
+                return Collation.CASE_SENSITIVE;
+            } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
+                return Collation.CASE_INSENSITIVE;
             }
-            throw new UnknownEncodingException( id );
+            throw new UnknownCollationException( str );
         }
     }
 
@@ -852,6 +854,41 @@ public abstract class Catalog {
                 return IndexType.HASH;
             }
             throw new UnknownIndexTypeException( str );
+        }
+    }
+
+
+    public enum ConstraintType {
+        UNIQUE( 1 );
+
+        private final int id;
+
+
+        ConstraintType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static ConstraintType getById( int id ) throws UnknownConstraintTypeException {
+            for ( ConstraintType e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownConstraintTypeException( id );
+        }
+
+
+        public static ConstraintType parse( @NonNull String str ) throws UnknownConstraintTypeException {
+            if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
+                return ConstraintType.UNIQUE;
+            }
+            throw new UnknownConstraintTypeException( str );
         }
     }
 
