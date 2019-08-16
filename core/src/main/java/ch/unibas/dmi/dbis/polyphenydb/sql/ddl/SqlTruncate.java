@@ -26,17 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
-
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDdl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
@@ -45,7 +37,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
@@ -87,29 +78,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        // Check if there is a table with this name
-        long schemaId;
-        CatalogCombinedTable table;
-        try {
-            String tableName;
-            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
-                tableName = name.names.get( 2 );
-            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
-                tableName = name.names.get( 1 );
-            } else { // TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
-                tableName = name.names.get( 0 );
-            }
-            table = transaction.getCatalog().getCombinedTable( transaction.getCatalog().getTable( schemaId, tableName ).id );
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        } catch ( UnknownSchemaException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
-        } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableNotFound( name.toString() ) );
-        }
+        CatalogCombinedTable table = getCatalogCombinedTable( context, transaction, name );
 
         //  Execute truncate on all placements
         table.getPlacements().forEach( catalogDataPlacement -> {
