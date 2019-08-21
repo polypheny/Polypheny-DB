@@ -902,7 +902,7 @@ public class DbmsMeta implements ProtobufMeta {
             statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
             statement.unset();
         } else {
-            throw new RuntimeException( "There is no associated statement" );
+            throw new RuntimeException( "The connection has no statement associated" );
         }
 
         // Parser Config
@@ -1208,7 +1208,7 @@ public class DbmsMeta implements ProtobufMeta {
         // Check if there is an running transaction
         Transaction transaction = connectionToClose.getCurrentTransaction();
         if ( transaction != null ) {
-            LOG.warn( "There is a running connection associated with this connection {}", connectionToClose );
+            LOG.warn( "There is a running transaction associated with this connection {}", connectionToClose );
             LOG.warn( "Rollback transaction {}", transaction );
             rollback( ch );
         }

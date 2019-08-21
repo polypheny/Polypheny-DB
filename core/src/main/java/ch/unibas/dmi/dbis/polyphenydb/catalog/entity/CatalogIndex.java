@@ -93,7 +93,7 @@ public final class CatalogIndex {
                     key.databaseName,
                     key.schemaName,
                     key.tableName,
-                    unique,
+                    !unique,
                     null,
                     name,
                     0,
@@ -125,7 +125,7 @@ public final class CatalogIndex {
             public final String pages;
             public final String filterCondition;
             public final int location;
-            public final String indexType;
+            public final int indexType;
         }
 
     }
