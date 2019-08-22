@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
@@ -59,10 +58,10 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -181,7 +180,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | UnknownEncodingException | GenericCatalogException e ) {
+        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {
             if ( ifNotExists ) {
@@ -202,8 +201,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     tableName,
                     schemaId,
                     context.getCurrentUserId(),
-                    Encoding.UTF8,
-                    Collation.CASE_INSENSITIVE,
                     TableType.TABLE,
                     null );
 
@@ -219,17 +216,24 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
+                    final PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() );
+                    Collation collation = null;
+                    if ( polySqlType.isCharType() ) {
+                        if ( columnDeclaration.collation != null ) {
+                            collation = Collation.parse( columnDeclaration.collation );
+                        } else {
+                            collation = Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ); // Set default collation
+                        }
+                    }
                     long addedColumnId = transaction.getCatalog().addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
-                            PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() ),
-                            columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
+                            polySqlType,
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
+                            columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
                             columnDeclaration.dataType.getNullable(),
-                            Encoding.UTF8,
-                            Collation.CASE_INSENSITIVE,
-                            false
+                            collation
                     );
 
                     // Add default value
@@ -269,7 +273,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -365,137 +369,5 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
     }
 
-
-    /*
-    public void execute( Context context ) {
-        final Pair<PolyphenyDbSchema, String> pair = SqlDdlNodes.schema( context, true, name );
-        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
-        final RelDataType queryRowType;
-        if ( query != null ) {
-            // A bit of a hack: pretend it's a view, to get its row type
-            final String sql = query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql();
-            final ViewTableMacro viewTableMacro = ViewTable.viewMacro( pair.left.plus(), sql, pair.left.path( null ), context.getObjectPath(), false );
-            final TranslatableTable x = viewTableMacro.apply( ImmutableList.of() );
-            queryRowType = x.getRowType( typeFactory );
-
-            if ( columnList != null && queryRowType.getFieldCount() != columnList.size() ) {
-                throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnCountMismatch() );
-            }
-        } else {
-            queryRowType = null;
-        }
-        final List<SqlNode> columnList;
-        if ( this.columnList != null ) {
-            columnList = this.columnList.getList();
-        } else {
-            if ( queryRowType == null ) {
-                // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
-            }
-            columnList = new ArrayList<>();
-            for ( String name : queryRowType.getFieldNames() ) {
-                columnList.add( new SqlIdentifier( name, SqlParserPos.ZERO ) );
-            }
-        }
-        final ImmutableList.Builder<ColumnDef> b = ImmutableList.builder();
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
-        final RelDataTypeFactory.Builder storedBuilder = typeFactory.builder();
-        for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
-            if ( c.e instanceof SqlColumnDeclaration ) {
-                final SqlColumnDeclaration d = (SqlColumnDeclaration) c.e;
-                RelDataType type = d.dataType.deriveType( typeFactory, true );
-                final Pair<PolyphenyDbSchema, String> pairForType = SqlDdlNodes.schema( context, true, d.dataType.getTypeName() );
-                if ( type == null ) {
-                    PolyphenyDbSchema.TypeEntry typeEntry = pairForType.left.getType( pairForType.right, false );
-                    if ( typeEntry != null ) {
-                        type = typeEntry.getType().apply( typeFactory );
-                    }
-                }
-                builder.add( d.name.getSimple(), type );
-                if ( d.strategy != ColumnStrategy.VIRTUAL ) {
-                    storedBuilder.add( d.name.getSimple(), type );
-                }
-                b.add( ColumnDef.of( d.expression, type, d.strategy ) );
-            } else if ( c.e instanceof SqlIdentifier ) {
-                final SqlIdentifier id = (SqlIdentifier) c.e;
-                if ( queryRowType == null ) {
-                    throw SqlUtil.newContextException( id.getParserPosition(), RESOURCE.createTableRequiresColumnTypes( id.getSimple() ) );
-                }
-                final RelDataTypeField f = queryRowType.getFieldList().get( c.i );
-                final ColumnStrategy strategy =
-                        f.getType().isNullable()
-                                ? ColumnStrategy.NULLABLE
-                                : ColumnStrategy.NOT_NULLABLE;
-                b.add( ColumnDef.of( c.e, f.getType(), strategy ) );
-                builder.add( id.getSimple(), f.getType() );
-                storedBuilder.add( id.getSimple(), f.getType() );
-            } else {
-                throw new AssertionError( c.e.getClass() );
-            }
-        }
-        final RelDataType rowType = builder.build();
-        final RelDataType storedRowType = storedBuilder.build();
-        final List<ColumnDef> columns = b.build();
-        final InitializerExpressionFactory ief =
-                new NullInitializerExpressionFactory() {
-                    @Override
-                    public ColumnStrategy generationStrategy( RelOptTable table, int iColumn ) {
-                        return columns.get( iColumn ).strategy;
-                    }
-
-
-                    @Override
-                    public RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context ) {
-                        final ColumnDef c = columns.get( iColumn );
-                        if ( c.expr != null ) {
-                            return context.convertExpression( c.expr );
-                        }
-                        return super.newColumnDefaultValue( table, iColumn, context );
-                    }
-                };
-        if ( pair.left.plus().getTable( pair.right ) != null ) {
-            // Table exists.
-            if ( !ifNotExists ) {
-                // They did not specify IF NOT EXISTS, so give error.
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( pair.right ) );
-            }
-            return;
-        }
-        // Table does not exist. Create it.
-        pair.left.add( pair.right,
-                new MutableArrayTable(
-                        pair.right,
-                        RelDataTypeImpl.proto( storedRowType ),
-                        RelDataTypeImpl.proto( rowType ), ief ) );
-        if ( query != null ) {
-            SqlDdlNodes.populate( name, query, context );
-        }
-    }
-
-    // Column Definition
-    private static class ColumnDef {
-
-        final SqlNode expr;
-        final RelDataType type;
-        final ColumnStrategy strategy;
-
-
-        private ColumnDef( SqlNode expr, RelDataType type, ColumnStrategy strategy ) {
-            this.expr = expr;
-            this.type = type;
-            this.strategy = Objects.requireNonNull( strategy );
-            Preconditions.checkArgument(
-                    strategy == ColumnStrategy.NULLABLE
-                            || strategy == ColumnStrategy.NOT_NULLABLE
-                            || expr != null );
-        }
-
-
-        static ColumnDef of( SqlNode expr, RelDataType type, ColumnStrategy strategy ) {
-            return new ColumnDef( expr, type, strategy );
-        }
-    }
-
-    */
 }
 

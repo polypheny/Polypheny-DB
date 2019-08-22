@@ -48,8 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -120,8 +118,6 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
                         name.getSimple(),
                         context.getDatabaseId(),
                         context.getCurrentUserId(),
-                        Encoding.UTF8,
-                        Collation.CASE_INSENSITIVE,
                         SchemaType.RELATIONAL );
             }
         } catch ( GenericCatalogException e ) {

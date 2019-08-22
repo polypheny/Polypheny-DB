@@ -57,7 +57,7 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     @RequiredArgsConstructor
-    public class PrimitiveCatalogUser {
+    public static class PrimitiveCatalogUser {
 
         public final String table;
         public final String store;

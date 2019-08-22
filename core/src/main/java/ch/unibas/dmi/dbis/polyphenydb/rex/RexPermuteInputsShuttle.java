@@ -56,7 +56,7 @@ import java.util.List;
  * Shuttle which applies a permutation to its input fields.
  *
  * @see RexPermutationShuttle
- * @see RexUtil#apply(TargetMapping, RexNode)
+ * see RexUtil#apply(TargetMapping, RexNode)
  */
 public class RexPermuteInputsShuttle extends RexShuttle {
 

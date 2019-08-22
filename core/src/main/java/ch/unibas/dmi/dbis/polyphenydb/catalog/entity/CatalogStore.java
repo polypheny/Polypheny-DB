@@ -55,7 +55,7 @@ public class CatalogStore implements CatalogEntity {
 
 
     @RequiredArgsConstructor
-    public class PrimitiveCatalogUser {
+    public static class PrimitiveCatalogUser {
 
         public final String name;
     }

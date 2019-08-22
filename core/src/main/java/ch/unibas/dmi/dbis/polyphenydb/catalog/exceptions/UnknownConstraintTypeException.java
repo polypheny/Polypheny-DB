@@ -23,34 +23,17 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAlter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+public class UnknownConstraintTypeException extends CatalogException {
 
-
-/**
- * Parse tree for {@code ALTER TABLE} statement.
- */
-public abstract class SqlAlterTable extends SqlAlter {
-
-
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER TABLE", SqlKind.ALTER_TABLE );
-
-
-    /**
-     * Creates a SqlAlterTable.
-     */
-    public SqlAlterTable( SqlParserPos pos ) {
-        super( OPERATOR, pos );
+    public UnknownConstraintTypeException( String name ) {
+        super( "There is no constraint type with name: " + name );
     }
 
 
-
-
+    public UnknownConstraintTypeException( int id ) {
+        super( "There is no constraint type with id: " + id );
+    }
 }
-

@@ -33,14 +33,12 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Encoding;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -159,9 +157,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     type.getScale() == -1 ? null : type.getScale(),
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     nullable,
-                    Encoding.UTF8,
-                    Collation.CASE_INSENSITIVE,
-                    false
+                    Collation.CASE_INSENSITIVE
             );
             addedColumn = transaction.getCatalog().getColumn( columnId );
 
@@ -174,7 +170,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
                 transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
             }
-        } catch ( GenericCatalogException | UnknownTypeException | UnknownEncodingException | UnknownCollationException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
 

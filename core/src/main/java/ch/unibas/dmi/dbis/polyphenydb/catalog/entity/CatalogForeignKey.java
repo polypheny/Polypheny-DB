@@ -37,13 +37,11 @@ import lombok.RequiredArgsConstructor;
 /**
  *
  */
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 public final class CatalogForeignKey extends CatalogKey {
 
-    private static final long serialVersionUID = -1496390493702171203L;
-
+    public final String name;
     public final long referencedKeyId;
-    public final String referencedKeyName;
     public final long referencedKeyDatabaseId;
     public final String referencedKeyDatabaseName;
     public final long referencedKeySchemaId;
@@ -65,9 +63,7 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String schemaName,
             final long databaseId,
             @NonNull final String databaseName,
-            final boolean unique,
             final long referencedKeyId,
-            @NonNull final String referencedKeyName,
             final long referencedKeyTableId,
             @NonNull final String referencedKeyTableName,
             final long referencedKeySchemaId,
@@ -76,9 +72,9 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String referencedKeyDatabaseName,
             final Integer updateRule,
             final Integer deleteRule ) {
-        super( id, name, tableId, tableName, schemaId, schemaName, databaseId, databaseName, unique );
+        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
+        this.name = name;
         this.referencedKeyId = referencedKeyId;
-        this.referencedKeyName = referencedKeyName;
         this.referencedKeyTableId = referencedKeyTableId;
         this.referencedKeyTableName = referencedKeyTableName;
         this.referencedKeySchemaId = referencedKeySchemaId;
@@ -96,6 +92,7 @@ public final class CatalogForeignKey extends CatalogKey {
         LinkedList<CatalogForeignKeyColumn> list = new LinkedList<>();
         for ( String columnName : columnNames ) {
             list.add( new CatalogForeignKeyColumn( i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+            i++;
         }
         return list;
     }
@@ -105,6 +102,8 @@ public final class CatalogForeignKey extends CatalogKey {
     @RequiredArgsConstructor
     public class CatalogForeignKeyColumn implements CatalogEntity {
 
+        private static final long serialVersionUID = -1496390493702171203L;
+
         private final int keySeq;
         private final String referencedKeyColumnName;
         private final String foreignKeyColumnName;
@@ -112,7 +111,21 @@ public final class CatalogForeignKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ referencedKeyDatabaseName, referencedKeySchemaName, referencedKeyTableName, referencedKeyColumnName, databaseName, schemaName, tableName, foreignKeyColumnName, keySeq, updateRule, deleteRule, name, referencedKeyName, null };
+            return new Serializable[]{
+                    referencedKeyDatabaseName,
+                    referencedKeySchemaName,
+                    referencedKeyTableName,
+                    referencedKeyColumnName,
+                    databaseName,
+                    schemaName,
+                    tableName,
+                    foreignKeyColumnName,
+                    keySeq,
+                    updateRule,
+                    deleteRule,
+                    name,
+                    null,
+                    null };
         }
 
 

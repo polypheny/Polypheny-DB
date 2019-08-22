@@ -40,10 +40,9 @@ import lombok.RequiredArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 public final class CatalogIndex {
 
-    private static final long serialVersionUID = -5596459769680478780L;
-
     public final long id;
     public final String name;
+    public final boolean unique;
     public final int type;
     public final Integer location;
 
@@ -54,11 +53,13 @@ public final class CatalogIndex {
     public CatalogIndex(
             final long id,
             @NonNull final String name,
+            final boolean unique,
             final int type,
             final Integer location,
             final long keyId ) {
         this.id = id;
         this.name = name;
+        this.unique = unique;
         this.type = type;
         this.location = location;
         this.keyId = keyId;
@@ -80,13 +81,30 @@ public final class CatalogIndex {
     @RequiredArgsConstructor
     public class CatalogIndexColumn implements CatalogEntity {
 
+        private static final long serialVersionUID = -5596459769680478780L;
+
         private final int ordinalPosition;
         private final String columnName;
 
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ key.databaseName, key.schemaName, key.tableName, !key.unique, null, name, 0, ordinalPosition, columnName, null, -1, null, null, location, type, key.name };
+            return new Serializable[]{
+                    key.databaseName,
+                    key.schemaName,
+                    key.tableName,
+                    !unique,
+                    null,
+                    name,
+                    0,
+                    ordinalPosition,
+                    columnName,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    location,
+                    type };
         }
 
 
@@ -107,8 +125,7 @@ public final class CatalogIndex {
             public final String pages;
             public final String filterCondition;
             public final int location;
-            public final String indexType;
-            public final String keyName;
+            public final int indexType;
         }
 
     }

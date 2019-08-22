@@ -27,13 +27,15 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -60,6 +62,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     private final SqlIdentifier afterColumn;
     private final SqlNode defaultValue;
     private final Boolean dropDefault;
+    private final String collation;
 
 
     public SqlAlterTableModifyColumn(
@@ -70,6 +73,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             Boolean nullable,
             SqlIdentifier beforeColumn,
             SqlIdentifier afterColumn,
+            String collation,
             SqlNode defaultValue,
             Boolean dropDefault ) {
         super( pos );
@@ -79,6 +83,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         this.nullable = nullable;
         this.beforeColumn = beforeColumn;
         this.afterColumn = afterColumn;
+        this.collation = collation;
         this.defaultValue = defaultValue;
         this.dropDefault = dropDefault;
     }
@@ -119,6 +124,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             writer.keyword( "POSITION" );
             writer.keyword( "AFTER" );
             afterColumn.unparse( writer, leftPrec, rightPrec );
+        } else if ( collation != null ) {
+            writer.keyword( "SET" );
+            writer.keyword( "COLLATION" );
+            writer.literal( collation );
         } else if ( defaultValue != null ) {
             writer.keyword( "SET" );
             writer.keyword( "DEFAULT" );
@@ -143,8 +152,11 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
                         polySqlType,
-                        type.getScale() == -1 ? null : type.getScale(),
-                        type.getPrecision() == -1 ? null : type.getPrecision() );
+                        type.getPrecision() == -1 ? null : type.getPrecision(),
+                        type.getScale() == -1 ? null : type.getScale() );
+                for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
+                    StoreManager.getInstance().getStore( dp.storeId ).updateColumnType( getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
+                }
             } else if ( nullable != null ) {
                 transaction.getCatalog().setNullable( catalogColumn.id, nullable );
             } else if ( beforeColumn != null || afterColumn != null ) {
@@ -187,6 +199,9 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 } else {
                     // Do nothing
                 }
+            } else if ( collation != null ) {
+                Collation col = Collation.parse( collation );
+                transaction.getCatalog().setCollation( catalogColumn.id, col );
             } else if ( defaultValue != null ) {
                 // TODO: String is only a temporal solution for default values
                 String v = defaultValue.toString();
@@ -199,7 +214,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Unknown option" );
             }
-        } catch ( GenericCatalogException | UnknownEncodingException | UnknownTypeException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }

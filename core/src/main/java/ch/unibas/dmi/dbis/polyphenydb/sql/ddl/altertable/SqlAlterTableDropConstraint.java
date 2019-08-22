@@ -27,9 +27,10 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -78,8 +79,9 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, transaction, table );
         try {
-            transaction.getCatalog().deleteConstraint( catalogTable.id, constraintName.getSimple() );
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+            CatalogConstraint constraint = transaction.getCatalog().getConstraint( catalogTable.id, constraintName.getSimple() );
+            transaction.getCatalog().deleteConstraint( constraint.id );
+        } catch ( GenericCatalogException | UnknownConstraintException e ) {
             throw new RuntimeException( e );
         }
     }

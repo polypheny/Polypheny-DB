@@ -60,10 +60,10 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownEncodingException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
@@ -104,6 +104,7 @@ import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -269,8 +270,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
                     "DEFINITION"
             );
         } catch ( GenericCatalogException e ) {
@@ -305,7 +304,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "COLUMN_NAME",        // the column name
                     "DATA_TYPE",          // The SQL data type from java.sql.Types.
                     "TYPE_NAME",          // The name of the data type.
-                    "COLUMN_SIZE",        // The precision of the column.
+                    "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
                     "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
                     "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
                     "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
@@ -314,15 +313,13 @@ public class DbmsMeta implements ProtobufMeta {
                     "COLUMN_DEF",         // The default value of the column.
                     "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
                     "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
-                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types).
+                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
                     "ORDINAL_POSITION",   // The index of the column within the table.
                     "IS_NULLABLE",        // Indicates if the column allows null values.
                     // Polypheny-DB specific extensions:
-                    "ENCODING",
-                    "COLLATION",
-                    "FORCE_DEFAULT"
+                    "COLLATION"
             );
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownEncodingException | UnknownColumnException | UnknownTypeException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException e ) {
             throw propagate( e );
         }
     }
@@ -350,8 +347,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_CATALOG",
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
                     "SCHEMA_TYPE"
             );
         } catch ( GenericCatalogException e ) {
@@ -378,9 +373,6 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_CAT",
                     // Polypheny-DB specific extensions:
                     "OWNER",
-                    "ENCODING",
-                    "COLLATION",
-                    "CONNECTION_LIMIT",
                     "DEFAULT_SCHEMA"
             );
         } catch ( GenericCatalogException e ) {
@@ -511,7 +503,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "TABLE_NAME",         // table name
                     "COLUMN_NAME",        // column name
                     "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
-                    "PK_NAME"             // the name of the primary key
+                    "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
             );
         } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw propagate( e );
@@ -600,7 +592,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
                     "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
                     "FK_NAME",                // The name of the foreign key.
-                    "PK_NAME",                // The name of the primary key.
+                    "PK_NAME",                // The name of the primary key. --> always null
                     "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
             );
         } catch ( GenericCatalogException e ) {
@@ -716,8 +708,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "FILTER_CONDITION",     // The filter condition. --> currently always returns null
                     // Polypheny-DB specific extensions
                     "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
-                    "INDEX_TYPE",           // Polypheny-DB specific index type
-                    "KEY_NAME"              // The name of the associated key
+                    "INDEX_TYPE"            // Polypheny-DB specific index type
             );
         } catch ( GenericCatalogException e ) {
             throw propagate( e );
@@ -911,12 +902,14 @@ public class DbmsMeta implements ProtobufMeta {
             statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
             statement.unset();
         } else {
-            throw new RuntimeException( "There is no associated statement" );
+            throw new RuntimeException( "The connection has no statement associated" );
         }
 
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( false );
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         Config parserConfig = configConfigBuilder.build();
 
         // Execute
@@ -1177,7 +1170,7 @@ public class DbmsMeta implements ProtobufMeta {
         final CatalogSchema schema;
         try {
             schema = catalog.getSchema( database.name, defaultSchemaName );
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownEncodingException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         assert schema != null;
@@ -1215,7 +1208,7 @@ public class DbmsMeta implements ProtobufMeta {
         // Check if there is an running transaction
         Transaction transaction = connectionToClose.getCurrentTransaction();
         if ( transaction != null ) {
-            LOG.warn( "There is a running connection associated with this connection {}", connectionToClose );
+            LOG.warn( "There is a running transaction associated with this connection {}", connectionToClose );
             LOG.warn( "Rollback transaction {}", transaction );
             rollback( ch );
         }
