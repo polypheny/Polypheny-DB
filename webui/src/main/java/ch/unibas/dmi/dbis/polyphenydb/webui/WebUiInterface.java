@@ -149,6 +149,8 @@ public class WebUiInterface extends QueryInterface {
 
         post( "/addPrimaryKey", crud::addPrimaryKey, gson::toJson );
 
+        post( "/addUniqueConstraint", crud::addUniqueConstraint, gson::toJson );
+
         post( "/getIndexes", crud::getIndexes, gson::toJson );
 
         post( "/dropIndex", crud::dropIndex, gson::toJson );

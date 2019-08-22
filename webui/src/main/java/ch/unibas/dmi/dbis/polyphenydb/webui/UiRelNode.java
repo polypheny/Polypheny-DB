@@ -60,4 +60,7 @@ public class UiRelNode {
     //filter
     String field;
     String filter;
+
+    //project
+    String fields;
 }

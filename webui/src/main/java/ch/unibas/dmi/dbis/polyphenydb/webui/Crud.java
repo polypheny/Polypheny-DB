@@ -26,8 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
@@ -39,9 +37,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -66,13 +61,12 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
@@ -81,8 +75,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,8 +245,15 @@ public abstract class Crud implements InformationObserver {
                 } else {
                     sort = new SortState();
                 }
-                // todo: get default value
-                header.add( new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter ) );
+                LocalTransactionHandler handler = getHandler();
+                DbColumn dbCol = new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter );
+                if( request.tableId != null ){
+                    String[] t = request.tableId.split( "\\." );
+                    ResultSet defaultVal = handler.getMetaData().getColumns( this.dbName, t[0], t[1], col );
+                    defaultVal.next();
+                    dbCol.defaultValue = defaultVal.getString( 13 );
+                }
+                header.add( dbCol );
             }
             while ( rs.next() ) {
                 String[] row = new String[numOfCols];
@@ -390,19 +389,30 @@ public abstract class Crud implements InformationObserver {
     Result insertRow( final Request req, final Response res ) {
         int rowsAffected = 0;
         Result result;
+        LocalTransactionHandler handler = getHandler();
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         StringJoiner cols = new StringJoiner( ",", "(", ")" );
         StringBuilder query = new StringBuilder();
         query.append( "INSERT INTO " ).append( request.tableId );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
+
+        String[] t = request.tableId.split("\\.");
+        Map<String, Integer> dataTypes = new HashMap<>();
+        try {
+            ResultSet dbCols = handler.getMetaData().getColumns( this.dbName, t[0], t[1], null );
+            while( dbCols.next() ) {
+                dataTypes.put( dbCols.getString( 4 ), dbCols.getInt( 5 ) );
+            }
+        } catch ( SQLException e ) {
+            e.printStackTrace();
+        }
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( entry.getKey() );
             String value = entry.getValue();
             if( value == null ){
                 value = "NULL";
             }
-            //todo default value
-            else if( ! NumberUtils.isNumber( value )) {
+            else if( dataTypes.get( entry.getKey() ) == Types.VARCHAR ){
                 value = "'"+value+"'";
             }
             values.add( value );
@@ -410,7 +420,6 @@ public abstract class Crud implements InformationObserver {
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
 
-        LocalTransactionHandler handler = getHandler();
         try {
             rowsAffected = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
@@ -606,7 +615,6 @@ public abstract class Crud implements InformationObserver {
         builder.append( "UPDATE " ).append( request.tableId ).append( " SET " );
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
-            //todo default value
             if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "%s = NULL", entry.getKey() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
@@ -788,6 +796,33 @@ public abstract class Crud implements InformationObserver {
             }
         }else{
             result = new Result( "Cannot add primary key if no columns are provided." );
+        }
+        return result;
+    }
+
+
+    /**
+     * Add a primary key to a table
+     */
+    Result addUniqueConstraint ( final Request req, final Response res ) {
+        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+        LocalTransactionHandler handler = getHandler();
+        Result result;
+        if( request.constraint.columns.length > 0 ){
+            StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+            for( String s : request.constraint.columns ){
+                joiner.add( s );
+            }
+            String query = "ALTER TABLE " + request.table + " ADD CONSTRAINT " + request.constraint.name + " UNIQUE " + joiner.toString();
+            try{
+                int rows = handler.executeUpdate( query );
+                handler.commit();
+                result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
+            } catch ( SQLException | CatalogTransactionException e ){
+                result = new Result( e.getMessage() );
+            }
+        }else{
+            result = new Result( "Cannot add unique constraint if no columns are provided." );
         }
         return result;
     }

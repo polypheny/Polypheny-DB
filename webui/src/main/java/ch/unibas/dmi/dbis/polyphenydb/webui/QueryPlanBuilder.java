@@ -33,6 +33,7 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
@@ -42,6 +43,7 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang.math.NumberUtils;
 
@@ -120,6 +122,15 @@ public class QueryPlanBuilder {
                 } else{
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ));
                 }
+            case "Project":
+                String[] cols = node.fields.split("[\\s]*,[\\s]*");
+                ArrayList<RexNode> fields = new ArrayList<>();
+                for( String c : cols ){
+                    String[] projectField = c.split( "\\." );
+                    fields.add( builder.field( node.inputCount, projectField[0], projectField[1] ) );
+                }
+                builder.project( fields );
+                return builder;
             default:
                 throw new IllegalArgumentException( "Node of type " + node.type + " is not supported yet." );
         }
