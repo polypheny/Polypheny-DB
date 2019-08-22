@@ -1184,7 +1184,7 @@ final class Statements {
 
 
     private static List<CatalogKey> keyFilter( TransactionHandler transactionHandler, String keyFilter, String keyColumnFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\"" + keyFilter;
+        String keySql = "SELECT k.\"id\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\" FROM \"key\" k, \"table\" t, \"schema\" s, \"database\" d WHERE k.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\"" + keyFilter + " ORDER BY d.\"name\", s.\"name\", t.\"name\"";
         List<CatalogKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
@@ -1202,7 +1202,7 @@ final class Statements {
             throw new GenericCatalogException( e );
         }
         for ( CatalogKey catalogKey : list ) {
-            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyColumnFilter;
+            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + keyColumnFilter + " ORDER BY k.\"id\", kc.\"seq\"";
             try ( ResultSet rs = transactionHandler.executeSelect( keyColumnSql ) ) {
                 List<Long> columnIds = new LinkedList<>();
                 List<String> columnNames = new LinkedList<>();
@@ -1221,7 +1221,7 @@ final class Statements {
 
 
     private static List<CatalogForeignKey> foreignKeyFilter( TransactionHandler transactionHandler, String keyFilter ) throws GenericCatalogException {
-        String keySql = "SELECT k.\"id\", fk.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", refKey.\"id\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + ";";
+        String keySql = "SELECT k.\"id\", fk.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", refKey.\"id\", refTab.\"id\", refTab.\"name\", refSch.\"id\", refSch.\"name\", refDat.\"id\", refDat.\"name\", fk.\"on_update\", fk.\"on_delete\" FROM \"key\" k, \"key\" refKey, \"foreign_key\" fk, \"table\" t, \"schema\" s, \"database\" d, \"table\" refTab, \"schema\" refSch, \"database\" refDat WHERE k.\"id\" = fk.\"key\" AND refKey.\"id\" = fk.\"references\" AND t.\"id\" = k.\"table\" AND refTab.\"id\" = refKey.\"table\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\" AND refTab.\"schema\" = refSch.\"id\" AND refSch.\"database\" = refDat.\"id\"" + keyFilter + " ORDER BY d.\"name\", s.\"name\", t.\"name\", refSch.\"name\", refDat.\"name\", refTab.\"name\"";
         List<CatalogForeignKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
@@ -1249,7 +1249,7 @@ final class Statements {
             throw new GenericCatalogException( e );
         }
         for ( CatalogForeignKey catalogKey : list ) {
-            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + ";";
+            String keyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.id + " ORDER BY k.\"id\", kc.\"seq\"";
             try ( ResultSet rs = transactionHandler.executeSelect( keyColumnSql ) ) {
                 List<Long> columnIds = new LinkedList<>();
                 List<String> columnNames = new LinkedList<>();
@@ -1262,7 +1262,7 @@ final class Statements {
             } catch ( SQLException e ) {
                 throw new GenericCatalogException( e );
             }
-            String refKeyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.referencedKeyId + ";";
+            String refKeyColumnSql = "SELECT c.\"id\", c.\"name\" FROM \"key_column\" kc, \"key\" k, \"column\" c WHERE k.\"id\" = kc.\"key\" AND c.\"id\" = kc.\"column\" AND k.\"id\" = " + catalogKey.referencedKeyId + " ORDER BY k.\"id\", kc.\"seq\"";
             try ( ResultSet rs = transactionHandler.executeSelect( refKeyColumnSql ) ) {
                 List<Long> columnIds = new LinkedList<>();
                 List<String> columnNames = new LinkedList<>();
@@ -1357,10 +1357,12 @@ final class Statements {
         data.put( "table", "" + tableId );
         long keyId = insertHandler( transactionHandler, "key", data );
 
+        int i = 1;
         for ( long columnId : columnIds ) {
             Map<String, String> columnData = new LinkedHashMap<>();
             columnData.put( "key", "" + keyId );
             columnData.put( "column", "" + columnId );
+            columnData.put( "seq", "" + i++ );
             insertHandler( transactionHandler, "key_column", columnData );
         }
 
@@ -1493,13 +1495,13 @@ final class Statements {
 
     static List<CatalogIndex> getIndexes( XATransactionHandler transactionHandler, long tableId, boolean onlyUnique ) throws GenericCatalogException {
         String keyFilter = " AND k.\"table\" = " + tableId;
-        if ( onlyUnique ) {
-            keyFilter += " AND i.\"unique\" = true";
-        }
         List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
         List<CatalogIndex> indexes = new LinkedList<>();
         for ( CatalogKey key : keys ) {
             String indexFilter = " i.\"key\" = " + key.id;
+            if ( onlyUnique ) {
+                indexFilter += " AND i.\"unique\" = true";
+            }
             List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
             indexesOfKey.forEach( i -> i.key = key );
             indexes.addAll( indexesOfKey );

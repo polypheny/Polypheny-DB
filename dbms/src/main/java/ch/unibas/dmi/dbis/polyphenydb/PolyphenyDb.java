@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
@@ -37,7 +38,6 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.Server;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,20 +60,6 @@ public class PolyphenyDb {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
 
-            // TODO
-
-            List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores();
-            for ( CatalogStore store : stores ) {
-                try {
-                    Class<?> clazz = Class.forName( store.adapterClazz );
-                    Constructor<?> ctor = clazz.getConstructor();
-                    Store instance = (Store) ctor.newInstance();
-                    StoreManager.getInstance().register( store.id, store.uniqueName, instance );
-                } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
-                    throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
-                }
-            }
-
             new PolyphenyDb().runPolyphenyDb();
 
         } catch ( Throwable uncaught ) {
@@ -84,7 +70,20 @@ public class PolyphenyDb {
     }
 
 
-    public void runPolyphenyDb() throws SQLException, ClassNotFoundException {
+    public void runPolyphenyDb() throws GenericCatalogException, InstantiationException {
+
+        List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores();
+        for ( CatalogStore store : stores ) {
+            try {
+                Class<?> clazz = Class.forName( store.adapterClazz );
+                Constructor<?> ctor = clazz.getConstructor();
+                Store instance = (Store) ctor.newInstance();
+                StoreManager.getInstance().register( store.id, store.uniqueName, instance );
+            } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
+                throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
+            }
+        }
+
         class ShutdownHelper implements Runnable {
 
             private final Serializable[] joinOnNotStartedLock = new Serializable[0];

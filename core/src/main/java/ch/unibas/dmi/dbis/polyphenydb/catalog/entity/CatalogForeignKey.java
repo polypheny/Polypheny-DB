@@ -92,6 +92,7 @@ public final class CatalogForeignKey extends CatalogKey {
         LinkedList<CatalogForeignKeyColumn> list = new LinkedList<>();
         for ( String columnName : columnNames ) {
             list.add( new CatalogForeignKeyColumn( i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+            i++;
         }
         return list;
     }

@@ -150,8 +150,9 @@ CREATE TABLE "key" (
 
 
 CREATE TABLE "key_column" (
-    "key"    BIGINT NOT NULL REFERENCES "key" ("id"),
-    "column" BIGINT NOT NULL REFERENCES "column" ("id"),
+    "key"    BIGINT  NOT NULL REFERENCES "key" ("id"),
+    "column" BIGINT  NOT NULL REFERENCES "column" ("id"),
+    "seq"    INTEGER NOT NULL,
     PRIMARY KEY ("key", "column")
 );
 
@@ -267,6 +268,8 @@ CREATE INDEX "key_table"
 
 CREATE INDEX "key_column_key"
     ON "key_column" ("key");
+CREATE UNIQUE INDEX "key_column_key_seq"
+    ON "key_column" ("key", "seq");
 
 CREATE INDEX "constraint_key"
     ON "constraint" ("key");
