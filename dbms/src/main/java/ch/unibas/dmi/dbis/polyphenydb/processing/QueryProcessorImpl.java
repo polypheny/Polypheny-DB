@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
+import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
@@ -34,6 +36,17 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel.Prefer;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
@@ -64,16 +77,24 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBasicCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlInsert;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
@@ -174,6 +195,58 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             return prepareDdl( parsed );
         }
 
+        // Add default values for unset fields
+        if ( parsed.getKind() == SqlKind.INSERT ) {
+            SqlInsert insert = (SqlInsert) parsed;
+            SqlNodeList columnList = insert.getTargetColumnList();
+            CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            for ( CatalogColumn column : combinedTable.getColumns() ) {
+                if ( !checkIfSqlNodeListContains( columnList, column.name ) ) {
+                    // Add column
+                    columnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
+                    // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
+                    int i = 0;
+                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                        SqlBasicCall call = (SqlBasicCall) sqlNode;
+                        // Create new values array and copy content of the old one
+                        SqlNode[] oldValues = call.getOperands();
+                        SqlNode[] newValues = new SqlNode[oldValues.length + 1];
+                        System.arraycopy( oldValues, 0, newValues, 0, oldValues.length );
+                        // Add value
+                        if ( column.defaultValue != null ) {
+                            CatalogDefaultValue defaultValue = column.defaultValue;
+                            switch ( column.type ) {
+                                case BOOLEAN:
+                                    newValues[newValues.length - 1] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
+                                    break;
+                                case INTEGER:
+                                case DECIMAL:
+                                case BIGINT:
+                                    newValues[newValues.length - 1] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    break;
+                                case REAL:
+                                case DOUBLE:
+                                    newValues[newValues.length - 1] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    break;
+                                case VARCHAR:
+                                case TEXT:
+                                    newValues[newValues.length - 1] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
+                                    break;
+                                default:
+                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                            }
+                        } else if ( column.nullable ) {
+                            newValues[newValues.length - 1] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                        } else {
+                            throw new PolyphenyDbException( "The not nullable field '" + column.name + " is missing in the insert statement and has no default value defined." );
+                        }
+                        // Replace value in parser tree
+                        ((SqlBasicCall) insert.getSource()).getOperands()[i++] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues );
+                    }
+                }
+            }
+        }
+
         //
         // Validation
         stopWatch.reset();
@@ -185,14 +258,15 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
         PolyphenyDbSqlValidator validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
         Pair<SqlNode, RelDataType> validatePair;*/
-        Pair<SqlNode, RelDataType> validatePair = null;
+        SqlNode validated;
+        RelDataType type;
         try {
-            validatePair = planner.validateAndGetType( parsed );
+            Pair<SqlNode, RelDataType> validatePair = planner.validateAndGetType( parsed );
+            validated = validatePair.left;
+            type = validatePair.right;
         } catch ( ValidationException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
-        SqlNode validated = validatePair.left;
-        RelDataType type = validatePair.right;
         stopWatch.stop();
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Validated query: [{}]", validated );
@@ -621,5 +695,56 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     @Override
     public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
         return null; // TODO: Implement
+    }
+
+
+    private CatalogTable getCatalogTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
+        CatalogTable catalogTable;
+        try {
+            long schemaId;
+            String tableOldName;
+            if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+                schemaId = transaction.getCatalog().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                tableOldName = tableName.names.get( 2 );
+            } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
+                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                tableOldName = tableName.names.get( 1 );
+            } else { // TableName
+                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                tableOldName = tableName.names.get( 0 );
+            }
+            catalogTable = transaction.getCatalog().getTable( schemaId, tableOldName );
+        } catch ( UnknownDatabaseException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.schemaNotFound( tableName.toString() ) );
+        } catch ( UnknownTableException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.tableNotFound( tableName.toString() ) );
+        } catch ( UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+        return catalogTable;
+    }
+
+
+    private CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
+        try {
+            return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private boolean checkIfSqlNodeListContains( SqlNodeList columnList, String name ) {
+        for ( SqlNode node : columnList.getList() ) {
+            SqlIdentifier identifier = (SqlIdentifier) node;
+            if ( RuntimeConfig.CASE_SENSITIVE.getBoolean() ) {
+                return identifier.getSimple().equals( name );
+            } else {
+                return identifier.getSimple().equalsIgnoreCase( name );
+            }
+        }
+        return false;
     }
 }
