@@ -204,52 +204,62 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         // Add default values for unset fields
         if ( parsed.getKind() == SqlKind.INSERT ) {
             SqlInsert insert = (SqlInsert) parsed;
-            SqlNodeList columnList = insert.getTargetColumnList();
+            SqlNodeList oldColumnList = insert.getTargetColumnList();
             CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
+            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
+            int pos = 0;
             for ( CatalogColumn column : combinedTable.getColumns() ) {
-                if ( !checkIfSqlNodeListContains( columnList, column.name ) ) {
-                    // Add column
-                    columnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
-                    // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
-                    int i = 0;
-                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
-                        SqlBasicCall call = (SqlBasicCall) sqlNode;
-                        // Create new values array and copy content of the old one
-                        SqlNode[] oldValues = call.getOperands();
-                        SqlNode[] newValues = new SqlNode[oldValues.length + 1];
-                        System.arraycopy( oldValues, 0, newValues, 0, oldValues.length );
+                // Add column
+                newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
+
+                // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
+                int i = 0;
+                for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                    SqlBasicCall call = (SqlBasicCall) sqlNode;
+                    int position = getPositionInSqlNodeList( oldColumnList, column.name );
+                    if ( position >= 0 ) {
+                        newValues[i][pos] = call.getOperands()[position];
+                    } else {
                         // Add value
                         if ( column.defaultValue != null ) {
                             CatalogDefaultValue defaultValue = column.defaultValue;
                             switch ( column.type ) {
                                 case BOOLEAN:
-                                    newValues[newValues.length - 1] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
                                     break;
                                 case INTEGER:
                                 case DECIMAL:
                                 case BIGINT:
-                                    newValues[newValues.length - 1] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
                                     break;
                                 case REAL:
                                 case DOUBLE:
-                                    newValues[newValues.length - 1] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
                                     break;
                                 case VARCHAR:
                                 case TEXT:
-                                    newValues[newValues.length - 1] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
                                     break;
                                 default:
                                     throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
                             }
                         } else if ( column.nullable ) {
-                            newValues[newValues.length - 1] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                            newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
                         } else {
-                            throw new PolyphenyDbException( "The not nullable field '" + column.name + " is missing in the insert statement and has no default value defined." );
+                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
                         }
-                        // Replace value in parser tree
-                        ((SqlBasicCall) insert.getSource()).getOperands()[i++] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues );
+                        i++;
                     }
+                    pos++;
                 }
+            }
+            // Add new column list
+            insert.setColumnList( newColumnList );
+            // Replace value in parser tree
+            for ( int i = 0; i < newValues.length; i++ ) {
+                SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
+                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
             }
         }
 
@@ -742,15 +752,21 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     }
 
 
-    private boolean checkIfSqlNodeListContains( SqlNodeList columnList, String name ) {
+    private int getPositionInSqlNodeList( SqlNodeList columnList, String name ) {
+        int i = 0;
         for ( SqlNode node : columnList.getList() ) {
             SqlIdentifier identifier = (SqlIdentifier) node;
             if ( RuntimeConfig.CASE_SENSITIVE.getBoolean() ) {
-                return identifier.getSimple().equals( name );
+                if ( identifier.getSimple().equals( name ) ) {
+                    return i;
+                }
             } else {
-                return identifier.getSimple().equalsIgnoreCase( name );
+                if ( identifier.getSimple().equalsIgnoreCase( name ) ) {
+                    return i;
+                }
             }
+            i++;
         }
-        return false;
+        return -1;
     }
 }

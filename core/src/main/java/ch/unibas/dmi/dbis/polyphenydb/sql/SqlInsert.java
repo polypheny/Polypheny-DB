@@ -50,6 +50,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.List;
+import lombok.Setter;
 
 
 /**
@@ -62,6 +63,7 @@ public class SqlInsert extends SqlCall {
     SqlNodeList keywords;
     SqlNode targetTable;
     SqlNode source;
+    @Setter
     SqlNodeList columnList;
 
 
