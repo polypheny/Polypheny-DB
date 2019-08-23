@@ -88,10 +88,13 @@ public class PolySchemaBuilder {
         for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
             Map<String, Table> tableMap = new HashMap<>();
             SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), combinedSchema.getSchema().name ).plus();
+            // Create schema on stores
+            for ( Store store : StoreManager.getInstance().getStores().values() ) {
+                store.createNewSchema( rootSchema, combinedSchema.getSchema().name );
+            }
             for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
                 int storeId = combinedTable.getPlacements().get( 0 ).storeId;
                 Store store = StoreManager.getInstance().getStore( storeId );
-                store.createNewSchema( rootSchema, combinedSchema.getSchema().name );
                 Table table = store.createTableSchema( combinedTable );
                 s.add( combinedTable.getTable().name, table );
                 tableMap.put( combinedTable.getTable().name, table );
