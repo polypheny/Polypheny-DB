@@ -31,6 +31,7 @@ import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
+import ch.unibas.dmi.dbis.polyphenydb.webui.JdbcTransactionHandler.TransactionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
@@ -39,8 +40,6 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -77,7 +76,7 @@ public class CrudPolypheny extends Crud {
     ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
 
         if ( request.depth < 1 ) {
             LOGGER.error( "Trying to fetch a schemaTree with depth < 1" );
@@ -153,7 +152,7 @@ public class CrudPolypheny extends Crud {
         Result result;
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
 
         // rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
@@ -220,11 +219,11 @@ public class CrudPolypheny extends Crud {
                 sBuilder.append( query );
             }
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             try {
                 handler.rollback();
-            } catch ( JdbcConnectionException e2 ) {
+            } catch ( TransactionHandlerException e2 ) {
                 result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             }
         }
@@ -239,7 +238,7 @@ public class CrudPolypheny extends Crud {
     @Override
     Result addColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
         if ( request.newColumn.maxLength != null ) {
             query = query + String.format( "(%d)", request.newColumn.maxLength );
@@ -272,7 +271,7 @@ public class CrudPolypheny extends Crud {
             int affectedRows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -282,7 +281,7 @@ public class CrudPolypheny extends Crud {
     @Override
     Result dropConstraint( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         String query;
         if ( request.constraint.type.equals( "PRIMARY KEY" ) ) {
             query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", request.table );
@@ -294,7 +293,7 @@ public class CrudPolypheny extends Crud {
             int rows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( rows ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -304,16 +303,17 @@ public class CrudPolypheny extends Crud {
     /**
      * Drop an index of a table
      */
+    @Override
     Result dropIndex( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         String query = String.format( "ALTER TABLE %s DROP INDEX %s", index.getTable(), index.getName() );
         Result result;
         try {
             int a = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -323,9 +323,10 @@ public class CrudPolypheny extends Crud {
     /**
      * Create an index for a table
      */
+    @Override
     Result createIndex( final Request req, final Response res ) {
         Index index = this.gson.fromJson( req.body(), Index.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
         for ( String col : index.getColumns() ) {
@@ -336,7 +337,7 @@ public class CrudPolypheny extends Crud {
             int a = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( a ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;

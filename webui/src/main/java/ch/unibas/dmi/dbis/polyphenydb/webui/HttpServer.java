@@ -60,7 +60,8 @@ public class HttpServer extends QueryInterface {
     private Gson gson = new Gson();
 
 
-    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port, final Crud crud ) {
+    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
+
         super( transactionManager, authenticator );
 
         port( port );
@@ -83,26 +84,17 @@ public class HttpServer extends QueryInterface {
             }
         } );
 
-        crudRoutes( crud );
+        crudRoutes( new CrudPolypheny(
+                "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver",
+                "jdbc:polypheny://",
+                "localhost",
+                20591,
+                "app",
+                "user",
+                "pa" )
+                .setTransactionManager( transactionManager ) );
 
         LOGGER.info( "HTTP Server started." );
-    }
-
-
-    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
-        this(
-                transactionManager,
-                authenticator,
-                port,
-                new CrudPolypheny(
-                        "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver",
-                        "jdbc:polypheny://",
-                        "localhost",
-                        20591,
-                        "app",
-                        "user",
-                        "pa" )
-                        .setTransactionManager( transactionManager ) );
     }
 
 

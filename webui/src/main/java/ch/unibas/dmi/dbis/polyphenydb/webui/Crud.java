@@ -37,6 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.webui.JdbcTransactionHandler.TransactionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -53,8 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -83,7 +82,7 @@ import spark.Response;
 
 public abstract class Crud implements InformationObserver {
 
-    static final Logger LOGGER = LoggerFactory.getLogger( CrudPostgres.class );
+    static final Logger LOGGER = LoggerFactory.getLogger( Crud.class );
     final String dbName;
     protected final String url;
     private final String user;
@@ -141,35 +140,14 @@ public abstract class Crud implements InformationObserver {
     /**
      * Get an instance of the LocalTransactionHandler
      */
-    TransactionHandler getHandler() {
-        TransactionHandler handler = null;
+    JdbcTransactionHandler getHandler() {
+        JdbcTransactionHandler handler = null;
         try {
-            handler = TransactionHandler.getTransactionHandler( this.driver, this.url, this.user, this.password );
-        } catch ( JdbcConnectionException e ) {
+            handler = JdbcTransactionHandler.getTransactionHandler( this.driver, this.url, this.user, this.password );
+        } catch ( TransactionHandlerException e ) {
             LOGGER.error( "Could not get TransactionHandler", e );
         }
         return handler;
-    }
-
-
-    /**
-     * Get the Number of rows in a table
-     */
-    int getTableSize( final UIRequest request ) {
-        int size = 0;
-        String query = "SELECT count(*) FROM " + request.tableId;
-        if ( request.filter != null ) {
-            query += " " + filterTable( request.filter );
-        }
-        TransactionHandler handler = getHandler();
-        try ( ResultSet rs = handler.executeSelect( query ) ) {
-            rs.next();
-            size = rs.getInt( 1 );
-            handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
-            LOGGER.error( e.getMessage() );
-        }
-        return size;
     }
 
 
@@ -179,7 +157,7 @@ public abstract class Crud implements InformationObserver {
     Result getTable( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
 
         StringBuilder query = new StringBuilder();
         String where = "";
@@ -195,13 +173,13 @@ public abstract class Crud implements InformationObserver {
         try ( ResultSet rs = handler.executeSelect( query.toString() ) ) {
             result = buildResult( rs, request );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             //result = new Result( e.getMessage() );
             result = new Result( "Could not fetch table " + request.tableId );
             try {
                 handler.rollback();
                 return result;
-            } catch ( JdbcConnectionException ex ) {
+            } catch ( TransactionHandlerException ex ) {
                 LOGGER.error( "Could not rollback", ex );
             }
         }
@@ -227,54 +205,6 @@ public abstract class Crud implements InformationObserver {
     }
 
 
-    /**
-     * From a ResultSet: build a Result object that the UI can understand
-     */
-    Result buildResult( final ResultSet rs, final UIRequest request ) {
-        ArrayList<String[]> data = new ArrayList<>();
-        ArrayList<DbColumn> header = new ArrayList<>();
-        Result result;
-
-        try {
-            ResultSetMetaData meta = rs.getMetaData();
-            int numOfCols = meta.getColumnCount();
-            for ( int i = 1; i <= numOfCols; i++ ) {
-                String col = meta.getColumnName( i );
-                String filter = "";
-                if ( request.filter != null && request.filter.containsKey( col ) ) {
-                    filter = request.filter.get( col );
-                }
-                SortState sort;
-                if ( request.sortState != null && request.sortState.containsKey( col ) ) {
-                    sort = request.sortState.get( col );
-                } else {
-                    sort = new SortState();
-                }
-                TransactionHandler handler = getHandler();
-                DbColumn dbCol = new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter );
-                if ( request.tableId != null ) {
-                    String[] t = request.tableId.split( "\\." );
-                    ResultSet defaultVal = handler.getMetaData().getColumns( this.dbName, t[0], t[1], col );
-                    defaultVal.next();
-                    dbCol.defaultValue = defaultVal.getString( 13 );
-                }
-                header.add( dbCol );
-            }
-            while ( rs.next() ) {
-                String[] row = new String[numOfCols];
-                for ( int i = 1; i <= numOfCols; i++ ) {
-                    row[i - 1] = rs.getString( i );
-                }
-                data.add( row );
-            }
-            result = new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
-        } catch ( SQLException e ) {
-            result = new Result( e.getMessage() );
-        }
-        return result;
-    }
-
-
     abstract ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res );
 
 
@@ -283,7 +213,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, new String[]{ "TABLE" } ) ) {
             ArrayList<String> tables = new ArrayList<>();
@@ -292,7 +222,7 @@ public abstract class Crud implements InformationObserver {
             }
             result = new Result( new Debug().setAffectedRows( tables.size() ) ).setTables( tables );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -312,12 +242,12 @@ public abstract class Crud implements InformationObserver {
             query.append( "TRUNCATE TABLE " );
         }
         query.append( request.schema ).append( "." ).append( request.table );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
         return result;
@@ -371,16 +301,16 @@ public abstract class Crud implements InformationObserver {
         }
         query.append( colJoiner.toString() );
         query.append( ")" );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
                 handler.rollback();
-            } catch ( JdbcConnectionException ex ) {
+            } catch ( TransactionHandlerException ex ) {
                 LOGGER.error( "Could not rollback CREATE TABLE statement: " + ex.getMessage(), ex );
             }
         }
@@ -394,7 +324,7 @@ public abstract class Crud implements InformationObserver {
     Result insertRow( final Request req, final Response res ) {
         int rowsAffected = 0;
         Result result;
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         StringJoiner cols = new StringJoiner( ",", "(", ")" );
         StringBuilder query = new StringBuilder();
@@ -428,7 +358,7 @@ public abstract class Crud implements InformationObserver {
             rowsAffected = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
         return result;
@@ -464,7 +394,7 @@ public abstract class Crud implements InformationObserver {
     ArrayList<Result> anyQuery( final Request req, final Response res ) {
         QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
         ArrayList<Result> results = new ArrayList<>();
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         boolean autoCommit = true;
 
         // TODO: make it possible to use pagination
@@ -489,7 +419,7 @@ public abstract class Crud implements InformationObserver {
                     handler.commit();
                     executionTime += System.nanoTime() - temp;
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
-                } catch ( JdbcConnectionException e ) {
+                } catch ( TransactionHandlerException e ) {
                     executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
@@ -499,7 +429,7 @@ public abstract class Crud implements InformationObserver {
                     handler.rollback();
                     executionTime += System.nanoTime() - temp;
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
-                } catch ( JdbcConnectionException e ) {
+                } catch ( TransactionHandlerException e ) {
                     executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
@@ -531,7 +461,7 @@ public abstract class Crud implements InformationObserver {
                         handler.commit();
                     }
                     rs.close();
-                } catch ( SQLException | JdbcConnectionException e ) {
+                } catch ( SQLException | TransactionHandlerException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
@@ -546,7 +476,7 @@ public abstract class Crud implements InformationObserver {
                     if ( autoCommit ) {
                         handler.commit();
                     }
-                } catch ( SQLException | JdbcConnectionException e ) {
+                } catch ( SQLException | TransactionHandlerException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
@@ -601,7 +531,7 @@ public abstract class Crud implements InformationObserver {
         }
         builder.append( joiner.toString() );
 
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
             // only commit if one row is deleted
@@ -612,7 +542,7 @@ public abstract class Crud implements InformationObserver {
                 handler.rollback();
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
         return result;
@@ -642,7 +572,7 @@ public abstract class Crud implements InformationObserver {
         }
         builder.append( " WHERE " ).append( where.toString() );
 
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
 
@@ -653,7 +583,7 @@ public abstract class Crud implements InformationObserver {
                 handler.rollback();
                 result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
         return result;
@@ -665,7 +595,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result getColumns( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
 
         ArrayList<String> primaryColumns = new ArrayList<>();
@@ -677,7 +607,7 @@ public abstract class Crud implements InformationObserver {
                 primaryColumns.add( rs.getString( 4 ) );
             }
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
 
@@ -687,7 +617,7 @@ public abstract class Crud implements InformationObserver {
                 cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), rs.getString( 13 ) ) );
             }
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
 
@@ -711,14 +641,14 @@ public abstract class Crud implements InformationObserver {
      */
     Result dropColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
         try {
             int affectedRows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( affectedRows ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -732,7 +662,7 @@ public abstract class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         String[] t = request.tableId.split( "\\." );
         Result result;
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         ArrayList<TableConstraint> constraints = new ArrayList<>();
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
@@ -745,7 +675,7 @@ public abstract class Crud implements InformationObserver {
                 temp.get( rs.getString( 6 ) ).add( rs.getString( 4 ) );
             }
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
 
@@ -790,7 +720,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result addPrimaryKey( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
@@ -802,7 +732,7 @@ public abstract class Crud implements InformationObserver {
                 int rows = handler.executeUpdate( query );
                 handler.commit();
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | JdbcConnectionException e ) {
+            } catch ( SQLException | TransactionHandlerException e ) {
                 result = new Result( e.getMessage() );
             }
         } else {
@@ -817,7 +747,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result addUniqueConstraint( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
@@ -829,7 +759,7 @@ public abstract class Crud implements InformationObserver {
                 int rows = handler.executeUpdate( query );
                 handler.commit();
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | JdbcConnectionException e ) {
+            } catch ( SQLException | TransactionHandlerException e ) {
                 result = new Result( e.getMessage() );
             }
         } else {
@@ -845,7 +775,7 @@ public abstract class Crud implements InformationObserver {
     Result getIndexes( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Result result;
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
 
         try {
             ResultSet indexInfo = handler.getMetaData().getIndexInfo( this.dbName, request.schema, request.table, false, true );
@@ -868,7 +798,7 @@ public abstract class Crud implements InformationObserver {
             }
             result = new Result( header, data.toArray( new String[0][2] ) );
             handler.commit();
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -893,7 +823,7 @@ public abstract class Crud implements InformationObserver {
      * Tables with its columns
      */
     Uml getUml( final Request req, final Response res ) {
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, request.schema, null ) ) {
@@ -953,7 +883,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result addForeignKey( final Request req, final Response res ) {
         ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         Result result;
         try {
             String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
@@ -961,7 +891,7 @@ public abstract class Crud implements InformationObserver {
             handler.executeUpdate( sql );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( 1 ) );
-        } catch ( SQLException | JdbcConnectionException e ) {
+        } catch ( SQLException | TransactionHandlerException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -988,7 +918,7 @@ public abstract class Crud implements InformationObserver {
      */
     Result schemaRequest( final Request req, final Response res ) {
         Schema schema = this.gson.fromJson( req.body(), Schema.class );
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
 
         //create schema
         if( schema.isCreate() && ! schema.isDrop() ) {
@@ -1004,7 +934,7 @@ public abstract class Crud implements InformationObserver {
                 int rows = handler.executeUpdate( query.toString() );
                 handler.commit();
                 return new Result( new Debug().setAffectedRows( rows ) );
-            } catch ( SQLException | JdbcConnectionException e ) {
+            } catch ( SQLException | TransactionHandlerException e ) {
                 return new Result( e.getMessage() );
             }
         }
@@ -1022,7 +952,7 @@ public abstract class Crud implements InformationObserver {
                 int rows = handler.executeUpdate( query.toString() );
                 handler.commit();
                 return new Result( new Debug().setAffectedRows( rows ) );
-            } catch ( SQLException | JdbcConnectionException e ) {
+            } catch ( SQLException | TransactionHandlerException e ) {
                 return new Result( e.getMessage() );
             }
         } else {
@@ -1035,7 +965,7 @@ public abstract class Crud implements InformationObserver {
      * Get all supported data types of the DBMS.
      */
     public Result getTypeInfo( final Request req, final Response res ) {
-        TransactionHandler handler = getHandler();
+        JdbcTransactionHandler handler = getHandler();
         ArrayList<String[]> data = new ArrayList<>();
         Result result;
         try ( ResultSet rs = handler.getMetaData().getTypeInfo() ) {
@@ -1123,5 +1053,79 @@ public abstract class Crud implements InformationObserver {
      * Get available actions for foreign key constraints
      */
     abstract String[] getForeignKeyActions( final Request req, final Response res );
+
+    // -----------------------------------------------------------------------
+    //                                Helper
+    // -----------------------------------------------------------------------
+
+
+    /**
+     * From a ResultSet: build a Result object that the UI can understand
+     */
+    private Result buildResult( final ResultSet rs, final UIRequest request ) {
+        ArrayList<String[]> data = new ArrayList<>();
+        ArrayList<DbColumn> header = new ArrayList<>();
+        Result result;
+
+        try {
+            ResultSetMetaData meta = rs.getMetaData();
+            int numOfCols = meta.getColumnCount();
+            for ( int i = 1; i <= numOfCols; i++ ) {
+                String col = meta.getColumnName( i );
+                String filter = "";
+                if ( request.filter != null && request.filter.containsKey( col ) ) {
+                    filter = request.filter.get( col );
+                }
+                SortState sort;
+                if ( request.sortState != null && request.sortState.containsKey( col ) ) {
+                    sort = request.sortState.get( col );
+                } else {
+                    sort = new SortState();
+                }
+                JdbcTransactionHandler handler = getHandler();
+                DbColumn dbCol = new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter );
+                if ( request.tableId != null ) {
+                    String[] t = request.tableId.split( "\\." );
+                    ResultSet defaultVal = handler.getMetaData().getColumns( this.dbName, t[0], t[1], col );
+                    defaultVal.next();
+                    dbCol.defaultValue = defaultVal.getString( 13 );
+                }
+                header.add( dbCol );
+            }
+            while ( rs.next() ) {
+                String[] row = new String[numOfCols];
+                for ( int i = 1; i <= numOfCols; i++ ) {
+                    row[i - 1] = rs.getString( i );
+                }
+                data.add( row );
+            }
+            result = new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+        } catch ( SQLException e ) {
+            result = new Result( e.getMessage() );
+        }
+        return result;
+    }
+
+
+    /**
+     * Get the Number of rows in a table
+     */
+    private int getTableSize( final UIRequest request ) {
+        int size = 0;
+        String query = "SELECT count(*) FROM " + request.tableId;
+        if ( request.filter != null ) {
+            query += " " + filterTable( request.filter );
+        }
+        JdbcTransactionHandler handler = getHandler();
+        try ( ResultSet rs = handler.executeSelect( query ) ) {
+            rs.next();
+            size = rs.getInt( 1 );
+            handler.commit();
+        } catch ( SQLException | TransactionHandlerException e ) {
+            LOGGER.error( e.getMessage() );
+        }
+        return size;
+    }
+
 
 }

@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement;
+package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import java.sql.Connection;
@@ -41,11 +41,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class TransactionHandler {
+public class JdbcTransactionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger( TransactionHandler.class );
+    private static final Logger logger = LoggerFactory.getLogger( JdbcTransactionHandler.class );
 
-    private static final Queue<TransactionHandler> freeInstances = new ConcurrentLinkedQueue<>();
+    private static final Queue<JdbcTransactionHandler> freeInstances = new ConcurrentLinkedQueue<>();
 
 
     private Connection connection;
@@ -57,12 +57,27 @@ public class TransactionHandler {
     private List<Statement> openStatements;
 
 
-    private TransactionHandler( final String driver, final String url, final String user, final String pass ) throws JdbcConnectionException {
+    /**
+     * @param driver driver name
+     * @param url url
+     * @param user user name
+     * @param pass password
+     */
+    public static JdbcTransactionHandler getTransactionHandler( final String driver, final String url, final String user, final String pass ) throws TransactionHandlerException {
+        JdbcTransactionHandler handler = freeInstances.poll();
+        if ( handler == null ) {
+            handler = new JdbcTransactionHandler( driver, url, user, pass );
+        }
+        return handler;
+    }
+
+
+    private JdbcTransactionHandler( final String driver, final String url, final String user, final String pass ) throws TransactionHandlerException {
         super();
         try {
             Class.forName( driver );
         } catch ( ClassNotFoundException e ) {
-            throw new JdbcConnectionException( "Could not load jdbc driver.", e );
+            throw new TransactionHandlerException( "Could not load jdbc driver.", e );
         }
 
         Properties props = new Properties();
@@ -73,14 +88,14 @@ public class TransactionHandler {
         try {
             connection = DriverManager.getConnection( url, props );
         } catch ( SQLException e ) {
-            throw new JdbcConnectionException( "Could not establish connection to driver", e );
+            throw new TransactionHandlerException( "Could not establish connection to driver", e );
         }
 
         try {
             connection.setAutoCommit( false );
             statement = connection.createStatement();
         } catch ( SQLException e ) {
-            throw new JdbcConnectionException( "Error while connecting to catalog storage", e );
+            throw new TransactionHandlerException( "Error while connecting to catalog storage", e );
         }
 
     }
@@ -104,22 +119,22 @@ public class TransactionHandler {
     }
 
 
-    public void commit() throws JdbcConnectionException {
+    public void commit() throws TransactionHandlerException {
         try {
             connection.commit();
         } catch ( SQLException e ) {
-            throw new JdbcConnectionException( "Error while committing transaction in catalog storage", e );
+            throw new TransactionHandlerException( "Error while committing transaction in catalog storage", e );
         } finally {
             close();
         }
     }
 
 
-    public void rollback() throws JdbcConnectionException {
+    public void rollback() throws TransactionHandlerException {
         try {
             connection.rollback();
         } catch ( SQLException e ) {
-            throw new JdbcConnectionException( "Error while rollback transaction in catalog storage", e );
+            throw new TransactionHandlerException( "Error while rollback transaction in catalog storage", e );
         } finally {
             close();
         }
@@ -143,20 +158,6 @@ public class TransactionHandler {
     }
 
 
-    /**
-     * @param driver driver name
-     * @param url url
-     * @param user user name
-     * @param pass password
-     */
-    public static TransactionHandler getTransactionHandler( final String driver, final String url, final String user, final String pass ) throws JdbcConnectionException {
-        TransactionHandler handler = freeInstances.poll();
-        if ( handler == null ) {
-            handler = new TransactionHandler( driver, url, user, pass );
-        }
-        return handler;
-    }
-
 
     public DatabaseMetaData getMetaData() throws SQLException {
         return connection.getMetaData();
@@ -170,6 +171,15 @@ public class TransactionHandler {
         Statement statement = connection.createStatement();
         openStatements.add( statement );
         return statement;
+    }
+
+
+    public static class TransactionHandlerException extends Exception {
+
+        TransactionHandlerException( String message, Exception e ) {
+            super( message, e );
+        }
+
     }
 
 }
