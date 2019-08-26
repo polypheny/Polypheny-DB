@@ -771,8 +771,21 @@ public class CatalogImpl extends Catalog {
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+
+            if ( nullable ) {
+                // Check if the column is part of a primary key (pk's are not allowed to contain null values)
+                CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
+                CatalogTable catalogTable = Statements.getTable( transactionHandler, catalogColumn.tableId );
+                CatalogKey catalogKey = Statements.getPrimaryKey( transactionHandler, catalogTable.primaryKey );
+                if ( catalogKey.columnIds.contains( columnId ) ) {
+                    throw new GenericCatalogException( "Unable to allow null values in a column that is part of the primary key." );
+                }
+            } else {
+                // TODO: Check that the column does not contain any null values
+            }
+
             Statements.setNullable( transactionHandler, columnId, nullable );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException | UnknownColumnException | UnknownTableTypeException | UnknownTableException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -906,21 +919,30 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
 
+            // Check if the columns are set 'not null'
+            for ( Long columnId : columnIds ) {
+                CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
+                if ( catalogColumn.nullable ) {
+                    throw new GenericCatalogException( "Primary key is not allowed to contain null values but the column '" + catalogColumn.name + "' is declared nullable." );
+                }
+            }
+
             // TODO: Check if the current values are unique
 
             // Check if there is already a primary key defined for this table and if so, delete it.
-            if ( catalogTable.primaryKey != null ) {
-                CatalogCombinedKey combinedKey = getCombinedKey( catalogTable.primaryKey );
+            Long oldPrimaryKey = catalogTable.primaryKey;
+            if ( oldPrimaryKey != null ) {
+                CatalogCombinedKey combinedKey = getCombinedKey( oldPrimaryKey );
                 if ( combinedKey.getUniqueCount() == 1 && combinedKey.getReferencedBy().size() > 0 ) {
                     // This primary key is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
                 }
                 Statements.setPrimaryKey( transactionHandler, tableId, null );
-                deleteKeyIfNoLongerUsed( transactionHandler, catalogTable.primaryKey );
+                deleteKeyIfNoLongerUsed( transactionHandler, oldPrimaryKey );
             }
             long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
             Statements.setPrimaryKey( transactionHandler, tableId, keyId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException | UnknownKeyException e ) {
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException | UnknownKeyException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1032,6 +1054,14 @@ public class CatalogImpl extends Catalog {
             for ( CatalogKey refKey : keys ) {
                 if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
                     CatalogCombinedKey combinedKey = getCombinedKey( transactionHandler, refKey.id );
+                    // Check if the data type of the referenced column matches the data type of the referencing column
+                    int i = 0;
+                    for ( CatalogColumn referencedColumn : combinedKey.getColumns() ) {
+                        CatalogColumn referencingColumn = Statements.getColumn( transactionHandler, columnIds.get( i++ ) );
+                        if ( referencedColumn.type != referencingColumn.type ) {
+                            throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
+                        }
+                    }
                     if ( combinedKey.getUniqueCount() > 0 ) {
                         long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
                         Statements.addForeignKey( transactionHandler, keyId, refKey.id, constraintName, onUpdate, onDelete );
@@ -1039,8 +1069,8 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
-            throw new RuntimeException( "The referenced columns do not define a primary key, unique index or unique constraint." );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException e ) {
+            throw new GenericCatalogException( "The referenced columns do not define a primary key, unique index or unique constraint." );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }

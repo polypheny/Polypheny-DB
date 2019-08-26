@@ -86,8 +86,8 @@ public class JdbcMetaTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA test" );
-                statement.executeUpdate( "CREATE TABLE foo( id INTEGER, name VARCHAR(20) NULL, bar VARCHAR(33) NOT NULL COLLATE CASE SENSITIVE, PRIMARY KEY (id) )" );
-                statement.executeUpdate( "CREATE TABLE test.foo2( id INTEGER, name VARCHAR(20) NULL, foobar VARCHAR(33) NOT NULL, PRIMARY KEY (id, name) )" );
+                statement.executeUpdate( "CREATE TABLE foo( id INTEGER NOT NULL, name VARCHAR(20) NULL, bar VARCHAR(33) COLLATE CASE SENSITIVE, PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE test.foo2( id INTEGER NOT NULL, name VARCHAR(20) NOT NULL, foobar VARCHAR(33) NULL, PRIMARY KEY (id, name) )" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT u_foo1 UNIQUE (name, foobar)" );
                 statement.executeUpdate( "ALTER TABLE foo ADD CONSTRAINT fk_foo_1 FOREIGN KEY (name, bar) REFERENCES test.foo2(name, foobar) ON UPDATE CASCADE ON DELETE SET NULL" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT fk_foo_2 FOREIGN KEY (id) REFERENCES public.foo(id)" );
@@ -190,9 +190,9 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "COLLATION", rsmd.getColumnName( 19 ) );
 
             // Check data
-            final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 1, "", null, null, null, null, 1, "YES", null };
+            final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
             final Object[] columnName = new Object[]{ "APP", "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", "CASE_INSENSITIVE" };
-            final Object[] columnBar = new Object[]{ "APP", "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 0, "", null, null, null, null, 3, "NO", "CASE_SENSITIVE" };
+            final Object[] columnBar = new Object[]{ "APP", "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", "CASE_SENSITIVE" };
             checkResultSet(
                     connection.getMetaData().getColumns( "APP", null, "foo", null ),
                     ImmutableList.of( columnId, columnName, columnBar ) );

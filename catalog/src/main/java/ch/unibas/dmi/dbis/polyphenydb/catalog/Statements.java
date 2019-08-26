@@ -1401,7 +1401,7 @@ final class Statements {
 
 
     static CatalogForeignKey getForeignKey( XATransactionHandler transactionHandler, long foreignKeyId ) throws GenericCatalogException, UnknownForeignKeyException {
-        String keyFilter = " AND fk.\"id\" = " + foreignKeyId;
+        String keyFilter = " AND fk.\"key\" = " + foreignKeyId;
         List<CatalogForeignKey> foreignKeys = foreignKeyFilter( transactionHandler, keyFilter );
         if ( foreignKeys.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );

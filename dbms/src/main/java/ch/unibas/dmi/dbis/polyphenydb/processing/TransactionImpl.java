@@ -67,7 +67,6 @@ public class TransactionImpl implements Transaction {
 
     private QueryProcessor queryProcessor;
     private Catalog catalog;
-    private PolyphenyDbSchema schema;
 
     @Getter
     private CatalogUser user;
