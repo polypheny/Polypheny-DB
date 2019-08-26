@@ -23,22 +23,47 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement;
+package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-public class CatalogTransactionException extends CatalogException {
-
-    private Exception exception;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 
 
-    public CatalogTransactionException( final String message ) {
-        super( message );
-    }
+/**
+ * Model for a RelNode coming from the Relalg-Builder in the UI
+ */
+public class UIRelNode {
 
+    /**
+     * Type of the RelNode, e.g. TableScan
+     */
+    String type;
 
-    public CatalogTransactionException( final String message, final Exception e ) {
-        super( message, e );
-        exception = e;
-    }
+    /**
+     * Children of this node in the tree
+     */
+    UIRelNode[] children;
 
+    /**
+     * Number of inputs of a node.
+     * Required by the RelBuilder
+     */
+    int inputCount;
+
+    //tableScan
+    String table;
+
+    //join
+    JoinRelType join;
+    //join condition
+    String operator;
+    String col1;
+    String col2;
+
+    //filter
+    String field;
+    String filter;
+
+    //project
+    String fields;
 }

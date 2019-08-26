@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import java.util.StringJoiner;
 import lombok.Getter;
 
 
@@ -41,6 +40,7 @@ public class Index {
     private String name;
     private String method;
     private String[] columns;
+
 
     public Index( final String schema, final String table, final String name, final String method, final String[] columns ) {
         this.schema = schema;

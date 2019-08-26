@@ -80,10 +80,11 @@ public class QueryPlanBuilder {
 
     /**
      * Build a tree using the RelBuilder
+     *
      * @param topNode top node from the tree from the user interface, with its children
      * @param transaction transaction
      */
-    public static RelNode buildFromTree ( final UiRelNode topNode, final Transaction transaction ) {
+    public static RelNode buildFromTree( final UIRelNode topNode, final Transaction transaction ) {
         RelBuilder b = createRelBuilder( transaction );
         b = buildStep( b, topNode );
         return b.build();
@@ -93,39 +94,43 @@ public class QueryPlanBuilder {
     /**
      * Set up the RelBuilder recursively
      */
-    private static RelBuilder buildStep ( RelBuilder builder, final UiRelNode node ) {
-        if( node.children != null ){
-            for( UiRelNode n: node.children ){
+    private static RelBuilder buildStep( RelBuilder builder, final UIRelNode node ) {
+        if ( node.children != null ) {
+            for ( UIRelNode n : node.children ) {
                 builder = buildStep( builder, n );
             }
         }
 
         String[] field1 = null;
         String[] field2 = null;
-        if( node.col1 != null ) field1 = node.col1.split( "\\." );
-        if( node.col2 != null ) field2 = node.col2.split( "\\." );
+        if ( node.col1 != null ) {
+            field1 = node.col1.split( "\\." );
+        }
+        if ( node.col2 != null ) {
+            field2 = node.col2.split( "\\." );
+        }
         switch ( node.type ) {
             case "TableScan":
-                return builder.scan( node.table ).as ( node.table );
+                return builder.scan( node.table ).as( node.table );
             case "Join":
-                return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] )));
+                return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
                 String[] field = node.field.split( "\\." );
-                if( NumberUtils.isNumber( node.filter ) ){
+                if ( NumberUtils.isNumber( node.filter ) ) {
                     Number filter;
                     Double dbl = Double.parseDouble( node.filter );
                     filter = dbl;
-                    if( dbl % 1 == 0 ){
+                    if ( dbl % 1 == 0 ) {
                         filter = Integer.parseInt( node.filter );
                     }
-                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( filter ) ));
-                } else{
-                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ));
+                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( filter ) ) );
+                } else {
+                    return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ) );
                 }
             case "Project":
-                String[] cols = node.fields.split("[\\s]*,[\\s]*");
+                String[] cols = node.fields.split( "[\\s]*,[\\s]*" );
                 ArrayList<RexNode> fields = new ArrayList<>();
-                for( String c : cols ){
+                for ( String c : cols ) {
                     String[] projectField = c.split( "\\." );
                     fields.add( builder.field( node.inputCount, projectField[0], projectField[1] ) );
                 }
@@ -139,6 +144,7 @@ public class QueryPlanBuilder {
 
     /**
      * Parse an operator and return it as SqlOperator
+     *
      * @param operator operator for a filter condition
      * @return parsed operator as SqlOperator
      */
@@ -158,7 +164,7 @@ public class QueryPlanBuilder {
             case ">=":
                 return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
             default:
-                throw new IllegalArgumentException( "Operator '" + operator + "' is not supported.") ;
+                throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
         }
     }
 

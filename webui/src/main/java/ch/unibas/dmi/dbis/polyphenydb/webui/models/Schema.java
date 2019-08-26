@@ -26,8 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,10 +56,11 @@ public class Schema {
 
     /**
      * Schema Constructor
+     *
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Schema( final String name, final String type ){
+    public Schema( final String name, final String type ) {
         this.name = name;
         this.type = type;
     }
@@ -68,33 +69,37 @@ public class Schema {
     /**
      * Create or drop a schema. If schema.create is true, it will be created, if schema.drop is true, it will be dropped.
      */
-    public Result executeCreateOrDrop ( final LocalTransactionHandler handler ) {
-        if( this.create && !this.drop ) return createSchema( handler );
-        else if ( this.drop ) return dropSchema( handler );
-        else return new Result( "Neither the field 'create' nor the field 'drop' was set." );
+    public Result executeCreateOrDrop( final TransactionHandler handler ) {
+        if ( this.create && !this.drop ) {
+            return createSchema( handler );
+        } else if ( this.drop ) {
+            return dropSchema( handler );
+        } else {
+            return new Result( "Neither the field 'create' nor the field 'drop' was set." );
+        }
     }
 
 
     /**
      * Create the query for the schema creation and execute it
      */
-    private Result createSchema ( final LocalTransactionHandler handler ){
-        if( !this.create && this.drop ){
+    private Result createSchema( final TransactionHandler handler ) {
+        if ( !this.create && this.drop ) {
             return new Result( "Did not create schema " + this.name + " since the boolean 'create' was not set." );
         }
         StringBuilder query = new StringBuilder( "CREATE SCHEMA " );
-        if( this.ifExists ){
+        if ( this.ifExists ) {
             query.append( "IF NOT EXISTS " );
         }
         query.append( "\"" ).append( this.name ).append( "\"" );
-        if( this.authorization != null && !this.authorization.equals( "" )){
+        if ( this.authorization != null && !this.authorization.equals( "" ) ) {
             query.append( " AUTHORIZATION " ).append( this.authorization );
         }
         try {
             int rows = handler.executeUpdate( query.toString() );
             handler.commit();
             return new Result( new Debug().setAffectedRows( rows ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             return new Result( e.getMessage() );
         }
     }
@@ -103,23 +108,23 @@ public class Schema {
     /**
      * Create the query to drop this schema and execute it
      */
-    private Result dropSchema ( final LocalTransactionHandler handler ) {
-        if( !this.drop ){
+    private Result dropSchema( final TransactionHandler handler ) {
+        if ( !this.drop ) {
             return new Result( "Did not drop schema " + this.name + " since the boolean 'drop' was not set." );
         }
         StringBuilder query = new StringBuilder( "DROP SCHEMA " );
-        if( this.ifExists ){
+        if ( this.ifExists ) {
             query.append( "IF EXISTS " );
         }
         query.append( "\"" ).append( this.name ).append( "\"" );
-        if( this.cascade ){
+        if ( this.cascade ) {
             query.append( " CASCADE" );
         }
         try {
             int rows = handler.executeUpdate( query.toString() );
             handler.commit();
             return new Result( new Debug().setAffectedRows( rows ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             return new Result( e.getMessage() );
         }
     }

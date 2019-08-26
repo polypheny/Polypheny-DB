@@ -53,14 +53,14 @@ import spark.Spark;
 /**
  * HTTP server for serving the Polypheny-DB UI
  */
-public class WebUiInterface extends QueryInterface {
+public class HttpServer extends QueryInterface {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( WebUiInterface.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( HttpServer.class );
     private final ConfigManager cm = ConfigManager.getInstance();
     private Gson gson = new Gson();
 
 
-    public WebUiInterface( final TransactionManager transactionManager, final Authenticator authenticator, final int port, Crud crud ) {
+    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port, final Crud crud ) {
         super( transactionManager, authenticator );
 
         port( port );
@@ -74,9 +74,9 @@ public class WebUiInterface extends QueryInterface {
         // get modified index.html
         get( "/", ( req, res ) -> {
             res.type( "text/html" );
-            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream()) {
+            try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
                 return streamToString( stream );
-            } catch( NullPointerException e ){
+            } catch ( NullPointerException e ) {
                 return "Error: Spark server could not find index.html";
             } catch ( SocketException e ) {
                 return "Error: Spark server could not determine its ip address.";
@@ -89,7 +89,7 @@ public class WebUiInterface extends QueryInterface {
     }
 
 
-    public WebUiInterface( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
+    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
         this(
                 transactionManager,
                 authenticator,
@@ -113,7 +113,7 @@ public class WebUiInterface extends QueryInterface {
 
 
     /**
-     * defines the routes for this Server
+     * Defines the routes for this Server
      */
     private void crudRoutes( Crud crud ) {
 
@@ -182,17 +182,17 @@ public class WebUiInterface extends QueryInterface {
     private String streamToString( final InputStream stream ) {
         StringBuilder stringBuilder = new StringBuilder();
         String line = null;
-        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ))) {
-            while (( line = bufferedReader.readLine() ) != null ) {
-                if( line.contains( "//SPARK-REPLACE" )){
+        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ) ) ) {
+            while ( (line = bufferedReader.readLine()) != null ) {
+                if ( line.contains( "//SPARK-REPLACE" ) ) {
                     stringBuilder.append( "\nlocalStorage.setItem('configServer.port', '" ).append( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() ).append( "');" );
                     stringBuilder.append( "\nlocalStorage.setItem('informationServer.port', '" ).append( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() ).append( "');" );
                     stringBuilder.append( "\nlocalStorage.setItem('webUI.port', '" ).append( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ).append( "');" );
-                }else {
-                    stringBuilder.append(line);
+                } else {
+                    stringBuilder.append( line );
                 }
             }
-        } catch ( IOException e ){
+        } catch ( IOException e ) {
             LOGGER.error( e.getMessage() );
         }
 
@@ -204,7 +204,7 @@ public class WebUiInterface extends QueryInterface {
      * Define websocket paths
      */
     private void webSockets() {
-        webSocket( "/queryAnalyzer", CrudWebSocket.class );
+        webSocket( "/queryAnalyzer", WebSocket.class );
     }
 
 

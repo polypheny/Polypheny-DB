@@ -28,29 +28,62 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/**
- * Represents a transaction and provides methods to interact with the database system.
- */
-abstract class TransactionHandler {
+public class TransactionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger( TransactionHandler.class );
 
-    Connection connection;
-    Statement statement;
+    private static final Queue<TransactionHandler> freeInstances = new ConcurrentLinkedQueue<>();
+
+
+    private Connection connection;
+    private Statement statement;
 
     /**
      * List of all statements which have to be closed to free resources
      */
-    List<Statement> openStatements;
+    private List<Statement> openStatements;
+
+
+    private TransactionHandler( final String driver, final String url, final String user, final String pass ) throws JdbcConnectionException {
+        super();
+        try {
+            Class.forName( driver );
+        } catch ( ClassNotFoundException e ) {
+            throw new JdbcConnectionException( "Could not load jdbc driver.", e );
+        }
+
+        Properties props = new Properties();
+        props.setProperty( user, pass );
+        //props.setProperty( "ssl", sslEnabled );
+        props.setProperty( "wire_protocol", "PROTO3" );
+
+        try {
+            connection = DriverManager.getConnection( url, props );
+        } catch ( SQLException e ) {
+            throw new JdbcConnectionException( "Could not establish connection to driver", e );
+        }
+
+        try {
+            connection.setAutoCommit( false );
+            statement = connection.createStatement();
+        } catch ( SQLException e ) {
+            throw new JdbcConnectionException( "Error while connecting to catalog storage", e );
+        }
+
+    }
 
 
     public int executeUpdate( final String sql ) throws SQLException {
@@ -71,14 +104,61 @@ abstract class TransactionHandler {
     }
 
 
-    abstract boolean prepare() throws CatalogTransactionException;
+    public void commit() throws JdbcConnectionException {
+        try {
+            connection.commit();
+        } catch ( SQLException e ) {
+            throw new JdbcConnectionException( "Error while committing transaction in catalog storage", e );
+        } finally {
+            close();
+        }
+    }
 
-    abstract void commit() throws CatalogTransactionException;
 
-    abstract void rollback() throws CatalogTransactionException;
+    public void rollback() throws JdbcConnectionException {
+        try {
+            connection.rollback();
+        } catch ( SQLException e ) {
+            throw new JdbcConnectionException( "Error while rollback transaction in catalog storage", e );
+        } finally {
+            close();
+        }
+    }
 
 
-    public DatabaseMetaData getMetaData () throws SQLException {
+    @SuppressWarnings("Duplicates")
+    private void close() {
+        try {
+            if ( openStatements != null ) {
+                for ( Statement openStatement : openStatements ) {
+                    openStatement.close();
+                }
+            }
+        } catch ( SQLException e ) {
+            logger.debug( "Exception while closing connections in connection handler", e );
+        } finally {
+            openStatements = null;
+            freeInstances.add( this );
+        }
+    }
+
+
+    /**
+     * @param driver driver name
+     * @param url url
+     * @param user user name
+     * @param pass password
+     */
+    public static TransactionHandler getTransactionHandler( final String driver, final String url, final String user, final String pass ) throws JdbcConnectionException {
+        TransactionHandler handler = freeInstances.poll();
+        if ( handler == null ) {
+            handler = new TransactionHandler( driver, url, user, pass );
+        }
+        return handler;
+    }
+
+
+    public DatabaseMetaData getMetaData() throws SQLException {
         return connection.getMetaData();
     }
 

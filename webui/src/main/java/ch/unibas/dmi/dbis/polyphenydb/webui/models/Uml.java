@@ -30,9 +30,8 @@ import java.util.ArrayList;
 
 
 /**
- * Stores information that is needed for the UML view, such as
- * the list of all tables of a schema with their columns
- * and a list of all the foreign keys of a schema
+ * Stores information that is needed for the UML view, such as the list of all tables of a schema with their columns and a list of
+ * all the foreign keys of a schema
  */
 public class Uml {
 
@@ -40,7 +39,7 @@ public class Uml {
     private ForeignKey[] foreignKeys;
 
 
-    public Uml ( final ArrayList<DbTable> tables, final ArrayList<ForeignKey> foreignKeys ) {
+    public Uml( final ArrayList<DbTable> tables, final ArrayList<ForeignKey> foreignKeys ) {
         this.tables = tables.toArray( new DbTable[0] );
         this.foreignKeys = foreignKeys.toArray( new ForeignKey[0] );
     }

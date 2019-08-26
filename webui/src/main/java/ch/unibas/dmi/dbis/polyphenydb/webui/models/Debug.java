@@ -27,17 +27,19 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 /**
- * infos about a query, e.g. number of affected rows
+ * Infos about a query, e.g. number of affected rows
  */
 public class Debug {
 
     private int affectedRows;
     private String generatedQuery;
 
+
     public Debug setAffectedRows( final int affectedRows ) {
         this.affectedRows = affectedRows;
         return this;
     }
+
 
     public Debug setGeneratedQuery( final String query ) {
         this.generatedQuery = query;

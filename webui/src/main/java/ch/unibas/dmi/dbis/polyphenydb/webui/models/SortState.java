@@ -27,13 +27,13 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 /**
- * defines how a column is sorted
- * needed for Gson
+ * Defines how a column is sorted.
+ * Required for Gson.
  */
 public class SortState {
 
     /**
-     * how the column is supposed to be sorted (ASC or DESC)
+     * How the column is supposed to be sorted (ASC or DESC)
      */
     public SortDirection direction;
 
@@ -44,13 +44,13 @@ public class SortState {
     public boolean sorting;
 
 
-    public SortState () {
+    public SortState() {
         this.direction = SortDirection.DESC;
         this.sorting = false;
     }
 
 
-    public SortState ( final SortDirection direction) {
+    public SortState( final SortDirection direction ) {
         this.direction = direction;
         this.sorting = true;
     }

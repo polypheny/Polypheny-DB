@@ -31,34 +31,33 @@ import java.util.Map;
 
 
 /**
- * needed to parse a request coming from the UI using Gson
+ * Required to parse a request coming from the UI using Gson
  */
 public class UIRequest {
 
     /**
-     * the name of the table the data should be fetched from
+     * The name of the table the data should be fetched from
      */
     public String tableId;
 
     /**
-     * information about the pagination,
+     * Information about the pagination,
      * what current page should be loaded
      */
     public int currentPage;
 
     /**
-     * data that should be inserted
+     * Data that should be inserted
      */
     public Map<String, String> data;
 
     /**
-     * for each column: if it should be filtered
-     * empty string if it should not be filtered
+     * For each column: If it should be filtered empty string if it should not be filtered
      */
     public Map<String, String> filter;
 
     /**
-     * for each column: if and how it should be sorted
+     * For each column: If and how it should be sorted
      */
     public Map<String, SortState> sortState;
 

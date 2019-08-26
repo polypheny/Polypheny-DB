@@ -32,17 +32,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@WebSocket
-public class CrudWebSocket {
+@org.eclipse.jetty.websocket.api.annotations.WebSocket
+public class WebSocket {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( InformationWebSocket.class );
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+
 
     @OnWebSocketConnect
     public void connected( final Session session ) {

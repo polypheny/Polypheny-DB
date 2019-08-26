@@ -31,19 +31,22 @@ import java.util.StringJoiner;
 
 
 public class TableConstraint {
+
     public String name;
     public String type;
     public boolean deferrable;
     public boolean initially_deferred;
     public String[] columns;
 
-    public TableConstraint ( final String name, final String type, ArrayList<String> columns ) {
+
+    public TableConstraint( final String name, final String type, ArrayList<String> columns ) {
         this.name = name;
         this.type = type;
         this.columns = columns.toArray( new String[0] );
     }
 
-    public String[] asRow () {
+
+    public String[] asRow() {
         StringJoiner joiner = new StringJoiner( ", " );
         for ( String column : columns ) {
             joiner.add( column );

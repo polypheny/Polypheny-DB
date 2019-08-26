@@ -30,15 +30,14 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 
 
 /**
- * Model for a request to edit or create a Table
- * used for request where you want to truncate/drop a table
+ * Model for a request to edit or create a Table used for request where you want to truncate/drop a table
  * and when you want to create a new table
  */
 public class EditTableRequest {
 
     public String schema;
     public String table;
-    public String action;//truncate / drop
+    public String action; // truncate / drop
     public DbColumn[] columns;
 
 }

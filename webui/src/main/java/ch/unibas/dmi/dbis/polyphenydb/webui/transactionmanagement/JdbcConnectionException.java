@@ -26,20 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement;
 
 
-public class CatalogConnectionException extends CatalogException {
+public class JdbcConnectionException extends Exception {
 
-    private Exception exception;
-
-
-    public CatalogConnectionException( final String message ) {
-        super( message );
-        exception = null;
-    }
-
-
-    public CatalogConnectionException( final String message, final Exception e ) {
+    public JdbcConnectionException( String message, Exception e ) {
         super( message, e );
-        exception = e;
     }
 
 }

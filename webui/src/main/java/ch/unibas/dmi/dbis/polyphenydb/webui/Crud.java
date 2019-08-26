@@ -53,9 +53,8 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogConnectionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -86,18 +85,19 @@ public abstract class Crud implements InformationObserver {
 
     static final Logger LOGGER = LoggerFactory.getLogger( CrudPostgres.class );
     final String dbName;
-    protected final String URL;
-    private final String USER;
-    private final String PASS;
+    protected final String url;
+    private final String user;
+    private final String password;
     @Getter
-    private final int PORT;
-    private String driver;
+    private final int port;
+    private final String driver;
     Gson gson = new Gson();
     TransactionManager transactionManager;
 
 
     /**
      * Constructor
+     *
      * @param jdbc jdbc url
      * @param driver driver name
      * @param host host name
@@ -106,15 +106,15 @@ public abstract class Crud implements InformationObserver {
      * @param user user name
      * @param pass password
      */
-     Crud( final String driver, final String jdbc, final String host, final int port, final String dbName, final String user, final String pass ) {
+    Crud( final String driver, final String jdbc, final String host, final int port, final String dbName, final String user, final String pass ) {
         this.driver = driver;
         this.dbName = dbName;
         //Time zone: https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
-        this.URL = jdbc + host + ":" + port + "/" + dbName;//"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
+        this.url = jdbc + host + ":" + port + "/" + dbName;//"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
 
-        this.USER = user;
-        this.PASS = pass;
-        this.PORT = port;
+        this.user = user;
+        this.password = pass;
+        this.port = port;
 
         try {
             Class.forName( driver );
@@ -133,7 +133,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * Get the number of rows that should be displayed in one page in the data view
      */
-    int getPageSize () {
+    int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
     }
 
@@ -141,11 +141,11 @@ public abstract class Crud implements InformationObserver {
     /**
      * Get an instance of the LocalTransactionHandler
      */
-    LocalTransactionHandler getHandler() {
-        LocalTransactionHandler handler = null;
+    TransactionHandler getHandler() {
+        TransactionHandler handler = null;
         try {
-            handler = LocalTransactionHandler.getTransactionHandler( this.driver, this.URL, this.USER, this.PASS );
-        } catch ( CatalogConnectionException e ) {
+            handler = TransactionHandler.getTransactionHandler( this.driver, this.url, this.user, this.password );
+        } catch ( JdbcConnectionException e ) {
             LOGGER.error( "Could not get TransactionHandler", e );
         }
         return handler;
@@ -153,18 +153,20 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * get the Number of rows in a table
+     * Get the Number of rows in a table
      */
-     int getTableSize ( final UIRequest request ) {
+    int getTableSize( final UIRequest request ) {
         int size = 0;
         String query = "SELECT count(*) FROM " + request.tableId;
-        if( request.filter != null) query += " " + filterTable( request.filter );
-        LocalTransactionHandler handler = getHandler();
+        if ( request.filter != null ) {
+            query += " " + filterTable( request.filter );
+        }
+        TransactionHandler handler = getHandler();
         try ( ResultSet rs = handler.executeSelect( query ) ) {
             rs.next();
             size = rs.getInt( 1 );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             LOGGER.error( e.getMessage() );
         }
         return size;
@@ -172,31 +174,34 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * returns the content of a table
-     * with a maximum of PAGESIZE elements
+     * Returns the content of a table with a maximum of PAGESIZE elements.
      */
     Result getTable( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         Result result;
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
 
         StringBuilder query = new StringBuilder();
         String where = "";
-        if( request.filter != null) where = filterTable( request.filter );
+        if ( request.filter != null ) {
+            where = filterTable( request.filter );
+        }
         String orderBy = "";
-        if ( request.sortState != null ) orderBy = sortTable( request.sortState );
-        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( getPageSize() ).append( " OFFSET " ).append( ( Math.max( 0, request.currentPage - 1 )) * getPageSize() );
+        if ( request.sortState != null ) {
+            orderBy = sortTable( request.sortState );
+        }
+        query.append( "SELECT * FROM " ).append( request.tableId ).append( where ).append( orderBy ).append( " LIMIT " ).append( getPageSize() ).append( " OFFSET " ).append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
 
         try ( ResultSet rs = handler.executeSelect( query.toString() ) ) {
             result = buildResult( rs, request );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             //result = new Result( e.getMessage() );
             result = new Result( "Could not fetch table " + request.tableId );
             try {
                 handler.rollback();
                 return result;
-            } catch ( CatalogTransactionException ex ) {
+            } catch ( JdbcConnectionException ex ) {
                 LOGGER.error( "Could not rollback", ex );
             }
         }
@@ -205,7 +210,7 @@ public abstract class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, t[0], t[1], null ) ) {
             rs.next();//expecting only one result
-            if( rs.getString( 4 ).equals( "TABLE" ) ){
+            if ( rs.getString( 4 ).equals( "TABLE" ) ) {
                 result.setType( ResultType.TABLE );
             } else {
                 result.setType( ResultType.VIEW );
@@ -225,7 +230,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * From a ResultSet: build a Result object that the UI can understand
      */
-     Result buildResult( final ResultSet rs, final UIRequest request ) {
+    Result buildResult( final ResultSet rs, final UIRequest request ) {
         ArrayList<String[]> data = new ArrayList<>();
         ArrayList<DbColumn> header = new ArrayList<>();
         Result result;
@@ -233,21 +238,21 @@ public abstract class Crud implements InformationObserver {
         try {
             ResultSetMetaData meta = rs.getMetaData();
             int numOfCols = meta.getColumnCount();
-            for( int i = 1; i <= numOfCols; i++) {
+            for ( int i = 1; i <= numOfCols; i++ ) {
                 String col = meta.getColumnName( i );
                 String filter = "";
-                if(request.filter != null && request.filter.containsKey( col )){
+                if ( request.filter != null && request.filter.containsKey( col ) ) {
                     filter = request.filter.get( col );
                 }
                 SortState sort;
-                if( request.sortState != null && request.sortState.containsKey( col )){
+                if ( request.sortState != null && request.sortState.containsKey( col ) ) {
                     sort = request.sortState.get( col );
                 } else {
                     sort = new SortState();
                 }
-                LocalTransactionHandler handler = getHandler();
+                TransactionHandler handler = getHandler();
                 DbColumn dbCol = new DbColumn( meta.getColumnName( i ), meta.getColumnTypeName( i ), meta.isNullable( i ) == ResultSetMetaData.columnNullable, meta.getColumnDisplaySize( i ), sort, filter );
-                if( request.tableId != null ){
+                if ( request.tableId != null ) {
                     String[] t = request.tableId.split( "\\." );
                     ResultSet defaultVal = handler.getMetaData().getColumns( this.dbName, t[0], t[1], col );
                     defaultVal.next();
@@ -257,8 +262,8 @@ public abstract class Crud implements InformationObserver {
             }
             while ( rs.next() ) {
                 String[] row = new String[numOfCols];
-                for( int i = 1; i <= numOfCols; i++) {
-                    row[i-1] = rs.getString( i );
+                for ( int i = 1; i <= numOfCols; i++ ) {
+                    row[i - 1] = rs.getString( i );
                 }
                 data.add( row );
             }
@@ -278,16 +283,16 @@ public abstract class Crud implements InformationObserver {
      */
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
-        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, new String[]{"TABLE"} )) {
+        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, new String[]{ "TABLE" } ) ) {
             ArrayList<String> tables = new ArrayList<>();
             while ( rs.next() ) {
                 tables.add( rs.getString( 3 ) );
             }
             result = new Result( new Debug().setAffectedRows( tables.size() ) ).setTables( tables );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -307,12 +312,12 @@ public abstract class Crud implements InformationObserver {
             query.append( "TRUNCATE TABLE " );
         }
         query.append( request.schema ).append( "." ).append( request.table );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
         return result;
@@ -333,14 +338,14 @@ public abstract class Crud implements InformationObserver {
         int primaryCounter = 0;
         for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.dataType);
+            colBuilder.append( col.name ).append( " " ).append( col.dataType );
             if ( col.maxLength != null ) {
                 colBuilder.append( String.format( "(%d)", col.maxLength ) );
             }
             if ( !col.nullable ) {
                 colBuilder.append( " NOT NULL" );
             }
-            if( col.defaultValue != null ) {
+            if ( col.defaultValue != null ) {
                 switch ( col.dataType ) {
                     case "int8":
                     case "int4":
@@ -351,7 +356,7 @@ public abstract class Crud implements InformationObserver {
                         colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
                         break;
                     default:
-                        //varchar, timestamptz, bool
+                        // varchar, timestamptz, bool
                         colBuilder.append( " DEFAULT " ).append( col.defaultValue );
                 }
             }
@@ -366,16 +371,16 @@ public abstract class Crud implements InformationObserver {
         }
         query.append( colJoiner.toString() );
         query.append( ")" );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         try {
             int a = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setGeneratedQuery( query.toString() ).setAffectedRows( a ) );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
                 handler.rollback();
-            } catch ( CatalogTransactionException ex ) {
+            } catch ( JdbcConnectionException ex ) {
                 LOGGER.error( "Could not rollback CREATE TABLE statement: " + ex.getMessage(), ex );
             }
         }
@@ -384,23 +389,23 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * insert data into a table
+     * Insert data into a table
      */
     Result insertRow( final Request req, final Response res ) {
         int rowsAffected = 0;
         Result result;
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         StringJoiner cols = new StringJoiner( ",", "(", ")" );
         StringBuilder query = new StringBuilder();
         query.append( "INSERT INTO " ).append( request.tableId );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        String[] t = request.tableId.split("\\.");
+        String[] t = request.tableId.split( "\\." );
         Map<String, Integer> dataTypes = new HashMap<>();
         try {
             ResultSet dbCols = handler.getMetaData().getColumns( this.dbName, t[0], t[1], null );
-            while( dbCols.next() ) {
+            while ( dbCols.next() ) {
                 dataTypes.put( dbCols.getString( 4 ), dbCols.getInt( 5 ) );
             }
         } catch ( SQLException e ) {
@@ -409,11 +414,10 @@ public abstract class Crud implements InformationObserver {
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( entry.getKey() );
             String value = entry.getValue();
-            if( value == null ){
+            if ( value == null ) {
                 value = "NULL";
-            }
-            else if( dataTypes.get( entry.getKey() ) == Types.VARCHAR ){
-                value = "'"+value+"'";
+            } else if ( dataTypes.get( entry.getKey() ) == Types.VARCHAR ) {
+                value = "'" + value + "'";
             }
             values.add( value );
         }
@@ -424,7 +428,7 @@ public abstract class Crud implements InformationObserver {
             rowsAffected = handler.executeUpdate( query.toString() );
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
         }
         return result;
@@ -447,7 +451,9 @@ public abstract class Crud implements InformationObserver {
             }
         }
         String out = "";
-        if ( counter > 0 ) out = joiner.toString();
+        if ( counter > 0 ) {
+            out = joiner.toString();
+        }
         return out;
     }
 
@@ -458,16 +464,16 @@ public abstract class Crud implements InformationObserver {
     ArrayList<Result> anyQuery( final Request req, final Response res ) {
         QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
         ArrayList<Result> results = new ArrayList<>();
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         boolean autoCommit = true;
 
-        //todo make it possible to use pagination
+        // TODO: make it possible to use pagination
 
-        //No autoCommit if the query has commits.
-        //ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
-        Pattern p = Pattern.compile(".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-        Matcher m = p.matcher(request.query);
-        if( m.matches() ) {
+        // No autoCommit if the query has commits.
+        // Ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
+        Pattern p = Pattern.compile( ".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+        Matcher m = p.matcher( request.query );
+        if ( m.matches() ) {
             autoCommit = false;
         }
 
@@ -475,43 +481,43 @@ public abstract class Crud implements InformationObserver {
         long temp = 0;
         Pattern semicolon = Pattern.compile( ";[\\s]*$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
         String[] queries = semicolon.split( request.query );
-        for ( String query: queries ) {
+        for ( String query : queries ) {
             Result result;
-            if( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
+            if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     handler.commit();
                     executionTime += System.nanoTime() - temp;
-                    results.add( new Result( new Debug().setGeneratedQuery( query )) );
-                } catch ( CatalogTransactionException e ) {
+                    results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
+                } catch ( JdbcConnectionException e ) {
                     executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
-            } else if( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
+            } else if ( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
                     handler.rollback();
                     executionTime += System.nanoTime() - temp;
-                    results.add( new Result( new Debug().setGeneratedQuery( query )) );
-                } catch ( CatalogTransactionException  e ) {
+                    results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
+                } catch ( JdbcConnectionException e ) {
                     executionTime += System.nanoTime() - temp;
                     LOGGER.error( e.toString() );
                 }
-            } else if( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
-                //Add limit if not specified
-                Pattern p2 = Pattern.compile(".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-                if( ! p2.matcher( query ).find() ){
+            } else if ( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
+                // Add limit if not specified
+                Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                if ( !p2.matcher( query ).find() ) {
                     query = query + " LIMIT " + getPageSize();
                 }
-                //decrease limit if it is too large
-                else{
+                // decrease limit if it is too large
+                else {
                     Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                     Matcher limitMatcher = pattern.matcher( query );
-                    if( limitMatcher.find() ){
-                        int limit = Integer.parseInt( limitMatcher.group(2) );
-                        if( limit > getPageSize() ){
+                    if ( limitMatcher.find() ) {
+                        int limit = Integer.parseInt( limitMatcher.group( 2 ) );
+                        if ( limit > getPageSize() ) {
                             //see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
-                            query = limitMatcher.replaceFirst("$1 " + getPageSize());
+                            query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
                         }
                     }
                 }
@@ -521,9 +527,11 @@ public abstract class Crud implements InformationObserver {
                     executionTime += System.nanoTime() - temp;
                     result = buildResult( rs, request ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
-                    if( autoCommit ) handler.commit();
+                    if ( autoCommit ) {
+                        handler.commit();
+                    }
                     rs.close();
-                } catch ( SQLException | CatalogTransactionException e ) {
+                } catch ( SQLException | JdbcConnectionException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
@@ -535,8 +543,10 @@ public abstract class Crud implements InformationObserver {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
                     results.add( result );
-                    if( autoCommit ) handler.commit();
-                } catch ( SQLException | CatalogTransactionException e ) {
+                    if ( autoCommit ) {
+                        handler.commit();
+                    }
+                } catch ( SQLException | JdbcConnectionException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
@@ -544,19 +554,19 @@ public abstract class Crud implements InformationObserver {
             }
         }
 
-        if( request.analyze ){
+        if ( request.analyze ) {
             InformationManager queryAnalyzer = InformationManager.getInstance( UUID.randomUUID().toString() ).observe( this );
             InformationPage p1 = new InformationPage( "p1", "Query analysis", "Analysis of the query." );
             InformationGroup g1 = new InformationGroup( "Execution time", "p1" );
             InformationHtml html;
-            if( executionTime < 1e4 ) {
-                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %d nanoseconds", executionTime) );
+            if ( executionTime < 1e4 ) {
+                html = new InformationHtml( "exec_time", "Execution time", String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                DateFormat df = new SimpleDateFormat("m 'min' s 'sec' S 'ms'");
-                String durationText = df.format( new Date(millis) );
-                html = new InformationHtml( "exec_time", "Execution time", String.format("Execution time: %s", durationText) );
+                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
+                String durationText = df.format( new Date( millis ) );
+                html = new InformationHtml( "exec_time", "Execution time", String.format( "Execution time: %s", durationText ) );
             }
             queryAnalyzer.addPage( p1 );
             queryAnalyzer.addGroup( g1 );
@@ -568,9 +578,10 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * delete a row from a table
-     * the row is determined by the value of every column in that row (conjunction)
-     * the transaction is being rolled back, if more that one row would be deleted
+     * Delete a row from a table.
+     * The row is determined by the value of every column in that row (conjunction).
+     * The transaction is being rolled back, if more that one row would be deleted.
+     * TODO: This is not a nice solution
      */
     Result deleteRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
@@ -580,8 +591,8 @@ public abstract class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition = "";
-            if ( entry.getValue() == null) {
-                //todo fix: doesn't work for integers
+            if ( entry.getValue() == null ) {
+                // TODO: fix: doesn't work for integers
                 condition = String.format( "%s IS NULL", entry.getKey() );
             } else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
@@ -590,10 +601,10 @@ public abstract class Crud implements InformationObserver {
         }
         builder.append( joiner.toString() );
 
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
-            //only commit if one row is deleted
+            // only commit if one row is deleted
             if ( numOfRows == 1 ) {
                 handler.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
@@ -601,7 +612,7 @@ public abstract class Crud implements InformationObserver {
                 handler.rollback();
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
         return result;
@@ -631,7 +642,7 @@ public abstract class Crud implements InformationObserver {
         }
         builder.append( " WHERE " ).append( where.toString() );
 
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         try {
             int numOfRows = handler.executeUpdate( builder.toString() );
 
@@ -642,7 +653,7 @@ public abstract class Crud implements InformationObserver {
                 handler.rollback();
                 result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
         }
         return result;
@@ -654,29 +665,29 @@ public abstract class Crud implements InformationObserver {
      */
     Result getColumns( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
 
         ArrayList<String> primaryColumns = new ArrayList<>();
         String[] t = request.tableId.split( "\\." );
         ArrayList<DbColumn> cols = new ArrayList<>();
 
-        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] )) {
-            while( rs.next() ){
+        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] ) ) {
+            while ( rs.next() ) {
                 primaryColumns.add( rs.getString( 4 ) );
             }
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
 
         handler = getHandler();
         try ( ResultSet rs = handler.getMetaData().getColumns( this.dbName, t[0], t[1], "" ) ) {
-            while( rs.next() ){
+            while ( rs.next() ) {
                 cols.add( new DbColumn( rs.getString( 4 ), rs.getString( 6 ), rs.getInt( 11 ) == 1, rs.getInt( 7 ), primaryColumns.contains( rs.getString( 4 ) ), rs.getString( 13 ) ) );
             }
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
 
@@ -700,14 +711,14 @@ public abstract class Crud implements InformationObserver {
      */
     Result dropColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
         String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
         try {
             int affectedRows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( affectedRows ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -721,33 +732,33 @@ public abstract class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         String[] t = request.tableId.split( "\\." );
         Result result;
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         ArrayList<TableConstraint> constraints = new ArrayList<>();
         Map<String, ArrayList<String>> temp = new HashMap<>();
 
-        //get primary keys
-        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] )) {
-            while ( rs.next() ){
-                if( ! temp.containsKey( rs.getString( 6 ))){
+        // get primary keys
+        try ( ResultSet rs = handler.getMetaData().getPrimaryKeys( this.dbName, t[0], t[1] ) ) {
+            while ( rs.next() ) {
+                if ( !temp.containsKey( rs.getString( 6 ) ) ) {
                     temp.put( rs.getString( 6 ), new ArrayList<>() );
                 }
                 temp.get( rs.getString( 6 ) ).add( rs.getString( 4 ) );
             }
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
 
-        for ( Map.Entry<String, ArrayList<String>> entry: temp.entrySet()) {
-            constraints.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ));
+        for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
+            constraints.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ) );
         }
 
-        //get foreign keys
+        // get foreign keys
         temp.clear();
         handler = getHandler();
-        try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, t[0], t[1] )) {
-            while ( rs.next() ){
-                if( ! temp.containsKey( rs.getString( 12 ))){
+        try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, t[0], t[1] ) ) {
+            while ( rs.next() ) {
+                if ( !temp.containsKey( rs.getString( 12 ) ) ) {
                     temp.put( rs.getString( 12 ), new ArrayList<>() );
                 }
                 temp.get( rs.getString( 12 ) ).add( rs.getString( 8 ) );
@@ -756,17 +767,17 @@ public abstract class Crud implements InformationObserver {
             result = new Result( e.getMessage() );
         }
 
-        for ( Map.Entry<String, ArrayList<String>> entry: temp.entrySet()) {
-            constraints.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ));
+        for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
+            constraints.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
         }
 
         DbColumn[] header = { new DbColumn( "constraint name" ), new DbColumn( "constraint type" ), new DbColumn( "columns" ) };
         ArrayList<String[]> data = new ArrayList<>();
-        constraints.forEach( (c) -> {
+        constraints.forEach( ( c ) -> {
             data.add( c.asRow() );
         } );
 
-        result = new Result( header, data.toArray( new String[0][2] ));
+        result = new Result( header, data.toArray( new String[0][2] ) );
         return result;
     }
 
@@ -777,24 +788,24 @@ public abstract class Crud implements InformationObserver {
     /**
      * Add a primary key to a table
      */
-    Result addPrimaryKey ( final Request req, final Response res ) {
+    Result addPrimaryKey( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
-        if( request.constraint.columns.length > 0 ){
+        if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-            for( String s : request.constraint.columns ){
+            for ( String s : request.constraint.columns ) {
                 joiner.add( s );
             }
             String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
-            try{
+            try {
                 int rows = handler.executeUpdate( query );
                 handler.commit();
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | CatalogTransactionException e ){
+            } catch ( SQLException | JdbcConnectionException e ) {
                 result = new Result( e.getMessage() );
             }
-        }else{
+        } else {
             result = new Result( "Cannot add primary key if no columns are provided." );
         }
         return result;
@@ -804,24 +815,24 @@ public abstract class Crud implements InformationObserver {
     /**
      * Add a primary key to a table
      */
-    Result addUniqueConstraint ( final Request req, final Response res ) {
+    Result addUniqueConstraint( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
-        if( request.constraint.columns.length > 0 ){
+        if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
-            for( String s : request.constraint.columns ){
+            for ( String s : request.constraint.columns ) {
                 joiner.add( s );
             }
             String query = "ALTER TABLE " + request.table + " ADD CONSTRAINT " + request.constraint.name + " UNIQUE " + joiner.toString();
-            try{
+            try {
                 int rows = handler.executeUpdate( query );
                 handler.commit();
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
-            } catch ( SQLException | CatalogTransactionException e ){
+            } catch ( SQLException | JdbcConnectionException e ) {
                 result = new Result( e.getMessage() );
             }
-        }else{
+        } else {
             result = new Result( "Cannot add unique constraint if no columns are provided." );
         }
         return result;
@@ -834,22 +845,22 @@ public abstract class Crud implements InformationObserver {
     Result getIndexes( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Result result;
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
 
         try {
             ResultSet indexInfo = handler.getMetaData().getIndexInfo( this.dbName, request.schema, request.table, false, true );
-            DbColumn[] header = {new DbColumn( "name" ), new DbColumn( "columns" )};
+            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ) };
             Map<String, StringJoiner> indexes = new HashMap<>();
             ArrayList<String[]> data = new ArrayList<>();
             while ( indexInfo.next() ) {
                 String name = indexInfo.getString( 6 );
                 String col = indexInfo.getString( 9 );
-                if( ! indexes.containsKey( name )){
+                if ( !indexes.containsKey( name ) ) {
                     indexes.put( name, new StringJoiner( ", " ) );
                 }
                 indexes.get( name ).add( col );
             }
-            for ( Map.Entry<String, StringJoiner> entry: indexes.entrySet() ){
+            for ( Map.Entry<String, StringJoiner> entry : indexes.entrySet() ) {
                 String[] insert = new String[2];
                 insert[0] = entry.getKey();
                 insert[1] = entry.getValue().toString();
@@ -857,7 +868,7 @@ public abstract class Crud implements InformationObserver {
             }
             result = new Result( header, data.toArray( new String[0][2] ) );
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -877,52 +888,52 @@ public abstract class Crud implements InformationObserver {
 
 
     /**
-     * Get the needed information for the uml view:
+     * Get the required information for the uml view:
      * Foreign keys
      * Tables with its columns
      */
-    Uml getUml ( final Request req, final Response res ) {
-        LocalTransactionHandler handler = getHandler();
+    Uml getUml( final Request req, final Response res ) {
+        TransactionHandler handler = getHandler();
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         try ( ResultSet rs = handler.getMetaData().getImportedKeys( this.dbName, request.schema, null ) ) {
-            while ( rs.next() ){
+            while ( rs.next() ) {
                 fKeys.add( ForeignKey.builder()
-                    .pkTableSchema( rs.getString( 2 ))
-                    .pkTableName( rs.getString( 3 ))
-                    .pkColumnName( rs.getString( 4 ))
-                    .fkTableSchema( rs.getString( 6 ))
-                    .fkTableName( rs.getString( 7 ))
-                    .fkColumnName( rs.getString( 8 ))
-                    .fkName( rs.getString( 12 ))
-                    .pkName( rs.getString( 13 ))
-                    .build());
+                        .pkTableSchema( rs.getString( 2 ) )
+                        .pkTableName( rs.getString( 3 ) )
+                        .pkColumnName( rs.getString( 4 ) )
+                        .fkTableSchema( rs.getString( 6 ) )
+                        .fkTableName( rs.getString( 7 ) )
+                        .fkColumnName( rs.getString( 8 ) )
+                        .fkName( rs.getString( 12 ) )
+                        .pkName( rs.getString( 13 ) )
+                        .build() );
             }
         } catch ( SQLException e ) {
             LOGGER.error( "Could not fetch foreign keys of the schema " + request.schema, e );
         }
 
-        //get Tables with its columns
+        // get Tables with its columns
         ArrayList<DbTable> tables = new ArrayList<>();
-        String[] types = {"TABLE"};
-        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, types )) {
-            while ( rs.next() ){
+        String[] types = { "TABLE" };
+        try ( ResultSet rs = handler.getMetaData().getTables( this.dbName, request.schema, null, types ) ) {
+            while ( rs.next() ) {
                 DbTable table = new DbTable( rs.getString( 3 ), request.schema );
                 ResultSet rs2 = handler.getMetaData().getColumns( this.dbName, request.schema, rs.getString( 3 ), null );
-                while ( rs2.next() ){
-                    table.addColumn( new DbColumn( rs2.getString( 4 )));
+                while ( rs2.next() ) {
+                    table.addColumn( new DbColumn( rs2.getString( 4 ) ) );
                 }
 
-                //get primary key with its columns
-                ResultSet pkSet = handler.getMetaData().getPrimaryKeys( this.dbName, request.schema,  rs.getString(3));
-                while( pkSet.next() ){
+                // get primary key with its columns
+                ResultSet pkSet = handler.getMetaData().getPrimaryKeys( this.dbName, request.schema, rs.getString( 3 ) );
+                while ( pkSet.next() ) {
                     table.addPrimaryKeyField( pkSet.getString( 4 ) );
                 }
                 pkSet.close();
 
-                //get unique columns using indexes, see https://stackoverflow.com/questions/1674223/find-a-database-tables-unique-constraint
+                // get unique columns using indexes, see https://stackoverflow.com/questions/1674223/find-a-database-tables-unique-constraint
                 ResultSet uniqueCols = handler.getMetaData().getIndexInfo( this.dbName, request.schema, rs.getString( 3 ), true, true );
-                while ( uniqueCols.next() ){
+                while ( uniqueCols.next() ) {
                     table.addUniqueColumn( uniqueCols.getString( 9 ) );
                 }
                 uniqueCols.close();
@@ -942,12 +953,12 @@ public abstract class Crud implements InformationObserver {
      */
     Result addForeignKey( final Request req, final Response res ) {
         ForeignKey foreignKey = this.gson.fromJson( req.body(), ForeignKey.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
         try {
             foreignKey.create( handler );
             result = new Result( new Debug().setAffectedRows( 1 ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -957,13 +968,13 @@ public abstract class Crud implements InformationObserver {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    abstract Result executeRelAlg ( final Request req, final Response res );
+    abstract Result executeRelAlg( final Request req, final Response res );
 
 
     /**
      * Set the transactionManager that is needed for the relational algebra execution
      */
-    Crud setTransactionManager ( final TransactionManager transactionManager ) {
+    Crud setTransactionManager( final TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         return this;
     }
@@ -972,7 +983,7 @@ public abstract class Crud implements InformationObserver {
     /**
      * Create or drop a schema
      */
-    Result schemaRequest ( final Request req, final Response res ) {
+    Result schemaRequest( final Request req, final Response res ) {
         Schema schema = this.gson.fromJson( req.body(), Schema.class );
         return schema.executeCreateOrDrop( getHandler() );
     }
@@ -981,22 +992,24 @@ public abstract class Crud implements InformationObserver {
     /**
      * Get all supported data types of the DBMS.
      */
-    public Result getTypeInfo ( final Request req, final Response res ) {
-        LocalTransactionHandler handler = getHandler();
+    public Result getTypeInfo( final Request req, final Response res ) {
+        TransactionHandler handler = getHandler();
         ArrayList<String[]> data = new ArrayList<>();
         Result result;
         try ( ResultSet rs = handler.getMetaData().getTypeInfo() ) {
-            while( rs.next() ){
+            while ( rs.next() ) {
                 // ignore types that are not relevant
-                if( rs.getInt( 2 ) < -500 || rs.getInt( 2 ) > 500 ) continue;
+                if ( rs.getInt( 2 ) < -500 || rs.getInt( 2 ) > 500 ) {
+                    continue;
+                }
                 String[] row = new String[1];
-                for( int i = 1; i<=18; i++){
+                for ( int i = 1; i <= 18; i++ ) {
                     row[0] = rs.getString( 1 );
                 }
                 data.add( row );
             }
             DbColumn[] header = { new DbColumn( "TYPE_NAME" ) };
-            result = new Result( header, data.toArray( new String[0][1]) );
+            result = new Result( header, data.toArray( new String[0][1] ) );
         } catch ( SQLException e ) {
             result = new Result( e.getMessage() );
             e.printStackTrace();
@@ -1011,7 +1024,7 @@ public abstract class Crud implements InformationObserver {
     @Override
     public void observeInfos( final Information info ) {
         try {
-            CrudWebSocket.broadcast( info.asJson() );
+            WebSocket.broadcast( info.asJson() );
         } catch ( IOException e ) {
             LOGGER.error( e.getMessage() );
         }
@@ -1025,7 +1038,7 @@ public abstract class Crud implements InformationObserver {
     public void observePageList( final String analyzerId, final InformationPage[] pages ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         int counter = 0;
-        for( InformationPage page: pages ){
+        for ( InformationPage page : pages ) {
             nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ) );
             counter++;
         }
@@ -1037,8 +1050,8 @@ public abstract class Crud implements InformationObserver {
         if ( physicalPlan != null ) {
             nodes.add( new SidebarElement( physicalPlan.getId(), physicalPlan.getName(), "0/", physicalPlan.getIcon() ) );
         }
-        try{
-            CrudWebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
+        try {
+            WebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
         } catch ( IOException e ) {
             LOGGER.error( e.getMessage() );
         }

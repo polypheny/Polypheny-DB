@@ -26,16 +26,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.CatalogTransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.LocalTransactionHandler;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
+import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -47,14 +47,15 @@ import spark.Response;
 
 
 /**
- * Create, read, update and delete elements from a database
- * contains only demo data so far
+ * Create, read, update and delete elements from a database.
+ * Contains only demo data so far
  */
 public class CrudPostgres extends Crud {
 
 
     /**
      * Constructor
+     *
      * @param jdbc jdbc url
      * @param driver driver name
      * @param host host name
@@ -72,45 +73,47 @@ public class CrudPostgres extends Crud {
      * returns a Tree (in json format) with the Tables of a Database
      */
     @Override
-    ArrayList<SidebarElement> getSchemaTree ( final Request req, final Response res ) {
+    ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
 
-        if( request.depth < 1 ){
+        if ( request.depth < 1 ) {
             LOGGER.error( "Trying to fetch a schemaTree with depth < 1" );
             return new ArrayList<>();
         }
 
         try ( ResultSet schemas = handler.getMetaData().getSchemas() ) {
-            while ( schemas.next() ){
+            while ( schemas.next() ) {
                 String schema = schemas.getString( 1 );
-                if( schema.equals( "pg_catalog" ) || schema.equals( "information_schema" )) continue;
+                if ( schema.equals( "pg_catalog" ) || schema.equals( "information_schema" ) ) {
+                    continue;
+                }
                 SidebarElement schemaTree = new SidebarElement( schema, schema, "", "cui-layers" );
 
-                if( request.depth > 1 ){
+                if ( request.depth > 1 ) {
                     ResultSet tablesRs = handler.getMetaData().getTables( this.dbName, schema, null, null );
                     ArrayList<SidebarElement> tables = new ArrayList<>();
                     ArrayList<SidebarElement> views = new ArrayList<>();
-                    while ( tablesRs.next() ){
+                    while ( tablesRs.next() ) {
                         String tableName = tablesRs.getString( 3 );
                         SidebarElement table = new SidebarElement( schema + "." + tableName, tableName, request.routerLinkRoot, "fa fa-table" );
 
-                        if( request.depth > 2){
+                        if ( request.depth > 2 ) {
                             ResultSet columnsRs = handler.getMetaData().getColumns( this.dbName, schema, tableName, null );
-                            while ( columnsRs.next() ){
+                            while ( columnsRs.next() ) {
                                 String columnName = columnsRs.getString( 4 );
                                 table.addChild( new SidebarElement( schema + "." + tableName + "." + columnName, columnName, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if( tablesRs.getString( 4 ).equals("TABLE") ){
+                        if ( tablesRs.getString( 4 ).equals( "TABLE" ) ) {
                             tables.add( table );
-                        } else if ( request.views && tablesRs.getString( 4 ).equals("VIEW") ){
+                        } else if ( request.views && tablesRs.getString( 4 ).equals( "VIEW" ) ) {
                             views.add( table );
                         }
                     }
                     schemaTree.addChild( new SidebarElement( schema + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                    if( request.views ) {
+                    if ( request.views ) {
                         schemaTree.addChild( new SidebarElement( schema + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
                     }
                     tablesRs.close();
@@ -136,13 +139,15 @@ public class CrudPostgres extends Crud {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
-            if ( ! entry.getValue().equals( "" )) {
-                joiner.add( entry.getKey() + "::TEXT LIKE '" + entry.getValue() + "%'"  );//:TEXT to cast number to text if necessary (see https://stackoverflow.com/questions/1684291/sql-like-condition-to-check-for-integer#answer-40537672)
+            if ( !entry.getValue().equals( "" ) ) {
+                joiner.add( entry.getKey() + "::TEXT LIKE '" + entry.getValue() + "%'" );//:TEXT to cast number to text if necessary (see https://stackoverflow.com/questions/1684291/sql-like-condition-to-check-for-integer#answer-40537672)
                 counter++;
             }
         }
         String out = "";
-        if( counter > 0 ) out = joiner.toString();
+        if ( counter > 0 ) {
+            out = joiner.toString();
+        }
         return out;
     }
 
@@ -158,7 +163,7 @@ public class CrudPostgres extends Crud {
         Result result;
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
 
         //rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
@@ -189,12 +194,11 @@ public class CrudPostgres extends Crud {
         }
 
         //change default value
-        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ){
+        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
             String query;
-            if( newColumn.defaultValue == null ){
+            if ( newColumn.defaultValue == null ) {
                 query = String.format( "ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", request.tableId, newColumn.name );
-            }
-            else{
+            } else {
                 query = String.format( "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
                 switch ( newColumn.dataType ) {
                     case "int8":
@@ -214,17 +218,17 @@ public class CrudPostgres extends Crud {
         }
 
         result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
-        try{
-            for ( String query : queries ){
+        try {
+            for ( String query : queries ) {
                 handler.executeUpdate( query );
                 sBuilder.append( query );
             }
             handler.commit();
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             try {
                 handler.rollback();
-            } catch ( CatalogTransactionException  e2 ) {
+            } catch ( JdbcConnectionException e2 ) {
                 result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             }
         }
@@ -239,7 +243,7 @@ public class CrudPostgres extends Crud {
     @Override
     Result addColumn( final Request req, final Response res ) {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
         if ( request.newColumn.maxLength != null ) {
             query = query + String.format( "(%d)", request.newColumn.maxLength );
@@ -247,12 +251,12 @@ public class CrudPostgres extends Crud {
         if ( !request.newColumn.nullable ) {
             query = query + " NOT NULL";
         }
-        if ( request.newColumn.defaultValue != null ){
+        if ( request.newColumn.defaultValue != null ) {
             switch ( request.newColumn.dataType ) {
                 case "int8":
                 case "int4":
                     int a = Integer.parseInt( request.newColumn.defaultValue );
-                    query = query + " DEFAULT "+a;
+                    query = query + " DEFAULT " + a;
                     break;
                 case "varchar":
                     query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
@@ -267,7 +271,7 @@ public class CrudPostgres extends Crud {
             int affectedRows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -278,16 +282,16 @@ public class CrudPostgres extends Crud {
      * Drop constraint of a table
      */
     @Override
-    Result dropConstraint ( final Request req, final Response res ) {
+    Result dropConstraint( final Request req, final Response res ) {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
-        LocalTransactionHandler handler= getHandler();
+        TransactionHandler handler = getHandler();
         String query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
         Result result;
-        try{
+        try {
             int rows = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( rows ) );
-        } catch ( SQLException | CatalogTransactionException e ){
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -299,14 +303,14 @@ public class CrudPostgres extends Crud {
      */
     Result dropIndex( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         String query = String.format( "DROP INDEX %s.%s", index.getSchema(), index.getName() );
         Result result;
         try {
             int a = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -318,7 +322,7 @@ public class CrudPostgres extends Crud {
      */
     Result createIndex( final Request req, final Response res ) {
         Index index = this.gson.fromJson( req.body(), Index.class );
-        LocalTransactionHandler handler = getHandler();
+        TransactionHandler handler = getHandler();
         Result result;
         StringJoiner joiner = new StringJoiner( ",", "(", ")" );
         for ( String col : index.getColumns() ) {
@@ -329,7 +333,7 @@ public class CrudPostgres extends Crud {
             int a = handler.executeUpdate( query );
             handler.commit();
             result = new Result( new Debug().setAffectedRows( a ) );
-        } catch ( SQLException | CatalogTransactionException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -337,8 +341,8 @@ public class CrudPostgres extends Crud {
 
 
     @Override
-    Result executeRelAlg ( final Request req, final Response res ) {
-        return new Result ( "The execution of a relational algebra is not supported by Postgres." );
+    Result executeRelAlg( final Request req, final Response res ) {
+        return new Result( "The execution of a relational algebra is not supported by Postgres." );
     }
 
 

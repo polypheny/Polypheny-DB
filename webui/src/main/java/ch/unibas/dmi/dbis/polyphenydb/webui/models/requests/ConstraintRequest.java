@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
 
 
 public class ConstraintRequest {
+
     public String table;
     public TableConstraint constraint;
 }

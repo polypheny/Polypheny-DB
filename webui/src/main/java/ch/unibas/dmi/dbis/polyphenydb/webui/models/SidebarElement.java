@@ -30,8 +30,8 @@ import java.util.ArrayList;
 
 
 /**
- * can be used to define data for the left sidebar in the UI
- * needed for Gson
+ * Can be used to define data for the left sidebar in the UI.
+ * Required for Gson
  */
 public class SidebarElement {
 
@@ -45,6 +45,7 @@ public class SidebarElement {
 
     /**
      * Constructor
+     *
      * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
      * @param name the name of the SidebarElement that will be displayed in the UI
      * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)
@@ -62,6 +63,7 @@ public class SidebarElement {
 
     /**
      * Constructor
+     *
      * @param id unique id for the SidebarElement, e.g. of the form "schemaName.tableName.columnName"
      * @param name the name of the SidebarElement that will be displayed in the UI
      * @param routerLinkRoot routerLink to the view where the Sidebar is displayed. When clicking on a SidebarElement, the user will be directed to the page "routerLinkRoot/id" (id of the SidebarElement)

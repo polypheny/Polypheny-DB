@@ -43,10 +43,11 @@ public class DbTable {
 
     /**
      * Constructor for DbTable
+     *
      * @param tableName name of the table
      * @param schema name of the schema this table belongs to
      */
-    public DbTable ( final String tableName, final String schema ) {
+    public DbTable( final String tableName, final String schema ) {
         this.tableName = tableName;
         this.schema = schema;
     }
@@ -54,9 +55,10 @@ public class DbTable {
 
     /**
      * Add a column to a table when building the DbTable object
+     *
      * @param col column that is part of this table
      */
-    public void addColumn ( final DbColumn col ) {
+    public void addColumn( final DbColumn col ) {
         this.columns.add( col );
     }
 
@@ -64,7 +66,7 @@ public class DbTable {
     /**
      * Add a primary key column (multiple if composite PK) when building the DbTable object
      */
-    public void addPrimaryKeyField ( final String columnName ) {
+    public void addPrimaryKeyField( final String columnName ) {
         this.primaryKeyFields.add( columnName );
     }
 

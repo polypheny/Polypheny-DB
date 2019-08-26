@@ -37,46 +37,46 @@ import java.util.ArrayList;
 public class Result {
 
     /**
-     * the header contains information about the columns of a result
+     * The header contains information about the columns of a result
      */
     private DbColumn[] header;
     /**
-     * the rows containing the fetched data
+     * The rows containing the fetched data
      */
     private String[][] data;
     /**
-     * information for the pagination: what current page is being displayed
+     * Information for the pagination: what current page is being displayed
      */
     private int currentPage;
     /**
-     * information for the pagination: how many pages there can be in total
+     * Information for the pagination: how many pages there can be in total
      */
     private int highestPage;
     /**
-     *  table from which the data has been fetched
+     * Table from which the data has been fetched
      */
     private String table;
     /**
      * List of tables of a schema
-     * */
+     */
     private String[] tables;
     /**
-     * The request from the UI is being sent back
-     * and contains information about which columns are being filtered and which are being sorted
+     * The request from the UI is being sent back and contains information about which columns are being filtered and which are being sorted
      */
     private UIRequest request;
     /**
-     * error message if a query failed
+     * Error message if a query failed
      */
     private String error;
     /**
-     * info about a query
+     * Info about a query
      */
     private Debug info;
     /**
      * Type of the result: if the data is from a table/view/arbitrary query
      */
     private ResultType type;
+
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns
@@ -88,6 +88,7 @@ public class Result {
         this.header = header;
         this.data = data;
     }
+
 
     /**
      * Build a Result object containing the error message of a failed query
@@ -122,25 +123,29 @@ public class Result {
     }
 
 
-    public Result setTable ( String table ) {
+    public Result setTable( String table ) {
         this.table = table;
         return this;
     }
+
 
     public Result setInfo( Debug info ) {
         this.info = info;
         return this;
     }
 
+
     public Result setType( ResultType type ) {
         this.type = type;
         return this;
     }
 
-    public Result setError ( String error ) {
+
+    public Result setError( String error ) {
         this.error = error;
         return this;
     }
+
 
     public Result setTables( ArrayList<String> tables ) {
         this.tables = tables.toArray( new String[tables.size()] );

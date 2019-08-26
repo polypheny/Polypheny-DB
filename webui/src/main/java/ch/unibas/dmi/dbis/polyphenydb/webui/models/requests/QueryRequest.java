@@ -29,7 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 public class QueryRequest extends UIRequest {
 
     /**
-     * a query from the SQL console
+     * A query from the SQL console
      */
     public String query;
 

@@ -27,8 +27,8 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 /**
- * Describes where the data in the Result is coming from,
- * if it is from a table, a view or from an arbitrary query
+ * Describes where the data in the Result is coming from.
+ * If it is from a table, a view or from an arbitrary query
  */
 public enum ResultType {
     TABLE,
