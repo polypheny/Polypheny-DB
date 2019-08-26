@@ -63,6 +63,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -98,10 +99,19 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Check if there are foreign keys referencing this table
+        List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
         try {
             List<CatalogForeignKey> exportedKeys = transaction.getCatalog().getExportedKeys( table.getTable().id );
             if ( exportedKeys.size() > 0 ) {
-                throw new PolyphenyDbException( "Cannot drop table '" + table.getSchema().name + "." + table.getTable().name + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
+                for ( CatalogForeignKey foreignKey : exportedKeys ) {
+                    if ( foreignKey.tableId == table.getTable().id ) {
+                        // If this is a self-reference, drop it later.
+                        selfRefsToDelete.add( foreignKey );
+                    } else {
+                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchema().name + "." + table.getTable().name + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
+                    }
+                }
+
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
@@ -116,6 +126,15 @@ public class SqlDropTable extends SqlDropObject {
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while deleting data from stores.", e );
+        }
+
+        // Delete the self-referencing foreign keys
+        try {
+            for ( CatalogForeignKey foreignKey : selfRefsToDelete ) {
+                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+            }
+        } catch ( GenericCatalogException e ) {
+            throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
         }
 
         // Delete indexes of this table
