@@ -780,6 +780,8 @@ public class CatalogImpl extends Catalog {
                 if ( catalogKey.columnIds.contains( columnId ) ) {
                     throw new GenericCatalogException( "Unable to allow null values in a column that is part of the primary key." );
                 }
+            } else {
+                // TODO: Check that the column does not contain any null values
             }
 
             Statements.setNullable( transactionHandler, columnId, nullable );
