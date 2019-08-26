@@ -26,49 +26,29 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.JdbcConnectionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.transactionmanagement.TransactionHandler;
-import java.sql.SQLException;
 import lombok.Builder;
+import lombok.Getter;
 
 
 /**
  * Model for a ForeignKey
  */
+@Getter
 @Builder
 public class ForeignKey {
 
-    String fkName;
-    String pkName;
+    private String fkName;
+    private String pkName;
 
-    String pkTableSchema;
-    String pkTableName;
-    String pkColumnName;
+    private String pkTableSchema;
+    private String pkTableName;
+    private String pkColumnName;
 
-    String fkTableSchema;
-    String fkTableName;
-    String fkColumnName;
+    private String fkTableSchema;
+    private String fkTableName;
+    private String fkColumnName;
 
-    String update;
-    String delete;
-
-
-    /**
-     * Generates and executes the query to create the ForeignKey in the DBMS.
-     */
-    public void create( final TransactionHandler handler ) throws SQLException, JdbcConnectionException {
-        String sql =
-                String.format(
-                        "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
-                        this.fkTableName,
-                        this.fkName,
-                        this.fkColumnName,
-                        this.pkTableName,
-                        this.pkColumnName,
-                        this.update,
-                        this.delete );
-        handler.executeUpdate( sql );
-        handler.commit();
-    }
+    private String update;
+    private String delete;
 
 }

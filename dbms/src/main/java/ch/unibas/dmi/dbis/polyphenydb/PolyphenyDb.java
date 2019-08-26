@@ -33,8 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
+import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
-import ch.unibas.dmi.dbis.polyphenydb.webui.WebUiInterface;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -148,12 +148,12 @@ public class PolyphenyDb {
         final TransactionManager transactionManager = new TransactionManagerImpl();
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
-        final WebUiInterface webUiInterface = new WebUiInterface( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
 
-        Thread webUiInterfaceThread = new Thread( webUiInterface );
+        Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
         try {

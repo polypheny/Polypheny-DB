@@ -952,13 +952,16 @@ public abstract class Crud implements InformationObserver {
      * Add foreign key
      */
     Result addForeignKey( final Request req, final Response res ) {
-        ForeignKey foreignKey = this.gson.fromJson( req.body(), ForeignKey.class );
+        ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
         TransactionHandler handler = getHandler();
         Result result;
         try {
-            foreignKey.create( handler );
+            String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
+                    fk.getFkTableName(), fk.getFkName(), fk.getFkColumnName(), fk.getPkTableName(), fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
+            handler.executeUpdate( sql );
+            handler.commit();
             result = new Result( new Debug().setAffectedRows( 1 ) );
-        } catch ( SQLException e ) {
+        } catch ( SQLException | JdbcConnectionException e ) {
             result = new Result( e.getMessage() );
         }
         return result;
@@ -985,7 +988,46 @@ public abstract class Crud implements InformationObserver {
      */
     Result schemaRequest( final Request req, final Response res ) {
         Schema schema = this.gson.fromJson( req.body(), Schema.class );
-        return schema.executeCreateOrDrop( getHandler() );
+        TransactionHandler handler = getHandler();
+
+        //create schema
+        if( schema.isCreate() && ! schema.isDrop() ) {
+            StringBuilder query = new StringBuilder( "CREATE SCHEMA " );
+            if ( schema.isIfExists() ) {
+                query.append( "IF NOT EXISTS " );
+            }
+            query.append( "\"" ).append( schema.getName() ).append( "\"" );
+            if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
+                query.append( " AUTHORIZATION " ).append( schema.getAuthorization() );
+            }
+            try {
+                int rows = handler.executeUpdate( query.toString() );
+                handler.commit();
+                return new Result( new Debug().setAffectedRows( rows ) );
+            } catch ( SQLException | JdbcConnectionException e ) {
+                return new Result( e.getMessage() );
+            }
+        }
+        //drop schema
+        else if ( !schema.isCreate() && schema.isDrop() ) {
+            StringBuilder query = new StringBuilder( "DROP SCHEMA " );
+            if ( schema.isIfExists() ) {
+                query.append( "IF EXISTS " );
+            }
+            query.append( "\"" ).append( schema.getName() ).append( "\"" );
+            if ( schema.isCascade() ) {
+                query.append( " CASCADE" );
+            }
+            try {
+                int rows = handler.executeUpdate( query.toString() );
+                handler.commit();
+                return new Result( new Debug().setAffectedRows( rows ) );
+            } catch ( SQLException | JdbcConnectionException e ) {
+                return new Result( e.getMessage() );
+            }
+        } else {
+            return new Result( "Neither the field 'create' nor the field 'drop' was set." );
+        }
     }
 
 
