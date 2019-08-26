@@ -1054,6 +1054,14 @@ public class CatalogImpl extends Catalog {
             for ( CatalogKey refKey : keys ) {
                 if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
                     CatalogCombinedKey combinedKey = getCombinedKey( transactionHandler, refKey.id );
+                    // Check if the data type of the referenced column matches the data type of the referencing column
+                    int i = 0;
+                    for ( CatalogColumn referencedColumn : combinedKey.getColumns() ) {
+                        CatalogColumn referencingColumn = Statements.getColumn( transactionHandler, columnIds.get( i++ ) );
+                        if ( referencedColumn.type != referencingColumn.type ) {
+                            throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
+                        }
+                    }
                     if ( combinedKey.getUniqueCount() > 0 ) {
                         long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
                         Statements.addForeignKey( transactionHandler, keyId, refKey.id, constraintName, onUpdate, onDelete );
@@ -1061,8 +1069,8 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
-            throw new RuntimeException( "The referenced columns do not define a primary key, unique index or unique constraint." );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException e ) {
+            throw new GenericCatalogException( "The referenced columns do not define a primary key, unique index or unique constraint." );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
