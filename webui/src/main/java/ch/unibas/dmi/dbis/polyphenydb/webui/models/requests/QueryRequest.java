@@ -34,7 +34,7 @@ public class QueryRequest extends UIRequest {
     public String query;
 
     /**
-     * True if information about the query execution should be added to the queryAnalyzer (InformationManager)
+     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
      */
     public boolean analyze;
 

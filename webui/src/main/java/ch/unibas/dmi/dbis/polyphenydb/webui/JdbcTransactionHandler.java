@@ -158,7 +158,6 @@ public class JdbcTransactionHandler {
     }
 
 
-
     public DatabaseMetaData getMetaData() throws SQLException {
         return connection.getMetaData();
     }

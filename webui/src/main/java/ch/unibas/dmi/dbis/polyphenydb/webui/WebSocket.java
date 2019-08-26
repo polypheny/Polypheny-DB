@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 @org.eclipse.jetty.websocket.api.annotations.WebSocket
 public class WebSocket {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( InformationWebSocket.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WebSocket.class );
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 

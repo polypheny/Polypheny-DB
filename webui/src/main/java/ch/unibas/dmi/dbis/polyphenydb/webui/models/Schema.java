@@ -40,21 +40,21 @@ public class Schema {
     private static final Logger LOGGER = LoggerFactory.getLogger( Schema.class );
 
     private String name;
-    private String type;//todo enum
+    private String type; // TODO: enum
 
     // fields for creation
     private boolean create;
     private boolean ifNotExists;
     private String authorization;
 
-    //fields for deletion
+    // fields for deletion
     private boolean drop;
     private boolean ifExists;
     private boolean cascade;
 
 
     /**
-     * Schema Constructor
+     * Constructor
      *
      * @param name name of the schema
      * @param type type of the schema, e.g. relational

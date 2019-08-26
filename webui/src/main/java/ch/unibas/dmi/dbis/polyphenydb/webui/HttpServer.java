@@ -36,7 +36,6 @@ import static spark.Spark.webSocket;
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
@@ -56,14 +55,19 @@ import spark.Spark;
 public class HttpServer extends QueryInterface {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( HttpServer.class );
-    private final ConfigManager cm = ConfigManager.getInstance();
     private Gson gson = new Gson();
+
+    private final int port;
 
 
     public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
-
         super( transactionManager, authenticator );
+        this.port = port;
+    }
 
+
+    @Override
+    public void run() {
         port( port );
 
         webSockets();
@@ -84,7 +88,7 @@ public class HttpServer extends QueryInterface {
             }
         } );
 
-        crudRoutes( new CrudPolypheny(
+        crudRoutes( new Crud(
                 "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver",
                 "jdbc:polypheny://",
                 "localhost",
@@ -95,12 +99,6 @@ public class HttpServer extends QueryInterface {
                 .setTransactionManager( transactionManager ) );
 
         LOGGER.info( "HTTP Server started." );
-    }
-
-
-    @Override
-    public void run() {
-        // TODO: Start server
     }
 
 
@@ -173,7 +171,7 @@ public class HttpServer extends QueryInterface {
     //see: http://roufid.com/5-ways-convert-inputstream-string-java/
     private String streamToString( final InputStream stream ) {
         StringBuilder stringBuilder = new StringBuilder();
-        String line = null;
+        String line;
         try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, Charset.defaultCharset() ) ) ) {
             while ( (line = bufferedReader.readLine()) != null ) {
                 if ( line.contains( "//SPARK-REPLACE" ) ) {
@@ -204,7 +202,7 @@ public class HttpServer extends QueryInterface {
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
      */
-    public static void enableCORS() {
+    private static void enableCORS() {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         options( "/*", ( req, res ) -> {
