@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 
@@ -47,7 +48,11 @@ public interface Transaction {
 
     PolyphenyDbSchema getSchema();
 
-    abstract DataContext getDataContext();
+    boolean isAnalyze();
+
+    InformationManager getQueryAnalyzer();
+
+    DataContext getDataContext();
 
     JavaTypeFactory getTypeFactory();
 

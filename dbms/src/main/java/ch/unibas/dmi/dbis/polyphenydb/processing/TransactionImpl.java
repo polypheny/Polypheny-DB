@@ -42,6 +42,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
@@ -76,13 +77,17 @@ public class TransactionImpl implements Transaction {
 
     private TransactionManagerImpl transactionManager;
 
+    @Getter
+    private final boolean analyze;
 
-    TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database ) {
+
+    TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
         this.defaultSchema = defaultSchema;
         this.database = database;
+        this.analyze = analyze;
     }
 
 
@@ -107,6 +112,12 @@ public class TransactionImpl implements Transaction {
     @Override
     public PolyphenyDbSchema getSchema() {
         return PolySchemaBuilder.getInstance().getCurrent( this );
+    }
+
+
+    @Override
+    public InformationManager getQueryAnalyzer() {
+        return InformationManager.getInstance( xid.toString() );
     }
 
 

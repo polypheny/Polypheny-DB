@@ -1152,7 +1152,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, null );
+        Transaction transaction = transactionManager.startTransaction( user, null, null, false );
 
         final Catalog catalog = transaction.getCatalog();
         // Check database access

@@ -140,15 +140,6 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     private final Transaction transaction;
 
-
-    static {
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPageLogical );
-        im.addGroup( informationGroupLogical );
-        im.addPage( informationPagePhysical );
-        im.addGroup( informationGroupPhysical );
-    }
-
     QueryProcessorImpl( Transaction transaction ) {
         this.transaction = transaction;
     }
@@ -340,11 +331,16 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     @Override
     public PolyphenyDbSignature processQuery( final RelNode logicalPlan, RelOptPlanner planner ) {
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                "LogicalQueryPlan",
-                informationGroupLogical.getId(),
-                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPageLogical );
+            queryAnalyzer.addGroup( informationGroupLogical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "LogicalQueryPlan",
+                    informationGroupLogical.getId(),
+                    RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
 
         final StopWatch stopWatch = new StopWatch();
         //
@@ -359,11 +355,16 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        informationQueryPlan = new InformationQueryPlan(
-                "PhysicalQueryPlan",
-                informationGroupPhysical.getId(),
-                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPagePhysical );
+            queryAnalyzer.addGroup( informationGroupPhysical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "PhysicalQueryPlan",
+                    informationGroupPhysical.getId(),
+                    RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimizing Statement ... done. [{}]", stopWatch );

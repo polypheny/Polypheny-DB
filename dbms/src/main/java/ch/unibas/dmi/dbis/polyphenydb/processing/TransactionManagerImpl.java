@@ -57,25 +57,25 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database ) {
+    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze ) );
         return transactions.get( xid );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
 
-        Transaction transaction = startTransaction( catalogUser, null, null );
+        Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
 
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase );
+        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
     }
 
 

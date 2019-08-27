@@ -37,9 +37,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 
 public interface TransactionManager {
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database );
+    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze );
 
-    Transaction startTransaction( String user, String database ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 
     void removeTransaction( PolyXid xid ) throws TransactionException;
 }

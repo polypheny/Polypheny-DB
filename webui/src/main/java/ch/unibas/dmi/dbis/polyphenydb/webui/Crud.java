@@ -101,7 +101,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -436,10 +435,16 @@ public class Crud implements InformationObserver {
      */
     ArrayList<Result> anyQuery( final Request req, final Response res ) {
         QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
-        Transaction transaction = getTransaction();
+        Transaction transaction = getTransaction( request.analyze );
 
         ArrayList<Result> results = new ArrayList<>();
         boolean autoCommit = true;
+
+        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed and in case of auto commit of, the information is overwritten
+        InformationManager queryAnalyzer = null;
+        if ( request.analyze ) {
+            queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
+        }
 
         // TODO: make it possible to use pagination
 
@@ -462,7 +467,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction();
+                    transaction = getTransaction( request.analyze );
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
                 } catch ( TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -473,7 +478,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
-                    transaction = getTransaction();
+                    transaction = getTransaction( request.analyze );
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
                 } catch ( TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -504,7 +509,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction();
+                        transaction = getTransaction( request.analyze );
                     }
                 } catch ( QueryExecutionException | TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -520,7 +525,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
-                        transaction = getTransaction();
+                        transaction = getTransaction( request.analyze );
                     }
                 } catch ( QueryExecutionException | TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -541,8 +546,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        if ( request.analyze ) {
-            InformationManager queryAnalyzer = InformationManager.getInstance( UUID.randomUUID().toString() ).observe( this );
+        if ( queryAnalyzer != null ) {
             InformationPage p1 = new InformationPage( "p1", "Query analysis", "Analysis of the query." );
             InformationGroup g1 = new InformationGroup( "Execution time", "p1" );
             InformationHtml html;
@@ -1139,7 +1143,6 @@ public class Crud implements InformationObserver {
         ArrayList<DbTable> tables = new ArrayList<>();
 
         try {
-
             List<CatalogTable> catalogTables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
             for ( CatalogTable catalogTable : catalogTables ) {
                 if ( catalogTable.tableType.equalsIgnoreCase( "TABLE" ) ) {
@@ -1240,7 +1243,7 @@ public class Crud implements InformationObserver {
     Result executeRelAlg( final Request req, final Response res ) {
         UIRelNode topNode = gson.fromJson( req.body(), UIRelNode.class );
 
-        Transaction transaction = getTransaction();
+        Transaction transaction = getTransaction( true );
 
         RelNode result;
         try {
@@ -1403,14 +1406,6 @@ public class Crud implements InformationObserver {
         for ( InformationPage page : pages ) {
             nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ) );
             counter++;
-        }
-        InformationPage logicalPlan = InformationManager.getInstance().getPage( "informationPageLogicalQueryPlan" );
-        if ( logicalPlan != null ) {
-            nodes.add( new SidebarElement( logicalPlan.getId(), logicalPlan.getName(), "0/", logicalPlan.getIcon() ) );
-        }
-        InformationPage physicalPlan = InformationManager.getInstance().getPage( "informationPagePhysicalQueryPlan" );
-        if ( physicalPlan != null ) {
-            nodes.add( new SidebarElement( physicalPlan.getId(), physicalPlan.getName(), "0/", physicalPlan.getIcon() ) );
         }
         try {
             WebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
@@ -1621,8 +1616,13 @@ public class Crud implements InformationObserver {
 
 
     private Transaction getTransaction() {
+        return getTransaction( false );
+    }
+
+
+    private Transaction getTransaction( boolean analyze ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName );
+            return transactionManager.startTransaction( userName, databaseName, analyze );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
