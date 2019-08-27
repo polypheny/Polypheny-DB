@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import java.util.ArrayList;
+import lombok.Getter;
 
 
 /**
@@ -34,8 +35,8 @@ import java.util.ArrayList;
  */
 public class DbTable {
 
-    private String tableName;
-    private String schema;
+    @Getter private String tableName;
+    @Getter private String schema;
     private ArrayList<DbColumn> columns = new ArrayList<>();
     private ArrayList<String> primaryKeyFields = new ArrayList<>();
     private ArrayList<String> uniqueColumns = new ArrayList<>();

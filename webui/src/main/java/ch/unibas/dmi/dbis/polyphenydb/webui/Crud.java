@@ -88,6 +88,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
 import java.text.DateFormat;
@@ -765,8 +766,9 @@ public class Crud implements InformationObserver {
                     case "FLOAT":
                     case "SMALLINT":
                     case "TINYINT":
-                        int a = Integer.parseInt( request.newColumn.defaultValue );
-                        query = query + a;
+                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                        query = query + b.toString();
                         break;
                     case "VARCHAR":
                         query = query + String.format( "'%s'", request.newColumn.defaultValue );
@@ -817,13 +819,14 @@ public class Crud implements InformationObserver {
             switch ( request.newColumn.dataType ) {
                 case "BIGINT":
                 case "INTEGER":
-                case "DECIMAL":
-                case "DOUBLE":
-                case "FLOAT":
                 case "SMALLINT":
                 case "TINYINT":
-                    int a = Integer.parseInt( request.newColumn.defaultValue );
-                    query = query + " DEFAULT " + a;
+                case "FLOAT":
+                case "DOUBLE":
+                case "DECIMAL":
+                    request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                    BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                    query = query + " DEFAULT " + b.toString();
                     break;
                 case "VARCHAR":
                     query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
@@ -1183,15 +1186,13 @@ public class Crud implements InformationObserver {
                     for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
                         if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
                             // TODO: unique constraints can be over multiple columns.
+                            if( catalogConstraint.key.columnNames.size() == 1 &&
+                                    catalogConstraint.key.schemaName.equals( table.getSchema()) &&
+                                    catalogConstraint.key.tableName.equals( table.getTableName() ) ) {
+                                table.addUniqueColumn( catalogConstraint.key.columnNames.get( 0 ) );
+                            }
                             // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
                         }
-                    }
-
-                    // get unique indexes
-                    List<CatalogIndex> catalogIndexes = transaction.getCatalog().getIndexes( catalogTable.id, true );
-                    for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                        // TODO: unique indexes can be over multiple columns.
-                        // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
                     }
 
                     tables.add( table );
