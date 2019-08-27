@@ -407,8 +407,7 @@ public class Crud implements InformationObserver {
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            }
-            else if( !columnIsNumeric( dataTypes.get( entry.getKey() ) ) ){
+            } else if ( !columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
                 value = "'" + value + "'";
             }
             values.add( value );
@@ -463,6 +462,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.commit();
                     executionTime += System.nanoTime() - temp;
+                    transaction = getTransaction();
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
                 } catch ( TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -473,6 +473,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     transaction.rollback();
                     executionTime += System.nanoTime() - temp;
+                    transaction = getTransaction();
                     results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
                 } catch ( TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -503,6 +504,7 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
+                        transaction = getTransaction();
                     }
                 } catch ( QueryExecutionException | TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
@@ -518,12 +520,24 @@ public class Crud implements InformationObserver {
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
+                        transaction = getTransaction();
                     }
                 } catch ( QueryExecutionException | TransactionException e ) {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                 }
+            }
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            results.add( new Result( e.getMessage() ) );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                LOGGER.error( "Caught exception while rollback", e );
             }
         }
 
@@ -569,11 +583,9 @@ public class Crud implements InformationObserver {
             String condition = "";
             if ( entry.getValue() == null ) {
                 condition = String.format( "%s IS NULL", entry.getKey() );
-            }
-            else if( columnIsNumeric( dataTypes.get( entry.getKey() ) )){
+            } else if ( columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
                 condition = String.format( "%s = %s", entry.getKey(), entry.getValue() );
-            }
-            else {
+            } else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
             }
             joiner.add( condition );
@@ -1043,7 +1055,7 @@ public class Crud implements InformationObserver {
                 String[] arr = new String[3];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.columnNames );
-                arr[2] = Catalog.IndexType.getById(catalogIndex.type).toString();
+                arr[2] = Catalog.IndexType.getById( catalogIndex.type ).toString();
                 data.add( arr );
             }
 
@@ -1426,8 +1438,6 @@ public class Crud implements InformationObserver {
         return "";
     }
 
-
-
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -1508,9 +1518,9 @@ public class Crud implements InformationObserver {
             String[] temp = new String[row.size()];
             int counter = 0;
             for ( Object o : row ) {
-                if( o == null ) {
+                if ( o == null ) {
                     temp[counter] = null;
-                } else{
+                } else {
                     temp[counter] = o.toString();
                 }
                 counter++;
@@ -1557,7 +1567,7 @@ public class Crud implements InformationObserver {
         }
         Result result = executeSqlSelect( transaction, request, query );
         // We expect the result to be in the first column of the first row
-        if( result.getData().length == 0 ){
+        if ( result.getData().length == 0 ) {
             return 0;
         } else {
             return Integer.parseInt( result.getData()[0][0] );
@@ -1621,11 +1631,12 @@ public class Crud implements InformationObserver {
 
     /**
      * Get the data types of each column of a table
+     *
      * @param schemaName name of the schema
      * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, Integer> getColumnTypes ( String schemaName, String tableName ) {
+    private Map<String, Integer> getColumnTypes( String schemaName, String tableName ) {
         Map<String, Integer> dataTypes = new HashMap<>();
         Transaction transaction = getTransaction();
         try {
@@ -1643,10 +1654,11 @@ public class Crud implements InformationObserver {
 
     /**
      * Check if the Sql Type of a column is a numeric type, e.g. INTEGER or FLOAT
+     *
      * @param type int value of a Sql Type (java.sql.Types)
      */
-    private boolean columnIsNumeric ( int type ) {
-        switch ( type ){
+    private boolean columnIsNumeric( int type ) {
+        switch ( type ) {
             //see https://www.journaldev.com/16774/sql-data-types
             case Types.BIT:
             case Types.TINYINT:
