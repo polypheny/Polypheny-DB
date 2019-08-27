@@ -205,61 +205,63 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( parsed.getKind() == SqlKind.INSERT ) {
             SqlInsert insert = (SqlInsert) parsed;
             SqlNodeList oldColumnList = insert.getTargetColumnList();
-            CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
-            SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
-            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
-            int pos = 0;
-            for ( CatalogColumn column : combinedTable.getColumns() ) {
-                // Add column
-                newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
+            if ( oldColumnList != null ) {
+                CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+                SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
+                SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
+                int pos = 0;
+                for ( CatalogColumn column : combinedTable.getColumns() ) {
+                    // Add column
+                    newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
-                // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
-                int i = 0;
-                for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
-                    SqlBasicCall call = (SqlBasicCall) sqlNode;
-                    int position = getPositionInSqlNodeList( oldColumnList, column.name );
-                    if ( position >= 0 ) {
-                        newValues[i][pos] = call.getOperands()[position];
-                    } else {
-                        // Add value
-                        if ( column.defaultValue != null ) {
-                            CatalogDefaultValue defaultValue = column.defaultValue;
-                            switch ( column.type ) {
-                                case BOOLEAN:
-                                    newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
-                                    break;
-                                case INTEGER:
-                                case DECIMAL:
-                                case BIGINT:
-                                    newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                case REAL:
-                                case DOUBLE:
-                                    newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                case VARCHAR:
-                                case TEXT:
-                                    newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                default:
-                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
-                            }
-                        } else if ( column.nullable ) {
-                            newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                    // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
+                    int i = 0;
+                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                        SqlBasicCall call = (SqlBasicCall) sqlNode;
+                        int position = getPositionInSqlNodeList( oldColumnList, column.name );
+                        if ( position >= 0 ) {
+                            newValues[i][pos] = call.getOperands()[position];
                         } else {
-                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
+                            // Add value
+                            if ( column.defaultValue != null ) {
+                                CatalogDefaultValue defaultValue = column.defaultValue;
+                                switch ( column.type ) {
+                                    case BOOLEAN:
+                                        newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
+                                        break;
+                                    case INTEGER:
+                                    case DECIMAL:
+                                    case BIGINT:
+                                        newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    case REAL:
+                                    case DOUBLE:
+                                        newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    case VARCHAR:
+                                    case TEXT:
+                                        newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    default:
+                                        throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                                }
+                            } else if ( column.nullable ) {
+                                newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                            } else {
+                                throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
+                            }
+                            i++;
                         }
-                        i++;
+                        pos++;
                     }
-                    pos++;
                 }
-            }
-            // Add new column list
-            insert.setColumnList( newColumnList );
-            // Replace value in parser tree
-            for ( int i = 0; i < newValues.length; i++ ) {
-                SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
-                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+                // Add new column list
+                insert.setColumnList( newColumnList );
+                // Replace value in parser tree
+                for ( int i = 0; i < newValues.length; i++ ) {
+                    SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
+                    ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+                }
             }
         }
 
