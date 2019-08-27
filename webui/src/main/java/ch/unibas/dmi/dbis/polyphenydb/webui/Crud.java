@@ -47,6 +47,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -400,22 +401,14 @@ public class Crud implements InformationObserver {
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
         String[] t = request.tableId.split( "\\." );
-        Map<String, Integer> dataTypes = new HashMap<>();
-        try {
-            CatalogTable table = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
-            List<CatalogColumn> catalogColumns = transaction.getCatalog().getColumns( table.id );
-            for ( CatalogColumn catalogColumn : catalogColumns ) {
-                dataTypes.put( catalogColumn.name, catalogColumn.type.getTypeCode() );
-            }
-        } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
-            LOGGER.error( "Caught exception", e );
-        }
+        Map<String, Integer> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( entry.getKey() );
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            } else if ( dataTypes.get( entry.getKey() ) == Types.VARCHAR ) {
+            }
+            else if( !columnIsNumeric( dataTypes.get( entry.getKey() ) ) ){
                 value = "'" + value + "'";
             }
             values.add( value );
@@ -570,12 +563,17 @@ public class Crud implements InformationObserver {
         StringBuilder builder = new StringBuilder();
         builder.append( "DELETE FROM " ).append( request.tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
+        String[] t = request.tableId.split( "\\." );
+        Map<String, Integer> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition = "";
             if ( entry.getValue() == null ) {
-                // TODO: fix: doesn't work for integers
                 condition = String.format( "%s IS NULL", entry.getKey() );
-            } else {
+            }
+            else if( columnIsNumeric( dataTypes.get( entry.getKey() ) )){
+                condition = String.format( "%s = %s", entry.getKey(), entry.getValue() );
+            }
+            else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
             }
             joiner.add( condition );
@@ -1038,19 +1036,20 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = transaction.getCatalog().getTable( databaseName, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = transaction.getCatalog().getIndexes( catalogTable.id, false );
 
-            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ) };
+            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ), new DbColumn( "type" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                String[] arr = new String[2];
+                String[] arr = new String[3];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.columnNames );
+                arr[2] = Catalog.IndexType.getById(catalogIndex.type).toString();
                 data.add( arr );
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
             transaction.commit();
-        } catch ( UnknownTableException | GenericCatalogException | TransactionException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | TransactionException | UnknownIndexTypeException e ) {
             result = new Result( e.getMessage() );
             try {
                 transaction.rollback();
@@ -1509,7 +1508,11 @@ public class Crud implements InformationObserver {
             String[] temp = new String[row.size()];
             int counter = 0;
             for ( Object o : row ) {
-                temp[counter] = o.toString();
+                if( o == null ) {
+                    temp[counter] = null;
+                } else{
+                    temp[counter] = o.toString();
+                }
                 counter++;
             }
             data.add( temp );
@@ -1554,7 +1557,11 @@ public class Crud implements InformationObserver {
         }
         Result result = executeSqlSelect( transaction, request, query );
         // We expect the result to be in the first column of the first row
-        return Integer.parseInt( result.getData()[0][0] );
+        if( result.getData().length == 0 ){
+            return 0;
+        } else {
+            return Integer.parseInt( result.getData()[0][0] );
+        }
     }
 
 
@@ -1608,6 +1615,51 @@ public class Crud implements InformationObserver {
             return transactionManager.startTransaction( userName, databaseName );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
+        }
+    }
+
+
+    /**
+     * Get the data types of each column of a table
+     * @param schemaName name of the schema
+     * @param tableName name of the table
+     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
+     */
+    private Map<String, Integer> getColumnTypes ( String schemaName, String tableName ) {
+        Map<String, Integer> dataTypes = new HashMap<>();
+        Transaction transaction = getTransaction();
+        try {
+            CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );
+            List<CatalogColumn> catalogColumns = transaction.getCatalog().getColumns( table.id );
+            for ( CatalogColumn catalogColumn : catalogColumns ) {
+                dataTypes.put( catalogColumn.name, catalogColumn.type.getTypeCode() );
+            }
+        } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
+            LOGGER.error( "Caught exception", e );
+        }
+        return dataTypes;
+    }
+
+
+    /**
+     * Check if the Sql Type of a column is a numeric type, e.g. INTEGER or FLOAT
+     * @param type int value of a Sql Type (java.sql.Types)
+     */
+    private boolean columnIsNumeric ( int type ) {
+        switch ( type ){
+            //see https://www.journaldev.com/16774/sql-data-types
+            case Types.BIT:
+            case Types.TINYINT:
+            case Types.SMALLINT:
+            case Types.INTEGER:
+            case Types.BIGINT:
+            case Types.DECIMAL:
+            case Types.NUMERIC:
+            case Types.FLOAT:
+            case Types.REAL:
+                return true;
+            default:
+                return false;
         }
     }
 
