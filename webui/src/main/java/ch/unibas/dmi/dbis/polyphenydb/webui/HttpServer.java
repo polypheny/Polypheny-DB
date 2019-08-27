@@ -88,15 +88,7 @@ public class HttpServer extends QueryInterface {
             }
         } );
 
-        crudRoutes( new Crud(
-                "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver",
-                "jdbc:polypheny://",
-                "localhost",
-                20591,
-                "app",
-                "user",
-                "pa" )
-                .setTransactionManager( transactionManager ) );
+        crudRoutes( new Crud( transactionManager, "pa", "APP" ) );
 
         LOGGER.info( "HTTP Server started." );
     }

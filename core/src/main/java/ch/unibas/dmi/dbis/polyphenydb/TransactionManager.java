@@ -29,11 +29,17 @@ package ch.unibas.dmi.dbis.polyphenydb;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 
 
 public interface TransactionManager {
 
     Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database );
+
+    Transaction startTransaction( String user, String database ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 
     void removeTransaction( PolyXid xid ) throws TransactionException;
 }

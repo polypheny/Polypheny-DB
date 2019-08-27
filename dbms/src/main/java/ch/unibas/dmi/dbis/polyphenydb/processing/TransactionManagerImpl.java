@@ -36,9 +36,14 @@ import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.Utils;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +64,18 @@ public class TransactionManagerImpl implements TransactionManager {
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
         transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database ) );
         return transactions.get( xid );
+    }
+
+
+    @Override
+    public Transaction startTransaction( String user, String database ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+        CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
+
+        Transaction transaction = startTransaction( catalogUser, null, null );
+        CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
+        CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+
+        return startTransaction( catalogUser, catalogSchema, catalogDatabase );
     }
 
 

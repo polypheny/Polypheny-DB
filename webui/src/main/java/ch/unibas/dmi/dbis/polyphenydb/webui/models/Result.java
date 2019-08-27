@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.gson.Gson;
 import java.util.ArrayList;
+import lombok.Getter;
 
 
 /**
@@ -43,6 +44,7 @@ public class Result {
     /**
      * The rows containing the fetched data
      */
+    @Getter
     private String[][] data;
     /**
      * Information for the pagination: what current page is being displayed
