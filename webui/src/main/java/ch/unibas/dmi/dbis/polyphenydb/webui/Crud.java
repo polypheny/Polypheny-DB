@@ -1195,6 +1195,18 @@ public class Crud implements InformationObserver {
                         }
                     }
 
+                    // get unique indexes
+                    List<CatalogIndex> catalogIndexes = transaction.getCatalog().getIndexes( catalogTable.id, true );
+                    for ( CatalogIndex catalogIndex : catalogIndexes ) {
+                        // TODO: unique indexes can be over multiple columns.
+                        if( catalogIndex.key.columnNames.size() == 1 &&
+                        catalogIndex.key.schemaName.equals( table.getSchema() ) &&
+                        catalogIndex.key.tableName.equals( table.getTableName() )) {
+                            table.addUniqueColumn( catalogIndex.key.columnNames.get( 0 ) );
+                        }
+                        // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
+                    }
+
                     tables.add( table );
                 }
             }
