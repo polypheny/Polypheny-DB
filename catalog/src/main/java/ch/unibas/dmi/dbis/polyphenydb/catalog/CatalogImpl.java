@@ -776,9 +776,11 @@ public class CatalogImpl extends Catalog {
                 // Check if the column is part of a primary key (pk's are not allowed to contain null values)
                 CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
                 CatalogTable catalogTable = Statements.getTable( transactionHandler, catalogColumn.tableId );
-                CatalogKey catalogKey = Statements.getPrimaryKey( transactionHandler, catalogTable.primaryKey );
-                if ( catalogKey.columnIds.contains( columnId ) ) {
-                    throw new GenericCatalogException( "Unable to allow null values in a column that is part of the primary key." );
+                if ( catalogTable.primaryKey != null ) {
+                    CatalogKey catalogKey = Statements.getPrimaryKey( transactionHandler, catalogTable.primaryKey );
+                    if ( catalogKey.columnIds.contains( columnId ) ) {
+                        throw new GenericCatalogException( "Unable to allow null values in a column that is part of the primary key." );
+                    }
                 }
             } else {
                 // TODO: Check that the column does not contain any null values
