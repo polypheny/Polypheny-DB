@@ -107,9 +107,10 @@ public class JavaInformation {
                     new GraphData<>( "heap-data", new Long[]{ current, max, free } )
             );
 
+            table.reset();
             table.addRow( "Current", humanReadableByteCount( current, false ) );
-            table.addRow( "Max", humanReadableByteCount( max, false ) );
             table.addRow( "Free", humanReadableByteCount( free, false ) );
+            table.addRow( "Max", humanReadableByteCount( max, false ) );
         }
     }
 

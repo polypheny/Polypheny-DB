@@ -60,6 +60,12 @@ public class InformationTable extends InformationHtml {
     }
 
 
+    public void reset() {
+        rows = new LinkedList<>();
+        updateHtml( generateHtml() );
+    }
+
+
     private String generateHtml() {
         StringBuilder sb = new StringBuilder();
         sb.append( "<table class=\"table table-responsive-sm\">" );
