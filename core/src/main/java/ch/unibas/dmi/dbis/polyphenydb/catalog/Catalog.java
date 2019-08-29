@@ -468,7 +468,7 @@ public abstract class Catalog {
     public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException;
 
     /**
-     * Delete the specified column. A potential default value has to be delete before.
+     * Delete the specified column. This also deletes a default value in case there is one defined for this column.
      *
      * @param columnId The id of the column to delete
      */
