@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -66,7 +67,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
@@ -90,7 +90,6 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.ResultSetMetaData;
-import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -401,13 +400,13 @@ public class Crud implements InformationObserver {
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
         String[] t = request.tableId.split( "\\." );
-        Map<String, Integer> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( entry.getKey() );
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            } else if ( !columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
+            } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
                 value = "'" + value + "'";
             }
             values.add( value );
@@ -583,12 +582,12 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( request.tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         String[] t = request.tableId.split( "\\." );
-        Map<String, Integer> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition = "";
             if ( entry.getValue() == null ) {
                 condition = String.format( "%s IS NULL", entry.getKey() );
-            } else if ( columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
+            } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
                 condition = String.format( "%s = %s", entry.getKey(), entry.getValue() );
             } else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
@@ -1366,6 +1365,7 @@ public class Crud implements InformationObserver {
     public Result getTypeInfo( final Request req, final Response res ) {
         ArrayList<String[]> data = new ArrayList<>();
 
+        /*
         for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
             // ignore types that are not relevant
             if ( sqlTypeName.getJdbcOrdinal() < -500 || sqlTypeName.getJdbcOrdinal() > 500 ) {
@@ -1375,6 +1375,13 @@ public class Crud implements InformationObserver {
             for ( int i = 1; i <= 18; i++ ) {
                 row[0] = sqlTypeName.name();
             }
+            data.add( row );
+        }
+         */
+
+        for ( PolySqlType polySqlType : PolySqlType.values() ) {
+            String[] row = new String[1];
+            row[0] = polySqlType.name();
             data.add( row );
         }
 
@@ -1649,43 +1656,19 @@ public class Crud implements InformationObserver {
      * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, Integer> getColumnTypes( String schemaName, String tableName ) {
-        Map<String, Integer> dataTypes = new HashMap<>();
+    private Map<String, PolySqlType> getColumnTypes( String schemaName, String tableName ) {
+        Map<String, PolySqlType> dataTypes = new HashMap<>();
         Transaction transaction = getTransaction();
         try {
             CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = transaction.getCatalog().getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                dataTypes.put( catalogColumn.name, catalogColumn.type.getTypeCode() );
+                dataTypes.put( catalogColumn.name, catalogColumn.type );
             }
         } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
             LOGGER.error( "Caught exception", e );
         }
         return dataTypes;
-    }
-
-
-    /**
-     * Check if the Sql Type of a column is a numeric type, e.g. INTEGER or FLOAT
-     *
-     * @param type int value of a Sql Type (java.sql.Types)
-     */
-    private boolean columnIsNumeric( int type ) {
-        switch ( type ) {
-            //see https://www.journaldev.com/16774/sql-data-types
-            case Types.BIT:
-            case Types.TINYINT:
-            case Types.SMALLINT:
-            case Types.INTEGER:
-            case Types.BIGINT:
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-            case Types.FLOAT:
-            case Types.REAL:
-                return true;
-            default:
-                return false;
-        }
     }
 
 

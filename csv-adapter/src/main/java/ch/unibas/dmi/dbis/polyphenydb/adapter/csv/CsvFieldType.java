@@ -112,8 +112,6 @@ enum CsvFieldType {
                 return CsvFieldType.DOUBLE;
             case DECIMAL:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
-            case MONEY:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
             case VARCHAR:
                 return CsvFieldType.STRING;
             case TEXT:
