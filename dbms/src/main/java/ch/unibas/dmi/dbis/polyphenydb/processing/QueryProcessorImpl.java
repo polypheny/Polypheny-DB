@@ -241,10 +241,10 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                             } else {
                                 throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
                             }
-                            i++;
                         }
-                        pos++;
+                        i++;
                     }
+                    pos++;
                 }
                 // Add new column list
                 insert.setColumnList( newColumnList );
