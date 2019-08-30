@@ -407,7 +407,7 @@ public class Crud implements InformationObserver {
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            } else if ( !columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
+            } else if ( !needsApostrophe( dataTypes.get( entry.getKey() ) ) ) {
                 value = "'" + value + "'";
             }
             values.add( value );
@@ -588,7 +588,7 @@ public class Crud implements InformationObserver {
             String condition = "";
             if ( entry.getValue() == null ) {
                 condition = String.format( "%s IS NULL", entry.getKey() );
-            } else if ( columnIsNumeric( dataTypes.get( entry.getKey() ) ) ) {
+            } else if ( needsApostrophe( dataTypes.get( entry.getKey() ) ) ) {
                 condition = String.format( "%s = %s", entry.getKey(), entry.getValue() );
             } else {
                 condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
@@ -1656,7 +1656,7 @@ public class Crud implements InformationObserver {
             CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = transaction.getCatalog().getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                dataTypes.put( catalogColumn.name, catalogColumn.type.getTypeCode() );
+                dataTypes.put( catalogColumn.name, catalogColumn.type.getJavaSqlTypesValue() );
             }
         } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
             LOGGER.error( "Caught exception", e );
@@ -1666,11 +1666,11 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Check if the Sql Type of a column is a numeric type, e.g. INTEGER or FLOAT
+     * Check if the Sql Type of a column needs an apostrophe, i.e. if it is of a numeric or boolean type, e.g. INTEGER, FLOAT or BOOLEAN
      *
      * @param type int value of a Sql Type (java.sql.Types)
      */
-    private boolean columnIsNumeric( int type ) {
+    private boolean needsApostrophe( int type ) {
         switch ( type ) {
             //see https://www.journaldev.com/16774/sql-data-types
             case Types.BIT:
@@ -1682,6 +1682,7 @@ public class Crud implements InformationObserver {
             case Types.NUMERIC:
             case Types.FLOAT:
             case Types.REAL:
+            case Types.BOOLEAN:
                 return true;
             default:
                 return false;
