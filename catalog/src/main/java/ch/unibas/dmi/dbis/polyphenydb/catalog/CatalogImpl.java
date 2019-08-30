@@ -837,7 +837,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified column. A potential default value has to be delete before.
+     * Delete the specified column. This also deletes a default value in case there is one defined for this column.
      *
      * @param columnId The id of the column to delete
      */
@@ -845,6 +845,7 @@ public class CatalogImpl extends Catalog {
     public void deleteColumn( long columnId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            deleteDefaultValue( columnId );
             Statements.deleteColumn( transactionHandler, columnId );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );

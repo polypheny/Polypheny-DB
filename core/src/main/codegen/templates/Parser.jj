@@ -157,14 +157,13 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 /**
  * SQL parser, generated from Parser.jj by JavaCC.
  *
- * <p>The public wrapper for this parser is {@link SqlParser}.
+ * The public wrapper for this parser is {@link SqlParser}.
  */
 public class ${parser.class} extends SqlAbstractParserImpl
 {
     private static final Logger LOGGER = PolyphenyDbTrace.getParserTracer();
 
-    // Can't use quoted literal because of a bug in how JavaCC translates
-    // backslash-backslash.
+    // Can't use quoted literal because of a bug in how JavaCC translates backslash-backslash.
     private static final char BACKSLASH = 0x5c;
     private static final char DOUBLE_QUOTE = 0x22;
     private static final String DQ = DOUBLE_QUOTE + "";
@@ -184,8 +183,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
         public SqlAbstractParserImpl getParser(Reader reader) {
             final ${parser.class} parser = new ${parser.class}(reader);
             if (reader instanceof SourceStringReader) {
-                final String sql =
-                    ((SourceStringReader) reader).getSourceString();
+                final String sql = ((SourceStringReader) reader).getSourceString();
                 parser.setOriginalSql(sql);
             }
           return parser;
@@ -256,8 +254,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     }
 
     private SqlNode extend(SqlNode table, SqlNodeList extendList) {
-        return SqlStdOperatorTable.EXTEND.createCall(
-            Span.of(table, extendList).pos(), table, extendList);
+        return SqlStdOperatorTable.EXTEND.createCall(Span.of(table, extendList).pos(), table, extendList);
     }
 }
 
@@ -275,8 +272,7 @@ void debug_message1() {
 }
 
 JAVACODE String unquotedIdentifier() {
-    return SqlParserUtil.strip(getToken(0).image, null, null, null,
-        unquotedCasing);
+    return SqlParserUtil.strip(getToken(0).image, null, null, null, unquotedCasing);
 }
 
 /**
@@ -423,8 +419,7 @@ JAVACODE void checkQueryExpression(ExprContext exprContext)
     case ACCEPT_NON_QUERY:
     case ACCEPT_SUB_QUERY:
     case ACCEPT_CURSOR:
-        throw SqlUtil.newContextException(getPos(),
-            RESOURCE.illegalQueryExpression());
+        throw SqlUtil.newContextException(getPos(), RESOURCE.illegalQueryExpression());
     }
 }
 
@@ -432,8 +427,7 @@ JAVACODE void checkNonQueryExpression(ExprContext exprContext)
 {
     switch (exprContext) {
     case ACCEPT_QUERY:
-        throw SqlUtil.newContextException(getPos(),
-            RESOURCE.illegalNonQueryExpression());
+        throw SqlUtil.newContextException(getPos(), RESOURCE.illegalNonQueryExpression());
     }
 }
 
@@ -1230,8 +1224,7 @@ SqlNode SqlDescribe() :
     |
         // Use syntactic lookahead to determine whether a table name is coming.
         // We do not allow SimpleIdentifier() because that includes <STATEMENT>.
-        LOOKAHEAD( <TABLE> | <IDENTIFIER> | <QUOTED_IDENTIFIER>
-           | <BACK_QUOTED_IDENTIFIER> | <BRACKET_QUOTED_IDENTIFIER> )
+        LOOKAHEAD( <TABLE> | <IDENTIFIER> | <QUOTED_IDENTIFIER> | <BACK_QUOTED_IDENTIFIER> | <BRACKET_QUOTED_IDENTIFIER> )
         (<TABLE>)?
         table = CompoundIdentifier()
         (
@@ -1239,8 +1232,7 @@ SqlNode SqlDescribe() :
         |
             E() { column = null; }
         ) {
-            return new SqlDescribeTable(s.add(table).addIf(column).pos(),
-                table, column);
+            return new SqlDescribeTable(s.add(table).addIf(column).pos(), table, column);
         }
     |
         (<STATEMENT>)?
@@ -1272,18 +1264,13 @@ SqlNode SqlProcedureCall() :
     <CALL> {
         s = span();
     }
-    routineCall = NamedRoutineCall(
-        SqlFunctionCategory.USER_DEFINED_PROCEDURE,
-        ExprContext.ACCEPT_SUB_QUERY)
+    routineCall = NamedRoutineCall(SqlFunctionCategory.USER_DEFINED_PROCEDURE, ExprContext.ACCEPT_SUB_QUERY)
     {
-        return SqlStdOperatorTable.PROCEDURE_CALL.createCall(
-            s.end(routineCall), routineCall);
+        return SqlStdOperatorTable.PROCEDURE_CALL.createCall(s.end(routineCall), routineCall);
     }
 }
 
-SqlNode NamedRoutineCall(
-    SqlFunctionCategory routineType,
-    ExprContext exprContext) :
+SqlNode NamedRoutineCall(SqlFunctionCategory routineType, ExprContext exprContext) :
 {
     SqlIdentifier name;
     final List<SqlNode> list = new ArrayList<SqlNode>();
@@ -1391,8 +1378,7 @@ SqlNode SqlDelete() :
     [ [ <AS> ] alias = SimpleIdentifier() ]
     condition = WhereOpt()
     {
-        return new SqlDelete(s.add(table).addIf(extendList).addIf(alias)
-            .addIf(condition).pos(), table, condition, null, alias);
+        return new SqlDelete(s.add(table).addIf(extendList).addIf(alias).addIf(condition).pos(), table, condition, null, alias);
     }
 }
 
@@ -1444,9 +1430,7 @@ SqlNode SqlUpdate() :
     )*
     condition = WhereOpt()
     {
-        return new SqlUpdate(s.addAll(targetColumnList)
-            .addAll(sourceExpressionList).addIf(condition).pos(), table,
-            targetColumnList, sourceExpressionList, condition, null, alias);
+        return new SqlUpdate(s.addAll(targetColumnList).addAll(sourceExpressionList).addIf(condition).pos(), table, targetColumnList, sourceExpressionList, condition, null, alias);
     }
 }
 
@@ -1483,8 +1467,7 @@ SqlNode SqlMerge() :
         insertCall = WhenNotMatchedClause(table)
     )
     {
-        return new SqlMerge(s.addIf(updateCall).addIf(insertCall).pos(), table,
-            condition, sourceTableRef, updateCall, insertCall, null, alias);
+        return new SqlMerge(s.addIf(updateCall).addIf(insertCall).pos(), table, condition, sourceTableRef, updateCall, insertCall, null, alias);
     }
 }
 
@@ -1514,8 +1497,7 @@ SqlUpdate WhenMatchedClause(SqlNode table, SqlIdentifier alias) :
         }
     )*
     {
-        return new SqlUpdate(s.addAll(updateExprList).pos(), table,
-            updateColumnList, updateExprList, null, null, alias);
+        return new SqlUpdate(s.addAll(updateExprList).pos(), table, updateColumnList, updateExprList, null, null, alias);
     }
 }
 
@@ -1923,15 +1905,13 @@ SqlNode TableRef2(boolean lateral) :
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
             if (columnAliasList == null) {
-                tableRef = SqlStdOperatorTable.AS.createCall(
-                    Span.of(tableRef).end(this), tableRef, id);
+                tableRef = SqlStdOperatorTable.AS.createCall( Span.of(tableRef).end(this), tableRef, id );
             } else {
                 List<SqlNode> idList = new ArrayList<SqlNode>();
                 idList.add(tableRef);
                 idList.add(id);
                 idList.addAll(columnAliasList.getList());
-                tableRef = SqlStdOperatorTable.AS.createCall(
-                    Span.of(tableRef).end(this), idList);
+                tableRef = SqlStdOperatorTable.AS.createCall( Span.of(tableRef).end(this), idList );
             }
         }
     ]
@@ -1940,13 +1920,10 @@ SqlNode TableRef2(boolean lateral) :
         (
             <SUBSTITUTE> <LPAREN> sample = StringLiteral() <RPAREN>
             {
-                String sampleName =
-                    SqlLiteral.unchain(sample).getValueAs(String.class);
+                String sampleName = SqlLiteral.unchain(sample).getValueAs(String.class);
                 SqlSampleSpec sampleSpec = SqlSampleSpec.createNamed(sampleName);
-                final SqlLiteral sampleLiteral =
-                    SqlLiteral.createSample(sampleSpec, s2.end(this));
-                tableRef = SqlStdOperatorTable.TABLESAMPLE.createCall(
-                    s2.add(tableRef).end(this), tableRef, sampleLiteral);
+                final SqlLiteral sampleLiteral = SqlLiteral.createSample(sampleSpec, s2.end(this));
+                tableRef = SqlStdOperatorTable.TABLESAMPLE.createCall(s2.add(tableRef).end(this), tableRef, sampleLiteral);
             }
         |
             (
@@ -1970,8 +1947,7 @@ SqlNode TableRef2(boolean lateral) :
             {
                 final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100L);
                 BigDecimal rate = samplePercentage.bigDecimalValue();
-                if (rate.compareTo(BigDecimal.ZERO) < 0
-                    || rate.compareTo(ONE_HUNDRED) > 0)
+                if (rate.compareTo(BigDecimal.ZERO) < 0 || rate.compareTo(ONE_HUNDRED) > 0)
                 {
                     throw new ParseException(RESOURCE.invalidSampleSize().str());
                 }
@@ -1986,14 +1962,11 @@ SqlNode TableRef2(boolean lateral) :
                 if (fRate > 0.0f && fRate < 1.0f) {
                     SqlSampleSpec tableSampleSpec =
                     isRepeatable
-                        ? SqlSampleSpec.createTableSample(
-                            isBernoulli, fRate, repeatableSeed)
+                        ? SqlSampleSpec.createTableSample(isBernoulli, fRate, repeatableSeed)
                         : SqlSampleSpec.createTableSample(isBernoulli, fRate);
 
-                    SqlLiteral tableSampleLiteral =
-                        SqlLiteral.createSample(tableSampleSpec, s2.end(this));
-                    tableRef = SqlStdOperatorTable.TABLESAMPLE.createCall(
-                        s2.end(this), tableRef, tableSampleLiteral);
+                    SqlLiteral tableSampleLiteral = SqlLiteral.createSample(tableSampleSpec, s2.end(this));
+                    tableRef = SqlStdOperatorTable.TABLESAMPLE.createCall(s2.end(this), tableRef, tableSampleLiteral);
                 }
             }
         )
@@ -2132,8 +2105,7 @@ SqlNode TableConstructor() :
     <VALUES> { s = span(); }
     rowConstructorList = RowConstructorList(s)
     {
-        return SqlStdOperatorTable.VALUES.createCall(
-            s.end(this), rowConstructorList.toArray());
+        return SqlStdOperatorTable.VALUES.createCall(s.end(this), rowConstructorList.toArray());
     }
 }
 
@@ -2194,16 +2166,14 @@ SqlNode RowConstructor() :
             // LOOKAHEAD in RowConstructorList().  It would be so much more
             // reasonable to require parentheses.  Sigh.
             s = Span.of(value);
-            valueList = new SqlNodeList(Collections.singletonList(value),
-                value.getParserPosition());
+            valueList = new SqlNodeList(Collections.singletonList(value),value.getParserPosition());
         }
     )
     {
         // REVIEW jvs 8-Feb-2004: Should we discriminate between scalar
         // sub-queries inside of ROW and row sub-queries?  The standard does,
         // but the distinction seems to be purely syntactic.
-        return SqlStdOperatorTable.ROW.createCall(s.end(valueList),
-            valueList.toArray());
+        return SqlStdOperatorTable.ROW.createCall(s.end(valueList),valueList.toArray());
     }
 }
 
@@ -2273,14 +2243,12 @@ SqlNode GroupingElement() :
 |   <ROLLUP> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.ROLLUP.createCall(s.end(this),
-            nodes.getList());
+        return SqlStdOperatorTable.ROLLUP.createCall(s.end(this), nodes.getList());
     }
 |   <CUBE> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.CUBE.createCall(s.end(this),
-            nodes.getList());
+        return SqlStdOperatorTable.CUBE.createCall(s.end(this), nodes.getList());
     }
 |   LOOKAHEAD(3)
     <LPAREN> <RPAREN> {
@@ -2294,9 +2262,7 @@ SqlNode GroupingElement() :
 /**
  * Parses a list of expressions separated by commas.
  */
-SqlNodeList ExpressionCommaList(
-    final Span s,
-    ExprContext exprContext) :
+SqlNodeList ExpressionCommaList(final Span s, ExprContext exprContext) :
 {
     List<SqlNode> list;
     SqlNode e;
@@ -2425,9 +2391,7 @@ SqlWindow WindowSpecification() :
     ]
     <RPAREN>
     {
-        return SqlWindow.create(
-            null, id, partitionList, orderList,
-            isRows, lowerBound, upperBound, allowPartial, s.end(this));
+        return SqlWindow.create(null, id, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial, s.end(this));
     }
 }
 
