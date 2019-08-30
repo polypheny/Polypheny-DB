@@ -131,8 +131,10 @@ public class HostInformation {
         }, 5000, 5000 );
 */
 
-        // TODO: Sensors, Memory
+        // TODO: Memory
 
+        //
+        // Processes
         InformationGroup processesGroup = new InformationGroup( "Processes", page.getId() );
         im.addGroup( processesGroup );
 
