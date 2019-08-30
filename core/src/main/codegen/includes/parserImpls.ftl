@@ -312,7 +312,7 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
             )
         |
             <SET> <DEFAULT_>
-            defaultValue = Literal()
+            defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
         |
             <DROP> <DEFAULT_>
             { dropDefault = true; }
