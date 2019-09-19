@@ -79,6 +79,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
@@ -307,7 +308,7 @@ public class Crud implements InformationObserver {
         query.append( request.schema ).append( "." ).append( request.table );
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( query.toString() ) );
+            result = new Result( new Debug().setAffectedRows( a ).setGeneratedQuery( query.toString() ) );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
@@ -345,6 +346,7 @@ public class Crud implements InformationObserver {
             }
             if ( col.defaultValue != null ) {
                 switch ( col.dataType ) {
+                    //TODO FIX DATA TYPES
                     case "int8":
                     case "int4":
                         int a = Integer.parseInt( col.defaultValue );
@@ -458,8 +460,11 @@ public class Crud implements InformationObserver {
 
         long executionTime = 0;
         long temp = 0;
-        Pattern semicolon = Pattern.compile( ";[\\s]*$", Pattern.MULTILINE );//find all semicolons at the end of a line and split there
-        String[] queries = semicolon.split( request.query );
+        // remove all comments
+        String allQueries = request.query;
+        allQueries = allQueries.replaceAll("(?s)(\\/\\*.*?\\*\\/)", "");
+        allQueries = allQueries.replaceAll("(?m)(--.*?$)","");
+        String[] queries = allQueries.split( ";", 0 );
         for ( String query : queries ) {
             Result result;
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
@@ -515,6 +520,11 @@ public class Crud implements InformationObserver {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
+                    try {
+                        transaction.rollback();
+                    } catch ( TransactionException ex ) {
+                        LOGGER.error( "Caught exception while rollback", e );
+                    }
                 }
             } else {
                 try {
@@ -531,6 +541,11 @@ public class Crud implements InformationObserver {
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
+                    try {
+                        transaction.rollback();
+                    } catch ( TransactionException ex ) {
+                        LOGGER.error( "Caught exception while rollback", e );
+                    }
                 }
             }
         }
@@ -773,7 +788,6 @@ public class Crud implements InformationObserver {
                         query = query + String.format( "'%s'", request.newColumn.defaultValue );
                         break;
                     default:
-                        //varchar, timestamptz, bool
                         query = query + request.newColumn.defaultValue;
                 }
             }
@@ -831,7 +845,6 @@ public class Crud implements InformationObserver {
                     query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
                     break;
                 default:
-                    // varchar, timestamptz, bool
                     query = query + " DEFAULT " + request.newColumn.defaultValue;
             }
         }
@@ -929,7 +942,7 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
             }
 
-            DbColumn[] header = { new DbColumn( "constraint name" ), new DbColumn( "constraint type" ), new DbColumn( "columns" ) };
+            DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( ( c ) -> {
                 data.add( c.asRow() );
@@ -957,8 +970,10 @@ public class Crud implements InformationObserver {
         String query;
         if ( request.constraint.type.equals( "PRIMARY KEY" ) ) {
             query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", request.table );
+        } else if ( request.constraint.type.equals( "FOREIGN KEY" ) ) {
+            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY %s", request.table, request.constraint.name );
         } else {
-            query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s;", request.table, request.constraint.name );
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s", request.table, request.constraint.name );
         }
         Result result;
         try {
@@ -1116,7 +1131,7 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( col );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX %s ON %s USING %s", index.getTable(), index.getName(), colJoiner.toString(), index.getMethod() );
+        String query = String.format( "ALTER TABLE %s.%s ADD INDEX %s ON %s USING %s", index.getSchema(), index.getTable(), index.getName(), colJoiner.toString(), index.getMethod() );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();

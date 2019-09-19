@@ -43,6 +43,7 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang.math.NumberUtils;

@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
@@ -37,33 +37,33 @@ public class UIRelNode {
     /**
      * Type of the RelNode, e.g. TableScan
      */
-    String type;
+    public String type;
 
     /**
      * Children of this node in the tree
      */
-    UIRelNode[] children;
+    public UIRelNode[] children;
 
     /**
      * Number of inputs of a node.
      * Required by the RelBuilder
      */
-    int inputCount;
+    public int inputCount;
 
     //tableScan
-    String table;
+    public String table;
 
     //join
-    JoinRelType join;
+    public JoinRelType join;
     //join condition
-    String operator;
-    String col1;
-    String col2;
+    public String operator;
+    public String col1;
+    public String col2;
 
     //filter
-    String field;
-    String filter;
+    public String field;
+    public String filter;
 
     //project
-    String fields;
+    public String fields;
 }
