@@ -57,7 +57,7 @@ dependencies {
     compile project(":csv-adapter")
     compile project(":hsqldb-adapter")
     compile project(":catalog")
-    compile project(":webui")
+    compile project(path: ":webui", configuration: "shadow")
     compile project(":jdbc-interface")
 
     ////// Logging
