@@ -35,8 +35,10 @@ import lombok.Getter;
  */
 public class DbTable {
 
-    @Getter private String tableName;
-    @Getter private String schema;
+    @Getter
+    private String tableName;
+    @Getter
+    private String schema;
     private ArrayList<DbColumn> columns = new ArrayList<>();
     private ArrayList<String> primaryKeyFields = new ArrayList<>();
     private ArrayList<String> uniqueColumns = new ArrayList<>();

@@ -34,7 +34,7 @@ public class DbColumn {
     public String name;
 
     // for both
-    public String dataType;//varchar/int/etc
+    public String dataType; //varchar/int/etc
 
     // for the Data-Table in the UI
     public SortState sort;

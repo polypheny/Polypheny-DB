@@ -31,7 +31,7 @@ import java.util.ArrayList;
 
 /**
  * Can be used to define data for the left sidebar in the UI.
- * Required for Gson
+ * Required for Gson.
  */
 public class SidebarElement {
 

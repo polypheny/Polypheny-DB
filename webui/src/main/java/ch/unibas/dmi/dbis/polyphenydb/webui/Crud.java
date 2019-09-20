@@ -462,8 +462,8 @@ public class Crud implements InformationObserver {
         long temp = 0;
         // remove all comments
         String allQueries = request.query;
-        allQueries = allQueries.replaceAll("(?s)(\\/\\*.*?\\*\\/)", "");
-        allQueries = allQueries.replaceAll("(?m)(--.*?$)","");
+        allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
+        allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
         String[] queries = allQueries.split( ";", 0 );
         for ( String query : queries ) {
             Result result;
@@ -1200,8 +1200,8 @@ public class Crud implements InformationObserver {
                     for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
                         if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
                             // TODO: unique constraints can be over multiple columns.
-                            if( catalogConstraint.key.columnNames.size() == 1 &&
-                                    catalogConstraint.key.schemaName.equals( table.getSchema()) &&
+                            if ( catalogConstraint.key.columnNames.size() == 1 &&
+                                    catalogConstraint.key.schemaName.equals( table.getSchema() ) &&
                                     catalogConstraint.key.tableName.equals( table.getTableName() ) ) {
                                 table.addUniqueColumn( catalogConstraint.key.columnNames.get( 0 ) );
                             }
@@ -1213,9 +1213,9 @@ public class Crud implements InformationObserver {
                     List<CatalogIndex> catalogIndexes = transaction.getCatalog().getIndexes( catalogTable.id, true );
                     for ( CatalogIndex catalogIndex : catalogIndexes ) {
                         // TODO: unique indexes can be over multiple columns.
-                        if( catalogIndex.key.columnNames.size() == 1 &&
-                        catalogIndex.key.schemaName.equals( table.getSchema() ) &&
-                        catalogIndex.key.tableName.equals( table.getTableName() )) {
+                        if ( catalogIndex.key.columnNames.size() == 1 &&
+                                catalogIndex.key.schemaName.equals( table.getSchema() ) &&
+                                catalogIndex.key.tableName.equals( table.getTableName() ) ) {
                             table.addUniqueColumn( catalogIndex.key.columnNames.get( 0 ) );
                         }
                         // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
