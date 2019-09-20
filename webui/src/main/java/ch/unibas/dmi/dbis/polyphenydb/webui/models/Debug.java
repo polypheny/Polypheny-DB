@@ -23,42 +23,26 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+/**
+ * Infos about a query, e.g. number of affected rows
+ */
+public class Debug {
+
+    private int affectedRows;
+    private String generatedQuery;
 
 
-public interface Transaction {
+    public Debug setAffectedRows( final int affectedRows ) {
+        this.affectedRows = affectedRows;
+        return this;
+    }
 
-    PolyXid getXid();
 
-    QueryProcessor getQueryProcessor();
-
-    Catalog getCatalog();
-
-    void commit() throws TransactionException;
-
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
+    public Debug setGeneratedQuery( final String query ) {
+        this.generatedQuery = query;
+        return this;
+    }
 }

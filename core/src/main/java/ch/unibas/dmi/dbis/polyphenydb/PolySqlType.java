@@ -106,16 +106,6 @@ public enum PolySqlType {
         }
     },
 
-    MONEY( Types.DECIMAL, PolySqlTypeCode.MONEY, new Class[0] ) {
-        private final Class<BigDecimal> clazz = BigDecimal.class;
-
-
-        @Override
-        public Class<BigDecimal> getTypeJavaClass() {
-            return this.clazz;
-        }
-    },
-
     VARCHAR( Types.VARCHAR, PolySqlTypeCode.VARCHAR, Integer.class ) {
         private final Class<String> clazz = String.class;
 
@@ -184,7 +174,6 @@ public enum PolySqlType {
         public static final int REAL = 5;
         public static final int DOUBLE = 6;
         public static final int DECIMAL = 7;
-        public static final int MONEY = 8;
         public static final int VARCHAR = 9;
         public static final int TEXT = 10;
         public static final int DATE = 11;
@@ -230,16 +219,6 @@ public enum PolySqlType {
     }
 
 
-    public static PolySqlType getByTypeCode( int typeCode ) throws UnknownTypeException {
-        for ( PolySqlType t : values() ) {
-            if ( t.typeCode == typeCode ) {
-                return t;
-            }
-        }
-        throw new UnknownTypeException( "There is no PolySqlType with TypeCode: " + typeCode );
-    }
-
-
     public abstract Class<?> getTypeJavaClass();
 
 
@@ -273,7 +252,7 @@ public enum PolySqlType {
     }
 
 
-    public static PolySqlType getPolySqlTypeFromTypeCode( final int typeCode ) {
+    public static PolySqlType getByTypeCode( final int typeCode ) throws UnknownTypeException {
         switch ( typeCode ) {
             case PolySqlTypeCode.BOOLEAN:
                 return BOOLEAN;
@@ -289,8 +268,6 @@ public enum PolySqlType {
                 return DOUBLE;
             case PolySqlTypeCode.DECIMAL:
                 return DECIMAL;
-            case PolySqlTypeCode.MONEY:
-                return MONEY;
             case PolySqlTypeCode.VARCHAR:
                 return VARCHAR;
             case PolySqlTypeCode.TEXT:
@@ -302,7 +279,7 @@ public enum PolySqlType {
             case PolySqlTypeCode.TIMESTAMP:
                 return TIMESTAMP;
             default:
-                throw new IllegalArgumentException( "A PolySqlType was not found for the given type code '" + typeCode + "'" );
+                throw new UnknownTypeException( "A PolySqlType was not found for the given type code '" + typeCode + "'" );
         }
     }
 

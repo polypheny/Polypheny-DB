@@ -23,42 +23,34 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import java.util.ArrayList;
+import java.util.StringJoiner;
 
 
-public interface Transaction {
+public class TableConstraint {
 
-    PolyXid getXid();
+    public String name;
+    public String type;
+    public boolean deferrable;
+    public boolean initially_deferred;
+    public String[] columns;
 
-    QueryProcessor getQueryProcessor();
 
-    Catalog getCatalog();
+    public TableConstraint( final String name, final String type, ArrayList<String> columns ) {
+        this.name = name;
+        this.type = type;
+        this.columns = columns.toArray( new String[0] );
+    }
 
-    void commit() throws TransactionException;
 
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
+    public String[] asRow() {
+        StringJoiner joiner = new StringJoiner( ", " );
+        for ( String column : columns ) {
+            joiner.add( column );
+        }
+        return new String[]{ this.name, this.type, joiner.toString() };
+    }
 }

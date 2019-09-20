@@ -23,42 +23,36 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+/**
+ * Defines how a column is sorted.
+ * Required for Gson.
+ */
+public class SortState {
+
+    /**
+     * How the column is supposed to be sorted (ASC or DESC)
+     */
+    public SortDirection direction;
 
 
-public interface Transaction {
+    /**
+     * If true, the column will be sorted
+     */
+    public boolean sorting;
 
-    PolyXid getXid();
 
-    QueryProcessor getQueryProcessor();
+    public SortState() {
+        this.direction = SortDirection.DESC;
+        this.sorting = false;
+    }
 
-    Catalog getCatalog();
 
-    void commit() throws TransactionException;
+    public SortState( final SortDirection direction ) {
+        this.direction = direction;
+        this.sorting = true;
+    }
 
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

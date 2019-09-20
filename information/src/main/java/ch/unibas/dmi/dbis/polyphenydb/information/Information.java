@@ -153,7 +153,7 @@ public abstract class Information {
      */
     protected void notifyManager() {
         if (informationManager == null) {
-            LOG.error( "Requested notification of the information manager but no manager set." );
+            LOG.info( "Requested notification of the information manager but no manager set." );
         } else {
             informationManager.notify( this );
         }

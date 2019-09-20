@@ -57,6 +57,9 @@ $RECYCLE.BIN/
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
+# heap dumps
+*.hprof
+
 # Package Files #
 *.jar
 *.war

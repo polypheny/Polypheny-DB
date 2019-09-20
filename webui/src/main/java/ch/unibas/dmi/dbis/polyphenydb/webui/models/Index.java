@@ -23,42 +23,43 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import lombok.Getter;
 
 
-public interface Transaction {
+/**
+ * Schema for the index of a table
+ */
+@Getter
+public class Index {
 
-    PolyXid getXid();
+    private String schema;
+    private String table;
+    private String name;
+    private String method;
+    private String[] columns;
 
-    QueryProcessor getQueryProcessor();
 
-    Catalog getCatalog();
+    public Index( final String schema, final String table, final String name, final String method, final String[] columns ) {
+        this.schema = schema;
+        this.table = table;
+        this.name = name;
+        this.method = method;
+        this.columns = columns;
+    }
 
-    void commit() throws TransactionException;
 
-    void rollback() throws TransactionException;
+    /**
+     * Convert index to a row to display in the UI
+     */
+    public String[] asRow() {
+        String[] row = new String[3];
+        row[0] = this.name;
+        row[1] = this.method;
+        row[2] = String.join( ",", this.columns );
+        return row;
+    }
 
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

@@ -23,42 +23,25 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import java.util.ArrayList;
 
 
-public interface Transaction {
+/**
+ * Stores information that is needed for the UML view, such as the list of all tables of a schema with their columns and a list of
+ * all the foreign keys of a schema
+ */
+public class Uml {
 
-    PolyXid getXid();
+    private DbTable[] tables;
+    private ForeignKey[] foreignKeys;
 
-    QueryProcessor getQueryProcessor();
 
-    Catalog getCatalog();
+    public Uml( final ArrayList<DbTable> tables, final ArrayList<ForeignKey> foreignKeys ) {
+        this.tables = tables.toArray( new DbTable[0] );
+        this.foreignKeys = foreignKeys.toArray( new ForeignKey[0] );
+    }
 
-    void commit() throws TransactionException;
-
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

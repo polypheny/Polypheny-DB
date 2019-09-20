@@ -23,42 +23,21 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 
 
-public interface Transaction {
+/**
+ * Model for a request to edit or create a Table used for request where you want to truncate/drop a table
+ * and when you want to create a new table
+ */
+public class EditTableRequest {
 
-    PolyXid getXid();
+    public String schema;
+    public String table;
+    public String action; // truncate / drop
+    public DbColumn[] columns;
 
-    QueryProcessor getQueryProcessor();
-
-    Catalog getCatalog();
-
-    void commit() throws TransactionException;
-
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

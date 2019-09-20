@@ -23,42 +23,42 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
+import java.util.Map;
 
 
-public interface Transaction {
+/**
+ * Required to parse a request coming from the UI using Gson
+ */
+public class UIRequest {
 
-    PolyXid getXid();
+    /**
+     * The name of the table the data should be fetched from
+     */
+    public String tableId;
 
-    QueryProcessor getQueryProcessor();
+    /**
+     * Information about the pagination,
+     * what current page should be loaded
+     */
+    public int currentPage;
 
-    Catalog getCatalog();
+    /**
+     * Data that should be inserted
+     */
+    public Map<String, String> data;
 
-    void commit() throws TransactionException;
+    /**
+     * For each column: If it should be filtered empty string if it should not be filtered
+     */
+    public Map<String, String> filter;
 
-    void rollback() throws TransactionException;
+    /**
+     * For each column: If and how it should be sorted
+     */
+    public Map<String, SortState> sortState;
 
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

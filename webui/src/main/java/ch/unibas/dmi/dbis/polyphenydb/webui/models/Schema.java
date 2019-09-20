@@ -23,42 +23,45 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public interface Transaction {
+/**
+ * Model for a schema of a DBMS
+ */
+@Getter
+public class Schema {
 
-    PolyXid getXid();
+    private static final Logger LOGGER = LoggerFactory.getLogger( Schema.class );
 
-    QueryProcessor getQueryProcessor();
+    private String name;
+    private String type; // TODO: enum
 
-    Catalog getCatalog();
+    // fields for creation
+    private boolean create;
+    private boolean ifNotExists;
+    private String authorization;
 
-    void commit() throws TransactionException;
+    // fields for deletion
+    private boolean drop;
+    private boolean ifExists;
+    private boolean cascade;
 
-    void rollback() throws TransactionException;
 
-    PolyphenyDbSchema getSchema();
+    /**
+     * Constructor
+     *
+     * @param name name of the schema
+     * @param type type of the schema, e.g. relational
+     */
+    public Schema( final String name, final String type ) {
+        this.name = name;
+        this.type = type;
+    }
 
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

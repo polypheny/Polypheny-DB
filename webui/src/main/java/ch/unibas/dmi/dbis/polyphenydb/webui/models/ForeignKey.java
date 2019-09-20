@@ -23,42 +23,32 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import lombok.Builder;
+import lombok.Getter;
 
 
-public interface Transaction {
+/**
+ * Model for a ForeignKey
+ */
+@Getter
+@Builder
+public class ForeignKey {
 
-    PolyXid getXid();
+    private String fkName;
+    private String pkName;
 
-    QueryProcessor getQueryProcessor();
+    private String pkTableSchema;
+    private String pkTableName;
+    private String pkColumnName;
 
-    Catalog getCatalog();
+    private String fkTableSchema;
+    private String fkTableName;
+    private String fkColumnName;
 
-    void commit() throws TransactionException;
+    private String update;
+    private String delete;
 
-    void rollback() throws TransactionException;
-
-    PolyphenyDbSchema getSchema();
-
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
 }

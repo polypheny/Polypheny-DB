@@ -23,42 +23,47 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 
 
-public interface Transaction {
+/**
+ * Model for a RelNode coming from the Relalg-Builder in the UI
+ */
+public class UIRelNode {
 
-    PolyXid getXid();
+    /**
+     * Type of the RelNode, e.g. TableScan
+     */
+    public String type;
 
-    QueryProcessor getQueryProcessor();
+    /**
+     * Children of this node in the tree
+     */
+    public UIRelNode[] children;
 
-    Catalog getCatalog();
+    /**
+     * Number of inputs of a node.
+     * Required by the RelBuilder
+     */
+    public int inputCount;
 
-    void commit() throws TransactionException;
+    //tableScan
+    public String table;
 
-    void rollback() throws TransactionException;
+    //join
+    public JoinRelType join;
+    //join condition
+    public String operator;
+    public String col1;
+    public String col2;
 
-    PolyphenyDbSchema getSchema();
+    //filter
+    public String field;
+    public String filter;
 
-    boolean isAnalyze();
-
-    InformationManager getQueryAnalyzer();
-
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
-
-    CatalogSchema getDefaultSchema();
+    //project
+    public String fields;
 }

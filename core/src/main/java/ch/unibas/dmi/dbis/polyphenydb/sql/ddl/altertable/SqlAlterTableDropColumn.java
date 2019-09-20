@@ -109,7 +109,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                     } else if ( combinedKey.getConstraints().size() > 0 ) {
                         throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + combinedKey.getConstraints().get( 0 ).name + "'." );
                     }
-                    throw new PolyphenyDbException( "Ok, strange... Here is something going wrong." );
+                    throw new PolyphenyDbException( "Ok, strange... Something is going wrong here!" );
                 }
             }
 

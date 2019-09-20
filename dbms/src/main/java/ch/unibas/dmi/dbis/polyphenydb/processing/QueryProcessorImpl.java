@@ -68,8 +68,6 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbSqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
@@ -135,13 +133,12 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     private static final Logger LOG = LoggerFactory.getLogger( QueryProcessorImpl.class );
 
-    private InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
-    private InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
-    private InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
-    private InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
+    private static InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+    private static InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
+    private static InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+    private static InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     private final Transaction transaction;
-
 
     QueryProcessorImpl( Transaction transaction ) {
         this.transaction = transaction;
@@ -199,61 +196,63 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( parsed.getKind() == SqlKind.INSERT ) {
             SqlInsert insert = (SqlInsert) parsed;
             SqlNodeList oldColumnList = insert.getTargetColumnList();
-            CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
-            SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
-            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
-            int pos = 0;
-            for ( CatalogColumn column : combinedTable.getColumns() ) {
-                // Add column
-                newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
+            if ( oldColumnList != null ) {
+                CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+                SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
+                SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
+                int pos = 0;
+                for ( CatalogColumn column : combinedTable.getColumns() ) {
+                    // Add column
+                    newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
-                // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
-                int i = 0;
-                for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
-                    SqlBasicCall call = (SqlBasicCall) sqlNode;
-                    int position = getPositionInSqlNodeList( oldColumnList, column.name );
-                    if ( position >= 0 ) {
-                        newValues[i][pos] = call.getOperands()[position];
-                    } else {
-                        // Add value
-                        if ( column.defaultValue != null ) {
-                            CatalogDefaultValue defaultValue = column.defaultValue;
-                            switch ( column.type ) {
-                                case BOOLEAN:
-                                    newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
-                                    break;
-                                case INTEGER:
-                                case DECIMAL:
-                                case BIGINT:
-                                    newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                case REAL:
-                                case DOUBLE:
-                                    newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                case VARCHAR:
-                                case TEXT:
-                                    newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
-                                    break;
-                                default:
-                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
-                            }
-                        } else if ( column.nullable ) {
-                            newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                    // Add value (loop because it can be a multi insert (insert into test(id) values (1),(2),(3))
+                    int i = 0;
+                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                        SqlBasicCall call = (SqlBasicCall) sqlNode;
+                        int position = getPositionInSqlNodeList( oldColumnList, column.name );
+                        if ( position >= 0 ) {
+                            newValues[i][pos] = call.getOperands()[position];
                         } else {
-                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
+                            // Add value
+                            if ( column.defaultValue != null ) {
+                                CatalogDefaultValue defaultValue = column.defaultValue;
+                                switch ( column.type ) {
+                                    case BOOLEAN:
+                                        newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
+                                        break;
+                                    case INTEGER:
+                                    case DECIMAL:
+                                    case BIGINT:
+                                        newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    case REAL:
+                                    case DOUBLE:
+                                        newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    case VARCHAR:
+                                    case TEXT:
+                                        newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
+                                        break;
+                                    default:
+                                        throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                                }
+                            } else if ( column.nullable ) {
+                                newValues[i][pos] = SqlLiteral.createNull( SqlParserPos.ZERO );
+                            } else {
+                                throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
+                            }
                         }
                         i++;
                     }
                     pos++;
                 }
-            }
-            // Add new column list
-            insert.setColumnList( newColumnList );
-            // Replace value in parser tree
-            for ( int i = 0; i < newValues.length; i++ ) {
-                SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
-                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+                // Add new column list
+                insert.setColumnList( newColumnList );
+                // Replace value in parser tree
+                for ( int i = 0; i < newValues.length; i++ ) {
+                    SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
+                    ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+                }
             }
         }
 
@@ -320,10 +319,10 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
-                        .addRuleInstance( FilterTableScanRule.INSTANCE )
+                        /*.addRuleInstance( FilterTableScanRule.INSTANCE )
                         .addRuleInstance( FilterTableScanRule.INTERPRETER )
                         .addRuleInstance( ProjectTableScanRule.INSTANCE )
-                        .addRuleInstance( ProjectTableScanRule.INTERPRETER )
+                        .addRuleInstance( ProjectTableScanRule.INTERPRETER ) */
                         .build();
         RelOptPlanner planner = new HepPlanner( hepProgram );
         return processQuery( logicalPlan, planner );
@@ -332,11 +331,16 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
     @Override
     public PolyphenyDbSignature processQuery( final RelNode logicalPlan, RelOptPlanner planner ) {
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                "LogicalQueryPlan",
-                informationGroupLogical.getId(),
-                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPageLogical );
+            queryAnalyzer.addGroup( informationGroupLogical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "LogicalQueryPlan",
+                    informationGroupLogical.getId(),
+                    RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
 
         final StopWatch stopWatch = new StopWatch();
         //
@@ -351,11 +355,16 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( LOG.isTraceEnabled() ) {
             LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        informationQueryPlan = new InformationQueryPlan(
-                "PhysicalQueryPlan",
-                informationGroupPhysical.getId(),
-                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPagePhysical );
+            queryAnalyzer.addGroup( informationGroupPhysical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "PhysicalQueryPlan",
+                    informationGroupPhysical.getId(),
+                    RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
         stopWatch.stop();
         if ( LOG.isDebugEnabled() ) {
             LOG.debug( "Optimizing Statement ... done. [{}]", stopWatch );

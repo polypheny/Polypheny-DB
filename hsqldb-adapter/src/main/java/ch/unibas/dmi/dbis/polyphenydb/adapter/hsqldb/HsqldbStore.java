@@ -213,12 +213,10 @@ public class HsqldbStore implements Store {
                 return "FLOAT";
             case DECIMAL:
                 return "DECIMAL";
-            case MONEY:
-                return "MONEY";
             case VARCHAR:
                 return "VARCHAR";
             case TEXT:
-                return "TEXT";
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
             case DATE:
                 return "DATE";
             case TIME:
