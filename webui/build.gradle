@@ -116,7 +116,7 @@ task unzipUiFIles(type: Copy) {
     }
 }
 
-build.dependsOn(unzipUiFIles)
+classes.dependsOn(unzipUiFIles)
 
 
 
@@ -144,6 +144,7 @@ jar {
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
     }
+    from("$buildDir/webapp") // include webapp files
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"
