@@ -46,17 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
@@ -81,7 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -336,6 +324,7 @@ public class CassandraRules {
         }
 
 
+        @Override
         public boolean matches( RelOptRuleCall call ) {
             final Sort sort = call.rel( 0 );
             final CassandraFilter filter = call.rel( 2 );

@@ -157,16 +157,19 @@ public class SqlTestGen {
                 }
 
 
+                @Override
                 public void checkType( String sql, String expected ) {
                     // We could generate the SQL -- or maybe describe -- but ignore it for now.
                 }
 
 
+                @Override
                 public void checkCollation( String expression, String expectedCollationName, Coercibility expectedCoercibility ) {
                     // We could generate the SQL -- or maybe describe -- but ignore it for now.
                 }
 
 
+                @Override
                 public void checkCharset( String expression, Charset expectedCharset ) {
                     // We could generate the SQL -- or maybe describe -- but ignore it for now.
                 }

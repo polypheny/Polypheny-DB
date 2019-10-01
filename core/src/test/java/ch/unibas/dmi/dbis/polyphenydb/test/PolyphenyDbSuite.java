@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.ArrayTableTest;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbRemoteEmbeddedDriverTest;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.LatticeSuggesterTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtilTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitTest;
@@ -110,7 +107,6 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         // very fast tests (under 0.1s)
-        ArrayTableTest.class,
         BitSetsTest.class,
         ImmutableBitSetTest.class,
         DirectedGraphTest.class,
@@ -127,7 +123,6 @@ import org.junit.runners.Suite;
         SqlFunctionsTest.class,
         SqlJsonFunctionsTest.class,
         SqlTypeNameTest.class,
-        ModelTest.class,
         SqlValidatorFeatureTest.class,
         VolcanoPlannerTraitTest.class,
         InterpreterTest.class,
@@ -166,7 +161,7 @@ import org.junit.runners.Suite;
         ScannableTableTest.class,
         RexExecutorTest.class,
         SqlLimitsTest.class,
-        JdbcFrontLinqBackTest.class,
+//        JdbcFrontLinqBackTest.class,
         RelToSqlConverterTest.class,
         SqlOperatorTest.class,
         ChunkListTest.class,
@@ -180,36 +175,35 @@ import org.junit.runners.Suite;
         MutableRelTest.class,
 
         // slow tests (above 1s)
-        UdfTest.class,
+//        UdfTest.class,
         UdtTest.class,
         TableFunctionTest.class,
         PlannerTest.class,
         RelBuilderTest.class,
         PigRelBuilderTest.class,
         RexImplicationCheckerTest.class,
-        JdbcAdapterTest.class,
-        LinqFrontJdbcBackTest.class,
+//        JdbcAdapterTest.class,
+//        LinqFrontJdbcBackTest.class,
         JdbcFrontJdbcBackLinqMiddleTest.class,
         RexProgramFuzzyTest.class,
         SqlToRelConverterTest.class,
         ProfilerTest.class,
         SqlAdvisorJdbcTest.class,
         //CoreQuidemTest.class,
-        PolyphenyDbRemoteEmbeddedDriverTest.class,
         StreamTest.class,
         SortRemoveRuleTest.class,
 
         // above 10sec
-        JdbcFrontJdbcBackTest.class,
+//        JdbcFrontJdbcBackTest.class,
 
         // above 20sec
-        JdbcTest.class,
+//        JdbcTest.class,
         PolyphenyDbSqlOperatorTest.class,
-        ReflectiveSchemaTest.class,
+//        ReflectiveSchemaTest.class,
         RelOptRulesTest.class,
 
         // test cases
-        TableInRootSchemaTest.class,
+//        TableInRootSchemaTest.class,
         RelMdColumnOriginsTest.class,
         MultiJdbcSchemaJoinTest.class,
         CollectionTypeTest.class,
@@ -217,13 +211,6 @@ import org.junit.runners.Suite;
         // slow tests that don't break often
         SqlToRelConverterExtendedTest.class,
         PartiallyOrderedSetTest.class,
-
-        // above 30sec
-        LatticeSuggesterTest.class,
-        MaterializationTest.class,
-
-        // above 120sec
-        LatticeTest.class,
 
         // system tests and benchmarks (very slow, but usually only run if
         // '-Dpolyphenydb.test.slow' is specified)

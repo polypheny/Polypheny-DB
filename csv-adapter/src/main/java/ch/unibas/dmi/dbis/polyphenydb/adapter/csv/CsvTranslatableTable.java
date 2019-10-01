@@ -98,6 +98,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     }
 
 
+    @Override
     public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
         return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
     }
@@ -108,6 +109,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         throw new UnsupportedOperationException();
     }

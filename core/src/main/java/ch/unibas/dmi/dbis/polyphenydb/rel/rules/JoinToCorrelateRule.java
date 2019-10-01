@@ -100,6 +100,7 @@ public class JoinToCorrelateRule extends RelOptRule {
     }
 
 
+    @Override
     public boolean matches( RelOptRuleCall call ) {
         LogicalJoin join = call.rel( 0 );
         switch ( join.getJoinType() ) {

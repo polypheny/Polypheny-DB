@@ -49,7 +49,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import com.google.common.collect.ImmutableMultiset;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -62,6 +61,7 @@ import org.junit.Test;
 /**
  * Test case for POLYPHENYDB-542.
  */
+@SuppressWarnings("SqlDialectInspection")
 public class RelMdColumnOriginsTest {
 
     /**
@@ -76,11 +76,9 @@ public class RelMdColumnOriginsTest {
         Statement statement = polyphenyDbEmbeddedConnection.createStatement();
         ResultSet resultSet =
                 statement.executeQuery( "SELECT TABLE1.ID, TABLE2.ID FROM "
-                        + "(SELECT GROUPING(A) AS ID FROM T1 "
-                        + "GROUP BY ROLLUP(A,B)) TABLE1 "
+                        + "(SELECT GROUPING(A) AS ID FROM T1 GROUP BY ROLLUP(A,B)) TABLE1 "
                         + "JOIN "
-                        + "(SELECT GROUPING(A) AS ID FROM T1 "
-                        + "GROUP BY ROLLUP(A,B)) TABLE2 "
+                        + "(SELECT GROUPING(A) AS ID FROM T1 GROUP BY ROLLUP(A,B)) TABLE2 "
                         + "ON TABLE1.ID = TABLE2.ID" );
 
         final String result1 = "ID=0; ID=0";

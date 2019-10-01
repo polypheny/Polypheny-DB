@@ -148,6 +148,7 @@ public class TraitPropagationTest {
 
             // SELECT * from T;
             final Table table = new AbstractTable() {
+                @Override
                 public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                     return typeFactory.builder()
                             .add( "s", stringType )
@@ -208,6 +209,7 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             RelTraitSet empty = call.getPlanner().emptyTraitSet();
             LogicalAggregate rel = call.rel( 0 );
@@ -237,6 +239,7 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             LogicalProject rel = call.rel( 0 );
             RelNode rawInput = call.rel( 1 );
@@ -273,6 +276,7 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Sort sort = (Sort) rel;
             final RelNode input = convert( sort.getInput(), rel.getCluster().traitSetOf( PHYSICAL ) );
@@ -294,6 +298,7 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             EnumerableTableScan rel = call.rel( 0 );
             call.transformTo( new PhysTable( rel.getCluster() ) );
@@ -321,11 +326,13 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             return new PhysAgg( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
@@ -353,11 +360,13 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public PhysProj copy( RelTraitSet traitSet, RelNode input, List<RexNode> exps, RelDataType rowType ) {
             return new PhysProj( getCluster(), traitSet, input, exps, rowType );
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
@@ -374,11 +383,13 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public PhysSort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
             return new PhysSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
@@ -399,6 +410,7 @@ public class TraitPropagationTest {
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }

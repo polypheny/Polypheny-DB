@@ -104,6 +104,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public Convention getOutConvention() {
         return Convention.NONE;
     }

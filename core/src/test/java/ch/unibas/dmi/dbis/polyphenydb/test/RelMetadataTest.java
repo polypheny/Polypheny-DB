@@ -55,6 +55,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -314,7 +315,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     private void checkNoColumnOrigin( String sql ) {
         Set<RelColumnOrigin> result = checkColumnOrigin( sql );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertTrue( result.isEmpty() );
     }
 
@@ -344,7 +345,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     // WARNING:  this requires the two table names to be different
     private void checkTwoColumnOrigin( String sql, String expectedTableName1, String expectedColumnName1, String expectedTableName2, String expectedColumnName2, boolean expectedDerived ) {
         Set<RelColumnOrigin> result = checkColumnOrigin( sql );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertEquals( 2, result.size() );
         for ( RelColumnOrigin rco : result ) {
             RelOptTable actualTable = rco.getOriginTable();
@@ -797,7 +798,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         RelNode rel = convertSql( sql );
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         Double result = mq.getSelectivity( rel, null );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertEquals( expected, result, EPSILON );
     }
 
@@ -841,7 +842,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
     private void checkRelSelectivity( RelNode rel, double expected ) {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         Double result = mq.getSelectivity( rel, null );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertEquals( expected, result, EPSILON );
     }
 

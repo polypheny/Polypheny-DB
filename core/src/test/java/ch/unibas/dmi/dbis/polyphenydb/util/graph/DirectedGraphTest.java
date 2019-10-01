@@ -438,11 +438,13 @@ public class DirectedGraphTest {
      */
     private static class DefaultAttributedEdgeFactory implements AttributedDirectedGraph.AttributedEdgeFactory<String, DefaultEdge> {
 
+        @Override
         public DefaultEdge createEdge( String v0, String v1, Object... attributes ) {
             return new DefaultAttributedEdge( v0, v1, ImmutableList.copyOf( attributes ) );
         }
 
 
+        @Override
         public DefaultEdge createEdge( String v0, String v1 ) {
             throw new UnsupportedOperationException();
         }

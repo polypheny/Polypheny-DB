@@ -56,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
@@ -134,7 +133,7 @@ import org.junit.Test;
  * <li>Test case-insensitive unique field names</li>
  * <li>Test that an alias created using {@link RelBuilder#alias(RexNode, String)} is removed if not a top-level project</li>
  * <li>{@link RelBuilder#aggregate} with grouping sets</li>
- * <li>{@link RelBuilder#aggregateCall} with filter</li>
+ * <li>{@code RelBuilder#aggregateCall} with filter</li>
  * <li>Add call to create {@link TableFunctionScan}</li>
  * <li>Add call to create {@link Window}</li>
  * <li>Add call to create {@link TableModify}</li>

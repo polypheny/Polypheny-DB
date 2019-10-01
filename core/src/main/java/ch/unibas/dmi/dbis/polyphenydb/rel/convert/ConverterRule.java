@@ -118,11 +118,13 @@ public abstract class ConverterRule extends RelOptRule {
     }
 
 
+    @Override
     public Convention getOutConvention() {
         return (Convention) outTrait;
     }
 
 
+    @Override
     public RelTrait getOutTrait() {
         return outTrait;
     }

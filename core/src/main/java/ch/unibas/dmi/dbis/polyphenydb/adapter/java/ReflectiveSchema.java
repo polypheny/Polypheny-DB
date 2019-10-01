@@ -290,6 +290,7 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
                 @SuppressWarnings("unchecked")

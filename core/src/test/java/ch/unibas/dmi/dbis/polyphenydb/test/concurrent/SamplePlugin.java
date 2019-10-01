@@ -63,6 +63,7 @@ public class SamplePlugin extends ConcurrentTestPlugin {
     private static final String DESCRIBE_RESULT_SET_CMD = "@describeResultSet";
 
 
+    @Override
     public ConcurrentTestPluginCommand getCommandFor( String name, String params ) {
         if ( name.equals( DESCRIBE_RESULT_SET_CMD ) ) {
             return new DescribeResultSet();
@@ -72,6 +73,7 @@ public class SamplePlugin extends ConcurrentTestPlugin {
     }
 
 
+    @Override
     public Iterable<String> getSupportedThreadCommands() {
         return Arrays.asList( new String[]{ DESCRIBE_RESULT_SET_CMD } );
     }
@@ -82,6 +84,7 @@ public class SamplePlugin extends ConcurrentTestPlugin {
      */
     static class DescribeResultSet implements ConcurrentTestPluginCommand {
 
+        @Override
         public void execute( TestContext testContext ) throws IOException {
             Statement stmt = (PreparedStatement) testContext.getCurrentStatement();
             if ( stmt == null ) {

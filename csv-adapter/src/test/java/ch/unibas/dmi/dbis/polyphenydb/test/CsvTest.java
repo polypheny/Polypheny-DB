@@ -45,29 +45,19 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStreamTableFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
-import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -76,7 +66,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -91,6 +80,7 @@ import org.junit.Test;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
+@SuppressWarnings("SqlDialectInspection")
 @Ignore
 public class CsvTest {
 
@@ -596,6 +586,7 @@ public class CsvTest {
             Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIMESTAMP );
 
             Statement statement = connection.createStatement();
+            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" })
             ResultSet resultSet = statement.executeQuery( "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100" );
             resultSet.next();
 
@@ -625,7 +616,7 @@ public class CsvTest {
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             Statement statement = connection.createStatement();
-            final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
+            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
             ResultSet resultSet = statement.executeQuery( sql );
             int n = 0;
             while ( resultSet.next() ) {
@@ -663,7 +654,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
         // Use LIMIT to ensure that results are deterministic without ORDER BY
-        final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
+        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -685,7 +676,7 @@ public class CsvTest {
     public void testTimestampOrderBy() throws SQLException {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
-        final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
+        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -705,7 +696,7 @@ public class CsvTest {
     public void testTimestampGroupByAndOrderBy() throws SQLException {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
-        final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
+        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -714,31 +705,6 @@ public class CsvTest {
             assertThat( resultSet.next(), is( true ) );
             final Timestamp timestamp = resultSet.getTimestamp( 2 );
             Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
-        }
-    }
-
-
-    /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1031">[POLYPHENYDB-1031] In prepared statement, CsvScannableTable.scan is called twice</a>.
-     * To see the bug, place a breakpoint in CsvScannableTable.scan, and note that it is called twice. It should only be called once.
-     */
-    @Test
-    public void testPrepared() throws SQLException {
-        final Properties properties = new Properties();
-        properties.setProperty( "caseSensitive", "true" );
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties ) ) {
-            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-
-            final Schema schema = CsvSchemaFactory.INSTANCE.create( polyphenyDbEmbeddedConnection.getRootSchema(), null,
-                    ImmutableMap.of( "directory", resourcePath( "sales" ), "flavor", "scannable" ) );
-            polyphenyDbEmbeddedConnection.getRootSchema().add( "TEST", schema );
-            final String sql = "select * from \"TEST\".\"DEPTS\" where \"NAME\" = ?";
-            final PreparedStatement statement2 = polyphenyDbEmbeddedConnection.prepareStatement( sql );
-
-            statement2.setString( 1, "Sales" );
-            final ResultSet resultSet1 = statement2.executeQuery();
-            Consumer<ResultSet> expect = expect( "DEPTNO=10; NAME=Sales" );
-            expect.accept( resultSet1 );
         }
     }
 
@@ -755,19 +721,19 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "07:15:56" ) ) );
 
             // timestamp
-            final String sql3 = "select JOINTIMES,\n"
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES,\n"
                     + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINTIMES)}\n"
                     + "from \"DATE\"\n"
                     + "where (JOINTIMES >= {ts '2003-01-01 00:00:00'}\n"
@@ -779,7 +745,7 @@ public class CsvTest {
             assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "2005-09-07 00:00:00" ) ) );
             assertThat( joinTimes.getTimestamp( 2 ), is( java.sql.Timestamp.valueOf( "2005-09-08 00:00:00" ) ) );
 
-            final String sql4 = "select JOINTIMES, extract(year from JOINTIMES)\n" + "from \"DATE\"";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql4 = "select JOINTIMES, extract(year from JOINTIMES)\n" + "from \"DATE\"";
             final ResultSet joinTimes2 = statement.executeQuery( sql4 );
             assertThat( joinTimes2.next(), is( true ) );
             assertThat( joinTimes2.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
@@ -797,12 +763,12 @@ public class CsvTest {
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
-            final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
             final ResultSet joinTimes = statement.executeQuery( sql1 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getInt( 1 ), is( 2007 ) );
 
-            final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
             final ResultSet joinTimes2 = statement.executeQuery( sql2 );
             assertThat( joinTimes2.next(), is( true ) );
             assertThat( joinTimes2.getInt( 1 ), is( 2007 ) );
@@ -826,21 +792,21 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT is not null";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT is not null";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME is not null";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME is not null";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
 
             // timestamp
-            final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES is not null";
+            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES is not null";
             final ResultSet joinTimes = statement.executeQuery( sql3 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
@@ -861,102 +827,25 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT > {d '1990-01-01'}";
+            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT > {d '1990-01-01'}";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME > {t '00:00:00'}";
+            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME > {t '00:00:00'}";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
 
             // timestamp
-            final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES > {ts '1990-01-01 00:00:00'}";
+            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES > {ts '1990-01-01 00:00:00'}";
             final ResultSet joinTimes = statement.executeQuery( sql3 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
             assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
-        }
-    }
-
-
-    @Ignore("POLYPHENYDB-1894: there's a bug in the test code, so it does not test what it should")
-    @Test(timeout = 10000)
-    public void testCsvStream() throws Exception {
-        final File file = File.createTempFile( "stream", "csv" );
-        final String model = "{\n"
-                + "  version: '1.0',\n"
-                + "  defaultSchema: 'STREAM',\n"
-                + "  schemas: [\n"
-                + "    {\n"
-                + "      name: 'SS',\n"
-                + "      tables: [\n"
-                + "        {\n"
-                + "          name: 'DEPTS',\n"
-                + "          type: 'custom',\n"
-                + "          factory: '" + CsvStreamTableFactory.class.getName()
-                + "',\n"
-                + "          stream: {\n"
-                + "            stream: true\n"
-                + "          },\n"
-                + "          operand: {\n"
-                + "            file: " + escapeString( file.getAbsolutePath() ) + ",\n"
-                + "            flavor: \"scannable\"\n"
-                + "          }\n"
-                + "        }\n"
-                + "      ]\n"
-                + "    }\n"
-                + "  ]\n"
-                + "}\n";
-        final String[] strings = {
-                "DEPTNO:int,NAME:string",
-                "10,\"Sales\"",
-                "20,\"Marketing\"",
-                "30,\"Engineering\""
-        };
-
-        try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=inline:" + model );
-                PrintWriter pw = Util.printWriter( file );
-                Worker<Void> worker = new Worker<>()
-        ) {
-            final Thread thread = new Thread( worker );
-            thread.start();
-
-            // Add some rows so that the table can deduce its row type.
-            final Iterator<String> lines = Arrays.asList( strings ).iterator();
-            pw.println( lines.next() ); // header
-            pw.flush();
-            worker.queue.put( writeLine( pw, lines.next() ) ); // first row
-            worker.queue.put( writeLine( pw, lines.next() ) ); // second row
-            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-            final String sql = "select stream * from \"SS\".\"DEPTS\"";
-            final PreparedStatement statement = polyphenyDbEmbeddedConnection.prepareStatement( sql );
-            final ResultSet resultSet = statement.executeQuery();
-            int count = 0;
-            try {
-                while ( resultSet.next() ) {
-                    ++count;
-                    if ( lines.hasNext() ) {
-                        worker.queue.put( sleep( 10 ) );
-                        worker.queue.put( writeLine( pw, lines.next() ) );
-                    } else {
-                        worker.queue.put( cancel( statement ) );
-                    }
-                }
-                fail( "expected exception, got end of data" );
-            } catch ( SQLException e ) {
-                assertThat( e.getMessage(), is( "Statement canceled" ) );
-            }
-            assertThat( count, anyOf( is( strings.length - 2 ), is( strings.length - 1 ) ) );
-            assertThat( worker.e, nullValue() );
-            assertThat( worker.v, nullValue() );
-        } finally {
-            Util.discard( file.delete() );
         }
     }
 
@@ -1030,6 +919,7 @@ public class CsvTest {
         private Exception e;
 
 
+        @Override
         public void run() {
             try {
                 for ( ; ; ) {
@@ -1045,6 +935,7 @@ public class CsvTest {
         }
 
 
+        @Override
         public void close() {
             try {
                 queue.put( end );

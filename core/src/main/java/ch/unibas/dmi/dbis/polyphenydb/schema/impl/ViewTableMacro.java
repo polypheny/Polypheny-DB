@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
@@ -93,14 +92,15 @@ public class ViewTableMacro implements TableMacro {
     }
 
 
+    @Override
     public List<FunctionParameter> getParameters() {
         return Collections.emptyList();
     }
 
 
+    @Override
     public TranslatableTable apply( List<Object> arguments ) {
-        final PolyphenyDbEmbeddedConnection connection = MaterializedViewTable.MATERIALIZATION_CONNECTION;
-        AnalyzeViewResult parsed = Schemas.analyzeView( connection, schema, schemaPath, viewSql, viewPath, modifiable != null && modifiable );
+        AnalyzeViewResult parsed = Schemas.analyzeView( schema, schemaPath, viewSql, viewPath, modifiable != null && modifiable );
         final List<String> schemaPath1 = schemaPath != null ? schemaPath : schema.path( null );
         if ( (modifiable == null || modifiable) && parsed.modifiable && parsed.table != null ) {
             return modifiableViewTable( parsed, viewSql, schemaPath1, viewPath, schema );

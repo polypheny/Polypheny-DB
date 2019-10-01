@@ -46,20 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistics;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -71,9 +60,13 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Statistics;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
 
 
 /**
@@ -127,6 +120,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
             public Enumerator<T> enumerator() {

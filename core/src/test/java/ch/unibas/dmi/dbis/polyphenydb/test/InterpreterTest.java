@@ -97,21 +97,25 @@ public class InterpreterTest {
         }
 
 
+        @Override
         public SchemaPlus getRootSchema() {
             return rootSchema;
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             return (JavaTypeFactory) planner.getTypeFactory();
         }
 
 
+        @Override
         public QueryProvider getQueryProvider() {
             return null;
         }
 
 
+        @Override
         public Object get( String name ) {
             return null;
         }

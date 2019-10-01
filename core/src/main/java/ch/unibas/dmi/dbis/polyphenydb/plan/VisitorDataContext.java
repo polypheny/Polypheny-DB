@@ -81,6 +81,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
     public SchemaPlus getRootSchema() {
         throw new RuntimeException( "Unsupported" );
     }
@@ -91,6 +92,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
     public QueryProvider getQueryProvider() {
         throw new RuntimeException( "Unsupported" );
     }

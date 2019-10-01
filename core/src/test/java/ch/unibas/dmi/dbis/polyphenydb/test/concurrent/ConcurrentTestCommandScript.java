@@ -1514,16 +1514,19 @@ public class ConcurrentTestCommandScript
         protected void doExecute( final ConcurrentTestCommandExecutor exec ) throws Exception {
             ConcurrentTestPluginCommand.TestContext context =
                     new ConcurrentTestPluginCommand.TestContext() {
+                        @Override
                         public void storeMessage( String message ) {
                             ConcurrentTestCommandScript.this.storeMessage( exec.getThreadId(), message );
                         }
 
 
+                        @Override
                         public Connection getConnection() {
                             return exec.getConnection();
                         }
 
 
+                        @Override
                         public Statement getCurrentStatement() {
                             return exec.getStatement();
                         }

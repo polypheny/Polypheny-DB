@@ -46,14 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -64,19 +56,22 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-
-import org.bson.BsonDocument;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Function1;
+import org.bson.BsonDocument;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 
 /**
@@ -111,6 +106,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new MongoQueryable<>( queryProvider, schema, this, tableName );
     }

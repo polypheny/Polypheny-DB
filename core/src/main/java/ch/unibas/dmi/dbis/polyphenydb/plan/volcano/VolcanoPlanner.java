@@ -45,23 +45,18 @@
 package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.AbstractRelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptLattice;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterializations;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
@@ -85,10 +80,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SemiJoinRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortRemoveRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionToDistinctRule;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.SaffronProperties;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
@@ -109,7 +102,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -227,13 +219,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      */
     private boolean locked;
 
-    private final List<RelOptMaterialization> materializations = new ArrayList<>();
-
-    /**
-     * Map of lattices by the qualified name of their star table.
-     */
-    private final Map<List<String>, RelOptLattice> latticeByName = new LinkedHashMap<>();
-
     final Map<RelNode, Provenance> provenanceMap = new HashMap<>();
 
     private final Deque<VolcanoRuleCall> ruleCallStack = new ArrayDeque<>();
@@ -286,11 +271,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public boolean isRegistered( RelNode rel ) {
         return mapRel2Subset.get( rel ) != null;
     }
 
 
+    @Override
     public void setRoot( RelNode rel ) {
         // We're registered all the rules, and therefore RelNode classes, we're interested in, and have not yet started calling metadata providers.
         // So now is a good time to tell the metadata layer what to expect.
@@ -308,68 +295,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelNode getRoot() {
         return root;
-    }
-
-
-    @Override
-    public List<RelOptMaterialization> getMaterializations() {
-        return ImmutableList.copyOf( materializations );
-    }
-
-
-    @Override
-    public void addMaterialization( RelOptMaterialization materialization ) {
-        materializations.add( materialization );
-    }
-
-
-    @Override
-    public void addLattice( RelOptLattice lattice ) {
-        latticeByName.put( lattice.starRelOptTable.getQualifiedName(), lattice );
-    }
-
-
-    @Override
-    public RelOptLattice getLattice( RelOptTable table ) {
-        return latticeByName.get( table.getQualifiedName() );
-    }
-
-
-    private void registerMaterializations() {
-        // Avoid using materializations while populating materializations!
-        final PolyphenyDbConnectionConfig config = context.unwrap( PolyphenyDbConnectionConfig.class );
-        if ( config == null || !config.materializationsEnabled() ) {
-            return;
-        }
-
-        // Register rels using materialized views.
-        final List<Pair<RelNode, List<RelOptMaterialization>>> materializationUses = RelOptMaterializations.useMaterializedViews( originalRoot, materializations );
-        for ( Pair<RelNode, List<RelOptMaterialization>> use : materializationUses ) {
-            RelNode rel = use.left;
-            Hook.SUB.run( rel );
-            registerImpl( rel, root.set );
-        }
-
-        // Register table rels of materialized views that cannot find a substitution in root rel transformation but can potentially be useful.
-        final Set<RelOptMaterialization> applicableMaterializations = new HashSet<>( RelOptMaterializations.getApplicableMaterializations( originalRoot, materializations ) );
-        for ( Pair<RelNode, List<RelOptMaterialization>> use : materializationUses ) {
-            applicableMaterializations.removeAll( use.right );
-        }
-        for ( RelOptMaterialization materialization : applicableMaterializations ) {
-            RelSubset subset = registerImpl( materialization.queryRel, null );
-            RelNode tableRel2 = RelOptUtil.createCastRel( materialization.tableRel, materialization.queryRel.getRowType(), true );
-            registerImpl( tableRel2, subset.set );
-        }
-
-        // Register rels using lattices.
-        final List<Pair<RelNode, RelOptLattice>> latticeUses = RelOptMaterializations.useLattices( originalRoot, ImmutableList.copyOf( latticeByName.values() ) );
-        if ( !latticeUses.isEmpty() ) {
-            RelNode rel = latticeUses.get( 0 ).left;
-            Hook.SUB.run( rel );
-            registerImpl( rel, root.set );
-        }
     }
 
 
@@ -434,16 +362,16 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         this.relImportances.clear();
         this.ruleQueue.clear();
         this.ruleNames.clear();
-        this.materializations.clear();
-        this.latticeByName.clear();
     }
 
 
+    @Override
     public List<RelOptRule> getRules() {
         return ImmutableList.copyOf( ruleSet );
     }
 
 
+    @Override
     public boolean addRule( RelOptRule rule ) {
         if ( locked ) {
             return false;
@@ -487,6 +415,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public boolean removeRule( RelOptRule rule ) {
         if ( !ruleSet.remove( rule ) ) {
             // Rule was not present.
@@ -528,6 +457,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelNode changeTraits( final RelNode rel, RelTraitSet toTraits ) {
         assert !rel.getTraitSet().equals( toTraits );
         assert toTraits.allSimple();
@@ -541,6 +471,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelOptPlanner chooseDelegate() {
         return this;
     }
@@ -564,9 +495,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      *
      * @return the most efficient RelNode tree found for implementing the given query
      */
+    @Override
     public RelNode findBestExp() {
         ensureRootConverters();
-        registerMaterializations();
         int cumulativeTicks = 0;
         for ( VolcanoPlannerPhase phase : VolcanoPlannerPhase.values() ) {
             setInitialImportance();
@@ -801,6 +732,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelSubset register( RelNode rel, RelNode equivRel ) {
         assert !isRegistered( rel ) : "pre: isRegistered(rel)";
         final RelSet set;
@@ -826,6 +758,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelSubset ensureRegistered( RelNode rel, RelNode equivRel ) {
         final RelSubset subset = getSubset( rel );
         if ( subset != null ) {
@@ -888,6 +821,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public void registerSchema( RelOptSchema schema ) {
         if ( registeredSchemas.add( schema ) ) {
             try {
@@ -899,6 +833,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public RelOptCost getCost( RelNode rel, RelMetadataQuery mq ) {
         assert rel != null : "pre-condition: rel != null";
         if ( rel instanceof RelSubset ) {
@@ -1068,6 +1003,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
     public void setImportance( RelNode rel, double importance ) {
         assert rel != null;
         if ( importance == 0d ) {
@@ -1529,6 +1465,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public void addListener( RelOptListener newListener ) {
         // TODO jvs 6-Apr-2006:  new superclass AbstractRelOptPlanner now defines a multicast listener; just need to hook it in
         if ( listener != null ) {
@@ -1539,12 +1476,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public void registerMetadataProviders( List<RelMetadataProvider> list ) {
         list.add( 0, new VolcanoRelMetadataProvider() );
     }
 
 
     // implement RelOptPlanner
+    @Override
     public long getRelMetadataTimestamp( RelNode rel ) {
         RelSubset subset = getSubset( rel );
         if ( subset == null ) {

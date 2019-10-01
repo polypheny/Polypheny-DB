@@ -386,7 +386,6 @@ data: {
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
         createStatementParserMethods: [
-            "SqlCreateMaterializedView"
             "SqlCreateSchema"
             "SqlCreateTable"
             "SqlCreateType"
@@ -396,7 +395,6 @@ data: {
 
         # List of methods for parsing extensions to "DROP" calls. Each must accept arguments "(SqlParserPos pos)".
         dropStatementParserMethods: [
-            "SqlDropMaterializedView"
             "SqlDropSchema"
             "SqlDropTable"
             "SqlDropType"

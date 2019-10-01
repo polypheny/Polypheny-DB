@@ -233,13 +233,4 @@ public class CassandraAdapterTest {
                 .returns( "tweet_id=f3dbb03a-d05b-11e5-b58b-90e2ba530b12\n" + "tweet_id=f3e4182e-d05b-11e5-b58b-90e2ba530b12\n" );
     }
 
-
-    @Test
-    public void testMaterializedView() {
-        PolyphenyDbAssert.that()
-                .with( TWISSANDRA )
-                .query( "select \"tweet_id\" from \"tweets\" where \"username\"='JmuhsAaMdw'" )
-                .enableMaterializations( true )
-                .explainContains( "CassandraTableScan(table=[[twissandra, Tweets_By_User]])" );
-    }
 }

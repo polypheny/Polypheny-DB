@@ -68,6 +68,8 @@ import org.junit.rules.ExpectedException;
 /**
  * Unit tests for DDL.
  */
+
+@SuppressWarnings("SqlDialectInspection")
 public class DdlTest {
 
     static final String URL = "jdbc:polyphenydbembedded:";
@@ -80,7 +82,6 @@ public class DdlTest {
         return DriverManager.getConnection( URL,
                 PolyphenyDbAssert.propBuilder()
                         .set( PolyphenyDbConnectionProperty.PARSER_FACTORY, SqlParserImpl.class.getName() + "#FACTORY" )
-                        .set( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED, "true" )
                         .build() );
     }
 

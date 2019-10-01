@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import com.google.common.collect.ImmutableList;
 
@@ -82,6 +81,7 @@ public interface SchemaPlus extends Schema {
     String getName();
 
     // override with stricter return
+    @Override
     SchemaPlus getSubSchema( String name );
 
     /**
@@ -104,11 +104,7 @@ public interface SchemaPlus extends Schema {
      */
     void add( String name, RelProtoDataType type );
 
-    /**
-     * Adds a lattice to this schema.
-     */
-    void add( String name, Lattice lattice );
-
+    @Override
     boolean isMutable();
 
     /**

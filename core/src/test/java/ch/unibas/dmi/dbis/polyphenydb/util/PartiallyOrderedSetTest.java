@@ -82,16 +82,15 @@ public class PartiallyOrderedSetTest {
     final long seed = new Random().nextLong();
     final Random random = new Random( seed );
 
-    static final PartiallyOrderedSet.Ordering<String> STRING_SUBSET_ORDERING =
-            ( e1, e2 ) -> {
-                // e1 < e2 if every char in e1 is also in e2
-                for ( int i = 0; i < e1.length(); i++ ) {
-                    if ( e2.indexOf( e1.charAt( i ) ) < 0 ) {
-                        return false;
-                    }
-                }
-                return true;
-            };
+    static final PartiallyOrderedSet.Ordering<String> STRING_SUBSET_ORDERING = ( e1, e2 ) -> {
+        // e1 < e2 if every char in e1 is also in e2
+        for ( int i = 0; i < e1.length(); i++ ) {
+            if ( e2.indexOf( e1.charAt( i ) ) < 0 ) {
+                return false;
+            }
+        }
+        return true;
+    };
 
 
     /**
@@ -138,9 +137,7 @@ public class PartiallyOrderedSetTest {
 
         final StringBuilder buf = new StringBuilder();
         poset.out( buf );
-        TestUtil.assertEqualsVerbose(
-                "PartiallyOrderedSet size: 0 elements: {\n}",
-                buf.toString() );
+        TestUtil.assertEqualsVerbose( "PartiallyOrderedSet size: 0 elements: {\n}", buf.toString() );
 
         poset.add( "a" );
         printValidate( poset );
@@ -258,9 +255,7 @@ public class PartiallyOrderedSetTest {
 
     @Test
     public void testPosetBitsLarge() {
-        Assume.assumeTrue(
-                "it takes 80 seconds, and the computations are exactly the same every time",
-                PolyphenyDbAssert.ENABLE_SLOW );
+        Assume.assumeTrue( "it takes 80 seconds, and the computations are exactly the same every time", PolyphenyDbAssert.ENABLE_SLOW );
         final PartiallyOrderedSet<Integer> poset = new PartiallyOrderedSet<>( PartiallyOrderedSetTest::isBitSuperset );
         checkPosetBitsLarge( poset, 30000, 2921, 164782 );
     }

@@ -51,8 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.MapSqlStatisticProvider;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.SqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
@@ -149,6 +147,7 @@ public class Frameworks {
     public static <R> R withPlanner( final PlannerAction<R> action, final FrameworkConfig config ) {
         return withPrepare(
                 new Frameworks.PrepareAction<R>( config ) {
+                    @Override
                     public R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final PolyphenyDbSchema schema = PolyphenyDbSchema.from( Util.first( config.getDefaultSchema(), rootSchema ) );
                         return action.apply( cluster, relOptSchema, schema.root().plus() );
@@ -250,8 +249,6 @@ public class Frameworks {
         private RexExecutor executor;
         private RelOptCostFactory costFactory;
         private RelDataTypeSystem typeSystem;
-        private boolean evolveLattice;
-        private SqlStatisticProvider statisticProvider;
         private ViewExpander viewExpander;
         private ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
 
@@ -266,8 +263,6 @@ public class Frameworks {
             parserConfig = SqlParser.Config.DEFAULT;
             sqlToRelConverterConfig = SqlToRelConverter.Config.DEFAULT;
             typeSystem = RelDataTypeSystem.DEFAULT;
-            evolveLattice = false;
-            statisticProvider = MapSqlStatisticProvider.INSTANCE;
         }
 
 
@@ -286,8 +281,6 @@ public class Frameworks {
             executor = config.getExecutor();
             costFactory = config.getCostFactory();
             typeSystem = config.getTypeSystem();
-            evolveLattice = config.isEvolveLattice();
-            statisticProvider = config.getStatisticProvider();
             prepareContext = config.getPrepareContext();
         }
 
@@ -305,8 +298,6 @@ public class Frameworks {
                     costFactory,
                     typeSystem,
                     executor,
-                    evolveLattice,
-                    statisticProvider,
                     viewExpander,
                     prepareContext );
         }
@@ -404,18 +395,6 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder evolveLattice( boolean evolveLattice ) {
-            this.evolveLattice = evolveLattice;
-            return this;
-        }
-
-
-        public ConfigBuilder statisticProvider( SqlStatisticProvider statisticProvider ) {
-            this.statisticProvider = Objects.requireNonNull( statisticProvider );
-            return this;
-        }
-
-
         public ConfigBuilder viewExpander( ViewExpander viewExpander ) {
             this.viewExpander = viewExpander;
             return this;
@@ -445,8 +424,6 @@ public class Frameworks {
         private final RelOptCostFactory costFactory;
         private final RelDataTypeSystem typeSystem;
         private final RexExecutor executor;
-        private final boolean evolveLattice;
-        private final SqlStatisticProvider statisticProvider;
         private final ViewExpander viewExpander;
         private final ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
 
@@ -463,8 +440,6 @@ public class Frameworks {
                 RelOptCostFactory costFactory,
                 RelDataTypeSystem typeSystem,
                 RexExecutor executor,
-                boolean evolveLattice,
-                SqlStatisticProvider statisticProvider,
                 ViewExpander viewExpander,
                 ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext ) {
             this.context = context;
@@ -478,8 +453,6 @@ public class Frameworks {
             this.costFactory = costFactory;
             this.typeSystem = typeSystem;
             this.executor = executor;
-            this.evolveLattice = evolveLattice;
-            this.statisticProvider = statisticProvider;
             this.viewExpander = viewExpander;
             this.prepareContext = prepareContext;
         }
@@ -548,18 +521,6 @@ public class Frameworks {
         @Override
         public RelDataTypeSystem getTypeSystem() {
             return typeSystem;
-        }
-
-
-        @Override
-        public boolean isEvolveLattice() {
-            return evolveLattice;
-        }
-
-
-        @Override
-        public SqlStatisticProvider getStatisticProvider() {
-            return statisticProvider;
         }
 
 

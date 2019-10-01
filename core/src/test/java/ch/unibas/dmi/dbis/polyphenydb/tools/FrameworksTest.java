@@ -448,6 +448,7 @@ public class FrameworksTest {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "id", typeFactory.createSqlType( SqlTypeName.INTEGER ) )
@@ -456,36 +457,43 @@ public class FrameworksTest {
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.of( 15D, ImmutableList.of( ImmutableBitSet.of( 0 ) ), ImmutableList.of() );
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, int[] projects ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Collection getModifiableCollection() {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Type getElementType() {
             return Object.class;
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             throw new UnsupportedOperationException();
         }

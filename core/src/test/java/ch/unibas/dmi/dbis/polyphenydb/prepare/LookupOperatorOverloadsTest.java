@@ -59,7 +59,6 @@ import static org.junit.Assert.assertThat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;

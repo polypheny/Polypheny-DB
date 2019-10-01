@@ -286,22 +286,6 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     }
 }
 
-SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
-{
-    final boolean ifNotExists;
-    final SqlIdentifier id;
-    SqlNodeList columnList = null;
-    final SqlNode query;
-}
-{
-    <MATERIALIZED> <VIEW> ifNotExists = IfNotExistsOpt()
-    id = CompoundIdentifier()
-    [ columnList = ParenthesizedSimpleIdentifierList() ]
-    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return SqlDdlNodes.createMaterializedView(s.end(this), replace, ifNotExists, id, columnList, query);
-    }
-}
-
 private void FunctionJarDef(SqlNodeList usingList) :
 {
     final SqlDdlNodes.FileType fileType;
@@ -389,17 +373,6 @@ SqlDrop SqlDropView(Span s, boolean replace) :
 {
     <VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return SqlDdlNodes.dropView(s.end(this), ifExists, id);
-    }
-}
-
-SqlDrop SqlDropMaterializedView(Span s, boolean replace) :
-{
-    final boolean ifExists;
-    final SqlIdentifier id;
-}
-{
-    <MATERIALIZED> <VIEW> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropMaterializedView(s.end(this), ifExists, id);
     }
 }
 

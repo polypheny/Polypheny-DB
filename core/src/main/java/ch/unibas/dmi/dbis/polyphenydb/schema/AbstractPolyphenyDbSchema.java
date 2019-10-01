@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
@@ -71,15 +70,23 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     protected final NameMap<TableEntry> tableMap;
     protected final NameMultimap<FunctionEntry> functionMap;
     protected final NameMap<TypeEntry> typeMap;
-    protected final NameMap<LatticeEntry> latticeMap;
     protected final NameSet functionNames;
     protected final NameMap<FunctionEntry> nullaryFunctionMap;
     protected final NameMap<PolyphenyDbSchema> subSchemaMap;
     private List<? extends List<String>> path;
 
 
-    protected AbstractPolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap, NameMap<TypeEntry> typeMap,
-            NameMultimap<FunctionEntry> functionMap, NameSet functionNames, NameMap<FunctionEntry> nullaryFunctionMap, List<? extends List<String>> path ) {
+    protected AbstractPolyphenyDbSchema(
+            AbstractPolyphenyDbSchema parent,
+            Schema schema,
+            String name,
+            NameMap<PolyphenyDbSchema> subSchemaMap,
+            NameMap<TableEntry> tableMap,
+            NameMap<TypeEntry> typeMap,
+            NameMultimap<FunctionEntry> functionMap,
+            NameSet functionNames,
+            NameMap<FunctionEntry> nullaryFunctionMap,
+            List<? extends List<String>> path ) {
         this.parent = parent;
         this.schema = schema;
         this.name = name;
@@ -87,11 +94,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             this.tableMap = new NameMap<>();
         } else {
             this.tableMap = Objects.requireNonNull( tableMap );
-        }
-        if ( latticeMap == null ) {
-            this.latticeMap = new NameMap<>();
-        } else {
-            this.latticeMap = Objects.requireNonNull( latticeMap );
         }
         if ( subSchemaMap == null ) {
             this.subSchemaMap = new NameMap<>();
@@ -261,16 +263,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     }
 
 
-    private LatticeEntry add( String name, Lattice lattice ) {
-        if ( latticeMap.containsKey( name, false ) ) {
-            throw new RuntimeException( "Duplicate lattice '" + name + "'" );
-        }
-        final LatticeEntryImpl entry = new LatticeEntryImpl( this, name, lattice );
-        latticeMap.put( name, entry );
-        return entry;
-    }
-
-
     @Override
     public AbstractPolyphenyDbSchema root() {
         for ( AbstractPolyphenyDbSchema schema = this; ; ) {
@@ -385,17 +377,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         builder.putAll( subSchemaMap.map() );
         addImplicitSubSchemaToBuilder( builder );
         return builder.build();
-    }
-
-
-    /**
-     * Returns a collection of lattices.
-     *
-     * All are explicit (defined using {@link #add(String, Lattice)}).
-     */
-    @Override
-    public NavigableMap<String, LatticeEntry> getLatticeMap() {
-        return ImmutableSortedMap.copyOf( latticeMap.map() );
     }
 
 
@@ -725,12 +706,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         @Override
         public void add( String name, RelProtoDataType type ) {
             AbstractPolyphenyDbSchema.this.add( name, type );
-        }
-
-
-        @Override
-        public void add( String name, Lattice lattice ) {
-            AbstractPolyphenyDbSchema.this.add( name, lattice );
         }
     }
 

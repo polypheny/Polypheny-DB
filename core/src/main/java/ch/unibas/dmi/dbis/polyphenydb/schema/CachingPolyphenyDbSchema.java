@@ -58,33 +58,46 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
      * Creates a CachingPolyphenyDbSchema.
      */
     CachingPolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name ) {
-        this( parent, schema, name, null, null, null, null, null, null, null, null );
+        this( parent, schema, name, null, null, null, null, null, null, null );
     }
 
 
-    private CachingPolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap, NameMap<TypeEntry> typeMap,
-            NameMultimap<FunctionEntry> functionMap, NameSet functionNames, NameMap<FunctionEntry> nullaryFunctionMap, List<? extends List<String>> path ) {
-        super( parent, schema, name, subSchemaMap, tableMap, latticeMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
+    private CachingPolyphenyDbSchema(
+            AbstractPolyphenyDbSchema parent,
+            Schema schema,
+            String name,
+            NameMap<PolyphenyDbSchema> subSchemaMap,
+            NameMap<TableEntry> tableMap,
+            NameMap<TypeEntry> typeMap,
+            NameMultimap<FunctionEntry> functionMap,
+            NameSet functionNames,
+            NameMap<FunctionEntry> nullaryFunctionMap,
+            List<? extends List<String>> path ) {
+        super( parent, schema, name, subSchemaMap, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, path );
         this.implicitSubSchemaCache =
                 new AbstractCached<SubSchemaCache>() {
+                    @Override
                     public SubSchemaCache build() {
                         return new SubSchemaCache( CachingPolyphenyDbSchema.this, CachingPolyphenyDbSchema.this.schema.getSubSchemaNames() );
                     }
                 };
         this.implicitTableCache =
                 new AbstractCached<NameSet>() {
+                    @Override
                     public NameSet build() {
                         return NameSet.immutableCopyOf( CachingPolyphenyDbSchema.this.schema.getTableNames() );
                     }
                 };
         this.implicitFunctionCache =
                 new AbstractCached<NameSet>() {
+                    @Override
                     public NameSet build() {
                         return NameSet.immutableCopyOf( CachingPolyphenyDbSchema.this.schema.getFunctionNames() );
                     }
                 };
         this.implicitTypeCache =
                 new AbstractCached<NameSet>() {
+                    @Override
                     public NameSet build() {
                         return NameSet.immutableCopyOf( CachingPolyphenyDbSchema.this.schema.getTypeNames() );
                     }
@@ -105,6 +118,7 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     }
 
 
+    @Override
     protected boolean isCacheEnabled() {
         return this.cache;
     }
@@ -125,6 +139,7 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     /**
      * Adds a child schema of this schema.
      */
+    @Override
     public PolyphenyDbSchema add( String name, Schema schema ) {
         final PolyphenyDbSchema polyphenyDbSchema = new CachingPolyphenyDbSchema( this, schema, name );
         subSchemaMap.put( name, polyphenyDbSchema );
@@ -253,8 +268,9 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     }
 
 
+    @Override
     protected PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version ) {
-        AbstractPolyphenyDbSchema snapshot = new CachingPolyphenyDbSchema( parent, schema.snapshot( version ), name, null, tableMap, latticeMap, typeMap, functionMap, functionNames, nullaryFunctionMap, getPath() );
+        AbstractPolyphenyDbSchema snapshot = new CachingPolyphenyDbSchema( parent, schema.snapshot( version ), name, null, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, getPath() );
         for ( PolyphenyDbSchema subSchema : subSchemaMap.map().values() ) {
             PolyphenyDbSchema subSchemaSnapshot = ((AbstractPolyphenyDbSchema) subSchema).snapshot( snapshot, version );
             snapshot.subSchemaMap.put( subSchema.getName(), subSchemaSnapshot );

@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.util.Filterator;
@@ -65,6 +66,7 @@ import org.junit.Test;
  */
 public class FilteratorTest {
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testOne() {
         final List<String> tomDickHarry = Arrays.asList( "tom", "dick", "harry" );
@@ -107,10 +109,10 @@ public class FilteratorTest {
         assertTrue( filterator.hasNext() );
 
         // skips null
-        assertTrue( arrayList == filterator.next() );
+        assertSame( arrayList, filterator.next() );
 
         // skips the HashSet
-        assertTrue( linkedList == filterator.next() );
+        assertSame( linkedList, filterator.next() );
         assertFalse( filterator.hasNext() );
     }
 

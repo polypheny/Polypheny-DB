@@ -45,14 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -69,14 +62,18 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Function1;
 
 
 /**
@@ -242,6 +239,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new CassandraQueryable<>( queryProvider, schema, this, tableName );
     }

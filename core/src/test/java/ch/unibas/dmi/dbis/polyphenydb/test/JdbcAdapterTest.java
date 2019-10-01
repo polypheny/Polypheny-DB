@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.test;
@@ -47,7 +28,6 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
@@ -69,6 +49,7 @@ import org.junit.Test;
 /**
  * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc} package.
  */
+@SuppressWarnings("SqlDialectInspection")
 public class JdbcAdapterTest {
 
     /**
@@ -95,7 +76,7 @@ public class JdbcAdapterTest {
                 .query( sql )
                 .explainContains( explain )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB || PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .planHasSql( jdbcSql );
     }
 
@@ -112,7 +93,7 @@ public class JdbcAdapterTest {
                         + "    JdbcTableScan(table=[[foodmart, sales_fact_1997]])\n"
                         + "    JdbcTableScan(table=[[foodmart, sales_fact_1998]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT *\n"
                         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
                         + "UNION ALL\n"
@@ -131,7 +112,7 @@ public class JdbcAdapterTest {
                         + "  select * from \"sales_fact_1998\")\n"
                         + "where \"product_id\" = 1" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT *\n"
                         + "FROM \"foodmart\".\"sales_fact_1997\"\n"
                         + "WHERE \"product_id\" = 1\n"
@@ -148,7 +129,7 @@ public class JdbcAdapterTest {
         PolyphenyDbAssert.model( JdbcTest.FOODMART_MODEL )
                 .query( "select \"store_id\", \"store_name\" from \"store\"\n" + "where \"store_name\" in ('Store 1', 'Store 10', 'Store 11', 'Store 15', 'Store 16', 'Store 24', 'Store 3', 'Store 7')" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"store_id\", \"store_name\"\n"
                         + "FROM \"foodmart\".\"store\"\n"
                         + "WHERE \"store_name\" = 'Store 1' OR \"store_name\" = 'Store 10' OR \"store_name\" = 'Store 11' OR \"store_name\" = 'Store 15' OR \"store_name\" = 'Store 16' OR \"store_name\" = 'Store 24' OR \"store_name\" = 'Store 3' OR \"store_name\" = 'Store 7'" )
@@ -178,7 +159,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(EMPNO=[$0], ENAME=[$1], DEPTNO=[$7])\n"
                         + "        JdbcTableScan(table=[[SCOTT, EMP]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t0\".\"EMPNO\", \"t0\".\"ENAME\", "
                         + "\"t0\".\"DEPTNO\", \"t\".\"DNAME\"\n"
                         + "FROM (SELECT \"DEPTNO\", \"DNAME\"\n"
@@ -206,7 +187,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(EMPNO=[$0], ENAME=[$1], SAL=[$5])\n"
                         + "        JdbcTableScan(table=[[SCOTT, EMP]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t\".\"EMPNO\", \"t\".\"ENAME\", "
                         + "\"SALGRADE\".\"GRADE\"\nFROM \"SCOTT\".\"SALGRADE\"\n"
                         + "INNER JOIN (SELECT \"EMPNO\", \"ENAME\", \"SAL\"\n"
@@ -230,7 +211,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(EMPNO=[$0], ENAME=[$1], SAL=[$5])\n"
                         + "        JdbcTableScan(table=[[SCOTT, EMP]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t\".\"EMPNO\", \"t\".\"ENAME\", "
                         + "\"SALGRADE\".\"GRADE\"\nFROM \"SCOTT\".\"SALGRADE\"\n"
                         + "INNER JOIN (SELECT \"EMPNO\", \"ENAME\", \"SAL\"\n"
@@ -254,7 +235,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(EMPNO=[$0], ENAME=[$1], MGR=[$3], SAL=[$5])\n"
                         + "        JdbcTableScan(table=[[SCOTT, EMP]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t0\".\"EMPNO\", \"t0\".\"ENAME\", "
                         + "\"t0\".\"EMPNO\" AS \"EMPNO0\", \"t0\".\"ENAME\" AS \"ENAME0\"\n"
                         + "FROM (SELECT \"EMPNO\", \"SAL\"\n"
@@ -280,7 +261,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(EMPNO=[$0], ENAME=[$1], MGR=[$3], HIREDATE=[$4], SAL=[$5])\n"
                         + "        JdbcTableScan(table=[[SCOTT, EMP]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t0\".\"EMPNO\", \"t0\".\"ENAME\", "
                         + "\"t0\".\"EMPNO\" AS \"EMPNO0\", \"t0\".\"ENAME\" AS \"ENAME0\"\n"
                         + "FROM (SELECT \"EMPNO\", \"HIREDATE\", \"SAL\"\n"
@@ -311,7 +292,7 @@ public class JdbcAdapterTest {
                         + "        JdbcProject(DEPTNO=[$0], DNAME=[$1])\n"
                         + "          JdbcTableScan(table=[[SCOTT, DEPT]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t\".\"EMPNO\", \"t\".\"ENAME\", "
                         + "\"t0\".\"DNAME\", \"SALGRADE\".\"GRADE\"\n"
                         + "FROM \"SCOTT\".\"SALGRADE\"\n"
@@ -338,7 +319,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(DEPTNO=[$0], DNAME=[$1])\n"
                         + "        JdbcTableScan(table=[[SCOTT, DEPT]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t\".\"EMPNO\", \"t\".\"ENAME\", "
                         + "\"t0\".\"DEPTNO\", \"t0\".\"DNAME\"\n"
                         + "FROM (SELECT \"EMPNO\", \"ENAME\", \"DEPTNO\"\nFROM \"SCOTT\".\"EMP\") AS \"t\"\n"
@@ -363,7 +344,7 @@ public class JdbcAdapterTest {
                         + "    JdbcProject(DEPTNO=[$0], DNAME=[$1])\n"
                         + "      JdbcTableScan(table=[[SCOTT, DEPT]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB );
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB );
     }
 
 
@@ -384,7 +365,7 @@ public class JdbcAdapterTest {
                         + "      JdbcProject(DEPTNO=[$0], DNAME=[$1])\n"
                         + "        JdbcTableScan(table=[[SCOTT, DEPT]])" )
                 .runs()
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .planHasSql( "SELECT \"t0\".\"EMPNO\", \"t0\".\"ENAME\", "
                         + "\"t1\".\"DEPTNO\", \"t1\".\"DNAME\"\n"
                         + "FROM (SELECT \"EMPNO\", \"ENAME\", \"DEPTNO\"\n"
@@ -552,7 +533,7 @@ public class JdbcAdapterTest {
     public void testOverDefault() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select \"store_id\", \"account_id\", \"exp_date\","
                         + " \"time_id\", \"category_id\", \"currency_id\", \"amount\","
                         + " last_value(\"time_id\") over ()"
@@ -579,7 +560,7 @@ public class JdbcAdapterTest {
     public void testCast() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select cast(\"store_id\" as TINYINT),"
                         + "cast(\"store_id\" as DOUBLE)"
                         + " from \"expense_fact\"" )
@@ -594,7 +575,7 @@ public class JdbcAdapterTest {
     public void testOverRowsBetweenBoundFollowingAndFollowing() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select \"store_id\", \"account_id\", \"exp_date\","
                         + " \"time_id\", \"category_id\", \"currency_id\", \"amount\","
                         + " last_value(\"time_id\") over (partition by \"account_id\""
@@ -620,7 +601,7 @@ public class JdbcAdapterTest {
     public void testOverRowsBetweenBoundPrecedingAndCurrent() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select \"store_id\", \"account_id\", \"exp_date\","
                         + " \"time_id\", \"category_id\", \"currency_id\", \"amount\","
                         + " last_value(\"time_id\") over (partition by \"account_id\""
@@ -646,7 +627,7 @@ public class JdbcAdapterTest {
     public void testOverDisallowPartial() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select \"store_id\", \"account_id\", \"exp_date\","
                         + " \"time_id\", \"category_id\", \"currency_id\", \"amount\","
                         + " last_value(\"time_id\") over (partition by \"account_id\""
@@ -678,7 +659,7 @@ public class JdbcAdapterTest {
     public void testLastValueOver() {
         PolyphenyDbAssert
                 .model( JdbcTest.FOODMART_MODEL )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.POSTGRESQL )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.POSTGRESQL )
                 .query( "select \"store_id\", \"account_id\", \"exp_date\","
                         + " \"time_id\", \"category_id\", \"currency_id\", \"amount\","
                         + " last_value(\"time_id\") over (partition by \"account_id\""
@@ -722,28 +703,6 @@ public class JdbcAdapterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-865">[POLYPHENYDB-865] Unknown table type causes NullPointerException in JdbcSchema</a>. The issue occurred because of the "SYSTEM_INDEX" table type when run against PostgreSQL.
-     */
-    @Test
-    @Ignore
-    public void testMetadataTables() throws Exception {
-        // The troublesome tables occur in PostgreSQL's system schema.
-        final String model =
-                JdbcTest.FOODMART_MODEL.replace( "jdbcSchema: 'foodmart'", "jdbcSchema: null" );
-        PolyphenyDbAssert.model(
-                model )
-                .doWithConnection( connection -> {
-                    try {
-                        final ResultSet resultSet = connection.getMetaData().getTables( null, null, "%", null );
-                        assertFalse( PolyphenyDbAssert.toString( resultSet ).isEmpty() );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
-    }
-
-
-    /**
      * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-666">[POLYPHENYDB-666] Anti-semi-joins against JDBC adapter give wrong results</a>.
      */
     @Test
@@ -751,22 +710,22 @@ public class JdbcAdapterTest {
     public void testScalarSubQuery() {
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "SELECT COUNT(empno) AS cEmpNo FROM \"SCOTT\".\"EMP\" WHERE DEPTNO <> (SELECT * FROM (VALUES 1))" )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .returns( "CEMPNO=14\n" );
 
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "SELECT ename FROM \"SCOTT\".\"EMP\" WHERE DEPTNO = (SELECT deptno FROM \"SCOTT\".\"DEPT\" WHERE dname = 'ACCOUNTING')" )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .returns( "ENAME=CLARK\nENAME=KING\nENAME=MILLER\n" );
 
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "SELECT COUNT(ename) AS cEname FROM \"SCOTT\".\"EMP\" WHERE DEPTNO > (SELECT deptno FROM \"SCOTT\".\"DEPT\" WHERE dname = 'ACCOUNTING')" )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .returns( "CENAME=11\n" );
 
         PolyphenyDbAssert.model( JdbcTest.SCOTT_MODEL )
                 .query( "SELECT COUNT(ename) AS cEname FROM \"SCOTT\".\"EMP\" WHERE DEPTNO < (SELECT deptno FROM \"SCOTT\".\"DEPT\" WHERE dname = 'ACCOUNTING')" )
-                .enable( PolyphenyDbAssert.DB == PolyphenyDbAssert.DatabaseInstance.HSQLDB )
+                .enable( PolyphenyDbAssert.DB == DatabaseInstance.HSQLDB )
                 .returns( "CENAME=0\n" );
     }
 

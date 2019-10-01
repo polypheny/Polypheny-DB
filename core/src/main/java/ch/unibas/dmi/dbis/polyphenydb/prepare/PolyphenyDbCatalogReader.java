@@ -47,14 +47,11 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.AggregateFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
@@ -70,16 +67,13 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.FamilyOperandTypeChecker;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.ListSqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerType;
@@ -136,11 +130,13 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public PolyphenyDbCatalogReader withSchemaPath( List<String> schemaPath ) {
         return new PolyphenyDbCatalogReader( rootSchema, nameMatcher, ImmutableList.of( schemaPath, ImmutableList.of() ), typeFactory );
     }
 
 
+    @Override
     public Prepare.PreparingTable getTable( final List<String> names ) {
         // First look in the default schema, if any. If not found, look in the root schema.
         PolyphenyDbSchema.TableEntry entry = SqlValidatorUtil.getTableEntry( this, names );
@@ -242,6 +238,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public Prepare.PreparingTable getTableForMember( List<String> names ) {
         return getTable( names );
     }
@@ -282,30 +279,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                 .filter( predicate )
                 .map( function -> toOp( opName, function ) )
                 .forEachOrdered( operatorList::add );
-    }
-
-
-    /**
-     * Creates an operator table that contains functions in the given class.
-     *
-     * @see ModelHandler#addFunctions
-     */
-    public static SqlOperatorTable operatorTable( String className ) {
-        // Dummy schema to collect the functions
-        final PolyphenyDbSchema schema = AbstractPolyphenyDbSchema.createRootSchema( false );
-        ModelHandler.addFunctions( schema.plus(), null, ImmutableList.of(), className, "*", true );
-
-        // The following is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor
-        final SqlTypeFactoryImpl typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-
-        final ListSqlOperatorTable table = new ListSqlOperatorTable();
-        for ( String name : schema.getFunctionNames() ) {
-            for ( Function function : schema.getFunctions( name, true ) ) {
-                final SqlIdentifier id = new SqlIdentifier( name, SqlParserPos.ZERO );
-                table.add( toOp( typeFactory, id, function ) );
-            }
-        }
-        return table;
     }
 
 

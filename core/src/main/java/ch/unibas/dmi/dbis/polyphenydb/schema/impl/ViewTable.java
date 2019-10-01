@@ -149,6 +149,7 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return queryProvider.createQuery( getExpression( schema, tableName, Queryable.class ), elementType );
     }

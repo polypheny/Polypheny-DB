@@ -249,6 +249,7 @@ public class RelBuilder {
         final RelOptSchema[] relOptSchemas = { null };
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
+                    @Override
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         clusters[0] = cluster;
                         relOptSchemas[0] = relOptSchema;

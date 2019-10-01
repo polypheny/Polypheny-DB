@@ -83,6 +83,7 @@ import org.junit.Test;
 /**
  * Test cases for <a href="https://issues.apache.org/jira/browse/CALCITE-1386">[POLYPHENYDB-1386] ITEM operator seems to ignore the value type of collection and assign the value to Object</a>.
  */
+@SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" })
 public class CollectionTypeTest {
 
     @Test
@@ -378,6 +379,7 @@ public class CollectionTypeTest {
      */
     public static class NestedCollectionTable implements ScannableTable {
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
 
             RelDataType nullableVarcharType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.VARCHAR ), true );
@@ -393,18 +395,22 @@ public class CollectionTypeTest {
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.UNKNOWN;
         }
 
 
+        @Override
         public TableType getJdbcTableType() {
             return Schema.TableType.TABLE;
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return nestedRecordsEnumerator();
                 }
@@ -430,6 +436,7 @@ public class CollectionTypeTest {
      */
     public static class NestedCollectionWithAnyTypeTable implements ScannableTable {
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "ID", SqlTypeName.INTEGER )
@@ -441,18 +448,22 @@ public class CollectionTypeTest {
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.UNKNOWN;
         }
 
 
+        @Override
         public Schema.TableType getJdbcTableType() {
             return Schema.TableType.TABLE;
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return nestedRecordsEnumerator();
                 }

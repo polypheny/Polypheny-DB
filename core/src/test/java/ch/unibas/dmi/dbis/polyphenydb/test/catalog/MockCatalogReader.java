@@ -472,6 +472,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             if ( clazz.isInstance( this ) ) {
                 return clazz.cast( this );
@@ -637,7 +638,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public static MockModifiableViewRelOptTable create( MockModifiableViewTable modifiableViewTable, MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount, ColumnResolver resolver ) {
             final Table underlying = modifiableViewTable.unwrap( Table.class );
             final InitializerExpressionFactory initializerExpressionFactory =
-                    underlying != null && underlying instanceof Wrapper
+                    underlying instanceof Wrapper
                             ? ((Wrapper) underlying).unwrap( InitializerExpressionFactory.class )
                             : NullInitializerExpressionFactory.INSTANCE;
             return new MockModifiableViewRelOptTable( modifiableViewTable, catalogReader, catalogName, schemaName, name, stream, rowCount, resolver, Util.first( initializerExpressionFactory, NullInitializerExpressionFactory.INSTANCE ) );

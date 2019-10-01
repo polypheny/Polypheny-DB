@@ -297,6 +297,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public RelOptTable getTableForMember( List<String> names ) {
             final SqlValidatorTable table = catalogReader.getTable( names );
             final RelDataType rowType = table.getRowType();
@@ -336,6 +337,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public RelOptTable getTableForMember( List<String> names, final String datasetName, boolean[] usedDataset ) {
             final RelOptTable table = getTableForMember( names );
 
@@ -363,11 +365,13 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public RelDataTypeFactory getTypeFactory() {
             return typeFactory;
         }
 
 
+        @Override
         public void registerRules( RelOptPlanner planner ) throws Exception {
         }
 
@@ -600,6 +604,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public RelRoot convertSqlToRel( String sql ) {
             Objects.requireNonNull( sql );
             final SqlNode sqlQuery;
@@ -673,6 +678,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public SqlNode parseQuery( String sql ) throws Exception {
             final Config config = SqlParser.configBuilder().setConformance( getConformance() ).build();
             SqlParser parser = SqlParser.create( sql, config );
@@ -680,16 +686,19 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public SqlConformance getConformance() {
             return conformance;
         }
 
 
+        @Override
         public SqlValidator createValidator( SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory ) {
             return new FarragoTestValidator( getOperatorTable(), catalogReader, typeFactory, getConformance() );
         }
 
 
+        @Override
         public final SqlOperatorTable getOperatorTable() {
             if ( opTab == null ) {
                 opTab = createOperatorTable();
@@ -710,6 +719,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Prepare.CatalogReader createCatalogReader( RelDataTypeFactory typeFactory ) {
             MockCatalogReader catalogReader;
             if ( this.catalogReaderFactory != null ) {
@@ -721,16 +731,19 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public RelOptPlanner createPlanner() {
             return new MockRelOptPlanner( context );
         }
 
 
+        @Override
         public void assertConvertsTo( String sql, String plan ) {
             assertConvertsTo( sql, plan, false );
         }
 
 
+        @Override
         public void assertConvertsTo( String sql, String plan, boolean trim ) {
             String sql2 = getDiffRepos().expand( "sql", sql );
             RelNode rel = convertSqlToRel( sql2 ).project();
@@ -763,11 +776,13 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public DiffRepository getDiffRepos() {
             return diffRepos;
         }
 
 
+        @Override
         public SqlValidator getValidator() {
             final RelDataTypeFactory typeFactory = getTypeFactory();
             final SqlValidatorCatalogReader catalogReader = createCatalogReader( typeFactory );
@@ -775,6 +790,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public TesterImpl withDecorrelation( boolean enableDecorrelate ) {
             return this.enableDecorrelate == enableDecorrelate
                     ? this
@@ -782,6 +798,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Tester withLateDecorrelation( boolean enableLateDecorrelate ) {
             return this.enableLateDecorrelate == enableLateDecorrelate
                     ? this
@@ -789,6 +806,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public TesterImpl withConfig( SqlToRelConverter.Config config ) {
             return this.config == config
                     ? this
@@ -796,6 +814,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Tester withTrim( boolean enableTrim ) {
             return this.enableTrim == enableTrim
                     ? this
@@ -803,6 +822,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Tester withExpand( boolean enableExpand ) {
             return this.enableExpand == enableExpand
                     ? this
@@ -810,26 +830,31 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Tester withConformance( SqlConformance conformance ) {
             return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
         }
 
 
+        @Override
         public Tester withCatalogReaderFactory( SqlTestFactory.MockCatalogReaderFactory factory ) {
             return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, factory, clusterFactory, config, conformance, context );
         }
 
 
+        @Override
         public Tester withClusterFactory( Function<RelOptCluster, RelOptCluster> clusterFactory ) {
             return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
         }
 
 
+        @Override
         public Tester withContext( Context context ) {
             return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
         }
 
 
+        @Override
         public boolean isLateDecorrelate() {
             return enableLateDecorrelate;
         }
@@ -847,6 +872,7 @@ public abstract class SqlToRelTestBase {
 
 
         // override SqlValidator
+        @Override
         public boolean shouldExpandIdentifiers() {
             return true;
         }

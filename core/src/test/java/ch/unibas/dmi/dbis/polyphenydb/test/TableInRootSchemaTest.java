@@ -51,7 +51,6 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ToRelContext;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -152,6 +151,7 @@ public class TableInRootSchemaTest {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             int columnCount = columnNames.length;
             final List<Pair<String, RelDataType>> columnDesc = new ArrayList<>( columnCount );
@@ -173,8 +173,10 @@ public class TableInRootSchemaTest {
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 public Enumerator<T> enumerator() {
                     //noinspection unchecked
                     return (Enumerator<T>) enumeratorImpl( null );
@@ -189,11 +191,13 @@ public class TableInRootSchemaTest {
                 private Iterator<Object[]> iterator = Arrays.asList( rows ).iterator();
 
 
+                @Override
                 public Object[] current() {
                     return current;
                 }
 
 
+                @Override
                 public boolean moveNext() {
                     if ( iterator.hasNext() ) {
                         Object[] full = iterator.next();
@@ -206,11 +210,13 @@ public class TableInRootSchemaTest {
                 }
 
 
+                @Override
                 public void reset() {
                     throw new UnsupportedOperationException();
                 }
 
 
+                @Override
                 public void close() {
                     // noop
                 }
@@ -227,6 +233,7 @@ public class TableInRootSchemaTest {
         }
 
 
+        @Override
         public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
             return EnumerableTableScan.create( context.getCluster(), relOptTable );
         }

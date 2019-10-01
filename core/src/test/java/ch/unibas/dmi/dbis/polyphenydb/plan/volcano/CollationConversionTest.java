@@ -121,18 +121,20 @@ public class CollationConversionTest {
     /**
      * Converts a NoneSingleRel to RootSingleRel.
      */
-    private class SingleNodeRule extends RelOptRule {
+    private static class SingleNodeRule extends RelOptRule {
 
         SingleNodeRule() {
             super( operand( NoneSingleRel.class, any() ) );
         }
 
 
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel single = call.rel( 0 );
             RelNode input = single.getInput();
@@ -148,7 +150,7 @@ public class CollationConversionTest {
     /**
      * Root node with physical convention and ROOT_COLLATION trait.
      */
-    private class RootSingleRel extends TestSingleRel {
+    private static class RootSingleRel extends TestSingleRel {
 
         RootSingleRel( RelOptCluster cluster, RelNode input ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( ROOT_COLLATION ), input );
@@ -171,18 +173,20 @@ public class CollationConversionTest {
     /**
      * Converts a {@link NoneLeafRel} (with none convention) to {@link LeafRel} (with physical convention).
      */
-    private class LeafTraitRule extends RelOptRule {
+    private static class LeafTraitRule extends RelOptRule {
 
         LeafTraitRule() {
             super( operand( NoneLeafRel.class, any() ) );
         }
 
 
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneLeafRel leafRel = call.rel( 0 );
             call.transformTo( new LeafRel( leafRel.getCluster(), leafRel.label ) );
@@ -193,18 +197,20 @@ public class CollationConversionTest {
     /**
      * Leaf node with physical convention and LEAF_COLLATION trait.
      */
-    private class LeafRel extends TestLeafRel {
+    private static class LeafRel extends TestLeafRel {
 
         LeafRel( RelOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( LEAF_COLLATION ), label );
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             return new LeafRel( getCluster(), label );
         }
@@ -214,7 +220,7 @@ public class CollationConversionTest {
     /**
      * Leaf node with none convention and LEAF_COLLATION trait.
      */
-    private class NoneLeafRel extends TestLeafRel {
+    private static class NoneLeafRel extends TestLeafRel {
 
         NoneLeafRel( RelOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ).plus( LEAF_COLLATION ), label );
@@ -240,6 +246,7 @@ public class CollationConversionTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( Convention.NONE, LEAF_COLLATION );
             return new NoneSingleRel( getCluster(), sole( inputs ) );
@@ -269,11 +276,13 @@ public class CollationConversionTest {
      */
     private static class TestRelCollationTraitDef extends RelTraitDef<RelCollation> {
 
+        @Override
         public Class<RelCollation> getTraitClass() {
             return RelCollation.class;
         }
 
 
+        @Override
         public String getSimpleName() {
             return "testsort";
         }
@@ -285,11 +294,13 @@ public class CollationConversionTest {
         }
 
 
+        @Override
         public RelCollation getDefault() {
             return LEAF_COLLATION;
         }
 
 
+        @Override
         public RelNode convert( RelOptPlanner planner, RelNode rel, RelCollation toCollation, boolean allowInfiniteCostConverters ) {
             if ( toCollation.getFieldCollations().isEmpty() ) {
                 // An empty sort doesn't make sense.
@@ -300,6 +311,7 @@ public class CollationConversionTest {
         }
 
 
+        @Override
         public boolean canConvert( RelOptPlanner planner, RelCollation fromTrait, RelCollation toTrait ) {
             return true;
         }
@@ -316,11 +328,13 @@ public class CollationConversionTest {
         }
 
 
+        @Override
         public Sort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
             return new PhysicalSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }

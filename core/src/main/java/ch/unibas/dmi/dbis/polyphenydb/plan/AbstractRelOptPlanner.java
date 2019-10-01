@@ -126,16 +126,19 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public Context getContext() {
         return context;
     }
 
 
+    @Override
     public RelOptCostFactory getCostFactory() {
         return costFactory;
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public void setCancelFlag( CancelFlag cancelFlag ) {
         // ignored
@@ -199,6 +202,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public void setRuleDescExclusionFilter( Pattern exclusionFilter ) {
         ruleDescExclusionFilter = exclusionFilter;
     }
@@ -215,45 +219,29 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public RelOptPlanner chooseDelegate() {
         return this;
     }
 
 
-    public void addMaterialization( RelOptMaterialization materialization ) {
-        // ignore - this planner does not support materializations
-    }
-
-
-    public List<RelOptMaterialization> getMaterializations() {
-        return ImmutableList.of();
-    }
-
-
-    public void addLattice( RelOptLattice lattice ) {
-        // ignore - this planner does not support lattices
-    }
-
-
-    public RelOptLattice getLattice( RelOptTable table ) {
-        // this planner does not support lattices
-        return null;
-    }
-
-
+    @Override
     public void registerSchema( RelOptSchema schema ) {
     }
 
 
+    @Override
     public long getRelMetadataTimestamp( RelNode rel ) {
         return 0;
     }
 
 
+    @Override
     public void setImportance( RelNode rel, double importance ) {
     }
 
 
+    @Override
     public void registerClass( RelNode node ) {
         final Class<? extends RelNode> clazz = node.getClass();
         if ( classes.add( clazz ) ) {
@@ -275,16 +263,19 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public RelTraitSet emptyTraitSet() {
         return RelTraitSet.createEmpty();
     }
 
 
+    @Override
     public RelOptCost getCost( RelNode rel, RelMetadataQuery mq ) {
         return mq.getCumulativeCost( rel );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelOptCost getCost( RelNode rel ) {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
@@ -292,6 +283,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public void addListener( RelOptListener newListener ) {
         if ( listener == null ) {
             listener = new MulticastRelOptListener();
@@ -300,34 +292,41 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public void registerMetadataProviders( List<RelMetadataProvider> list ) {
     }
 
 
+    @Override
     public boolean addRelTraitDef( RelTraitDef relTraitDef ) {
         return false;
     }
 
 
+    @Override
     public void clearRelTraitDefs() {
     }
 
 
+    @Override
     public List<RelTraitDef> getRelTraitDefs() {
         return ImmutableList.of();
     }
 
 
+    @Override
     public void setExecutor( RexExecutor executor ) {
         this.executor = executor;
     }
 
 
+    @Override
     public RexExecutor getExecutor() {
         return executor;
     }
 
 
+    @Override
     public void onCopy( RelNode rel, RelNode newRel ) {
         // do nothing
     }

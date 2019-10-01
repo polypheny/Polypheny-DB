@@ -49,13 +49,9 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
  * Extension to {@link SqlParserTest} which ensures that every expression can un-parse successfully.
  */
 public class SqlUnParserTest extends SqlParserTest {
-    //~ Constructors -----------------------------------------------------------
-
 
     public SqlUnParserTest() {
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     @Override

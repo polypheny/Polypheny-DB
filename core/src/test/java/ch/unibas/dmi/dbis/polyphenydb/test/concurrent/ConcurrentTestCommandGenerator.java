@@ -576,6 +576,7 @@ public class ConcurrentTestCommandGenerator {
 
 
         // implement ConcurrentTestCommand
+        @Override
         public ConcurrentTestCommand markToFail( String comment, String pattern ) {
             shouldFail = true;
             failComment = comment;
@@ -584,11 +585,13 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         public boolean isFailureExpected() {
             return failureExpected;
         }
 
 
+        @Override
         public ConcurrentTestCommand markToFail() {
             this.failureExpected = true;
             return this;
@@ -600,6 +603,7 @@ public class ConcurrentTestCommandGenerator {
 
 
         // implement ConcurrentTestCommand
+        @Override
         public void execute( ConcurrentTestCommandExecutor exec ) throws Exception {
             try {
                 doExecute( exec );

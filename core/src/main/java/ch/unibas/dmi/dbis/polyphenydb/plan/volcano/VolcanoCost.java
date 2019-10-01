@@ -102,11 +102,13 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public double getCpu() {
         return cpu;
     }
 
 
+    @Override
     public boolean isInfinite() {
         return (this == INFINITY)
                 || (this.rowCount == Double.POSITIVE_INFINITY)
@@ -115,11 +117,13 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public double getIo() {
         return io;
     }
 
 
+    @Override
     public boolean isLe( RelOptCost other ) {
         VolcanoCost that = (VolcanoCost) other;
         if ( true ) {
@@ -132,6 +136,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public boolean isLt( RelOptCost other ) {
         if ( true ) {
             VolcanoCost that = (VolcanoCost) other;
@@ -141,6 +146,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public double getRows() {
         return rowCount;
     }
@@ -170,6 +176,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public boolean isEqWithEpsilon( RelOptCost other ) {
         if ( !(other instanceof VolcanoCost) ) {
             return false;
@@ -182,6 +189,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public RelOptCost minus( RelOptCost other ) {
         if ( this == INFINITY ) {
             return this;
@@ -194,6 +202,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public RelOptCost multiplyBy( double factor ) {
         if ( this == INFINITY ) {
             return this;
@@ -202,6 +211,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public double divideBy( RelOptCost cost ) {
         // Compute the geometric average of the ratios of all of the factors which are non-zero and finite.
         VolcanoCost that = (VolcanoCost) cost;
@@ -235,6 +245,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public RelOptCost plus( RelOptCost other ) {
         VolcanoCost that = (VolcanoCost) other;
         if ( (this == INFINITY) || (that == INFINITY) ) {

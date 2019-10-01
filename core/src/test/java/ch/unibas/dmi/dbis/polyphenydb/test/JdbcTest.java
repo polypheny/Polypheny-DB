@@ -64,7 +64,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.generate.RangeTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
@@ -76,11 +75,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -119,16 +113,8 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableMacroImpl;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.ConfigBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
@@ -174,7 +160,6 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaStatement;
-import org.apache.calcite.avatica.Handler;
 import org.apache.calcite.avatica.HandlerImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.util.Casing;
@@ -184,7 +169,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function0;
 import org.hamcrest.Matcher;
 import org.hsqldb.jdbcDriver;
 import org.junit.Ignore;
@@ -194,6 +178,7 @@ import org.junit.Test;
 /**
  * Tests for using Polypheny-DB via JDBC.
  */
+@SuppressWarnings("SqlDialectInspection")
 public class JdbcTest {
 
     public static final String FOODMART_SCHEMA = "     {\n"
@@ -691,22 +676,6 @@ public class JdbcTest {
                 .returnsUnordered( "empid=100", "empid=200", "empid=150" );
     }
 
-
-    /**
-     * Tests that a driver can be extended with its own parser and can execute its own flavor of DDL.
-     */
-    @Test
-    public void testMockDdl() throws Exception {
-        final MockDdlDriver driver = new MockDdlDriver();
-        try (
-                Connection connection = driver.connect( "jdbc:polyphenydbembedded:", new Properties() );
-                Statement statement = connection.createStatement()
-        ) {
-            assertThat( driver.counter, is( 0 ) );
-            statement.executeUpdate( "COMMIT" );
-            assertThat( driver.counter, is( 1 ) );
-        }
-    }
 
 
     /**
@@ -2383,32 +2352,6 @@ public class JdbcTest {
                         + "              EnumerableTableScan(table=[[foodmart2, customer]])\n"
                         + "          EnumerableCalcRel(expr#0..9=[{inputs}], expr#10=[CAST($t4):INTEGER], expr#11=[1997], expr#12=[=($t10, $t11)], proj#0..9=[{exprs}], $condition=[$t12])\n"
                         + "            EnumerableTableScan(table=[[foodmart2, time_by_day]])" )
-                .runs();
-    }
-
-
-    /**
-     * Tests that a relatively complex query on the foodmart schema creates an in-memory aggregate table and then uses it.
-     */
-    // TODO: MV: Test fails
-    @Ignore // DO NOT CHECK IN
-    @Test
-    public void testFoodmartLattice() throws IOException {
-        // 8: select ... from customer, sales, time ... group by ...
-        final FoodMartQuerySet set = FoodMartQuerySet.instance();
-        final FoodMartQuerySet.FoodmartQuery query = set.queries.get( 8 );
-        PolyphenyDbAssert.that()
-                .with( PolyphenyDbAssert.Config.JDBC_FOODMART_WITH_LATTICE )
-                .withDefaultSchema( "foodmart" )
-                .pooled()
-                .query( query.sql )
-                .enableMaterializations( true )
-                .explainContains( ""
-                        + "EnumerableCalc(expr#0..8=[{inputs}], c0=[$t3], c1=[$t2], c2=[$t1], c3=[$t0], c4=[$t8], c5=[$t8], c6=[$t6], c7=[$t4], c8=[$t7], c9=[$t5])\n"
-                        + "  EnumerableSort(sort0=[$3], sort1=[$2], sort2=[$1], sort3=[$8], dir0=[ASC-nulls-last], dir1=[ASC-nulls-last], dir2=[ASC-nulls-last], dir3=[ASC-nulls-last])\n"
-                        + "    EnumerableAggregate(group=[{0, 1, 2, 3, 4, 5, 6, 7, 8}])\n"
-                        + "      EnumerableCalc(expr#0..9=[{inputs}], expr#10=[CAST($t0):INTEGER], expr#11=[1997], expr#12=[=($t10, $t11)], expr#13=['%Jeanne%'], expr#14=[LIKE($t9, $t13)], expr#15=[AND($t12, $t14)], $f0=[$t1], $f1=[$t2], $f2=[$t3], $f3=[$t4], $f4=[$t5], $f5=[$t6], $f6=[$t7], $f7=[$t8], $f8=[$t9], $f9=[$t0], $condition=[$t15])\n"
-                        + "        EnumerableTableScan(table=[[foodmart, m{12, 18, 27, 28, 30, 35, 36, 37, 40, 46}]])" )
                 .runs();
     }
 
@@ -5890,6 +5833,7 @@ public class JdbcTest {
         PolyphenyDbAssert.that()
                 .with(
                         new PolyphenyDbAssert.ConnectionFactory() {
+                            @Override
                             public PolyphenyDbEmbeddedConnection createConnection() throws SQLException {
                                 PolyphenyDbEmbeddedConnection connection = (PolyphenyDbEmbeddedConnection) new AutoTempDriver( objects ).connect( "jdbc:polyphenydbembedded:", new Properties() );
                                 final SchemaPlus rootSchema = connection.getRootSchema();
@@ -7249,9 +7193,6 @@ public class JdbcTest {
         return b.toString();
     }
 
-    // Disable checkstyle, so it doesn't complain about fields like "customer_id".
-    //CHECKSTYLE: OFF
-
 
     public static class HrSchema {
 
@@ -7532,8 +7473,6 @@ public class JdbcTest {
         }
     }
 
-    //CHECKSTYLE: ON
-
 
     /**
      * Abstract base class for implementations of {@link ModifiableTable}.
@@ -7598,6 +7537,7 @@ public class JdbcTest {
                 }
 
 
+                @Override
                 public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                     return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
                         public Enumerator<T> enumerator() {
@@ -7616,6 +7556,7 @@ public class JdbcTest {
      */
     public static class MySchemaFactory implements SchemaFactory {
 
+        @Override
         public Schema create( SchemaPlus parentSchema, String name, final Map<String, Object> operand ) {
             final boolean mutable = SqlFunctions.isNotFalse( (Boolean) operand.get( "mutable" ) );
             return new ReflectiveSchema( new HrSchema() ) {
@@ -7638,104 +7579,6 @@ public class JdbcTest {
     }
 
 
-    /**
-     * Mock driver that has a handler that stores the results of each query in a temporary table.
-     */
-    public static class AutoTempDriver extends EmbeddedDriver {
-
-        private final List<Object> results;
-
-
-        AutoTempDriver( List<Object> results ) {
-            super();
-            this.results = results;
-        }
-
-
-        @Override
-        protected Handler createHandler() {
-            return new HandlerImpl() {
-                @Override
-                public void onStatementExecute(
-                        AvaticaStatement statement,
-                        ResultSink resultSink ) {
-                    super.onStatementExecute( statement, resultSink );
-                    results.add( resultSink );
-                }
-            };
-        }
-    }
-
-
-    /**
-     * Mock driver that a given {@link Handler}.
-     */
-    public static class HandlerDriver extends EmbeddedDriver {
-
-        private static final TryThreadLocal<Handler> HANDLERS = TryThreadLocal.of( null );
-
-
-        public HandlerDriver() {
-        }
-
-
-        @Override
-        protected Handler createHandler() {
-            return HANDLERS.get();
-        }
-    }
-
-
-    /**
-     * Mock driver that can execute a trivial DDL statement.
-     */
-    public static class MockDdlDriver extends EmbeddedDriver {
-
-        public int counter;
-
-
-        public MockDdlDriver() {
-        }
-
-
-        @Override
-        protected Function0<PolyphenyDbPrepare> createPrepareFactory() {
-            return new Function0<PolyphenyDbPrepare>() {
-                @Override
-                public PolyphenyDbPrepare apply() {
-                    return new PolyphenyDbPrepareImpl() {
-                        @Override
-                        protected ConfigBuilder createParserConfig() {
-                            return super.createParserConfig().setParserFactory( stream ->
-                                    new SqlParserImpl( stream ) {
-                                        @Override
-                                        public SqlNode parseSqlStmtEof() {
-                                            return new SqlCall( SqlParserPos.ZERO ) {
-                                                @Override
-                                                public SqlOperator getOperator() {
-                                                    return new SqlSpecialOperator( "COMMIT", SqlKind.COMMIT );
-                                                }
-
-
-                                                @Override
-                                                public List<SqlNode> getOperandList() {
-                                                    return ImmutableList.of();
-                                                }
-                                            };
-                                        }
-                                    } );
-                        }
-
-
-                        @Override
-                        public void executeDdl( Context context, SqlNode node ) {
-                            ++counter;
-                        }
-                    };
-                }
-            };
-        }
-    }
 
 
     /**

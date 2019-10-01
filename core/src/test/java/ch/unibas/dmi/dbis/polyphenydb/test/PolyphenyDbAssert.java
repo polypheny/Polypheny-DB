@@ -58,24 +58,18 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcTableComputer;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedMetaImpl;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
-import ch.unibas.dmi.dbis.polyphenydb.model.ModelHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
@@ -90,7 +84,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Closer;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Smalls.SimpleTableFunction;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
@@ -427,6 +420,7 @@ public class PolyphenyDbAssert {
             Collection expected;
 
 
+            @Override
             public void accept( ResultSet resultSet ) {
                 ++executeCount;
                 try {
@@ -557,19 +551,9 @@ public class PolyphenyDbAssert {
     }
 
 
-    static void assertQuery( Connection connection, String sql, int limit, boolean materializationsEnabled, List<Pair<Hook, Consumer>> hooks, Consumer<ResultSet> resultChecker, Consumer<Integer> updateChecker, Consumer<Throwable> exceptionChecker ) {
-        final Supplier<String> message = () -> "With materializationsEnabled=" + materializationsEnabled + ", limit=" + limit + ", sql=" + sql;
+    static void assertQuery( Connection connection, String sql, int limit, List<Pair<Hook, Consumer>> hooks, Consumer<ResultSet> resultChecker, Consumer<Integer> updateChecker, Consumer<Throwable> exceptionChecker ) {
+        final Supplier<String> message = () -> "limit=" + limit + ", sql=" + sql;
         try ( Closer closer = new Closer() ) {
-            if ( connection.isWrapperFor( PolyphenyDbEmbeddedConnection.class ) ) {
-                final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-                final Properties properties = polyphenyDbEmbeddedConnection.getProperties();
-                properties.setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
-                properties.setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
-                if ( !properties.containsKey( PolyphenyDbConnectionProperty.TIME_ZONE.camelName() ) ) {
-                    // Do not override id some test has already set this property.
-                    properties.setProperty( PolyphenyDbConnectionProperty.TIME_ZONE.camelName(), DateTimeUtils.UTC_ZONE.getID() );
-                }
-            }
             for ( Pair<Hook, Consumer> hook : hooks ) {
                 //noinspection unchecked
                 closer.add( hook.left.addThread( hook.right ) );
@@ -616,20 +600,9 @@ public class PolyphenyDbAssert {
     }
 
 
-    private static void assertPrepare( Connection connection, String sql, int limit, boolean materializationsEnabled, List<Pair<Hook, Consumer>> hooks, Consumer<ResultSet> resultChecker, Consumer<Integer> updateChecker,
-            Consumer<Throwable> exceptionChecker, PreparedStatementConsumer consumer ) {
-        final Supplier<String> message = () -> "With materializationsEnabled=" + materializationsEnabled + ", limit=" + limit + ", sql = " + sql;
+    private static void assertPrepare( Connection connection, String sql, int limit, List<Pair<Hook, Consumer>> hooks, Consumer<ResultSet> resultChecker, Consumer<Integer> updateChecker, Consumer<Throwable> exceptionChecker, PreparedStatementConsumer consumer ) {
+        final Supplier<String> message = () -> "limit=" + limit + ", sql = " + sql;
         try ( Closer closer = new Closer() ) {
-            if ( connection.isWrapperFor( PolyphenyDbEmbeddedConnection.class ) ) {
-                final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-                final Properties properties = polyphenyDbEmbeddedConnection.getProperties();
-                properties.setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
-                properties.setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
-                if ( !properties.containsKey( PolyphenyDbConnectionProperty.TIME_ZONE.camelName() ) ) {
-                    // Do not override id some test has already set this property.
-                    properties.setProperty( PolyphenyDbConnectionProperty.TIME_ZONE.camelName(), DateTimeUtils.UTC_ZONE.getID() );
-                }
-            }
             for ( Pair<Hook, Consumer> hook : hooks ) {
                 //noinspection unchecked
                 closer.add( hook.left.addThread( hook.right ) );
@@ -677,8 +650,8 @@ public class PolyphenyDbAssert {
     }
 
 
-    static void assertPrepare( Connection connection, String sql, boolean materializationsEnabled, final Function<RelNode, Void> convertChecker, final Function<RelNode, Void> substitutionChecker ) {
-        final Supplier<String> message = () -> "With materializationsEnabled=" + materializationsEnabled + ", sql = " + sql;
+    static void assertPrepare( Connection connection, String sql, final Function<RelNode, Void> convertChecker, final Function<RelNode, Void> substitutionChecker ) {
+        final Supplier<String> message = () -> "sql = " + sql;
         try ( Closer closer = new Closer() ) {
             if ( convertChecker != null ) {
                 closer.add( Hook.TRIMMED.addThread( (Consumer<RelNode>) convertChecker::apply ) );
@@ -686,8 +659,6 @@ public class PolyphenyDbAssert {
             if ( substitutionChecker != null ) {
                 closer.add( Hook.SUB.addThread( (Consumer<RelNode>) substitutionChecker::apply ) );
             }
-            ((PolyphenyDbEmbeddedConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.toString( materializationsEnabled ) );
-            ((PolyphenyDbEmbeddedConnection) connection).getProperties().setProperty( PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.camelName(), Boolean.toString( materializationsEnabled ) );
             PreparedStatement statement = connection.prepareStatement( sql );
             statement.close();
             connection.close();
@@ -796,17 +767,6 @@ public class PolyphenyDbAssert {
                 JdbcSchema jdbcSchema2 = JdbcSchema.create( rootSchema, schema.schemaName, dataSource, cs.catalog, cs.schema, tableMap2 );
                 tableMap2.forEach( ( s, jdbcTable ) -> jdbcTable.setSchema( jdbcSchema2 ) );
                 return rootSchema.add( schema.schemaName, jdbcSchema2 );
-            case JDBC_FOODMART_WITH_LATTICE:
-                foodmart = addSchemaIfNotExists( rootSchema, SchemaSpec.JDBC_FOODMART );
-                foodmart.add( schema.schemaName,
-                        Lattice.create( foodmart.unwrap( PolyphenyDbSchema.class ),
-                                "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
-                                        + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n"
-                                        + "join \"foodmart\".\"customer\" as c using (\"customer_id\")\n"
-                                        + "join \"foodmart\".\"product\" as p using (\"product_id\")\n"
-                                        + "join \"foodmart\".\"product_class\" as pc on p.\"product_class_id\" = pc.\"product_class_id\"",
-                                true ) );
-                return foodmart;
             case SCOTT:
                 jdbcScott = addSchemaIfNotExists( rootSchema, SchemaSpec.JDBC_SCOTT );
                 return rootSchema.add( schema.schemaName, new CloneSchema( jdbcScott ) );
@@ -968,8 +928,6 @@ public class PolyphenyDbAssert {
                     return with( PolyphenyDbAssert.SchemaSpec.JDBC_FOODMART );
                 case FOODMART_CLONE:
                     return with( SchemaSpec.CLONE_FOODMART );
-                case JDBC_FOODMART_WITH_LATTICE:
-                    return with( SchemaSpec.JDBC_FOODMART_WITH_LATTICE );
                 case JDBC_SCOTT:
                     return with( SchemaSpec.JDBC_SCOTT );
                 case SCOTT:
@@ -1062,54 +1020,6 @@ public class PolyphenyDbAssert {
             return with( PolyphenyDbConnectionProperty.MODEL, Sources.of( model ).file().getAbsolutePath() );
         }
 
-
-        public final AssertThat withMaterializations( String model, final String... materializations ) {
-            return withMaterializations( model, false, materializations );
-        }
-
-
-        /**
-         * Adds materializations to the schema.
-         */
-        public final AssertThat withMaterializations( String model, final boolean existing, final String... materializations ) {
-            return withMaterializations( model, builder -> {
-                assert materializations.length % 2 == 0;
-                final List<Object> list = builder.list();
-                for ( int i = 0; i < materializations.length; i++ ) {
-                    String table = materializations[i++];
-                    final Map<String, Object> map = builder.map();
-                    map.put( "table", table );
-                    if ( !existing ) {
-                        map.put( "view", table + "v" );
-                    }
-                    String sql = materializations[i];
-                    final String sql2 = sql.replaceAll( "`", "\"" );
-                    map.put( "sql", sql2 );
-                    list.add( map );
-                }
-                return list;
-            } );
-        }
-
-
-        /**
-         * Adds materializations to the schema.
-         */
-        public final AssertThat withMaterializations( String model, Function<JsonBuilder, List<Object>> materializations ) {
-            final JsonBuilder builder = new JsonBuilder();
-            final List<Object> list = materializations.apply( builder );
-            final String buf = "materializations: " + builder.toJsonString( list );
-            final String model2;
-            if ( model.contains( "defaultSchema: 'foodmart'" ) ) {
-                int endIndex = model.lastIndexOf( ']' );
-                model2 = model.substring( 0, endIndex ) + ", \n{ name: 'mat', " + buf + "}\n" + "]" + model.substring( endIndex + 1 );
-            } else if ( model.contains( "type: " ) ) {
-                model2 = model.replaceFirst( "type: ", java.util.regex.Matcher.quoteReplacement( buf + ",\n" + "type: " ) );
-            } else {
-                throw new AssertionError( "do not know where to splice" );
-            }
-            return withModel( model2 );
-        }
 
 
         public AssertQuery query( String sql ) {
@@ -1265,6 +1175,7 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public Connection apply( Connection connection ) throws SQLException {
             if ( schema != null ) {
                 PolyphenyDbEmbeddedConnection con = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
@@ -1290,6 +1201,7 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public Connection apply( Connection connection ) throws SQLException {
             connection.setSchema( name );
             return connection;
@@ -1310,12 +1222,12 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public Connection apply( Connection connection ) throws SQLException {
             PolyphenyDbEmbeddedConnection con = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
             SchemaPlus rootSchema = con.getRootSchema();
             switch ( schemaSpec ) {
                 case CLONE_FOODMART:
-                case JDBC_FOODMART_WITH_LATTICE:
                     addSchema( rootSchema, SchemaSpec.JDBC_FOODMART );
                     /* fall through */
                 default:
@@ -1342,6 +1254,7 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public Connection createConnection() throws SQLException {
             return dataSource.getConnection();
         }
@@ -1378,6 +1291,7 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public Connection createConnection() throws SQLException {
             final Properties info = new Properties();
             for ( Map.Entry<String, String> entry : map.entrySet() ) {
@@ -1396,11 +1310,13 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public ConnectionFactory with( String property, Object value ) {
             return new MapConnectionFactory( FlatLists.append( this.map, property, value.toString() ), postProcessors );
         }
 
 
+        @Override
         public ConnectionFactory with( ConnectionProperty property, Object value ) {
             if ( !property.type().valid( value, property.valueClass() ) ) {
                 throw new IllegalArgumentException();
@@ -1409,6 +1325,7 @@ public class PolyphenyDbAssert {
         }
 
 
+        @Override
         public ConnectionFactory with( ConnectionPostProcessor postProcessor ) {
             ImmutableList.Builder<ConnectionPostProcessor> builder = ImmutableList.builder();
             builder.addAll( postProcessors );
@@ -1514,23 +1431,15 @@ public class PolyphenyDbAssert {
 
 
         public final AssertQuery updates( int count ) {
-            return withConnection( connection -> assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, checkUpdateCount( count ), null ) );
+            return withConnection( connection -> assertQuery( connection, sql, limit, hooks, null, checkUpdateCount( count ), null ) );
         }
-
-
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed in 2.0
-        public final AssertQuery returns( com.google.common.base.Function<ResultSet, Void> checker ) {
-            return returns( sql, checker::apply );
-        }
-
 
         protected AssertQuery returns( String sql, Consumer<ResultSet> checker ) {
             return withConnection( connection -> {
                 if ( consumer == null ) {
-                    assertQuery( connection, sql, limit, materializationsEnabled, hooks, checker, null, null );
+                    assertQuery( connection, sql, limit, hooks, checker, null, null );
                 } else {
-                    assertPrepare( connection, sql, limit, materializationsEnabled, hooks, checker, null, null, consumer );
+                    assertPrepare( connection, sql, limit, hooks, checker, null, null, consumer );
                 }
             } );
         }
@@ -1552,7 +1461,7 @@ public class PolyphenyDbAssert {
 
 
         public AssertQuery throws_( String message ) {
-            return withConnection( connection -> assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, null, checkException( message ) ) );
+            return withConnection( connection -> assertQuery( connection, sql, limit, hooks, null, null, checkException( message ) ) );
         }
 
 
@@ -1562,7 +1471,7 @@ public class PolyphenyDbAssert {
          * @param optionalMessage An optional message to check for in the output stacktrace
          */
         public AssertQuery failsAtValidation( String optionalMessage ) {
-            return withConnection( connection -> assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, null, checkValidationException( optionalMessage ) ) );
+            return withConnection( connection -> assertQuery( connection, sql, limit, hooks, null, null, checkValidationException( optionalMessage ) ) );
         }
 
 
@@ -1577,16 +1486,16 @@ public class PolyphenyDbAssert {
         public AssertQuery runs() {
             return withConnection( connection -> {
                 if ( consumer == null ) {
-                    assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, null, null );
+                    assertQuery( connection, sql, limit, hooks, null, null, null );
                 } else {
-                    assertPrepare( connection, sql, limit, materializationsEnabled, hooks, null, null, null, consumer );
+                    assertPrepare( connection, sql, limit, hooks, null, null, null, consumer );
                 }
             } );
         }
 
 
         public AssertQuery typeIs( String expected ) {
-            return withConnection( connection -> assertQuery( connection, sql, limit, false, hooks, checkResultType( expected ), null, null ) );
+            return withConnection( connection -> assertQuery( connection, sql, limit, hooks, checkResultType( expected ), null, null ) );
         }
 
 
@@ -1605,12 +1514,12 @@ public class PolyphenyDbAssert {
 
 
         public AssertQuery convertMatches( final Function<RelNode, Void> checker ) {
-            return withConnection( connection -> assertPrepare( connection, sql, this.materializationsEnabled, checker, null ) );
+            return withConnection( connection -> assertPrepare( connection, sql, checker, null ) );
         }
 
 
         public AssertQuery substitutionMatches( final Function<RelNode, Void> checker ) {
-            return withConnection( connection -> assertPrepare( connection, sql, materializationsEnabled, null, checker ) );
+            return withConnection( connection -> assertPrepare( connection, sql, null, checker ) );
         }
 
 
@@ -1669,7 +1578,7 @@ public class PolyphenyDbAssert {
             }
             addHook( Hook.JAVA_PLAN, (Consumer<String>) a0 -> plan = a0 );
             withConnection( connection -> {
-                assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, checkUpdate, null );
+                assertQuery( connection, sql, limit, hooks, null, checkUpdate, null );
                 assertNotNull( plan );
             } );
         }
@@ -1683,19 +1592,9 @@ public class PolyphenyDbAssert {
             final List<Object> list = new ArrayList<>();
             addHook( Hook.QUERY_PLAN, list::add );
             return withConnection( connection -> {
-                assertQuery( connection, sql, limit, materializationsEnabled, hooks, null, null, null );
+                assertQuery( connection, sql, limit, hooks, null, null, null );
                 predicate1.accept( list );
             } );
-        }
-
-
-        /**
-         * @deprecated Use {@link #queryContains(Consumer)}.
-         */
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public final AssertQuery queryContains( com.google.common.base.Function<List, Void> predicate1 ) {
-            return queryContains( (Consumer<List>) predicate1::apply );
         }
 
 
@@ -1705,34 +1604,6 @@ public class PolyphenyDbAssert {
         public AssertQuery limit( int limit ) {
             this.limit = limit;
             return this;
-        }
-
-
-        public void sameResultWithMaterializationsDisabled() {
-            boolean save = materializationsEnabled;
-            try {
-                materializationsEnabled = false;
-                final boolean ordered = sql.toUpperCase( Locale.ROOT ).contains( "ORDER BY" );
-                final Consumer<ResultSet> checker = consistentResult( ordered );
-                returns( checker );
-                materializationsEnabled = true;
-                returns( checker );
-            } finally {
-                materializationsEnabled = save;
-            }
-        }
-
-
-        public AssertQuery enableMaterializations( boolean enable ) {
-            this.materializationsEnabled = enable;
-            return this;
-        }
-
-
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed in 2.0
-        public <T> AssertQuery withHook( Hook hook, Function<T, Void> handler ) {
-            return withHook( hook, (Consumer<T>) handler::apply );
         }
 
 
@@ -2002,7 +1873,6 @@ public class PolyphenyDbAssert {
         REFLECTIVE_FOODMART( "foodmart" ),
         JDBC_FOODMART( "foodmart" ),
         CLONE_FOODMART( "foodmart2" ),
-        JDBC_FOODMART_WITH_LATTICE( "lattice" ),
         GEO( "GEO" ),
         HR( "hr" ),
         JDBC_SCOTT( "JDBC_SCOTT" ),
@@ -2069,7 +1939,7 @@ public class PolyphenyDbAssert {
         }
 
 
-        public Collection<String> toStringList( ResultSet resultSet, Collection<String> list ) throws SQLException {
+        Collection<String> toStringList( ResultSet resultSet, Collection<String> list ) throws SQLException {
             final ResultSetMetaData metaData = resultSet.getMetaData();
             while ( resultSet.next() ) {
                 rowToString( resultSet, metaData );

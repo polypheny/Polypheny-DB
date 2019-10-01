@@ -63,36 +63,42 @@ public class RelOptCostImpl implements RelOptCost {
 
 
     // implement RelOptCost
+    @Override
     public double getRows() {
         return value;
     }
 
 
     // implement RelOptCost
+    @Override
     public double getIo() {
         return 0;
     }
 
 
     // implement RelOptCost
+    @Override
     public double getCpu() {
         return 0;
     }
 
 
     // implement RelOptCost
+    @Override
     public boolean isInfinite() {
         return Double.isInfinite( value );
     }
 
 
     // implement RelOptCost
+    @Override
     public boolean isLe( RelOptCost other ) {
         return getRows() <= other.getRows();
     }
 
 
     // implement RelOptCost
+    @Override
     public boolean isLt( RelOptCost other ) {
         return getRows() < other.getRows();
     }
@@ -120,29 +126,34 @@ public class RelOptCostImpl implements RelOptCost {
 
 
     // implement RelOptCost
+    @Override
     public boolean isEqWithEpsilon( RelOptCost other ) {
         return Math.abs( getRows() - other.getRows() ) < RelOptUtil.EPSILON;
     }
 
 
     // implement RelOptCost
+    @Override
     public RelOptCost minus( RelOptCost other ) {
         return new RelOptCostImpl( getRows() - other.getRows() );
     }
 
 
     // implement RelOptCost
+    @Override
     public RelOptCost plus( RelOptCost other ) {
         return new RelOptCostImpl( getRows() + other.getRows() );
     }
 
 
     // implement RelOptCost
+    @Override
     public RelOptCost multiplyBy( double factor ) {
         return new RelOptCostImpl( getRows() * factor );
     }
 
 
+    @Override
     public double divideBy( RelOptCost cost ) {
         RelOptCostImpl that = (RelOptCostImpl) cost;
         return this.getRows() / that.getRows();

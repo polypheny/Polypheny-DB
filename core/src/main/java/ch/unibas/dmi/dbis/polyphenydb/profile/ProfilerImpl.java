@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.profile;
 
 import static ch.unibas.dmi.dbis.polyphenydb.profile.ProfilerImpl.CompositeCollector.OF;
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
@@ -433,16 +432,16 @@ public class ProfilerImpl implements Profiler {
                     return rowCount;
                 default:
                     double c = rowCount;
-                    for ( ImmutableBitSet bitSet : keyPoset.getParents( columns, true ) ) {
-                        if ( bitSet.isEmpty() ) {
-                            // If the parent is the empty group (i.e. "GROUP BY ()", the grand total) we cannot improve on the estimate.
-                            continue;
-                        }
-                        final Distribution d1 = distributions.get( bitSet );
-                        final double c2 = cardinality( rowCount, columns.except( bitSet ) );
-                        final double d = Lattice.getRowCount( rowCount, d1.cardinality, c2 );
-                        c = Math.min( c, d );
-                    }
+//                    for ( ImmutableBitSet bitSet : keyPoset.getParents( columns, true ) ) {
+//                        if ( bitSet.isEmpty() ) {
+//                            // If the parent is the empty group (i.e. "GROUP BY ()", the grand total) we cannot improve on the estimate.
+//                            continue;
+//                        }
+//                        final Distribution d1 = distributions.get( bitSet );
+//                        final double c2 = cardinality( rowCount, columns.except( bitSet ) );
+//                        final double d = Lattice.getRowCount( rowCount, d1.cardinality, c2 );
+//                        c = Math.min( c, d );
+//                    }
                     for ( ImmutableBitSet bitSet : keyPoset.getChildren( columns, true ) ) {
                         final Distribution d1 = distributions.get( bitSet );
                         c = Math.min( c, d1.cardinality );

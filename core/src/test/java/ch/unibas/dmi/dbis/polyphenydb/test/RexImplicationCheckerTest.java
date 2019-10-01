@@ -321,7 +321,6 @@ public class RexImplicationCheckerTest {
 
 
     /**
-     * Similar to {@link MaterializationTest#testAlias()}:
      * {@code x > 1 OR (y > 2 AND z > 4)}
      * implies
      * {@code (y > 3 AND z > 5)}.
@@ -617,8 +616,9 @@ public class RexImplicationCheckerTest {
                     .build();
             Frameworks.withPrepare(
                     new Frameworks.PrepareAction<Void>( config ) {
+                        @Override
                         public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-                            DataContext dataContext = Schemas.createDataContext( null, rootSchema );
+                            DataContext dataContext = Schemas.createDataContext( rootSchema );
                             holder.set( new RexExecutorImpl( dataContext ) );
                             return null;
                         }

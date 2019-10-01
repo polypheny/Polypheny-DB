@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.profile;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
@@ -240,12 +239,12 @@ public class SimpleProfiler implements Profiler {
                         break;
                     default:
                         expectedCardinality = rowCount;
-                        for ( Column column : space.columns ) {
-                            final Distribution d1 = distributions.get( ImmutableBitSet.of( column.ordinal ) );
-                            final Distribution d2 = distributions.get( space.columnOrdinals.clear( column.ordinal ) );
-                            final double d = Lattice.getRowCount( rowCount, d1.cardinality, d2.cardinality );
-                            expectedCardinality = Math.min( expectedCardinality, d );
-                        }
+//                        for ( Column column : space.columns ) {
+//                            final Distribution d1 = distributions.get( ImmutableBitSet.of( column.ordinal ) );
+//                            final Distribution d2 = distributions.get( space.columnOrdinals.clear( column.ordinal ) );
+//                            final double d = Lattice.getRowCount( rowCount, d1.cardinality, d2.cardinality );
+//                            expectedCardinality = Math.min( expectedCardinality, d );
+//                        }
                 }
                 final boolean minimal =
                         nonMinimal == 0

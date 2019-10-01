@@ -586,10 +586,10 @@ public class SqlParserTest {
 
     private static final ThreadLocal<boolean[]> LINUXIFY = ThreadLocal.withInitial( () -> new boolean[]{ true } );
 
-    Quoting quoting = Quoting.DOUBLE_QUOTE;
-    Casing unquotedCasing = Casing.TO_UPPER;
-    Casing quotedCasing = Casing.UNCHANGED;
-    SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+    private Quoting quoting = Quoting.DOUBLE_QUOTE;
+    private Casing unquotedCasing = Casing.TO_UPPER;
+    private Casing quotedCasing = Casing.UNCHANGED;
+    private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -7331,6 +7331,7 @@ public class SqlParserTest {
      */
     protected class TesterImpl implements Tester {
 
+        @Override
         public void check( String sql, String expected ) {
             final SqlNode sqlNode = parseStmtAndHandleEx( sql );
 
@@ -7354,6 +7355,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkExp( String sql, String expected ) {
             final SqlNode sqlNode = parseExpressionAndHandleEx( sql );
             String actual = sqlNode.toSqlString( null, true ).getSql();
@@ -7375,6 +7377,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkFails( String sql, String expectedMsgPattern ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             Throwable thrown = null;
@@ -7389,6 +7392,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkNode( String sql, Matcher<SqlNode> matcher ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             try {
@@ -7404,6 +7408,7 @@ public class SqlParserTest {
          * Tests that an expression throws an exception which matches the given
          * pattern.
          */
+        @Override
         public void checkExpFails( String sql, String expectedMsgPattern ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             Throwable thrown = null;

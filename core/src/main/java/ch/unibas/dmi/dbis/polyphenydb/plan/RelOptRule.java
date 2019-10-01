@@ -364,6 +364,7 @@ public abstract class RelOptRule {
                 for ( int n = 0; n < m; n++ ) {
                     if ( operand.solveOrder[n] == k ) {
                         exists = true;
+                        break;
                     }
                 }
                 if ( !exists ) {
@@ -604,6 +605,7 @@ public abstract class RelOptRule {
         }
 
 
+        @Override
         public boolean matches( RelNode rel ) {
             // Don't apply converters to converters that operate on the same RelTraitDef -- otherwise we get an n^2 effect.
             if ( rel instanceof Converter ) {

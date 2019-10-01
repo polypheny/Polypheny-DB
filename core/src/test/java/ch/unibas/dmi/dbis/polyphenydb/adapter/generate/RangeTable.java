@@ -85,6 +85,7 @@ public class RangeTable extends AbstractQueryableTable {
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return typeFactory.builder()
                 .add( columnName, SqlTypeName.INTEGER )
@@ -92,8 +93,10 @@ public class RangeTable extends AbstractQueryableTable {
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+            @Override
             public Enumerator<T> enumerator() {
                 //noinspection unchecked
                 return (Enumerator<T>) RangeTable.this.enumerator();
@@ -107,6 +110,7 @@ public class RangeTable extends AbstractQueryableTable {
             int current = start - 1;
 
 
+            @Override
             public Integer current() {
                 if ( current >= end ) {
                     throw new NoSuchElementException();
@@ -115,17 +119,20 @@ public class RangeTable extends AbstractQueryableTable {
             }
 
 
+            @Override
             public boolean moveNext() {
                 ++current;
                 return current < end;
             }
 
 
+            @Override
             public void reset() {
                 current = start - 1;
             }
 
 
+            @Override
             public void close() {
             }
         };
@@ -137,6 +144,7 @@ public class RangeTable extends AbstractQueryableTable {
      */
     public static class Factory implements TableFactory<RangeTable> {
 
+        @Override
         public RangeTable create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             final String columnName = (String) operand.get( "column" );
             final int start = (Integer) operand.get( "start" );

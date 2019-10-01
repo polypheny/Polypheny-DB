@@ -46,12 +46,12 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -389,6 +389,7 @@ public class JdbcFrontLinqBackTest {
             }
 
 
+            @Override
             public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
                     public Enumerator<T> enumerator() {
@@ -404,6 +405,7 @@ public class JdbcFrontLinqBackTest {
             }
 
 
+            @Override
             public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
                 return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
             }
@@ -445,9 +447,9 @@ public class JdbcFrontLinqBackTest {
         boolean status = statement.execute( sql );
         assertFalse( status );
         ResultSet resultSet = statement.getResultSet();
-        assertTrue( resultSet == null );
+        assertNull( resultSet );
         int updateCount = statement.getUpdateCount();
-        assertTrue( updateCount == 1 );
+        assertEquals( 1, updateCount );
     }
 
 
@@ -466,9 +468,9 @@ public class JdbcFrontLinqBackTest {
         boolean status = preparedStatement.execute();
         assertFalse( status );
         ResultSet resultSet = preparedStatement.getResultSet();
-        assertTrue( resultSet == null );
+        assertNull( resultSet );
         int updateCount = preparedStatement.getUpdateCount();
-        assertTrue( updateCount == 1 );
+        assertEquals( 1, updateCount );
     }
 
 

@@ -116,6 +116,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     }
 
 
+    @Override
     @Before
     public void setUp() {
         super.setUp();

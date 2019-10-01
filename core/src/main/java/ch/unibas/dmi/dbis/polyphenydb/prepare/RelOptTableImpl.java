@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -510,12 +509,6 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
         @Override
         public void add( String name, RelProtoDataType type ) {
-            throw new UnsupportedOperationException();
-        }
-
-
-        @Override
-        public void add( String name, Lattice lattice ) {
             throw new UnsupportedOperationException();
         }
 

@@ -3447,8 +3447,7 @@ public class RelToSqlConverterTest {
             return new Sql( schema, sql, dialect, config,
                     FlatLists.append( transforms, r -> {
                         Program program = Programs.of( ruleSet );
-                        return program.run( relOptPlanner, r, r.getTraitSet(),
-                                ImmutableList.of(), ImmutableList.of() );
+                        return program.run( relOptPlanner, r, r.getTraitSet() );
                     } ) );
         }
 

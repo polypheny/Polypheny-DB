@@ -144,6 +144,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
     }
 
 
+    @Override
     @Before
     public void setUp() {
         super.setUp();

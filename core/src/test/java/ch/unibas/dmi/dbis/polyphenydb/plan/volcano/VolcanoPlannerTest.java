@@ -214,6 +214,7 @@ public class VolcanoPlannerTest {
         planner.addRule( new PhysProjectRule() );
 
         planner.addRule( new ConverterRule( RelNode.class, PHYS_CALLING_CONVENTION, EnumerableConvention.INSTANCE, "PhysToIteratorRule" ) {
+            @Override
             public RelNode convert( RelNode rel ) {
                 return new PhysToIteratorConverter(
                         rel.getCluster(),
@@ -416,13 +417,14 @@ public class VolcanoPlannerTest {
     /**
      * Converter from PHYS to ENUMERABLE convention.
      */
-    class PhysToIteratorConverter extends ConverterImpl {
+    static class PhysToIteratorConverter extends ConverterImpl {
 
         PhysToIteratorConverter( RelOptCluster cluster, RelNode child ) {
             super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( EnumerableConvention.INSTANCE ), child );
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             return new PhysToIteratorConverter( getCluster(), AbstractRelNode.sole( inputs ) );
@@ -444,11 +446,13 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             // Do not transform to anything; just log the calls.
             TestSingleRel singleRel = call.rel( 0 );
@@ -479,6 +483,7 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel singleRel = call.rel( 0 );
             RelNode childRel = call.rel( 1 );
@@ -504,6 +509,7 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final LogicalProject project = call.rel( 0 );
             RelNode childRel = project.getInput();
@@ -528,6 +534,7 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             PhysSingleRel singleRel = call.rel( 0 );
             PhysLeafRel leafRel = call.rel( 1 );
@@ -546,11 +553,13 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel singleRel = call.rel( 0 );
             PhysLeafRel leafRel = call.rel( 1 );
@@ -582,17 +591,20 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public void relChosen( RelChosenEvent event ) {
             recordEvent( event );
         }
 
 
+        @Override
         public void relDiscarded( RelDiscardedEvent event ) {
             // Volcano is quite a pack rat--it never discards anything!
             throw new AssertionError( event );
         }
 
 
+        @Override
         public void relEquivalenceFound( RelEquivalenceEvent event ) {
             if ( !event.isPhysical() ) {
                 return;
@@ -601,11 +613,13 @@ public class VolcanoPlannerTest {
         }
 
 
+        @Override
         public void ruleAttempted( RuleAttemptedEvent event ) {
             recordEvent( event );
         }
 
 
+        @Override
         public void ruleProductionSucceeded( RuleProductionEvent event ) {
             recordEvent( event );
         }

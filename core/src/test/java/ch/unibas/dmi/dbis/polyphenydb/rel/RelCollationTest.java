@@ -61,7 +61,7 @@ import org.junit.Test;
 public class RelCollationTest {
 
     /**
-     * Unit test for {@link RelCollations#contains}.
+     * Unit test for {@code RelCollations#contains}.
      */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Test

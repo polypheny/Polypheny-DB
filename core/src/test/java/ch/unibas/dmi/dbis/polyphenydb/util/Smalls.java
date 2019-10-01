@@ -125,12 +125,14 @@ public class Smalls {
         }
         final Enumerable<Integer> enumerable = Linq4j.asEnumerable( items );
         return new AbstractQueryableTable( Integer.class ) {
+            @Override
             public <E> Queryable<E> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 //noinspection unchecked
                 return (Queryable<E>) enumerable.asQueryable();
             }
 
 
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "c", SqlTypeName.INTEGER ).build();
             }
@@ -148,14 +150,17 @@ public class Smalls {
      */
     public static QueryableTable generateStrings( final Integer count ) {
         return new AbstractQueryableTable( IntString.class ) {
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.createJavaType( IntString.class );
             }
 
 
+            @Override
             public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 BaseQueryable<IntString> queryable =
                         new BaseQueryable<IntString>( null, IntString.class, null ) {
+                            @Override
                             public Enumerator<IntString> enumerator() {
                                 return new Enumerator<IntString>() {
                                     static final String Z = "abcdefghijklm";
@@ -165,11 +170,13 @@ public class Smalls {
                                     String curS;
 
 
+                                    @Override
                                     public IntString current() {
                                         return new IntString( curI, curS );
                                     }
 
 
+                                    @Override
                                     public boolean moveNext() {
                                         if ( i < count ) {
                                             curI = i;
@@ -182,11 +189,13 @@ public class Smalls {
                                     }
 
 
+                                    @Override
                                     public void reset() {
                                         i = 0;
                                     }
 
 
+                                    @Override
                                     public void close() {
                                     }
                                 };
@@ -205,6 +214,7 @@ public class Smalls {
     public static QueryableTable multiplicationTable( final int ncol, final int nrow, Integer offset ) {
         final int offs = offset == null ? 0 : offset;
         return new AbstractQueryableTable( Object[].class ) {
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 final RelDataTypeFactory.Builder builder = typeFactory.builder();
                 builder.add( "row_name", typeFactory.createJavaType( String.class ) );
@@ -216,6 +226,7 @@ public class Smalls {
             }
 
 
+            @Override
             public Queryable<Object[]> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 final List<Object[]> table = new AbstractList<Object[]>() {
                     @Override
@@ -253,24 +264,29 @@ public class Smalls {
      */
     public static ScannableTable fibonacciTableWithLimit( final long limit ) {
         return new ScannableTable() {
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "N", SqlTypeName.BIGINT ).build();
             }
 
 
+            @Override
             public Enumerable<Object[]> scan( DataContext root ) {
                 return new AbstractEnumerable<Object[]>() {
+                    @Override
                     public Enumerator<Object[]> enumerator() {
                         return new Enumerator<Object[]>() {
                             private long prev = 1;
                             private long current = 0;
 
 
+                            @Override
                             public Object[] current() {
                                 return new Object[]{ current };
                             }
 
 
+                            @Override
                             public boolean moveNext() {
                                 final long next = current + prev;
                                 if ( limit >= 0 && next > limit ) {
@@ -282,12 +298,14 @@ public class Smalls {
                             }
 
 
+                            @Override
                             public void reset() {
                                 prev = 0;
                                 current = 1;
                             }
 
 
+                            @Override
                             public void close() {
                             }
                         };
@@ -296,21 +314,25 @@ public class Smalls {
             }
 
 
+            @Override
             public Statistic getStatistic() {
                 return Statistics.UNKNOWN;
             }
 
 
+            @Override
             public Schema.TableType getJdbcTableType() {
                 return Schema.TableType.TABLE;
             }
 
 
+            @Override
             public boolean isRolledUp( String column ) {
                 return false;
             }
 
 
+            @Override
             public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
                 return true;
             }
@@ -323,6 +345,7 @@ public class Smalls {
      */
     public static QueryableTable processCursor( final int offset, final Enumerable<Object[]> a ) {
         return new AbstractQueryableTable( Object[].class ) {
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "result", SqlTypeName.INTEGER )
@@ -330,6 +353,7 @@ public class Smalls {
             }
 
 
+            @Override
             public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 final Enumerable<Integer> enumerable = a.select( a0 -> offset + ((Integer) a0[0]) );
                 //noinspection unchecked
@@ -344,6 +368,7 @@ public class Smalls {
      */
     public static QueryableTable processCursors( final int offset, final Enumerable<Object[]> a, final Enumerable<IntString> b ) {
         return new AbstractQueryableTable( Object[].class ) {
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "result", SqlTypeName.INTEGER )
@@ -351,6 +376,7 @@ public class Smalls {
             }
 
 
+            @Override
             public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                 final Enumerable<Integer> enumerable = a.zip( b, ( v0, v1 ) -> ((Integer) v0[1]) + v1.n + offset );
                 //noinspection unchecked
@@ -810,21 +836,25 @@ public class Smalls {
      */
     public static class MySum3 implements MyGenericAggFunction<Integer, Integer, Integer> {
 
+        @Override
         public Integer init() {
             return 0;
         }
 
 
+        @Override
         public Integer add( Integer accumulator, Integer val ) {
             return accumulator + val;
         }
 
 
+        @Override
         public Integer merge( Integer accumulator1, Integer accumulator2 ) {
             return accumulator1 + accumulator2;
         }
 
 
+        @Override
         public Integer result( Integer accumulator ) {
             return accumulator;
         }
@@ -1105,6 +1135,7 @@ public class Smalls {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "S", SqlTypeName.VARCHAR, 12 )
@@ -1112,6 +1143,7 @@ public class Smalls {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             Object[][] rows = { { "abcde" }, { "xyz" }, { content } };
             return Linq4j.asEnumerable( rows );

@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -133,6 +133,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
@@ -171,16 +172,19 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new JdbcTableQueryable<>( queryProvider, schema, tableName );
     }
 
 
+    @Override
     public Enumerable<Object[]> scan( DataContext root ) {
         final JavaTypeFactory typeFactory = root.getTypeFactory();
         final SqlString sql = generateSql();
@@ -225,8 +229,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         }
 
 
+        @Override
         public Enumerator<T> enumerator() {
-            final JavaTypeFactory typeFactory = ((PolyphenyDbEmbeddedConnection) queryProvider).getTypeFactory();
+            // final JavaTypeFactory typeFactory = ((PolyphenyDbEmbeddedConnection) queryProvider).getTypeFactory();
+            final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl(); // TODO MV: Potential bug
             final SqlString sql = generateSql();
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );

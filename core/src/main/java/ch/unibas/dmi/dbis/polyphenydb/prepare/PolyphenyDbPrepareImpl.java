@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableBindable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpretable;
@@ -62,19 +62,24 @@ import ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.MaterializationService;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner.CannotPlanException;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparedExplain;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparedResult;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparedResultImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
@@ -84,10 +89,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AbstractMaterializedViewRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExpandDistinctAggregatesRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateStarTableRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateValuesRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
@@ -97,7 +100,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinAssociateRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinCommuteRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinPushExpressionsRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinPushThroughJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.MaterializedViewFilterScanRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectFilterTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectMergeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
@@ -121,8 +123,6 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Typed;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.LatticeEntry;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
@@ -144,13 +144,15 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlRexConvertletTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
+import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter.ConfigBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks.PrepareAction;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Static;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.base.Supplier;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util.FoundOne;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -165,9 +167,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
+import org.apache.calcite.avatica.Meta.CursorFactory;
+import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
@@ -247,8 +253,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
     private static final List<RelOptRule> DEFAULT_RULES =
             ImmutableList.of(
-                    AggregateStarTableRule.INSTANCE,
-                    AggregateStarTableRule.INSTANCE2,
                     TableScanRule.INSTANCE,
                     COMMUTE
                             ? JoinAssociateRule.INSTANCE
@@ -286,16 +290,19 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
+    @Override
     public ParseResult parse( Context context, String sql ) {
         return parse_( context, sql, false, false, false );
     }
 
 
+    @Override
     public ConvertResult convert( Context context, String sql ) {
         return (ConvertResult) parse_( context, sql, true, false, false );
     }
 
 
+    @Override
     public AnalyzeViewResult analyzeView( Context context, String sql, boolean fail ) {
         return (AnalyzeViewResult) parse_( context, sql, true, true, fail );
     }
@@ -336,7 +343,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final HepPlanner planner = new HepPlanner( new HepProgramBuilder().build() );
         planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
 
-        final SqlToRelConverter.ConfigBuilder configBuilder = SqlToRelConverter.configBuilder().withTrimUnusedFields( true );
+        final ConfigBuilder configBuilder = SqlToRelConverter.configBuilder().withTrimUnusedFields( true );
         if ( analyze ) {
             configBuilder.withConvertTableAccess( false );
         }
@@ -566,15 +573,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         for ( RelOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
-        if ( prepareContext.config().materializationsEnabled() ) {
-            planner.addRule( MaterializedViewFilterScanRule.INSTANCE );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_PROJECT_FILTER );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_FILTER );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_PROJECT_JOIN );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_JOIN );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_PROJECT_AGGREGATE );
-            planner.addRule( AbstractMaterializedViewRule.INSTANCE_AGGREGATE );
-        }
         if ( enableBindable ) {
             for ( RelOptRule rule : Bindables.RULES ) {
                 planner.addRule( rule );
@@ -592,7 +590,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
         if ( enableBindable && ENABLE_ENUMERABLE ) {
-            planner.addRule( EnumerableBindable.EnumerableToBindableConverterRule.INSTANCE );
+            planner.addRule( EnumerableToBindableConverterRule.INSTANCE );
         }
 
         if ( ENABLE_STREAM ) {
@@ -611,12 +609,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final SparkHandler spark = prepareContext.spark();
         if ( spark.enabled() ) {
             spark.registerRules(
-                    new SparkHandler.RuleSetBuilder() {
+                    new RuleSetBuilder() {
+                        @Override
                         public void addRule( RelOptRule rule ) {
                             // TODO:
                         }
 
 
+                        @Override
                         public void removeRule( RelOptRule rule ) {
                             // TODO:
                         }
@@ -629,11 +629,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
+    @Override
     public <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable ) {
         return prepare_( context, Query.of( queryable ), queryable.getElementType(), -1 );
     }
 
 
+    @Override
     public <T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount ) {
         return prepare_( context, query, elementType, maxRowCount );
     }
@@ -653,7 +655,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         if ( plannerFactories.isEmpty() ) {
             throw new AssertionError( "no planner factories" );
         }
-        RuntimeException exception = Util.FoundOne.NULL;
+        RuntimeException exception = FoundOne.NULL;
         for ( Function1<Context, RelOptPlanner> plannerFactory : plannerFactories ) {
             final RelOptPlanner planner = plannerFactory.apply( context );
             if ( planner == null ) {
@@ -661,7 +663,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
             try {
                 return prepare2_( context, query, elementType, maxRowCount, catalogReader, planner );
-            } catch ( RelOptPlanner.CannotPlanException e ) {
+            } catch ( CannotPlanException e ) {
                 exception = e;
             }
         }
@@ -682,7 +684,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final List<String> origin = null;
         final List<List<String>> origins = Collections.nCopies( x.getFieldCount(), origin );
         final List<ColumnMetaData> columns = getColumnMetaDataList( typeFactory, x, x, origins );
-        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.deduce( columns, null );
+        final CursorFactory cursorFactory = CursorFactory.deduce( columns, null );
         return new PolyphenyDbSignature<>(
                 sql,
                 ImmutableList.of(),
@@ -694,7 +696,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 ImmutableList.of(),
                 -1,
                 dataContext -> Linq4j.asEnumerable( list ),
-                Meta.StatementType.SELECT );
+                StatementType.SELECT );
     }
 
 
@@ -703,14 +705,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      *
      * @param kind Kind of statement
      */
-    private Meta.StatementType getStatementType( SqlKind kind ) {
+    private StatementType getStatementType( SqlKind kind ) {
         switch ( kind ) {
             case INSERT:
             case DELETE:
             case UPDATE:
-                return Meta.StatementType.IS_DML;
+                return StatementType.IS_DML;
             default:
-                return Meta.StatementType.SELECT;
+                return StatementType.SELECT;
         }
     }
 
@@ -721,11 +723,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      *
      * @param preparedResult Prepare result
      */
-    private Meta.StatementType getStatementType( Prepare.PreparedResult preparedResult ) {
+    private StatementType getStatementType( PreparedResult preparedResult ) {
         if ( preparedResult.isDml() ) {
-            return Meta.StatementType.IS_DML;
+            return StatementType.IS_DML;
         } else {
-            return Meta.StatementType.SELECT;
+            return StatementType.SELECT;
         }
     }
 
@@ -734,9 +736,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Prefer prefer;
         if ( elementType == Object[].class ) {
-            prefer = EnumerableRel.Prefer.ARRAY;
+            prefer = Prefer.ARRAY;
         } else {
-            prefer = EnumerableRel.Prefer.CUSTOM;
+            prefer = Prefer.CUSTOM;
         }
         final Convention resultConvention =
                 enableBindable
@@ -745,8 +747,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt( this, context, catalogReader, typeFactory, context.getRootSchema(), prefer, planner, resultConvention, createConvertletTable() );
 
         final RelDataType x;
-        final Prepare.PreparedResult preparedResult;
-        final Meta.StatementType statementType;
+        final PreparedResult preparedResult;
+        final StatementType statementType;
         if ( query.sql != null ) {
             final PolyphenyDbConnectionConfig config = context.config();
             final SqlParser.ConfigBuilder parserConfig = createParserConfig()
@@ -779,12 +781,12 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         ImmutableMap.of(),
                         null,
                         ImmutableList.of(),
-                        Meta.CursorFactory.OBJECT,
+                        CursorFactory.OBJECT,
                         null,
                         ImmutableList.of(),
                         -1,
                         null,
-                        Meta.StatementType.OTHER_DDL );
+                        StatementType.OTHER_DDL );
             }
 
             final SqlValidator validator = createSqlValidator( context, catalogReader );
@@ -836,10 +838,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         if ( preparedResult instanceof Typed ) {
             resultClazz = (Class) ((Typed) preparedResult).getElementType();
         }
-        final Meta.CursorFactory cursorFactory =
+        final CursorFactory cursorFactory =
                 preparingStmt.resultConvention == BindableConvention.INSTANCE
-                        ? Meta.CursorFactory.ARRAY
-                        : Meta.CursorFactory.deduce( columns, resultClazz );
+                        ? CursorFactory.ARRAY
+                        : CursorFactory.deduce( columns, resultClazz );
         //noinspection unchecked
         final Bindable<T> bindable = preparedResult.getBindable( cursorFactory );
         return new PolyphenyDbSignature<>(
@@ -850,8 +852,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 columns,
                 cursorFactory,
                 context.getRootSchema(),
-                preparedResult instanceof Prepare.PreparedResultImpl
-                        ? ((Prepare.PreparedResultImpl) preparedResult).collations
+                preparedResult instanceof PreparedResultImpl
+                        ? ((PreparedResultImpl) preparedResult).collations
                         : ImmutableList.of(),
                 maxRowCount,
                 bindable,
@@ -881,7 +883,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
     private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, RelDataType type, RelDataType fieldType, List<String> origins ) {
-        final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
+        final AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
         return new ColumnMetaData(
                 ordinal,
                 false,
@@ -908,12 +910,12 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
+    private AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
         final String typeName = getTypeName( type );
         if ( type.getComponentType() != null ) {
-            final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            final AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
             final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            final Rep rep = Rep.of( clazz );
             assert rep != null;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
@@ -930,7 +932,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     // fall through
                 default:
                     final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
-                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+                    final Rep rep = Rep.of( clazz );
                     assert rep != null;
                     return ColumnMetaData.scalar( typeOrdinal, typeName, rep );
             }
@@ -1001,19 +1003,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    protected void populateMaterializations( Context context, RelOptPlanner planner, Prepare.Materialization materialization ) {
-        // REVIEW: initialize queryRel and tableRel inside MaterializationService, not here?
-        try {
-            final PolyphenyDbSchema schema = materialization.materializedTable.schema;
-            PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), materialization.viewSchemaPath, context.getTypeFactory() );
-            final PolyphenyDbMaterializer materializer = new PolyphenyDbMaterializer( this, context, catalogReader, schema, planner, createConvertletTable() );
-            materializer.populate( materialization );
-        } catch ( Exception e ) {
-            throw new RuntimeException( "While populating materialization " + materialization.materializedTable.path(), e );
-        }
-    }
-
-
     private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
         if ( type.isStruct() ) {
             return type;
@@ -1025,7 +1014,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Executes a prepare action.
      */
-    public <R> R perform( Frameworks.PrepareAction<R> action ) {
+    public <R> R perform( PrepareAction<R> action ) {
         final Context prepareContext = action.getConfig().getPrepareContext();
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
         final PolyphenyDbSchema schema =
@@ -1043,7 +1032,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Holds state for the process of preparing a SQL statement.
      */
-    static class PolyphenyDbPreparingStmt extends Prepare implements RelOptTable.ViewExpander {
+    static class PolyphenyDbPreparingStmt extends Prepare implements ViewExpander {
 
         protected final RelOptPlanner planner;
         protected final RexBuilder rexBuilder;
@@ -1051,13 +1040,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         protected final PolyphenyDbSchema schema;
         protected final RelDataTypeFactory typeFactory;
         protected final SqlRexConvertletTable convertletTable;
-        private final EnumerableRel.Prefer prefer;
+        private final Prefer prefer;
         private final Map<String, Object> internalParameters = new LinkedHashMap<>();
         private int expansionDepth;
         private SqlValidator sqlValidator;
 
 
-        PolyphenyDbPreparingStmt( PolyphenyDbPrepareImpl prepare, Context context, CatalogReader catalogReader, RelDataTypeFactory typeFactory, PolyphenyDbSchema schema, EnumerableRel.Prefer prefer, RelOptPlanner planner, Convention resultConvention, SqlRexConvertletTable convertletTable ) {
+        PolyphenyDbPreparingStmt( PolyphenyDbPrepareImpl prepare, Context context, CatalogReader catalogReader, RelDataTypeFactory typeFactory, PolyphenyDbSchema schema, Prefer prefer, RelOptPlanner planner, Convention resultConvention, SqlRexConvertletTable convertletTable ) {
             super( context, catalogReader, resultConvention );
             this.prepare = prepare;
             this.schema = schema;
@@ -1114,9 +1103,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             // Trim unused fields.
             root = trimUnusedFields( root );
 
-            final List<Materialization> materializations = ImmutableList.of();
-            final List<PolyphenyDbSchema.LatticeEntry> lattices = ImmutableList.of();
-            root = optimize( root, materializations, lattices );
+            root = optimize( root );
 
             if ( timingTracer != null ) {
                 timingTracer.traceTime( "end optimization" );
@@ -1127,7 +1114,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected SqlToRelConverter getSqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, SqlToRelConverter.Config config ) {
+        protected SqlToRelConverter getSqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, Config config ) {
             final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
             return new SqlToRelConverter( this, validator, catalogReader, cluster, convertletTable, config );
         }
@@ -1163,7 +1150,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             // View may have different schema path than current connection.
             final CatalogReader catalogReader = this.catalogReader.withSchemaPath( schemaPath );
             SqlValidator validator = createSqlValidator( catalogReader );
-            final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder().withTrimUnusedFields( true ).build();
+            final Config config = SqlToRelConverter.configBuilder().withTrimUnusedFields( true ).build();
             SqlToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
             RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
 
@@ -1239,39 +1226,23 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     root.rel,
                     mapTableModOp( isDml, root.kind ),
                     isDml ) {
+                @Override
                 public String getCode() {
                     throw new UnsupportedOperationException();
                 }
 
 
-                public Bindable getBindable( Meta.CursorFactory cursorFactory ) {
+                @Override
+                public Bindable getBindable( CursorFactory cursorFactory ) {
                     return bindable;
                 }
 
 
+                @Override
                 public Type getElementType() {
                     return ((Typed) bindable).getElementType();
                 }
             };
-        }
-
-
-        @Override
-        protected List<Materialization> getMaterializations() {
-            final List<Prepare.Materialization> materializations =
-                    context.config().materializationsEnabled()
-                            ? MaterializationService.instance().query( schema )
-                            : ImmutableList.of();
-            for ( Prepare.Materialization materialization : materializations ) {
-                prepare.populateMaterializations( context, planner, materialization );
-            }
-            return materializations;
-        }
-
-
-        @Override
-        protected List<LatticeEntry> getLattices() {
-            return Schemas.getLatticeEntries( schema );
         }
     }
 
@@ -1279,14 +1250,15 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * An {@code EXPLAIN} statement, prepared and ready to execute.
      */
-    private static class PolyphenyDbPreparedExplain extends Prepare.PreparedExplain {
+    private static class PolyphenyDbPreparedExplain extends PreparedExplain {
 
         PolyphenyDbPreparedExplain( RelDataType resultType, RelDataType parameterRowType, RelRoot root, SqlExplainFormat format, SqlExplainLevel detailLevel ) {
             super( resultType, parameterRowType, root, format, detailLevel );
         }
 
 
-        public Bindable getBindable( final Meta.CursorFactory cursorFactory ) {
+        @Override
+        public Bindable getBindable( final CursorFactory cursorFactory ) {
             final String explanation = getCode();
             return dataContext -> {
                 switch ( cursorFactory.style ) {
@@ -1334,6 +1306,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
+        @Override
         public List<RexNode> toRexList( BlockStatement statement ) {
             final List<Expression> simpleList = simpleList( statement );
             final List<RexNode> list = new ArrayList<>();
@@ -1344,6 +1317,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
+        @Override
         public RexNode toRex( BlockStatement statement ) {
             return toRex( Blocks.simple( statement ) );
         }
@@ -1360,6 +1334,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
+        @Override
         public RexNode toRex( Expression expression ) {
             switch ( expression.getNodeType() ) {
                 case MemberAccess:
@@ -1430,6 +1405,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
+        @Override
         public ScalarTranslator bind( List<ParameterExpression> parameterList, List<RexNode> values ) {
             return new LambdaScalarTranslator( rexBuilder, parameterList, values );
         }
@@ -1457,6 +1433,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
+        @Override
         public RexNode parameter( ParameterExpression param ) {
             int i = parameterList.indexOf( param );
             if ( i >= 0 ) {

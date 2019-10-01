@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema.Type;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
 import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
@@ -84,21 +81,13 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
     }
 
 
-    public boolean materializationsEnabled() {
-        return PolyphenyDbConnectionProperty.MATERIALIZATIONS_ENABLED.wrap( properties ).getBoolean();
-    }
-
-
-    public boolean createMaterializations() {
-        return PolyphenyDbConnectionProperty.CREATE_MATERIALIZATIONS.wrap( properties ).getBoolean();
-    }
-
-
+    @Override
     public NullCollation defaultNullCollation() {
         return PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.wrap( properties ).getEnum( NullCollation.class, NullCollation.HIGH );
     }
 
 
+    @Override
     public <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
         final String fun = PolyphenyDbConnectionProperty.FUN.wrap( properties ).getString();
         if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
@@ -121,65 +110,64 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
             case "oracle":
                 tables.add( OracleSqlOperatorTable.instance() );
                 return;
-            case "spatial":
-                tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
-                return;
+            //case "spatial":
+            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
+            //    return;
             default:
                 throw new IllegalArgumentException( "Unknown operator table: " + s );
         }
     }
 
 
+    @Override
     public String model() {
         return PolyphenyDbConnectionProperty.MODEL.wrap( properties ).getString();
     }
 
 
+    @Override
     public Lex lex() {
         return PolyphenyDbConnectionProperty.LEX.wrap( properties ).getEnum( Lex.class );
     }
 
 
+    @Override
     public Quoting quoting() {
         return PolyphenyDbConnectionProperty.QUOTING.wrap( properties ).getEnum( Quoting.class, lex().quoting );
     }
 
 
+    @Override
     public Casing unquotedCasing() {
         return PolyphenyDbConnectionProperty.UNQUOTED_CASING.wrap( properties ).getEnum( Casing.class, lex().unquotedCasing );
     }
 
 
+    @Override
     public Casing quotedCasing() {
         return PolyphenyDbConnectionProperty.QUOTED_CASING.wrap( properties ).getEnum( Casing.class, lex().quotedCasing );
     }
 
 
+    @Override
     public <T> T parserFactory( Class<T> parserFactoryClass, T defaultParserFactory ) {
         return PolyphenyDbConnectionProperty.PARSER_FACTORY.wrap( properties ).getPlugin( parserFactoryClass, defaultParserFactory );
     }
 
 
-    public <T> T schemaFactory( Class<T> schemaFactoryClass, T defaultSchemaFactory ) {
-        return PolyphenyDbConnectionProperty.SCHEMA_FACTORY.wrap( properties ).getPlugin( schemaFactoryClass, defaultSchemaFactory );
-    }
-
-
-    public Type schemaType() {
-        return PolyphenyDbConnectionProperty.SCHEMA_TYPE.wrap( properties ).getEnum( Type.class );
-    }
-
-
+    @Override
     public boolean forceDecorrelate() {
         return PolyphenyDbConnectionProperty.FORCE_DECORRELATE.wrap( properties ).getBoolean();
     }
 
 
+    @Override
     public <T> T typeSystem( Class<T> typeSystemClass, T defaultTypeSystem ) {
         return PolyphenyDbConnectionProperty.TYPE_SYSTEM.wrap( properties ).getPlugin( typeSystemClass, defaultTypeSystem );
     }
 
 
+    @Override
     public SqlConformance conformance() {
         return PolyphenyDbConnectionProperty.CONFORMANCE.wrap( properties ).getEnum( SqlConformanceEnum.class );
     }

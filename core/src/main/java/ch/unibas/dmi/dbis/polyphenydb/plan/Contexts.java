@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,17 +60,6 @@ public class Contexts {
 
 
     private Contexts() {
-    }
-
-
-    /**
-     * Returns a context that contains a {@link PolyphenyDbConnectionConfig}.
-     *
-     * @deprecated Use {@link #of}
-     */
-    @Deprecated // to be removed before 2.0
-    public static Context withConfig( PolyphenyDbConnectionConfig config ) {
-        return of( config );
     }
 
 
@@ -167,6 +155,7 @@ public class Contexts {
         }
 
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             if ( clazz.isInstance( target ) ) {
                 return clazz.cast( target );
@@ -181,6 +170,7 @@ public class Contexts {
      */
     public static class EmptyContext implements Context {
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             return null;
         }

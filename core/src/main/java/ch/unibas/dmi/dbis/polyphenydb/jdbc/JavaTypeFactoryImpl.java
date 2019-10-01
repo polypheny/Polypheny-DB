@@ -99,6 +99,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public RelDataType createStructType( Class type ) {
         final List<RelDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getFields() ) {

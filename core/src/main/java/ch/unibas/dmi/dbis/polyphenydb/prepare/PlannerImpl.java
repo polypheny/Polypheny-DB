@@ -369,7 +369,7 @@ public class PlannerImpl implements Planner, ViewExpander {
                         rel.getCluster().getMetadataProvider(),
                         rel.getCluster().getPlanner() ) );
         Program program = programs.get( ruleSetIndex );
-        return program.run( planner, rel, requiredOutputTraits, ImmutableList.of(), ImmutableList.of() );
+        return program.run( planner, rel, requiredOutputTraits );
     }
 
 

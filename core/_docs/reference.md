@@ -2165,14 +2165,12 @@ ddlStatement:
   |   createForeignSchemaStatement
   |   createTableStatement
   |   createViewStatement
-  |   createMaterializedViewStatement
   |   createTypeStatement
   |   createFunctionStatement
   |   dropSchemaStatement
   |   dropForeignSchemaStatement
   |   dropTableStatement
   |   dropViewStatement
-  |   dropMaterializedViewStatement
   |   dropTypeStatement
   |   dropFunctionStatement
 
@@ -2235,11 +2233,6 @@ createViewStatement:
       [ '(' columnName [, columnName ]* ')' ]
       AS query
 
-createMaterializedViewStatement:
-      CREATE MATERIALIZED VIEW [ IF NOT EXISTS ] name
-      [ '(' columnName [, columnName ]* ')' ]
-      AS query
-
 createFunctionStatement:
       CREATE [ OR REPLACE ] FUNCTION [ IF NOT EXISTS ] name
       AS classNameLiteral
@@ -2259,9 +2252,6 @@ dropTableStatement:
 
 dropViewStatement:
       DROP VIEW [ IF EXISTS ] name
-
-dropMaterializedViewStatement:
-      DROP MATERIALIZED VIEW [ IF EXISTS ] name
 
 dropTypeStatement:
       DROP TYPE [ IF EXISTS ] name

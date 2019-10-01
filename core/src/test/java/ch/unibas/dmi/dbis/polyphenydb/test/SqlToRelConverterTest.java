@@ -3585,6 +3585,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         }
 
 
+        @Override
         public void visit( RelNode node, int ordinal, RelNode parent ) {
             try {
                 stack.push( node );
