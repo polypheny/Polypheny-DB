@@ -526,6 +526,7 @@ public class ImmutableBitSet
      * <p>Bit sets {@code (), (0), (0, 1), (0, 1, 3), (1), (2, 3)} are in sorted
      * order.</p>
      */
+    @Override
     public int compareTo( @Nonnull ImmutableBitSet o ) {
         int i = 0;
         for ( ; ; ) {
@@ -642,16 +643,19 @@ public class ImmutableBitSet
     }
 
 
+    @Override
     public Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
             int i = nextSetBit( 0 );
 
 
+            @Override
             public boolean hasNext() {
                 return i >= 0;
             }
 
 
+            @Override
             public Integer next() {
                 int prev = i;
                 i = nextSetBit( i + 1 );
@@ -659,6 +663,7 @@ public class ImmutableBitSet
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -716,12 +721,14 @@ public class ImmutableBitSet
      */
     public Set<Integer> asSet() {
         return new AbstractSet<Integer>() {
+            @Override
             @Nonnull
             public Iterator<Integer> iterator() {
                 return ImmutableBitSet.this.iterator();
             }
 
 
+            @Override
             public int size() {
                 return cardinality();
             }

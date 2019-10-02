@@ -748,7 +748,7 @@ public class Smalls {
 
 
         public static double toDouble( Float var ) {
-            return var == null ? 0.0d : Double.valueOf( var.toString() );
+            return var == null ? 0.0d : Double.parseDouble( var.toString() );
         }
 
 

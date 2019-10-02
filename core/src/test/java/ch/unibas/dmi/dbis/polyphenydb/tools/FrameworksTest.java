@@ -128,6 +128,7 @@ public class FrameworksTest {
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
                     final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
                     final Table table = new AbstractTable() {
+                        @Override
                         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                             final RelDataType stringType = typeFactory.createJavaType( String.class );
                             final RelDataType integerType = typeFactory.createJavaType( Integer.class );

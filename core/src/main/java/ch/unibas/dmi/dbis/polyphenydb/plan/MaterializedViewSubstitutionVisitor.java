@@ -83,6 +83,7 @@ public class MaterializedViewSubstitutionVisitor extends SubstitutionVisitor {
     }
 
 
+    @Override
     public List<RelNode> go( RelNode replacement_ ) {
         return super.go( replacement_ );
     }
@@ -177,6 +178,7 @@ public class MaterializedViewSubstitutionVisitor extends SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableFilter query = (MutableFilter) call.query;
             final MutableFilter target = (MutableFilter) call.target;
@@ -220,6 +222,7 @@ public class MaterializedViewSubstitutionVisitor extends SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableRel query = call.query;
 

@@ -676,9 +676,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
 
     @Test
     public void testConcatWithCharset() {
-        checkCharset(
-                "_UTF16'a'||_UTF16'b'||_UTF16'c'",
-                Charset.forName( "UTF-16LE" ) );
+        //noinspection CharsetObjectCanBeUsed
+        checkCharset( "_UTF16'a'||_UTF16'b'||_UTF16'c'", Charset.forName( "UTF-16LE" ) );
     }
 
 
@@ -931,9 +930,8 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         checkCharset(
                 "substring('10' FROM 1  FOR 2)",
                 Charset.forName( "latin1" ) );
-        checkCharset(
-                "substring(_UTF16'10' FROM 1  FOR 2)",
-                Charset.forName( "UTF-16LE" ) );
+        //noinspection CharsetObjectCanBeUsed
+        checkCharset( "substring(_UTF16'10' FROM 1  FOR 2)", Charset.forName( "UTF-16LE" ) );
     }
 
 
@@ -5968,6 +5966,7 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     public void testUserDefinedConformance() {
         final SqlAbstractConformance c =
                 new SqlDelegatingConformance( SqlConformanceEnum.DEFAULT ) {
+                    @Override
                     public boolean isBangEqualAllowed() {
                         return true;
                     }

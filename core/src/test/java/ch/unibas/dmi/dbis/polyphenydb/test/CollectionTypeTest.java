@@ -83,7 +83,6 @@ import org.junit.Test;
 /**
  * Test cases for <a href="https://issues.apache.org/jira/browse/CALCITE-1386">[POLYPHENYDB-1386] ITEM operator seems to ignore the value type of collection and assign the value to Object</a>.
  */
-@SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" })
 public class CollectionTypeTest {
 
     @Test

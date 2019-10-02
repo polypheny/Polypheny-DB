@@ -71,6 +71,7 @@ public class SqlCurrentDateFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.FUNCTION_ID;
     }
@@ -83,6 +84,7 @@ public class SqlCurrentDateFunction extends SqlFunction {
 
 
     // Plans referencing context variables should never be cached
+    @Override
     public boolean isDynamicFunction() {
         return true;
     }

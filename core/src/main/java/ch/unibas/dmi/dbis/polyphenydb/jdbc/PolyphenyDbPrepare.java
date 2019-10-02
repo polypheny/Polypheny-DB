@@ -214,25 +214,30 @@ public interface PolyphenyDbPrepare {
          */
         private static class TrivialSparkHandler implements SparkHandler {
 
+            @Override
             public RelNode flattenTypes( RelOptPlanner planner, RelNode rootRel, boolean restructure ) {
                 return rootRel;
             }
 
 
+            @Override
             public void registerRules( RuleSetBuilder builder ) {
             }
 
 
+            @Override
             public boolean enabled() {
                 return false;
             }
 
 
+            @Override
             public ArrayBindable compile( ClassDeclaration expr, String s ) {
                 throw new UnsupportedOperationException();
             }
 
 
+            @Override
             public Object sparkContext() {
                 throw new UnsupportedOperationException();
             }

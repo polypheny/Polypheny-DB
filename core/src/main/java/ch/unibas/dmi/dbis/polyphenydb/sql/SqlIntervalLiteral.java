@@ -85,11 +85,13 @@ public class SqlIntervalLiteral extends SqlLiteral {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseSqlIntervalLiteral( writer, this, leftPrec, rightPrec );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public int signum() {
         return ((IntervalValue) value).signum();

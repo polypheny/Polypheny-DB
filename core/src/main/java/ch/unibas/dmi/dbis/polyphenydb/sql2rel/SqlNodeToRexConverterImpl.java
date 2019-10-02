@@ -82,6 +82,7 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
     }
 
 
+    @Override
     public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
         final SqlRexConvertlet convertlet = convertletTable.get( call );
         if ( convertlet != null ) {
@@ -93,12 +94,14 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
     }
 
 
+    @Override
     public RexLiteral convertInterval( SqlRexContext cx, SqlIntervalQualifier intervalQualifier ) {
         RexBuilder rexBuilder = cx.getRexBuilder();
         return rexBuilder.makeIntervalLiteral( intervalQualifier );
     }
 
 
+    @Override
     public RexNode convertLiteral( SqlRexContext cx, SqlLiteral literal ) {
         RexBuilder rexBuilder = cx.getRexBuilder();
         RelDataTypeFactory typeFactory = cx.getTypeFactory();

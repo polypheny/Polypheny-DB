@@ -63,6 +63,7 @@ class EnumerableAggregateRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalAggregate agg = (LogicalAggregate) rel;
         final RelTraitSet traitSet = agg.getTraitSet().replace( EnumerableConvention.INSTANCE );

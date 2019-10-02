@@ -73,6 +73,7 @@ public class RelXmlWriter extends RelWriterImpl {
     }
 
 
+    @Override
     protected void explain_( RelNode rel, List<Pair<String, Object>> values ) {
         if ( generic ) {
             explainGeneric( rel, values );

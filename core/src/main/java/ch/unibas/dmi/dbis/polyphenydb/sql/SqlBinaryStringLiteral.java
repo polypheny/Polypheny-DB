@@ -55,7 +55,7 @@ import java.util.List;
 /**
  * A binary (or hexadecimal) string literal.
  *
- * The {@link #value} field is a {@link BitString} and {@link #typeName} is {@link SqlTypeName#BINARY}.
+ * The {@link #value} field is a {@link BitString} and {@code #typeName} is {@link SqlTypeName#BINARY}.
  */
 public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
 
@@ -79,12 +79,14 @@ public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         assert value instanceof BitString;
         writer.literal( "X'" + ((BitString) value).toHexString() + "'" );
     }
 
 
+    @Override
     protected SqlAbstractStringLiteral concat1( List<SqlLiteral> literals ) {
         return new SqlBinaryStringLiteral(
                 BitString.concat( Util.transform( literals, literal -> ((SqlBinaryStringLiteral) literal).getBitString() ) ),

@@ -396,41 +396,49 @@ public class SqlParser {
         }
 
 
+        @Override
         public int identifierMaxLength() {
             return identifierMaxLength;
         }
 
 
+        @Override
         public Casing quotedCasing() {
             return quotedCasing;
         }
 
 
+        @Override
         public Casing unquotedCasing() {
             return unquotedCasing;
         }
 
 
+        @Override
         public Quoting quoting() {
             return quoting;
         }
 
 
+        @Override
         public boolean caseSensitive() {
             return caseSensitive;
         }
 
 
+        @Override
         public SqlConformance conformance() {
             return conformance;
         }
 
 
+        @Override
         public boolean allowBangEqual() {
             return conformance.isBangEqualAllowed();
         }
 
 
+        @Override
         public SqlParserImplFactory parserFactory() {
             return parserFactory;
         }

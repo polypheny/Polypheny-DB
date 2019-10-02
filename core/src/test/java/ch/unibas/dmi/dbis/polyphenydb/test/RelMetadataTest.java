@@ -217,7 +217,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         RelNode rel = convertSql( sql );
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         Double result = mq.getPercentageOriginalRows( rel );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertEquals( expected, result, epsilon );
     }
 
@@ -335,7 +335,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
     private void checkSingleColumnOrigin( String sql, String expectedTableName, String expectedColumnName, boolean expectedDerived ) {
         Set<RelColumnOrigin> result = checkColumnOrigin( sql );
-        assertTrue( result != null );
+        assertNotNull( result );
         assertEquals( 1, result.size() );
         RelColumnOrigin rco = result.iterator().next();
         checkColumnOrigin( rco, expectedTableName, expectedColumnName, expectedDerived );
@@ -2018,7 +2018,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         RexCall call = (RexCall) predicates.pulledUpPredicates.get( 0 );
         assertThat( call.getOperands().size(), is( 2 ) );
         RexTableInputRef inputRef1 = (RexTableInputRef) call.getOperands().get( 0 );
-        assertTrue( inputRef1.getQualifiedName().equals( EMP_QNAME ) );
+        assertEquals( inputRef1.getQualifiedName(), EMP_QNAME );
         assertThat( inputRef1.getIndex(), is( 0 ) );
 
         final LogicalTableScan deptScan = LogicalTableScan.create( cluster, deptTable );
@@ -2034,16 +2034,16 @@ public class RelMetadataTest extends SqlToRelTestBase {
         call = (RexCall) predicates.pulledUpPredicates.get( 0 );
         assertThat( call.getOperands().size(), is( 2 ) );
         inputRef1 = (RexTableInputRef) call.getOperands().get( 0 );
-        assertTrue( inputRef1.getQualifiedName().equals( EMP_QNAME ) );
+        assertEquals( inputRef1.getQualifiedName(), EMP_QNAME );
         assertThat( inputRef1.getIndex(), is( 0 ) );
         // From Join
         call = (RexCall) predicates.pulledUpPredicates.get( 1 );
         assertThat( call.getOperands().size(), is( 2 ) );
         inputRef1 = (RexTableInputRef) call.getOperands().get( 0 );
-        assertTrue( inputRef1.getQualifiedName().equals( EMP_QNAME ) );
+        assertEquals( inputRef1.getQualifiedName(), EMP_QNAME );
         assertThat( inputRef1.getIndex(), is( 7 ) );
         RexTableInputRef inputRef2 = (RexTableInputRef) call.getOperands().get( 1 );
-        assertTrue( inputRef2.getQualifiedName().equals( ImmutableList.of( "CATALOG", "SALES", "DEPT" ) ) );
+        assertEquals( inputRef2.getQualifiedName(), ImmutableList.of( "CATALOG", "SALES", "DEPT" ) );
         assertThat( inputRef2.getIndex(), is( 0 ) );
     }
 
@@ -2061,7 +2061,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         RexCall call = (RexCall) pulledUpPredicates.get( 0 );
         assertThat( call.getOperands().size(), is( 2 ) );
         final RexTableInputRef inputRef1 = (RexTableInputRef) call.getOperands().get( 0 );
-        assertTrue( inputRef1.getQualifiedName().equals( EMP_QNAME ) );
+        assertEquals( inputRef1.getQualifiedName(), EMP_QNAME );
         assertThat( inputRef1.getIndex(), is( 0 ) );
         final RexLiteral constant = (RexLiteral) call.getOperands().get( 1 );
         assertThat( constant.toString(), is( "5" ) );
@@ -2082,7 +2082,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         RexCall call = (RexCall) pulledUpPredicates.get( 0 );
         assertThat( call.getOperands().size(), is( 2 ) );
         final RexTableInputRef inputRef1 = (RexTableInputRef) call.getOperands().get( 0 );
-        assertTrue( inputRef1.getQualifiedName().equals( EMP_QNAME ) );
+        assertEquals( inputRef1.getQualifiedName(), EMP_QNAME );
         assertThat( inputRef1.getIndex(), is( 0 ) );
         final RexLiteral constant = (RexLiteral) call.getOperands().get( 1 );
         assertThat( constant.toString(), is( "5" ) );
@@ -2587,6 +2587,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
      */
     static <T> Matcher<Iterable<? extends T>> sortsAs( final String value ) {
         return new CustomTypeSafeMatcher<Iterable<? extends T>>( value ) {
+            @Override
             protected boolean matchesSafely( Iterable<? extends T> item ) {
                 final List<String> strings = new ArrayList<>();
                 for ( T t : item ) {
@@ -2627,6 +2628,7 @@ public class RelMetadataTest extends SqlToRelTestBase {
         static final ThreadLocal<List<String>> THREAD_LIST = new ThreadLocal<>();
 
 
+        @Override
         public MetadataDef<ColType> getDef() {
             return ColType.DEF;
         }

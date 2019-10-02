@@ -74,17 +74,20 @@ public class SqlPrefixOperator extends SqlOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.PREFIX;
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         Util.discard( operandsCount );
         return "{0}{1}";
     }
 
 
+    @Override
     protected RelDataType adjustType( SqlValidator validator, SqlCall call, RelDataType type ) {
         if ( SqlTypeUtil.inCharFamily( type ) ) {
             // Determine coercibility and resulting collation name of unary operator if needed.

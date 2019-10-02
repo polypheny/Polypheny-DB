@@ -214,6 +214,7 @@ public class SqlCallBinding extends SqlOperatorBinding {
     }
 
 
+    @Override
     public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
         return call.getOperandList().get( ordinal ).getMonotonicity( scope );
     }
@@ -311,6 +312,7 @@ public class SqlCallBinding extends SqlOperatorBinding {
     }
 
 
+    @Override
     public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
         return validator.newValidationError( call, e );
     }

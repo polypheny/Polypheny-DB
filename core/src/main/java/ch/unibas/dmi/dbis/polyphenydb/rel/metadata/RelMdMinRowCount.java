@@ -75,6 +75,7 @@ public class RelMdMinRowCount implements MetadataHandler<BuiltInMetadata.MinRowC
                     new RelMdMinRowCount() );
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.MinRowCount> getDef() {
         return BuiltInMetadata.MinRowCount.DEF;
     }

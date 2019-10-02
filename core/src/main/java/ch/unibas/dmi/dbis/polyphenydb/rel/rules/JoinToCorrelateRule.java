@@ -116,6 +116,7 @@ public class JoinToCorrelateRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         assert matches( call );
         final LogicalJoin join = call.rel( 0 );

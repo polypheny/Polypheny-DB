@@ -183,6 +183,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return SqlWindowOperator.INSTANCE;
     }
@@ -194,6 +195,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, lowerBound, upperBound, allowPartial );
     }
@@ -851,11 +853,13 @@ public class SqlWindow extends SqlCall {
         }
 
 
+        @Override
         public SqlSyntax getSyntax() {
             return SqlSyntax.SPECIAL;
         }
 
 
+        @Override
         public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             assert operands.length == 8;
@@ -872,6 +876,7 @@ public class SqlWindow extends SqlCall {
         }
 
 
+        @Override
         public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler ) {
             if ( onlyExpressions ) {
                 for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
@@ -891,6 +896,7 @@ public class SqlWindow extends SqlCall {
         }
 
 
+        @Override
         public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
             final SqlWindow window = (SqlWindow) call;
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.WINDOW, "(", ")" );

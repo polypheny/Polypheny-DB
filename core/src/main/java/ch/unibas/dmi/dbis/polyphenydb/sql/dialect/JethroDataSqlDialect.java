@@ -232,6 +232,7 @@ public class JethroDataSqlDialect extends SqlDialect {
         final Map<String, JethroInfo> map = new HashMap<>();
 
 
+        @Override
         public JethroInfo get( final DatabaseMetaData metaData ) {
             try {
                 assert "JethroData".equals( metaData.getDatabaseProductName() );

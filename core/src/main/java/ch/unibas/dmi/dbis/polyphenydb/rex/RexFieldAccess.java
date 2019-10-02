@@ -93,21 +93,25 @@ public class RexFieldAccess extends RexNode {
     }
 
 
+    @Override
     public RelDataType getType() {
         return field.getType();
     }
 
 
+    @Override
     public SqlKind getKind() {
         return SqlKind.FIELD_ACCESS;
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitFieldAccess( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitFieldAccess( this, arg );
     }

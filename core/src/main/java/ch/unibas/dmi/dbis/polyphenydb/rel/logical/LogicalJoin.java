@@ -175,6 +175,7 @@ public final class LogicalJoin extends Join {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         // Don't ever print semiJoinDone=false. This way, we don't clutter things up in optimizers that don't use semi-joins.
         return super.explainTerms( pw ).itemIf( "semiJoinDone", semiJoinDone, semiJoinDone );
@@ -187,6 +188,7 @@ public final class LogicalJoin extends Join {
     }
 
 
+    @Override
     public List<RelDataTypeField> getSystemFieldList() {
         return systemFieldList;
     }

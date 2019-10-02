@@ -60,6 +60,7 @@ import java.util.List;
 public class RexShuttle implements RexVisitor<RexNode> {
 
 
+    @Override
     public RexNode visitOver( RexOver over ) {
         boolean[] update = { false };
         List<RexNode> clonedOperands = visitList( over.operands, update );
@@ -100,6 +101,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
     }
 
 
+    @Override
     public RexNode visitSubQuery( RexSubQuery subQuery ) {
         boolean[] update = { false };
         List<RexNode> clonedOperands = visitList( subQuery.operands, update );
@@ -123,6 +125,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
     }
 
 
+    @Override
     public RexNode visitCall( final RexCall call ) {
         boolean[] update = { false };
         List<RexNode> clonedOperands = visitList( call.operands, update );
@@ -208,11 +211,13 @@ public class RexShuttle implements RexVisitor<RexNode> {
     }
 
 
+    @Override
     public RexNode visitCorrelVariable( RexCorrelVariable variable ) {
         return variable;
     }
 
 
+    @Override
     public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
         RexNode before = fieldAccess.getReferenceExpr();
         RexNode after = before.accept( this );
@@ -225,26 +230,31 @@ public class RexShuttle implements RexVisitor<RexNode> {
     }
 
 
+    @Override
     public RexNode visitInputRef( RexInputRef inputRef ) {
         return inputRef;
     }
 
 
+    @Override
     public RexNode visitLocalRef( RexLocalRef localRef ) {
         return localRef;
     }
 
 
+    @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         return literal;
     }
 
 
+    @Override
     public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
         return dynamicParam;
     }
 
 
+    @Override
     public RexNode visitRangeRef( RexRangeRef rangeRef ) {
         return rangeRef;
     }

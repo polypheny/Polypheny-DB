@@ -81,6 +81,7 @@ public class ArrayComparator implements Comparator<Object[]> {
     }
 
 
+    @Override
     public int compare( Object[] o1, Object[] o2 ) {
         for ( int i = 0; i < comparators.length; i++ ) {
             Comparator comparator = comparators[i];

@@ -91,6 +91,7 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
     }
 
 
+    @Override
     public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         for ( SqlOperatorTable table : tableList ) {
             table.lookupOperatorOverloads( opName, category, syntax, operatorList );
@@ -98,6 +99,7 @@ public class ChainedSqlOperatorTable implements SqlOperatorTable {
     }
 
 
+    @Override
     public List<SqlOperator> getOperatorList() {
         List<SqlOperator> list = new ArrayList<>();
         for ( SqlOperatorTable table : tableList ) {

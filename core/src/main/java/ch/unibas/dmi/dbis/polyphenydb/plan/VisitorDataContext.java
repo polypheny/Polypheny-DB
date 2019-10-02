@@ -87,6 +87,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
     public JavaTypeFactory getTypeFactory() {
         throw new RuntimeException( "Unsupported" );
     }
@@ -98,6 +99,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
     public Object get( String name ) {
         if ( name.equals( "inputRecord" ) ) {
             return values;

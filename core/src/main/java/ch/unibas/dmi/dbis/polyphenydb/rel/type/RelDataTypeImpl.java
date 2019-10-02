@@ -97,6 +97,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public RelDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
         for ( RelDataTypeField field : fieldList ) {
             if ( Util.matches( caseSensitive, field.getName(), fieldName ) ) {
@@ -160,46 +161,54 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public List<RelDataTypeField> getFieldList() {
         assert isStruct();
         return fieldList;
     }
 
 
+    @Override
     public List<String> getFieldNames() {
         return Pair.left( fieldList );
     }
 
 
+    @Override
     public int getFieldCount() {
         assert isStruct() : this;
         return fieldList.size();
     }
 
 
+    @Override
     public StructKind getStructKind() {
         return isStruct() ? StructKind.FULLY_QUALIFIED : StructKind.NONE;
     }
 
 
+    @Override
     public RelDataType getComponentType() {
         // this is not a collection type
         return null;
     }
 
 
+    @Override
     public RelDataType getKeyType() {
         // this is not a map type
         return null;
     }
 
 
+    @Override
     public RelDataType getValueType() {
         // this is not a map type
         return null;
     }
 
 
+    @Override
     public boolean isStruct() {
         return fieldList != null;
     }
@@ -221,46 +230,55 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public String getFullTypeString() {
         return digest;
     }
 
 
+    @Override
     public boolean isNullable() {
         return false;
     }
 
 
+    @Override
     public Charset getCharset() {
         return null;
     }
 
 
+    @Override
     public SqlCollation getCollation() {
         return null;
     }
 
 
+    @Override
     public SqlIntervalQualifier getIntervalQualifier() {
         return null;
     }
 
 
+    @Override
     public int getPrecision() {
         return PRECISION_NOT_SPECIFIED;
     }
 
 
+    @Override
     public int getScale() {
         return SCALE_NOT_SPECIFIED;
     }
 
 
+    @Override
     public SqlTypeName getSqlTypeName() {
         return null;
     }
 
 
+    @Override
     public SqlIdentifier getSqlIdentifier() {
         SqlTypeName typeName = getSqlTypeName();
         if ( typeName == null ) {
@@ -270,6 +288,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public RelDataTypeFamily getFamily() {
         // by default, put each type into its own family
         return this;
@@ -306,14 +325,17 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public RelDataTypePrecedenceList getPrecedenceList() {
         // By default, make each type have a precedence list containing only other types in the same family
         return new RelDataTypePrecedenceList() {
+            @Override
             public boolean containsType( RelDataType type ) {
                 return getFamily() == type.getFamily();
             }
 
 
+            @Override
             public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
                 assert containsType( type1 );
                 assert containsType( type2 );
@@ -323,6 +345,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public RelDataTypeComparability getComparability() {
         return RelDataTypeComparability.ALL;
     }
@@ -405,6 +428,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    @Override
     public boolean isDynamicStruct() {
         return false;
     }

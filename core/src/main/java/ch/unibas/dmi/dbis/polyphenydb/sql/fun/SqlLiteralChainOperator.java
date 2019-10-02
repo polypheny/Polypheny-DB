@@ -116,6 +116,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         if ( !argTypesValid( callBinding ) ) {
             if ( throwOnFailure ) {
@@ -129,6 +130,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
 
     // Result type is the same as all the args, but its size is the total size.
     // REVIEW mb 8/8/04: Possibly this can be achieved by combining the strategy useFirstArgType with a new transformer.
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.
         RelDataType ret = opBinding.getOperandType( 0 );
@@ -143,11 +145,13 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public String getAllowedSignatures( String opName ) {
         return opName + "(...)";
     }
 
 
+    @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         // per the SQL std, each string fragment must be on a different line
         final List<SqlNode> operandList = call.getOperandList();
@@ -162,6 +166,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "", "" );
         SqlCollation collation = null;

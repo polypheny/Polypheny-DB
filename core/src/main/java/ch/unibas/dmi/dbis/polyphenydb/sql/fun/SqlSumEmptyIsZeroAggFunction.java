@@ -81,6 +81,7 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
         return ImmutableList.of(
@@ -90,6 +91,7 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
         return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );

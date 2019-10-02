@@ -76,19 +76,6 @@ public class Utilities {
 
 
     /**
-     * Computes the hash code of a {@code double} value. Equivalent to {@link Double}{@code .hashCode(double)}, but that method was only introduced in JDK 1.8.
-     *
-     * @param v Value
-     * @return Hash code
-     * @deprecated Use {@link Double#hashCode(double)}
-     */
-    @Deprecated // to be removed before 2.0
-    public static int hashCode( double v ) {
-        return Double.hashCode( v );
-    }
-
-
-    /**
      * Computes the hash code of a {@code float} value. Equivalent to {@link Float}{@code .hashCode(float)}, but that method was only introduced in JDK 1.8.
      *
      * @param v Value

@@ -77,6 +77,7 @@ public class FilterMultiJoinMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalFilter filter = call.rel( 0 );
         MultiJoin multiJoin = call.rel( 1 );

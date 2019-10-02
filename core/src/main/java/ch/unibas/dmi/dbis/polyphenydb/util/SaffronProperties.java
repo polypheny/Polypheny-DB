@@ -101,7 +101,7 @@ public interface SaffronProperties {
      * default national character set which is used with the N'string' construct
      * which may or may not be different from the {@link #defaultCharset}. The
      * default is "ISO-8859-1". It is used in
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.nationalcharset")
     @Default("ISO-8859-1")
@@ -111,7 +111,7 @@ public interface SaffronProperties {
      * The string property "saffron.default.collation.name" is the name of the
      * default collation. The default is "ISO-8859-1$en_US". Used in
      * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation} and
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.name")
     @Default("ISO-8859-1$en_US")
@@ -121,7 +121,7 @@ public interface SaffronProperties {
      * The string property "saffron.default.collation.strength" is the strength
      * of the default collation. The default is "primary". Used in
      * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation} and
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.strength")
     @Default("primary")

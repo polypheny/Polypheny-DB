@@ -268,6 +268,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         final ImmutableIntList m0 = ImmutableIntList.of( 0, 1, 2, 3, 4, 5, 6, 8 );
         MockTable emp20View =
                 new MockViewTable( this, salesSchema.getCatalogName(), salesSchema.getName(), "EMP_20", false, 600, empTable, m0, null, NullInitializerExpressionFactory.INSTANCE ) {
+                    @Override
                     public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
                         final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
                         final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
@@ -295,6 +296,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         registerTable( emp20View );
 
         MockTable empNullables20View = new MockViewTable( this, salesSchema.getCatalogName(), salesSchema.getName(), "EMPNULLABLES_20", false, 600, empNullablesTable, m0, null, NullInitializerExpressionFactory.INSTANCE ) {
+            @Override
             public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
                 final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
                 final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );

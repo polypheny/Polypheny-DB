@@ -370,6 +370,7 @@ public class RexExecutorTest {
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             throw new RuntimeException( "Unsupported" );
         }
@@ -381,6 +382,7 @@ public class RexExecutorTest {
         }
 
 
+        @Override
         public Object get( String name ) {
             if ( name.equals( "inputRecord" ) ) {
                 return values;

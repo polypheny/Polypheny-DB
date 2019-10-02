@@ -71,6 +71,7 @@ public final class Closer implements AutoCloseable {
     }
 
 
+    @Override
     public void close() {
         for ( AutoCloseable closeable : list ) {
             try {

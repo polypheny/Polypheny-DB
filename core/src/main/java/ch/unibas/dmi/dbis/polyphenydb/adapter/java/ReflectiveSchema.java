@@ -269,16 +269,19 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return ((JavaTypeFactory) typeFactory).createType( elementType );
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.UNKNOWN;
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             if ( elementType == Object[].class ) {
                 //noinspection unchecked
@@ -293,6 +296,7 @@ public class ReflectiveSchema extends AbstractSchema {
         @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 @SuppressWarnings("unchecked")
                 public Enumerator<T> enumerator() {
                     return (Enumerator<T>) enumerable.enumerator();
@@ -331,6 +335,7 @@ public class ReflectiveSchema extends AbstractSchema {
      */
     public static class Factory implements SchemaFactory {
 
+        @Override
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
             Class<?> clazz;
             Object target;
@@ -386,6 +391,7 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public TranslatableTable apply( final List<Object> arguments ) {
             try {
                 final Object o = method.invoke( schema.getTarget(), arguments.toArray() );
@@ -451,6 +457,7 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public Object[] apply( Object o ) {
             try {
                 final Object[] objects = new Object[fields.length];

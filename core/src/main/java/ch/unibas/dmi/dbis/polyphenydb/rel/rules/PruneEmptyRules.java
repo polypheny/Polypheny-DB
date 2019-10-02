@@ -101,6 +101,7 @@ public abstract class PruneEmptyRules {
             new RelOptRule(
                     operand( LogicalUnion.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Union" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     final LogicalUnion union = call.rel( 0 );
                     final List<RelNode> inputs = call.getChildRels( union );
@@ -142,6 +143,7 @@ public abstract class PruneEmptyRules {
             new RelOptRule(
                     operand( LogicalMinus.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Minus" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     final LogicalMinus minus = call.rel( 0 );
                     final List<RelNode> inputs = call.getChildRels( minus );
@@ -186,6 +188,7 @@ public abstract class PruneEmptyRules {
             new RelOptRule(
                     operand( LogicalIntersect.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Intersect" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     LogicalIntersect intersect = call.rel( 0 );
                     final RelBuilder builder = call.builder();
@@ -366,6 +369,7 @@ public abstract class PruneEmptyRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             SingleRel single = call.rel( 0 );
             call.transformTo( call.builder().push( single ).empty().build() );

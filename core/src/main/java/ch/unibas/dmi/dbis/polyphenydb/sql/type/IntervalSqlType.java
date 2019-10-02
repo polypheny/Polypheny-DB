@@ -78,6 +78,7 @@ public class IntervalSqlType extends AbstractSqlType {
     }
 
 
+    @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         sb.append( "INTERVAL " );
         final SqlDialect dialect = AnsiSqlDialect.DEFAULT;

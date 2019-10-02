@@ -78,6 +78,7 @@ public class Filterator<E> implements Iterator<E> {
     //~ Methods ----------------------------------------------------------------
 
 
+    @Override
     public boolean hasNext() {
         if ( ready ) {
             // Allow hasNext() to be called repeatedly.
@@ -96,6 +97,7 @@ public class Filterator<E> implements Iterator<E> {
     }
 
 
+    @Override
     public E next() {
         if ( ready ) {
             E o = lookAhead;
@@ -113,6 +115,7 @@ public class Filterator<E> implements Iterator<E> {
     }
 
 
+    @Override
     public void remove() {
         iterator.remove();
     }

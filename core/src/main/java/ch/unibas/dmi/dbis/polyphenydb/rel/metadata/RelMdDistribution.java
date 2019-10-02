@@ -81,6 +81,7 @@ public class RelMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Distribution> getDef() {
         return BuiltInMetadata.Distribution.DEF;
     }

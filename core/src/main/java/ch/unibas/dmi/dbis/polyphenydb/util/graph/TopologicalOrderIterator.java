@@ -97,11 +97,13 @@ public class TopologicalOrderIterator<V, E extends DefaultEdge> implements Itera
     }
 
 
+    @Override
     public boolean hasNext() {
         return !empties.isEmpty();
     }
 
 
+    @Override
     public V next() {
         V v = empties.remove( 0 );
         for ( E o : graph.vertexMap.get( v ).outEdges ) {
@@ -116,6 +118,7 @@ public class TopologicalOrderIterator<V, E extends DefaultEdge> implements Itera
     }
 
 
+    @Override
     public void remove() {
         throw new UnsupportedOperationException();
     }

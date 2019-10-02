@@ -402,16 +402,19 @@ public class StreamTest {
                 .build();
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return protoRowType.apply( typeFactory );
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.of( 100d, ImmutableList.of(), RelCollations.createSingleton( 0 ) );
         }
 
 
+        @Override
         public TableType getJdbcTableType() {
             return Schema.TableType.TABLE;
         }
@@ -441,6 +444,7 @@ public class StreamTest {
         }
 
 
+        @Override
         public Table create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             return new OrdersTable( getRowList() );
         }
@@ -477,6 +481,7 @@ public class StreamTest {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return Linq4j.asEnumerable( rows );
         }
@@ -512,6 +517,7 @@ public class StreamTest {
         }
 
 
+        @Override
         public Table create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             return new InfiniteOrdersTable();
         }
@@ -523,23 +529,27 @@ public class StreamTest {
      */
     public static class InfiniteOrdersTable extends BaseOrderStreamTable implements StreamableTable {
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return Linq4j.asEnumerable( () -> new Iterator<Object[]>() {
                 private final String[] items = { "paint", "paper", "brush" };
                 private int counter = 0;
 
 
+                @Override
                 public boolean hasNext() {
                     return true;
                 }
 
 
+                @Override
                 public Object[] next() {
                     final int index = counter++;
                     return new Object[]{ System.currentTimeMillis(), index, items[index % items.length], 10 };
                 }
 
 
+                @Override
                 public void remove() {
                     throw new UnsupportedOperationException();
                 }
@@ -547,6 +557,7 @@ public class StreamTest {
         }
 
 
+        @Override
         public Table stream() {
             return this;
         }
@@ -566,6 +577,7 @@ public class StreamTest {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return Linq4j.asEnumerable( rows );
         }
@@ -577,6 +589,7 @@ public class StreamTest {
      */
     public static class ProductsTableFactory implements TableFactory<Table> {
 
+        @Override
         public Table create( SchemaPlus schema, String name,
                 Map<String, Object> operand, RelDataType rowType ) {
             final Object[][] rows = {
@@ -608,21 +621,25 @@ public class StreamTest {
                 .build();
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return Linq4j.asEnumerable( rows );
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return protoRowType.apply( typeFactory );
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.of( 200d, ImmutableList.of() );
         }
 
 
+        @Override
         public Schema.TableType getJdbcTableType() {
             return Schema.TableType.TABLE;
         }

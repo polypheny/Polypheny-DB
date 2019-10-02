@@ -77,6 +77,7 @@ public class UnionToDistinctRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Union union = call.rel( 0 );
         if ( union.all ) {

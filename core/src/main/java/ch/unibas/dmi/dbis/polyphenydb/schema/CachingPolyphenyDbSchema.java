@@ -336,6 +336,7 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
         boolean built = false;
 
 
+        @Override
         public T get( long now ) {
             if ( !CachingPolyphenyDbSchema.this.cache ) {
                 return build();
@@ -348,6 +349,7 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
         }
 
 
+        @Override
         public void enable( long now, boolean enabled ) {
             if ( !enabled ) {
                 t = null;

@@ -549,7 +549,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     protected void assertEquals( String[] actualResults, List<String>... expectedResults ) throws Exception {
         List<String> expectedList = plus( expectedResults );
-        Map<String, String> uniqueResults = new HashMap<String, String>();
+        Map<String, String> uniqueResults = new HashMap<>();
         for ( String actualResult : actualResults ) {
             uniqueResults.put( actualResult, actualResult );
         }
@@ -563,7 +563,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
         if ( hints == null ) {
             return "<<NULL>>";
         }
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         for ( SqlMoniker hint : hints ) {
             if ( hint.getType() != SqlMonikerType.FUNCTION ) {
                 list.add( hint.id() );
@@ -602,7 +602,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
      * @return Sum list
      */
     protected static <T> List<T> plus( List<T>... lists ) {
-        final List<T> result = new ArrayList<T>();
+        final List<T> result = new ArrayList<>();
         for ( List<T> list : lists ) {
             result.addAll( list );
         }

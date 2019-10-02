@@ -82,6 +82,7 @@ public class ConcurrentTestTimedCommandGenerator extends ConcurrentTestCommandGe
      *
      * @param threadId the thread ID to get an Iterator on
      */
+    @Override
     Iterable<ConcurrentTestCommand> getCommandIterable( final int threadId ) {
         synchronized ( this ) {
             if ( endTimeMillis == 0L ) {
@@ -89,13 +90,14 @@ public class ConcurrentTestTimedCommandGenerator extends ConcurrentTestCommandGe
             }
         }
 
-        return () -> new TimedIterator<ConcurrentTestCommand>( getCommands( threadId ), endTimeMillis );
+        return () -> new TimedIterator<>( getCommands( threadId ), endTimeMillis );
     }
 
 
     /**
      * Outputs command sequence and notes how long the sequence will be repeated.
      */
+    @Override
     void printCommands( PrintStream out, Integer threadId ) {
         super.printCommands( out, threadId );
         out.println( "Repeat sequence for " + runTimeSeconds + " seconds" );
@@ -121,6 +123,7 @@ public class ConcurrentTestTimedCommandGenerator extends ConcurrentTestCommandGe
         }
 
 
+        @Override
         public boolean hasNext() {
             if ( commandIndex < commands.size() ) {
                 return true;
@@ -135,6 +138,7 @@ public class ConcurrentTestTimedCommandGenerator extends ConcurrentTestCommandGe
         }
 
 
+        @Override
         public E next() {
             if ( !hasNext() ) {
                 throw new NoSuchElementException();
@@ -144,6 +148,7 @@ public class ConcurrentTestTimedCommandGenerator extends ConcurrentTestCommandGe
         }
 
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }

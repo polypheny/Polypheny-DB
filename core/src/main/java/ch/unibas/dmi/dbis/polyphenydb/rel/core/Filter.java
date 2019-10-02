@@ -119,6 +119,7 @@ public abstract class Filter extends SingleRel {
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         RexNode condition = shuttle.apply( this.condition );
         if ( this.condition == condition ) {
@@ -176,6 +177,7 @@ public abstract class Filter extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw ).item( "condition", condition );
     }

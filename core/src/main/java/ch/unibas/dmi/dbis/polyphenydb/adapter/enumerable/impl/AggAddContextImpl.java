@@ -61,6 +61,7 @@ public abstract class AggAddContextImpl extends AggResultContextImpl implements 
     }
 
 
+    @Override
     public final List<Expression> arguments() {
         return rowTranslator().translateList( rexArguments() );
     }

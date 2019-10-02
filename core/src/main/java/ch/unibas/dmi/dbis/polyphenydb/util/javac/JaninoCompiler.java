@@ -74,6 +74,7 @@ public class JaninoCompiler implements JavaCompiler {
 
 
     // implement JavaCompiler
+    @Override
     public void compile() {
         // REVIEW: SWZ: 3/12/2006: When this method is invoked multiple times, it creates a series of AccountingClassLoader objects, each with the previous as its parent ClassLoader.  If we refactored this
         // class and its callers to specify all code to compile in one go, we could probably just use a single AccountingClassLoader.
@@ -114,18 +115,21 @@ public class JaninoCompiler implements JavaCompiler {
 
 
     // implement JavaCompiler
+    @Override
     public JavaCompilerArgs getArgs() {
         return args;
     }
 
 
     // implement JavaCompiler
+    @Override
     public ClassLoader getClassLoader() {
         return classLoader;
     }
 
 
     // implement JavaCompiler
+    @Override
     public int getTotalByteCodeSize() {
         return classLoader.getTotalByteCodeSize();
     }
@@ -145,23 +149,27 @@ public class JaninoCompiler implements JavaCompiler {
         }
 
 
+        @Override
         public boolean supportsSetSource() {
             return true;
         }
 
 
+        @Override
         public void setDestdir( String destdir ) {
             super.setDestdir( destdir );
             this.destdir = destdir;
         }
 
 
+        @Override
         public void setSource( String source, String fileName ) {
             this.source = source;
             addFile( fileName );
         }
 
 
+        @Override
         public void setFullClassName( String fullClassName ) {
             this.fullClassName = fullClassName;
         }

@@ -189,6 +189,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public <T> T unwrap( Class<T> clazz ) {
         if ( clazz.isInstance( this ) ) {
             return clazz.cast( this );
@@ -209,6 +210,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public Expression getExpression( Class clazz ) {
         if ( expressionFunction == null ) {
             return null;
@@ -238,6 +240,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public double getRowCount() {
         if ( rowCount != null ) {
             return rowCount;
@@ -252,11 +255,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public RelOptSchema getRelOptSchema() {
         return schema;
     }
 
 
+    @Override
     public RelNode toRel( ToRelContext context ) {
         // Make sure rowType's list is immutable. If rowType is DynamicRecordType, creates a new RelOptTable by replacing with immutable RelRecordType using the same field list.
         if ( this.getRowType().isDynamicStruct() ) {
@@ -309,6 +314,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public List<RelCollation> getCollationList() {
         if ( table != null ) {
             return table.getStatistic().getCollations();
@@ -317,6 +323,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public RelDistribution getDistribution() {
         if ( table != null ) {
             return table.getStatistic().getDistribution();
@@ -325,6 +332,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public boolean isKey( ImmutableBitSet columns ) {
         if ( table != null ) {
             return table.getStatistic().isKey( columns );
@@ -333,6 +341,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public List<RelReferentialConstraint> getReferentialConstraints() {
         if ( table != null ) {
             return table.getStatistic().getReferentialConstraints();
@@ -341,11 +350,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public RelDataType getRowType() {
         return rowType;
     }
 
 
+    @Override
     public boolean supportsModality( SqlModality modality ) {
         switch ( modality ) {
             case STREAM:
@@ -356,11 +367,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public List<String> getQualifiedName() {
         return names;
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         for ( RelCollation collation : table.getStatistic().getCollations() ) {
             final RelFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
@@ -373,6 +386,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    @Override
     public SqlAccessType getAllowedAccess() {
         return SqlAccessType.ALL;
     }
@@ -385,11 +399,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
         final int fieldCount = table.getRowType().getFieldCount();
         final InitializerExpressionFactory ief = Util.first( table.unwrap( InitializerExpressionFactory.class ), NullInitializerExpressionFactory.INSTANCE );
         return new AbstractList<ColumnStrategy>() {
+            @Override
             public int size() {
                 return fieldCount;
             }
 
 
+            @Override
             public ColumnStrategy get( int index ) {
                 return ief.generationStrategy( table, index );
             }

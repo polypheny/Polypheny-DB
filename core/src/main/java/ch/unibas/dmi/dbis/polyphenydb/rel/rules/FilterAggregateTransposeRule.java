@@ -102,6 +102,7 @@ public class FilterAggregateTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Filter filterRel = call.rel( 0 );
         final Aggregate aggRel = call.rel( 1 );

@@ -66,11 +66,13 @@ import java.util.List;
  */
 public class SetopOperandTypeChecker implements SqlOperandTypeChecker {
 
+    @Override
     public boolean isOptional( int i ) {
         return false;
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         assert callBinding.getOperandCount() == 2 : "setops are binary (for now)";
         final RelDataType[] argTypes = new RelDataType[callBinding.getOperandCount()];
@@ -112,11 +114,13 @@ public class SetopOperandTypeChecker implements SqlOperandTypeChecker {
             final RelDataType type =
                     callBinding.getTypeFactory().leastRestrictive(
                             new AbstractList<RelDataType>() {
+                                @Override
                                 public RelDataType get( int index ) {
                                     return argTypes[index].getFieldList().get( i2 ).getType();
                                 }
 
 
+                                @Override
                                 public int size() {
                                     return argTypes.length;
                                 }
@@ -139,16 +143,19 @@ public class SetopOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 2 );
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         return "{0} " + opName + " {1}";
     }
 
 
+    @Override
     public Consistency getConsistency() {
         return Consistency.NONE;
     }

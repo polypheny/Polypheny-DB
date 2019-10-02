@@ -81,11 +81,13 @@ public class SqlInfixOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.SPECIAL;
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == names.length + 1;
         final boolean needWhitespace = needsSpace();

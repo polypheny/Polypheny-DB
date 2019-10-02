@@ -689,6 +689,7 @@ public class XmlOutput {
         }
 
 
+        @Override
         protected StringEscaper clone() {
             StringEscaper clone = new StringEscaper();
             if ( translationVector != null ) {

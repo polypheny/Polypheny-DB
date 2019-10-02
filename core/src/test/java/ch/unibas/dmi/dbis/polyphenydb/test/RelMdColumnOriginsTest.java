@@ -61,7 +61,6 @@ import org.junit.Test;
 /**
  * Test case for POLYPHENYDB-542.
  */
-@SuppressWarnings("SqlDialectInspection")
 public class RelMdColumnOriginsTest {
 
     /**

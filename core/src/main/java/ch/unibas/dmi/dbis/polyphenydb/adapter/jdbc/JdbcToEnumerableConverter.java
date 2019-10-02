@@ -111,6 +111,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         // Generate:
         //   ResultSetEnumerable.of(schema.getDataSource(), "select ...")

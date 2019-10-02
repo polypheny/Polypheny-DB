@@ -149,6 +149,7 @@ public class RexExecutorImpl implements RexExecutor {
     /**
      * Do constant reduction using generated code.
      */
+    @Override
     public void reduce( RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues ) {
         final String code = compile( rexBuilder, constExps,
                 ( list, index, storageType ) -> {
@@ -177,6 +178,7 @@ public class RexExecutorImpl implements RexExecutor {
         }
 
 
+        @Override
         public Expression field( BlockBuilder list, int index, Type storageType ) {
             MethodCallExpression recFromCtx = Expressions.call(
                     DataContext.ROOT,

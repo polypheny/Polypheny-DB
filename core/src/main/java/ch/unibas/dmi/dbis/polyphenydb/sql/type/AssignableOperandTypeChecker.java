@@ -77,16 +77,19 @@ public class AssignableOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public boolean isOptional( int i ) {
         return false;
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( paramTypes.size() );
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered parameter names.
         final List<SqlNode> operands = callBinding.getCall().getOperandList();
@@ -104,6 +107,7 @@ public class AssignableOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         StringBuilder sb = new StringBuilder();
         sb.append( opName );
@@ -124,6 +128,7 @@ public class AssignableOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public Consistency getConsistency() {
         return Consistency.NONE;
     }

@@ -49,8 +49,8 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.Matchers;
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.SlowTests;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
@@ -460,6 +460,7 @@ public class ProfilerTest {
 
         static final Ordering<Profiler.Statistic> ORDERING =
                 new Ordering<Profiler.Statistic>() {
+                    @Override
                     public int compare( Profiler.Statistic left,
                             Profiler.Statistic right ) {
                         int c = left.getClass().getSimpleName().compareTo( right.getClass().getSimpleName() );
@@ -602,6 +603,7 @@ public class ProfilerTest {
 
         private Enumerable<List<Comparable>> getRows( final PreparedStatement s ) {
             return new AbstractEnumerable<List<Comparable>>() {
+                @Override
                 public Enumerator<List<Comparable>> enumerator() {
                     try {
                         final ResultSet r = s.executeQuery();
@@ -619,6 +621,7 @@ public class ProfilerTest {
                 final Comparable[] values = new Comparable[columnCount];
 
 
+                @Override
                 public List<Comparable> current() {
                     for ( int i = 0; i < columnCount; i++ ) {
                         try {
@@ -632,6 +635,7 @@ public class ProfilerTest {
                 }
 
 
+                @Override
                 public boolean moveNext() {
                     try {
                         return r.next();
@@ -641,10 +645,12 @@ public class ProfilerTest {
                 }
 
 
+                @Override
                 public void reset() {
                 }
 
 
+                @Override
                 public void close() {
                     try {
                         r.close();

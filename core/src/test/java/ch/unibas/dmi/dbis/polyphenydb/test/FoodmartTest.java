@@ -117,7 +117,7 @@ public class FoodmartTest {
             return ImmutableList.of();
         }
         final FoodMartQuerySet set = FoodMartQuerySet.instance();
-        final List<Object[]> list = new ArrayList<Object[]>();
+        final List<Object[]> list = new ArrayList<>();
         if ( idList != null ) {
             if ( idList.endsWith( ",-disabled" ) ) {
                 StringBuilder buf = new StringBuilder( idList );

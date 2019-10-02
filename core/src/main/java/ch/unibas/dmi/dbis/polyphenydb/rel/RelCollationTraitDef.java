@@ -69,11 +69,13 @@ public class RelCollationTraitDef extends RelTraitDef<RelCollation> {
     }
 
 
+    @Override
     public Class<RelCollation> getTraitClass() {
         return RelCollation.class;
     }
 
 
+    @Override
     public String getSimpleName() {
         return "sort";
     }
@@ -85,11 +87,13 @@ public class RelCollationTraitDef extends RelTraitDef<RelCollation> {
     }
 
 
+    @Override
     public RelCollation getDefault() {
         return RelCollations.EMPTY;
     }
 
 
+    @Override
     public RelNode convert( RelOptPlanner planner, RelNode rel, RelCollation toCollation, boolean allowInfiniteCostConverters ) {
         if ( toCollation.getFieldCollations().isEmpty() ) {
             // An empty sort doesn't make sense.
@@ -107,6 +111,7 @@ public class RelCollationTraitDef extends RelTraitDef<RelCollation> {
     }
 
 
+    @Override
     public boolean canConvert( RelOptPlanner planner, RelCollation fromTrait, RelCollation toTrait ) {
         return false;
     }

@@ -163,6 +163,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public URL url() {
             if ( url == null ) {
                 throw new UnsupportedOperationException();
@@ -171,6 +172,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public File file() {
             if ( file == null ) {
                 throw new UnsupportedOperationException();
@@ -179,11 +181,13 @@ public abstract class Sources {
         }
 
 
+        @Override
         public String protocol() {
             return file != null ? "file" : url.getProtocol();
         }
 
 
+        @Override
         public String path() {
             if ( file != null ) {
                 return file.getPath();
@@ -197,6 +201,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public Reader reader() throws IOException {
             final InputStream is;
             if ( path().endsWith( ".gz" ) ) {
@@ -209,6 +214,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public InputStream openStream() throws IOException {
             if ( file != null ) {
                 return new FileInputStream( file );
@@ -218,12 +224,14 @@ public abstract class Sources {
         }
 
 
+        @Override
         public Source trim( String suffix ) {
             Source x = trimOrNull( suffix );
             return x == null ? this : x;
         }
 
 
+        @Override
         public Source trimOrNull( String suffix ) {
             if ( url != null ) {
                 final String s = Sources.trimOrNull( url.toExternalForm(), suffix );
@@ -235,6 +243,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public Source append( Source child ) {
             if ( isFile( child ) ) {
                 if ( child.file().isAbsolute() ) {
@@ -262,6 +271,7 @@ public abstract class Sources {
         }
 
 
+        @Override
         public Source relative( Source parent ) {
             if ( isFile( parent ) ) {
                 if ( isFile( this )

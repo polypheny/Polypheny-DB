@@ -94,6 +94,7 @@ public class ProjectMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Project topProject = call.rel( 0 );
         final Project bottomProject = call.rel( 1 );

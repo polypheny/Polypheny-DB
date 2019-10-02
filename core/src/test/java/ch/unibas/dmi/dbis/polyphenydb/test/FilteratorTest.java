@@ -70,7 +70,7 @@ public class FilteratorTest {
     @Test
     public void testOne() {
         final List<String> tomDickHarry = Arrays.asList( "tom", "dick", "harry" );
-        final Filterator<String> filterator = new Filterator<String>( tomDickHarry.iterator(), String.class );
+        final Filterator<String> filterator = new Filterator<>( tomDickHarry.iterator(), String.class );
 
         // call hasNext twice
         assertTrue( filterator.hasNext() );
@@ -90,7 +90,7 @@ public class FilteratorTest {
     public void testNulls() {
         // Nulls don't cause an error - but are not emitted, because they fail the instanceof test.
         final List<String> tomDickHarry = Arrays.asList( "paul", null, "ringo" );
-        final Filterator<String> filterator = new Filterator<String>( tomDickHarry.iterator(), String.class );
+        final Filterator<String> filterator = new Filterator<>( tomDickHarry.iterator(), String.class );
         assertEquals( "paul", filterator.next() );
         assertEquals( "ringo", filterator.next() );
         assertFalse( filterator.hasNext() );
@@ -105,7 +105,7 @@ public class FilteratorTest {
         Collection[] collections = { null, arrayList, hashSet, linkedList, null,
         };
         final Filterator<List> filterator =
-                new Filterator<List>( Arrays.asList( collections ).iterator(), List.class );
+                new Filterator<>( Arrays.asList( collections ).iterator(), List.class );
         assertTrue( filterator.hasNext() );
 
         // skips null
@@ -120,7 +120,7 @@ public class FilteratorTest {
     @Test
     public void testBox() {
         final Number[] numbers = { 1, 2, 3.14, 4, null, 6E23 };
-        List<Integer> result = new ArrayList<Integer>();
+        List<Integer> result = new ArrayList<>();
         for ( int i : Util.filter( Arrays.asList( numbers ), Integer.class ) ) {
             result.add( i );
         }

@@ -114,6 +114,7 @@ public class DynamicRecordTypeImpl extends DynamicRecordType {
     }
 
 
+    @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         sb.append( "(DynamicRecordRow" ).append( getFieldNames() ).append( ")" );
     }

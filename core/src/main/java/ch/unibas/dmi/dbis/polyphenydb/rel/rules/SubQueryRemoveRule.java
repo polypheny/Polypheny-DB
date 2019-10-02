@@ -502,6 +502,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Project project = call.rel( 0 );
             final RelBuilder builder = call.builder();
@@ -531,6 +532,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Filter filter = call.rel( 0 );
             final RelBuilder builder = call.builder();
@@ -570,6 +572,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Join join = call.rel( 0 );
             final RelBuilder builder = call.builder();

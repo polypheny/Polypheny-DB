@@ -81,6 +81,7 @@ public class RelMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.DistinctRowCount> getDef() {
         return BuiltInMetadata.DistinctRowCount.DEF;
     }

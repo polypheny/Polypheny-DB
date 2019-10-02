@@ -66,6 +66,7 @@ import org.apache.calcite.linq4j.tree.Types;
  */
 public enum JavaRowFormat {
     CUSTOM {
+        @Override
         Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
             assert type.getFieldCount() > 1;
             return typeFactory.getJavaClass( type );
@@ -78,6 +79,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             switch ( expressions.size() ) {
                 case 0:
@@ -89,6 +91,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public MemberExpression field( Expression expression, int field, Type fromType, Type fieldType ) {
             final Type type = expression.getType();
             if ( type instanceof Types.RecordType ) {
@@ -102,6 +105,7 @@ public enum JavaRowFormat {
     },
 
     SCALAR {
+        @Override
         Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
             assert type.getFieldCount() == 1;
             return typeFactory.getJavaClass( type.getFieldList().get( 0 ).getType() );
@@ -114,12 +118,14 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             assert expressions.size() == 1;
             return expressions.get( 0 );
         }
 
 
+        @Override
         public Expression field( Expression expression, int field, Type fromType, Type fieldType ) {
             assert field == 0;
             return expression;
@@ -131,6 +137,7 @@ public enum JavaRowFormat {
      * records with 2 or more fields that you need to be comparable, say as a key in a lookup.
      */
     LIST {
+        @Override
         Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
             return FlatLists.ComparableList.class;
         }
@@ -142,6 +149,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             switch ( expressions.size() ) {
                 case 0:
@@ -201,6 +209,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression field( Expression expression, int field, Type fromType, Type fieldType ) {
             final MethodCallExpression e = Expressions.call( expression, BuiltInMethod.LIST_GET.method, Expressions.constant( field ) );
             if ( fromType == null ) {
@@ -232,6 +241,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression field( Expression expression, int field, Type fromType, Type fieldType ) {
             final Expression e = Expressions.call( expression, BuiltInMethod.ROW_VALUE.method, Expressions.constant( field ) );
             if ( fromType == null ) {
@@ -242,6 +252,7 @@ public enum JavaRowFormat {
     },
 
     ARRAY {
+        @Override
         Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
             return Object[].class;
         }
@@ -253,6 +264,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             return Expressions.newArrayInit( Object.class, expressions );
         }
@@ -264,6 +276,7 @@ public enum JavaRowFormat {
         }
 
 
+        @Override
         public Expression field( Expression expression, int field, Type fromType, Type fieldType ) {
             final IndexExpression e = Expressions.arrayIndex( expression, Expressions.constant( field ) );
             if ( fromType == null ) {

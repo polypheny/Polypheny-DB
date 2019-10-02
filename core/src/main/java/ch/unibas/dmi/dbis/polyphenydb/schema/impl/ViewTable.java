@@ -144,6 +144,7 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
@@ -155,6 +156,7 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         return expandView( context, relOptTable.getRowType(), viewSql ).rel;
     }

@@ -57,7 +57,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexPatternFieldRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlBitOpAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMinMaxAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;

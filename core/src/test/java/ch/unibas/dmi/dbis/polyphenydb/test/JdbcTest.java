@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.test;
@@ -60,6 +41,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -133,7 +115,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.DriverManager;
-import java.sql.DriverPropertyInfo;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -147,13 +128,11 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -178,7 +157,6 @@ import org.junit.Test;
 /**
  * Tests for using Polypheny-DB via JDBC.
  */
-@SuppressWarnings("SqlDialectInspection")
 public class JdbcTest {
 
     public static final String FOODMART_SCHEMA = "     {\n"
@@ -705,72 +683,6 @@ public class JdbcTest {
     }
 
 
-    /**
-     * Test for {@link EmbeddedDriver#getPropertyInfo(String, Properties)}.
-     */
-    @Test
-    public void testConnectionProperties() throws ClassNotFoundException, SQLException {
-        java.sql.Driver driver = DriverManager.getDriver( "jdbc:polyphenydbembedded:" );
-        final DriverPropertyInfo[] propertyInfo = driver.getPropertyInfo( "jdbc:polyphenydbembedded:", new Properties() );
-        final Set<String> names = new HashSet<>();
-        for ( DriverPropertyInfo info : propertyInfo ) {
-            names.add( info.name );
-        }
-        assertTrue( names.contains( "SCHEMA" ) );
-        assertTrue( names.contains( "TIME_ZONE" ) );
-        assertTrue( names.contains( "MATERIALIZATIONS_ENABLED" ) );
-    }
-
-
-    /**
-     * Make sure that the properties look sane.
-     */
-    @Test
-    @Ignore
-    public void testVersion() throws ClassNotFoundException, SQLException {
-        Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-        PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-        final DatabaseMetaData metaData = polyphenyDbEmbeddedConnection.getMetaData();
-        assertEquals( "Polypheny-DB JDBC Embedded Driver", metaData.getDriverName() );
-
-        final String driverVersion = metaData.getDriverVersion();
-        final int driverMajor = metaData.getDriverMajorVersion();
-        final int driverMinor = metaData.getDriverMinorVersion();
-        assertEquals( 1, driverMajor );
-        assertTrue( driverMinor >= 0 && driverMinor < 20 );
-
-        assertEquals( "Polypheny-DB", metaData.getDatabaseProductName() );
-        final String databaseVersion = metaData.getDatabaseProductVersion();
-        final int databaseMajor = metaData.getDatabaseMajorVersion();
-        assertEquals( driverMajor, databaseMajor );
-        final int databaseMinor = metaData.getDatabaseMinorVersion();
-        assertEquals( driverMinor, databaseMinor );
-
-        // Check how version is composed of major and minor version. Note that version is stored in pom.xml; major and minor version are
-        // stored in ch-unibas-dmi-dbis-polyphenydb-jdbc.properties, but derived from version.major and version.minor in pom.xml.
-        //
-        // We are more permissive for snapshots. For instance, we allow 1.4.0-SNAPSHOT to match {major=1, minor=3}.
-        // Previously, this test would break the first build after a release.
-        assertTrue( driverVersion.startsWith( driverMajor + "." ) );
-        assertTrue( driverVersion.split( "\\." ).length >= 2 );
-        assertTrue( driverVersion.equals( mm( driverMajor, driverMinor ) )
-                || driverVersion.startsWith( mm( driverMajor, driverMinor ) + "." )
-                || driverVersion.startsWith( mm( driverMajor, driverMinor ) + "-" )
-                || driverVersion.endsWith( "-SNAPSHOT" )
-                && driverVersion.startsWith( mm( driverMajor, driverMinor + 1 ) ) );
-
-        assertTrue( databaseVersion.startsWith( "1." ) );
-        assertTrue( databaseVersion.split( "\\." ).length >= 2 );
-        assertTrue( databaseVersion.equals( mm( databaseMajor, databaseMinor ) )
-                || databaseVersion.startsWith( mm( databaseMajor, databaseMinor ) + "." )
-                || databaseVersion.startsWith( mm( databaseMajor, databaseMinor ) + "-" )
-                || databaseVersion.endsWith( "-SNAPSHOT" )
-                && databaseVersion.startsWith( mm( driverMajor, driverMinor + 1 ) ) );
-
-        connection.close();
-    }
-
-
     private String mm( int majorVersion, int minorVersion ) {
         return majorVersion + "." + minorVersion;
     }
@@ -817,10 +729,6 @@ public class JdbcTest {
     }
 
 
-    /**
-     * Unit test for
-     * {@link PolyphenyDbEmbeddedMetaImpl#likeToRegex(org.apache.calcite.avatica.Meta.Pat)}.
-     */
     @Test
     public void testLikeToRegex() {
         checkLikeToRegex( true, "%", "abc" );
@@ -848,7 +756,7 @@ public class JdbcTest {
 
     private void checkLikeToRegex( boolean b, String pattern, String abc ) {
         final Pattern regex = PolyphenyDbEmbeddedMetaImpl.likeToRegex( Meta.Pat.of( pattern ) );
-        assertTrue( b == regex.matcher( abc ).matches() );
+        assertEquals( b, regex.matcher( abc ).matches() );
     }
 
 
@@ -884,7 +792,7 @@ public class JdbcTest {
             assertEquals( "emps", metaData.getTableName( 2 ) );
             assertEquals( "Y", metaData.getColumnLabel( 3 ) );
             assertEquals( "Y", metaData.getColumnName( 3 ) );
-            assertEquals( null, metaData.getTableName( 3 ) );
+            assertNull( metaData.getTableName( 3 ) );
         }
     }
 
@@ -5295,27 +5203,6 @@ public class JdbcTest {
     }
 
 
-    /**
-     * Defines a materialized view and tests that the query is rewritten to use it, and that the query produces the same result with and without it. There are more comprehensive tests in {@link MaterializationTest}.
-     */
-    @Ignore("until JdbcSchema can define materialized views")
-    @Test
-    public void testModelWithMaterializedView() {
-        PolyphenyDbAssert.model( FOODMART_MODEL )
-                .enable( false )
-                .query( "select count(*) as c from \"foodmart\".\"sales_fact_1997\" join \"foodmart\".\"time_by_day\" using (\"time_id\")" )
-                .returns( "C=86837\n" );
-        PolyphenyDbAssert.that().withMaterializations(
-                FOODMART_MODEL,
-                "agg_c_10_sales_fact_1997",
-                "select t.`month_of_year`, t.`quarter`, t.`the_year`, sum(s.`store_sales`) as `store_sales`, sum(s.`store_cost`), sum(s.`unit_sales`), count(distinct s.`customer_id`), count(*) as `fact_count` from `time_by_day` as t join `sales_fact_1997` as s using (`time_id`) group by t.`month_of_year`, t.`quarter`, t.`the_year`" )
-                .query( "select t.\"month_of_year\", t.\"quarter\", t.\"the_year\", sum(s.\"store_sales\") as \"store_sales\", sum(s.\"store_cost\"), sum(s.\"unit_sales\"), count(distinct s.\"customer_id\"), count(*) as \"fact_count\" from \"time_by_day\" as t join \"sales_fact_1997\" as s using (\"time_id\") group by t.\"month_of_year\", t.\"quarter\", t.\"the_year\"" )
-                .explainContains( "JdbcTableScan(table=[[foodmart, agg_c_10_sales_fact_1997]])" )
-                .enableMaterializations( false )
-                .explainContains( "JdbcTableScan(table=[[foodmart, sales_fact_1997]])" )
-                .sameResultWithMaterializationsDisabled();
-    }
-
 
     /**
      * Tests a JDBC connection that provides a model that contains custom
@@ -6099,7 +5986,7 @@ public class JdbcTest {
         assertEquals( "2005-01-01", s );              // 2005-01-01 00:00:00 +0100
         ++c;
 
-        assertTrue( !rs.next() );
+        assertFalse( rs.next() );
     }
 
 
@@ -7484,6 +7371,7 @@ public class JdbcTest {
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation,
                 List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
@@ -7510,6 +7398,7 @@ public class JdbcTest {
         public static final TryThreadLocal<List<Employee>> THREAD_COLLECTION = TryThreadLocal.of( null );
 
 
+        @Override
         public Table create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType ) {
             final Class clazz;
             final Object[] array;
@@ -7532,6 +7421,7 @@ public class JdbcTest {
                     throw new AssertionError( name );
             }
             return new AbstractQueryableTable( clazz ) {
+                @Override
                 public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                     return ((JavaTypeFactory) typeFactory).createType( clazz );
                 }
@@ -7540,6 +7430,7 @@ public class JdbcTest {
                 @Override
                 public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
                     return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                        @Override
                         public Enumerator<T> enumerator() {
                             @SuppressWarnings("unchecked") final List<T> list = (List) Arrays.asList( array );
                             return Linq4j.enumerator( list );

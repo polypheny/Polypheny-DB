@@ -94,17 +94,20 @@ public class SqlDatePartFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 1 );
     }
 
 
+    @Override
     public String getSignatureTemplate( int operandsCount ) {
         assert 1 == operandsCount;
         return "{0}({1})";
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         return OperandTypes.DATETIME.checkSingleOperandType( callBinding, callBinding.operand( 0 ), 0, throwOnFailure );
     }

@@ -108,6 +108,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public boolean addVertex( V vertex ) {
         if ( vertexMap.containsKey( vertex ) ) {
             return false;
@@ -118,11 +119,13 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public Set<E> edgeSet() {
         return Collections.unmodifiableSet( edges );
     }
 
 
+    @Override
     public E addEdge( V vertex, V targetVertex ) {
         final VertexInfo<V, E> info = vertexMap.get( vertex );
         if ( info == null ) {
@@ -142,6 +145,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public E getEdge( V source, V target ) {
         // REVIEW: could instead use edges.get(new DefaultEdge(source, target))
         final VertexInfo<V, E> info = vertexMap.get( source );
@@ -154,6 +158,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public boolean removeEdge( V source, V target ) {
         final VertexInfo<V, E> info = vertexMap.get( source );
         List<E> outEdges = info.outEdges;
@@ -169,11 +174,13 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public Set<V> vertexSet() {
         return vertexMap.keySet();
     }
 
 
+    @Override
     public void removeAllVertices( Collection<V> collection ) {
         vertexMap.keySet().removeAll( collection );
         for ( VertexInfo<V, E> info : vertexMap.values() ) {
@@ -183,11 +190,13 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
     }
 
 
+    @Override
     public List<E> getOutwardEdges( V source ) {
         return vertexMap.get( source ).outEdges;
     }
 
 
+    @Override
     public List<E> getInwardEdges( V target ) {
         final ArrayList<E> list = new ArrayList<>();
         for ( VertexInfo<V, E> info : vertexMap.values() ) {

@@ -78,6 +78,7 @@ public class SqlRuntimeTester extends AbstractSqlTester {
     }
 
 
+    @Override
     public void assertExceptionIsThrown( String sql, String expectedMsgPattern ) {
         assertExceptionIsThrown( sql, expectedMsgPattern, false );
     }

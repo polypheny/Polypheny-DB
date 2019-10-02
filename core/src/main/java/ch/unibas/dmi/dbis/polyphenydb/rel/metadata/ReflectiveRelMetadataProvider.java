@@ -204,6 +204,7 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
     }
 
 
+    @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         final ImmutableMultimap.Builder<Method, MetadataHandler<M>> builder = ImmutableMultimap.builder();
         for ( Map.Entry<Method, MetadataHandler> entry : handlerMap.entries() ) {
@@ -232,6 +233,7 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
     }
 
 
+    @Override
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, Class<? extends M> metadataClass ) {
         if ( metadataClass == metadataClass0 ) {
             return apply( relClass );

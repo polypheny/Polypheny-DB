@@ -84,6 +84,7 @@ public class AliasNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         final List<String> nameList = new ArrayList<>();
         final List<SqlNode> operands = call.getOperandList();
@@ -129,11 +130,13 @@ public class AliasNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return call;
     }
 
 
+    @Override
     public String translate( String name ) {
         final RelDataType underlyingRowType = validator.getValidatedNodeType( call.operand( 0 ) );
         int i = 0;

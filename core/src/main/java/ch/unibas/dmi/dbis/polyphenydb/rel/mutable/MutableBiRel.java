@@ -73,6 +73,7 @@ abstract class MutableBiRel extends MutableRel {
     }
 
 
+    @Override
     public void setInput( int ordinalInParent, MutableRel input ) {
         if ( ordinalInParent > 1 ) {
             throw new IllegalArgumentException();
@@ -89,6 +90,7 @@ abstract class MutableBiRel extends MutableRel {
     }
 
 
+    @Override
     public List<MutableRel> getInputs() {
         return ImmutableList.of( left, right );
     }
@@ -104,6 +106,7 @@ abstract class MutableBiRel extends MutableRel {
     }
 
 
+    @Override
     public void childrenAccept( MutableRelVisitor visitor ) {
         visitor.visit( left );
         visitor.visit( right );

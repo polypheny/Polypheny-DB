@@ -75,12 +75,14 @@ public class SqlRandFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.FUNCTION;
     }
 
 
     // Plans referencing context variables should never be cached
+    @Override
     public boolean isDynamicFunction() {
         return true;
     }

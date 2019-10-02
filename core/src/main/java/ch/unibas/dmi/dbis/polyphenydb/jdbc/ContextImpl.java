@@ -83,6 +83,7 @@ public class ContextImpl implements Context {
     }
 
 
+    @Override
     public PolyphenyDbConnectionConfig config() {
         return new PolyphenyDbConnectionConfigImpl( new Properties() );
     }

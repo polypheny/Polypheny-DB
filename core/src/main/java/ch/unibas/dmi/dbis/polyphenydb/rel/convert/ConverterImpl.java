@@ -94,11 +94,13 @@ public abstract class ConverterImpl extends SingleRel implements Converter {
     }
 
 
+    @Override
     public RelTraitSet getInputTraits() {
         return inTraits;
     }
 
 
+    @Override
     public RelTraitDef getTraitDef() {
         return traitDef;
     }

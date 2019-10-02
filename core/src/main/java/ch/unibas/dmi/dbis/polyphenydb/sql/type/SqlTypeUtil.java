@@ -764,7 +764,7 @@ public abstract class SqlTypeUtil {
     /**
      * Compares two types and returns true if fromType can be cast to toType.
      *
-     * REVIEW jvs 17-Dec-2004: the coerce param below shouldn't really be necessary. We're using it as a hack because {@link SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
+     * REVIEW jvs 17-Dec-2004: the coerce param below shouldn't really be necessary. We're using it as a hack because {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
      * Once it is, this param (and the non-coerce rules of {@link SqlTypeAssignmentRules}) should go away.
      *
      * @param toType target of assignment

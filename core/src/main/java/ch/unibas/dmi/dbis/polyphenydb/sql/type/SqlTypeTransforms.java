@@ -117,6 +117,7 @@ public abstract class SqlTypeTransforms {
      */
     public static final SqlTypeTransform TO_VARYING =
             new SqlTypeTransform() {
+                @Override
                 public RelDataType transformType( SqlOperatorBinding opBinding, RelDataType typeToTransform ) {
                     switch ( typeToTransform.getSqlTypeName() ) {
                         case VARCHAR:

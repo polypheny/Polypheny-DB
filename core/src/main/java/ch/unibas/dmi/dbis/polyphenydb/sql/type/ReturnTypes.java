@@ -284,6 +284,7 @@ public abstract class ReturnTypes {
                 new ExplicitOperatorBinding(
                         opBinding,
                         new AbstractList<RelDataType>() {
+                            @Override
                             public RelDataType get( int index ) {
                                 RelDataType type = opBinding.getOperandType( index ).getComponentType();
                                 assert type != null;
@@ -291,6 +292,7 @@ public abstract class ReturnTypes {
                             }
 
 
+                            @Override
                             public int size() {
                                 return opBinding.getOperandCount();
                             }

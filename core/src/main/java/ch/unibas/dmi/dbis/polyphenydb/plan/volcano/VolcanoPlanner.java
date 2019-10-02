@@ -614,6 +614,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         final PrintWriter pw = new PrintWriter( sw );
         final List<RelNode> nodes = new ArrayList<>();
         new RelVisitor() {
+            @Override
             public void visit( RelNode node, int ordinal, RelNode parent ) {
                 nodes.add( node );
                 super.visit( node, ordinal, parent );
@@ -671,6 +672,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                     final Set<RelSubset> visitedSubsets = new HashSet<>();
 
 
+                    @Override
                     public void visit( RelNode p, int ordinal, RelNode parent ) {
                         if ( p instanceof RelSubset ) {
                             RelSubset subset = (RelSubset) p;
@@ -1575,6 +1577,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         /**
          * Rather than invoking the rule (as the base method does), creates a {@link VolcanoRuleMatch} which can be invoked later.
          */
+        @Override
         protected void onMatch() {
             final VolcanoRuleMatch match = new VolcanoRuleMatch( volcanoPlanner, getOperand0(), rels, nodeInputs );
             volcanoPlanner.ruleQueue.addMatch( match );

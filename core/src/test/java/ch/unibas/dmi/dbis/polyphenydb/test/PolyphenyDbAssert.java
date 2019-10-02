@@ -326,7 +326,7 @@ public class PolyphenyDbAssert {
 
                 Exception exception = containsCorrectException( throwable );
 
-                assertTrue( "Expected to fail at validation, but did not", exception != null );
+                assertNotNull( "Expected to fail at validation, but did not", exception );
                 if ( expected != null ) {
                     StringWriter stringWriter = new StringWriter();
                     PrintWriter printWriter = new PrintWriter( stringWriter );
@@ -424,7 +424,7 @@ public class PolyphenyDbAssert {
             public void accept( ResultSet resultSet ) {
                 ++executeCount;
                 try {
-                    final Collection result = PolyphenyDbAssert.toStringList( resultSet, ordered ? new ArrayList<String>() : new TreeSet<String>() );
+                    final Collection result = PolyphenyDbAssert.toStringList( resultSet, ordered ? new ArrayList<>() : new TreeSet<>() );
                     if ( executeCount == 1 ) {
                         expected = result;
                     } else {
@@ -508,7 +508,7 @@ public class PolyphenyDbAssert {
         return s -> {
             try {
                 final String actual = Util.toLinux( toString( s ) );
-                assertTrue( actual + " should have " + count + " occurrence of " + expected, StringUtils.countMatches( actual, expected ) == count );
+                assertEquals( actual + " should have " + count + " occurrence of " + expected, StringUtils.countMatches( actual, expected ), count );
             } catch ( SQLException e ) {
                 throw new RuntimeException( e );
             }
@@ -695,7 +695,7 @@ public class PolyphenyDbAssert {
 
 
     static List<String> toList( ResultSet resultSet ) throws SQLException {
-        return (List<String>) toStringList( resultSet, new ArrayList<String>() );
+        return (List<String>) toStringList( resultSet, new ArrayList<>() );
     }
 
 

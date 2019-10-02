@@ -114,6 +114,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public final SqlTestFactory getFactory() {
         return factory;
     }
@@ -124,21 +125,25 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
      *
      * This default implementation does nothing.
      */
+    @Override
     public void close() {
         // no resources to release
     }
 
 
+    @Override
     public final SqlConformance getConformance() {
         return (SqlConformance) factory.get( "conformance" );
     }
 
 
+    @Override
     public final SqlValidator getValidator() {
         return factory.getValidator();
     }
 
 
+    @Override
     public void assertExceptionIsThrown( String sql, String expectedMsgPattern ) {
         final SqlValidator validator;
         final SqlNode sqlNode;
@@ -178,6 +183,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public RelDataType getColumnType( String sql ) {
         RelDataType rowType = getResultType( sql );
         final List<RelDataTypeField> fields = rowType.getFieldList();
@@ -186,6 +192,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public RelDataType getResultType( String sql ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, sql );
@@ -194,6 +201,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public SqlNode parseAndValidate( SqlValidator validator, String sql ) {
         if ( validator == null ) {
             validator = getValidator();
@@ -208,12 +216,14 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public SqlNode parseQuery( String sql ) throws SqlParseException {
         SqlParser parser = factory.createParser( sql );
         return parser.parseQuery();
     }
 
 
+    @Override
     public void checkColumnType( String sql, String expected ) {
         RelDataType actualType = getColumnType( sql );
         String actual = SqlTests.getTypeString( actualType );
@@ -221,6 +231,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkFieldOrigin( String sql, String fieldOriginList ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, sql );
@@ -248,6 +259,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkResultType( String sql, String expected ) {
         RelDataType actualType = getResultType( sql );
         String actual = SqlTests.getTypeString( actualType );
@@ -255,6 +267,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkIntervalConv( String sql, String expected ) {
         SqlValidator validator = getValidator();
         final SqlCall n = (SqlCall) parseAndValidate( validator, sql );
@@ -279,6 +292,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkType( String expression, String type ) {
         for ( String sql : buildQueries( expression ) ) {
             checkColumnType( sql, type );
@@ -286,6 +300,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkCollation( String expression, String expectedCollationName, Coercibility expectedCoercibility ) {
         for ( String sql : buildQueries( expression ) ) {
             RelDataType actualType = getColumnType( sql );
@@ -297,6 +312,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkCharset( String expression, Charset expectedCharset ) {
         for ( String sql : buildQueries( expression ) ) {
             RelDataType actualType = getColumnType( sql );
@@ -309,26 +325,31 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public SqlTester withQuoting( Quoting quoting ) {
         return with( "quoting", quoting );
     }
 
 
+    @Override
     public SqlTester withQuotedCasing( Casing casing ) {
         return with( "quotedCasing", casing );
     }
 
 
+    @Override
     public SqlTester withUnquotedCasing( Casing casing ) {
         return with( "unquotedCasing", casing );
     }
 
 
+    @Override
     public SqlTester withCaseSensitive( boolean sensitive ) {
         return with( "caseSensitive", sensitive );
     }
 
 
+    @Override
     public SqlTester withLex( Lex lex ) {
         return withQuoting( lex.quoting )
                 .withCaseSensitive( lex.caseSensitive )
@@ -337,6 +358,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public SqlTester withConformance( SqlConformance conformance ) {
         if ( conformance == null ) {
             conformance = SqlConformanceEnum.DEFAULT;
@@ -350,11 +372,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public SqlTester withOperatorTable( SqlOperatorTable operatorTable ) {
         return with( "operatorTable", operatorTable );
     }
 
 
+    @Override
     public SqlTester withConnectionFactory( PolyphenyDbAssert.ConnectionFactory connectionFactory ) {
         return with( "connectionFactory", connectionFactory );
     }
@@ -370,29 +394,34 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     // SqlTester methods
 
 
+    @Override
     public void setFor( SqlOperator operator, VmName... unimplementedVmNames ) {
         // do nothing
     }
 
 
+    @Override
     public void checkAgg( String expr, String[] inputValues, Object result, double delta ) {
         String query = SqlTests.generateAggQuery( expr, inputValues );
         check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
+    @Override
     public void checkAggWithMultipleArgs( String expr, String[][] inputValues, Object result, double delta ) {
         String query = SqlTests.generateAggQueryWithMultipleArgs( expr, inputValues );
         check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
+    @Override
     public void checkWinAgg( String expr, String[] inputValues, String windowSpec, String type, Object result, double delta ) {
         String query = SqlTests.generateWinAggQuery( expr, windowSpec, inputValues );
         check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
+    @Override
     public void checkScalar( String expression, Object result, String resultType ) {
         checkType( expression, resultType );
         for ( String sql : buildQueries( expression ) ) {
@@ -401,6 +430,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkScalarExact( String expression, String result ) {
         for ( String sql : buildQueries( expression ) ) {
             check( sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0 );
@@ -408,6 +438,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkScalarExact( String expression, String expectedType, String result ) {
         for ( String sql : buildQueries( expression ) ) {
             TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
@@ -416,6 +447,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkScalarApprox( String expression, String expectedType, double expectedResult, double delta ) {
         for ( String sql : buildQueries( expression ) ) {
             TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
@@ -424,6 +456,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkBoolean( String expression, Boolean result ) {
         for ( String sql : buildQueries( expression ) ) {
             if ( null == result ) {
@@ -435,6 +468,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkString( String expression, String result, String expectedType ) {
         for ( String sql : buildQueries( expression ) ) {
             TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
@@ -443,6 +477,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkNull( String expression ) {
         for ( String sql : buildQueries( expression ) ) {
             check( sql, SqlTests.ANY_TYPE_CHECKER, null, 0 );
@@ -450,11 +485,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public final void check( String query, TypeChecker typeChecker, Object result, double delta ) {
         check( query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER, SqlTests.createChecker( result, delta ) );
     }
 
 
+    @Override
     public void check( String query, TypeChecker typeChecker, ParameterChecker parameterChecker, ResultChecker resultChecker ) {
         // This implementation does NOT check the result! All it does is check the return type.
 
@@ -476,6 +513,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkMonotonic( String query, SqlMonotonicity expectedMonotonicity ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, query );
@@ -487,6 +525,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkRewrite( SqlValidator validator, String query, String expectedRewrite ) {
         SqlNode rewrittenNode = parseAndValidate( validator, query );
         String actualRewrite = rewrittenNode.toSqlString( AnsiSqlDialect.DEFAULT, false ).getSql();
@@ -494,6 +533,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkFails( String expression, String expectedError, boolean runtime ) {
         if ( runtime ) {
             // We need to test that the expression fails at runtime. Ironically, that means that it must succeed at prepare time.
@@ -507,16 +547,19 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
+    @Override
     public void checkQueryFails( String sql, String expectedError ) {
         assertExceptionIsThrown( sql, expectedError );
     }
 
 
+    @Override
     public void checkQuery( String sql ) {
         assertExceptionIsThrown( sql, null );
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String sql ) {
         final SqlValidator validator = getValidator();
         final SqlNode node = parseAndValidate( validator, sql );
@@ -639,11 +682,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             int i = 0;
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
 
 
+            @Override
             public String next() {
                 switch ( i++ ) {
                     case 0:
@@ -656,6 +701,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             }
 
 
+            @Override
             public boolean hasNext() {
                 return i < 2;
             }

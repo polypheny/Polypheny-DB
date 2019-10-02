@@ -136,6 +136,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );

@@ -82,6 +82,7 @@ public class FilterMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Filter topFilter = call.rel( 0 );
         final Filter bottomFilter = call.rel( 1 );

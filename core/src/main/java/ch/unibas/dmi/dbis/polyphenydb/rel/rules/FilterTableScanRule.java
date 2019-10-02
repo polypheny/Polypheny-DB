@@ -92,6 +92,7 @@ public abstract class FilterTableScanRule extends RelOptRule {
                     operand( Filter.class, operandJ( TableScan.class, null, FilterTableScanRule::test, none() ) ),
                     RelFactories.LOGICAL_BUILDER,
                     "FilterTableScanRule" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     final Filter filter = call.rel( 0 );
                     final TableScan scan = call.rel( 1 );
@@ -113,6 +114,7 @@ public abstract class FilterTableScanRule extends RelOptRule {
                                             null, FilterTableScanRule::test, none() ) ) ),
                     RelFactories.LOGICAL_BUILDER,
                     "FilterTableScanRule:interpreter" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     final Filter filter = call.rel( 0 );
                     final TableScan scan = call.rel( 2 );

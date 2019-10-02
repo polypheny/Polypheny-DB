@@ -959,7 +959,7 @@ public class SqlDialect {
         NULL,
         LOCAL,
         DIRECT,
-        SHIFT;
+        SHIFT
     }
 
 
@@ -1134,12 +1134,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public DatabaseProduct databaseProduct() {
             return databaseProduct;
         }
 
 
+        @Override
         public Context withDatabaseProduct( @Nonnull DatabaseProduct databaseProduct ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1154,11 +1156,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String databaseProductName() {
             return databaseProductName;
         }
 
 
+        @Override
         public Context withDatabaseProductName( String databaseProductName ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1173,11 +1177,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String databaseVersion() {
             return databaseVersion;
         }
 
 
+        @Override
         public Context withDatabaseVersion( String databaseVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1192,11 +1198,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public int databaseMajorVersion() {
             return databaseMajorVersion;
         }
 
 
+        @Override
         public Context withDatabaseMajorVersion( int databaseMajorVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1211,11 +1219,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public int databaseMinorVersion() {
             return databaseMinorVersion;
         }
 
 
+        @Override
         public Context withDatabaseMinorVersion( int databaseMinorVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1230,11 +1240,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String identifierQuoteString() {
             return identifierQuoteString;
         }
 
 
+        @Override
         public Context withIdentifierQuoteString( String identifierQuoteString ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1249,12 +1261,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public NullCollation nullCollation() {
             return nullCollation;
         }
 
 
+        @Override
         public Context withNullCollation( @Nonnull NullCollation nullCollation ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1269,12 +1283,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public RelDataTypeSystem dataTypeSystem() {
             return dataTypeSystem;
         }
 
 
+        @Override
         public Context withDataTypeSystem( @Nonnull RelDataTypeSystem dataTypeSystem ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1289,12 +1305,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public JethroDataSqlDialect.JethroInfo jethroInfo() {
             return jethroInfo;
         }
 
 
+        @Override
         public Context withJethroInfo( JethroDataSqlDialect.JethroInfo jethroInfo ) {
             return new ContextImpl(
                     databaseProduct,

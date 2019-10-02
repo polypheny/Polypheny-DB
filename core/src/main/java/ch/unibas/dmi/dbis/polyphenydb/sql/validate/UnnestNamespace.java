@@ -83,6 +83,7 @@ class UnnestNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         // Validate the call and its arguments, and infer the return type.
         validator.validateCall( unnest, scope );
@@ -92,6 +93,7 @@ class UnnestNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return unnest;
     }

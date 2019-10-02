@@ -56,7 +56,7 @@ import java.util.List;
  * <p>Type parameter 'R' is the base class of visitoR class; type parameter 'E'
  * is the base class of visiteE class.
  *
- * <p>TODO: obsolete {@link ReflectUtil#lookupVisitMethod}, and use caching in
+ * <p>TODO: obsolete {@code ReflectUtil#lookupVisitMethod}, and use caching in
  * implementing that method.
  *
  * @param <E> Argument type

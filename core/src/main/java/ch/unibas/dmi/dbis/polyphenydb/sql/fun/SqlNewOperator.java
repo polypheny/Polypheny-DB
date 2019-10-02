@@ -65,6 +65,7 @@ public class SqlNewOperator extends SqlPrefixOperator {
 
 
     // override SqlOperator
+    @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         // New specification is purely syntactic, so we rewrite it as a direct call to the constructor method.
         return call.operand( 0 );
@@ -72,6 +73,7 @@ public class SqlNewOperator extends SqlPrefixOperator {
 
 
     // override SqlOperator
+    @Override
     public boolean requiresDecimalExpansion() {
         return false;
     }

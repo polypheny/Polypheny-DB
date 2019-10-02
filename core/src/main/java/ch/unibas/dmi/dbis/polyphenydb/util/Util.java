@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -364,7 +363,7 @@ public class Util {
      *
      * @param v Value
      * @return Hash code
-     * @deprecated Use {@link Utilities#hashCode(double)}
+     * @deprecated Use {@code Utilities#hashCode(double)}
      */
     @Deprecated // to be removed before 2.0
     public static int hashCode( double v ) {
@@ -1358,18 +1357,22 @@ public class Util {
             final StringTokenizer t = new StringTokenizer( s, delim );
 
 
+            @Override
             public Iterator<String> iterator() {
                 return new Iterator<String>() {
+                    @Override
                     public boolean hasNext() {
                         return t.hasMoreTokens();
                     }
 
 
+                    @Override
                     public String next() {
                         return t.nextToken();
                     }
 
 
+                    @Override
                     public void remove() {
                         throw new UnsupportedOperationException( "remove" );
                     }
@@ -1711,16 +1714,19 @@ public class Util {
             final Iterator<?> iter,
             final Class<E> clazz ) {
         return new Iterator<E>() {
+            @Override
             public boolean hasNext() {
                 return iter.hasNext();
             }
 
 
+            @Override
             public E next() {
                 return clazz.cast( iter.next() );
             }
 
 
+            @Override
             public void remove() {
                 iter.remove();
             }
@@ -1778,11 +1784,13 @@ public class Util {
             private int size = -1;
 
 
+            @Override
             public Iterator<E> iterator() {
                 return new Filterator<>( collection.iterator(), includeFilter );
             }
 
 
+            @Override
             public int size() {
                 if ( size == -1 ) {
                     // Compute size.  This is expensive, but the value
@@ -1971,11 +1979,13 @@ public class Util {
         }
         final int size = (list.size() + n - k - 1) / n;
         return new AbstractList<E>() {
+            @Override
             public E get( int index ) {
                 return list.get( index * n + k );
             }
 
 
+            @Override
             public int size() {
                 return size;
             }
@@ -2140,11 +2150,13 @@ public class Util {
 
     public static List<Integer> range( final int end ) {
         return new AbstractList<Integer>() {
+            @Override
             public int size() {
                 return end;
             }
 
 
+            @Override
             public Integer get( int index ) {
                 return index;
             }
@@ -2154,11 +2166,13 @@ public class Util {
 
     public static List<Integer> range( final int start, final int end ) {
         return new AbstractList<Integer>() {
+            @Override
             public int size() {
                 return end - start;
             }
 
 
+            @Override
             public Integer get( int index ) {
                 return start + index;
             }
@@ -2442,16 +2456,19 @@ public class Util {
                 Collections2.transform( values, v -> Pair.of( function.apply( v ), v ) );
         final Set<Map.Entry<K, V>> entrySet =
                 new AbstractSet<Map.Entry<K, V>>() {
+                    @Override
                     public Iterator<Map.Entry<K, V>> iterator() {
                         return entries.iterator();
                     }
 
 
+                    @Override
                     public int size() {
                         return entries.size();
                     }
                 };
         return new AbstractMap<K, V>() {
+            @Override
             public Set<Entry<K, V>> entrySet() {
                 return entrySet;
             }
@@ -2736,11 +2753,13 @@ public class Util {
         }
 
 
+        @Override
         public T get( int i ) {
             return function.apply( list.get( i ) );
         }
 
 
+        @Override
         public int size() {
             return list.size();
         }
@@ -2792,11 +2811,13 @@ public class Util {
         }
 
 
+        @Override
         public boolean hasNext() {
             return current != DUMMY;
         }
 
 
+        @Override
         public T next() {
             final T t = this.current;
             current = moveNext();

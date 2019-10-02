@@ -76,6 +76,7 @@ class SchemaNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         final RelDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
         for ( SqlMoniker moniker : validator.catalogReader.getAllSchemaObjectNames( names ) ) {
@@ -87,6 +88,7 @@ class SchemaNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return null;
     }

@@ -102,76 +102,91 @@ public class RelShuttleImpl implements RelShuttle {
     }
 
 
+    @Override
     public RelNode visit( LogicalAggregate aggregate ) {
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
 
+    @Override
     public RelNode visit( LogicalMatch match ) {
         return visitChild( match, 0, match.getInput() );
     }
 
 
+    @Override
     public RelNode visit( TableScan scan ) {
         return scan;
     }
 
 
+    @Override
     public RelNode visit( TableFunctionScan scan ) {
         return visitChildren( scan );
     }
 
 
+    @Override
     public RelNode visit( LogicalValues values ) {
         return values;
     }
 
 
+    @Override
     public RelNode visit( LogicalFilter filter ) {
         return visitChild( filter, 0, filter.getInput() );
     }
 
 
+    @Override
     public RelNode visit( LogicalProject project ) {
         return visitChild( project, 0, project.getInput() );
     }
 
 
+    @Override
     public RelNode visit( LogicalJoin join ) {
         return visitChildren( join );
     }
 
 
+    @Override
     public RelNode visit( LogicalCorrelate correlate ) {
         return visitChildren( correlate );
     }
 
 
+    @Override
     public RelNode visit( LogicalUnion union ) {
         return visitChildren( union );
     }
 
 
+    @Override
     public RelNode visit( LogicalIntersect intersect ) {
         return visitChildren( intersect );
     }
 
 
+    @Override
     public RelNode visit( LogicalMinus minus ) {
         return visitChildren( minus );
     }
 
 
+    @Override
     public RelNode visit( LogicalSort sort ) {
         return visitChildren( sort );
     }
 
 
+    @Override
     public RelNode visit( LogicalExchange exchange ) {
         return visitChildren( exchange );
     }
 
 
+    @Override
     public RelNode visit( RelNode other ) {
         return visitChildren( other );
     }

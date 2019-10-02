@@ -172,6 +172,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public RelDataType validateImpl( RelDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof TableNamespace ) {
@@ -227,6 +228,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return id;
     }
@@ -245,6 +247,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
         return monotonicExprs;
     }

@@ -254,6 +254,7 @@ public abstract class DateRangeRules {
         }
 
 
+        @Override
         public void close() {
             timeUnits.clear();
             opKinds.clear();

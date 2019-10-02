@@ -110,11 +110,13 @@ public class SqlLikeOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.between( 2, 3 );
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         switch ( callBinding.getOperandCount() ) {
             case 2:
@@ -137,6 +139,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "", "" );
         call.operand( 0 ).unparse( writer, getLeftPrec(), getRightPrec() );
@@ -151,6 +154,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public ReduceResult reduceExpr( final int opOrdinal, TokenSequence list ) {
         // Example:
         //   a LIKE b || c ESCAPE d || e AND f

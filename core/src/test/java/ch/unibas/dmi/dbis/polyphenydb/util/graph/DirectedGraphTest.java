@@ -165,7 +165,7 @@ public class DirectedGraphTest {
     @Test
     public void testDepthFirst() {
         final DefaultDirectedGraph<String, DefaultEdge> graph = createDag();
-        final List<String> list = new ArrayList<String>();
+        final List<String> list = new ArrayList<>();
         for ( String s : DepthFirstIterator.of( graph, "A" ) ) {
             list.add( s );
         }
@@ -204,7 +204,7 @@ public class DirectedGraphTest {
     @Test
     public void testTopologicalOrderIterator() {
         final DefaultDirectedGraph<String, DefaultEdge> graph = createDag();
-        final List<String> list = new ArrayList<String>();
+        final List<String> list = new ArrayList<>();
         for ( String s : TopologicalOrderIterator.of( graph ) ) {
             list.add( s );
         }
@@ -277,7 +277,7 @@ public class DirectedGraphTest {
         //   +- E - F
         DefaultDirectedGraph<String, DefaultEdge> graph = createDag();
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of() ) );
 
         // Add cycle C-D-E-C
@@ -289,7 +289,7 @@ public class DirectedGraphTest {
         //      \_____/
         graph.addEdge( "D", "E" );
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of( "C", "D", "E", "F" ) ) );
 
         // Add another cycle, D-C-D in addition to C-D-E-C.
@@ -302,7 +302,7 @@ public class DirectedGraphTest {
         //      \_____/
         graph.addEdge( "D", "C" );
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of( "C", "D", "E", "F" ) ) );
 
         graph.removeEdge( "D", "E" );
@@ -318,7 +318,7 @@ public class DirectedGraphTest {
         //
         // Detected cycle contains "D", which is downstream from the cycle but not in the cycle. Not sure whether that is correct.
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of( "B", "C", "D" ) ) );
 
         // Add single-node cycle, C-C
@@ -331,13 +331,13 @@ public class DirectedGraphTest {
         graph.removeEdge( "C", "B" );
         graph.addEdge( "C", "C" );
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of( "C", "D" ) ) );
 
         // Empty graph is not cyclic.
         graph.removeAllVertices( graph.vertexSet() );
         assertThat(
-                new CycleDetector<String, DefaultEdge>( graph ).findCycles(),
+                new CycleDetector<>( graph ).findCycles(),
                 CoreMatchers.equalTo( ImmutableSet.of() ) );
     }
 
@@ -355,7 +355,7 @@ public class DirectedGraphTest {
 
 
     private List<String> getA( DefaultDirectedGraph<String, DefaultEdge> graph, String root ) {
-        final List<String> list = new ArrayList<String>();
+        final List<String> list = new ArrayList<>();
         for ( String s : BreadthFirstIterator.of( graph, root ) ) {
             list.add( s );
         }
@@ -364,7 +364,7 @@ public class DirectedGraphTest {
 
 
     private Set<String> getB( DefaultDirectedGraph<String, DefaultEdge> graph, String root ) {
-        final Set<String> list = new LinkedHashSet<String>();
+        final Set<String> list = new LinkedHashSet<>();
         BreadthFirstIterator.reachable( list, graph, root );
         return list;
     }

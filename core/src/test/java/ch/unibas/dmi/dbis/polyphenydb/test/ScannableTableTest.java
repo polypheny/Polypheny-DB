@@ -404,6 +404,7 @@ public class ScannableTableTest {
                                         scan( final DataContext root ) {
                                             scanCount.incrementAndGet();
                                             return new AbstractEnumerable<Object[]>() {
+                                                @Override
                                                 public Enumerator<Object[]> enumerator() {
                                                     enumerateCount.incrementAndGet();
                                                     return superScan( root ).enumerator();
@@ -462,13 +463,16 @@ public class ScannableTableTest {
      */
     public static class SimpleTable extends AbstractTable implements ScannableTable {
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder().add( "i", SqlTypeName.INTEGER ).build();
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return tens();
                 }
@@ -483,6 +487,7 @@ public class ScannableTableTest {
      */
     public static class BeatlesTable extends AbstractTable implements ScannableTable {
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", SqlTypeName.INTEGER )
@@ -491,8 +496,10 @@ public class ScannableTableTest {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return beatles( new StringBuilder(), null, null );
                 }
@@ -517,6 +524,7 @@ public class ScannableTableTest {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", SqlTypeName.INTEGER )
@@ -526,9 +534,11 @@ public class ScannableTableTest {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
             final Integer filter = getFilter( cooperative, filters );
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return beatles( buf, filter, null );
                 }
@@ -552,6 +562,7 @@ public class ScannableTableTest {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", SqlTypeName.INTEGER )
@@ -561,9 +572,11 @@ public class ScannableTableTest {
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, final int[] projects ) {
             final Integer filter = getFilter( cooperative, filters );
             return new AbstractEnumerable<Object[]>() {
+                @Override
                 public Enumerator<Object[]> enumerator() {
                     return beatles( buf, filter, projects );
                 }
@@ -578,11 +591,13 @@ public class ScannableTableTest {
             Object[] current;
 
 
+            @Override
             public Object[] current() {
                 return current;
             }
 
 
+            @Override
             public boolean moveNext() {
                 if ( ++row < 4 ) {
                     current = new Object[]{ row * 10 };
@@ -593,11 +608,13 @@ public class ScannableTableTest {
             }
 
 
+            @Override
             public void reset() {
                 row = -1;
             }
 
 
+            @Override
             public void close() {
                 current = null;
             }
@@ -620,11 +637,13 @@ public class ScannableTableTest {
             Object[] current;
 
 
+            @Override
             public Object[] current() {
                 return current;
             }
 
 
+            @Override
             public boolean moveNext() {
                 while ( ++row < 4 ) {
                     Object[] current = BEATLES[row % 4];
@@ -646,11 +665,13 @@ public class ScannableTableTest {
             }
 
 
+            @Override
             public void reset() {
                 row = -1;
             }
 
 
+            @Override
             public void close() {
                 current = null;
                 buf.append( "returnCount=" ).append( returnCount );

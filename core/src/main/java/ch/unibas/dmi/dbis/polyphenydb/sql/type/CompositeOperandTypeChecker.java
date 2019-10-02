@@ -121,6 +121,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public boolean isOptional( int i ) {
         for ( SqlOperandTypeChecker allowedRule : allowedRules ) {
             if ( allowedRule.isOptional( i ) ) {
@@ -136,11 +137,13 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         if ( allowedSignatures != null ) {
             return allowedSignatures;
@@ -162,6 +165,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         switch ( composition ) {
             case REPEAT:
@@ -173,11 +177,13 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
             default:
                 final List<SqlOperandCountRange> ranges =
                         new AbstractList<SqlOperandCountRange>() {
+                            @Override
                             public SqlOperandCountRange get( int index ) {
                                 return allowedRules.get( index ).getOperandCountRange();
                             }
 
 
+                            @Override
                             public int size() {
                                 return allowedRules.size();
                             }
@@ -186,6 +192,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
                 final int max = maxMax( ranges );
                 SqlOperandCountRange composite =
                         new SqlOperandCountRange() {
+                            @Override
                             public boolean isValidCount( int count ) {
                                 switch ( composition ) {
                                     case AND:
@@ -207,11 +214,13 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
                             }
 
 
+                            @Override
                             public int getMin() {
                                 return min;
                             }
 
 
+                            @Override
                             public int getMax() {
                                 return max;
                             }
@@ -255,6 +264,7 @@ public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         if ( check( callBinding ) ) {
             return true;

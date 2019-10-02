@@ -65,6 +65,7 @@ public abstract class ChainedPhaseRuleMappingInitializer implements VolcanoPlann
     }
 
 
+    @Override
     public final void initialize( Map<VolcanoPlannerPhase, Set<String>> phaseRuleMap ) {
         // Initialize subordinate's mappings.
         subordinate.initialize( phaseRuleMap );

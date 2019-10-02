@@ -57,6 +57,7 @@ public enum SqlSyntax {
      * Function syntax, as in "Foo(x, y)".
      */
     FUNCTION {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             SqlUtil.unparseFunctionSyntax( operator, writer, call );
         }
@@ -66,6 +67,7 @@ public enum SqlSyntax {
      * Function syntax, as in "Foo(x, y)", but uses "*" if there are no arguments, for example "COUNT(*)".
      */
     FUNCTION_STAR {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             SqlUtil.unparseFunctionSyntax( operator, writer, call );
         }
@@ -75,6 +77,7 @@ public enum SqlSyntax {
      * Binary operator syntax, as in "x + y".
      */
     BINARY {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             SqlUtil.unparseBinarySyntax( operator, call, writer, leftPrec, rightPrec );
         }
@@ -84,6 +87,7 @@ public enum SqlSyntax {
      * Prefix unary operator syntax, as in "- x".
      */
     PREFIX {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             assert call.operandCount() == 1;
             writer.keyword( operator.getName() );
@@ -95,6 +99,7 @@ public enum SqlSyntax {
      * Postfix unary operator syntax, as in "x ++".
      */
     POSTFIX {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             assert call.operandCount() == 1;
             call.operand( 0 ).unparse( writer, operator.getLeftPrec(), operator.getRightPrec() );
@@ -106,6 +111,7 @@ public enum SqlSyntax {
      * Special syntax, such as that of the SQL CASE operator, "CASE x WHEN 1 THEN 2 ELSE 3 END".
      */
     SPECIAL {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             // You probably need to override the operator's unparse method.
             throw Util.needToImplement( this );
@@ -118,6 +124,7 @@ public enum SqlSyntax {
      * @see SqlConformance#allowNiladicParentheses()
      */
     FUNCTION_ID {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             SqlUtil.unparseFunctionSyntax( operator, writer, call );
         }
@@ -127,6 +134,7 @@ public enum SqlSyntax {
      * Syntax of an internal operator, which does not appear in the SQL.
      */
     INTERNAL {
+        @Override
         public void unparse( SqlWriter writer, SqlOperator operator, SqlCall call, int leftPrec, int rightPrec ) {
             throw new UnsupportedOperationException( "Internal operator '" + operator + "' " + "cannot be un-parsed" );
         }

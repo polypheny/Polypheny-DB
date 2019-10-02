@@ -84,37 +84,44 @@ public abstract class RelOptAbstractTable implements RelOptTable {
     }
 
 
+    @Override
     public List<String> getQualifiedName() {
         return ImmutableList.of( name );
     }
 
 
+    @Override
     public double getRowCount() {
         return 100;
     }
 
 
+    @Override
     public RelDataType getRowType() {
         return rowType;
     }
 
 
+    @Override
     public RelOptSchema getRelOptSchema() {
         return schema;
     }
 
 
     // Override to define collations.
+    @Override
     public List<RelCollation> getCollationList() {
         return Collections.emptyList();
     }
 
 
+    @Override
     public RelDistribution getDistribution() {
         return RelDistributions.BROADCAST_DISTRIBUTED;
     }
 
 
+    @Override
     public <T> T unwrap( Class<T> clazz ) {
         return clazz.isInstance( this )
                 ? clazz.cast( this )
@@ -123,32 +130,38 @@ public abstract class RelOptAbstractTable implements RelOptTable {
 
 
     // Override to define keys
+    @Override
     public boolean isKey( ImmutableBitSet columns ) {
         return false;
     }
 
 
     // Override to define foreign keys
+    @Override
     public List<RelReferentialConstraint> getReferentialConstraints() {
         return Collections.emptyList();
     }
 
 
+    @Override
     public RelNode toRel( ToRelContext context ) {
         return LogicalTableScan.create( context.getCluster(), this );
     }
 
 
+    @Override
     public Expression getExpression( Class clazz ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RelOptTable extend( List<RelDataTypeField> extendedFields ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public List<ColumnStrategy> getColumnStrategies() {
         return RelOptTableImpl.columnStrategies( this );
     }

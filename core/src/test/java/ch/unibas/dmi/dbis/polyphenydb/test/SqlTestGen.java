@@ -133,8 +133,10 @@ public class SqlTestGen {
         }
 
 
+        @Override
         public SqlTester getTester() {
             return new SqlValidatorTester( SPOOLER_VALIDATOR ) {
+                @Override
                 public void assertExceptionIsThrown( String sql, String expectedMsgPattern ) {
                     if ( expectedMsgPattern == null ) {
                         // This SQL statement is supposed to succeed. Generate it to the file, so we can see what output it produces.

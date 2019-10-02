@@ -139,11 +139,13 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
             int i = bounds[0] - 1;
 
 
+            @Override
             public Integer current() {
                 return i;
             }
 
 
+            @Override
             public boolean moveNext() {
                 for ( ; ; ) {
                     if ( ++i > bounds[1] ) {
@@ -156,11 +158,13 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
             }
 
 
+            @Override
             public void reset() {
                 i = bounds[0] - 1;
             }
 
 
+            @Override
             public void close() {
                 // no resources
             }

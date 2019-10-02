@@ -99,21 +99,25 @@ public class SqlAdvisorGetHintsFunction2 implements TableFunction, Implementable
                     .build();
 
 
+    @Override
     public CallImplementor getImplementor() {
         return IMPLEMENTOR;
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments ) {
         return typeFactory.createJavaType( SqlAdvisorHint2.class );
     }
 
 
+    @Override
     public Type getElementType( List<Object> arguments ) {
         return SqlAdvisorHint2.class;
     }
 
 
+    @Override
     public List<FunctionParameter> getParameters() {
         return PARAMETERS;
     }

@@ -75,6 +75,7 @@ public class ProjectMultiJoinMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalProject project = call.rel( 0 );
         MultiJoin multiJoin = call.rel( 1 );

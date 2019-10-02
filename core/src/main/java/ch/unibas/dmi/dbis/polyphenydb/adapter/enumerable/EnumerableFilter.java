@@ -87,11 +87,13 @@ public class EnumerableFilter extends Filter implements EnumerableRel {
     }
 
 
+    @Override
     public EnumerableFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
         return new EnumerableFilter( getCluster(), traitSet, input, condition );
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         // EnumerableCalc is always better
         throw new UnsupportedOperationException();

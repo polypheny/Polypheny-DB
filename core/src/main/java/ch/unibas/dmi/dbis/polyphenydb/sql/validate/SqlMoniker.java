@@ -61,6 +61,7 @@ public interface SqlMoniker {
                 final Ordering<Iterable<String>> listOrdering = Ordering.<String>natural().lexicographical();
 
 
+                @Override
                 public int compare( SqlMoniker o1, SqlMoniker o2 ) {
                     int c = o1.getType().compareTo( o2.getType() );
                     if ( c == 0 ) {

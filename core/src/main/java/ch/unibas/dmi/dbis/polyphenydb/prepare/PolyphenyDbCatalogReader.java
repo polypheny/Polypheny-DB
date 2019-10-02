@@ -184,6 +184,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public RelDataType getNamedType( SqlIdentifier typeName ) {
         PolyphenyDbSchema.TypeEntry typeEntry = SqlValidatorUtil.getTypeEntry( getRootSchema(), typeName );
         if ( typeEntry != null ) {
@@ -194,6 +195,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public List<SqlMoniker> getAllSchemaObjectNames( List<String> names ) {
         final PolyphenyDbSchema schema = SqlValidatorUtil.getSchema( rootSchema, names, nameMatcher );
         if ( schema == null ) {
@@ -233,6 +235,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public List<List<String>> getSchemaPaths() {
         return schemaPaths;
     }
@@ -244,23 +247,27 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelDataTypeField field( RelDataType rowType, String alias ) {
         return nameMatcher.field( rowType, alias );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public boolean matches( String string, String name ) {
         return nameMatcher.matches( string, name );
     }
 
 
+    @Override
     public RelDataType createTypeFromProjection( final RelDataType type, final List<String> columnNameList ) {
         return SqlValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
     }
 
 
+    @Override
     public void lookupOperatorOverloads( final SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         if ( syntax != SqlSyntax.FUNCTION ) {
             return;
@@ -361,21 +368,25 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public List<SqlOperator> getOperatorList() {
         return null;
     }
 
 
+    @Override
     public PolyphenyDbSchema getRootSchema() {
         return rootSchema;
     }
 
 
+    @Override
     public RelDataTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
 
+    @Override
     public void registerRules( RelOptPlanner planner ) throws Exception {
     }
 
@@ -387,6 +398,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
+    @Override
     public SqlNameMatcher nameMatcher() {
         return nameMatcher;
     }

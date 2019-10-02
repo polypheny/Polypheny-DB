@@ -80,16 +80,19 @@ public class AbstractSchema implements Schema {
     }
 
 
+    @Override
     public boolean isMutable() {
         return true;
     }
 
 
+    @Override
     public Schema snapshot( SchemaVersion version ) {
         return this;
     }
 
 
+    @Override
     public Expression getExpression( SchemaPlus parentSchema, String name ) {
         return Schemas.subSchemaExpression( parentSchema, name, getClass() );
     }
@@ -109,11 +112,13 @@ public class AbstractSchema implements Schema {
     }
 
 
+    @Override
     public final Set<String> getTableNames() {
         return getTableMap().keySet();
     }
 
 
+    @Override
     public final Table getTable( String name ) {
         return getTableMap().get( name );
     }
@@ -133,11 +138,13 @@ public class AbstractSchema implements Schema {
     }
 
 
+    @Override
     public RelProtoDataType getType( String name ) {
         return getTypeMap().get( name );
     }
 
 
+    @Override
     public Set<String> getTypeNames() {
         return getTypeMap().keySet();
     }
@@ -158,11 +165,13 @@ public class AbstractSchema implements Schema {
     }
 
 
+    @Override
     public final Collection<Function> getFunctions( String name ) {
         return getFunctionMultimap().get( name ); // never null
     }
 
 
+    @Override
     public final Set<String> getFunctionNames() {
         return getFunctionMultimap().keySet();
     }
@@ -182,11 +191,13 @@ public class AbstractSchema implements Schema {
     }
 
 
+    @Override
     public final Set<String> getSubSchemaNames() {
         return getSubSchemaMap().keySet();
     }
 
 
+    @Override
     public final Schema getSubSchema( String name ) {
         return getSubSchemaMap().get( name );
     }
@@ -204,6 +215,7 @@ public class AbstractSchema implements Schema {
         }
 
 
+        @Override
         public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
             return new AbstractSchema();
         }

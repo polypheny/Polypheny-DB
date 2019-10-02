@@ -128,6 +128,7 @@ public class ProfilerImpl implements Profiler {
     }
 
 
+    @Override
     public Profile profile( Iterable<List<Comparable>> rows, final List<Column> columns, Collection<ImmutableBitSet> initialGroups ) {
         return new Run( columns, initialGroups ).profile( rows );
     }
@@ -600,6 +601,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             final Comparable v = row.get( columnOrdinal );
             if ( v == NullSentinel.INSTANCE ) {
@@ -617,6 +619,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             space.nullCount = nullCount;
             space.cardinality = values.size() + (nullCount > 0 ? 1 : 0);
@@ -646,6 +649,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             if ( space.columnOrdinals.equals( OF ) ) {
                 Util.discard( 0 );
@@ -677,6 +681,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             // number of input rows (not distinct values) that were null or partially null
             space.nullCount = nullCount;
@@ -723,6 +728,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             space.nullCount = nullCount;
             space.cardinality = (int) sketch.getEstimate();
@@ -745,6 +751,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             final Comparable value = row.get( columnOrdinal );
             if ( value == NullSentinel.INSTANCE ) {
@@ -772,6 +779,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             if ( space.columnOrdinals.equals( OF ) ) {
                 Util.discard( 0 );

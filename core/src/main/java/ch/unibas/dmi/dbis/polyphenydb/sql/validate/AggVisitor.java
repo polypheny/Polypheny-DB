@@ -101,6 +101,7 @@ abstract class AggVisitor extends SqlBasicVisitor<Void> {
     }
 
 
+    @Override
     public Void visit( SqlCall call ) {
         final SqlOperator operator = call.getOperator();
         // If nested aggregates disallowed or found an aggregate at invalid level

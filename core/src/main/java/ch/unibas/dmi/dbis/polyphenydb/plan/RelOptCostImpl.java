@@ -111,6 +111,7 @@ public class RelOptCostImpl implements RelOptCost {
 
 
     // implement RelOptCost
+    @Override
     public boolean equals( RelOptCost other ) {
         return getRows() == other.getRows();
     }
@@ -176,30 +177,35 @@ public class RelOptCostImpl implements RelOptCost {
     private static class Factory implements RelOptCostFactory {
 
         // implement RelOptPlanner
+        @Override
         public RelOptCost makeCost( double dRows, double dCpu, double dIo ) {
             return new RelOptCostImpl( dRows );
         }
 
 
         // implement RelOptPlanner
+        @Override
         public RelOptCost makeHugeCost() {
             return new RelOptCostImpl( Double.MAX_VALUE );
         }
 
 
         // implement RelOptPlanner
+        @Override
         public RelOptCost makeInfiniteCost() {
             return new RelOptCostImpl( Double.POSITIVE_INFINITY );
         }
 
 
         // implement RelOptPlanner
+        @Override
         public RelOptCost makeTinyCost() {
             return new RelOptCostImpl( 1.0 );
         }
 
 
         // implement RelOptPlanner
+        @Override
         public RelOptCost makeZeroCost() {
             return new RelOptCostImpl( 0.0 );
         }

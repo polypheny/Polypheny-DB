@@ -46,7 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
@@ -344,6 +344,7 @@ public abstract class SqlToRelTestBase {
             // If they're asking for a sample, just for test purposes, assume there's a table called "<table>:<sample>".
             RelOptTable datasetTable =
                     new DelegatingRelOptTable( table ) {
+                        @Override
                         public List<String> getQualifiedName() {
                             final List<String> list = new ArrayList<>( super.getQualifiedName() );
                             list.set(
@@ -393,6 +394,7 @@ public abstract class SqlToRelTestBase {
             }
 
 
+            @Override
             public <T> T unwrap( Class<T> clazz ) {
                 if ( clazz.isInstance( this ) ) {
                     return clazz.cast( this );
@@ -401,11 +403,13 @@ public abstract class SqlToRelTestBase {
             }
 
 
+            @Override
             public List<String> getQualifiedName() {
                 return names;
             }
 
 
+            @Override
             public double getRowCount() {
                 // use something other than 0 to give costing tests some room, and make emps bigger than depts for join asymmetry
                 if ( Iterables.getLast( names ).equals( "EMP" ) ) {
@@ -416,51 +420,61 @@ public abstract class SqlToRelTestBase {
             }
 
 
+            @Override
             public RelDataType getRowType() {
                 return rowType;
             }
 
 
+            @Override
             public RelOptSchema getRelOptSchema() {
                 return MockRelOptSchema.this;
             }
 
 
+            @Override
             public RelNode toRel( ToRelContext context ) {
                 return LogicalTableScan.create( context.getCluster(), this );
             }
 
 
+            @Override
             public List<RelCollation> getCollationList() {
                 return collationList;
             }
 
 
+            @Override
             public RelDistribution getDistribution() {
                 return RelDistributions.BROADCAST_DISTRIBUTED;
             }
 
 
+            @Override
             public boolean isKey( ImmutableBitSet columns ) {
                 return false;
             }
 
 
+            @Override
             public List<RelReferentialConstraint> getReferentialConstraints() {
                 return ImmutableList.of();
             }
 
 
+            @Override
             public List<ColumnStrategy> getColumnStrategies() {
                 throw new UnsupportedOperationException();
             }
 
 
+            @Override
             public Expression getExpression( Class clazz ) {
                 return null;
             }
 
 
+            @Override
             public RelOptTable extend( List<RelDataTypeField> extendedFields ) {
                 final RelDataType extendedRowType = getRelOptSchema().getTypeFactory().builder()
                         .addAll( rowType.getFieldList() )
@@ -485,6 +499,7 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             if ( clazz.isInstance( this ) ) {
                 return clazz.cast( this );
@@ -493,61 +508,73 @@ public abstract class SqlToRelTestBase {
         }
 
 
+        @Override
         public Expression getExpression( Class clazz ) {
             return parent.getExpression( clazz );
         }
 
 
+        @Override
         public RelOptTable extend( List<RelDataTypeField> extendedFields ) {
             return parent.extend( extendedFields );
         }
 
 
+        @Override
         public List<String> getQualifiedName() {
             return parent.getQualifiedName();
         }
 
 
+        @Override
         public double getRowCount() {
             return parent.getRowCount();
         }
 
 
+        @Override
         public RelDataType getRowType() {
             return parent.getRowType();
         }
 
 
+        @Override
         public RelOptSchema getRelOptSchema() {
             return parent.getRelOptSchema();
         }
 
 
+        @Override
         public RelNode toRel( ToRelContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 
 
+        @Override
         public List<RelCollation> getCollationList() {
             return parent.getCollationList();
         }
 
 
+        @Override
         public RelDistribution getDistribution() {
             return parent.getDistribution();
         }
 
 
+        @Override
         public boolean isKey( ImmutableBitSet columns ) {
             return parent.isKey( columns );
         }
 
 
+        @Override
         public List<RelReferentialConstraint> getReferentialConstraints() {
             return parent.getReferentialConstraints();
         }
 
 
+        @Override
         public List<ColumnStrategy> getColumnStrategies() {
             return parent.getColumnStrategies();
         }
@@ -748,14 +775,14 @@ public abstract class SqlToRelTestBase {
             String sql2 = getDiffRepos().expand( "sql", sql );
             RelNode rel = convertSqlToRel( sql2 ).project();
 
-            assertTrue( rel != null );
+            assertNotNull( rel );
             assertValid( rel );
 
             if ( trim ) {
                 final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
                 final RelFieldTrimmer trimmer = createFieldTrimmer( relBuilder );
                 rel = trimmer.trim( rel );
-                assertTrue( rel != null );
+                assertNotNull( rel );
                 assertValid( rel );
             }
 

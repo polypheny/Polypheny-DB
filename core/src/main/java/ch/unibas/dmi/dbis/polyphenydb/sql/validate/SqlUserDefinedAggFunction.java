@@ -127,12 +127,14 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public List<RelDataType> getParameterTypes( final RelDataTypeFactory typeFactory ) {
         return Lists.transform( function.getParameters(), parameter -> parameter.getType( typeFactory ) );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
         return function.getReturnType( typeFactory );

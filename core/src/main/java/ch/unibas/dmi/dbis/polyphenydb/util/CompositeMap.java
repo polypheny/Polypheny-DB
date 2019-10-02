@@ -92,11 +92,13 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public int size() {
         return keySet().size();
     }
 
 
+    @Override
     public boolean isEmpty() {
         // Empty iff all maps are empty.
         for ( Map<K, V> map : maps ) {
@@ -108,6 +110,7 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public boolean containsKey( Object key ) {
         for ( Map<K, V> map : maps ) {
             if ( map.containsKey( key ) ) {
@@ -118,6 +121,7 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public boolean containsValue( Object value ) {
         for ( Map<K, V> map : maps ) {
             if ( map.containsValue( value ) ) {
@@ -128,6 +132,7 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public V get( Object key ) {
         for ( Map<K, V> map : maps ) {
             //noinspection SuspiciousMethodCalls
@@ -139,30 +144,35 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public V put( K key, V value ) {
         // we are an unmodifiable view on the maps
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public V remove( Object key ) {
         // we are an unmodifiable view on the maps
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void putAll( Map<? extends K, ? extends V> m ) {
         // we are an unmodifiable view on the maps
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void clear() {
         // we are an unmodifiable view on the maps
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Set<K> keySet() {
         final Set<K> keys = new LinkedHashSet<>();
         for ( Map<K, V> map : maps ) {
@@ -186,11 +196,13 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 
 
+    @Override
     public Collection<V> values() {
         return combinedMap().values();
     }
 
 
+    @Override
     public Set<Entry<K, V>> entrySet() {
         return combinedMap().entrySet();
     }

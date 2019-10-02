@@ -70,6 +70,7 @@ public class EnumerableFilterToCalcRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final EnumerableFilter filter = call.rel( 0 );
         final RelNode input = filter.getInput();

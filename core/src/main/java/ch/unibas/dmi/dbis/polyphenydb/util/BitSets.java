@@ -120,11 +120,13 @@ public final class BitSets {
             int i = bitSet.nextSetBit( 0 );
 
 
+            @Override
             public boolean hasNext() {
                 return i >= 0;
             }
 
 
+            @Override
             public Integer next() {
                 int prev = i;
                 i = bitSet.nextSetBit( i + 1 );
@@ -132,6 +134,7 @@ public final class BitSets {
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }

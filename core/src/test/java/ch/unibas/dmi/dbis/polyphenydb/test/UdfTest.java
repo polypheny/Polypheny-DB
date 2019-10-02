@@ -927,26 +927,31 @@ public class UdfTest {
      */
     private abstract static class ArrayAppendScalarFunction implements ScalarFunction, ImplementableFunction {
 
+        @Override
         public List<FunctionParameter> getParameters() {
             final List<FunctionParameter> parameters = new ArrayList<>();
             for ( final Ord<RelProtoDataType> type : Ord.zip( getParams() ) ) {
                 parameters.add(
                         new FunctionParameter() {
+                            @Override
                             public int getOrdinal() {
                                 return type.i;
                             }
 
 
+                            @Override
                             public String getName() {
                                 return "arg" + type.i;
                             }
 
 
+                            @Override
                             public RelDataType getType( RelDataTypeFactory typeFactory ) {
                                 return type.e.apply( typeFactory );
                             }
 
 
+                            @Override
                             public boolean isOptional() {
                                 return false;
                             }
@@ -994,11 +999,13 @@ public class UdfTest {
      */
     private class ArrayAppendDoubleFunction extends ArrayAppendScalarFunction {
 
+        @Override
         public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
             return typeFactory.createArrayType( typeFactory.createSqlType( SqlTypeName.DOUBLE ), -1 );
         }
 
 
+        @Override
         public List<RelProtoDataType> getParams() {
             return ImmutableList.of(
                     typeFactory -> typeFactory.createArrayType( typeFactory.createSqlType( SqlTypeName.DOUBLE ), -1 ),

@@ -68,6 +68,7 @@ class EnumerableFilterRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalFilter filter = (LogicalFilter) rel;
         return new EnumerableFilter(

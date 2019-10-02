@@ -1639,6 +1639,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             LogicalAggregate singleAggregate = call.rel( 0 );
             LogicalProject project = call.rel( 1 );
@@ -1689,6 +1690,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final LogicalCorrelate correlate = call.rel( 0 );
             final RelNode left = call.rel( 1 );
@@ -1862,6 +1864,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final LogicalCorrelate correlate = call.rel( 0 );
             final RelNode left = call.rel( 1 );
@@ -2198,6 +2201,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final LogicalCorrelate correlate = call.rel( 0 );
             final RelNode left = call.rel( 1 );
@@ -2344,6 +2348,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public int compareTo( @Nonnull CorRef o ) {
             int c = corr.compareTo( o.corr );
             if ( c != 0 ) {
@@ -2399,6 +2404,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
 
 
+        @Override
         public int compareTo( @Nonnull CorDef o ) {
             int c = corr.compareTo( o.corr );
             if ( c != 0 ) {

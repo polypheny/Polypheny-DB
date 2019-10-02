@@ -136,6 +136,7 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
+    @Override
     public void findAllColumnNames( List<SqlMoniker> result ) {
         for ( ScopeChild child : children ) {
             addColumnNames( child.namespace, result );
@@ -144,6 +145,7 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
+    @Override
     public void findAliases( Collection<SqlMoniker> result ) {
         for ( ScopeChild child : children ) {
             result.add( new SqlMonikerImpl( child.name, SqlMonikerType.TABLE ) );
@@ -235,6 +237,7 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
+    @Override
     public RelDataType resolveColumn( String columnName, SqlNode ctx ) {
         final SqlNameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         int found = 0;

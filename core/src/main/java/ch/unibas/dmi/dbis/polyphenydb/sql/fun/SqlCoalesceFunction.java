@@ -79,6 +79,7 @@ public class SqlCoalesceFunction extends SqlFunction {
 
 
     // override SqlOperator
+    @Override
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         validateQuantifier( validator, call ); // check DISTINCT/ALL
 

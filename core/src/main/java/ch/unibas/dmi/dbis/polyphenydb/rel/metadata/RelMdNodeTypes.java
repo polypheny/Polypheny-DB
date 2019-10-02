@@ -77,6 +77,7 @@ public class RelMdNodeTypes implements MetadataHandler<BuiltInMetadata.NodeTypes
                     new RelMdNodeTypes() );
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.NodeTypes> getDef() {
         return BuiltInMetadata.NodeTypes.DEF;
     }

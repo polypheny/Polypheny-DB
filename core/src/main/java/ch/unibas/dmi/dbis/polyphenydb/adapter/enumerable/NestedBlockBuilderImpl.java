@@ -80,6 +80,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      *
      * @return new code block that can optimize expressions and reuse already calculated values from the parent blocks.
      */
+    @Override
     public final BlockBuilder nestBlock() {
         BlockBuilder block = new BlockBuilder( true, currentBlock() );
         nestBlock( block, Collections.emptyMap() );
@@ -93,6 +94,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      * @param block new code block
      * @see #exitBlock()
      */
+    @Override
     public final void nestBlock( BlockBuilder block ) {
         nestBlock( block, Collections.emptyMap() );
     }
@@ -105,6 +107,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      * @param nullables map of expression to its nullability state
      * @see #exitBlock()
      */
+    @Override
     public final void nestBlock( BlockBuilder block, Map<RexNode, Boolean> nullables ) {
         blocks.add( block );
         Map<RexNode, Boolean> prev = this.nullables.isEmpty()
@@ -127,6 +130,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      *
      * @return current code block
      */
+    @Override
     public final BlockBuilder currentBlock() {
         return blocks.get( blocks.size() - 1 );
     }
@@ -137,6 +141,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      *
      * @return current nullability state of rex nodes
      */
+    @Override
     public final Map<RexNode, Boolean> currentNullables() {
         return nullables.get( nullables.size() - 1 );
     }
@@ -147,6 +152,7 @@ public class NestedBlockBuilderImpl implements NestedBlockBuilder {
      *
      * @see #nestBlock()
      */
+    @Override
     public final void exitBlock() {
         blocks.remove( blocks.size() - 1 );
         nullables.remove( nullables.size() - 1 );

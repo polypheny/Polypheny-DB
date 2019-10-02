@@ -228,6 +228,7 @@ public interface SqlTester extends AutoCloseable, Tester {
      * @param sql Query expression
      * @param type Type string
      */
+    @Override
     void checkColumnType( String sql, String type );
 
     /**

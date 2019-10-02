@@ -72,16 +72,19 @@ public abstract class EnumeratorCursor<T> extends PositionedCursor<T> {
     }
 
 
+    @Override
     protected T current() {
         return enumerator.current();
     }
 
 
+    @Override
     public boolean next() {
         return enumerator.moveNext();
     }
 
 
+    @Override
     public void close() {
         enumerator.close();
     }

@@ -56,7 +56,7 @@ import java.util.List;
 /**
  * A character string literal.
  *
- * Its {@link #value} field is an {@link NlsString} and {@link #typeName} is {@link SqlTypeName#CHAR}.
+ * Its {@link #value} field is an {@link NlsString} and {@code #typeName} is {@link SqlTypeName#CHAR}.
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
@@ -87,6 +87,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         if ( false ) {
             Util.discard( Bug.FRG78_FIXED );
@@ -98,6 +99,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
     }
 
 
+    @Override
     protected SqlAbstractStringLiteral concat1( List<SqlLiteral> literals ) {
         return new SqlCharStringLiteral(
                 NlsString.concat(

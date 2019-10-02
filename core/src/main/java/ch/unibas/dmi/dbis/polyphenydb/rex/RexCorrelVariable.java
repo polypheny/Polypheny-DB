@@ -68,11 +68,13 @@ public class RexCorrelVariable extends RexVariable {
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitCorrelVariable( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitCorrelVariable( this, arg );
     }

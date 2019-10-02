@@ -775,11 +775,13 @@ public abstract class SqlImplementor {
 
         public List<SqlNode> fieldList() {
             return new AbstractList<SqlNode>() {
+                @Override
                 public SqlNode get( int index ) {
                     return field( index );
                 }
 
 
+                @Override
                 public int size() {
                     return fieldCount;
                 }
@@ -882,6 +884,7 @@ public abstract class SqlImplementor {
         }
 
 
+        @Override
         public SqlNode field( int ordinal ) {
             return field.apply( ordinal );
         }
@@ -977,6 +980,7 @@ public abstract class SqlImplementor {
         }
 
 
+        @Override
         public SqlNode field( int ordinal ) {
             for ( Map.Entry<String, RelDataType> alias : aliases.entrySet() ) {
                 final List<RelDataTypeField> fields = alias.getValue().getFieldList();
@@ -1016,6 +1020,7 @@ public abstract class SqlImplementor {
         }
 
 
+        @Override
         public SqlNode field( int ordinal ) {
             if ( ordinal < leftContext.fieldCount ) {
                 return leftContext.field( ordinal );
@@ -1086,6 +1091,7 @@ public abstract class SqlImplementor {
             final SqlNodeList selectList = select.getSelectList();
             if ( selectList != null ) {
                 newContext = new Context( dialect, selectList.size() ) {
+                    @Override
                     public SqlNode field( int ordinal ) {
                         final SqlNode selectItem = selectList.get( ordinal );
                         switch ( selectItem.getKind() ) {

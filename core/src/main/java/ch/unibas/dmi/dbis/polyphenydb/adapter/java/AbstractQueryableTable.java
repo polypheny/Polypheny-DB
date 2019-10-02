@@ -67,6 +67,7 @@ public abstract class AbstractQueryableTable extends AbstractTable implements Qu
     }
 
 
+    @Override
     public Type getElementType() {
         return elementType;
     }

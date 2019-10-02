@@ -287,11 +287,13 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public boolean hasNext() {
             return cursor < size;
         }
 
 
+        @Override
         public E next() {
             if ( cursor >= size ) {
                 throw new NoSuchElementException();
@@ -315,11 +317,13 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public boolean hasPrevious() {
             return cursor > 0;
         }
 
 
+        @Override
         public E previous() {
             lastRet = cursor--;
             if ( cursor < start ) {
@@ -337,16 +341,19 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public int nextIndex() {
             return cursor;
         }
 
 
+        @Override
         public int previousIndex() {
             return cursor - 1;
         }
 
 
+        @Override
         public void remove() {
             if ( lastRet < 0 ) {
                 throw new IllegalStateException();
@@ -423,6 +430,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public void set( E e ) {
             if ( lastRet < 0 ) {
                 throw new IllegalStateException();
@@ -439,6 +447,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public void add( E e ) {
             if ( chunk == null ) {
                 Object[] newChunk = new Object[CHUNK_SIZE + HEADER_SIZE];

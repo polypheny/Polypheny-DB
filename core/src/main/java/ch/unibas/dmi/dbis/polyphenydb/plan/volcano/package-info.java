@@ -87,7 +87,7 @@
  * their trait sets expanded before the <code>setRoot(RelNode)</code> call.</li>*
  * </ol>
  *
- * The second trait extension mechanism requires that implementations of {@link ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
+ * The second trait extension mechanism requires that implementations of {@code ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
  * In either case, the new <code>RelTraitDef</code> implementation must be {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner#addRelTraitDef(ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef)} registered with the planner.
  *
  * A {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset} is a subset of a <code>RelSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.

@@ -49,7 +49,6 @@ import org.junit.Test;
 /**
  * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc} package.
  */
-@SuppressWarnings("SqlDialectInspection")
 public class JdbcAdapterTest {
 
     /**
@@ -971,6 +970,7 @@ public class JdbcAdapterTest {
         }
 
 
+        @Override
         public void close() {
             lock.unlock();
         }

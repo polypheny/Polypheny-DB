@@ -105,6 +105,7 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
      * @param arguments Arguments
      * @return Table
      */
+    @Override
     public TranslatableTable apply( List<Object> arguments ) {
         try {
             Object o = null;

@@ -82,6 +82,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         columnMappings = new HashSet<>();
         RelDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );

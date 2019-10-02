@@ -127,6 +127,7 @@ public class SqlTrimFunction extends SqlFunction {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         assert call.operand( 0 ) instanceof SqlLiteral : call.operand( 0 );
@@ -138,6 +139,7 @@ public class SqlTrimFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         switch ( operandsCount ) {
             case 3:
@@ -148,6 +150,7 @@ public class SqlTrimFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
         assert functionQualifier == null;
         switch ( operands.length ) {
@@ -172,6 +175,7 @@ public class SqlTrimFunction extends SqlFunction {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         if ( !super.checkOperandTypes( callBinding, throwOnFailure ) ) {
             return false;

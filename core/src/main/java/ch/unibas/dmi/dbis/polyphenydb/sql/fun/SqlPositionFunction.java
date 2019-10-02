@@ -77,6 +77,7 @@ public class SqlPositionFunction extends SqlFunction {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
@@ -90,6 +91,7 @@ public class SqlPositionFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         switch ( operandsCount ) {
             case 2:
@@ -102,6 +104,7 @@ public class SqlPositionFunction extends SqlFunction {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         // check that the two operands are of same type.
         switch ( callBinding.getOperandCount() ) {

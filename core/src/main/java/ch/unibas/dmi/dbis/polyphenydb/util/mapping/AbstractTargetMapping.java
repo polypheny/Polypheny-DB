@@ -77,26 +77,31 @@ public abstract class AbstractTargetMapping extends Mappings.AbstractMapping imp
     }
 
 
+    @Override
     public Mapping inverse() {
         return Mappings.invert( this );
     }
 
 
+    @Override
     public int size() {
         return sourceCount;
     }
 
 
+    @Override
     public void clear() {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public MappingType getMappingType() {
         return MappingType.PARTIAL_FUNCTION;
     }
 
 
+    @Override
     public Iterator<IntPair> iterator() {
         return new Iterator<IntPair>() {
             int source = -1;
@@ -118,11 +123,13 @@ public abstract class AbstractTargetMapping extends Mappings.AbstractMapping imp
             }
 
 
+            @Override
             public boolean hasNext() {
                 return source < sourceCount;
             }
 
 
+            @Override
             public IntPair next() {
                 IntPair p = new IntPair( source, target );
                 moveToNext();
@@ -130,6 +137,7 @@ public abstract class AbstractTargetMapping extends Mappings.AbstractMapping imp
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException( "remove" );
             }
@@ -137,6 +145,7 @@ public abstract class AbstractTargetMapping extends Mappings.AbstractMapping imp
     }
 
 
+    @Override
     public abstract int getTargetOpt( int source );
 }
 

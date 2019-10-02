@@ -92,6 +92,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     }
 
 
+    @Override
     protected DiffRepository getDiffRepos() {
         return DiffRepository.lookup( SqlToRelConverterTest.class );
     }
@@ -3576,6 +3577,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         final Deque<RelNode> stack = new ArrayDeque<>();
 
 
+        @Override
         public Set<CorrelationId> correlationIds() {
             final ImmutableSet.Builder<CorrelationId> builder = ImmutableSet.builder();
             for ( RelNode r : stack ) {

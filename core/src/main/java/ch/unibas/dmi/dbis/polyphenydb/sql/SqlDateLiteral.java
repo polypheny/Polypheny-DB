@@ -88,16 +88,19 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
     /**
      * Returns e.g. '1969-07-21'.
      */
+    @Override
     public String toFormattedString() {
         return getDate().toString();
     }
 
 
+    @Override
     public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
         return typeFactory.createSqlType( getTypeName() );
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseDateTimeLiteral( writer, this, leftPrec, rightPrec );
     }

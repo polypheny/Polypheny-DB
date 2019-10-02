@@ -313,6 +313,7 @@ public interface SqlValidatorScope {
         }
 
 
+        @Override
         protected void build( ImmutableList.Builder<Step> paths ) {
             parent.build( paths );
             paths.add( this );
@@ -328,6 +329,7 @@ public interface SqlValidatorScope {
         final List<Resolve> resolves = new ArrayList<>();
 
 
+        @Override
         public void found( SqlValidatorNamespace namespace, boolean nullable, SqlValidatorScope scope, Path path, List<String> remainingNames ) {
             if ( scope instanceof TableScope ) {
                 scope = scope.getValidator().getSelectScope( (SqlSelect) scope.getNode() );
@@ -340,6 +342,7 @@ public interface SqlValidatorScope {
         }
 
 
+        @Override
         public int count() {
             return resolves.size();
         }

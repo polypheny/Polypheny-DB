@@ -140,6 +140,7 @@ class ConcurrentTestCommandExecutor extends Thread {
     /**
      * Executes the configured commands.
      */
+    @Override
     public void run() {
         try {
             connection = DriverManager.getConnection( jdbcURL, jdbcProps );

@@ -72,6 +72,7 @@ import org.apache.calcite.linq4j.Ord;
  */
 public class SimpleProfiler implements Profiler {
 
+    @Override
     public Profile profile( Iterable<List<Comparable>> rows, final List<Column> columns, Collection<ImmutableBitSet> initialGroups ) {
         Util.discard( initialGroups ); // this profiler ignores initial groups
         return new Run( columns ).profile( rows );
@@ -339,6 +340,7 @@ public class SimpleProfiler implements Profiler {
         }
 
 
+        @Override
         public int compareTo( @Nonnull Space o ) {
             return columnOrdinals.equals( o.columnOrdinals )
                     ? 0

@@ -2301,6 +2301,7 @@ public abstract class RelOptUtil {
         }
         try {
             new RelVisitor() {
+                @Override
                 public void visit( RelNode node, int ordinal, RelNode parent ) {
                     if ( node == target ) {
                         throw Util.FoundOne.NULL;
@@ -2455,11 +2456,13 @@ public abstract class RelOptUtil {
         assert fieldNames.size() == fields.size();
         final List<RexNode> refs =
                 new AbstractList<RexNode>() {
+                    @Override
                     public int size() {
                         return fields.size();
                     }
 
 
+                    @Override
                     public RexNode get( int index ) {
                         return RexInputRef.of( index, fields );
                     }
@@ -2552,22 +2555,26 @@ public abstract class RelOptUtil {
         final List<String> fieldNames = rowType.getFieldNames();
         final RelBuilder relBuilder = RelBuilder.proto( factory ).create( child.getCluster(), null );
         final List<RexNode> exprs = new AbstractList<RexNode>() {
+            @Override
             public int size() {
                 return posList.size();
             }
 
 
+            @Override
             public RexNode get( int index ) {
                 final int pos = posList.get( index );
                 return relBuilder.getRexBuilder().makeInputRef( child, pos );
             }
         };
         final List<String> names = new AbstractList<String>() {
+            @Override
             public int size() {
                 return posList.size();
             }
 
 
+            @Override
             public String get( int index ) {
                 final int pos = posList.get( index );
                 return fieldNames.get( pos );
@@ -2735,11 +2742,13 @@ public abstract class RelOptUtil {
             final List<RelDataTypeField> fields = relBuilder.peek().getRowType().getFieldList();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
+                        @Override
                         public int size() {
                             return leftCount + extraLeftExprs.size();
                         }
 
 
+                        @Override
                         public Pair<RexNode, String> get( int index ) {
                             if ( index < leftCount ) {
                                 RelDataTypeField field = fields.get( index );
@@ -2758,11 +2767,13 @@ public abstract class RelOptUtil {
             final int newLeftCount = leftCount + extraLeftExprs.size();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
+                        @Override
                         public int size() {
                             return rightCount + extraRightExprs.size();
                         }
 
 
+                        @Override
                         public Pair<RexNode, String> get( int index ) {
                             if ( index < rightCount ) {
                                 RelDataTypeField field = fields.get( index );
@@ -2947,6 +2958,7 @@ public abstract class RelOptUtil {
 
 
         // implement RelVisitor
+        @Override
         public void visit( RelNode p, int ordinal, RelNode parent ) {
             super.visit( p, ordinal, parent );
             p.collectVariablesUsed( variables );
@@ -3007,6 +3019,7 @@ public abstract class RelOptUtil {
         public final SortedSet<Integer> inputPosReferenced = new TreeSet<>();
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
             inputPosReferenced.add( inputRef.getIndex() );
             return inputRef;
@@ -3124,6 +3137,7 @@ public abstract class RelOptUtil {
         }
 
 
+        @Override
         public Void visitInputRef( RexInputRef inputRef ) {
             inputBitSet.set( inputRef.getIndex() );
             return null;
@@ -3194,6 +3208,7 @@ public abstract class RelOptUtil {
         }
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef var ) {
             int srcIndex = var.getIndex();
             int destIndex = srcIndex + adjustments[srcIndex];

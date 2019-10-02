@@ -96,6 +96,7 @@ public class CoerceInputsRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         RelNode consumerRel = call.rel( 0 );
         if ( consumerRel.getClass() != consumerRelClass ) {

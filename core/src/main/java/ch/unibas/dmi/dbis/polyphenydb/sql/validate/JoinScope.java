@@ -75,11 +75,13 @@ public class JoinScope extends ListScope {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return join;
     }
 
 
+    @Override
     public void addChild( SqlValidatorNamespace ns, String alias, boolean nullable ) {
         super.addChild( ns, alias, nullable );
         if ( (usingScope != null) && (usingScope != parent) ) {
@@ -97,6 +99,7 @@ public class JoinScope extends ListScope {
     }
 
 
+    @Override
     public SqlWindow lookupWindow( String name ) {
         // Lookup window in enclosing select.
         if ( usingScope != null ) {

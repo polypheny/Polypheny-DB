@@ -103,7 +103,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -335,13 +334,7 @@ public abstract class SqlOperatorBaseTest {
             List<SqlOperator> routines = new ArrayList<>();
             operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, SqlParserPos.ZERO ), null, sqlOperator.getSyntax(), routines );
 
-            Iterator<SqlOperator> iter = routines.iterator();
-            while ( iter.hasNext() ) {
-                SqlOperator operator = iter.next();
-                if ( !sqlOperator.getClass().isInstance( operator ) ) {
-                    iter.remove();
-                }
-            }
+            routines.removeIf( operator -> !sqlOperator.getClass().isInstance( operator ) );
             assertThat( routines.size(), equalTo( 1 ) );
             assertThat( sqlOperator, equalTo( routines.get( 0 ) ) );
         }
@@ -7699,10 +7692,7 @@ public abstract class SqlOperatorBaseTest {
                                 true,
                                 "BOOLEAN NOT NULL" );
                     }
-                } catch ( Error e ) {
-                    System.out.println( "Failed for expr=[" + expr + "]" );
-                    throw e;
-                } catch ( RuntimeException e ) {
+                } catch ( Error | RuntimeException e ) {
                     System.out.println( "Failed for expr=[" + expr + "]" );
                     throw e;
                 }
@@ -7870,7 +7860,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     private List<Object> getValues( BasicSqlType type, boolean inBound ) {
-        List<Object> values = new ArrayList<Object>();
+        List<Object> values = new ArrayList<>();
         for ( boolean sign : FALSE_TRUE ) {
             for ( SqlTypeName.Limit limit : SqlTypeName.Limit.values() ) {
                 Object o = type.getLimit( sign, limit, !inBound );
@@ -7901,6 +7891,7 @@ public abstract class SqlOperatorBaseTest {
         }
 
 
+        @Override
         public void checkResult( ResultSet result ) throws Exception {
             Throwable thrown = null;
             try {
@@ -7937,6 +7928,7 @@ public abstract class SqlOperatorBaseTest {
         }
 
 
+        @Override
         public void checkResult( ResultSet result ) throws Exception {
             Throwable thrown = null;
             try {
@@ -7980,7 +7972,6 @@ public abstract class SqlOperatorBaseTest {
         @Override
         public void check( String query, TypeChecker typeChecker, ParameterChecker parameterChecker, ResultChecker resultChecker ) {
             super.check( query, typeChecker, parameterChecker, resultChecker );
-            //noinspection unchecked
             final PolyphenyDbAssert.ConnectionFactory connectionFactory = (PolyphenyDbAssert.ConnectionFactory) getFactory().get( "connectionFactory" );
             try (
                     Connection connection = connectionFactory.createConnection();

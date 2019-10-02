@@ -46,9 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.runtime.Feature;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Feature;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlTestFactory;
@@ -147,6 +147,7 @@ public class SqlValidatorFeatureTest extends SqlValidatorTestCase {
         }
 
 
+        @Override
         protected void validateFeature( Feature feature, SqlParserPos context ) {
             if ( feature.equals( disabledFeature ) ) {
                 PolyphenyDbException ex = new PolyphenyDbException( FEATURE_DISABLED, null );

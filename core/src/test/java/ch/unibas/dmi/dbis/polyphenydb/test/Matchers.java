@@ -161,7 +161,7 @@ public class Matchers {
      */
     @Factory
     public static <T extends Number> Matcher<T> within( T value, double epsilon ) {
-        return new IsWithin<T>( value, epsilon );
+        return new IsWithin<>( value, epsilon );
     }
 
 

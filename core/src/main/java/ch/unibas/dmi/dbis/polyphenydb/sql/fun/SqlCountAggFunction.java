@@ -98,6 +98,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
         return ImmutableList.of(
@@ -107,12 +108,14 @@ public class SqlCountAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
         return typeFactory.createSqlType( SqlTypeName.BIGINT );
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {

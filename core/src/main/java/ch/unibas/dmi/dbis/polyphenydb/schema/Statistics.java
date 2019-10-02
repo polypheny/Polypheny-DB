@@ -68,26 +68,31 @@ public class Statistics {
      */
     public static final Statistic UNKNOWN =
             new Statistic() {
+                @Override
                 public Double getRowCount() {
                     return null;
                 }
 
 
+                @Override
                 public boolean isKey( ImmutableBitSet columns ) {
                     return false;
                 }
 
 
+                @Override
                 public List<RelReferentialConstraint> getReferentialConstraints() {
                     return ImmutableList.of();
                 }
 
 
+                @Override
                 public List<RelCollation> getCollations() {
                     return ImmutableList.of();
                 }
 
 
+                @Override
                 public RelDistribution getDistribution() {
                     return RelDistributionTraitDef.INSTANCE.getDefault();
                 }
@@ -123,11 +128,13 @@ public class Statistics {
      */
     public static Statistic of( final Double rowCount, final List<ImmutableBitSet> keys, final List<RelReferentialConstraint> referentialConstraints, final List<RelCollation> collations ) {
         return new Statistic() {
+            @Override
             public Double getRowCount() {
                 return rowCount;
             }
 
 
+            @Override
             public boolean isKey( ImmutableBitSet columns ) {
                 for ( ImmutableBitSet key : keys ) {
                     if ( columns.contains( key ) ) {
@@ -138,16 +145,19 @@ public class Statistics {
             }
 
 
+            @Override
             public List<RelReferentialConstraint> getReferentialConstraints() {
                 return referentialConstraints;
             }
 
 
+            @Override
             public List<RelCollation> getCollations() {
                 return collations;
             }
 
 
+            @Override
             public RelDistribution getDistribution() {
                 return RelDistributionTraitDef.INSTANCE.getDefault();
             }

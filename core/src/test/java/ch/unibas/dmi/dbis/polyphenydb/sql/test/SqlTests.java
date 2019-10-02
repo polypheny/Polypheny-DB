@@ -508,6 +508,7 @@ public abstract class SqlTests {
         }
 
 
+        @Override
         public void checkType( RelDataType type ) {
             assertThat( type.toString(), is( typeName.toString() ) );
         }
@@ -537,6 +538,7 @@ public abstract class SqlTests {
         }
 
 
+        @Override
         public void checkType( RelDataType type ) {
             String actual = getTypeString( type );
             assertThat( actual, is( expected ) );
@@ -579,6 +581,7 @@ public abstract class SqlTests {
         }
 
 
+        @Override
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSetWithPattern( resultSet, pattern );
         }
@@ -600,6 +603,7 @@ public abstract class SqlTests {
         }
 
 
+        @Override
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSetWithDelta( resultSet, expected.doubleValue(), delta );
         }
@@ -619,6 +623,7 @@ public abstract class SqlTests {
         }
 
 
+        @Override
         public void checkResult( ResultSet resultSet ) throws Exception {
             compareResultSet( resultSet, expected );
         }

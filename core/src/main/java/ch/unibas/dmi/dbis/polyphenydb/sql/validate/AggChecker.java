@@ -108,6 +108,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
     }
 
 
+    @Override
     public Void visit( SqlIdentifier id ) {
         if ( isGroupExpr( id ) || id.isStar() ) {
             // Star may validly occur in "SELECT COUNT(*) OVER w"
@@ -136,6 +137,7 @@ class AggChecker extends SqlBasicVisitor<Void> {
     }
 
 
+    @Override
     public Void visit( SqlCall call ) {
         final SqlValidatorScope scope = scopes.peek();
         if ( call.getOperator().isAggregator() ) {

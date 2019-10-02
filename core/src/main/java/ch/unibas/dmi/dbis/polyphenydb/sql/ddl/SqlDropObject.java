@@ -73,6 +73,7 @@ abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableList.of( name );
     }

@@ -192,6 +192,7 @@ public class RelOptRulesTest extends RelOptTestBase {
     private final PushProjector.ExprCondition skipItem = expr -> expr instanceof RexCall && "item".equalsIgnoreCase( ((RexCall) expr).getOperator().getName() );
 
 
+    @Override
     protected DiffRepository getDiffRepos() {
         return DiffRepository.lookup( RelOptRulesTest.class );
     }
@@ -3166,6 +3167,7 @@ public class RelOptRulesTest extends RelOptTestBase {
                                             int matchCount = 0;
 
 
+                                            @Override
                                             public boolean test( Project project ) {
                                                 return matchCount++ == 0;
                                             }

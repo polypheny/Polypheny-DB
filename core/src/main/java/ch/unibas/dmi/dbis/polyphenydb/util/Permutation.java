@@ -123,6 +123,7 @@ public class Permutation implements Mapping, TargetMapping {
     //~ Methods ----------------------------------------------------------------
 
 
+    @Override
     public Object clone() {
         return new Permutation(
                 targets.clone(),
@@ -143,11 +144,13 @@ public class Permutation implements Mapping, TargetMapping {
     /**
      * Returns the number of elements in this permutation.
      */
+    @Override
     public final int size() {
         return targets.length;
     }
 
 
+    @Override
     public void clear() {
         throw new UnsupportedOperationException(
                 "Cannot clear: permutation must always contain one mapping per element" );
@@ -231,6 +234,7 @@ public class Permutation implements Mapping, TargetMapping {
      * greater than or equal to the size of
      * the permuation
      */
+    @Override
     public void set( int source, int target ) {
         set( source, target, false );
     }
@@ -440,6 +444,7 @@ public class Permutation implements Mapping, TargetMapping {
     /**
      * Returns the inverse permutation.
      */
+    @Override
     public Permutation inverse() {
         return new Permutation(
                 sources.clone(),
@@ -450,6 +455,7 @@ public class Permutation implements Mapping, TargetMapping {
     /**
      * Returns whether this is the identity permutation.
      */
+    @Override
     public boolean isIdentity() {
         for ( int i = 0; i < targets.length; i++ ) {
             if ( targets[i] != i ) {
@@ -463,6 +469,7 @@ public class Permutation implements Mapping, TargetMapping {
     /**
      * Returns the position that <code>source</code> is mapped to.
      */
+    @Override
     public int getTarget( int source ) {
         try {
             return targets[source];
@@ -475,6 +482,7 @@ public class Permutation implements Mapping, TargetMapping {
     /**
      * Returns the position which maps to <code>target</code>.
      */
+    @Override
     public int getSource( int target ) {
         try {
             return sources[target];
@@ -540,16 +548,19 @@ public class Permutation implements Mapping, TargetMapping {
 
 
     // implement Mapping
+    @Override
     public Iterator<IntPair> iterator() {
         return new Iterator<IntPair>() {
             private int i = 0;
 
 
+            @Override
             public boolean hasNext() {
                 return i < targets.length;
             }
 
 
+            @Override
             public IntPair next() {
                 final IntPair pair = new IntPair( i, targets[i] );
                 ++i;
@@ -557,6 +568,7 @@ public class Permutation implements Mapping, TargetMapping {
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -564,26 +576,31 @@ public class Permutation implements Mapping, TargetMapping {
     }
 
 
+    @Override
     public int getSourceCount() {
         return targets.length;
     }
 
 
+    @Override
     public int getTargetCount() {
         return targets.length;
     }
 
 
+    @Override
     public MappingType getMappingType() {
         return MappingType.BIJECTION;
     }
 
 
+    @Override
     public int getTargetOpt( int source ) {
         return getTarget( source );
     }
 
 
+    @Override
     public int getSourceOpt( int target ) {
         return getSource( target );
     }

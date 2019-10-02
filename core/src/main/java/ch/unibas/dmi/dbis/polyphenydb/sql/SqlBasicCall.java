@@ -76,6 +76,7 @@ public class SqlBasicCall extends SqlCall {
     }
 
 
+    @Override
     public SqlKind getKind() {
         return operator.getKind();
     }
@@ -98,6 +99,7 @@ public class SqlBasicCall extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return operator;
     }
@@ -108,6 +110,7 @@ public class SqlBasicCall extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return UnmodifiableArrayList.of( operands ); // not immutable, but quick
     }

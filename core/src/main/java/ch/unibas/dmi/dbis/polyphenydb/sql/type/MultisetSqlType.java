@@ -70,6 +70,7 @@ public class MultisetSqlType extends AbstractSqlType {
 
 
     // implement RelDataTypeImpl
+    @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         if ( withDetail ) {
             sb.append( elementType.getFullTypeString() );
@@ -81,12 +82,14 @@ public class MultisetSqlType extends AbstractSqlType {
 
 
     // implement RelDataType
+    @Override
     public RelDataType getComponentType() {
         return elementType;
     }
 
 
     // implement RelDataType
+    @Override
     public RelDataTypeFamily getFamily() {
         // TODO jvs 2-Dec-2004:  This gives each multiset type its own family.  But that's not quite correct; the family should be based on the element type for proper comparability semantics (per 4.10.4 of SQL/2003).
         //  So either this should make up canonical families dynamically, or the comparison type-checking should not rely on this.  I think the same goes for ROW types.
@@ -97,6 +100,7 @@ public class MultisetSqlType extends AbstractSqlType {
     @Override
     public RelDataTypePrecedenceList getPrecedenceList() {
         return new RelDataTypePrecedenceList() {
+            @Override
             public boolean containsType( RelDataType type ) {
                 return type.getSqlTypeName() == getSqlTypeName()
                         && type.getComponentType() != null
@@ -104,6 +108,7 @@ public class MultisetSqlType extends AbstractSqlType {
             }
 
 
+            @Override
             public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
                 if ( !containsType( type1 ) ) {
                     throw new IllegalArgumentException( "must contain type: " + type1 );

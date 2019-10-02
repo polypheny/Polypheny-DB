@@ -324,11 +324,13 @@ public class CountriesTableFunction {
 
     public static ScannableTable eval( boolean b ) {
         return new ScannableTable() {
+            @Override
             public Enumerable<Object[]> scan( DataContext root ) {
                 return Linq4j.asEnumerable( ROWS );
             }
 
 
+            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "country", SqlTypeName.VARCHAR )
@@ -339,21 +341,25 @@ public class CountriesTableFunction {
             }
 
 
+            @Override
             public Statistic getStatistic() {
                 return Statistics.of( 246D, ImmutableList.of( ImmutableBitSet.of( 0 ), ImmutableBitSet.of( 3 ) ) );
             }
 
 
+            @Override
             public TableType getJdbcTableType() {
                 return Schema.TableType.TABLE;
             }
 
 
+            @Override
             public boolean isRolledUp( String column ) {
                 return false;
             }
 
 
+            @Override
             public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
                 return false;
             }

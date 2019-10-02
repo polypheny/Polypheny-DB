@@ -59,6 +59,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.security.PrivilegedAction;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.MessageFormat;
@@ -85,7 +86,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Resources {
 
-    private static final ThreadLocal<Locale> MAP_THREAD_TO_LOCALE = new ThreadLocal<Locale>();
+    private static final ThreadLocal<Locale> MAP_THREAD_TO_LOCALE = new ThreadLocal<>();
 
 
     private Resources() {
@@ -189,9 +190,10 @@ public class Resources {
         return (T) Proxy.newProxyInstance( clazz.getClassLoader(),
                 new Class[]{ clazz },
                 new InvocationHandler() {
-                    final Map<String, Object> cache = new ConcurrentHashMap<String, Object>();
+                    final Map<String, Object> cache = new ConcurrentHashMap<>();
 
 
+                    @Override
                     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
                         if ( args == null || args.length == 0 ) {
                             Object o = cache.get( method.getName() );
@@ -407,7 +409,7 @@ public class Resources {
                         String raw = raw();
                         MessageFormat format = new MessageFormat( raw );
                         final Format[] formats = format.getFormatsByArgumentIndex();
-                        final List<Class> types = new ArrayList<Class>();
+                        final List<Class> types = new ArrayList<>();
                         final Class<?>[] parameterTypes = method.getParameterTypes();
                         for ( int i = 0; i < formats.length; i++ ) {
                             Format format1 = formats[i];
@@ -883,46 +885,55 @@ public class Resources {
         INSTANCE;
 
 
+        @Override
         public boolean isSet( Prop p ) {
             return false;
         }
 
 
+        @Override
         public int intValue( IntProp p ) {
             return p.defaultValue();
         }
 
 
+        @Override
         public int intValue( IntProp p, int defaultValue ) {
             return defaultValue;
         }
 
 
+        @Override
         public String stringValue( StringProp p ) {
             return p.defaultValue();
         }
 
 
+        @Override
         public String stringValue( StringProp p, String defaultValue ) {
             return defaultValue;
         }
 
 
+        @Override
         public boolean booleanValue( BooleanProp p ) {
             return p.defaultValue();
         }
 
 
+        @Override
         public boolean booleanValue( BooleanProp p, boolean defaultValue ) {
             return defaultValue;
         }
 
 
+        @Override
         public double doubleValue( DoubleProp p ) {
             return p.defaultValue();
         }
 
 
+        @Override
         public double doubleValue( DoubleProp p, double defaultValue ) {
             return defaultValue;
         }
@@ -1084,23 +1095,23 @@ public class Resources {
             final ClassLoader loader = clazz.getClassLoader();
             final String resName = clazz.getName().replace( '.', '/' ) + ".properties";
             return (InputStream) java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction() {
-                        public Object run() {
-                            if ( loader != null ) {
-                                return loader.getResourceAsStream( resName );
-                            } else {
-                                return ClassLoader.getSystemResourceAsStream( resName );
-                            }
+                    (PrivilegedAction) () -> {
+                        if ( loader != null ) {
+                            return loader.getResourceAsStream( resName );
+                        } else {
+                            return ClassLoader.getSystemResourceAsStream( resName );
                         }
                     } );
         }
 
 
+        @Override
         public Enumeration<String> getKeys() {
             return bundle.getKeys();
         }
 
 
+        @Override
         protected Object handleGetObject( String key ) {
             return bundle.getObject( key );
         }
@@ -1201,11 +1212,13 @@ public class Resources {
         }
 
 
+        @Override
         public boolean isSet( Prop p ) {
             return properties.containsKey( p.key );
         }
 
 
+        @Override
         public int intValue( IntProp p ) {
             final String s = properties.getProperty( p.key );
             if ( s != null ) {
@@ -1216,12 +1229,14 @@ public class Resources {
         }
 
 
+        @Override
         public int intValue( IntProp p, int defaultValue ) {
             final String s = properties.getProperty( p.key );
             return s == null ? defaultValue : Integer.parseInt( s, 10 );
         }
 
 
+        @Override
         public String stringValue( StringProp p ) {
             final String s = properties.getProperty( p.key );
             if ( s != null ) {
@@ -1232,12 +1247,14 @@ public class Resources {
         }
 
 
+        @Override
         public String stringValue( StringProp p, String defaultValue ) {
             final String s = properties.getProperty( p.key );
             return s == null ? defaultValue : s;
         }
 
 
+        @Override
         public boolean booleanValue( BooleanProp p ) {
             final String s = properties.getProperty( p.key );
             if ( s != null ) {
@@ -1248,12 +1265,14 @@ public class Resources {
         }
 
 
+        @Override
         public boolean booleanValue( BooleanProp p, boolean defaultValue ) {
             final String s = properties.getProperty( p.key );
             return s == null ? defaultValue : Boolean.parseBoolean( s );
         }
 
 
+        @Override
         public double doubleValue( DoubleProp p ) {
             final String s = properties.getProperty( p.key );
             if ( s != null ) {
@@ -1264,6 +1283,7 @@ public class Resources {
         }
 
 
+        @Override
         public double doubleValue( DoubleProp p, double defaultValue ) {
             final String s = properties.getProperty( p.key );
             return s == null ? defaultValue : Double.parseDouble( s );

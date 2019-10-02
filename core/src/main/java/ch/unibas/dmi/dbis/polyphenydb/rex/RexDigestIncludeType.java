@@ -51,6 +51,6 @@ package ch.unibas.dmi.dbis.polyphenydb.rex;
 public enum RexDigestIncludeType {
     ALWAYS,
     OPTIONAL,
-    NO_TYPE;
+    NO_TYPE
 }
 

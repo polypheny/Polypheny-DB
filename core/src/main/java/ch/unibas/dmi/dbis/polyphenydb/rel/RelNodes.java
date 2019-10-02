@@ -93,6 +93,7 @@ public class RelNodes {
      */
     private static class RelNodeComparator implements Comparator<RelNode> {
 
+        @Override
         public int compare( RelNode o1, RelNode o2 ) {
             // Compare on field count first. It is more stable than id (when rules are added to the set of active rules).
             final int c = Utilities.compare( o1.getRowType().getFieldCount(), o2.getRowType().getFieldCount() );

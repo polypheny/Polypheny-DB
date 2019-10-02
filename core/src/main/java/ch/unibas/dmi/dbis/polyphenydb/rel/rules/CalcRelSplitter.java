@@ -394,6 +394,7 @@ public abstract class CalcRelSplitter {
             }
             expr.accept(
                     new RexVisitorImpl<Void>( true ) {
+                        @Override
                         public Void visitLocalRef( RexLocalRef localRef ) {
                             for ( Integer target : targets ) {
                                 graph.addEdge( localRef.getIndex(), target );
@@ -728,6 +729,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitCall( RexCall call ) {
             if ( !relType.canImplement( call ) ) {
                 throw CannotImplement.INSTANCE;
@@ -736,6 +738,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitDynamicParam( RexDynamicParam dynamicParam ) {
             if ( !relType.canImplement( dynamicParam ) ) {
                 throw CannotImplement.INSTANCE;
@@ -744,6 +747,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
             if ( !relType.canImplement( fieldAccess ) ) {
                 throw CannotImplement.INSTANCE;
@@ -752,6 +756,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitLiteral( RexLiteral literal ) {
             if ( !relType.canImplement( literal ) ) {
                 throw CannotImplement.INSTANCE;
@@ -792,6 +797,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef input ) {
             final int index = exprInverseOrdinals[input.getIndex()];
             assert index >= 0;
@@ -799,6 +805,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public RexNode visitLocalRef( RexLocalRef local ) {
             // A reference to a local variable becomes a reference to an input if the local was computed at a previous level.
             final int localIndex = local.getIndex();
@@ -835,6 +842,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitLocalRef( RexLocalRef localRef ) {
             int inputLevel = exprLevels[localRef.getIndex()];
             level = Math.max( level, inputLevel );
@@ -883,6 +891,7 @@ public abstract class CalcRelSplitter {
         }
 
 
+        @Override
         public Void visitLocalRef( RexLocalRef ref ) {
             final int index = ref.getIndex();
             maxUsingLevelOrdinals[index] = Math.max( maxUsingLevelOrdinals[index], currentLevel );

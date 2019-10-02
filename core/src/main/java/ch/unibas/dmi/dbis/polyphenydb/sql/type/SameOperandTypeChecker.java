@@ -73,16 +73,19 @@ public class SameOperandTypeChecker implements SqlSingleOperandTypeChecker {
     }
 
 
+    @Override
     public Consistency getConsistency() {
         return Consistency.NONE;
     }
 
 
+    @Override
     public boolean isOptional( int i ) {
         return false;
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         return checkOperandTypesImpl( callBinding, throwOnFailure, callBinding );
     }
@@ -133,6 +136,7 @@ public class SameOperandTypeChecker implements SqlSingleOperandTypeChecker {
 
 
     // implement SqlOperandTypeChecker
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         if ( nOperands == -1 ) {
             return SqlOperandCountRanges.any();
@@ -142,6 +146,7 @@ public class SameOperandTypeChecker implements SqlSingleOperandTypeChecker {
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         final String typeName = getTypeName();
         return SqlUtil.getAliasedSignature(
@@ -161,6 +166,7 @@ public class SameOperandTypeChecker implements SqlSingleOperandTypeChecker {
     }
 
 
+    @Override
     public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode operand, int iFormalOperand, boolean throwOnFailure ) {
         throw new UnsupportedOperationException(); // TODO:
     }

@@ -156,6 +156,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "rowCount" );
@@ -178,6 +179,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "unique" );
@@ -202,6 +204,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "fd" );
@@ -258,6 +261,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "distribution" );

@@ -64,16 +64,19 @@ abstract class MutableLeafRel extends MutableRel {
     }
 
 
+    @Override
     public void setInput( int ordinalInParent, MutableRel input ) {
         throw new IllegalArgumentException();
     }
 
 
+    @Override
     public List<MutableRel> getInputs() {
         return ImmutableList.of();
     }
 
 
+    @Override
     public void childrenAccept( MutableRelVisitor visitor ) {
         // no children - nothing to do
     }

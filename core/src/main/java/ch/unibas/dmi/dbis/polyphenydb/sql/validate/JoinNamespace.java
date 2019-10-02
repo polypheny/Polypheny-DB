@@ -65,6 +65,7 @@ class JoinNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         RelDataType leftType = validator.getNamespace( join.getLeft() ).getRowType();
         RelDataType rightType = validator.getNamespace( join.getRight() ).getRowType();
@@ -85,6 +86,7 @@ class JoinNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return join;
     }

@@ -87,11 +87,13 @@ public class SqlTimeLiteral extends SqlAbstractDateTimeLiteral {
     /**
      * Returns e.g. '03:05:67.456'.
      */
+    @Override
     public String toFormattedString() {
         return getTime().toString( precision );
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseDateTimeLiteral( writer, this, leftPrec, rightPrec );
     }

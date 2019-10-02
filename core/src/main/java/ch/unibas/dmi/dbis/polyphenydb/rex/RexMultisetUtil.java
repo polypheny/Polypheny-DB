@@ -209,6 +209,7 @@ public class RexMultisetUtil {
         }
 
 
+        @Override
         public Void visitCall( RexCall call ) {
             ++totalCount;
             if ( MULTISET_OPERATORS.contains( call.getOperator() ) ) {

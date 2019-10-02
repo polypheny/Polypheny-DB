@@ -88,6 +88,7 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge> extends DefaultDi
     /**
      * @deprecated Use {@link #addEdge(Object, Object, Object...)}.
      */
+    @Override
     @Deprecated
     public E addEdge( V vertex, V targetVertex ) {
         return super.addEdge( vertex, targetVertex );
@@ -127,6 +128,7 @@ public class AttributedDirectedGraph<V, E extends DefaultEdge> extends DefaultDi
      * Removes all edges from a given vertex to another.
      * Returns whether any were removed.
      */
+    @Override
     public boolean removeEdge( V source, V target ) {
         final VertexInfo<V, E> info = vertexMap.get( source );
         List<E> outEdges = info.outEdges;

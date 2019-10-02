@@ -66,6 +66,7 @@ public class ExplicitOperandTypeInference implements SqlOperandTypeInference {
     }
 
 
+    @Override
     public void inferOperandTypes( SqlCallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes ) {
         if ( operandTypes.length != paramTypes.size() ) {
             // This call does not match the inference strategy.

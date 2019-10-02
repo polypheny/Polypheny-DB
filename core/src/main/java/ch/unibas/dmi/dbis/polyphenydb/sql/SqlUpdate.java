@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
@@ -87,11 +86,13 @@ public class SqlUpdate extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return OPERATOR;
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( targetTable, targetColumnList, sourceExpressionList, condition, alias );
     }
@@ -173,7 +174,7 @@ public class SqlUpdate extends SqlCall {
 
 
     /**
-     * Gets the source SELECT expression for the data to be updated. Returns null before the statement has been expanded by {@link SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
+     * Gets the source SELECT expression for the data to be updated. Returns null before the statement has been expanded by {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
      *
      * @return the source SELECT for the data to be updated
      */
@@ -215,6 +216,7 @@ public class SqlUpdate extends SqlCall {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateUpdate( this );
     }

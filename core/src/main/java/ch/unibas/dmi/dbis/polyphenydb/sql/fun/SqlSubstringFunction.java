@@ -89,6 +89,7 @@ public class SqlSubstringFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         switch ( operandsCount ) {
             case 2:
@@ -101,6 +102,7 @@ public class SqlSubstringFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getAllowedSignatures( String opName ) {
         StringBuilder ret = new StringBuilder();
         for ( Ord<SqlTypeName> typeName : Ord.zip( SqlTypeName.STRING_TYPES ) ) {
@@ -123,6 +125,7 @@ public class SqlSubstringFunction extends SqlFunction {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         SqlValidator validator = callBinding.getValidator();
         SqlValidatorScope scope = callBinding.getScope();
@@ -172,11 +175,13 @@ public class SqlSubstringFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.between( 2, 3 );
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         call.operand( 0 ).unparse( writer, leftPrec, rightPrec );

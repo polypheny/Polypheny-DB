@@ -80,6 +80,7 @@ public class SemiJoinFilterTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         SemiJoin semiJoin = call.rel( 0 );
         LogicalFilter filter = call.rel( 1 );

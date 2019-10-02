@@ -157,6 +157,7 @@ public class RelFactories {
      */
     private static class ProjectFactoryImpl implements ProjectFactory {
 
+        @Override
         public RelNode createProject( RelNode input, List<? extends RexNode> childExprs, List<String> fieldNames ) {
             return LogicalProject.create( input, childExprs, fieldNames );
         }
@@ -184,11 +185,13 @@ public class RelFactories {
      */
     private static class SortFactoryImpl implements SortFactory {
 
+        @Override
         public RelNode createSort( RelNode input, RelCollation collation, RexNode offset, RexNode fetch ) {
             return LogicalSort.create( input, collation, offset, fetch );
         }
 
 
+        @Override
         @Deprecated // to be removed before 2.0
         public RelNode createSort( RelTraitSet traits, RelNode input, RelCollation collation, RexNode offset, RexNode fetch ) {
             return createSort( input, collation, offset, fetch );
@@ -261,6 +264,7 @@ public class RelFactories {
      */
     private static class SetOpFactoryImpl implements SetOpFactory {
 
+        @Override
         public RelNode createSetOp( SqlKind kind, List<RelNode> inputs, boolean all ) {
             switch ( kind ) {
                 case UNION:
@@ -293,6 +297,7 @@ public class RelFactories {
      */
     private static class AggregateFactoryImpl implements AggregateFactory {
 
+        @Override
         @SuppressWarnings("deprecation")
         public RelNode createAggregate( RelNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
@@ -317,6 +322,7 @@ public class RelFactories {
      */
     private static class FilterFactoryImpl implements FilterFactory {
 
+        @Override
         public RelNode createFilter( RelNode input, RexNode condition ) {
             return LogicalFilter.create( input, condition );
         }
@@ -353,11 +359,13 @@ public class RelFactories {
      */
     private static class JoinFactoryImpl implements JoinFactory {
 
+        @Override
         public RelNode createJoin( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, boolean semiJoinDone ) {
             return LogicalJoin.create( left, right, condition, variablesSet, joinType, semiJoinDone, ImmutableList.of() );
         }
 
 
+        @Override
         public RelNode createJoin( RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone ) {
             return createJoin( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone );
         }
@@ -389,6 +397,7 @@ public class RelFactories {
      */
     private static class CorrelateFactoryImpl implements CorrelateFactory {
 
+        @Override
         public RelNode createCorrelate( RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
             return LogicalCorrelate.create( left, right, correlationId, requiredColumns, joinType );
         }
@@ -416,6 +425,7 @@ public class RelFactories {
      */
     private static class SemiJoinFactoryImpl implements SemiJoinFactory {
 
+        @Override
         public RelNode createSemiJoin( RelNode left, RelNode right, RexNode condition ) {
             final JoinInfo joinInfo = JoinInfo.of( left, right, condition );
             return SemiJoin.create( left, right, condition, joinInfo.leftKeys, joinInfo.rightKeys );
@@ -440,6 +450,7 @@ public class RelFactories {
      */
     private static class ValuesFactoryImpl implements ValuesFactory {
 
+        @Override
         public RelNode createValues( RelOptCluster cluster, RelDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
             return LogicalValues.create( cluster, rowType, ImmutableList.copyOf( tuples ) );
         }
@@ -463,6 +474,7 @@ public class RelFactories {
      */
     private static class TableScanFactoryImpl implements TableScanFactory {
 
+        @Override
         public RelNode createScan( RelOptCluster cluster, RelOptTable table ) {
             return LogicalTableScan.create( cluster, table );
         }
@@ -527,6 +539,7 @@ public class RelFactories {
      */
     private static class MatchFactoryImpl implements MatchFactory {
 
+        @Override
         public RelNode createMatch( RelNode input, RexNode pattern, RelDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, RelCollation orderKeys, RexNode interval ) {
             return LogicalMatch.create( input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );

@@ -128,6 +128,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
@@ -234,6 +235,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     }
 
 
+    @Override
     public RexProgram getProgram() {
         return program;
     }

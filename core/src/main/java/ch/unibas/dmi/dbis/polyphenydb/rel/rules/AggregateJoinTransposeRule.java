@@ -159,6 +159,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Aggregate aggregate = call.rel( 0 );
         final Join join = call.rel( 1 );

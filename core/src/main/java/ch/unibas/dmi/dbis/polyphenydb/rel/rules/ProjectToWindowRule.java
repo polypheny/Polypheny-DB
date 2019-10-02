@@ -131,6 +131,7 @@ public abstract class ProjectToWindowRule extends RelOptRule {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             Calc calc = call.rel( 0 );
             assert RexOver.containsOver( calc.getProgram() );
@@ -211,26 +212,31 @@ public abstract class ProjectToWindowRule extends RelOptRule {
 
         private static final RelType[] REL_TYPES = {
                 new RelType( "CalcRelType" ) {
+                    @Override
                     protected boolean canImplement( RexFieldAccess field ) {
                         return true;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexDynamicParam param ) {
                         return true;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexLiteral literal ) {
                         return true;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexCall call ) {
                         return !(call instanceof RexOver);
                     }
 
 
+                    @Override
                     protected RelNode makeRel( RelOptCluster cluster, RelTraitSet traitSet, RelBuilder relBuilder, RelNode input, RexProgram program ) {
                         assert !program.containsAggs();
                         program = program.normalize( cluster.getRexBuilder(), null );
@@ -238,31 +244,37 @@ public abstract class ProjectToWindowRule extends RelOptRule {
                     }
                 },
                 new RelType( "WinAggRelType" ) {
+                    @Override
                     protected boolean canImplement( RexFieldAccess field ) {
                         return false;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexDynamicParam param ) {
                         return false;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexLiteral literal ) {
                         return false;
                     }
 
 
+                    @Override
                     protected boolean canImplement( RexCall call ) {
                         return call instanceof RexOver;
                     }
 
 
+                    @Override
                     protected boolean supportsCondition() {
                         return false;
                     }
 
 
+                    @Override
                     protected RelNode makeRel( RelOptCluster cluster, RelTraitSet traitSet, RelBuilder relBuilder, RelNode input, RexProgram program ) {
                         Preconditions.checkArgument( program.getCondition() == null, "WindowedAggregateRel cannot accept a condition" );
                         return LogicalWindow.create( cluster, traitSet, relBuilder, input, program );
@@ -380,6 +392,7 @@ public abstract class ProjectToWindowRule extends RelOptRule {
             for ( final Ord<RexNode> expr : Ord.zip( exprs ) ) {
                 expr.e.accept(
                         new RexVisitorImpl<Void>( true ) {
+                            @Override
                             public Void visitLocalRef( RexLocalRef localRef ) {
                                 graph.addEdge( localRef.getIndex(), expr.i );
                                 return null;

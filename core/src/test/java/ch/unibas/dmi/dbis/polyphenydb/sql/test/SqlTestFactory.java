@@ -60,8 +60,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorWithHints;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.MockSqlOperatorTable;
+import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReaderSimple;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
@@ -201,6 +201,7 @@ public class SqlTestFactory {
         RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
         if ( conformance.shouldConvertRaggedUnionTypesToVarying() ) {
             typeSystem = new DelegatingTypeSystem( typeSystem ) {
+                @Override
                 public boolean shouldConvertRaggedUnionTypesToVarying() {
                     return true;
                 }

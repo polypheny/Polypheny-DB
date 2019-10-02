@@ -82,12 +82,14 @@ public class SqlSingleValueAggFunction extends SqlAggFunction {
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
         return ImmutableList.of( type );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
         return type;

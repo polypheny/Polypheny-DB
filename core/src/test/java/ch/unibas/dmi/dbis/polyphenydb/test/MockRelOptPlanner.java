@@ -157,7 +157,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
      * @return whether match occurred
      */
     private boolean matchRecursive( RelNode rel, RelNode parent, int ordinalInParent ) {
-        List<RelNode> bindings = new ArrayList<RelNode>();
+        List<RelNode> bindings = new ArrayList<>();
         if ( match( rule.getOperand(), rel, bindings ) ) {
             MockRuleCall call = new MockRuleCall( this, rule.getOperand(), bindings.toArray( new RelNode[0] ) );
             if ( rule.matches( call ) ) {
@@ -268,6 +268,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
 
         // implement RelOptRuleCall
+        @Override
         public void transformTo( RelNode rel, Map<RelNode, RelNode> equiv ) {
             transformationResult = rel;
         }

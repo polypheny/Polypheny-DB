@@ -79,6 +79,7 @@ public class RelMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.UniqueKeys> getDef() {
         return BuiltInMetadata.UniqueKeys.DEF;
     }

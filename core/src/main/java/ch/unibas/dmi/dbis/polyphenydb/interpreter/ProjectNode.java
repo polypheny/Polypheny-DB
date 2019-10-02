@@ -66,6 +66,7 @@ public class ProjectNode extends AbstractSingleNode<Project> {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         Row row;
         while ( (row = source.receive()) != null ) {

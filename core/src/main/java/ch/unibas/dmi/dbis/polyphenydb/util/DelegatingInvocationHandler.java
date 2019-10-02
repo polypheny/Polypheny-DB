@@ -82,6 +82,7 @@ public abstract class DelegatingInvocationHandler implements InvocationHandler {
     //~ Methods ----------------------------------------------------------------
 
 
+    @Override
     public Object invoke(
             Object proxy,
             Method method,

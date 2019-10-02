@@ -191,6 +191,7 @@ public class RexImpTable {
                     };
 
 
+                    @Override
                     public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
                         return implementors[call.getOperands().size()].implement( translator, call, translatedOperands );
                     }
@@ -204,6 +205,7 @@ public class RexImpTable {
                     };
 
 
+                    @Override
                     public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
                         return implementors[call.getOperands().size()].implement( translator, call, translatedOperands );
                     }
@@ -484,6 +486,7 @@ public class RexImpTable {
                 // else if any arguments are null, result is null;
                 // else false.
                 return new CallImplementor() {
+                    @Override
                     public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
                         switch ( nullAs ) {
                             case NULL:
@@ -1029,11 +1032,13 @@ public class RexImpTable {
      */
     static class SingleValueImplementor implements AggImplementor {
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return Arrays.asList( boolean.class, info.returnType() );
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             List<Expression> acc = reset.accumulator();
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc.get( 0 ), Expressions.constant( false ) ) ) );
@@ -1045,6 +1050,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
             List<Expression> acc = add.accumulator();
             Expression flag = acc.get( 0 );
@@ -1059,6 +1065,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             return RexToLixTranslator.convert( result.accumulator().get( 1 ), info.returnType() );
         }
@@ -1152,19 +1159,23 @@ public class RexImpTable {
      */
     static class GroupingImplementor implements AggImplementor {
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return ImmutableList.of();
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             final List<Integer> keys;
             switch ( info.aggregation().kind ) {
@@ -1347,26 +1358,31 @@ public class RexImpTable {
         }
 
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return Collections.emptyList();
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             // no op
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
             // no op
         }
 
 
+        @Override
         public boolean needCacheWhenFrameIntact() {
             return true;
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
@@ -1405,26 +1421,31 @@ public class RexImpTable {
      */
     static class NthValueImplementor implements WinAggImplementor {
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return Collections.emptyList();
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             // no op
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
             // no op
         }
 
 
+        @Override
         public boolean needCacheWhenFrameIntact() {
             return true;
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
@@ -1470,26 +1491,31 @@ public class RexImpTable {
         }
 
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return Collections.emptyList();
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             // no op
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
             // no op
         }
 
 
+        @Override
         public boolean needCacheWhenFrameIntact() {
             return false;
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
@@ -1557,26 +1583,31 @@ public class RexImpTable {
      */
     static class NtileImplementor implements WinAggImplementor {
 
+        @Override
         public List<Type> getStateType( AggContext info ) {
             return Collections.emptyList();
         }
 
 
+        @Override
         public void implementReset( AggContext info, AggResetContext reset ) {
             // no op
         }
 
 
+        @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
             // no op
         }
 
 
+        @Override
         public boolean needCacheWhenFrameIntact() {
             return false;
         }
 
 
+        @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
@@ -1735,6 +1766,7 @@ public class RexImpTable {
      */
     private static class TrimImplementor implements NotNullImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
             final Object value = ((ConstantExpression) translatedOperands.get( 0 )).value;
@@ -1766,6 +1798,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             switch ( call.getOperands().size() ) {
                 case 1:
@@ -1832,6 +1865,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final Expression expression;
             if ( Modifier.isStatic( method.getModifiers() ) ) {
@@ -1861,6 +1895,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             return Expressions.call( SqlFunctions.class, methodName, translatedOperands );
         }
@@ -1895,6 +1930,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> expressions ) {
             // neither nullable:
             //   return x OP y
@@ -1978,6 +2014,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final Expression operand = translatedOperands.get( 0 );
             final UnaryExpression e = Expressions.makeUnary( expressionType, operand );
@@ -1995,6 +2032,7 @@ public class RexImpTable {
      */
     private static class ExtractImplementor implements NotNullImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final TimeUnitRange timeUnitRange = (TimeUnitRange) ((ConstantExpression) translatedOperands.get( 0 )).value;
             final TimeUnit unit = timeUnitRange.startUnit;
@@ -2145,6 +2183,7 @@ public class RexImpTable {
      */
     private static class CaseImplementor implements CallImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             return implementRecurse( translator, call, nullAs, 0 );
         }
@@ -2198,6 +2237,7 @@ public class RexImpTable {
      */
     private static class CoalesceImplementor implements CallImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             return implementRecurse( translator, call.operands, nullAs );
         }
@@ -2229,6 +2269,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             // Short-circuit if no cast is required
             RexNode arg = call.getOperands().get( 0 );
@@ -2252,6 +2293,7 @@ public class RexImpTable {
      */
     private static class CastImplementor implements NotNullImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             assert call.getOperands().size() == 1;
             final RelDataType sourceType = call.getOperands().get( 0 ).getType();
@@ -2272,6 +2314,7 @@ public class RexImpTable {
      */
     private static class ReinterpretImplementor implements NotNullImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             assert call.getOperands().size() == 1;
             return translatedOperands.get( 0 );
@@ -2284,6 +2327,7 @@ public class RexImpTable {
      */
     private static class ValueConstructorImplementor implements CallImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             return translator.translateConstructor( call.getOperands(), call.getOperator().getKind() );
         }
@@ -2295,6 +2339,7 @@ public class RexImpTable {
      */
     private static class ItemImplementor implements CallImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             final MethodImplementor implementor = getImplementor( call.getOperands().get( 0 ).getType().getSqlTypeName() );
             // Since we follow PostgreSQL's semantics that an out-of-bound reference returns NULL, x[y] can return null even if x and y are both NOT NULL.
@@ -2324,6 +2369,7 @@ public class RexImpTable {
      */
     private static class SystemFunctionImplementor implements CallImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             switch ( nullAs ) {
                 case IS_NULL:
@@ -2381,6 +2427,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             List<RexNode> operands = call.getOperands();
             assert operands.size() == 1;
@@ -2423,6 +2470,7 @@ public class RexImpTable {
         }
 
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final Expression expression = implementor.implement( translator, call, translatedOperands );
             return Expressions.not( expression );
@@ -2435,6 +2483,7 @@ public class RexImpTable {
      */
     private static class DatetimeArithmeticImplementor implements NotNullImplementor {
 
+        @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final RexNode operand0 = call.getOperands().get( 0 );
             Expression trop0 = translatedOperands.get( 0 );

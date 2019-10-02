@@ -1013,6 +1013,7 @@ public class SqlValidatorUtil {
         }
 
 
+        @Override
         public SqlNode visit( SqlNodeList list ) {
             SqlNodeList copy = new SqlNodeList( list.getParserPosition() );
             for ( SqlNode node : list ) {
@@ -1023,6 +1024,7 @@ public class SqlValidatorUtil {
 
 
         // Override to copy all arguments regardless of whether visitor changes them.
+        @Override
         protected SqlNode visitScoped( SqlCall call ) {
             ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, true );
             call.getOperator().acceptCall( this, call, false, argHandler );
@@ -1030,11 +1032,13 @@ public class SqlValidatorUtil {
         }
 
 
+        @Override
         public SqlNode visit( SqlLiteral literal ) {
             return SqlNode.clone( literal );
         }
 
 
+        @Override
         public SqlNode visit( SqlIdentifier id ) {
             // First check for builtin functions which don't have parentheses, like "LOCALTIME".
             final SqlCall call = SqlUtil.makeCall( getScope().getValidator().getOperatorTable(), id );
@@ -1046,16 +1050,19 @@ public class SqlValidatorUtil {
         }
 
 
+        @Override
         public SqlNode visit( SqlDataTypeSpec type ) {
             return SqlNode.clone( type );
         }
 
 
+        @Override
         public SqlNode visit( SqlDynamicParam param ) {
             return SqlNode.clone( param );
         }
 
 
+        @Override
         public SqlNode visit( SqlIntervalQualifier intervalQualifier ) {
             return SqlNode.clone( intervalQualifier );
         }

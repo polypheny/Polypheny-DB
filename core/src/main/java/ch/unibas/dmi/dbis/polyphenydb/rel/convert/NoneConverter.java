@@ -67,6 +67,7 @@ public class NoneConverter extends ConverterImpl {
     }
 
 
+    @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert traitSet.comprises( Convention.NONE );
         return new NoneConverter( getCluster(), AbstractRelNode.sole( inputs ) );

@@ -67,11 +67,13 @@ public class SqlDynamicParam extends SqlNode {
     }
 
 
+    @Override
     public SqlNode clone( SqlParserPos pos ) {
         return new SqlDynamicParam( index, pos );
     }
 
 
+    @Override
     public SqlKind getKind() {
         return SqlKind.DYNAMIC_PARAM;
     }
@@ -82,26 +84,31 @@ public class SqlDynamicParam extends SqlNode {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.dynamicParam( index );
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateDynamicParam( this );
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         return SqlMonotonicity.CONSTANT;
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( !(node instanceof SqlDynamicParam) ) {
             return litmus.fail( "{} != {}", this, node );

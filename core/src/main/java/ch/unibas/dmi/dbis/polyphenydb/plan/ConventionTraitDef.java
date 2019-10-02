@@ -89,21 +89,25 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
 
     // implement RelTraitDef
+    @Override
     public Class<Convention> getTraitClass() {
         return Convention.class;
     }
 
 
+    @Override
     public String getSimpleName() {
         return "convention";
     }
 
 
+    @Override
     public Convention getDefault() {
         return Convention.NONE;
     }
 
 
+    @Override
     public void registerConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
@@ -119,6 +123,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     }
 
 
+    @Override
     public void deregisterConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
@@ -134,6 +139,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
 
     // implement RelTraitDef
+    @Override
     public RelNode convert( RelOptPlanner planner, RelNode rel, Convention toConvention, boolean allowInfiniteCostConverters ) {
         final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
         final ConversionData conversionData = getConversionData( planner );
@@ -187,6 +193,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     }
 
 
+    @Override
     public boolean canConvert( RelOptPlanner planner, Convention fromConvention, Convention toConvention ) {
         ConversionData conversionData = getConversionData( planner );
         return fromConvention.canConvertConvention( toConvention ) || conversionData.getShortestPath( fromConvention, toConvention ) != null;

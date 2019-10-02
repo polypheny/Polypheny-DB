@@ -110,6 +110,7 @@ public class SqlCastFunction extends SqlFunction {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         assert opBinding.getOperandCount() == 2;
         RelDataType ret = opBinding.getOperandType( 1 );
@@ -129,12 +130,14 @@ public class SqlCastFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         assert operandsCount == 2;
         return "{0}({1} AS {2})";
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 2 );
     }
@@ -144,6 +147,7 @@ public class SqlCastFunction extends SqlFunction {
      * Makes sure that the number and types of arguments are allowable.
      * Operators (such as "ROW" and "AS") which do not check their arguments can override this method.
      */
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final SqlNode left = callBinding.operand( 0 );
         final SqlNode right = callBinding.operand( 1 );
@@ -169,11 +173,13 @@ public class SqlCastFunction extends SqlFunction {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.SPECIAL;
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == 2;
         final SqlWriter.Frame frame = writer.startFunCall( getName() );

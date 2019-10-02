@@ -129,11 +129,13 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments ) {
         return apply( arguments ).getRowType( typeFactory );
     }
 
 
+    @Override
     public Type getElementType( List<Object> arguments ) {
         final Table table = apply( arguments );
         if ( table instanceof QueryableTable ) {
@@ -146,6 +148,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
     }
 
 
+    @Override
     public CallImplementor getImplementor() {
         return implementor;
     }
@@ -154,6 +157,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
     private static CallImplementor createImplementor( final Method method ) {
         return RexImpTable.createImplementor(
                 new ReflectiveCallNotNullImplementor( method ) {
+                    @Override
                     public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
                         Expression expr = super.implement( translator, call, translatedOperands );
                         final Class<?> returnType = method.getReturnType();

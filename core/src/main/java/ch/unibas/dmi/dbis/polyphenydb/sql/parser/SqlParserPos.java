@@ -188,11 +188,13 @@ public class SqlParserPos implements Serializable {
 
     private static List<SqlParserPos> toPos( final SqlNode[] nodes ) {
         return new AbstractList<SqlParserPos>() {
+            @Override
             public SqlParserPos get( int index ) {
                 return nodes[index].getParserPosition();
             }
 
 
+            @Override
             public int size() {
                 return nodes.length;
             }
@@ -236,11 +238,13 @@ public class SqlParserPos implements Serializable {
                 return positions.get( 0 );
             default:
                 final List<SqlParserPos> poses = new AbstractList<SqlParserPos>() {
+                    @Override
                     public SqlParserPos get( int index ) {
                         return positions.get( index + 1 );
                     }
 
 
+                    @Override
                     public int size() {
                         return positions.size() - 1;
                     }

@@ -80,6 +80,7 @@ public class SqlWith extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableList.of( withList, body );
     }
@@ -120,6 +121,7 @@ public class SqlWith extends SqlCall {
         }
 
 
+        @Override
         public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
             final SqlWith with = (SqlWith) call;
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.WITH, "WITH", "" );

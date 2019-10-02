@@ -62,6 +62,7 @@ public class RelMdExplainVisibility implements MetadataHandler<BuiltInMetadata.E
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.ExplainVisibility> getDef() {
         return BuiltInMetadata.ExplainVisibility.DEF;
     }

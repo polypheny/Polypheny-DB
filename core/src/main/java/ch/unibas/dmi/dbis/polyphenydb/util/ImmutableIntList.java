@@ -172,11 +172,13 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     }
 
 
+    @Override
     public int size() {
         return ints.length;
     }
 
 
+    @Override
     public Object[] toArray() {
         final Object[] objects = new Object[ints.length];
         for ( int i = 0; i < objects.length; i++ ) {
@@ -186,6 +188,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     }
 
 
+    @Override
     public <T> T[] toArray( T[] a ) {
         final int size = ints.length;
         if ( a.length < size ) {
@@ -218,6 +221,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     }
 
 
+    @Override
     public Integer get( int index ) {
         return ints[index];
     }
@@ -243,6 +247,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     @Override
     public ListIterator<Integer> listIterator( int index ) {
         return new AbstractIndexedListIterator<Integer>( size(), index ) {
+            @Override
             protected Integer get( int index ) {
                 return ImmutableIntList.this.get( index );
             }
@@ -250,6 +255,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     }
 
 
+    @Override
     public int indexOf( Object o ) {
         if ( o instanceof Integer ) {
             return indexOf( (int) (Integer) o );
@@ -268,6 +274,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
     }
 
 
+    @Override
     public int lastIndexOf( Object o ) {
         if ( o instanceof Integer ) {
             return lastIndexOf( (int) (Integer) o );
@@ -315,6 +322,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
                 new Function1<Integer, Integer>() {
                     /** @see Bug#upgrade(String) Upgrade to {@code IntFunction} when we
                      * drop support for JDK 1.7 */
+                    @Override
                     public Integer apply( Integer index ) {
                         return lower + index;
                     }
@@ -404,11 +412,13 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
         }
 
 
+        @Override
         public final boolean hasNext() {
             return position < size;
         }
 
 
+        @Override
         public final E next() {
             if ( !hasNext() ) {
                 throw new NoSuchElementException();
@@ -417,16 +427,19 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
         }
 
 
+        @Override
         public final int nextIndex() {
             return position;
         }
 
 
+        @Override
         public final boolean hasPrevious() {
             return position > 0;
         }
 
 
+        @Override
         public final E previous() {
             if ( !hasPrevious() ) {
                 throw new NoSuchElementException();
@@ -435,6 +448,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
         }
 
 
+        @Override
         public final int previousIndex() {
             return position - 1;
         }

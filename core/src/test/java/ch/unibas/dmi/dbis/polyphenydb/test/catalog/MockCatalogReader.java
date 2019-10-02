@@ -156,6 +156,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
+    @Override
     public SqlNameMatcher nameMatcher() {
         return nameMatcher;
     }
@@ -214,6 +215,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         if ( table.stream ) {
             registerTable( table.names,
                     new StreamableWrapperTable( table ) {
+                        @Override
                         public Table stream() {
                             return wrapperTable;
                         }
@@ -490,46 +492,55 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public double getRowCount() {
             return rowCount;
         }
 
 
+        @Override
         public RelOptSchema getRelOptSchema() {
             return catalogReader;
         }
 
 
+        @Override
         public RelNode toRel( ToRelContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 
 
+        @Override
         public List<RelCollation> getCollationList() {
             return collationList;
         }
 
 
+        @Override
         public RelDistribution getDistribution() {
             return RelDistributions.BROADCAST_DISTRIBUTED;
         }
 
 
+        @Override
         public boolean isKey( ImmutableBitSet columns ) {
             return !keyList.isEmpty() && columns.contains( ImmutableBitSet.of( keyList ) );
         }
 
 
+        @Override
         public List<RelReferentialConstraint> getReferentialConstraints() {
             return referentialConstraints;
         }
 
 
+        @Override
         public RelDataType getRowType() {
             return rowType;
         }
 
 
+        @Override
         public boolean supportsModality( SqlModality modality ) {
             return modality == (stream ? SqlModality.STREAM : SqlModality.RELATION);
         }
@@ -541,11 +552,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public List<String> getQualifiedName() {
             return names;
         }
 
 
+        @Override
         public SqlMonotonicity getMonotonicity( String columnName ) {
             return monotonicColumnSet.contains( columnName )
                     ? SqlMonotonicity.INCREASING
@@ -553,11 +566,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public SqlAccessType getAllowedAccess() {
             return SqlAccessType.ALL;
         }
 
 
+        @Override
         public Expression getExpression( Class clazz ) {
             throw new UnsupportedOperationException();
         }
@@ -879,6 +894,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public void onRegister( RelDataTypeFactory typeFactory ) {
             rowType = new DynamicRecordTypeImpl( typeFactory );
         }
@@ -887,6 +903,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
+        @Override
         public RelNode toRel( ToRelContext context ) {
             if ( rowType.isDynamicStruct() ) {
                 rowType = new RelRecordType( rowType.getFieldList() );
@@ -912,111 +929,133 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public boolean isStruct() {
             return delegate.isStruct();
         }
 
 
+        @Override
         public boolean isDynamicStruct() {
             return delegate.isDynamicStruct();
         }
 
 
+        @Override
         public List<RelDataTypeField> getFieldList() {
             return delegate.getFieldList();
         }
 
 
+        @Override
         public List<String> getFieldNames() {
             return delegate.getFieldNames();
         }
 
 
+        @Override
         public int getFieldCount() {
             return delegate.getFieldCount();
         }
 
 
+        @Override
         public StructKind getStructKind() {
             return structKind;
         }
 
 
+        @Override
         public RelDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
             return delegate.getField( fieldName, caseSensitive, elideRecord );
         }
 
 
+        @Override
         public boolean isNullable() {
             return delegate.isNullable();
         }
 
 
+        @Override
         public RelDataType getComponentType() {
             return delegate.getComponentType();
         }
 
 
+        @Override
         public RelDataType getKeyType() {
             return delegate.getKeyType();
         }
 
 
+        @Override
         public RelDataType getValueType() {
             return delegate.getValueType();
         }
 
 
+        @Override
         public Charset getCharset() {
             return delegate.getCharset();
         }
 
 
+        @Override
         public SqlCollation getCollation() {
             return delegate.getCollation();
         }
 
 
+        @Override
         public SqlIntervalQualifier getIntervalQualifier() {
             return delegate.getIntervalQualifier();
         }
 
 
+        @Override
         public int getPrecision() {
             return delegate.getPrecision();
         }
 
 
+        @Override
         public int getScale() {
             return delegate.getScale();
         }
 
 
+        @Override
         public SqlTypeName getSqlTypeName() {
             return delegate.getSqlTypeName();
         }
 
 
+        @Override
         public SqlIdentifier getSqlIdentifier() {
             return delegate.getSqlIdentifier();
         }
 
 
+        @Override
         public String getFullTypeString() {
             return delegate.getFullTypeString();
         }
 
 
+        @Override
         public RelDataTypeFamily getFamily() {
             return delegate.getFamily();
         }
 
 
+        @Override
         public RelDataTypePrecedenceList getPrecedenceList() {
             return delegate.getPrecedenceList();
         }
 
 
+        @Override
         public RelDataTypeComparability getComparability() {
             return delegate.getComparability();
         }
@@ -1036,6 +1075,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public <C> C unwrap( Class<C> aClass ) {
             return aClass.isInstance( this )
                     ? aClass.cast( this )
@@ -1045,33 +1085,40 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return table.getRowType();
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return new Statistic() {
+                @Override
                 public Double getRowCount() {
                     return table.rowCount;
                 }
 
 
+                @Override
                 public boolean isKey( ImmutableBitSet columns ) {
                     return table.isKey( columns );
                 }
 
 
+                @Override
                 public List<RelReferentialConstraint> getReferentialConstraints() {
                     return table.getReferentialConstraints();
                 }
 
 
+                @Override
                 public List<RelCollation> getCollations() {
                     return table.collationList;
                 }
 
 
+                @Override
                 public RelDistribution getDistribution() {
                     return table.getDistribution();
                 }
@@ -1092,6 +1139,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public Schema.TableType getJdbcTableType() {
             return table.stream ? Schema.TableType.STREAM : Schema.TableType.TABLE;
         }
@@ -1108,6 +1156,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public Table stream() {
             return this;
         }

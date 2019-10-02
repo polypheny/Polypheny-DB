@@ -80,56 +80,67 @@ public class DelegatingSchema implements Schema {
     }
 
 
+    @Override
     public boolean isMutable() {
         return schema.isMutable();
     }
 
 
+    @Override
     public Schema snapshot( SchemaVersion version ) {
         return schema.snapshot( version );
     }
 
 
+    @Override
     public Expression getExpression( SchemaPlus parentSchema, String name ) {
         return schema.getExpression( parentSchema, name );
     }
 
 
+    @Override
     public Table getTable( String name ) {
         return schema.getTable( name );
     }
 
 
+    @Override
     public Set<String> getTableNames() {
         return schema.getTableNames();
     }
 
 
+    @Override
     public RelProtoDataType getType( String name ) {
         return schema.getType( name );
     }
 
 
+    @Override
     public Set<String> getTypeNames() {
         return schema.getTypeNames();
     }
 
 
+    @Override
     public Collection<Function> getFunctions( String name ) {
         return schema.getFunctions( name );
     }
 
 
+    @Override
     public Set<String> getFunctionNames() {
         return schema.getFunctionNames();
     }
 
 
+    @Override
     public Schema getSubSchema( String name ) {
         return schema.getSubSchema( name );
     }
 
 
+    @Override
     public Set<String> getSubSchemaNames() {
         return schema.getSubSchemaNames();
     }

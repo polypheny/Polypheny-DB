@@ -670,11 +670,13 @@ public class SqlParserTest {
      */
     public static Matcher<SqlNode> isDdl() {
         return new BaseMatcher<SqlNode>() {
+            @Override
             public boolean matches( Object item ) {
                 return item instanceof SqlNode && SqlKind.DDL.contains( ((SqlNode) item).getKind() );
             }
 
 
+            @Override
             public void describeTo( Description description ) {
                 description.appendText( "isDdl" );
             }

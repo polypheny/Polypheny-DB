@@ -198,6 +198,7 @@ public class TableAccessMap {
      */
     private class TableRelVisitor extends RelVisitor {
 
+        @Override
         public void visit( RelNode p, int ordinal, RelNode parent ) {
             super.visit( p, ordinal, parent );
             RelOptTable table = p.getTable();

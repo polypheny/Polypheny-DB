@@ -62,6 +62,7 @@ class EnumerableUnionRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalUnion union = (LogicalUnion) rel;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;

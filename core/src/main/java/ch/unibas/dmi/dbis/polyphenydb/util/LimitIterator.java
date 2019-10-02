@@ -55,17 +55,20 @@ public class LimitIterator<E> implements Iterator<E> {
     }
 
 
+    @Override
     public boolean hasNext() {
         return iterator.hasNext() && i < limit;
     }
 
 
+    @Override
     public E next() {
         ++i;
         return iterator.next();
     }
 
 
+    @Override
     public void remove() {
         throw new UnsupportedOperationException();
     }

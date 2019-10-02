@@ -93,11 +93,13 @@ public abstract class RexSlot extends RexVariable {
 
         private static AbstractList<String> fromTo( final String prefix, final int start, final int end ) {
             return new AbstractList<String>() {
+                @Override
                 public String get( int index ) {
                     return prefix + (index + start);
                 }
 
 
+                @Override
                 public int size() {
                     return end - start;
                 }

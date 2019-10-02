@@ -152,6 +152,7 @@ public interface RelNode extends RelOptNode, Cloneable {
     /**
      * Returns the type of the rows returned by this relational expression.
      */
+    @Override
     RelDataType getRowType();
 
     /**
@@ -167,6 +168,7 @@ public interface RelNode extends RelOptNode, Cloneable {
      *
      * @return Array of this relational expression's inputs
      */
+    @Override
     List<RelNode> getInputs();
 
     /**

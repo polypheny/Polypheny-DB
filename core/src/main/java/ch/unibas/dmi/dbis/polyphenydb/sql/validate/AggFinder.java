@@ -105,6 +105,7 @@ class AggFinder extends AggVisitor {
     }
 
 
+    @Override
     protected Void found( SqlCall call ) {
         throw new Util.FoundOne( call );
     }
@@ -142,6 +143,7 @@ class AggFinder extends AggVisitor {
         }
 
 
+        @Override
         @Nonnull
         public Iterator<SqlCall> iterator() {
             return calls.iterator();

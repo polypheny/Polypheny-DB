@@ -73,11 +73,13 @@ public abstract class WinAggAddContextImpl extends WinAggResultContextImpl imple
     }
 
 
+    @Override
     public final RexToLixTranslator rowTranslator() {
         return rowTranslator( computeIndex( Expressions.constant( 0 ), WinAggImplementor.SeekType.AGG_INDEX ) );
     }
 
 
+    @Override
     public final List<Expression> arguments() {
         return rowTranslator().translateList( rexArguments() );
     }

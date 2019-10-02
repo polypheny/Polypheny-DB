@@ -95,11 +95,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     }
 
 
+    @Override
     public SqlValidator getValidator() {
         return validator;
     }
 
 
+    @Override
     public final void validate( RelDataType targetRowType ) {
         switch ( status ) {
             case UNVALIDATED:
@@ -133,6 +135,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     protected abstract RelDataType validateImpl( RelDataType targetRowType );
 
 
+    @Override
     public RelDataType getRowType() {
         if ( rowType == null ) {
             validator.validateNamespace( this, validator.unknownType );
@@ -142,54 +145,64 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     }
 
 
+    @Override
     public RelDataType getRowTypeSansSystemColumns() {
         return getRowType();
     }
 
 
+    @Override
     public RelDataType getType() {
         Util.discard( getRowType() );
         return type;
     }
 
 
+    @Override
     public void setType( RelDataType type ) {
         this.type = type;
         this.rowType = convertToStruct( type );
     }
 
 
+    @Override
     public SqlNode getEnclosingNode() {
         return enclosingNode;
     }
 
 
+    @Override
     public SqlValidatorTable getTable() {
         return null;
     }
 
 
+    @Override
     public SqlValidatorNamespace lookupChild( String name ) {
         return validator.lookupFieldNamespace( getRowType(), name );
     }
 
 
+    @Override
     public boolean fieldExists( String name ) {
         final RelDataType rowType = getRowType();
         return validator.catalogReader.nameMatcher().field( rowType, name ) != null;
     }
 
 
+    @Override
     public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
         return ImmutableList.of();
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         return SqlMonotonicity.NOT_MONOTONIC;
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public void makeNullable() {
     }
@@ -200,21 +213,25 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     }
 
 
+    @Override
     public SqlValidatorNamespace resolve() {
         return this;
     }
 
 
+    @Override
     public boolean supportsModality( SqlModality modality ) {
         return true;
     }
 
 
+    @Override
     public <T> T unwrap( Class<T> clazz ) {
         return clazz.cast( this );
     }
 
 
+    @Override
     public boolean isWrapperFor( Class<?> clazz ) {
         return clazz.isInstance( this );
     }

@@ -158,6 +158,7 @@ class VolcanoCost implements RelOptCost {
     }
 
 
+    @Override
     public boolean equals( RelOptCost other ) {
         return this == other
                 || other instanceof VolcanoCost
@@ -268,26 +269,31 @@ class VolcanoCost implements RelOptCost {
      */
     private static class Factory implements RelOptCostFactory {
 
+        @Override
         public RelOptCost makeCost( double dRows, double dCpu, double dIo ) {
             return new VolcanoCost( dRows, dCpu, dIo );
         }
 
 
+        @Override
         public RelOptCost makeHugeCost() {
             return VolcanoCost.HUGE;
         }
 
 
+        @Override
         public RelOptCost makeInfiniteCost() {
             return VolcanoCost.INFINITY;
         }
 
 
+        @Override
         public RelOptCost makeTinyCost() {
             return VolcanoCost.TINY;
         }
 
 
+        @Override
         public RelOptCost makeZeroCost() {
             return VolcanoCost.ZERO;
         }

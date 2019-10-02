@@ -161,6 +161,7 @@ public abstract class Sort extends SingleRel {
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         RexNode offset = shuttle.apply( this.offset );
         RexNode fetch = shuttle.apply( this.fetch );
@@ -194,6 +195,7 @@ public abstract class Sort extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         assert fieldExps.size() == collation.getFieldCollations().size();

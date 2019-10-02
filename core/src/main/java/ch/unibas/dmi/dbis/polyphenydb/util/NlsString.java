@@ -77,6 +77,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
                     .softValues()
                     .build(
                             new CacheLoader<Pair<ByteString, Charset>, String>() {
+                                @Override
                                 public String load( @Nonnull Pair<ByteString, Charset> key ) {
                                     final Charset charset = key.right;
                                     final CharsetDecoder decoder = charset.newDecoder();
@@ -177,6 +178,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
     //~ Methods ----------------------------------------------------------------
 
 
+    @Override
     public Object clone() {
         try {
             return super.clone();

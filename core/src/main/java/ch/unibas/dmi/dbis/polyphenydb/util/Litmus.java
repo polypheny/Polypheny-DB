@@ -58,6 +58,7 @@ public interface Litmus {
      * an {@link java.lang.AssertionError} on failure.
      */
     Litmus THROW = new Litmus() {
+        @Override
         public boolean fail( String message, Object... args ) {
             final String s = message == null
                     ? null : MessageFormatter.arrayFormat( message, args ).getMessage();
@@ -65,11 +66,13 @@ public interface Litmus {
         }
 
 
+        @Override
         public boolean succeed() {
             return true;
         }
 
 
+        @Override
         public boolean check( boolean condition, String message, Object... args ) {
             if ( condition ) {
                 return succeed();
@@ -84,16 +87,19 @@ public interface Litmus {
      * a status code but does not throw.
      */
     Litmus IGNORE = new Litmus() {
+        @Override
         public boolean fail( String message, Object... args ) {
             return false;
         }
 
 
+        @Override
         public boolean succeed() {
             return true;
         }
 
 
+        @Override
         public boolean check( boolean condition, String message, Object... args ) {
             return condition;
         }

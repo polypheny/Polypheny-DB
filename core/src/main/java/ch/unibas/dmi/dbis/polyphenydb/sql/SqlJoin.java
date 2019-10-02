@@ -96,6 +96,7 @@ public class SqlJoin extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return OPERATOR;
     }
@@ -107,6 +108,7 @@ public class SqlJoin extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( left, natural, joinType, right, conditionType, condition );
     }
@@ -213,11 +215,13 @@ public class SqlJoin extends SqlCall {
         }
 
 
+        @Override
         public SqlSyntax getSyntax() {
             return SqlSyntax.SPECIAL;
         }
 
 
+        @Override
         public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
             assert functionQualifier == null;
             return new SqlJoin(

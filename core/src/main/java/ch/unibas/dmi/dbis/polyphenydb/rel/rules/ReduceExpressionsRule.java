@@ -363,6 +363,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             // Form a list of expressions with sub-expressions fully expanded.
             final List<RexNode> expandedExprList = new ArrayList<>();
             final RexShuttle shuttle = new RexShuttle() {
+                @Override
                 public RexNode visitLocalRef( RexLocalRef localRef ) {
                     return expandedExprList.get( localRef.getIndex() );
                 }

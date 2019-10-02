@@ -368,6 +368,7 @@ public class ConcurrentTestCommandScript
     /**
      * Executes the script
      */
+    @Override
     public void execute() throws Exception {
         scriptStartTime = System.currentTimeMillis();
         executeSetup();
@@ -471,7 +472,7 @@ public class ConcurrentTestCommandScript
                     try ( Statement stmt = connection.createStatement() ) {
                         int rows = stmt.executeUpdate( sql );
                         if ( rows != 1 ) {
-                            storeMessage( threadId, String.valueOf( rows ) + " rows affected." );
+                            storeMessage( threadId, rows + " rows affected." );
                         } else {
                             storeMessage( threadId, "1 row affected." );
                         }
@@ -627,11 +628,13 @@ public class ConcurrentTestCommandScript
     /**
      * Causes errors to be send here for custom handling. See {@link #customErrorHandler(ConcurrentTestCommandExecutor)}.
      */
+    @Override
     boolean requiresCustomErrorHandling() {
         return true;
     }
 
 
+    @Override
     void customErrorHandler( ConcurrentTestCommandExecutor executor ) {
         StringBuilder message = new StringBuilder();
         Throwable cause = executor.getFailureCause();
@@ -1328,7 +1331,7 @@ public class ConcurrentTestCommandScript
                 if ( state.equals( a.state ) ) {
                     StateDatum[] stateData = a.stateData;
 
-                    Map<String, String> result = new HashMap<String, String>();
+                    Map<String, String> result = new HashMap<>();
                     for ( StateDatum datum : stateData ) {
                         result.put( datum.x, datum.y );
                     }
@@ -1470,6 +1473,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             Integer threadId = executor.getThreadId();
             BufferedWriter out = threadBufferedWriters.get( threadId );
@@ -1491,6 +1495,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             storeMessage( executor.getThreadId(), msg );
         }
@@ -1511,6 +1516,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( final ConcurrentTestCommandExecutor exec ) throws Exception {
             ConcurrentTestPluginCommand.TestContext context =
                     new ConcurrentTestPluginCommand.TestContext() {
@@ -1580,6 +1586,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) {
             Integer threadId = executor.getThreadId();
             storeMessage( threadId, command );
@@ -1691,6 +1698,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             // TODO: trim and chop in constructor; stash sql in base class;
             // execute() calls storeSql.
@@ -1744,6 +1752,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             String properSql = sql.trim();
 
@@ -1774,7 +1783,7 @@ public class ConcurrentTestCommandScript
                 } else {
                     int rows = stmt.getUpdateCount();
                     if ( rows != 1 ) {
-                        storeMessage( executor.getThreadId(), String.valueOf( rows ) + " rows affected." );
+                        storeMessage( executor.getThreadId(), rows + " rows affected." );
                     } else {
                         storeMessage( executor.getThreadId(), "1 row affected." );
                     }
@@ -1808,6 +1817,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             String properSql = sql.trim();
 
@@ -1834,6 +1844,7 @@ public class ConcurrentTestCommandScript
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             PreparedStatement stmt = (PreparedStatement) executor.getStatement();
             long timeout = setTimeout( stmt );

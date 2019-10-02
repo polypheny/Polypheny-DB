@@ -161,6 +161,7 @@ public class CompositeList<T> extends AbstractList<T> {
     }
 
 
+    @Override
     public T get( int index ) {
         for ( List<? extends T> list : lists ) {
             int nextIndex = index - list.size();
@@ -173,6 +174,7 @@ public class CompositeList<T> extends AbstractList<T> {
     }
 
 
+    @Override
     public int size() {
         int n = 0;
         for ( List<? extends T> list : lists ) {

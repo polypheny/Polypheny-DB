@@ -122,6 +122,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
+    @Override
     public void clear() {
     }
 

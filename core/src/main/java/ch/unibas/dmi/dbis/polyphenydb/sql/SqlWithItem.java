@@ -75,6 +75,7 @@ public class SqlWithItem extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }
@@ -98,6 +99,7 @@ public class SqlWithItem extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return SqlWithItemOperator.INSTANCE;
     }
@@ -116,6 +118,7 @@ public class SqlWithItem extends SqlCall {
         }
 
 
+        @Override
         public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
             final SqlWithItem withItem = (SqlWithItem) call;
             withItem.name.unparse( writer, getLeftPrec(), getRightPrec() );

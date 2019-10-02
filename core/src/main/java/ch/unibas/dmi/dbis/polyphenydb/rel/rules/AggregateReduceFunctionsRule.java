@@ -122,6 +122,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall ruleCall ) {
         Aggregate oldAggRel = (Aggregate) ruleCall.rels[0];
         reduceAggs( ruleCall, oldAggRel );

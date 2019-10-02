@@ -195,6 +195,7 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( int c ) throws IOException {
         switch ( c ) {
             case INDENT:
@@ -240,6 +241,7 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( char[] cbuf, int off, int len ) throws IOException {
         // TODO: something more efficient using searches for
         // special characters
@@ -250,6 +252,7 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( String str, int off, int len ) throws IOException {
         // TODO: something more efficient using searches for
         // special characters

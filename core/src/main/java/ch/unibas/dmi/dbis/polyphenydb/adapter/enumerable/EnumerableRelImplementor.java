@@ -437,6 +437,7 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
     }
 
 
+    @Override
     public SqlConformance getConformance() {
         return (SqlConformance) map.getOrDefault( "_conformance", SqlConformanceEnum.DEFAULT );
     }

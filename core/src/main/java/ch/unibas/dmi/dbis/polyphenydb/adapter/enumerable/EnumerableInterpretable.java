@@ -101,6 +101,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
+    @Override
     public Node implement( final InterpreterImplementor implementor ) {
         final Bindable bindable = toBindable( implementor.internalParameters, implementor.spark, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY );
         final ArrayBindable arrayBindable = box( bindable );
@@ -174,32 +175,39 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             return (ArrayBindable) bindable;
         }
         return new ArrayBindable() {
+            @Override
             public Class<Object[]> getElementType() {
                 return Object[].class;
             }
 
 
+            @Override
             public Enumerable<Object[]> bind( DataContext dataContext ) {
                 final Enumerable<?> enumerable = bindable.bind( dataContext );
                 return new AbstractEnumerable<Object[]>() {
+                    @Override
                     public Enumerator<Object[]> enumerator() {
                         final Enumerator<?> enumerator = enumerable.enumerator();
                         return new Enumerator<Object[]>() {
+                            @Override
                             public Object[] current() {
                                 return new Object[]{ enumerator.current() };
                             }
 
 
+                            @Override
                             public boolean moveNext() {
                                 return enumerator.moveNext();
                             }
 
 
+                            @Override
                             public void reset() {
                                 enumerator.reset();
                             }
 
 
+                            @Override
                             public void close() {
                                 enumerator.close();
                             }
@@ -228,6 +236,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         }
 
 
+        @Override
         public void run() throws InterruptedException {
             final Enumerator<Object[]> enumerator = enumerable.enumerator();
             while ( enumerator.moveNext() ) {

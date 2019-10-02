@@ -76,11 +76,13 @@ public class GroupByScope extends DelegatingScope {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return groupByList;
     }
 
 
+    @Override
     public void validateExpr( SqlNode expr ) {
         SqlNode expanded = validator.expandGroupByOrHavingExpr( expr, this, select, false );
 

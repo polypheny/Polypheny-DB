@@ -272,6 +272,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
+    @Override
     public Enumerator<T> enumerator() {
         if ( preparedStatementEnricher == null ) {
             return enumeratorBasedOnStatement();
@@ -390,11 +391,13 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         }
 
 
+        @Override
         public T current() {
             return rowBuilder.apply();
         }
 
 
+        @Override
         public boolean moveNext() {
             try {
                 return resultSet.next();
@@ -404,6 +407,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         }
 
 
+        @Override
         public void reset() {
             try {
                 resultSet.beforeFirst();
@@ -413,6 +417,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         }
 
 
+        @Override
         public void close() {
             ResultSet savedResultSet = resultSet;
             if ( savedResultSet != null ) {

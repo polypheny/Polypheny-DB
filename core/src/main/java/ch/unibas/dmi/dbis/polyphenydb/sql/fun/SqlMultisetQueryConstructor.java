@@ -88,6 +88,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         RelDataType type =
                 getComponentType(
@@ -108,6 +109,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final List<RelDataType> argTypes =
                 SqlTypeUtil.deriveAndCollectTypes(
@@ -128,6 +130,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         SqlSelect subSelect = call.operand( 0 );
         subSelect.validateExpr( validator, scope );
@@ -140,6 +143,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( getName() );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
@@ -149,6 +153,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public boolean argumentMustBeScalar( int ordinal ) {
         return false;
     }

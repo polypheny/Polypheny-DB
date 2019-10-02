@@ -212,11 +212,13 @@ public class JaninoRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, Class<? extends M> metadataClass ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>>
     handlers( MetadataDef<M> def ) {
         return provider.handlers( def );

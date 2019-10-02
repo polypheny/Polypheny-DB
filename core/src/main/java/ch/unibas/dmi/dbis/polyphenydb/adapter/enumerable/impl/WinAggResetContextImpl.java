@@ -87,31 +87,37 @@ public class WinAggResetContextImpl extends AggResetContextImpl implements WinAg
     }
 
 
+    @Override
     public Expression index() {
         return index;
     }
 
 
+    @Override
     public Expression startIndex() {
         return startIndex;
     }
 
 
+    @Override
     public Expression endIndex() {
         return endIndex;
     }
 
 
+    @Override
     public Expression hasRows() {
         return hasRows;
     }
 
 
+    @Override
     public Expression getFrameRowCount() {
         return frameRowCount;
     }
 
 
+    @Override
     public Expression getPartitionRowCount() {
         return partitionRowCount;
     }

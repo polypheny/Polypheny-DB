@@ -648,6 +648,7 @@ public class PlannerTest {
             }
 
 
+            @Override
             public void onMatch( RelOptRuleCall call ) {
             }
         };
@@ -659,6 +660,7 @@ public class PlannerTest {
             }
 
 
+            @Override
             public void onMatch( RelOptRuleCall call ) {
             }
         };
@@ -1053,6 +1055,7 @@ public class PlannerTest {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final EnumerableProject project = (EnumerableProject) rel;
             return new JdbcRules.JdbcProject(
@@ -1077,6 +1080,7 @@ public class PlannerTest {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final EnumerableTableScan scan = (EnumerableTableScan) rel;
             return new MockJdbcTableScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
@@ -1109,6 +1113,7 @@ public class PlannerTest {
         }
 
 
+        @Override
         public JdbcImplementor.Result implement( JdbcImplementor implementor ) {
             return null;
         }
@@ -1181,18 +1186,21 @@ public class PlannerTest {
         }
 
 
+        @Override
         @SuppressWarnings("deprecation")
         public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
             return ImmutableList.of( typeFactory.createSqlType( SqlTypeName.ANY ) );
         }
 
 
+        @Override
         @SuppressWarnings("deprecation")
         public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
             return typeFactory.createSqlType( SqlTypeName.BIGINT );
         }
 
 
+        @Override
         public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
             // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
             if ( call.isCountStar() ) {

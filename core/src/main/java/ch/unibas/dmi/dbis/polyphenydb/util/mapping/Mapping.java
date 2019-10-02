@@ -66,23 +66,28 @@ public interface Mapping extends Mappings.FunctionMapping, Mappings.SourceMappin
      *
      * This method is optional; implementations may throw {@link UnsupportedOperationException}.
      */
+    @Override
     Iterator<IntPair> iterator();
 
     /**
      * Returns the number of sources. Valid sources will be in the range 0 .. sourceCount.
      */
+    @Override
     int getSourceCount();
 
     /**
      * Returns the number of targets. Valid targets will be in the range 0 .. targetCount.
      */
+    @Override
     int getTargetCount();
 
+    @Override
     MappingType getMappingType();
 
     /**
      * Returns whether this mapping is the identity.
      */
+    @Override
     boolean isIdentity();
 
     /**
@@ -93,6 +98,7 @@ public interface Mapping extends Mappings.FunctionMapping, Mappings.SourceMappin
     /**
      * Returns the number of elements in the mapping.
      */
+    @Override
     int size();
 }
 

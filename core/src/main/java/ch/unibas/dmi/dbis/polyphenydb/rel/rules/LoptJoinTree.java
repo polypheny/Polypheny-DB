@@ -208,6 +208,7 @@ public class LoptJoinTree {
         }
 
 
+        @Override
         public void getTreeOrder( List<Integer> treeOrder ) {
             treeOrder.add( id );
         }
@@ -240,6 +241,7 @@ public class LoptJoinTree {
         }
 
 
+        @Override
         public void getTreeOrder( List<Integer> treeOrder ) {
             left.getTreeOrder( treeOrder );
             right.getTreeOrder( treeOrder );

@@ -177,6 +177,7 @@ public abstract class SqlAggFunction extends SqlFunction implements Context {
     }
 
 
+    @Override
     public <T> T unwrap( Class<T> clazz ) {
         return clazz.isInstance( this ) ? clazz.cast( this ) : null;
     }

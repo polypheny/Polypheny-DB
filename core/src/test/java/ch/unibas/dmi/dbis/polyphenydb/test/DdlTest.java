@@ -69,7 +69,6 @@ import org.junit.rules.ExpectedException;
  * Unit tests for DDL.
  */
 
-@SuppressWarnings("SqlDialectInspection")
 public class DdlTest {
 
     static final String URL = "jdbc:polyphenydbembedded:";
