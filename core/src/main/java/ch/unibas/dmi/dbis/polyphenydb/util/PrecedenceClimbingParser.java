@@ -55,9 +55,7 @@ import org.apache.calcite.linq4j.Ord;
 
 
 /**
- * Parser that takes a collection of tokens (atoms and operators)
- * and groups them together according to the operators' precedence
- * and associativity.
+ * Parser that takes a collection of tokens (atoms and operators) and groups them together according to the operators' precedence and associativity.
  */
 public class PrecedenceClimbingParser {
 
@@ -92,8 +90,7 @@ public class PrecedenceClimbingParser {
 
 
     public Op infix( Object o, int precedence, boolean left ) {
-        return new Op( Type.INFIX, o, precedence * 2 + (left ? 0 : 1),
-                precedence * 2 + (left ? 1 : 0) );
+        return new Op( Type.INFIX, o, precedence * 2 + (left ? 0 : 1), precedence * 2 + (left ? 1 : 0) );
     }
 
 
@@ -107,8 +104,7 @@ public class PrecedenceClimbingParser {
     }
 
 
-    public SpecialOp special( Object o, int leftPrec, int rightPrec,
-            Special special ) {
+    public SpecialOp special( Object o, int leftPrec, int rightPrec, Special special ) {
         return new SpecialOp( o, leftPrec * 2, rightPrec * 2, special );
     }
 
@@ -116,8 +112,7 @@ public class PrecedenceClimbingParser {
     public Token parse() {
         partialParse();
         if ( first != last ) {
-            throw new AssertionError( "could not find next operator to reduce: "
-                    + this );
+            throw new AssertionError( "could not find next operator to reduce: " + this );
         }
         return first;
     }
@@ -264,8 +259,7 @@ public class PrecedenceClimbingParser {
 
 
     /**
-     * A token: either an atom, a call to an operator with arguments,
-     * or an unmatched operator.
+     * A token: either an atom, a call to an operator with arguments, or an unmatched operator.
      */
     public static class Token {
 
@@ -387,8 +381,7 @@ public class PrecedenceClimbingParser {
                     args.get( 1 ).print( b );
                     return b.append( ')' );
                 case SPECIAL:
-                    printOp( b, false, false )
-                            .append( '(' );
+                    printOp( b, false, false ).append( '(' );
                     for ( Ord<Token> arg : Ord.zip( args ) ) {
                         if ( arg.i > 0 ) {
                             b.append( ", " );
@@ -402,8 +395,7 @@ public class PrecedenceClimbingParser {
         }
 
 
-        private StringBuilder printOp( StringBuilder b, boolean leftSpace,
-                boolean rightSpace ) {
+        private StringBuilder printOp( StringBuilder b, boolean leftSpace, boolean rightSpace ) {
             String s = op.o.toString();
             if ( leftSpace ) {
                 b.append( ' ' );
@@ -423,9 +415,7 @@ public class PrecedenceClimbingParser {
     public interface Special {
 
         /**
-         * Given an occurrence of this operator, identifies the range of tokens to
-         * be collapsed into a call of this operator, and the arguments to that
-         * call.
+         * Given an occurrence of this operator, identifies the range of tokens to be collapsed into a call of this operator, and the arguments to that call.
          */
         Result apply( PrecedenceClimbingParser parser, SpecialOp op );
     }
@@ -455,8 +445,7 @@ public class PrecedenceClimbingParser {
     public static class Builder {
 
         final List<Token> tokens = new ArrayList<>();
-        private final PrecedenceClimbingParser dummy =
-                new PrecedenceClimbingParser( ImmutableList.of() );
+        private final PrecedenceClimbingParser dummy = new PrecedenceClimbingParser( ImmutableList.of() );
 
 
         private Builder add( Token t ) {
@@ -490,8 +479,7 @@ public class PrecedenceClimbingParser {
         }
 
 
-        public Builder special( Object o, int leftPrec, int rightPrec,
-                Special special ) {
+        public Builder special( Object o, int leftPrec, int rightPrec, Special special ) {
             return add( dummy.special( o, leftPrec, rightPrec, special ) );
         }
 
@@ -503,9 +491,7 @@ public class PrecedenceClimbingParser {
 
 
     /**
-     * List view onto the tokens in a parser. The view is semi-mutable; it
-     * supports {@link List#remove(int)} but not {@link List#set} or
-     * {@link List#add}.
+     * List view onto the tokens in a parser. The view is semi-mutable; it supports {@link List#remove(int)} but not {@link List#set} or {@link List#add}.
      */
     private class TokenList extends AbstractList<Token> {
 
@@ -567,4 +553,3 @@ public class PrecedenceClimbingParser {
     }
 }
 
-// End PrecedenceClimbingParser.java

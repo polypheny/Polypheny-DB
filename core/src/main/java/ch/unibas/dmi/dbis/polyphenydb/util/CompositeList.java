@@ -53,14 +53,11 @@ import java.util.List;
 /**
  * Read-only list that is the concatenation of sub-lists.
  *
- * <p>The list is read-only; attempts to call methods such as
- * {@link #add(Object)} or {@link #set(int, Object)} will throw.
+ * The list is read-only; attempts to call methods such as {@link #add(Object)} or {@link #set(int, Object)} will throw.
  *
- * <p>Changes to the backing lists, including changes in length, will be
- * reflected in this list.
+ * Changes to the backing lists, including changes in length, will be reflected in this list.
  *
- * <p>This class is not thread-safe. Changes to backing lists will cause
- * unspecified behavior.
+ * This class is not thread-safe. Changes to backing lists will cause unspecified behavior.
  *
  * @param <T> Element type
  */
@@ -137,8 +134,7 @@ public class CompositeList<T> extends AbstractList<T> {
      * @param <T> Element type
      * @return List consisting of all lists
      */
-    public static <T> CompositeList<T> of( List<? extends T> list0,
-            List<? extends T> list1 ) {
+    public static <T> CompositeList<T> of( List<? extends T> list0, List<? extends T> list1 ) {
         //noinspection unchecked
         return new CompositeList<T>( (ImmutableList) ImmutableList.of( list0, list1 ) );
     }
@@ -153,9 +149,7 @@ public class CompositeList<T> extends AbstractList<T> {
      * @param <T> Element type
      * @return List consisting of all lists
      */
-    public static <T> CompositeList<T> of( List<? extends T> list0,
-            List<? extends T> list1,
-            List<? extends T> list2 ) {
+    public static <T> CompositeList<T> of( List<? extends T> list0, List<? extends T> list1, List<? extends T> list2 ) {
         //noinspection unchecked
         return new CompositeList<T>( (ImmutableList) ImmutableList.of( list0, list1, list2 ) );
     }
@@ -184,4 +178,3 @@ public class CompositeList<T> extends AbstractList<T> {
     }
 }
 
-// End CompositeList.java

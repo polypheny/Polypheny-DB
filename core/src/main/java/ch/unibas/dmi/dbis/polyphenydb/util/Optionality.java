@@ -46,33 +46,26 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
 /**
- * Four states that describe whether a particular behavior or
- * property is allowed and/or not allowed.
+ * Four states that describe whether a particular behavior or property is allowed and/or not allowed.
  */
 public enum Optionality {
     /**
-     * A property is <em>mandatory</em> if an instance must possess it;
-     * it is an error if it does not.
+     * A property is <em>mandatory</em> if an instance must possess it; it is an error if it does not.
      */
     MANDATORY,
 
     /**
-     * A property is <em>optional</em> if an instance may or may not possess it;
-     * neither state is an error.
+     * A property is <em>optional</em> if an instance may or may not possess it; neither state is an error.
      */
     OPTIONAL,
 
     /**
-     * A property is <em>ignored</em> if an instance may or may not possess it;
-     * if it possesses the property, the effect is as if it does not.
+     * A property is <em>ignored</em> if an instance may or may not possess it; if it possesses the property, the effect is as if it does not.
      */
     IGNORED,
 
     /**
-     * A property is <em>forbidden</em> if an instance must not possess it;
-     * it is an error if the instance has the property.
+     * A property is <em>forbidden</em> if an instance must not possess it; it is an error if the instance has the property.
      */
     FORBIDDEN
 }
-
-// End Optionality.java

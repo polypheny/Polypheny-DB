@@ -71,12 +71,10 @@ import org.apache.calcite.linq4j.Linq4j;
 /**
  * An immutable list of bits.
  */
-public class ImmutableBitSet
-        implements Iterable<Integer>, Serializable, Comparable<ImmutableBitSet> {
+public class ImmutableBitSet implements Iterable<Integer>, Serializable, Comparable<ImmutableBitSet> {
 
     /**
-     * Compares bit sets topologically, so that enclosing bit sets come first,
-     * using natural ordering to break ties.
+     * Compares bit sets topologically, so that enclosing bit sets come first, using natural ordering to break ties.
      */
     public static final Comparator<ImmutableBitSet> COMPARATOR = ( o1, o2 ) -> {
         if ( o1.equals( o2 ) ) {
@@ -91,11 +89,9 @@ public class ImmutableBitSet
         return o1.compareTo( o2 );
     };
 
-    public static final Ordering<ImmutableBitSet> ORDERING =
-            Ordering.from( COMPARATOR );
+    public static final Ordering<ImmutableBitSet> ORDERING = Ordering.from( COMPARATOR );
 
-    // BitSets are packed into arrays of "words."  Currently a word is
-    // a long, which consists of 64 bits, requiring 6 address bits.
+    // BitSets are packed into arrays of "words."  Currently a word is a long, which consists of 64 bits, requiring 6 address bits.
     // The choice of word size is determined purely by performance concerns.
     private static final int ADDRESS_BITS_PER_WORD = 6;
     private static final int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;
@@ -105,14 +101,7 @@ public class ImmutableBitSet
 
     private static final long[] EMPTY_LONGS = new long[0];
 
-    private static final ImmutableBitSet EMPTY =
-            new ImmutableBitSet( EMPTY_LONGS );
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final
-    com.google.common.base.Function<? super BitSet, ImmutableBitSet>
-            FROM_BIT_SET = ImmutableBitSet::fromBitSet;
+    private static final ImmutableBitSet EMPTY = new ImmutableBitSet( EMPTY_LONGS );
 
     private final long[] words;
 
@@ -176,8 +165,7 @@ public class ImmutableBitSet
     /**
      * Creates an ImmutableBitSet with given bits set.
      *
-     * <p>For example, <code>of(ImmutableIntList.of(0, 3))</code> returns a bit
-     * set with bits {0, 3} set.
+     * For example, <code>of(ImmutableIntList.of(0, 3))</code> returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
      * @return Bit set
@@ -188,24 +176,18 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a new immutable bit set containing all the bits in the given long
-     * array.
+     * Returns a new immutable bit set containing all the bits in the given long array.
      *
-     * <p>More precisely,
+     * More precisely,
      *
-     * <blockquote>{@code ImmutableBitSet.valueOf(longs).get(n)
-     * == ((longs[n/64] & (1L<<(n%64))) != 0)}</blockquote>
+     * <blockquote>{@code ImmutableBitSet.valueOf(longs).get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)}</blockquote>
      *
-     * <p>for all {@code n < 64 * longs.length}.
+     * for all {@code n < 64 * longs.length}.
      *
-     * <p>This method is equivalent to
-     * {@code ImmutableBitSet.valueOf(LongBuffer.wrap(longs))}.
+     * This method is equivalent to {@code ImmutableBitSet.valueOf(LongBuffer.wrap(longs))}.
      *
-     * @param longs a long array containing a little-endian representation
-     * of a sequence of bits to be used as the initial bits of the
-     * new bit set
-     * @return a {@code ImmutableBitSet} containing all the bits in the long
-     * array
+     * @param longs a long array containing a little-endian representation of a sequence of bits to be used as the initial bits of the new bit set
+     * @return a {@code ImmutableBitSet} containing all the bits in the long array
      */
     public static ImmutableBitSet valueOf( long... longs ) {
         int n = longs.length;
@@ -220,8 +202,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a new immutable bit set containing all the bits in the given long
-     * buffer.
+     * Returns a new immutable bit set containing all the bits in the given long buffer.
      */
     public static ImmutableBitSet valueOf( LongBuffer longs ) {
         longs = longs.slice();
@@ -239,8 +220,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a new immutable bit set containing all the bits in the given
-     * {@link BitSet}.
+     * Returns a new immutable bit set containing all the bits in the given {@link BitSet}.
      */
     public static ImmutableBitSet fromBitSet( BitSet input ) {
         return of( BitSets.toIter( input ) );
@@ -248,11 +228,9 @@ public class ImmutableBitSet
 
 
     /**
-     * Creates an ImmutableBitSet with bits from {@code fromIndex} (inclusive) to
-     * specified {@code toIndex} (exclusive) set to {@code true}.
+     * Creates an ImmutableBitSet with bits from {@code fromIndex} (inclusive) to specified {@code toIndex} (exclusive) set to {@code true}.
      *
-     * <p>For example, {@code range(0, 3)} returns a bit set with bits
-     * {0, 1, 2} set.
+     * For example, {@code range(0, 3)} returns a bit set with bits {0, 1, 2} set.
      *
      * @param fromIndex Index of the first bit to be set.
      * @param toIndex Index after the last bit to be set.
@@ -311,19 +289,15 @@ public class ImmutableBitSet
     public Iterable<ImmutableBitSet> powerSet() {
         List<List<ImmutableBitSet>> singletons = new ArrayList<>();
         for ( int bit : this ) {
-            singletons.add(
-                    ImmutableList.of( ImmutableBitSet.of(), ImmutableBitSet.of( bit ) ) );
+            singletons.add( ImmutableList.of( ImmutableBitSet.of(), ImmutableBitSet.of( bit ) ) );
         }
-        return Iterables.transform( Linq4j.product( singletons ),
-                ImmutableBitSet::union );
+        return Iterables.transform( Linq4j.product( singletons ), ImmutableBitSet::union );
     }
 
 
     /**
-     * Returns the value of the bit with the specified index. The value
-     * is {@code true} if the bit with the index {@code bitIndex}
-     * is currently set in this {@code ImmutableBitSet}; otherwise, the result
-     * is {@code false}.
+     * Returns the value of the bit with the specified index. The value is {@code true} if the bit with the index {@code bitIndex}
+     * is currently set in this {@code ImmutableBitSet}; otherwise, the result is {@code false}.
      *
      * @param bitIndex the bit index
      * @return the value of the bit with the specified index
@@ -334,29 +308,22 @@ public class ImmutableBitSet
             throw new IndexOutOfBoundsException( "bitIndex < 0: " + bitIndex );
         }
         int wordIndex = wordIndex( bitIndex );
-        return (wordIndex < words.length)
-                && ((words[wordIndex] & (1L << bitIndex)) != 0);
+        return (wordIndex < words.length) && ((words[wordIndex] & (1L << bitIndex)) != 0);
     }
 
 
     /**
-     * Returns a new {@code ImmutableBitSet}
-     * composed of bits from this {@code ImmutableBitSet}
-     * from {@code fromIndex} (inclusive) to {@code toIndex} (exclusive).
+     * Returns a new {@code ImmutableBitSet} composed of bits from this {@code ImmutableBitSet} from {@code fromIndex} (inclusive) to {@code toIndex} (exclusive).
      *
      * @param fromIndex index of the first bit to include
      * @param toIndex index after the last bit to include
-     * @return a new {@code ImmutableBitSet} from a range of
-     * this {@code ImmutableBitSet}
-     * @throws IndexOutOfBoundsException if {@code fromIndex} is negative,
-     * or {@code toIndex} is negative, or {@code fromIndex} is
-     * larger than {@code toIndex}
+     * @return a new {@code ImmutableBitSet} from a range of this {@code ImmutableBitSet}
+     * @throws IndexOutOfBoundsException if {@code fromIndex} is negative, or {@code toIndex} is negative, or {@code fromIndex} is larger than {@code toIndex}
      */
     public ImmutableBitSet get( int fromIndex, int toIndex ) {
         checkRange( fromIndex, toIndex );
         final Builder builder = builder();
-        for ( int i = nextSetBit( fromIndex ); i >= 0 && i < toIndex;
-                i = nextSetBit( i + 1 ) ) {
+        for ( int i = nextSetBit( fromIndex ); i >= 0 && i < toIndex; i = nextSetBit( i + 1 ) ) {
             builder.set( i );
         }
         return builder.build();
@@ -374,31 +341,25 @@ public class ImmutableBitSet
             throw new IndexOutOfBoundsException( "toIndex < 0: " + toIndex );
         }
         if ( fromIndex > toIndex ) {
-            throw new IndexOutOfBoundsException( "fromIndex: " + fromIndex
-                    + " > toIndex: " + toIndex );
+            throw new IndexOutOfBoundsException( "fromIndex: " + fromIndex + " > toIndex: " + toIndex );
         }
     }
 
 
     /**
-     * Returns a string representation of this bit set. For every index
-     * for which this {@code BitSet} contains a bit in the set
-     * state, the decimal representation of that index is included in
-     * the result. Such indices are listed in order from lowest to
-     * highest, separated by ",&nbsp;" (a comma and a space) and
-     * surrounded by braces, resulting in the usual mathematical
+     * Returns a string representation of this bit set. For every index for which this {@code BitSet} contains a bit in the set state, the decimal representation of that index is included in
+     * the result. Such indices are listed in order from lowest to highest, separated by ",&nbsp;" (a comma and a space) and surrounded by braces, resulting in the usual mathematical
      * notation for a set of integers.
      *
-     * <p>Example:
-     * <pre>
-     * BitSet drPepper = new BitSet();</pre>
+     * Example:
+     * <pre>BitSet drPepper = new BitSet();</pre>
      * Now {@code drPepper.toString()} returns "{@code {}}".
-     * <pre>
-     * drPepper.set(2);</pre>
+     * <pre>drPepper.set(2);</pre>
      * Now {@code drPepper.toString()} returns "{@code {2}}".
      * <pre>
      * drPepper.set(4);
-     * drPepper.set(10);</pre>
+     * drPepper.set(10);
+     * </pre>
      * Now {@code drPepper.toString()} returns "{@code {2, 4, 10}}".
      *
      * @return a string representation of this bit set
@@ -426,13 +387,10 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns true if the specified {@code ImmutableBitSet} has any bits set to
-     * {@code true} that are also set to {@code true} in this
-     * {@code ImmutableBitSet}.
+     * Returns true if the specified {@code ImmutableBitSet} has any bits set to {@code true} that are also set to {@code true} in this {@code ImmutableBitSet}.
      *
      * @param set {@code ImmutableBitSet} to intersect with
-     * @return boolean indicating whether this {@code ImmutableBitSet} intersects
-     * the specified {@code ImmutableBitSet}
+     * @return boolean indicating whether this {@code ImmutableBitSet} intersects the specified {@code ImmutableBitSet}
      */
     public boolean intersects( ImmutableBitSet set ) {
         for ( int i = Math.min( words.length, set.words.length ) - 1; i >= 0; i-- ) {
@@ -445,8 +403,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the number of bits set to {@code true} in this
-     * {@code ImmutableBitSet}.
+     * Returns the number of bits set to {@code true} in this {@code ImmutableBitSet}.
      *
      * @see #size()
      */
@@ -465,11 +422,9 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the hash code value for this bit set. The hash code
-     * depends only on which bits are set within this {@code ImmutableBitSet}.
+     * Returns the hash code value for this bit set. The hash code depends only on which bits are set within this {@code ImmutableBitSet}.
      *
-     * <p>The hash code is defined using the same calculation as
-     * {@link java.util.BitSet#hashCode()}.
+     * The hash code is defined using the same calculation as {@link java.util.BitSet#hashCode()}.
      *
      * @return the hash code value for this bit set
      */
@@ -483,8 +438,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the number of bits of space actually in use by this
-     * {@code ImmutableBitSet} to represent bit values.
+     * Returns the number of bits of space actually in use by this {@code ImmutableBitSet} to represent bit values.
      * The maximum element in the set is the size - 1st element.
      *
      * @return the number of bits currently in this bit set
@@ -497,14 +451,11 @@ public class ImmutableBitSet
 
     /**
      * Compares this object against the specified object.
-     * The result is {@code true} if and only if the argument is
-     * not {@code null} and is a {@code ImmutableBitSet} object that has
-     * exactly the same set of bits set to {@code true} as this bit
-     * set.
+     * The result is {@code true} if and only if the argument is not {@code null} and is a {@code ImmutableBitSet} object that has exactly the same
+     * set of bits set to {@code true} as this bit set.
      *
      * @param obj the object to compare with
-     * @return {@code true} if the objects are the same;
-     * {@code false} otherwise
+     * @return {@code true} if the objects are the same; {@code false} otherwise
      * @see #size()
      */
     public boolean equals( Object obj ) {
@@ -520,11 +471,9 @@ public class ImmutableBitSet
 
 
     /**
-     * Compares this ImmutableBitSet with another, using a lexicographic
-     * ordering.
+     * Compares this ImmutableBitSet with another, using a lexicographic ordering.
      *
-     * <p>Bit sets {@code (), (0), (0, 1), (0, 1, 3), (1), (2, 3)} are in sorted
-     * order.</p>
+     * Bit sets {@code (), (0), (0, 1), (0, 1, 3), (1), (2, 3)} are in sorted order.
      */
     @Override
     public int compareTo( @Nonnull ImmutableBitSet o ) {
@@ -542,15 +491,13 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the index of the first bit that is set to {@code true}
-     * that occurs on or after the specified starting index. If no such
+     * Returns the index of the first bit that is set to {@code true} that occurs on or after the specified starting index. If no such
      * bit exists then {@code -1} is returned.
      *
-     * <p>Based upon {@link BitSet#nextSetBit}.
+     * Based upon {@link BitSet#nextSetBit}.
      *
      * @param fromIndex the index to start checking from (inclusive)
-     * @return the index of the next set bit, or {@code -1} if there
-     * is no such bit
+     * @return the index of the next set bit, or {@code -1} if there is no such bit
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
     public int nextSetBit( int fromIndex ) {
@@ -576,8 +523,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the index of the first bit that is set to {@code false}
-     * that occurs on or after the specified starting index.
+     * Returns the index of the first bit that is set to {@code false} that occurs on or after the specified starting index.
      *
      * @param fromIndex the index to start checking from (inclusive)
      * @return the index of the next clear bit
@@ -606,16 +552,12 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the index of the nearest bit that is set to {@code false}
-     * that occurs on or before the specified starting index.
-     * If no such bit exists, or if {@code -1} is given as the
-     * starting index, then {@code -1} is returned.
+     * Returns the index of the nearest bit that is set to {@code false} that occurs on or before the specified starting index.
+     * If no such bit exists, or if {@code -1} is given as the starting index, then {@code -1} is returned.
      *
      * @param fromIndex the index to start checking from (inclusive)
-     * @return the index of the previous clear bit, or {@code -1} if there
-     * is no such bit
-     * @throws IndexOutOfBoundsException if the specified index is less
-     * than {@code -1}
+     * @return the index of the previous clear bit, or {@code -1} if there is no such bit
+     * @throws IndexOutOfBoundsException if the specified index is less than {@code -1}
      */
     public int previousClearBit( int fromIndex ) {
         if ( fromIndex < 0 ) {
@@ -686,8 +628,7 @@ public class ImmutableBitSet
     /**
      * Creates a view onto this bit set as a list of integers.
      *
-     * <p>The {@code cardinality} and {@code get} methods are both O(n), but
-     * the iterator is efficient. The list is memory efficient, and the CPU cost
+     * The {@code cardinality} and {@code get} methods are both O(n), but the iterator is efficient. The list is memory efficient, and the CPU cost
      * breaks even (versus {@link #toList}) if you intend to scan it only once.
      */
     public List<Integer> asList() {
@@ -716,8 +657,7 @@ public class ImmutableBitSet
     /**
      * Creates a view onto this bit set as a set of integers.
      *
-     * <p>The {@code size} and {@code contains} methods are both O(n), but the
-     * iterator is efficient.
+     * The {@code size} and {@code contains} methods are both O(n), but the iterator is efficient.
      */
     public Set<Integer> asSet() {
         return new AbstractSet<Integer>() {
@@ -745,8 +685,7 @@ public class ImmutableBitSet
     /**
      * Converts this bit set to an array.
      *
-     * <p>Each entry of the array is the ordinal of a set bit. The array is
-     * sorted.
+     * Each entry of the array is the ordinal of a set bit. The array is sorted.
      *
      * @return Array of set bits
      */
@@ -791,8 +730,7 @@ public class ImmutableBitSet
     /**
      * Returns the union of a number of bit sets.
      */
-    public static ImmutableBitSet union(
-            Iterable<? extends ImmutableBitSet> sets ) {
+    public static ImmutableBitSet union( Iterable<? extends ImmutableBitSet> sets ) {
         final Builder builder = builder();
         for ( ImmutableBitSet set : sets ) {
             builder.addAll( set );
@@ -802,8 +740,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a bit set with all the bits in this set that are not in
-     * another.
+     * Returns a bit set with all the bits in this set that are not in another.
      *
      * @see BitSet#andNot(java.util.BitSet)
      */
@@ -815,8 +752,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a bit set with all the bits set in both this set and in
-     * another.
+     * Returns a bit set with all the bits set in both this set and in another.
      *
      * @see BitSet#and
      */
@@ -828,8 +764,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns true if all bits set in the second parameter are also set in the
-     * first. In other words, whether x is a super-set of y.
+     * Returns true if all bits set in the second parameter are also set in the first. In other words, whether x is a super-set of y.
      *
      * @param set1 Bitmap to be checked
      * @return Whether all bits in set1 are set in set0
@@ -862,12 +797,11 @@ public class ImmutableBitSet
     /**
      * Computes the closure of a map from integers to bits.
      *
-     * <p>The input must have an entry for each position.
+     * The input must have an entry for each position.
      *
-     * <p>Does not modify the input map or its bit sets.
+     * Does not modify the input map or its bit sets.
      */
-    public static SortedMap<Integer, ImmutableBitSet> closure(
-            SortedMap<Integer, ImmutableBitSet> equivalence ) {
+    public static SortedMap<Integer, ImmutableBitSet> closure( SortedMap<Integer, ImmutableBitSet> equivalence ) {
         if ( equivalence.isEmpty() ) {
             return ImmutableSortedMap.of();
         }
@@ -875,8 +809,7 @@ public class ImmutableBitSet
         for ( ImmutableBitSet bitSet : equivalence.values() ) {
             length = Math.max( length, bitSet.length() );
         }
-        if ( equivalence.size() < length
-                || equivalence.firstKey() != 0 ) {
+        if ( equivalence.size() < length || equivalence.firstKey() != 0 ) {
             SortedMap<Integer, ImmutableBitSet> old = equivalence;
             equivalence = new TreeMap<>();
             for ( int i = 0; i < length; i++ ) {
@@ -890,8 +823,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns the "logical size" of this {@code ImmutableBitSet}: the index of
-     * the highest set bit in the {@code ImmutableBitSet} plus one. Returns zero
+     * Returns the "logical size" of this {@code ImmutableBitSet}: the index of the highest set bit in the {@code ImmutableBitSet} plus one. Returns zero
      * if the {@code ImmutableBitSet} contains no set bits.
      *
      * @return the logical size of this {@code ImmutableBitSet}
@@ -900,14 +832,12 @@ public class ImmutableBitSet
         if ( words.length == 0 ) {
             return 0;
         }
-        return BITS_PER_WORD * (words.length - 1)
-                + (BITS_PER_WORD - Long.numberOfLeadingZeros( words[words.length - 1] ));
+        return BITS_PER_WORD * (words.length - 1) + (BITS_PER_WORD - Long.numberOfLeadingZeros( words[words.length - 1] ));
     }
 
 
     /**
-     * Returns true if this {@code ImmutableBitSet} contains no bits that are set
-     * to {@code true}.
+     * Returns true if this {@code ImmutableBitSet} contains no bits that are set to {@code true}.
      */
     public boolean isEmpty() {
         return words.length == 0;
@@ -922,15 +852,8 @@ public class ImmutableBitSet
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static Builder builder( ImmutableBitSet bitSet ) {
-        return bitSet.rebuild();
-    }
-
-
     /**
-     * Creates a Builder whose initial contents are the same as this
-     * ImmutableBitSet.
+     * Creates a Builder whose initial contents are the same as this ImmutableBitSet.
      */
     public Builder rebuild() {
         return new Rebuilder( this );
@@ -940,8 +863,7 @@ public class ImmutableBitSet
     /**
      * Returns the {@code n}th set bit.
      *
-     * @throws java.lang.IndexOutOfBoundsException if n is less than 0 or greater
-     * than the number of bits set
+     * @throws java.lang.IndexOutOfBoundsException if n is less than 0 or greater than the number of bits set
      */
     public int nth( int n ) {
         int start = 0;
@@ -975,8 +897,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a bit set the same as this but with a given bit set (if b is
-     * true) or unset (if b is false).
+     * Returns a bit set the same as this but with a given bit set (if b is true) or unset (if b is false).
      */
     public ImmutableBitSet set( int i, boolean b ) {
         if ( get( i ) == b ) {
@@ -987,8 +908,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a bit set the same as this but with a given bit set if condition
-     * is true.
+     * Returns a bit set the same as this but with a given bit set if condition is true.
      */
     public ImmutableBitSet setIf( int bit, boolean condition ) {
         return condition ? set( bit ) : this;
@@ -1004,8 +924,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a bit set the same as this but with a given bit cleared if
-     * condition is true.
+     * Returns a bit set the same as this but with a given bit cleared if condition is true.
      */
     public ImmutableBitSet clearIf( int i, boolean condition ) {
         return condition ? except( ImmutableBitSet.of( i ) ) : this;
@@ -1013,8 +932,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Returns a {@link BitSet} that has the same contents as this
-     * {@code ImmutableBitSet}.
+     * Returns a {@link BitSet} that has the same contents as this {@code ImmutableBitSet}.
      */
     public BitSet toBitSet() {
         return BitSets.of( this );
@@ -1036,9 +954,7 @@ public class ImmutableBitSet
     /**
      * Permutes a collection of bit sets according to a given mapping.
      */
-    public static Iterable<ImmutableBitSet> permute(
-            Iterable<ImmutableBitSet> bitSets,
-            final Map<Integer, Integer> map ) {
+    public static Iterable<ImmutableBitSet> permute( Iterable<ImmutableBitSet> bitSets, final Map<Integer, Integer> map ) {
         return Iterables.transform( bitSets, bitSet -> bitSet.permute( map ) );
     }
 
@@ -1060,25 +976,20 @@ public class ImmutableBitSet
 
 
     /**
-     * Setup equivalence Sets for each position. If i and j are equivalent then
-     * they will have the same equivalence Set. The algorithm computes the
-     * closure relation at each position for the position wrt to positions
-     * greater than it. Once a closure is computed for a position, the closure
-     * Set is set on all its descendants. So the closure computation bubbles up
-     * from lower positions and the final equivalence Set is propagated down
+     * Setup equivalence Sets for each position. If i and j are equivalent then they will have the same equivalence Set. The algorithm computes the
+     * closure relation at each position for the position wrt to positions greater than it. Once a closure is computed for a position, the closure
+     * Set is set on all its descendants. So the closure computation bubbles up from lower positions and the final equivalence Set is propagated down
      * from the lowest element in the Set.
      */
     private static class Closure {
 
         private SortedMap<Integer, ImmutableBitSet> equivalence;
-        private final SortedMap<Integer, ImmutableBitSet> closure =
-                new TreeMap<>();
+        private final SortedMap<Integer, ImmutableBitSet> closure = new TreeMap<>();
 
 
         Closure( SortedMap<Integer, ImmutableBitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys =
-                    ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }
@@ -1122,7 +1033,7 @@ public class ImmutableBitSet
         /**
          * Builds an ImmutableBitSet from the contents of this Builder.
          *
-         * <p>After calling this method, the Builder cannot be used again.
+         * After calling this method, the Builder cannot be used again.
          */
         public ImmutableBitSet build() {
             if ( words.length == 0 ) {
@@ -1135,19 +1046,18 @@ public class ImmutableBitSet
 
 
         /**
-         * Builds an ImmutableBitSet from the contents of this Builder, using
-         * an existing ImmutableBitSet if it happens to have the same contents.
+         * Builds an ImmutableBitSet from the contents of this Builder, using an existing ImmutableBitSet if it happens to have the same contents.
          *
-         * <p>Supplying the existing bit set if useful for set operations,
-         * where there is a significant chance that the original bit set is
+         * Supplying the existing bit set if useful for set operations, where there is a significant chance that the original bit set is
          * unchanged. We save memory because we use the same copy. For example:
          *
-         * <blockquote><pre>
+         * <pre>
          * ImmutableBitSet primeNumbers;
          * ImmutableBitSet hundreds = ImmutableBitSet.of(100, 200, 300);
-         * return primeNumbers.except(hundreds);</pre></blockquote>
+         * return primeNumbers.except(hundreds);
+         * </pre>
          *
-         * <p>After calling this method, the Builder cannot be used again.
+         * After calling this method, the Builder cannot be used again.
          */
         public ImmutableBitSet build( ImmutableBitSet bitSet ) {
             if ( wouldEqual( bitSet ) ) {
@@ -1196,8 +1106,7 @@ public class ImmutableBitSet
 
 
         /**
-         * Returns whether the bit set that would be created by this Builder would
-         * equal a given bit set.
+         * Returns whether the bit set that would be created by this Builder would equal a given bit set.
          */
         public boolean wouldEqual( ImmutableBitSet bitSet ) {
             if ( words == null ) {
@@ -1315,8 +1224,7 @@ public class ImmutableBitSet
 
 
     /**
-     * Refinement of {@link Builder} that remembers its original
-     * {@link ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet} and tries to use it
+     * Refinement of {@link Builder} that remembers its original {@link ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet} and tries to use it
      * when {@link #build} is called.
      */
     private static class Rebuilder extends Builder {
@@ -1350,4 +1258,3 @@ public class ImmutableBitSet
     }
 }
 
-// End ImmutableBitSet.java

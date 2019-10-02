@@ -53,8 +53,7 @@ import org.apache.calcite.linq4j.Linq4j;
 
 
 /**
- * A set of non-negative integers defined by a sequence of points, intervals,
- * and exclusions.
+ * A set of non-negative integers defined by a sequence of points, intervals, and exclusions.
  */
 public class IntegerIntervalSet extends AbstractSet<Integer> {
 
@@ -91,15 +90,11 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
 
 
     /**
-     * Parses a range of integers expressed as a string. The string can contain
-     * non-negative integers separated by commas, ranges (represented by a
-     * hyphen between two integers), and exclusions (represented by a preceding
-     * hyphen). For example, "1,2,3-20,-7,-10-15,12".
+     * Parses a range of integers expressed as a string. The string can contain non-negative integers separated by commas, ranges (represented by a
+     * hyphen between two integers), and exclusions (represented by a preceding hyphen). For example, "1,2,3-20,-7,-10-15,12".
      *
-     * <p>Inclusions and exclusions are performed in the order that they are
-     * seen. For example, "1-10,-2-9,3-7,-4-6"</p> does contain 3, because it is
-     * included by "1-10", excluded by "-2-9" and last included by "3-7". But it
-     * does not include 4.
+     * Inclusions and exclusions are performed in the order that they are seen. For example, "1-10,-2-9,3-7,-4-6"</p> does contain 3, because it is
+     * included by "1-10", excluded by "-2-9" and last included by "3-7". But it does not include 4.
      *
      * @param s Range set
      */
@@ -128,8 +123,7 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
 
     private Enumerator<Integer> enumerator() {
         final int[] bounds = { Integer.MAX_VALUE, Integer.MIN_VALUE };
-        visit(
-                s, ( start, end, exclude ) -> {
+        visit( s, ( start, end, exclude ) -> {
                     if ( !exclude ) {
                         bounds[0] = Math.min( bounds[0], start );
                         bounds[1] = Math.max( bounds[1], end );
@@ -174,15 +168,13 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
 
     @Override
     public boolean contains( Object o ) {
-        return o instanceof Number
-                && contains( ((Number) o).intValue() );
+        return o instanceof Number && contains( ((Number) o).intValue() );
     }
 
 
     public boolean contains( final int n ) {
         final boolean[] bs = { false };
-        visit(
-                s, ( start, end, exclude ) -> {
+        visit( s, ( start, end, exclude ) -> {
                     if ( start <= n && n <= end ) {
                         bs[0] = !exclude;
                     }
@@ -200,4 +192,3 @@ public class IntegerIntervalSet extends AbstractSet<Integer> {
     }
 }
 
-// End IntegerIntervalSet.java

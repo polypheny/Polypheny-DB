@@ -56,13 +56,11 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 /**
  * Time literal.
  *
- * <p>Immutable, internally represented as a string (in ISO format),
- * and can support unlimited precision (milliseconds, nanoseconds).
+ * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimeString implements Comparable<TimeString> {
 
-    private static final Pattern PATTERN =
-            Pattern.compile( "[0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\.[0-9]*[1-9])?" );
+    private static final Pattern PATTERN = Pattern.compile( "[0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\.[0-9]*[1-9])?" );
 
     final String v;
 
@@ -80,14 +78,10 @@ public class TimeString implements Comparable<TimeString> {
      */
     public TimeString( String v ) {
         this( v, false );
-        Preconditions.checkArgument( PATTERN.matcher( v ).matches(),
-                "Invalid time format:", v );
-        Preconditions.checkArgument( getHour() >= 0 && getHour() < 24,
-                "Hour out of range:", getHour() );
-        Preconditions.checkArgument( getMinute() >= 0 && getMinute() < 60,
-                "Minute out of range:", getMinute() );
-        Preconditions.checkArgument( getSecond() >= 0 && getSecond() < 60,
-                "Second out of range:", getSecond() );
+        Preconditions.checkArgument( PATTERN.matcher( v ).matches(), "Invalid time format:", v );
+        Preconditions.checkArgument( getHour() >= 0 && getHour() < 24, "Hour out of range:", getHour() );
+        Preconditions.checkArgument( getMinute() >= 0 && getMinute() < 60, "Minute out of range:", getMinute() );
+        Preconditions.checkArgument( getSecond() >= 0 && getSecond() < 60, "Second out of range:", getSecond() );
     }
 
 
@@ -113,12 +107,9 @@ public class TimeString implements Comparable<TimeString> {
 
 
     /**
-     * Sets the fraction field of a {@code TimeString} to a given number
-     * of milliseconds. Nukes the value set via {@link #withNanos}.
+     * Sets the fraction field of a {@code TimeString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
      *
-     * <p>For example,
-     * {@code new TimeString(1970, 1, 1, 2, 3, 4).withMillis(56)}
-     * yields {@code TIME '1970-01-01 02:03:04.056'}.
+     * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withMillis(56)} yields {@code TIME '1970-01-01 02:03:04.056'}.
      */
     public TimeString withMillis( int millis ) {
         Preconditions.checkArgument( millis >= 0 && millis < 1000 );
@@ -127,12 +118,9 @@ public class TimeString implements Comparable<TimeString> {
 
 
     /**
-     * Sets the fraction field of a {@code TimeString} to a given number
-     * of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
+     * Sets the fraction field of a {@code TimeString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
      *
-     * <p>For example,
-     * {@code new TimeString(1970, 1, 1, 2, 3, 4).withNanos(56789)}
-     * yields {@code TIME '1970-01-01 02:03:04.000056789'}.
+     * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withNanos(56789)} yields {@code TIME '1970-01-01 02:03:04.000056789'}.
      */
     public TimeString withNanos( int nanos ) {
         Preconditions.checkArgument( nanos >= 0 && nanos < 1000000000 );
@@ -145,9 +133,7 @@ public class TimeString implements Comparable<TimeString> {
      * The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
      *
-     * <p>For example,
-     * {@code new TimeString(1970, 1, 1, 2, 3, 4).withFraction("00506000")}
-     * yields {@code TIME '1970-01-01 02:03:04.00506'}.
+     * For example, {@code new TimeString(1970, 1, 1, 2, 3, 4).withFraction("00506000")} yields {@code TIME '1970-01-01 02:03:04.00506'}.
      */
     public TimeString withFraction( String fraction ) {
         String v = this.v;
@@ -205,8 +191,7 @@ public class TimeString implements Comparable<TimeString> {
 
 
     public static TimeString fromMillisOfDay( int i ) {
-        return new TimeString( DateTimeUtils.unixTimeToString( i ) )
-                .withMillis( (int) DateTimeUtils.floorMod( i, 1000 ) );
+        return new TimeString( DateTimeUtils.unixTimeToString( i ) ).withMillis( (int) DateTimeUtils.floorMod( i, 1000 ) );
     }
 
 
@@ -229,10 +214,7 @@ public class TimeString implements Comparable<TimeString> {
         int m = Integer.valueOf( v.substring( 3, 5 ) );
         int s = Integer.valueOf( v.substring( 6, 8 ) );
         int ms = getMillisInSecond();
-        return (int) (h * DateTimeUtils.MILLIS_PER_HOUR
-                + m * DateTimeUtils.MILLIS_PER_MINUTE
-                + s * DateTimeUtils.MILLIS_PER_SECOND
-                + ms);
+        return (int) (h * DateTimeUtils.MILLIS_PER_HOUR + m * DateTimeUtils.MILLIS_PER_MINUTE + s * DateTimeUtils.MILLIS_PER_SECOND + ms);
     }
 
 
@@ -272,8 +254,7 @@ public class TimeString implements Comparable<TimeString> {
 
 
     /**
-     * Converts this TimestampString to a string, truncated or padded with
-     * zeroes to a given precision.
+     * Converts this TimestampString to a string, truncated or padded with zeroes to a given precision.
      */
     public String toString( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
@@ -297,4 +278,3 @@ public class TimeString implements Comparable<TimeString> {
     }
 }
 
-// End TimeString.java

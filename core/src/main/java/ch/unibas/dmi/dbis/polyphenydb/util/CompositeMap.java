@@ -54,8 +54,7 @@ import java.util.Set;
 
 
 /**
- * Unmodifiable view onto multiple backing maps. An element occurs in the map
- * if it occurs in any of the backing maps; the value is the value that occurs
+ * Unmodifiable view onto multiple backing maps. An element occurs in the map if it occurs in any of the backing maps; the value is the value that occurs
  * in the first map that contains the key.
  *
  * @param <K> Key type
@@ -76,8 +75,7 @@ public class CompositeMap<K, V> implements Map<K, V> {
      */
     // Would like to use '@SafeVarargs' but JDK 1.6 doesn't support it.
     @SafeVarargs
-    public static <K, V> CompositeMap<K, V> of( Map<K, V> map0,
-            Map<K, V>... maps ) {
+    public static <K, V> CompositeMap<K, V> of( Map<K, V> map0, Map<K, V>... maps ) {
         return new CompositeMap<>( list( map0, maps ) );
     }
 
@@ -208,4 +206,3 @@ public class CompositeMap<K, V> implements Map<K, V> {
     }
 }
 
-// End CompositeMap.java

@@ -54,14 +54,12 @@ import org.slf4j.helpers.MessageFormatter;
 public interface Litmus {
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that throws
-     * an {@link java.lang.AssertionError} on failure.
+     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that throws an {@link java.lang.AssertionError} on failure.
      */
     Litmus THROW = new Litmus() {
         @Override
         public boolean fail( String message, Object... args ) {
-            final String s = message == null
-                    ? null : MessageFormatter.arrayFormat( message, args ).getMessage();
+            final String s = message == null ? null : MessageFormatter.arrayFormat( message, args ).getMessage();
             throw new AssertionError( s );
         }
 
@@ -83,8 +81,7 @@ public interface Litmus {
     };
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that returns
-     * a status code but does not throw.
+     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that returns a status code but does not throw.
      */
     Litmus IGNORE = new Litmus() {
         @Override
@@ -121,11 +118,7 @@ public interface Litmus {
     /**
      * Checks a condition.
      *
-     * <p>If the condition is true, calls {@link #succeed};
-     * if the condition is false, calls {@link #fail},
-     * converting {@code info} into a string message.
+     * If the condition is true, calls {@link #succeed}; if the condition is false, calls {@link #fail}, converting {@code info} into a string message.
      */
     boolean check( boolean condition, String message, Object... args );
 }
-
-// End Litmus.java

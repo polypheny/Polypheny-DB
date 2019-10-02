@@ -83,8 +83,7 @@ public class DateTimeStringUtils {
      * Appends year-month-day and hour:minute:second to a buffer; assumes they
      * are valid.
      */
-    static StringBuilder ymdhms( StringBuilder b, int year, int month, int day,
-            int h, int m, int s ) {
+    static StringBuilder ymdhms( StringBuilder b, int year, int month, int day, int h, int m, int s ) {
         ymd( b, year, month, day );
         b.append( ' ' );
         hms( b, h, m, s );
@@ -133,4 +132,3 @@ public class DateTimeStringUtils {
 
 }
 
-// End DateTimeStringUtils.java

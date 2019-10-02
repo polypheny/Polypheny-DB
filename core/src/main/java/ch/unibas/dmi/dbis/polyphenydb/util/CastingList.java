@@ -52,22 +52,16 @@ import java.util.List;
 /**
  * Converts a list whose members are automatically down-cast to a given type.
  *
- * <p>If a member of the backing list is not an instanceof <code>E</code>, the
- * accessing method (such as {@link List#get}) will throw a
- * {@link ClassCastException}.
+ * If a member of the backing list is not an instanceof <code>E</code>, the accessing method (such as {@link List#get}) will throw a {@link ClassCastException}.
  *
- * <p>All modifications are automatically written to the backing list. Not
- * synchronized.
+ * All modifications are automatically written to the backing list. Not synchronized.
  *
  * @param <E> Element type
  */
 public class CastingList<E> extends AbstractList<E> implements List<E> {
-    //~ Instance fields --------------------------------------------------------
 
     private final List<? super E> list;
     private final Class<E> clazz;
-
-    //~ Constructors -----------------------------------------------------------
 
 
     protected CastingList( List<? super E> list, Class<E> clazz ) {
@@ -75,8 +69,6 @@ public class CastingList<E> extends AbstractList<E> implements List<E> {
         this.list = list;
         this.clazz = clazz;
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     @Override
@@ -110,4 +102,3 @@ public class CastingList<E> extends AbstractList<E> implements List<E> {
     }
 }
 
-// End CastingList.java

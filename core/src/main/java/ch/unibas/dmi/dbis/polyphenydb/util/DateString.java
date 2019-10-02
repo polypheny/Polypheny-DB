@@ -55,12 +55,11 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 /**
  * Date literal.
  *
- * <p>Immutable, internally represented as a string (in ISO format).
+ * Immutable, internally represented as a string (in ISO format).
  */
 public class DateString implements Comparable<DateString> {
 
-    private static final Pattern PATTERN =
-            Pattern.compile( "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]" );
+    private static final Pattern PATTERN = Pattern.compile( "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]" );
 
     final String v;
 
@@ -78,14 +77,10 @@ public class DateString implements Comparable<DateString> {
      */
     public DateString( String v ) {
         this( v, false );
-        Preconditions.checkArgument( PATTERN.matcher( v ).matches(),
-                "Invalid date format:", v );
-        Preconditions.checkArgument( getYear() >= 1 && getYear() <= 9999,
-                "Year out of range:", getYear() );
-        Preconditions.checkArgument( getMonth() >= 1 && getMonth() <= 12,
-                "Month out of range:", getMonth() );
-        Preconditions.checkArgument( getDay() >= 1 && getDay() <= 31,
-                "Day out of range:", getDay() );
+        Preconditions.checkArgument( PATTERN.matcher( v ).matches(), "Invalid date format:", v );
+        Preconditions.checkArgument( getYear() >= 1 && getYear() <= 9999, "Year out of range:", getYear() );
+        Preconditions.checkArgument( getMonth() >= 1 && getMonth() <= 12, "Month out of range:", getMonth() );
+        Preconditions.checkArgument( getDay() >= 1 && getDay() <= 31, "Day out of range:", getDay() );
     }
 
 
@@ -101,12 +96,9 @@ public class DateString implements Comparable<DateString> {
      * Validates a year-month-date and converts to a string.
      */
     private static String ymd( int year, int month, int day ) {
-        Preconditions.checkArgument( year >= 1 && year <= 9999,
-                "Year out of range:", year );
-        Preconditions.checkArgument( month >= 1 && month <= 12,
-                "Month out of range:", month );
-        Preconditions.checkArgument( day >= 1 && day <= 31,
-                "Day out of range:", day );
+        Preconditions.checkArgument( year >= 1 && year <= 9999, "Year out of range:", year );
+        Preconditions.checkArgument( month >= 1 && month <= 12, "Month out of range:", month );
+        Preconditions.checkArgument( day >= 1 && day <= 31, "Day out of range:", day );
         final StringBuilder b = new StringBuilder();
         DateTimeStringUtils.ymd( b, year, month, day );
         return b.toString();
@@ -122,9 +114,7 @@ public class DateString implements Comparable<DateString> {
     @Override
     public boolean equals( Object o ) {
         // The value is in canonical form.
-        return o == this
-                || o instanceof DateString
-                && ((DateString) o).v.equals( v );
+        return o == this || o instanceof DateString && ((DateString) o).v.equals( v );
     }
 
 
@@ -144,9 +134,7 @@ public class DateString implements Comparable<DateString> {
      * Creates a DateString from a Calendar.
      */
     public static DateString fromCalendarFields( Calendar calendar ) {
-        return new DateString( calendar.get( Calendar.YEAR ),
-                calendar.get( Calendar.MONTH ) + 1,
-                calendar.get( Calendar.DAY_OF_MONTH ) );
+        return new DateString( calendar.get( Calendar.YEAR ), calendar.get( Calendar.MONTH ) + 1, calendar.get( Calendar.DAY_OF_MONTH ) );
     }
 
 
@@ -185,8 +173,7 @@ public class DateString implements Comparable<DateString> {
 
 
     /**
-     * Returns the number of milliseconds since the epoch. Always a multiple of
-     * 86,400,000 (the number of milliseconds in a day).
+     * Returns the number of milliseconds since the epoch. Always a multiple of 86,400,000 (the number of milliseconds in a day).
      */
     public long getMillisSinceEpoch() {
         return getDaysSinceEpoch() * DateTimeUtils.MILLIS_PER_DAY;
@@ -198,4 +185,3 @@ public class DateString implements Comparable<DateString> {
     }
 }
 
-// End DateString.java

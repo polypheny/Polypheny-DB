@@ -55,24 +55,19 @@ import java.nio.charset.Charset;
 /**
  * Serializable wrapper around a {@link Charset}.
  *
- * <p>It serializes itself by writing out the name of the character set, for
- * example "ISO-8859-1". On the other side, it deserializes itself by looking
- * for a charset with the same name.
+ * It serializes itself by writing out the name of the character set, for example "ISO-8859-1". On the other side, it deserializes itself
+ * by looking for a charset with the same name.
  *
- * <p>A SerializableCharset is immutable.
+ * A SerializableCharset is immutable.
  */
 public class SerializableCharset implements Serializable {
-    //~ Instance fields --------------------------------------------------------
 
     private Charset charset;
     private String charsetName;
 
-    //~ Constructors -----------------------------------------------------------
-
 
     /**
-     * Creates a SerializableCharset. External users should call
-     * {@link #forCharset(Charset)}.
+     * Creates a SerializableCharset. External users should call {@link #forCharset(Charset)}.
      *
      * @param charset Character set; must not be null
      */
@@ -81,8 +76,6 @@ public class SerializableCharset implements Serializable {
         this.charset = charset;
         this.charsetName = charset.name();
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     /**
@@ -96,8 +89,7 @@ public class SerializableCharset implements Serializable {
     /**
      * Per {@link Serializable}.
      */
-    private void readObject( ObjectInputStream in )
-            throws IOException, ClassNotFoundException {
+    private void readObject( ObjectInputStream in ) throws IOException, ClassNotFoundException {
         charsetName = (String) in.readObject();
         charset = Charset.availableCharsets().get( this.charsetName );
     }
@@ -114,8 +106,7 @@ public class SerializableCharset implements Serializable {
 
 
     /**
-     * Returns a SerializableCharset wrapping the given Charset, or null if the
-     * {@code charset} is null.
+     * Returns a SerializableCharset wrapping the given Charset, or null if the {@code charset} is null.
      *
      * @param charset Character set to wrap, or null
      * @return Wrapped charset
@@ -128,4 +119,3 @@ public class SerializableCharset implements Serializable {
     }
 }
 
-// End SerializableCharset.java

@@ -60,23 +60,18 @@ import java.util.SortedSet;
 /**
  * Set of elements organized into equivalence classes.
  *
- * <p>Elements are equivalent by the rules of a mathematical equivalence
- * relation:
+ * Elements are equivalent by the rules of a mathematical equivalence relation:
  *
  * <dl>
  * <dt>Reflexive
  * <dd>Every element {@code e} is equivalent to itself
  * <dt>Symmetric
- * <dd>If {@code e} is equivalent to {@code f},
- * then {@code f} is equivalent to {@code e}
+ * <dd>If {@code e} is equivalent to {@code f}, then {@code f} is equivalent to {@code e}
  * <dt>Transitive
- * <dd>If {@code e} is equivalent to {@code f},
- * and {@code f} is equivalent to {@code g},
- * then {@code e} is equivalent to {@code g}
+ * <dd>If {@code e} is equivalent to {@code f}, and {@code f} is equivalent to {@code g}, then {@code e} is equivalent to {@code g}
  * </dl>
  *
- * <p>For any given pair of elements, answers in O(log N) (two hash-table
- * lookups) whether they are equivalent to each other.
+ * For any given pair of elements, answers in O(log N) (two hash-table lookups) whether they are equivalent to each other.
  *
  * @param <E> Element type
  */
@@ -148,8 +143,7 @@ public class EquivalenceSet<E extends Comparable<E>> {
 
 
     /**
-     * Returns a map of the canonical element in each equivalence class to the
-     * set of elements in that class. The keys are sorted in natural order, as
+     * Returns a map of the canonical element in each equivalence class to the set of elements in that class. The keys are sorted in natural order, as
      * are the elements within each key.
      */
     public SortedMap<E, SortedSet<E>> map() {
@@ -158,8 +152,7 @@ public class EquivalenceSet<E extends Comparable<E>> {
             multimap.put( entry.getValue(), entry.getKey() );
         }
         // Create an immutable copy. Keys and values remain in sorted order.
-        final ImmutableSortedMap.Builder<E, SortedSet<E>> builder =
-                ImmutableSortedMap.naturalOrder();
+        final ImmutableSortedMap.Builder<E, SortedSet<E>> builder = ImmutableSortedMap.naturalOrder();
         for ( Map.Entry<E, Collection<E>> entry : multimap.asMap().entrySet() ) {
             builder.put( entry.getKey(), ImmutableSortedSet.copyOf( entry.getValue() ) );
         }
@@ -191,4 +184,3 @@ public class EquivalenceSet<E extends Comparable<E>> {
     }
 }
 
-// End EquivalenceSet.java

@@ -59,10 +59,9 @@ import java.util.Properties;
 
 
 /**
- * Provides an environment for debugging information, et cetera, used by
- * saffron.
+ * Provides an environment for debugging information, et cetera, used by saffron.
  *
- * <p>It is a singleton, accessed via the {@link #INSTANCE} object. It is
+ * It is a singleton, accessed via the {@link #INSTANCE} object. It is
  * populated from System properties if saffron is invoked via a <code>
  * main()</code> method, from a <code>javax.servlet.ServletContext</code> if
  * saffron is invoked from a servlet, and so forth. If there is a file called
@@ -133,7 +132,7 @@ public interface SaffronProperties {
      * the number of queries being concurrently prepared multiplied by the number
      * of types of metadata.
      *
-     * <p>If the value is less than 0, there is no limit. The default is 1,000.
+     * If the value is less than 0, there is no limit. The default is 1,000.
      */
     @Resource("saffron.metadata.handler.cache.maximum.size")
     @Default("1000")
@@ -158,8 +157,7 @@ public interface SaffronProperties {
             Properties properties = new Properties();
 
             // read properties from the file "saffron.properties", if it exists in classpath
-            try ( InputStream stream = Helper.class.getClassLoader()
-                    .getResourceAsStream( "saffron.properties" ) ) {
+            try ( InputStream stream = Helper.class.getClassLoader().getResourceAsStream( "saffron.properties" ) ) {
                 if ( stream != null ) {
                     properties.load( stream );
                 }
@@ -183,4 +181,3 @@ public interface SaffronProperties {
     }
 }
 
-// End SaffronProperties.java

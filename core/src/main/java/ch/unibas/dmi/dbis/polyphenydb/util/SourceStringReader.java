@@ -51,8 +51,7 @@ import javax.annotation.Nonnull;
 
 
 /**
- * Extension to {@link StringReader} that allows the original string to be
- * recovered.
+ * Extension to {@link StringReader} that allows the original string to be recovered.
  */
 public class SourceStringReader extends StringReader {
 
@@ -79,4 +78,3 @@ public class SourceStringReader extends StringReader {
     }
 }
 
-// End SourceStringReader.java

@@ -100,9 +100,7 @@ public abstract class Sources {
 
 
     /**
-     * Looks for a suffix on a path and returns
-     * either the path with the suffix removed
-     * or null.
+     * Looks for a suffix on a path and returns either the path with the suffix removed or null.
      */
     private static String trimOrNull( String s, String suffix ) {
         return s.endsWith( suffix )
@@ -262,8 +260,7 @@ public abstract class Sources {
             }
             String path = child.path();
             if ( url != null ) {
-                String encodedPath = new File( "." ).toURI().relativize( new File( path ).toURI() )
-                        .getRawSchemeSpecificPart();
+                String encodedPath = new File( "." ).toURI().relativize( new File( path ).toURI() ).getRawSchemeSpecificPart();
                 return Sources.url( url + "/" + encodedPath );
             } else {
                 return Sources.file( file, path );
@@ -274,8 +271,7 @@ public abstract class Sources {
         @Override
         public Source relative( Source parent ) {
             if ( isFile( parent ) ) {
-                if ( isFile( this )
-                        && file.getPath().startsWith( parent.file().getPath() ) ) {
+                if ( isFile( this ) && file.getPath().startsWith( parent.file().getPath() ) ) {
                     String rest = file.getPath().substring( parent.file().getPath().length() );
                     if ( rest.startsWith( File.separator ) ) {
                         return Sources.file( null, rest.substring( File.separator.length() ) );
@@ -284,10 +280,8 @@ public abstract class Sources {
                 return this;
             } else {
                 if ( !isFile( this ) ) {
-                    String rest = Sources.trimOrNull( url.toExternalForm(),
-                            parent.url().toExternalForm() );
-                    if ( rest != null
-                            && rest.startsWith( "/" ) ) {
+                    String rest = Sources.trimOrNull( url.toExternalForm(), parent.url().toExternalForm() );
+                    if ( rest != null && rest.startsWith( "/" ) ) {
                         return Sources.file( null, rest.substring( 1 ) );
                     }
                 }
@@ -297,4 +291,3 @@ public abstract class Sources {
     }
 }
 
-// End Sources.java

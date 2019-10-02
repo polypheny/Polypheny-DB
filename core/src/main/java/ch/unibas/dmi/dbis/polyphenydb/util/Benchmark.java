@@ -54,25 +54,21 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Helps to run benchmarks by running the same task repeatedly and averaging
- * the running times.
+ * Helps to run benchmarks by running the same task repeatedly and averaging the running times.
  */
 public class Benchmark {
 
     /**
-     * Certain tests are enabled only if logging is enabled at debug level or
-     * higher.
+     * Certain tests are enabled only if logging is enabled at debug level or higher.
      */
-    public static final Logger LOGGER =
-            LoggerFactory.getLogger( Benchmark.class );
+    public static final Logger LOGGER = LoggerFactory.getLogger( Benchmark.class );
 
     private final Function1<Statistician, Void> function;
     private final int repeat;
     private final Statistician statistician;
 
 
-    public Benchmark( String description, Function1<Statistician, Void> function,
-            int repeat ) {
+    public Benchmark( String description, Function1<Statistician, Void> function, int repeat ) {
         this.function = function;
         this.repeat = repeat;
         this.statistician = new Statistician( description );
@@ -119,9 +115,7 @@ public class Benchmark {
 
 
         public void record( long start ) {
-            durations.add(
-                    printDuration(
-                            desc + " iteration #" + (durations.size() + 1), start ) );
+            durations.add( printDuration( desc + " iteration #" + (durations.size() + 1), start ) );
         }
 
 
@@ -133,8 +127,7 @@ public class Benchmark {
             List<Long> coreDurations = durations;
             String durationsString = durations.toString(); // save before sort
 
-            // Ignore the first 3 readings. (JIT compilation takes a while to
-            // kick in.)
+            // Ignore the first 3 readings. (JIT compilation takes a while to kick in.)
             if ( coreDurations.size() > 3 ) {
                 coreDurations = durations.subList( 3, durations.size() );
             }
@@ -142,8 +135,7 @@ public class Benchmark {
             // Further ignore the max and min.
             List<Long> coreCoreDurations = coreDurations;
             if ( coreDurations.size() > 4 ) {
-                coreCoreDurations =
-                        coreDurations.subList( 1, coreDurations.size() - 1 );
+                coreCoreDurations = coreDurations.subList( 1, coreDurations.size() - 1 );
             }
             long sum = 0;
             int count = coreCoreDurations.size();
@@ -160,14 +152,9 @@ public class Benchmark {
             if ( durations.size() == 0 ) {
                 LOGGER.debug( "{}: {}", desc, "no runs" );
             } else {
-                LOGGER.debug(
-                        "{}: {} first; {} +- {}; {} min; {} max; {} nanos",
-                        desc,
-                        durations.get( 0 ), avg, stddev, coreDurations.get( 0 ),
-                        Util.last( coreDurations ), durationsString );
+                LOGGER.debug( "{}: {} first; {} +- {}; {} min; {} max; {} nanos", desc, durations.get( 0 ), avg, stddev, coreDurations.get( 0 ), Util.last( coreDurations ), durationsString );
             }
         }
     }
 }
 
-// End Benchmark.java

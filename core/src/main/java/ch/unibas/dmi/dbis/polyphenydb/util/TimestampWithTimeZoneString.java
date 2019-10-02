@@ -56,11 +56,9 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 /**
  * Timestamp with time-zone literal.
  *
- * <p>Immutable, internally represented as a string (in ISO format),
- * and can support unlimited precision (milliseconds, nanoseconds).
+ * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
-public class TimestampWithTimeZoneString
-        implements Comparable<TimestampWithTimeZoneString> {
+public class TimestampWithTimeZoneString implements Comparable<TimestampWithTimeZoneString> {
 
     final TimestampString localDateTime;
     final TimeZone timeZone;
@@ -90,23 +88,17 @@ public class TimestampWithTimeZoneString
 
 
     /**
-     * Creates a TimestampWithTimeZoneString for year, month, day, hour, minute, second,
-     * millisecond values in the given time-zone.
+     * Creates a TimestampWithTimeZoneString for year, month, day, hour, minute, second, millisecond values in the given time-zone.
      */
-    public TimestampWithTimeZoneString( int year, int month, int day, int h, int m, int s,
-            String timeZone ) {
-        this( DateTimeStringUtils.ymdhms( new StringBuilder(), year, month, day, h, m, s ).toString()
-                + " " + timeZone );
+    public TimestampWithTimeZoneString( int year, int month, int day, int h, int m, int s, String timeZone ) {
+        this( DateTimeStringUtils.ymdhms( new StringBuilder(), year, month, day, h, m, s ).toString() + " " + timeZone );
     }
 
 
     /**
-     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number
-     * of milliseconds. Nukes the value set via {@link #withNanos}.
+     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
      *
-     * <p>For example,
-     * {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withMillis(56)}
-     * yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.056 GMT'}.
+     * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withMillis(56)} yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.056 GMT'}.
      */
     public TimestampWithTimeZoneString withMillis( int millis ) {
         Preconditions.checkArgument( millis >= 0 && millis < 1000 );
@@ -115,12 +107,9 @@ public class TimestampWithTimeZoneString
 
 
     /**
-     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number
-     * of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
+     * Sets the fraction field of a {@code TimestampWithTimeZoneString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
      *
-     * <p>For example,
-     * {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withNanos(56789)}
-     * yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.000056789 GMT'}.
+     * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withNanos(56789)} yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.000056789 GMT'}.
      */
     public TimestampWithTimeZoneString withNanos( int nanos ) {
         Preconditions.checkArgument( nanos >= 0 && nanos < 1000000000 );
@@ -129,17 +118,14 @@ public class TimestampWithTimeZoneString
 
 
     /**
-     * Sets the fraction field of a {@code TimestampString}.
-     * The precision is determined by the number of leading zeros.
+     * Sets the fraction field of a {@code TimestampString}. The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
      *
-     * <p>For example, {@code
-     * new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withFraction("00506000")}
+     * For example, {@code new TimestampWithTimeZoneString(1970, 1, 1, 2, 3, 4, "GMT").withFraction("00506000")}
      * yields {@code TIMESTAMP WITH LOCAL TIME ZONE '1970-01-01 02:03:04.00506 GMT'}.
      */
     public TimestampWithTimeZoneString withFraction( String fraction ) {
-        return new TimestampWithTimeZoneString(
-                localDateTime.withFraction( fraction ), timeZone );
+        return new TimestampWithTimeZoneString( localDateTime.withFraction( fraction ), timeZone );
     }
 
 
@@ -158,10 +144,7 @@ public class TimestampWithTimeZoneString
             v = localDateTimeString;
             fraction = null;
         }
-        final DateTimeUtils.PrecisionTime pt =
-                DateTimeUtils.parsePrecisionDateTimeLiteral( v,
-                        new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ),
-                        this.timeZone, -1 );
+        final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( v, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), this.timeZone, -1 );
         pt.getCalendar().setTimeZone( timeZone );
         if ( fraction != null ) {
             return new TimestampWithTimeZoneString(
@@ -171,8 +154,7 @@ public class TimestampWithTimeZoneString
                     pt.getCalendar().get( Calendar.HOUR_OF_DAY ),
                     pt.getCalendar().get( Calendar.MINUTE ),
                     pt.getCalendar().get( Calendar.SECOND ),
-                    timeZone.getID() )
-                    .withFraction( fraction );
+                    timeZone.getID() ).withFraction( fraction );
         }
         return new TimestampWithTimeZoneString(
                 pt.getCalendar().get( Calendar.YEAR ),
@@ -214,14 +196,12 @@ public class TimestampWithTimeZoneString
 
     public TimestampWithTimeZoneString round( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
-        return new TimestampWithTimeZoneString(
-                localDateTime.round( precision ), timeZone );
+        return new TimestampWithTimeZoneString( localDateTime.round( precision ), timeZone );
     }
 
 
     /**
-     * Creates a TimestampWithTimeZoneString that is a given number of milliseconds since
-     * the epoch UTC.
+     * Creates a TimestampWithTimeZoneString that is a given number of milliseconds since the epoch UTC.
      */
     public static TimestampWithTimeZoneString fromMillisSinceEpoch( long millis ) {
         return new TimestampWithTimeZoneString(
@@ -231,8 +211,7 @@ public class TimestampWithTimeZoneString
 
 
     /**
-     * Converts this TimestampWithTimeZoneString to a string, truncated or padded with
-     * zeroes to a given precision.
+     * Converts this TimestampWithTimeZoneString to a string, truncated or padded with zeroes to a given precision.
      */
     public String toString( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
@@ -256,4 +235,3 @@ public class TimestampWithTimeZoneString
 
 }
 
-// End TimestampWithTimeZoneString.java
