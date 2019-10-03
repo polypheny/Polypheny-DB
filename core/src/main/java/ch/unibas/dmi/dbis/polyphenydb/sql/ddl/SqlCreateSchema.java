@@ -94,6 +94,9 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "CREATE" );
+        if ( replace ) {
+            writer.keyword( "OR REPLACE" );
+        }
         writer.keyword( "SCHEMA" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );
@@ -110,6 +113,8 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
                 if ( ifNotExists ) {
                     // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                     return;
+                } else if ( replace ) {
+                    throw new RuntimeException( "Replacing schema is not yet supported." );
                 } else {
                     throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
                 }

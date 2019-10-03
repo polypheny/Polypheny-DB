@@ -61,7 +61,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.examples.RelBuilderExample;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ConsList;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
@@ -1840,12 +1839,6 @@ public class UtilTest {
         assertThat( map.size(), equalTo( values.size() ) );
         assertThat( map.get( "X" ), is( (String) null ) );
         assertThat( map.get( "Y" ), equalTo( "y" ) );
-    }
-
-
-    @Test
-    public void testRelBuilderExample() {
-        new RelBuilderExample( false ).runAllExamples();
     }
 
 

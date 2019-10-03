@@ -23,26 +23,26 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
+import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
 
 
 /**
- * Concrete subclass of {@link SqlOperatorBaseTest} which checks against a {@link SqlValidator}. Tests that involve execution trivially succeed.
+ * Tester of {@link SqlValidator}.
  */
-public class SqlOperatorTest extends SqlOperatorBaseTest {
+public class SqlValidatorTester extends AbstractSqlTester {
 
-    private static final SqlTester DEFAULT_TESTER = (SqlTester) new SqlValidatorTestCase().getTester();
+    public SqlValidatorTester( SqlTestFactory factory ) {
+        super( factory );
+    }
 
 
-    /**
-     * Creates a SqlOperatorTest.
-     */
-    public SqlOperatorTest() {
-        super( false, DEFAULT_TESTER );
+    @Override
+    protected SqlTester with( SqlTestFactory factory ) {
+        return new SqlValidatorTester( factory );
     }
 }
+

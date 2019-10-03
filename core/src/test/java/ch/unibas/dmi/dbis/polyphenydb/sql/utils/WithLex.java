@@ -23,26 +23,23 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
+import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /**
- * Concrete subclass of {@link SqlOperatorBaseTest} which checks against a {@link SqlValidator}. Tests that involve execution trivially succeed.
+ * Annotation that indicates that test method should be run with given lex configuration.
  */
-public class SqlOperatorTest extends SqlOperatorBaseTest {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD })
+public @interface WithLex {
 
-    private static final SqlTester DEFAULT_TESTER = (SqlTester) new SqlValidatorTestCase().getTester();
-
-
-    /**
-     * Creates a SqlOperatorTest.
-     */
-    public SqlOperatorTest() {
-        super( false, DEFAULT_TESTER );
-    }
+    Lex value() default Lex.ORACLE;
 }
+

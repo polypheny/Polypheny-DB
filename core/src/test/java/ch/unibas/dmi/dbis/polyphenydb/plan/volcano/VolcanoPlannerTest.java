@@ -97,8 +97,6 @@ public class VolcanoPlannerTest {
     public VolcanoPlannerTest() {
     }
 
-    //~ Methods ----------------------------------------------------------------
-
 
     /**
      * Tests transformation of a leaf from NONE to PHYS.

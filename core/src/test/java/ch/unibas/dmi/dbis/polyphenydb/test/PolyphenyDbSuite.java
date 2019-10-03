@@ -46,20 +46,15 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtilTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitTest;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelWriterTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.CollationConversionTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.ComboRuleTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.TraitConversionTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.TraitPropagationTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlannerTest;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlannerTraitTest;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.LookupOperatorOverloadsTest;
-import ch.unibas.dmi.dbis.polyphenydb.profile.ProfilerTest;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTest;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTest;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverterTest;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRulesTest;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortRemoveRuleTest;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilderTest;
@@ -67,21 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutorTest;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexSqlStandardConvertletTableTest;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.BinarySearchTest;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.EnumerablesTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSetOptionOperatorTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlUnParserTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlAdvisorTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlOperatorTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlPrettyWriterTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.test.SqlTypeNameTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtilTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.LexCaseSensitiveTest;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtilTest;
-import ch.unibas.dmi.dbis.polyphenydb.test.enumerable.EnumerableCorrelateTest;
 import ch.unibas.dmi.dbis.polyphenydb.test.fuzzer.RexProgramFuzzyTest;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworksTest;
-import ch.unibas.dmi.dbis.polyphenydb.tools.PlannerTest;
 import ch.unibas.dmi.dbis.polyphenydb.util.BitSetsTest;
 import ch.unibas.dmi.dbis.polyphenydb.util.ChunkListTest;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSetTest;
@@ -111,64 +92,64 @@ import org.junit.runners.Suite;
         ImmutableBitSetTest.class,
         DirectedGraphTest.class,
         ReflectVisitorTest.class,
-        RelOptUtilTest.class,
+//        RelOptUtilTest.class,
         RelCollationTest.class,
         UtilTest.class,
         PrecedenceClimbingParserTest.class,
         SourceTest.class,
         MappingTest.class,
         PolyphenyDbResourceTest.class,
-        FilteratorTest.class,
+//        FilteratorTest.class,
         PermutationTestCase.class,
-        SqlFunctionsTest.class,
-        SqlJsonFunctionsTest.class,
-        SqlTypeNameTest.class,
-        SqlValidatorFeatureTest.class,
+//        SqlFunctionsTest.class,
+//        SqlJsonFunctionsTest.class,
+//       SqlTypeNameTest.class,
+//        SqlValidatorFeatureTest.class,
         VolcanoPlannerTraitTest.class,
-        InterpreterTest.class,
+//        InterpreterTest.class,
         TestUtilTest.class,
         VolcanoPlannerTest.class,
         RelTraitTest.class,
         HepPlannerTest.class,
         TraitPropagationTest.class,
         RelDistributionTest.class,
-        RelWriterTest.class,
-        RexProgramTest.class,
-        SqlOperatorBindingTest.class,
-        RexTransformerTest.class,
+//        RelWriterTest.class,
+//        RexProgramTest.class,
+//        SqlOperatorBindingTest.class,
+//        RexTransformerTest.class,
         BinarySearchTest.class,
         EnumerablesTest.class,
-        ExceptionMessageTest.class,
+//        ExceptionMessageTest.class,
         InduceGroupingTypeTest.class,
         RelOptPlanReaderTest.class,
         RexBuilderTest.class,
         RexSqlStandardConvertletTableTest.class,
-        SqlTypeFactoryTest.class,
-        SqlTypeUtilTest.class,
-        SqlValidatorUtilTest.class,
+//        SqlTypeFactoryTest.class,
+//       SqlTypeUtilTest.class,
+//        SqlValidatorUtilTest.class,
 
         // medium tests (above 0.1s)
-        SqlParserTest.class,
-        SqlUnParserTest.class,
-        SqlSetOptionOperatorTest.class,
-        SqlPrettyWriterTest.class,
-        SqlValidatorTest.class,
-        SqlValidatorDynamicTest.class,
-        SqlValidatorMatchTest.class,
-        SqlAdvisorTest.class,
-        RelMetadataTest.class,
+//        SqlParserTest.class,
+//        SqlUnParserTest.class,
+//        SqlSetOptionOperatorTest.class,
+//        SqlPrettyWriterTest.class,
+//        SqlValidatorTest.class,
+//        SqlValidatorDynamicTest.class,
+//        SqlValidatorMatchTest.class,
+//        SqlAdvisorTest.class,
+//        RelMetadataTest.class,
         DateRangeRulesTest.class,
-        ScannableTableTest.class,
+//        ScannableTableTest.class,
         RexExecutorTest.class,
-        SqlLimitsTest.class,
+//        SqlLimitsTest.class,
 //        JdbcFrontLinqBackTest.class,
-        RelToSqlConverterTest.class,
-        SqlOperatorTest.class,
+//        RelToSqlConverterTest.class,
+//        SqlOperatorTest.class,
         ChunkListTest.class,
-        FrameworksTest.class,
-        EnumerableCorrelateTest.class,
-        LookupOperatorOverloadsTest.class,
-        LexCaseSensitiveTest.class,
+//        FrameworksTest.class,
+//        EnumerableCorrelateTest.class,
+//        LookupOperatorOverloadsTest.class,
+//        LexCaseSensitiveTest.class,
         CollationConversionTest.class,
         TraitConversionTest.class,
         ComboRuleTest.class,
@@ -176,21 +157,21 @@ import org.junit.runners.Suite;
 
         // slow tests (above 1s)
 //        UdfTest.class,
-        UdtTest.class,
-        TableFunctionTest.class,
-        PlannerTest.class,
-        RelBuilderTest.class,
-        PigRelBuilderTest.class,
-        RexImplicationCheckerTest.class,
+//        UdtTest.class,
+//        TableFunctionTest.class,
+//        PlannerTest.class,
+//        RelBuilderTest.class,
+//        PigRelBuilderTest.class,
+//        RexImplicationCheckerTest.class,
 //        JdbcAdapterTest.class,
 //        LinqFrontJdbcBackTest.class,
-        JdbcFrontJdbcBackLinqMiddleTest.class,
+//        JdbcFrontJdbcBackLinqMiddleTest.class,
         RexProgramFuzzyTest.class,
-        SqlToRelConverterTest.class,
-        ProfilerTest.class,
-        SqlAdvisorJdbcTest.class,
+//        SqlToRelConverterTest.class,
+//        ProfilerTest.class,
+//        SqlAdvisorJdbcTest.class,
         //CoreQuidemTest.class,
-        StreamTest.class,
+//        StreamTest.class,
         SortRemoveRuleTest.class,
 
         // above 10sec
@@ -198,32 +179,25 @@ import org.junit.runners.Suite;
 
         // above 20sec
 //        JdbcTest.class,
-        PolyphenyDbSqlOperatorTest.class,
+//        PolyphenyDbSqlOperatorTest.class,
 //        ReflectiveSchemaTest.class,
-        RelOptRulesTest.class,
+//        RelOptRulesTest.class,
 
         // test cases
 //        TableInRootSchemaTest.class,
-        RelMdColumnOriginsTest.class,
-        MultiJdbcSchemaJoinTest.class,
-        CollectionTypeTest.class,
+//        RelMdColumnOriginsTest.class,
+//        MultiJdbcSchemaJoinTest.class,
+//        CollectionTypeTest.class,
 
         // slow tests that don't break often
-        SqlToRelConverterExtendedTest.class,
+//        SqlToRelConverterExtendedTest.class,
         PartiallyOrderedSetTest.class,
 
         // system tests and benchmarks (very slow, but usually only run if
         // '-Dpolyphenydb.test.slow' is specified)
-        FoodmartTest.class
+//        FoodmartTest.class
 })
 public class PolyphenyDbSuite {
 
-    static {
-        try {
-            Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
-        } catch ( ClassNotFoundException e ) {
-            e.printStackTrace();
-        }
-    }
 
 }

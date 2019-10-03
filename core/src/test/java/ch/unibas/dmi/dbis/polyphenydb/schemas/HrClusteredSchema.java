@@ -139,11 +139,7 @@ public final class HrClusteredSchema extends AbstractSchema {
         public Statistic getStatistic() {
             List<RelFieldCollation> collationFields = new ArrayList<>();
             for ( Integer key : pkColumns ) {
-                collationFields.add(
-                        new RelFieldCollation(
-                                key,
-                                RelFieldCollation.Direction.ASCENDING,
-                                RelFieldCollation.NullDirection.LAST ) );
+                collationFields.add( new RelFieldCollation( key, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.LAST ) );
             }
             return Statistics.of( data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( RelCollations.of( collationFields ) ) );
         }
