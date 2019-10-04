@@ -194,7 +194,6 @@ javadoc {
  * Tests
  */
 test {
-    include "**/PolyphenyDbSuite.class"
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
 }
 
