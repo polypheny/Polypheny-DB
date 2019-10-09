@@ -272,7 +272,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-898">[POLYPHENYDB-898] Type inference multiplying Java long by SQL INTEGER</a>.
+     * Test case for "Type inference multiplying Java long by SQL INTEGER".
      */
     @Test
     public void testSelectLongMultiplyInteger() throws SQLException {
@@ -476,7 +476,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1754">[POLYPHENYDB-1754] In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long</a>.
+     * Test case for "In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long".
      */
     @Test
     public void testGroupByTimestampAdd() throws SQLException {
@@ -530,7 +530,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-824">[POLYPHENYDB-824] Type inference when converting IN clause to semijoin</a>.
+     * Test case for "Type inference when converting IN clause to semijoin".
      */
     @Test
     public void testInToSemiJoinWithCast() throws SQLException {
@@ -546,7 +546,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1051">[POLYPHENYDB-1051] Underflow exception due to scaling IN clause literals</a>.
+     * Test case for "Underflow exception due to scaling IN clause literals".
      */
     @Test
     public void testInToSemiJoinWithoutCast() throws SQLException {
@@ -607,7 +607,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1072">[POLYPHENYDB-1072] CSV adapter incorrectly parses TIMESTAMP values after noon</a>.
+     * Test case for "CSV adapter incorrectly parses TIMESTAMP values after noon".
      */
     @Test
     public void testDateType2() throws SQLException {
@@ -647,7 +647,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1673">[POLYPHENYDB-1673] Query with ORDER BY or GROUP BY on TIMESTAMP column throws CompileException</a>.
+     * Test case for "Query with ORDER BY or GROUP BY on TIMESTAMP column throws CompileException".
      */
     @Test
     public void testTimestampGroupBy() throws SQLException {
@@ -710,7 +710,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1054">[POLYPHENYDB-1054] NPE caused by wrong code generation for Timestamp fields</a>.
+     * Test case for "NPE caused by wrong code generation for Timestamp fields".
      */
     @Test
     public void testFilterOnNullableTimestamp() throws Exception {
@@ -754,7 +754,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1118">[POLYPHENYDB-1118] NullPointerException in EXTRACT with WHERE ... IN clause if field has null value</a>.
+     * Test case for "NullPointerException in EXTRACT with WHERE ... IN clause if field has null value".
      */
     @Test
     public void testFilterOnNullableTimestamp2() throws Exception {
@@ -781,7 +781,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1427">[POLYPHENYDB-1427] Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields</a>.
+     * Test case for "Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields".
      */
     @Test
     public void testNonNullFilterOnDateType() throws SQLException {
@@ -816,7 +816,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1427">[POLYPHENYDB-1427] Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields</a>.
+     * Test case for "Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields".
      */
     @Test
     public void testGreaterThanFilterOnDateType() throws SQLException {

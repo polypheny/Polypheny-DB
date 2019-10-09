@@ -347,7 +347,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2713">[POLYPHENYDB-2713] JDBC adapter may generate casts on PostgreSQL for VARCHAR type exceeding max length</a>.
+     * Test case for "JDBC adapter may generate casts on PostgreSQL for VARCHAR type exceeding max length".
      */
     @Test
     public void testCastLongVarchar1() {
@@ -360,7 +360,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2713">[POLYPHENYDB-2713] JDBC adapter may generate casts on PostgreSQL for VARCHAR type exceeding max length</a>.
+     * Test case for "JDBC adapter may generate casts on PostgreSQL for VARCHAR type exceeding max length".
      */
     @Test
     public void testCastLongVarchar2() {
@@ -373,7 +373,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1174">[POLYPHENYDB-1174] When generating SQL, translate SUM0(x) to COALESCE(SUM(x), 0)</a>.
+     * Test case for "When generating SQL, translate SUM0(x) to COALESCE(SUM(x), 0)".
      */
     @Test
     public void testSum0BecomesCoalesce() {
@@ -410,7 +410,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1946">[POLYPHENYDB-1946] JDBC adapter should generate sub-SELECT if dialect does not support nested aggregate functions</a>.
+     * Test case for "JDBC adapter should generate sub-SELECT if dialect does not support nested aggregate functions".
      */
     @Test
     public void testNestedAggregates() {
@@ -450,7 +450,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2628">[POLYPHENYDB-2628] JDBC adapter throws NullPointerException while generating GROUP BY query for MySQL</a>.
+     * Test case for "JDBC adapter throws NullPointerException while generating GROUP BY query for MySQL".
      *
      * MySQL does not support nested aggregates, so {@link RelToSqlConverter} performs some extra checks, looking for aggregates in the input sub-query, and these would fail with {@code NullPointerException}
      * and {@code ClassCastException} in some cases.
@@ -511,7 +511,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1665">[POLYPHENYDB-1665] Aggregates and having cannot be combined</a>.
+     * Test case for "Aggregates and having cannot be combined".
      */
     @Test
     public void testSelectQueryWithGroupByHaving2() {
@@ -535,7 +535,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1665">[POLYPHENYDB-1665] Aggregates and having cannot be combined</a>.
+     * Test case for "Aggregates and having cannot be combined".
      */
     @Test
     public void testSelectQueryWithGroupByHaving3() {
@@ -609,7 +609,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2715">[POLYPHENYDB-2715] MS SQL Server does not support character set as part of data type</a>.
+     * Test case for "MS SQL Server does not support character set as part of data type".
      */
     @Test
     public void testMssqlCharacterSet() {
@@ -1222,7 +1222,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1636">[POLYPHENYDB-1636] JDBC adapter generates wrong SQL for self join with sub-query</a>.
+     * Test case for "JDBC adapter generates wrong SQL for self join with sub-query".
      */
     @Test
     public void testSubQueryAlias() {
@@ -1289,9 +1289,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-1332">[POLYPHENYDB-1332]
-     * DB2 should always use aliases for tables: x.y.z AS z</a>.
+     * Test case for "DB2 should always use aliases for tables: x.y.z AS z".
      */
     @Test
     public void testDb2DialectJoinStar() {
@@ -1434,7 +1432,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1422">[POLYPHENYDB-1422] In JDBC adapter, allow IS NULL and IS NOT NULL operators in generated SQL join condition</a>.
+     * Test case for "In JDBC adapter, allow IS NULL and IS NOT NULL operators in generated SQL join condition".
      */
     @Test
     public void testSimpleJoinConditionWithIsNullOperators() {
@@ -1465,7 +1463,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1586">[POLYPHENYDB-1586] JDBC adapter generates wrong SQL if UNION has more than two inputs</a>.
+     * Test case for "JDBC adapter generates wrong SQL if UNION has more than two inputs".
      */
     @Test
     public void testThreeQueryUnion() {
@@ -1492,7 +1490,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1800">[POLYPHENYDB-1800] JDBC adapter fails to SELECT FROM a UNION query</a>.
+     * Test case for "JDBC adapter fails to SELECT FROM a UNION query".
      */
     @Test
     public void testUnionWrappedInASelect() {
@@ -1574,7 +1572,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2625">[POLYPHENYDB-2625] Removing Window Boundaries from SqlWindow of Aggregate Function which do not allow Framing</a>
+     * Test case for "Removing Window Boundaries from SqlWindow of Aggregate Function which do not allow Framing".
      */
     @Test
     public void testRowNumberFunctionForPrintingOfFrameBoundary() {
@@ -1613,7 +1611,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1798">[POLYPHENYDB-1798] Generate dialect-specific SQL for FLOOR operator</a>.
+     * Test case for "Generate dialect-specific SQL for FLOOR operator".
      */
     @Test
     public void testFloor() {
@@ -1805,7 +1803,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1826">[POLYPHENYDB-1826] JDBC dialect-specific FLOOR fails when in GROUP BY</a>.
+     * Test case for "JDBC dialect-specific FLOOR fails when in GROUP BY".
      */
     @Test
     public void testFloorWithGroupBy() {
@@ -1882,7 +1880,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1849">[POLYPHENYDB-1849] Support sub-queries (RexSubQuery) in RelToSqlConverter</a>.
+     * Test case for "Support sub-queries (RexSubQuery) in RelToSqlConverter".
      */
     @Test
     public void testExistsWithExpand() {
@@ -3082,7 +3080,7 @@ public class RelToSqlConverterTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2118">[POLYPHENYDB-2118] RelToSqlConverter should only generate "*" if field names match</a>.
+     * Test case for "RelToSqlConverter should only generate "*" if field names match".
      */
     @Test
     public void testPreserveAlias() {

@@ -5041,7 +5041,6 @@ public class SqlToRelConverter {
 
             if ( call.getOperator().getKind() == SqlKind.FILTER ) {
                 // the WHERE in a FILTER must be tracked too so we can call replaceSubQueries on it.
-                // see https://issues.apache.org/jira/browse/CALCITE-1910
                 final SqlNode aggCall = call.getOperandList().get( 0 );
                 final SqlNode whereCall = call.getOperandList().get( 1 );
                 list.add( aggCall );
@@ -5051,7 +5050,6 @@ public class SqlToRelConverter {
 
             if ( call.getOperator().getKind() == SqlKind.WITHIN_GROUP ) {
                 // the WHERE in a WITHIN_GROUP must be tracked too so we can call replaceSubQueries on it.
-                // see https://issues.apache.org/jira/browse/CALCITE-1910
                 final SqlNode aggCall = call.getOperandList().get( 0 );
                 final SqlNodeList orderList = (SqlNodeList) call.getOperandList().get( 1 );
                 list.add( aggCall );

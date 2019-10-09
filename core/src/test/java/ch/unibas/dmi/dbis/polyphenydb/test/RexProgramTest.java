@@ -732,7 +732,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-394">[POLYPHENYDB-394] Add RexUtil.toCnf, to convert expressions to conjunctive normal form (CNF)</a>.
+     * Unit test for "Add RexUtil.toCnf, to convert expressions to conjunctive normal form (CNF)".
      */
     @Test
     public void testCnf2() {
@@ -802,8 +802,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-1290">[POLYPHENYDB-1290]
-     * When converting to CNF, fail if the expression exceeds a threshold</a>.
+     * Unit test for "When converting to CNF, fail if the expression exceeds a threshold".
      */
     @Test
     public void testThresholdCnf() {
@@ -1581,7 +1580,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-1289">[POLYPHENYDB-1289] RexUtil.simplifyCase() should account for nullability</a>.
+     * Unit test for "RexUtil.simplifyCase() should account for nullability".
      */
     @Test
     public void testSimplifyCaseNotNullableBoolean() {
@@ -2112,7 +2111,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-2505">[POLYPHENYDB-2505] RexSimplify wrongly simplifies "COALESCE(+(NULL), x)" to "NULL"</a>.
+     * Unit test for "RexSimplify wrongly simplifies "COALESCE(+(NULL), x)" to "NULL"".
      */
     @Test
     public void testSimplifyCoalesce() {
@@ -2269,7 +2268,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit tests for <a href="https://issues.apache.org/jira/browse/CALCITE-2438">[POLYPHENYDB-2438] RexCall#isAlwaysTrue returns incorrect result</a>.
+     * Unit tests for "RexCall#isAlwaysTrue returns incorrect result".
      */
     @Test
     public void testIsAlwaysTrueAndFalseXisNullisNotNullisFalse() {

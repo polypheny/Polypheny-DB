@@ -357,7 +357,7 @@ public class PlannerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-443">[POLYPHENYDB-443] getPredicates from a union is not correct</a>.
+     * Test case for "getPredicates from a union is not correct".
      */
     @Test
     public void testMetadataUnionPredicates2() throws Exception {
@@ -455,7 +455,7 @@ public class PlannerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2554">[POLYPHENYDB-2554] Enrich EnumerableJoin operator with order preserving information</a>.
+     * Test case for "Enrich EnumerableJoin operator with order preserving information".
      *
      * Since the left input to the join is sorted, and this join preserves order, there shouldn't be any sort operator above the join.
      */
@@ -797,7 +797,7 @@ public class PlannerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-435">[POLYPHENYDB-435] LoptOptimizeJoinRule incorrectly re-orders outer joins</a>.
+     * Test case for "LoptOptimizeJoinRule incorrectly re-orders outer joins".
      *
      * Checks the {@link LoptOptimizeJoinRule} on a query with a left outer join.
      *

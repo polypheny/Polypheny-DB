@@ -121,9 +121,9 @@ public abstract class Prepare {
     public static final TryThreadLocal<Boolean> THREAD_TRIM = TryThreadLocal.of( false );
 
     /**
-     * Temporary, until <a href="https://issues.apache.org/jira/browse/CALCITE-1045">[POLYPHENYDB-1045] Decorrelate sub-queries in Project and Join</a> is fixed.
+     * Temporary, until "Decorrelate sub-queries in Project and Join" is fixed.
      *
-     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true. After POLYPHENYDB-1045 is fixed, remove those overrides and use false everywhere.
+     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true. After it is fixed, remove those overrides and use false everywhere.
      */
     public static final TryThreadLocal<Boolean> THREAD_EXPAND = TryThreadLocal.of( false );
 

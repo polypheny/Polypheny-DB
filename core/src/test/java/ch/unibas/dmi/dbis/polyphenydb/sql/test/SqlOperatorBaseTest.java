@@ -866,7 +866,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1439">[POLYPHENYDB-1439] Handling errors during constant reduction</a>.
+     * Test case for "Handling errors during constant reduction".
      */
     @Test
     public void testCastInvalid() {
@@ -2239,7 +2239,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-715">[POLYPHENYDB-715] Add PERIOD type constructor and period operators (CONTAINS, PRECEDES, etc.)</a>.
+     * Test case for "Add PERIOD type constructor and period operators (CONTAINS, PRECEDES, etc.)".
      *
      * Tests OVERLAP and similar period operators CONTAINS, EQUALS, PRECEDES, SUCCEEDS, IMMEDIATELY PRECEDES, IMMEDIATELY SUCCEEDS for DATE, TIME and TIMESTAMP values.
      */
@@ -2782,7 +2782,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1864">[POLYPHENYDB-1864] Allow NULL literal as argument</a>.
+     * Test case for "Allow NULL literal as argument".
      */
     @Test
     public void testNullOperand() {
@@ -3428,7 +3428,7 @@ public abstract class SqlOperatorBaseTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1898">[POLYPHENYDB-1898] LIKE must match '.' (period) literally</a>.
+     * Test case for "LIKE must match '.' (period) literally".
      */
     @Test
     public void testLikeDot() {

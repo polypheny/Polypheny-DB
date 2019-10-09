@@ -302,7 +302,7 @@ public class ScannableTableTest {
 //
 //
 //    /**
-//     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-458">[POLYPHENYDB-458] ArrayIndexOutOfBoundsException when using just a single column in interpreter</a>.
+//     * Test case for "ArrayIndexOutOfBoundsException when using just a single column in interpreter".
 //     */
 //    @Test
 //    public void testPFTableRefusesFilterSingleColumn() throws Exception {
@@ -320,7 +320,7 @@ public class ScannableTableTest {
 //
 //
 //    /**
-//     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2039">[POLYPHENYDB-2039] AssertionError when pushing project to ProjectableFilterableTable</a>.
+//     * Test case for "AssertionError when pushing project to ProjectableFilterableTable".
 //     * Cannot push down a project if it is not a permutation of columns; in this case, it contains a literal.
 //     */
 //    @Test
@@ -340,7 +340,7 @@ public class ScannableTableTest {
 //
 //
 //    /**
-//     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1031">[POLYPHENYDB-1031] In prepared statement, CsvScannableTable.scan is called twice</a>.
+//     * Test case for "In prepared statement, CsvScannableTable.scan is called twice".
 //     */
 //    @Test
 //    public void testPrepared2() throws SQLException {

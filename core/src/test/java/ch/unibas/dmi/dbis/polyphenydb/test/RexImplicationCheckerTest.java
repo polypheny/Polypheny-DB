@@ -404,7 +404,7 @@ public class RexImplicationCheckerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2041">[POLYPHENYDB-2041] When simplifying a nullable expression, allow the result to change type to NOT NULL</a> and match nullability.
+     * Test case for "When simplifying a nullable expression, allow the result to change type to NOT NULL" and match nullability.
      *
      * @see RexSimplify#simplifyPreservingType(RexNode, RexUnknownAs, boolean)
      */

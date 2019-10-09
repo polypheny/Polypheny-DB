@@ -147,7 +147,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for: <a href="https://issues.apache.org/jira/browse/CALCITE-2468">[POLYPHENYDB-2468] struct type alias should not cause IOOBE.</a>.
+     * Test case for "struct type alias should not cause IOOBE".
      */
     @Test
     public void testStructTypeAlias() {
@@ -188,9 +188,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-245">[POLYPHENYDB-245]
-     * Off-by-one translation of ON clause of JOIN</a>.
+     * Test case for "Off-by-one translation of ON clause of JOIN".
      */
     @Test
     public void testConditionOffByOne() {
@@ -251,7 +249,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-74">[POLYPHENYDB-74] JOIN ... USING fails in 3-way join with UnsupportedOperationException</a>.
+     * Test case for "JOIN ... USING fails in 3-way join with UnsupportedOperationException".
      */
     @Test
     public void testJoinUsingThreeWay() {
@@ -271,7 +269,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-801">[POLYPHENYDB-801] NullPointerException using USING on table alias with column aliases</a>.
+     * Test case for "NullPointerException using USING on table alias with column aliases".
      */
     @Test
     public void testValuesUsing() {
@@ -409,7 +407,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2147">[POLYPHENYDB-2147] Incorrect plan in with with ROLLUP inside GROUPING SETS</a>.
+     * Test case for "Incorrect plan in with with ROLLUP inside GROUPING SETS".
      *
      * Equivalence example:
      * <code>GROUP BY GROUPING SETS (ROLLUP(A, B), CUBE(C,D))</code>
@@ -658,7 +656,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-476">[POLYPHENYDB-476] DISTINCT flag in windowed aggregates</a>.
+     * Test case for "DISTINCT flag in windowed aggregates".
      */
     @Test
     public void testSelectOverDistinct() {
@@ -945,7 +943,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-439">[POLYPHENYDB-439] SqlValidatorUtil.uniquify() may not terminate under some conditions</a>.
+     * Test case for "SqlValidatorUtil.uniquify() may not terminate under some conditions".
      */
     @Test
     public void testGroupAlias() {
@@ -984,7 +982,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-309">[POLYPHENYDB-309] WITH ... ORDER BY query gives AssertionError</a>.
+     * Test case for "WITH ... ORDER BY query gives AssertionError".
      */
     @Test
     public void testWithOrder() {
@@ -1085,7 +1083,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-365">[POLYPHENYDB-365] AssertionError while translating query with WITH and correlated sub-query</a>.
+     * Test case for "AssertionError while translating query with WITH and correlated sub-query".
      */
     @Test
     public void testWithExists() {
@@ -1305,7 +1303,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1732">[POLYPHENYDB-1732] IndexOutOfBoundsException when using LATERAL TABLE with more than one field</a>.
+     * Test case for "IndexOutOfBoundsException when using LATERAL TABLE with more than one field".
      */
     @Test
     public void testCollectionTableWithLateral3() {
@@ -1486,7 +1484,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-864">[POLYPHENYDB-864] Correlation variable has incorrect row type if it is populated by right side of a Join</a>.
+     * Test case for "Correlation variable has incorrect row type if it is populated by right side of a Join".
      */
     @Test
     public void testCorrelatedSubQueryInJoin() {
@@ -2022,7 +2020,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-750">[POLYPHENYDB-750] Allow windowed aggregate on top of regular aggregate</a>.
+     * Test case for "Allow windowed aggregate on top of regular aggregate".
      */
     @Test
     public void testNestedAggregates() {
@@ -2235,7 +2233,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-412">[POLYPHENYDB-412] RelFieldTrimmer: when trimming Sort, the collation and trait set don't match</a>.
+     * Test case for "RelFieldTrimmer: when trimming Sort, the collation and trait set don't match".
      */
     @Test
     public void testSortWithTrim() {
@@ -2274,7 +2272,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-753">[POLYPHENYDB-753] Test aggregate operators do not derive row types with duplicate column names</a>.
+     * Test case for "Test aggregate operators do not derive row types with duplicate column names".
      */
     @Test
     public void testAggNoDuplicateColumnNames() {
@@ -2296,7 +2294,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
     /**
      * Test aggregate function on a CASE expression involving IN with a sub-query.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-551">[POLYPHENYDB-551] Sub-query inside aggregate function</a>.
+     * Test case for "Sub-query inside aggregate function".
      */
     @Test
     public void testAggCaseInSubQuery() {
@@ -2318,7 +2316,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-614">[POLYPHENYDB-614] IN within CASE within GROUP BY gives AssertionError</a>.
+     * Test case for "IN within CASE within GROUP BY gives AssertionError".
      */
     @Test
     public void testGroupByCaseIn() {
@@ -2638,7 +2636,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-695">[POLYPHENYDB-695] SqlSingleValueAggFunction is created when it may not be needed</a>.
+     * Test case for "SqlSingleValueAggFunction is created when it may not be needed".
      */
     @Test
     public void testSubQueryAggregateFunctionFollowedBySimpleOperation() {
@@ -2650,8 +2648,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-1799">[POLYPHENYDB-1799] "OR .. IN" sub-query conversion wrong</a>.
+     * Test case for ""OR .. IN" sub-query conversion wrong".
      *
      * The problem is only fixed if you have {@code expand = false}.
      */
@@ -2664,7 +2661,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-695">[POLYPHENYDB-695] SqlSingleValueAggFunction is created when it may not be needed</a>.
+     * Test case for "SqlSingleValueAggFunction is created when it may not be needed".
      */
     @Test
     public void testSubQueryValues() {
@@ -2676,7 +2673,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-695">[POLYPHENYDB-695] SqlSingleValueAggFunction is created when it may not be needed</a>.
+     * Test case for "SqlSingleValueAggFunction is created when it may not be needed".
      */
     @Test
     public void testSubQueryLimitOne() {
@@ -2689,7 +2686,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-710">[POLYPHENYDB-710] When look up sub-queries, perform the same logic as the way when ones were registered</a>.
+     * Test case for "When look up sub-queries, perform the same logic as the way when ones were registered".
      */
     @Test
     public void testIdenticalExpressionInSubQuery() {
@@ -2701,7 +2698,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-694">[POLYPHENYDB-694] Scan HAVING clause for sub-queries and IN-lists</a> relating to IN.
+     * Test case for "Scan HAVING clause for sub-queries and IN-lists" relating to IN.
      */
     @Test
     public void testHavingAggrFunctionIn() {
@@ -2715,7 +2712,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-694">[POLYPHENYDB-694] Scan HAVING clause for sub-queries and IN-lists</a>, with a sub-query in the HAVING clause.
+     * Test case for "Scan HAVING clause for sub-queries and IN-lists", with a sub-query in the HAVING clause.
      */
     @Test
     public void testHavingInSubQueryWithAggrFunction() {
@@ -2732,7 +2729,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-716">[POLYPHENYDB-716] Scalar sub-query and aggregate function in SELECT or HAVING clause gives AssertionError</a>; variant involving HAVING clause.
+     * Test case for "Scalar sub-query and aggregate function in SELECT or HAVING clause gives AssertionError"; variant involving HAVING clause.
      */
     @Test
     public void testAggregateAndScalarSubQueryInHaving() {
@@ -2745,7 +2742,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-716">[POLYPHENYDB-716] Scalar sub-query and aggregate function in SELECT or HAVING clause gives AssertionError</a>; variant involving SELECT clause.
+     * Test case for "Scalar sub-query and aggregate function in SELECT or HAVING clause gives AssertionError"; variant involving SELECT clause.
      */
     @Test
     public void testAggregateAndScalarSubQueryInSelect() {
@@ -2758,7 +2755,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-770">[POLYPHENYDB-770] window aggregate and ranking functions with grouped aggregates</a>.
+     * Test case for "window aggregate and ranking functions with grouped aggregates".
      */
     @Test
     public void testWindowAggWithGroupBy() {
@@ -2770,7 +2767,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-847">[POLYPHENYDB-847] AVG window function in GROUP BY gives AssertionError</a>.
+     * Test case for "AVG window function in GROUP BY gives AssertionError".
      */
     @Test
     public void testWindowAverageWithGroupBy() {
@@ -2782,9 +2779,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-770">[POLYPHENYDB-770]
-     * variant involving joins</a>.
+     * Test case for "variant involving joins".
      */
     @Test
     public void testWindowAggWithGroupByAndJoin() {
@@ -2798,7 +2793,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-770">[POLYPHENYDB-770] variant involving HAVING clause</a>.
+     * Test case for "variant involving HAVING clause".
      */
     @Test
     public void testWindowAggWithGroupByAndHaving() {
@@ -2811,7 +2806,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-770">[POLYPHENYDB-770] variant involving join with sub-query that contains window function and GROUP BY</a>.
+     * Test case for "variant involving join with sub-query that contains window function and GROUP BY".
      */
     @Test
     public void testWindowAggInSubQueryJoin() {
@@ -2827,7 +2822,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1313">[POLYPHENYDB-1313] Validator should derive type of expression in ORDER BY</a>.
+     * Test case for "Validator should derive type of expression in ORDER BY".
      */
     @Test
     public void testOrderByOver() {
@@ -2838,7 +2833,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case (correlated scalar aggregate sub-query) for <a href="https://issues.apache.org/jira/browse/CALCITE-714">[POLYPHENYDB-714] When de-correlating, push join condition into sub-query</a>.
+     * Test case (correlated scalar aggregate sub-query) for "When de-correlating, push join condition into sub-query".
      */
     @Test
     public void testCorrelationScalarAggAndFilter() {
@@ -2851,7 +2846,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1543">[POLYPHENYDB-1543] Correlated scalar sub-query with multiple aggregates gives AssertionError</a>.
+     * Test case for "Correlated scalar sub-query with multiple aggregates gives AssertionError".
      */
     @Test
     public void testCorrelationMultiScalarAggregate() {
@@ -2875,7 +2870,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case (correlated EXISTS sub-query) for <a href="https://issues.apache.org/jira/browse/CALCITE-714">[POLYPHENYDB-714] When de-correlating, push join condition into sub-query</a>.
+     * Test case (correlated EXISTS sub-query) for "When de-correlating, push join condition into sub-query".
      */
     @Test
     public void testCorrelationExistsAndFilter() {
@@ -2911,7 +2906,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case (correlated NOT EXISTS sub-query) for <a href="https://issues.apache.org/jira/browse/CALCITE-714">[POLYPHENYDB-714] When de-correlating, push join condition into sub-query</a>.
+     * Test case (correlated NOT EXISTS sub-query) for "When de-correlating, push join condition into sub-query".
      */
     @Test
     public void testCorrelationNotExistsAndFilter() {
@@ -2973,7 +2968,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150] Dynamic Table / Dynamic Star support</a>
+     * Test case for "Dynamic Table / Dynamic Star support".
      */
     @Test
     public void testSelectFromDynamicTable() throws Exception {
@@ -2983,7 +2978,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testSelectStarFromDynamicTable() throws Exception {
@@ -2993,7 +2988,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2080">[POLYPHENYDB-2080] Query with NOT IN operator and literal fails throws AssertionError: 'Cast for just nullability not allowed'</a>.
+     * Test case for "Query with NOT IN operator and literal fails throws AssertionError: 'Cast for just nullability not allowed'".
      */
     @Test
     public void testNotInWithLiteral() {
@@ -3007,7 +3002,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testReferDynamicStarInSelectOB() throws Exception {
@@ -3019,7 +3014,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testDynamicStarInTableJoin() throws Exception {
@@ -3080,7 +3075,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testReferDynamicStarInSelectWhereGB() throws Exception {
@@ -3090,7 +3085,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testDynamicStarInJoinAndSubQ() throws Exception {
@@ -3100,7 +3095,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testStarJoinStaticDynTable() throws Exception {
@@ -3110,7 +3105,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testGrpByColFromStarInSubQuery() throws Exception {
@@ -3120,7 +3115,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for Dynamic Table / Dynamic Star support <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150]</a>
+     * Test case for Dynamic Table / Dynamic Star support.
      */
     @Test
     public void testDynStarInExistSubQ() throws Exception {
@@ -3131,7 +3126,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1150">[POLYPHENYDB-1150] Create the a new DynamicRecordType, avoiding star expansion when working with this type</a>.
+     * Test case for "Create the a new DynamicRecordType, avoiding star expansion when working with this type".
      */
     @Test
     public void testSelectDynamicStarOrderBy() throws Exception {
@@ -3141,7 +3136,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1321">[POLYPHENYDB-1321] Configurable IN list size when converting IN clause to join</a>.
+     * Test case for "Configurable IN list size when converting IN clause to join".
      */
     @Test
     public void testInToSemiJoin() {
@@ -3158,7 +3153,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1944">[POLYPHENYDB-1944] Window function applied to sub-query with dynamic star gets wrong plan</a>.
+     * Test case for "Window function applied to sub-query with dynamic star gets wrong plan".
      */
     @Test
     public void testWindowOnDynamicStar() throws Exception {
@@ -3187,7 +3182,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2366">[POLYPHENYDB-2366] Add support for ANY_VALUE aggregate function</a>.
+     * Test case for "Add support for ANY_VALUE aggregate function".
      */
     @Test
     public void testAnyValueAggregateFunctionNoGroupBy() throws Exception {
@@ -3266,7 +3261,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1909">[POLYPHENYDB-1909] Output rowType of Match should include PARTITION BY and ORDER BY columns</a>.
+     * Test case for "Output rowType of Match should include PARTITION BY and ORDER BY columns".
      */
     @Test
     public void testMatchRecognizeMeasures2() {
@@ -3399,7 +3394,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2323">[POLYPHENYDB-2323] Validator should allow alternative nullCollations for ORDER BY in OVER</a>.
+     * Test case for "Validator should allow alternative nullCollations for ORDER BY in OVER".
      */
     @Test
     public void testUserDefinedOrderByOver() {

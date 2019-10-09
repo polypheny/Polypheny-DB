@@ -347,9 +347,7 @@ public class RexTransformerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-814">[POLYPHENYDB-814] RexBuilder reverses precision and scale of DECIMAL literal</a>
-     * and
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-1344">[POLYPHENYDB-1344] Incorrect inferred precision when BigDecimal value is less than 1</a>.
+     * Test case for "RexBuilder reverses precision and scale of DECIMAL literal" and "Incorrect inferred precision when BigDecimal value is less than 1".
      */
     @Test
     public void testExactLiteral() {
@@ -372,10 +370,7 @@ public class RexTransformerTest {
 
 
     /**
-     * Test case for
-     * <a href="https://issues.apache.org/jira/browse/CALCITE-833">[POLYPHENYDB-833]
-     * RelOptUtil.splitJoinCondition attempts to split a Join-Condition which
-     * has a remaining condition</a>.
+     * Test case for "RelOptUtil.splitJoinCondition attempts to split a Join-Condition which has a remaining condition".
      */
     @Test
     public void testSplitJoinCondition() {

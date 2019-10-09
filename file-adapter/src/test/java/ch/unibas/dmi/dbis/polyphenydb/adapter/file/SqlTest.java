@@ -334,8 +334,7 @@ public class SqlTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1754">[POLYPHENYDB-1754]
-     * In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long</a>.
+     * Test case for "In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long".
      */
     @Test
     @Ignore

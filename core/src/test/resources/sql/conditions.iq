@@ -102,7 +102,7 @@ select *
 
 !ok
 
-# Test cases for CALCITE-980
+# Test cases for "Not (C='a' or C='b') as well as Not (C='a' and C='b') causes NPE"
 
 select "value" from "nullables" a where "value" = 'A' or "value" = 'B' order by 1;
 
@@ -258,7 +258,7 @@ select "value" from "nullables" a
 
 !ok
 
-# Test case for [CALCITE-2726] based on [HIVE-20617]
+# Test case based on [HIVE-20617]
 with ax(s, t) as (values ('a','a'),('a','a '),('b','bb'))
 select 'expected 1' as e,count(*) as c
 from ax where ((s,t) in (('a','a'),(null, 'bb'))) is null;
@@ -284,7 +284,7 @@ select case when s=0 then false else 100/s > 0 end from ax;
 
 !ok
 
-# Test case for CALCITE-2783
+# Test case for: "COALESCE(s, TRUE) = TRUE" and "(s OR s IS UNKNOWN) = TRUE" causes NullPointerException
 with ax(s) as (values (true),(false),(cast(null as boolean)))
 select s, (s or s is null), (s and s is not null) from ax;
 

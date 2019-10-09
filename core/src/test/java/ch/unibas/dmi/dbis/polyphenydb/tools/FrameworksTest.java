@@ -165,7 +165,7 @@ public class FrameworksTest {
     /**
      * Tests that validation (specifically, inferring the result of adding two DECIMAL(19, 0) values together) happens differently with a type system that allows a larger maximum precision for decimals.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-413">[POLYPHENYDB-413] Add RelDataTypeSystem plugin, allowing different max precision of a DECIMAL</a>.
+     * Test case for "Add RelDataTypeSystem plugin, allowing different max precision of a DECIMAL".
      *
      * Also tests the plugin system, by specifying implementations of a plugin interface with public and private constructors.
      */
@@ -234,7 +234,7 @@ public class FrameworksTest {
     /**
      * Tests that the validator expands identifiers by default.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-593">[POLYPHENYDB-593] Validator in Frameworks should expand identifiers</a>.
+     * Test case for "Validator in Frameworks should expand identifiers".
      */
     @Test
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
@@ -305,7 +305,7 @@ public class FrameworksTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2039">[POLYPHENYDB-2039] AssertionError when pushing project to ProjectableFilterableTable</a> using UPDATE via {@link Frameworks}.
+     * Test case for "AssertionError when pushing project to ProjectableFilterableTable" using UPDATE via {@link Frameworks}.
      */
     @Test
     public void testUpdate() throws Exception {

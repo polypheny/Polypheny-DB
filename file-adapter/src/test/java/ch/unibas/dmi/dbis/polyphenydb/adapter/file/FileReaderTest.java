@@ -267,7 +267,7 @@ public class FileReaderTest {
 
 
     /**
-     * Tests reading a CSV file via the file adapter. Based on the test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1952">[POLYPHENYDB-1952] NPE in planner</a>.
+     * Tests reading a CSV file via the file adapter. Based on the test case for "NPE in planner".
      */
     @Test
     @Ignore

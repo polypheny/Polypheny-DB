@@ -1229,7 +1229,7 @@ public class UtilTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2287">[POLYPHENYDB-2287] FlatList.equals throws StackOverflowError</a>.
+     * Test case for "FlatList.equals throws StackOverflowError".
      */
     @Test
     public void testFlat34Equals() {
@@ -1907,7 +1907,7 @@ public class UtilTest {
     /**
      * Tests {@link ch.unibas.dmi.dbis.polyphenydb.util.TryThreadLocal}.
      *
-     * TryThreadLocal was introduced to fix <a href="https://issues.apache.org/jira/browse/CALCITE-915">[POLYPHENYDB-915] Tests do not unset ThreadLocal values on exit</a>.
+     * TryThreadLocal was introduced to fix "Tests do not unset ThreadLocal values on exit".
      */
     @Test
     public void testTryThreadLocal() {
@@ -1943,7 +1943,7 @@ public class UtilTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1264">[POLYPHENYDB-1264] Litmus argument interpolation</a>.
+     * Test case for "Litmus argument interpolation".
      */
     @Test
     public void testLitmus() {

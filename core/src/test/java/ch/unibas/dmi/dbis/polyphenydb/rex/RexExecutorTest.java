@@ -298,7 +298,7 @@ public class RexExecutorTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1009">[POLYPHENYDB-1009] SelfPopulatingList is not thread-safe</a>.
+     * Test case for "SelfPopulatingList is not thread-safe".
      */
     @Test
     public void testSelfPopulatingList() {

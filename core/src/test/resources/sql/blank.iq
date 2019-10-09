@@ -53,7 +53,7 @@ select * from foo as f where i in (
 
 !ok
 
-# [CALCITE-1493] Wrong plan for NOT IN correlated queries
+# Test case for "Wrong plan for NOT IN correlated queries"
 create table table1(i int, j int);
 (0 rows modified)
 

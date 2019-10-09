@@ -417,8 +417,7 @@ public class Programs {
     /**
      * Program that de-correlates a query.
      *
-     * To work around <a href="https://issues.apache.org/jira/browse/CALCITE-842">[POLYPHENYDB-842] Decorrelator gets field offsets confused if fields have been trimmed</a>,
-     * disable field-trimming in {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
+     * To work around "Decorrelator gets field offsets confused if fields have been trimmed", disable field-trimming in {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
      */
     private static class DecorrelateProgram implements Program {
 

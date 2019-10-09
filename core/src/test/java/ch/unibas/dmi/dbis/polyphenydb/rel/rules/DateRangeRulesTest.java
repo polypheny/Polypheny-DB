@@ -113,7 +113,7 @@ public class DateRangeRulesTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1601">[POLYPHENYDB-1601] DateRangeRules loses OR filters</a>.
+     * Test case for "DateRangeRules loses OR filters".
      */
     @Test
     public void testExtractYearAndMonthFromDateColumn2() {
@@ -199,7 +199,7 @@ public class DateRangeRulesTest {
 
 
     /**
-     * Test case #1 for <a href="https://issues.apache.org/jira/browse/CALCITE-1658">[POLYPHENYDB-1658] DateRangeRules issues</a>.
+     * Test case #1 for "DateRangeRules issues".
      */
     @Test
     public void testExtractWithOrCondition1() {
@@ -223,7 +223,7 @@ public class DateRangeRulesTest {
 
 
     /**
-     * Test case #2 for <a href="https://issues.apache.org/jira/browse/CALCITE-1658">[POLYPHENYDB-1658] DateRangeRules issues</a>.
+     * Test case #2 for "DateRangeRules issues".
      */
     @Test
     public void testExtractWithOrCondition2() {
@@ -256,7 +256,7 @@ public class DateRangeRulesTest {
 
 
     /**
-     * Test case #3 for <a href="https://issues.apache.org/jira/browse/CALCITE-1658">[POLYPHENYDB-1658] DateRangeRules issues</a>.
+     * Test case #3 for "DateRangeRules issues".
      */
     @Test
     public void testExtractPartialRewriteForNotEqualsYear() {
@@ -287,7 +287,7 @@ public class DateRangeRulesTest {
 
 
     /**
-     * Test case #4 for <a href="https://issues.apache.org/jira/browse/CALCITE-1658">[POLYPHENYDB-1658] DateRangeRules issues</a>.
+     * Test case #4 for "DateRangeRules issues".
      */
     @Test
     public void testExtractPartialRewriteForInMonth() {

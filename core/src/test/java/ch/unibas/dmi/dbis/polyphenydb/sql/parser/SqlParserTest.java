@@ -751,7 +751,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case that does not reproduce but is related to <a href="https://issues.apache.org/jira/browse/CALCITE-2637">[POLYPHENYDB-2637] Prefix '-' operator failed between BETWEEN and AND</a>.
+     * Test case that does not reproduce but is related to "Prefix '-' operator failed between BETWEEN and AND".
      */
     @Test
     public void testBetweenAnd() {
@@ -2721,7 +2721,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case that does not reproduce but is related to <a href="https://issues.apache.org/jira/browse/CALCITE-1238">[POLYPHENYDB-1238] Unparsing LIMIT without ORDER BY after validation</a>.
+     * Test case that does not reproduce but is related to "Unparsing LIMIT without ORDER BY after validation".
      */
     @Test
     public void testLimitWithoutOrder() {
@@ -3230,7 +3230,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-493">[POLYPHENYDB-493] Add EXTEND clause, for defining columns and their types at query/DML time</a>.
+     * Test case for "Add EXTEND clause, for defining columns and their types at query/DML time".
      */
     @Test
     public void testTableExtend() {

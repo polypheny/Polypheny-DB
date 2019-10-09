@@ -354,7 +354,7 @@ public class MongoAdapterTest implements SchemaFactory {
                                 "warehouse_id=14; warehouse_state_province=CA",
                                 "warehouse_id=24; warehouse_state_province=CA" ) )
                 .queryContains(
-                        // Per https://issues.apache.org/jira/browse/CALCITE-164, $match must occur before $project for good performance.
+                        // $match must occur before $project for good performance.
                         mongoChecker(
                                 "{\n"
                                         + "  \"$match\": {\n"
@@ -731,7 +731,7 @@ public class MongoAdapterTest implements SchemaFactory {
     /**
      * MongoDB's predicates are handed (they can only accept literals on the right-hand size) so it's worth testing that we handle them right both ways around.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-740">[POLYPHENYDB-740] Redundant WHERE clause causes wrong result in MongoDB adapter</a>.
+     * Test case for "Redundant WHERE clause causes wrong result in MongoDB adapter".
      */
     @Test
     public void testFilterPair() {
@@ -762,7 +762,7 @@ public class MongoAdapterTest implements SchemaFactory {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-286">[POLYPHENYDB-286] Error casting MongoDB date</a>.
+     * Test case for "Error casting MongoDB date".
      */
     @Test
     public void testDate() {
@@ -787,7 +787,7 @@ public class MongoAdapterTest implements SchemaFactory {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-665">[POLYPHENYDB-665] ClassCastException in MongoDB adapter</a>.
+     * Test case for "ClassCastException in MongoDB adapter".
      */
     @Test
     public void testCountViaInt() {

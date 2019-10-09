@@ -390,7 +390,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2730">[POLYPHENYDB-2730] RelBuilder incorrectly simplifies a filter with duplicate conjunction to empty</a>.
+     * Test case for "RelBuilder incorrectly simplifies a filter with duplicate conjunction to empty".
      */
     @Test
     public void testScanFilterDuplicateAnd() {
@@ -801,7 +801,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2192">[POLYPHENYDB-2192] RelBuilder wrongly skips creation of Aggregate that prunes columns if input is unique</a>.
+     * Test case for "RelBuilder wrongly skips creation of Aggregate that prunes columns if input is unique".
      */
     @Test
     public void testAggregate3() {
@@ -929,7 +929,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1980">[POLYPHENYDB-1980] RelBuilder gives NPE if groupKey contains alias</a>.
+     * Test case for "RelBuilder gives NPE if groupKey contains alias".
      *
      * Now, the alias does not cause a new expression to be added to the input, but causes the referenced fields to be renamed.
      */
@@ -1548,7 +1548,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1551">[POLYPHENYDB-1551] RelBuilder's project() doesn't preserve alias</a>.
+     * Test case for "RelBuilder's project() doesn't preserve alias".
      */
     @Test
     public void testAliasProject() {
@@ -1781,7 +1781,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1523">[POLYPHENYDB-1523] Add RelBuilder field() method to reference aliased relations not on top of stack</a>, accessing tables aliased that are not accessible in the top RelNode.
+     * Test case for "Add RelBuilder field() method to reference aliased relations not on top of stack", accessing tables aliased that are not accessible in the top RelNode.
      */
     @Test
     public void testAliasPastTop() {
@@ -2007,7 +2007,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1015">[POLYPHENYDB-1015] OFFSET 0 causes AssertionError</a>.
+     * Test case for "OFFSET 0 causes AssertionError".
      */
     @Test
     public void testTrivialSort() {
@@ -2126,7 +2126,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1610">[POLYPHENYDB-1610] RelBuilder sort-combining optimization treats aliases incorrectly</a>.
+     * Test case for "RelBuilder sort-combining optimization treats aliases incorrectly".
      */
     @Test
     public void testSortOverProjectSort() {
@@ -2214,7 +2214,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1595">[POLYPHENYDB-1595] RelBuilder.call throws NullPointerException if argument types are invalid</a>.
+     * Test case for "RelBuilder.call throws NullPointerException if argument types are invalid".
      */
     @Test
     public void testTypeInferenceValidation() {
