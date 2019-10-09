@@ -55,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-
 import java.util.List;
 
 
@@ -100,6 +99,7 @@ public class CassandraLimit extends SingleRel implements CassandraRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         pw.itemIf( "offset", offset, offset != null );

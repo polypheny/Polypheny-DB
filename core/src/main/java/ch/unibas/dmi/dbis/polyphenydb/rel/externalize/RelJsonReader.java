@@ -72,10 +72,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -106,17 +109,19 @@ public class RelJsonReader {
         lastRel = null;
         final ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> o = mapper.readValue( s, TYPE_REF );
-        @SuppressWarnings("unchecked") final List<Map<String, Object>> rels = (List) o.get( "rels" );
+        @SuppressWarnings("unchecked") final Map<String, Object> rels = (Map) o.get( "Plan" );
         readRels( rels );
         System.out.println( lastRel );
         return lastRel;
     }
 
 
-    private void readRels( List<Map<String, Object>> jsonRels ) {
-        for ( Map<String, Object> jsonRel : jsonRels ) {
-            readRel( jsonRel );
+    private void readRels( Map<String, Object> jsonRels ) {
+        @SuppressWarnings("unchecked") List<Map<String, Object>> inputsList = (List) jsonRels.get( "inputs" );
+        for ( Map<String, Object> input : inputsList ) {
+            readRels( input );
         }
+        readRel( jsonRels );
     }
 
 
@@ -139,7 +144,20 @@ public class RelJsonReader {
 
             @Override
             public RelOptTable getTable( String table ) {
-                final List<String> list = getStringList( table );
+                final List<String> list;
+                if ( jsonRel.get( table ) instanceof String ) {
+                    String str = (String) jsonRel.get( table );
+                    // MV: This is not a nice solution...
+                    if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
+                        str = str.substring( 1, str.length() - 1 );
+                        list = new LinkedList<>();
+                        list.add( StringUtils.join( Arrays.asList( str.split( "," ) ), ", " ) );
+                    } else {
+                        list = getStringList( table );
+                    }
+                } else {
+                    list = getStringList( table );
+                }
                 return relOptSchema.getTableForMember( list );
             }
 
@@ -154,12 +172,12 @@ public class RelJsonReader {
 
             @Override
             public List<RelNode> getInputs() {
-                final List<String> jsonInputs = getStringList( "inputs" );
+                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List) get( "inputs" );
                 if ( jsonInputs == null ) {
                     return ImmutableList.of( lastRel );
                 }
                 final List<RelNode> inputs = new ArrayList<>();
-                for ( String jsonInput : jsonInputs ) {
+                for ( Map<String, Object> jsonInput : jsonInputs ) {
                     inputs.add( lookupInput( jsonInput ) );
                 }
                 return inputs;
@@ -353,10 +371,11 @@ public class RelJsonReader {
     }
 
 
-    private RelNode lookupInput( String jsonInput ) {
-        RelNode node = relMap.get( jsonInput );
+    private RelNode lookupInput( Map<String, Object> jsonInput ) {
+        String id = (String) jsonInput.get( "id" );
+        RelNode node = relMap.get( id );
         if ( node == null ) {
-            throw new RuntimeException( "unknown id " + jsonInput + " for relational expression" );
+            throw new RuntimeException( "unknown id " + id + " for relational expression" );
         }
         return node;
     }

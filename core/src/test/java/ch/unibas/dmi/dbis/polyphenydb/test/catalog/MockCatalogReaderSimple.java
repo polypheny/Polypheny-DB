@@ -82,8 +82,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
      * @param typeFactory Type factory
      * @param caseSensitive case sensitivity
      */
-    public MockCatalogReaderSimple( RelDataTypeFactory typeFactory,
-            boolean caseSensitive ) {
+    public MockCatalogReaderSimple( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
         super( typeFactory, caseSensitive );
         fixture = new Fixture( typeFactory );
     }

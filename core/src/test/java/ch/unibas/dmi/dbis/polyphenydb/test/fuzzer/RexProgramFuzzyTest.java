@@ -58,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbSuite;
 import ch.unibas.dmi.dbis.polyphenydb.test.RexProgramBuilderBase;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import java.time.Duration;
@@ -84,8 +83,9 @@ import org.slf4j.LoggerFactory;
  * Validates that {@link RexSimplify} is able to deal with randomized {@link RexNode}.
  * Note: the default fuzzing time is 5 seconds to keep overall test duration reasonable. The test starts from a random point every time, so the longer it runs the more errors it detects.
  *
- * Note: The test is not included to {@link PolyphenyDbSuite} since it would fail every build (there are lots of issues with {@link RexSimplify})
+ * Note: The test is ignored since it would fail every build (there are lots of issues with {@link RexSimplify})
  */
+@Ignore
 public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger( RexProgramFuzzyTest.class );

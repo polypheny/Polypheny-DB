@@ -78,7 +78,12 @@ dependencies {
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version:"4.12"
-    
+
+    testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version:"0.3"
+    testCompile group: "net.hydromatic", name: "foodmart-queries", version:"0.4.1"
+    testCompile group: "net.hydromatic", name: "quidem", version:"0.9"
+    testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version:"0.1"
+
     testCompile group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version:"1.0-SNAPSHOT"
 }
 
