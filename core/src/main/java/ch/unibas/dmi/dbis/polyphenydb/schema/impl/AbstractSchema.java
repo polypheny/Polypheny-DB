@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
@@ -202,23 +201,5 @@ public class AbstractSchema implements Schema {
         return getSubSchemaMap().get( name );
     }
 
-
-    /**
-     * Schema factory that creates an {@link ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema}.
-     */
-    public static class Factory implements SchemaFactory {
-
-        public static final Factory INSTANCE = new Factory();
-
-
-        private Factory() {
-        }
-
-
-        @Override
-        public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            return new AbstractSchema();
-        }
-    }
 }
 

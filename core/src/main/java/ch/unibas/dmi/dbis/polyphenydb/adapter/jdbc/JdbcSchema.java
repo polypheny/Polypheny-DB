@@ -54,7 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
@@ -412,46 +411,6 @@ public class JdbcSchema implements Schema {
             } catch ( SQLException e ) {
                 // ignore
             }
-        }
-    }
-
-
-    /**
-     * Schema factory that creates a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema}.
-     *
-     * This allows you to create a jdbc schema inside a model.json file, like this:
-     *
-     * <blockquote><pre>
-     * {
-     *   "version": "1.0",
-     *   "defaultSchema": "FOODMART_CLONE",
-     *   "schemas": [
-     *     {
-     *       "name": "FOODMART_CLONE",
-     *       "type": "custom",
-     *       "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema$Factory",
-     *       "operand": {
-     *         "jdbcDriver": "com.mysql.jdbc.Driver",
-     *         "jdbcUrl": "jdbc:mysql://localhost/foodmart",
-     *         "jdbcUser": "foodmart",
-     *         "jdbcPassword": "foodmart"
-     *       }
-     *     }
-     *   ]
-     * }</pre></blockquote>
-     */
-    public static class Factory implements SchemaFactory {
-
-        public static final Factory INSTANCE = new Factory();
-
-
-        private Factory() {
-        }
-
-
-        @Override
-        public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            return JdbcSchema.create( parentSchema, name, operand, null );
         }
     }
 }
