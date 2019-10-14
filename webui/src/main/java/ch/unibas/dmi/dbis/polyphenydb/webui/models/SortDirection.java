@@ -29,7 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 /**
  * Ways how a column can be sorted
  */
-enum SortDirection {
+public enum SortDirection {
     /**
      * ascending
      */

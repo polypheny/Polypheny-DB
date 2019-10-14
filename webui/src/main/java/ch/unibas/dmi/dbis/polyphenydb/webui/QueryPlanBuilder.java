@@ -43,6 +43,9 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortDirection;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,7 +115,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "TableScan":
-                return builder.scan( node.table ).as( node.table );
+                return builder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
@@ -129,17 +132,51 @@ public class QueryPlanBuilder {
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ) );
                 }
             case "Project":
-                String[] cols = node.fields.split( "[\\s]*,[\\s]*" );
-                ArrayList<RexNode> fields = new ArrayList<>();
-                for ( String c : cols ) {
-                    String[] projectField = c.split( "\\." );
-                    fields.add( builder.field( node.inputCount, projectField[0], projectField[1] ) );
-                }
+                ArrayList<RexNode> fields = getFields( node.fields, node.inputCount, builder );
                 builder.project( fields );
                 return builder;
+            case "Aggregate":
+                RelBuilder.AggCall aggregation;
+                String[] aggFields = node.field.split( "\\." );
+                switch ( node.aggregation ){
+                    case "SUM":
+                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        break;
+                    case "COUNT":
+                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        break;
+                    /*case "AVG":
+                        aggregation = builder.avg( false, node.as, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        break;*/
+                    default:
+                        throw new IllegalArgumentException( "unknown aggregate type" );
+                }
+                return builder.aggregate( builder.groupKey( node.groupBy ), aggregation );
+            case "Sort":
+                ArrayList<RexNode> columns = new ArrayList<>();
+                for( SortState s: node.sortColumns ){
+                    String[] sortField = s.column.split( "\\." );
+                    if( s.direction == SortDirection.DESC ){
+                        columns.add( builder.desc(builder.field( node.inputCount, sortField[0], sortField[1] )));
+                    } else {
+                        columns.add( builder.field( node.inputCount, sortField[0], sortField[1] ));
+                    }
+                }
+                return builder.sort( columns );
             default:
                 throw new IllegalArgumentException( "Node of type " + node.type + " is not supported yet." );
         }
+    }
+
+
+    private static ArrayList<RexNode> getFields ( String fields, int inputCount, RelBuilder builder ) {
+        String[] _fields = fields.split( "[\\s]*,[\\s]*" );
+        ArrayList<RexNode> nodes = new ArrayList<>();
+        for ( String f : _fields ) {
+            String[] field = f.split( "\\." );
+            nodes.add( builder.field( inputCount, field[0], field[1] ) );
+        }
+        return nodes;
     }
 
 
