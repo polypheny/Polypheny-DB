@@ -121,7 +121,7 @@ public class FileReaderTest {
     /**
      * Tests {@link FileReader} URL instantiation - with path.
      */
-    @Ignore("[POLYPHENYDB-1789] Wikipedia format change breaks file adapter test")
+    @Ignore("Wikipedia format change breaks file adapter test")
     @Test
     public void testFileReaderUrlWithPath() throws FileReaderException {
         Assume.assumeTrue( FileSuite.hazNetwork() );
@@ -133,7 +133,7 @@ public class FileReaderTest {
     /**
      * Tests {@link FileReader} URL fetch.
      */
-    @Ignore("[POLYPHENYDB-1789] Wikipedia format change breaks file adapter test")
+    @Ignore("Wikipedia format change breaks file adapter test")
     @Test
     public void testFileReaderUrlFetch() throws FileReaderException {
         Assume.assumeTrue( FileSuite.hazNetwork() );

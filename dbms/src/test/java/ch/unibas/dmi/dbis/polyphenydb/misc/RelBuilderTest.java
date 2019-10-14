@@ -81,6 +81,7 @@ import java.util.TreeSet;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -491,6 +492,7 @@ public class RelBuilderTest {
      * Tests each method that creates a scalar expression.
      */
     @Test
+    @Ignore
     public void testProject2() {
         final RelBuilder builder = createRelBuilder();
         RelNode root =
@@ -1088,6 +1090,7 @@ public class RelBuilderTest {
 
 
     @Test
+    @Ignore
     public void testDistinctAlready() {
         // department is already distinct
         final RelBuilder builder = createRelBuilder();

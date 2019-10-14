@@ -45,12 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
@@ -72,146 +70,146 @@ import org.junit.Test;
 @Ignore
 public class BooleanLogicTest {
 
-    @ClassRule
-    public static final EmbeddedElasticsearchPolicy NODE = EmbeddedElasticsearchPolicy.create();
-
-    private static final String NAME = "docs";
-
-
-    /**
-     * Used to create {@code zips} index and insert some data
-     *
-     * @throws Exception when ES node setup failed
-     */
-    @BeforeClass
-    public static void setupInstance() throws Exception {
-
-        final Map<String, String> mapping = ImmutableMap.of( "a", "keyword", "b", "keyword", "c", "keyword", "int", "long" );
-
-        NODE.createIndex( NAME, mapping );
-
-        String doc = "{'a': 'a', 'b':'b', 'c':'c', 'int': 42}".replace( '\'', '"' );
-        NODE.insertDocument( NAME, (ObjectNode) NODE.mapper().readTree( doc ) );
-    }
-
-
-    private ConnectionFactory newConnectionFactory() {
-        return new ConnectionFactory() {
-            @Override
-            public Connection createConnection() throws SQLException {
-                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
-
-                root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
-
-                // add Polypheny-DB view programmatically
-                final String viewSql = String.format( Locale.ROOT,
-                        "select cast(_MAP['a'] AS varchar(2)) AS a, "
-                                + " cast(_MAP['b'] AS varchar(2)) AS b, "
-                                + " cast(_MAP['c'] AS varchar(2)) AS c, "
-                                + " cast(_MAP['int'] AS integer) AS num"
-                                + " from \"elastic\".\"%s\"", NAME );
-
-                ViewTableMacro macro = ViewTable.viewMacro( root, viewSql, Collections.singletonList( "elastic" ), Arrays.asList( "elastic", "view" ), false );
-                root.add( "VIEW", macro );
-
-                return connection;
-            }
-        };
-    }
-
-
-    @Test
-    public void expressions() {
-        assertSingle( "select * from view" );
-        assertSingle( "select * from view where a = 'a'" );
-        assertEmpty( "select * from view where a <> 'a'" );
-        assertSingle( "select * from view where  'a' = a" );
-        assertEmpty( "select * from view where a = 'b'" );
-        assertEmpty( "select * from view where 'b' = a" );
-        assertSingle( "select * from view where a in ('a', 'b')" );
-        assertSingle( "select * from view where a in ('a', 'c') and b = 'b'" );
-        assertSingle( "select * from view where (a = 'ZZ' or a = 'a')  and b = 'b'" );
-        assertSingle( "select * from view where b = 'b' and a in ('a', 'c')" );
-        assertSingle( "select * from view where num = 42 and a in ('a', 'c')" );
-        assertEmpty( "select * from view where a in ('a', 'c') and b = 'c'" );
-        assertSingle( "select * from view where a in ('a', 'c') and b = 'b' and num = 42" );
-        assertSingle( "select * from view where a in ('a', 'c') and b = 'b' and num >= 42" );
-        assertEmpty( "select * from view where a in ('a', 'c') and b = 'b' and num <> 42" );
-        assertEmpty( "select * from view where a in ('a', 'c') and b = 'b' and num > 42" );
-        assertSingle( "select * from view where num = 42" );
-        assertSingle( "select * from view where 42 = num" );
-        assertEmpty( "select * from view where num > 42" );
-        assertEmpty( "select * from view where 42 > num" );
-        assertEmpty( "select * from view where num > 42 and num > 42" );
-        assertEmpty( "select * from view where num > 42 and num < 42" );
-        assertEmpty( "select * from view where num > 42 and num < 42 and num <> 42" );
-        assertEmpty( "select * from view where num > 42 and num < 42 and num = 42" );
-        assertEmpty( "select * from view where num > 42 or num < 42 and num = 42" );
-        assertSingle( "select * from view where num > 42 and num < 42 or num = 42" );
-        assertSingle( "select * from view where num > 42 or num < 42 or num = 42" );
-        assertSingle( "select * from view where num >= 42 and num <= 42 and num = 42" );
-        assertEmpty( "select * from view where num >= 42 and num <= 42 and num <> 42" );
-        assertEmpty( "select * from view where num < 42" );
-        assertEmpty( "select * from view where num <> 42" );
-        assertSingle( "select * from view where num >= 42" );
-        assertSingle( "select * from view where num <= 42" );
-        assertSingle( "select * from view where num < 43" );
-        assertSingle( "select * from view where num < 50" );
-        assertSingle( "select * from view where num > 41" );
-        assertSingle( "select * from view where num > 0" );
-        assertSingle( "select * from view where (a = 'a' and b = 'b') or (num = 42 and c = 'c')" );
-        assertSingle( "select * from view where c = 'c' and (a in ('a', 'b') or num in (41, 42))" );
-        assertSingle( "select * from view where (a = 'a' or b = 'b') or (num = 42 and c = 'c')" );
-        assertSingle( "select * from view where a = 'a' and (b = '0' or (b = 'b' and " + "(c = '0' or (c = 'c' and num = 42))))" );
-    }
-
-
-    /**
-     * Tests negations ({@code NOT} operator).
-     */
-    @Test
-    public void notExpression() {
-        assertEmpty( "select * from view where not a = 'a'" );
-        assertSingle( "select * from view where not not a = 'a'" );
-        assertEmpty( "select * from view where not not not a = 'a'" );
-        assertSingle( "select * from view where not a <> 'a'" );
-        assertSingle( "select * from view where not not not a <> 'a'" );
-        assertEmpty( "select * from view where not 'a' = a" );
-        assertSingle( "select * from view where not 'a' <> a" );
-        assertSingle( "select * from view where not a = 'b'" );
-        assertSingle( "select * from view where not 'b' = a" );
-        assertEmpty( "select * from view where not a in ('a')" );
-        assertEmpty( "select * from view where a not in ('a')" );
-        assertSingle( "select * from view where not a not in ('a')" );
-        assertEmpty( "select * from view where not a not in ('b')" );
-        assertEmpty( "select * from view where not not a not in ('a')" );
-        assertSingle( "select * from view where not not a not in ('b')" );
-        assertEmpty( "select * from view where not a in ('a', 'b')" );
-        assertEmpty( "select * from view where a not in ('a', 'b')" );
-        assertEmpty( "select * from view where not a not in ('z')" );
-        assertEmpty( "select * from view where not a not in ('z')" );
-        assertSingle( "select * from view where not a in ('z')" );
-        assertSingle( "select * from view where not (not num = 42 or not a in ('a', 'c'))" );
-        assertEmpty( "select * from view where not num > 0" );
-        assertEmpty( "select * from view where num = 42 and a not in ('a', 'c')" );
-        assertSingle( "select * from view where not (num > 42 or num < 42 and num = 42)" );
-    }
-
-
-    private void assertSingle( String query ) {
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( query )
-                .returns( "A=a; B=b; C=c; NUM=42\n" );
-    }
-
-
-    private void assertEmpty( String query ) {
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( query )
-                .returns( "" );
-    }
+//    @ClassRule
+//    public static final EmbeddedElasticsearchPolicy NODE = EmbeddedElasticsearchPolicy.create();
+//
+//    private static final String NAME = "docs";
+//
+//
+//    /**
+//     * Used to create {@code zips} index and insert some data
+//     *
+//     * @throws Exception when ES node setup failed
+//     */
+//    @BeforeClass
+//    public static void setupInstance() throws Exception {
+//
+//        final Map<String, String> mapping = ImmutableMap.of( "a", "keyword", "b", "keyword", "c", "keyword", "int", "long" );
+//
+//        NODE.createIndex( NAME, mapping );
+//
+//        String doc = "{'a': 'a', 'b':'b', 'c':'c', 'int': 42}".replace( '\'', '"' );
+//        NODE.insertDocument( NAME, (ObjectNode) NODE.mapper().readTree( doc ) );
+//    }
+//
+//
+//    private ConnectionFactory newConnectionFactory() {
+//        return new ConnectionFactory() {
+//            @Override
+//            public Connection createConnection() throws SQLException {
+//                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
+//                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
+//
+//                root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
+//
+//                // add Polypheny-DB view programmatically
+//                final String viewSql = String.format( Locale.ROOT,
+//                        "select cast(_MAP['a'] AS varchar(2)) AS a, "
+//                                + " cast(_MAP['b'] AS varchar(2)) AS b, "
+//                                + " cast(_MAP['c'] AS varchar(2)) AS c, "
+//                                + " cast(_MAP['int'] AS integer) AS num"
+//                                + " from \"elastic\".\"%s\"", NAME );
+//
+//                ViewTableMacro macro = ViewTable.viewMacro( root, viewSql, Collections.singletonList( "elastic" ), Arrays.asList( "elastic", "view" ), false );
+//                root.add( "VIEW", macro );
+//
+//                return connection;
+//            }
+//        };
+//    }
+//
+//
+//    @Test
+//    public void expressions() {
+//        assertSingle( "select * from view" );
+//        assertSingle( "select * from view where a = 'a'" );
+//        assertEmpty( "select * from view where a <> 'a'" );
+//        assertSingle( "select * from view where  'a' = a" );
+//        assertEmpty( "select * from view where a = 'b'" );
+//        assertEmpty( "select * from view where 'b' = a" );
+//        assertSingle( "select * from view where a in ('a', 'b')" );
+//        assertSingle( "select * from view where a in ('a', 'c') and b = 'b'" );
+//        assertSingle( "select * from view where (a = 'ZZ' or a = 'a')  and b = 'b'" );
+//        assertSingle( "select * from view where b = 'b' and a in ('a', 'c')" );
+//        assertSingle( "select * from view where num = 42 and a in ('a', 'c')" );
+//        assertEmpty( "select * from view where a in ('a', 'c') and b = 'c'" );
+//        assertSingle( "select * from view where a in ('a', 'c') and b = 'b' and num = 42" );
+//        assertSingle( "select * from view where a in ('a', 'c') and b = 'b' and num >= 42" );
+//        assertEmpty( "select * from view where a in ('a', 'c') and b = 'b' and num <> 42" );
+//        assertEmpty( "select * from view where a in ('a', 'c') and b = 'b' and num > 42" );
+//        assertSingle( "select * from view where num = 42" );
+//        assertSingle( "select * from view where 42 = num" );
+//        assertEmpty( "select * from view where num > 42" );
+//        assertEmpty( "select * from view where 42 > num" );
+//        assertEmpty( "select * from view where num > 42 and num > 42" );
+//        assertEmpty( "select * from view where num > 42 and num < 42" );
+//        assertEmpty( "select * from view where num > 42 and num < 42 and num <> 42" );
+//        assertEmpty( "select * from view where num > 42 and num < 42 and num = 42" );
+//        assertEmpty( "select * from view where num > 42 or num < 42 and num = 42" );
+//        assertSingle( "select * from view where num > 42 and num < 42 or num = 42" );
+//        assertSingle( "select * from view where num > 42 or num < 42 or num = 42" );
+//        assertSingle( "select * from view where num >= 42 and num <= 42 and num = 42" );
+//        assertEmpty( "select * from view where num >= 42 and num <= 42 and num <> 42" );
+//        assertEmpty( "select * from view where num < 42" );
+//        assertEmpty( "select * from view where num <> 42" );
+//        assertSingle( "select * from view where num >= 42" );
+//        assertSingle( "select * from view where num <= 42" );
+//        assertSingle( "select * from view where num < 43" );
+//        assertSingle( "select * from view where num < 50" );
+//        assertSingle( "select * from view where num > 41" );
+//        assertSingle( "select * from view where num > 0" );
+//        assertSingle( "select * from view where (a = 'a' and b = 'b') or (num = 42 and c = 'c')" );
+//        assertSingle( "select * from view where c = 'c' and (a in ('a', 'b') or num in (41, 42))" );
+//        assertSingle( "select * from view where (a = 'a' or b = 'b') or (num = 42 and c = 'c')" );
+//        assertSingle( "select * from view where a = 'a' and (b = '0' or (b = 'b' and " + "(c = '0' or (c = 'c' and num = 42))))" );
+//    }
+//
+//
+//    /**
+//     * Tests negations ({@code NOT} operator).
+//     */
+//    @Test
+//    public void notExpression() {
+//        assertEmpty( "select * from view where not a = 'a'" );
+//        assertSingle( "select * from view where not not a = 'a'" );
+//        assertEmpty( "select * from view where not not not a = 'a'" );
+//        assertSingle( "select * from view where not a <> 'a'" );
+//        assertSingle( "select * from view where not not not a <> 'a'" );
+//        assertEmpty( "select * from view where not 'a' = a" );
+//        assertSingle( "select * from view where not 'a' <> a" );
+//        assertSingle( "select * from view where not a = 'b'" );
+//        assertSingle( "select * from view where not 'b' = a" );
+//        assertEmpty( "select * from view where not a in ('a')" );
+//        assertEmpty( "select * from view where a not in ('a')" );
+//        assertSingle( "select * from view where not a not in ('a')" );
+//        assertEmpty( "select * from view where not a not in ('b')" );
+//        assertEmpty( "select * from view where not not a not in ('a')" );
+//        assertSingle( "select * from view where not not a not in ('b')" );
+//        assertEmpty( "select * from view where not a in ('a', 'b')" );
+//        assertEmpty( "select * from view where a not in ('a', 'b')" );
+//        assertEmpty( "select * from view where not a not in ('z')" );
+//        assertEmpty( "select * from view where not a not in ('z')" );
+//        assertSingle( "select * from view where not a in ('z')" );
+//        assertSingle( "select * from view where not (not num = 42 or not a in ('a', 'c'))" );
+//        assertEmpty( "select * from view where not num > 0" );
+//        assertEmpty( "select * from view where num = 42 and a not in ('a', 'c')" );
+//        assertSingle( "select * from view where not (num > 42 or num < 42 and num = 42)" );
+//    }
+//
+//
+//    private void assertSingle( String query ) {
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( query )
+//                .returns( "A=a; B=b; C=c; NUM=42\n" );
+//    }
+//
+//
+//    private void assertEmpty( String query ) {
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( query )
+//                .returns( "" );
+//    }
 
 }

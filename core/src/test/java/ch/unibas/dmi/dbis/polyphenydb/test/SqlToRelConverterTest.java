@@ -1130,6 +1130,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testModifiableViewExtend() {
         final String sql = "select *\n"
                 + "from EMP_MODIFIABLEVIEW extend (x varchar(5) not null)";
@@ -1138,6 +1139,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testModifiableViewExtendSubset() {
         final String sql = "select x, empno\n"
                 + "from EMP_MODIFIABLEVIEW extend (x varchar(5) not null)";
@@ -1146,6 +1148,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testModifiableViewExtendExpression() {
         final String sql = "select empno + x\n"
                 + "from EMP_MODIFIABLEVIEW extend (x int not null)";
@@ -1154,6 +1157,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR\n"
                 + " from EMP_MODIFIABLEVIEW3\n"
@@ -1165,6 +1169,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnCaseSensitiveCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, \"sal\", HIREDATE, MGR\n"
                 + " from EMP_MODIFIABLEVIEW3 extend (\"sal\" boolean)\n"
@@ -1173,6 +1178,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnExtendedCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, EXTRA\n"
                 + " from EMP_MODIFIABLEVIEW2\n"
@@ -1184,6 +1190,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnCaseSensitiveExtendedCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, \"extra\"\n"
                 + " from EMP_MODIFIABLEVIEW2 extend (\"extra\" boolean)\n"
@@ -1192,6 +1199,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnUnderlyingCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, COMM\n"
                 + " from EMP_MODIFIABLEVIEW3 extend (COMM int)\n"
@@ -1200,6 +1208,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectViewExtendedColumnCaseSensitiveUnderlyingCollision() {
         sql( "select ENAME, EMPNO, JOB, SLACKER, SAL, HIREDATE, MGR, \"comm\"\n"
                 + " from EMP_MODIFIABLEVIEW3 extend (\"comm\" int)\n"
@@ -1224,6 +1233,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableViewCollision() {
         sql( "update EMP_MODIFIABLEVIEW3(empno INTEGER NOT NULL, deptno INTEGER)"
                 + " set deptno = 20, empno = 20, ename = 'Bob'"
@@ -1232,6 +1242,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableViewCaseSensitiveCollision() {
         sql( "update EMP_MODIFIABLEVIEW2(\"slacker\" INTEGER, deptno INTEGER)"
                 + " set deptno = 20, \"slacker\" = 100"
@@ -1240,6 +1251,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableViewExtendedCollision() {
         sql( "update EMP_MODIFIABLEVIEW2(\"slacker\" INTEGER, extra BOOLEAN)"
                 + " set deptno = 20, \"slacker\" = 100, extra = true"
@@ -1248,6 +1260,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableViewExtendedCaseSensitiveCollision() {
         sql( "update EMP_MODIFIABLEVIEW2(\"extra\" INTEGER, extra BOOLEAN)"
                 + " set deptno = 20, \"extra\" = 100, extra = true"
@@ -1256,6 +1269,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableViewUnderlyingCollision() {
         sql( "update EMP_MODIFIABLEVIEW3(extra BOOLEAN, comm INTEGER)"
                 + " set empno = 20, comm = true, extra = true"
@@ -1264,6 +1278,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testSelectModifiableViewConstraint() {
         final String sql = "select deptno from EMP_MODIFIABLEVIEW2\n"
                 + "where deptno = ?";
@@ -1272,6 +1287,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testModifiableViewDdlExtend() {
         final String sql = "select extra from EMP_MODIFIABLEVIEW2";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -1396,6 +1412,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUnnestArrayPlan() {
         final String sql = "select d.deptno, e2.empno\n"
                 + "from dept_nested as d,\n"
@@ -1405,6 +1422,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUnnestArrayPlanAs() {
         final String sql = "select d.deptno, e2.empno\n"
                 + "from dept_nested as d,\n"
@@ -2411,6 +2429,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertExtendedColumnModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW2(updated TIMESTAMP) (ename, deptno, empno, updated, sal) values ('Fred', 20, 44, timestamp '2017-03-12 13:03:05', 999999)";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -2418,6 +2437,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertBindExtendedColumnModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW2(updated TIMESTAMP) (ename, deptno, empno, updated, sal) values ('Fred', 20, 44, ?, 999999)";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -2453,6 +2473,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testDeleteBindModifiableView() {
         final String sql = "delete from EMP_MODIFIABLEVIEW2 where empno = ?";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -2460,6 +2481,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testDeleteBindExtendedColumnModifiableView() {
         final String sql = "delete from EMP_MODIFIABLEVIEW2(note VARCHAR)\n"
                 + "where note = ?";
@@ -2492,6 +2514,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateModifiableView() {
         final String sql = "update EMP_MODIFIABLEVIEW2\n"
                 + "set sal = sal + 5000 where slacker = false";
@@ -2507,6 +2530,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testUpdateExtendedColumnModifiableView() {
         final String sql = "update EMP_MODIFIABLEVIEW2(updated TIMESTAMP)\n"
                 + "set updated = timestamp '2017-03-12 13:03:05', sal = sal + 5000\n"
@@ -2577,6 +2601,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW (EMPNO, ENAME, JOB) values (34625, 'nom', 'accountant')";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -2584,6 +2609,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertSubsetModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW values (10, 'Fred')";
         sql( sql ).with( getExtendedTester() ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).ok();
@@ -2591,6 +2617,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertBindModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW (empno, job) values (?, ?)";
         sql( sql ).with( getExtendedTester() ).ok();
@@ -2598,6 +2625,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     @Test
+    @Ignore
     public void testInsertBindSubsetModifiableView() {
         final String sql = "insert into EMP_MODIFIABLEVIEW values (?, ?)";
         sql( sql ).conformance( SqlConformanceEnum.PRAGMATIC_2003 ).with( getExtendedTester() ).ok();

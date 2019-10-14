@@ -45,24 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import static org.junit.Assume.assumeTrue;
-
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableMap;
-import java.util.concurrent.TimeUnit;
-import org.apache.cassandra.config.DatabaseDescriptor;
-import org.cassandraunit.CassandraCQLUnit;
-import org.cassandraunit.dataset.cql.ClassPathCQLDataSet;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 
 /**
@@ -75,10 +63,11 @@ import org.junit.runners.model.Statement;
  */
 @Ignore
 public class CassandraAdapterTest {
-
+    // TODO MV: enable
+    /*
     @ClassRule
     public static final ExternalResource RULE = initCassandraIfEnabled();
-
+*/
     /**
      * Connection factory based on the "mongo-zips" model.
      */
@@ -101,7 +90,8 @@ public class CassandraAdapterTest {
         return enabled && compatibleJdk;
     }
 
-
+    // TODO MV: enable
+/*
     private static ExternalResource initCassandraIfEnabled() {
         if ( !enabled() ) {
             // Return NOP resource (to avoid nulls)
@@ -232,5 +222,5 @@ public class CassandraAdapterTest {
                 .explainContains( "CassandraLimit(offset=[1], fetch=[2])" )
                 .returns( "tweet_id=f3dbb03a-d05b-11e5-b58b-90e2ba530b12\n" + "tweet_id=f3e4182e-d05b-11e5-b58b-90e2ba530b12\n" );
     }
-
+*/
 }

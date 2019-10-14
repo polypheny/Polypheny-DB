@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb.MongoAdapterTest;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb.MongoAdapterTest;
-
 import org.junit.BeforeClass;
 
 import static org.junit.Assume.assumeTrue;
