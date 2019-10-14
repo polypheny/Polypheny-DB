@@ -45,15 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.util.List;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 
 
 /**
@@ -85,21 +83,25 @@ class JsonEnumerator implements Enumerator<Object[]> {
     }
 
 
+    @Override
     public Object[] current() {
         return new Object[]{ enumerator.current() };
     }
 
 
+    @Override
     public boolean moveNext() {
         return enumerator.moveNext();
     }
 
 
+    @Override
     public void reset() {
         enumerator.reset();
     }
 
 
+    @Override
     public void close() {
         try {
             enumerator.close();

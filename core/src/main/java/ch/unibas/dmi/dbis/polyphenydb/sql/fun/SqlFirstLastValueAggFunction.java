@@ -45,18 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**
@@ -80,24 +75,5 @@ public class SqlFirstLastValueAggFunction extends SqlAggFunction {
         Preconditions.checkArgument( kind == SqlKind.FIRST_VALUE || kind == SqlKind.LAST_VALUE );
     }
 
-
-    @Deprecated // to be removed before 2.0
-    public SqlFirstLastValueAggFunction( boolean firstFlag ) {
-        this( firstFlag ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE );
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        return ImmutableList.of( typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true ) );
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
-    }
 }
 

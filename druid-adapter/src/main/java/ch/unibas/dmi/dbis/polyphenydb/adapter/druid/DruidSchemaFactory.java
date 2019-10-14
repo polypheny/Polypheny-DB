@@ -48,10 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-
 import java.util.List;
 import java.util.Map;
 
@@ -86,6 +82,7 @@ public class DruidSchemaFactory implements SchemaFactory {
     public static final String DEFAULT_URL = "http://localhost:8082";
 
 
+    @Override
     public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
         final String url = operand.get( "url" ) instanceof String
                 ? (String) operand.get( "url" )

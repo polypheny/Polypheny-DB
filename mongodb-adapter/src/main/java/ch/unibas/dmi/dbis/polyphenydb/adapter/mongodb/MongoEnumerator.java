@@ -45,19 +45,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Primitive;
-
 import com.mongodb.client.MongoCursor;
-
-import org.bson.Document;
-
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.bson.Document;
 
 
 /**
@@ -82,11 +79,13 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public Object current() {
         return current;
     }
 
 
+    @Override
     public boolean moveNext() {
         try {
             if ( cursor.hasNext() ) {
@@ -103,11 +102,13 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public void reset() {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void close() {
         if ( cursor instanceof MongoCursor ) {
             ((MongoCursor) cursor).close();

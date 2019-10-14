@@ -45,15 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import org.apache.calcite.avatica.util.TimeUnitRange;
-
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeFieldIf;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**
@@ -117,6 +113,7 @@ public class Granularities {
         }
 
 
+        @Override
         @Nonnull
         public Type getType() {
             return Type.ALL;
@@ -151,6 +148,7 @@ public class Granularities {
         }
 
 
+        @Override
         @Nonnull
         public Type getType() {
             return type;

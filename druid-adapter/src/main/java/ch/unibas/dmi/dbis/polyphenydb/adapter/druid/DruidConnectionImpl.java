@@ -513,19 +513,23 @@ class DruidConnectionImpl implements DruidConnection {
      */
     public Enumerable<Row> enumerable( final QueryType queryType, final String request, final List<String> fieldNames, final ExecutorService service ) throws IOException {
         return new AbstractEnumerable<Row>() {
+            @Override
             public Enumerator<Row> enumerator() {
                 final BlockingQueueEnumerator<Row> enumerator = new BlockingQueueEnumerator<>();
                 final RunnableQueueSink sink = new RunnableQueueSink() {
+                    @Override
                     public void send( Row row ) throws InterruptedException {
                         enumerator.queue.put( row );
                     }
 
 
+                    @Override
                     public void end() {
                         enumerator.done.set( true );
                     }
 
 
+                    @Override
                     @SuppressWarnings("deprecation")
                     public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
                         for ( Row row : enumerable ) {
@@ -535,6 +539,7 @@ class DruidConnectionImpl implements DruidConnection {
                     }
 
 
+                    @Override
                     public void run() {
                         try {
                             final Page page = new Page();
@@ -667,6 +672,7 @@ class DruidConnectionImpl implements DruidConnection {
         E next;
 
 
+        @Override
         public E current() {
             if ( next == null ) {
                 throw new NoSuchElementException();
@@ -675,6 +681,7 @@ class DruidConnectionImpl implements DruidConnection {
         }
 
 
+        @Override
         public boolean moveNext() {
             for ( ; ; ) {
                 next = queue.poll();
@@ -689,10 +696,12 @@ class DruidConnectionImpl implements DruidConnection {
         }
 
 
+        @Override
         public void reset() {
         }
 
 
+        @Override
         public void close() {
             final Throwable e = throwableHolder.get();
             if ( e != null ) {

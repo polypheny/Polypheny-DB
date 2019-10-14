@@ -91,6 +91,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     public Enumerable<Object> project( final DataContext root, final int[] fields ) {
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, fieldTypes, fields );
             }
@@ -104,6 +105,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     }
 
 
+    @Override
     public Type getElementType() {
         return Object[].class;
     }
@@ -115,6 +117,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         // Request all fields.
         final int fieldCount = relOptTable.getRowType().getFieldCount();

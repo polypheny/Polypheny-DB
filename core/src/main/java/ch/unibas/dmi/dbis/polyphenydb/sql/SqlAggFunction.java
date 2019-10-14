@@ -46,15 +46,12 @@ package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -229,18 +226,6 @@ public abstract class SqlAggFunction extends SqlFunction implements Context {
     @Override
     public final boolean requiresOver() {
         return requiresOver;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        throw new UnsupportedOperationException( "remove before calcite-2.0" );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        throw new UnsupportedOperationException( "remove before calcite-2.0" );
     }
 
 

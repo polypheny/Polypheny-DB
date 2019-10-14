@@ -46,15 +46,12 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**
@@ -62,10 +59,6 @@ import java.util.List;
  * numeric type (<code>int</code>, <code>long</code>, <code>float</code>, <code>double</code>); results are retrieved using (<code>HistogramMin</code>) and (<code>HistogramMax</code>).
  */
 public class SqlHistogramAggFunction extends SqlAggFunction {
-
-    @Deprecated // to be removed before 2.0
-    private final RelDataType type;
-
 
     public SqlHistogramAggFunction( RelDataType type ) {
         super(
@@ -79,27 +72,6 @@ public class SqlHistogramAggFunction extends SqlAggFunction {
                 false,
                 false,
                 Optionality.FORBIDDEN );
-        this.type = type;
     }
 
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        return ImmutableList.of( type );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RelDataType getType() {
-        return type;
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        return type;
-    }
 }
-

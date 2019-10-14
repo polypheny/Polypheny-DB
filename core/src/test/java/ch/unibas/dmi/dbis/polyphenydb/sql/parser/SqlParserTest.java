@@ -333,7 +333,6 @@ public class SqlParserTest {
             "MATCHES", "2014", "c",
             "MATCH_NUMBER", "2014", "c",
             "MATCH_RECOGNIZE", "2014", "c",
-            "MATERIALIZED", "92", "99", "2003", "2011", "2014", "c",  // MV: Added for DDL Parser
             "MAX", "92", "2011", "2014", "c",
             "MAX_CARDINALITY", "2011",
             "MEASURES", "c",

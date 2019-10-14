@@ -68,8 +68,6 @@ public interface PolyphenyDbSchema {
      */
     PolyphenyDbSchema add( String name, Schema schema );
 
-    TableEntry getTableBySql( String sql );
-
     TableEntry getTable( String tableName, boolean caseSensitive );
 
     String getName();
@@ -99,8 +97,6 @@ public interface PolyphenyDbSchema {
     NavigableMap<String, Table> getTablesBasedOnNullaryFunctions();
 
     TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
-
-    PolyphenyDbSchema createSnapshot( SchemaVersion version );
 
     @Experimental
     boolean removeSubSchema( String name );

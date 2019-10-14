@@ -1528,6 +1528,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
+        @Override
         public void run() throws InterruptedException {
             final List<ColumnMetaData.Rep> fieldTypes = new ArrayList<>();
             for ( RelDataTypeField field : query.getRowType().getFieldList() ) {
@@ -1592,6 +1593,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type );
@@ -1646,6 +1648,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type );
@@ -1673,6 +1676,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "dimension", dimension );
@@ -1698,6 +1702,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type );
@@ -1752,6 +1757,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
         // Expects all subclasses to write the EndObject item
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type );

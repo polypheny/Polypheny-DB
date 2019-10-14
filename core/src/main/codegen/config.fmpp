@@ -38,7 +38,6 @@ data: {
         # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved keyword add it to 'nonReservedKeywords' section.
         keywords: [
             "IF"
-            "MATERIALIZED"
             "STORED"
             "VIRTUAL"
             "JAR"

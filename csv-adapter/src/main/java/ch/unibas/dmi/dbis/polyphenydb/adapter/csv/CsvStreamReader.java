@@ -45,20 +45,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
-import org.apache.commons.io.input.Tailer;
-import org.apache.commons.io.input.TailerListener;
-import org.apache.commons.io.input.TailerListenerAdapter;
-
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
-
+import ch.unibas.dmi.dbis.polyphenydb.util.Source;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import org.apache.commons.io.input.Tailer;
+import org.apache.commons.io.input.TailerListener;
+import org.apache.commons.io.input.TailerListenerAdapter;
 
 
 /**
@@ -128,6 +125,7 @@ class CsvStreamReader extends CSVReader implements Closeable {
      * @return a string array with each comma-separated element as a separate entry.
      * @throws IOException if bad things happen during the read
      */
+    @Override
     public String[] readNext() throws IOException {
         String[] result = null;
         do {
@@ -167,6 +165,7 @@ class CsvStreamReader extends CSVReader implements Closeable {
      *
      * @throws IOException if the close fails
      */
+    @Override
     public void close() throws IOException {
     }
 

@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -56,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-
 import java.util.List;
 
 
@@ -120,6 +118,7 @@ public class MongoTableScan extends TableScan implements MongoRel {
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.mongoTable = mongoTable;
         implementor.table = table;

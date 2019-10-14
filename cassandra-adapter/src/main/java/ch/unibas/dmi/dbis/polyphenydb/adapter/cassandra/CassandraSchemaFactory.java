@@ -46,10 +46,8 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-
 import java.util.Map;
 
 
@@ -63,6 +61,7 @@ public class CassandraSchemaFactory implements SchemaFactory {
     }
 
 
+    @Override
     public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
         Map map = (Map) operand;
         String host = (String) map.get( "host" );

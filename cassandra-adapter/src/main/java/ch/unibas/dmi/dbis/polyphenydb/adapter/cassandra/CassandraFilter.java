@@ -45,10 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -67,7 +63,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -113,11 +108,13 @@ public class CassandraFilter extends Filter implements CassandraRel {
     }
 
 
+    @Override
     public CassandraFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
         return new CassandraFilter( getCluster(), traitSet, input, condition, partitionKeys, clusteringKeys, implicitFieldCollations );
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         implementor.add( null, Collections.singletonList( match ) );

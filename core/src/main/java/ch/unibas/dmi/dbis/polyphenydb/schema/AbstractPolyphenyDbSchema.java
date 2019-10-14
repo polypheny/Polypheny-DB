@@ -31,7 +31,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -314,20 +313,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a table that materializes the given SQL statement.
-     */
-    @Override
-    public final TableEntry getTableBySql( String sql ) {
-        for ( TableEntry tableEntry : tableMap.map().values() ) {
-            if ( tableEntry.sqls.contains( sql ) ) {
-                return tableEntry;
-            }
-        }
-        return null;
-    }
-
-
-    /**
      * Returns a table with the given name. Does not look for views.
      */
     @Override
@@ -471,8 +456,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a tables derived from explicit and implicit functions
-     * that take zero parameters.
+     * Returns a tables derived from explicit and implicit functions that take zero parameters.
      */
     @Override
     public final TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
@@ -485,22 +469,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             }
         }
         return getImplicitTableBasedOnNullaryFunction( tableName, caseSensitive );
-    }
-
-
-    /**
-     * Creates a snapshot of this PolyphenyDbSchema as of the specified time. All explicit objects in this PolyphenyDbSchema will be copied into the snapshot PolyphenyDbSchema, while the contents of the snapshot of the underlying schema
-     * should not change as specified in {@link Schema#snapshot(SchemaVersion)}. Snapshots of explicit sub schemas will be created and copied recursively.
-     *
-     * Currently, to accommodate the requirement of creating tables on the fly for materializations, the snapshot will still use the same table map and lattice map as in the original PolyphenyDbSchema instead of making copies.
-     *
-     * @param version The current schema version
-     * @return the schema snapshot.
-     */
-    @Override
-    public PolyphenyDbSchema createSnapshot( SchemaVersion version ) {
-        Preconditions.checkArgument( this.isRoot(), "must be root schema" );
-        return snapshot( null, version );
     }
 
 

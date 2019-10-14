@@ -45,8 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -55,8 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**
@@ -77,17 +73,6 @@ import java.util.List;
  */
 public class SqlMinMaxAggFunction extends SqlAggFunction {
 
-    public static final int MINMAX_INVALID = -1;
-    public static final int MINMAX_PRIMITIVE = 0;
-    public static final int MINMAX_COMPARABLE = 1;
-    public static final int MINMAX_COMPARATOR = 2;
-
-
-    @Deprecated // to be removed before 2.0
-    public final List<RelDataType> argTypes;
-    private final int minMaxKind;
-
-
     /**
      * Creates a SqlMinMaxAggFunction.
      */
@@ -103,59 +88,7 @@ public class SqlMinMaxAggFunction extends SqlAggFunction {
                 false,
                 false,
                 Optionality.FORBIDDEN );
-        this.argTypes = ImmutableList.of();
-        this.minMaxKind = MINMAX_COMPARABLE;
         Preconditions.checkArgument( kind == SqlKind.MIN || kind == SqlKind.MAX );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public SqlMinMaxAggFunction( List<RelDataType> argTypes, boolean isMin, int minMaxKind ) {
-        this( isMin ? SqlKind.MIN : SqlKind.MAX );
-        assert argTypes.isEmpty();
-        assert minMaxKind == MINMAX_COMPARABLE;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public boolean isMin() {
-        return kind == SqlKind.MIN;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public int getMinMaxKind() {
-        return minMaxKind;
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        switch ( minMaxKind ) {
-            case MINMAX_PRIMITIVE:
-            case MINMAX_COMPARABLE:
-                return argTypes;
-            case MINMAX_COMPARATOR:
-                return argTypes.subList( 1, 2 );
-            default:
-                throw new AssertionError( "bad kind: " + minMaxKind );
-        }
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        switch ( minMaxKind ) {
-            case MINMAX_PRIMITIVE:
-            case MINMAX_COMPARABLE:
-                return argTypes.get( 0 );
-            case MINMAX_COMPARATOR:
-                return argTypes.get( 1 );
-            default:
-                throw new AssertionError( "bad kind: " + minMaxKind );
-        }
     }
 
 

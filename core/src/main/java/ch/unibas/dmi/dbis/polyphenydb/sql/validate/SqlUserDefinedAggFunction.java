@@ -77,7 +77,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
     public final AggregateFunction function;
 
     /**
-     * This field is is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
+     * This field is is technical debt; see "Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor".
      */
     @Experimental
     public final RelDataTypeFactory typeFactory;
@@ -86,7 +86,16 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
     /**
      * Creates a SqlUserDefinedAggFunction.
      */
-    public SqlUserDefinedAggFunction( SqlIdentifier opName, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, AggregateFunction function, boolean requiresOrder, boolean requiresOver, Optionality requiresGroupOrder, RelDataTypeFactory typeFactory ) {
+    public SqlUserDefinedAggFunction(
+            SqlIdentifier opName,
+            SqlReturnTypeInference returnTypeInference,
+            SqlOperandTypeInference operandTypeInference,
+            SqlOperandTypeChecker operandTypeChecker,
+            AggregateFunction function,
+            boolean requiresOrder,
+            boolean requiresOver,
+            Optionality requiresGroupOrder,
+            RelDataTypeFactory typeFactory ) {
         super(
                 Util.last( opName.names ),
                 opName,
@@ -126,18 +135,5 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
     }
 
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( final RelDataTypeFactory typeFactory ) {
-        return Lists.transform( function.getParameters(), parameter -> parameter.getType( typeFactory ) );
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        return function.getReturnType( typeFactory );
-    }
 }
 

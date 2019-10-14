@@ -57,7 +57,7 @@ import java.util.List;
 
 
 /**
- * Base class for parse trees of {@code DROP TABLE}, {@code DROP VIEW}, {@code DROP MATERIALIZED VIEW} and {@code DROP TYPE} statements.
+ * Base class for parse trees of {@code DROP TABLE}, {@code DROP VIEW}, and {@code DROP TYPE} statements.
  */
 abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
 

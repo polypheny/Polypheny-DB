@@ -37,12 +37,8 @@ import org.junit.Test;
  *
  * <ul>
  * <li>"create table x (a int) as values 1, 2" should fail validation; data type not allowed in "create table ... as".<li>
- *
  * <li>"create table x (a int, b int as (a + 1)) stored" should not allow b to be specified in insert; should generate check constraint on b; should populate b in insert as if it had a default<li>
- *
  * <li>"create table as select" should store constraints deduced by planner<li>
- *
- * <li>during CREATE VIEW, check for a table and a materialized view with the same name (they have the same namespace)<li>
  * </ul>
  */
 public class DdlParserTest extends SqlParserTest {

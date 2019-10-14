@@ -202,6 +202,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         LOGGER.info( "OQL: " + oqlQuery );
 
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 final QueryService queryService = clientCache.getQueryService();
                 try {
@@ -248,6 +249,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
 
 
         // tzolov: this should never be called for queryable tables???
+        @Override
         public Enumerator<T> enumerator() {
             throw new UnsupportedOperationException( "Enumerator on Queryable should never be called" );
         }

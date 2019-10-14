@@ -84,7 +84,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortJoinTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortProjectTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortRemoveRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FoodmartSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.HrSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
@@ -1055,9 +1054,7 @@ public class PlannerTest {
 
 
     /**
-     * Rule to convert a
-     * {@link EnumerableProject} to an
-     * {@link JdbcRules.JdbcProject}.
+     * Rule to convert a {@link EnumerableProject} to an {@link JdbcRules.JdbcProject}.
      */
     private class MockJdbcProjectRule extends ConverterRule {
 
@@ -1080,9 +1077,7 @@ public class PlannerTest {
 
 
     /**
-     * Rule to convert a
-     * {@link EnumerableTableScan} to an
-     * {@link MockJdbcTableScan}.
+     * Rule to convert a {@link EnumerableTableScan} to an {@link MockJdbcTableScan}.
      */
     private class MockJdbcTableRule extends ConverterRule {
 
@@ -1194,20 +1189,6 @@ public class PlannerTest {
         public MyCountAggFunction() {
             super( "MY_COUNT", null, SqlKind.OTHER_FUNCTION, ReturnTypes.BIGINT, null, OperandTypes.ANY,
                     SqlFunctionCategory.NUMERIC, false, false, Optionality.FORBIDDEN );
-        }
-
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-            return ImmutableList.of( typeFactory.createSqlType( SqlTypeName.ANY ) );
-        }
-
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-            return typeFactory.createSqlType( SqlTypeName.BIGINT );
         }
 
 

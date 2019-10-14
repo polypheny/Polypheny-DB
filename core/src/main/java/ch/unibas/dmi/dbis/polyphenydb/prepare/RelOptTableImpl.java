@@ -111,8 +111,6 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
      * Estimate for the row count, or null.
      *
      * If not null, overrides the estimate from the actual table.
-     *
-     * Useful when a table that contains a materialized query result is being used to replace a query expression that wildly underestimates the row count. Now the materialized table can tell the same lie.
      */
     private final Double rowCount;
 

@@ -185,13 +185,6 @@ public interface Schema {
         FOREIGN_TABLE,
 
         /**
-         * Materialized view.
-         *
-         * Used by PostgreSQL.
-         */
-        MATERIALIZED_VIEW,
-
-        /**
          * Index table.
          *
          * Used by Apache Phoenix, PostgreSQL.
@@ -212,12 +205,6 @@ public interface Schema {
          * In Phoenix, must have a single BIGINT column called "$seq".
          */
         SEQUENCE,
-
-        /**
-         * A structure, similar to a view, that is the basis for auto-generated materializations. It is either a single table or a collection of tables that are joined via many-to-one relationships from a central hub table.
-         * It is not available for queries, but is just used as an intermediate structure during query planning.
-         */
-        STAR,
 
         /**
          * Stream.
@@ -356,13 +343,6 @@ public interface Schema {
          * Used by DB2.
          */
         INOPERATIVE_VIEW,
-
-        /**
-         * A materialized query table.
-         *
-         * Used by DB2.
-         */
-        MATERIALIZED_QUERY_TABLE,
 
         /**
          * A nickname.

@@ -96,6 +96,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         final RelDataType mapType =
                 typeFactory.createMapType(
@@ -112,6 +113,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
         return new MongoTableScan( cluster, cluster.traitSetOf( MongoRel.CONVENTION ), relOptTable, this, null );
@@ -136,6 +138,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         final Bson project = projectJson == null ? null : BsonDocument.parse( projectJson );
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields );
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 @SuppressWarnings("unchecked") final FindIterable<Document> cursor = collection.find( filter ).projection( project );
                 return new MongoEnumerator( cursor.iterator(), getter );
@@ -165,6 +168,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields );
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 final Iterator<Document> resultIterator;
                 try {
@@ -201,6 +205,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
 
+        @Override
         public Enumerator<T> enumerator() {
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) getTable().find( getMongoDb(), null, null, null );

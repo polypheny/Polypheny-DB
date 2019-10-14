@@ -107,6 +107,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
             protoRowType = schema.getRelDataType( columnFamily, view );
@@ -144,7 +145,14 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      * @param predicates A list of predicates which should be used in the query
      * @return Enumerator of results
      */
-    public Enumerable<Object> query( final Session session, List<Map.Entry<String, Class>> fields, final List<Map.Entry<String, String>> selectFields, List<String> predicates, List<String> order, final Integer offset, final Integer fetch ) {
+    public Enumerable<Object> query(
+            final Session session,
+            List<Map.Entry<String, Class>> fields,
+            final List<Map.Entry<String, String>> selectFields,
+            List<String> predicates,
+            List<String> order,
+            final Integer offset,
+            final Integer fetch ) {
         // Build the type of the resulting row based on the provided fields
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
@@ -225,6 +233,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         final String query = queryBuilder.toString();
 
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 final ResultSet results = session.execute( query );
                 // Skip results until we get to the right offset
@@ -245,6 +254,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
         return new CassandraTableScan( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), relOptTable, this, null );
@@ -263,6 +273,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         }
 
 
+        @Override
         public Enumerator<T> enumerator() {
             //noinspection unchecked
             final Enumerable<T> enumerable = (Enumerable<T>) getTable().query( getSession() );
@@ -286,7 +297,13 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
          * @see ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraMethod#CASSANDRA_QUERYABLE_QUERY
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> query( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, String>> selectFields, List<String> predicates, List<String> order, Integer offset, Integer fetch ) {
+        public Enumerable<Object> query(
+                List<Map.Entry<String, Class>> fields,
+                List<Map.Entry<String, String>> selectFields,
+                List<String> predicates,
+                List<String> order,
+                Integer offset,
+                Integer fetch ) {
             return getTable().query( getSession(), fields, selectFields, predicates, order, offset, fetch );
         }
     }

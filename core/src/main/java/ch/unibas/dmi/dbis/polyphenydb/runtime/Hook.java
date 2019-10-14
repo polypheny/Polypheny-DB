@@ -115,11 +115,6 @@ public enum Hook {
     TRIMMED,
 
     /**
-     * Called by the planner after substituting a materialization.
-     */
-    SUB,
-
-    /**
      * Called when a constant expression is being reduced.
      */
     EXPRESSION_REDUCER,
@@ -128,11 +123,6 @@ public enum Hook {
      * Called to create a Program to optimize the statement.
      */
     PROGRAM,
-
-    /**
-     * Called when materialization is created.
-     */
-    CREATE_MATERIALIZATION,
 
     /**
      * Called with a query that has been generated to send to a back-end system.

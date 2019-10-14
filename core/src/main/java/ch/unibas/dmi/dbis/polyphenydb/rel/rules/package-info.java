@@ -52,7 +52,7 @@
  *
  * Not present are rules specific to a particular data source: look in that data source's adapter.
  *
- * Also out of the scope of this package are rules that support a particular operation, such as decorrelation or recognizing materialized views. Those are defined along with the algorithm.
+ * Also out of the scope of this package are rules that support a particular operation, such as decorrelation. Those are defined along with the algorithm.
  *
  * For
  *

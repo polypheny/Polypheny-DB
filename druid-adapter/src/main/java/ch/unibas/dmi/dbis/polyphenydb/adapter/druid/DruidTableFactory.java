@@ -51,18 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TableFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.ImmutableList;
-
-import org.joda.time.Interval;
-import org.joda.time.chrono.ISOChronology;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -70,6 +59,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.joda.time.Interval;
+import org.joda.time.chrono.ISOChronology;
 
 
 /**
@@ -88,6 +79,7 @@ public class DruidTableFactory implements TableFactory {
 
 
     // name that is also the same name as a complex metric
+    @Override
     public Table create( SchemaPlus schema, String name, Map operand, RelDataType rowType ) {
         final DruidSchema druidSchema = schema.unwrap( DruidSchema.class );
         // If "dataSource" operand is present it overrides the table name.

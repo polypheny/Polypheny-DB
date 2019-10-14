@@ -46,15 +46,29 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
+import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExtractProjectRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateFilterTransposeRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterProjectTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectFilterTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectSortTransposeRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortProjectTransposeRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
@@ -62,43 +76,25 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExtractProjectRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateFilterTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortProjectTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
-
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import org.joda.time.Interval;
-import org.slf4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
+import org.joda.time.Interval;
+import org.slf4j.Logger;
 
 
 /**
@@ -159,6 +155,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Filter filter = call.rel( 0 );
             final DruidQuery query = call.rel( 1 );
@@ -292,6 +289,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Project project = call.rel( 0 );
             final DruidQuery query = call.rel( 1 );
@@ -383,6 +381,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             Project project = call.rel( 0 );
             DruidQuery query = call.rel( 1 );
@@ -435,6 +434,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Aggregate aggregate = call.rel( 0 );
             final DruidQuery query = call.rel( 1 );
@@ -475,6 +475,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Aggregate aggregate = call.rel( 0 );
             final Project project = call.rel( 1 );
@@ -721,6 +722,7 @@ public class DruidRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Sort sort = call.rel( 0 );
             final DruidQuery query = call.rel( 1 );

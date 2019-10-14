@@ -243,6 +243,7 @@ public class CassandraRules {
         /**
          * @see ConverterRule
          */
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             LogicalFilter filter = call.rel( 0 );
             CassandraTableScan scan = call.rel( 1 );
@@ -289,6 +290,7 @@ public class CassandraRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
@@ -394,6 +396,7 @@ public class CassandraRules {
         /**
          * @see ConverterRule
          */
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Sort sort = call.rel( 0 );
             CassandraFilter filter = call.rel( 2 );
@@ -427,6 +430,7 @@ public class CassandraRules {
         /**
          * @see ConverterRule
          */
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final EnumerableLimit limit = call.rel( 0 );
             final RelNode converted = convert( limit );

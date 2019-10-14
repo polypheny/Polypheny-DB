@@ -48,14 +48,9 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-
 import com.mongodb.AuthenticationMechanism;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +68,7 @@ public class MongoSchemaFactory implements SchemaFactory {
     }
 
 
+    @Override
     public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
         final String host = (String) operand.get( "host" );
         final String database = (String) operand.get( "database" );

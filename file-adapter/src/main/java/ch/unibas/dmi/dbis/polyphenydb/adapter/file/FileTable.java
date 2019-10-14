@@ -107,11 +107,13 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
 
+    @Override
     public Statistic getStatistic() {
         return Statistics.UNKNOWN;
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
@@ -123,6 +125,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
     @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+            @Override
             public Enumerator<T> enumerator() {
                 try {
                     FileEnumerator enumerator = new FileEnumerator( reader.iterator(), converter );
@@ -141,6 +144,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
      */
     public Enumerable<Object> project( final int[] fields ) {
         return new AbstractEnumerable<Object>() {
+            @Override
             public Enumerator<Object> enumerator() {
                 try {
                     return new FileEnumerator( reader.iterator(), converter, fields );
@@ -152,6 +156,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         return new EnumerableTableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), relOptTable, (Class) getElementType() );
     }
