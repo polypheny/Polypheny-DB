@@ -534,12 +534,6 @@ public class Bindables {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        protected BindableJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) {
-            this( cluster, traitSet, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType );
-        }
-
-
         @Override
         public BindableJoin copy( RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
             return new BindableJoin( getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType );

@@ -1008,7 +1008,6 @@ public class SqlValidatorUtil {
          * Copies a list of nodes.
          */
         public static SqlNodeList copy( SqlValidatorScope scope, SqlNodeList list ) {
-            //noinspection deprecation
             return (SqlNodeList) list.accept( new DeepCopier( scope ) );
         }
 

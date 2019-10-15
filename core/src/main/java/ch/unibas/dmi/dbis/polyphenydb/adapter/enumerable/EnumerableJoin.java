@@ -85,12 +85,6 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected EnumerableJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType, Set<String> variablesStopped ) throws InvalidRelException {
-        this( cluster, traits, left, right, condition, leftKeys, rightKeys, CorrelationId.setOf( variablesStopped ), joinType );
-    }
-
-
     /**
      * Creates an EnumerableJoin.
      */
@@ -99,12 +93,6 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableJoin( mq, left, right, joinType ) );
         return new EnumerableJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static EnumerableJoin create( RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType, Set<String> variablesStopped ) throws InvalidRelException {
-        return create( left, right, condition, leftKeys, rightKeys, CorrelationId.setOf( variablesStopped ), joinType );
     }
 
 
@@ -125,7 +113,8 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         double rowCount = mq.getRowCount( this );
 
-        // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner, make one of the versions slightly more expensive.
+        // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost.
+        // To make the results stable between versions of the planner, make one of the versions slightly more expensive.
         switch ( joinType ) {
             case RIGHT:
                 rowCount = addEpsilon( rowCount );

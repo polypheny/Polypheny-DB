@@ -393,7 +393,6 @@ public abstract class Prepare {
     public abstract static class AbstractPreparingTable implements PreparingTable {
 
         @Override
-        @SuppressWarnings("deprecation")
         public boolean columnHasDefaultValue( RelDataType rowType, int ordinal, InitializerContext initializerContext ) {
             // This method is no longer used
             final Table table = this.unwrap( Table.class );

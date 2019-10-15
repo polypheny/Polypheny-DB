@@ -259,7 +259,6 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public final RelNode convert( SqlNode sql ) throws RelConversionException {
         return rel( sql ).rel;
     }
@@ -284,23 +283,6 @@ public class PlannerImpl implements Planner, ViewExpander {
         root = root.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
         state = State.STATE_5_CONVERTED;
         return root;
-    }
-
-
-    /**
-     * @deprecated Now {@link PlannerImpl} implements {@link ViewExpander} directly.
-     */
-    @Deprecated
-    public class ViewExpanderImpl implements ViewExpander {
-
-        ViewExpanderImpl() {
-        }
-
-
-        @Override
-        public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-            return PlannerImpl.this.expandView( rowType, queryString, schemaPath, viewPath );
-        }
     }
 
 

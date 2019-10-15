@@ -139,13 +139,6 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     }
 
 
-    @Override
-    @SuppressWarnings("deprecation")
-    public void setCancelFlag( CancelFlag cancelFlag ) {
-        // ignored
-    }
-
-
     /**
      * Checks to see whether cancellation has been requested, and if so, throws an exception.
      */
@@ -273,14 +266,6 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     @Override
     public RelOptCost getCost( RelNode rel, RelMetadataQuery mq ) {
         return mq.getCumulativeCost( rel );
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public RelOptCost getCost( RelNode rel ) {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return getCost( rel, mq );
     }
 
 

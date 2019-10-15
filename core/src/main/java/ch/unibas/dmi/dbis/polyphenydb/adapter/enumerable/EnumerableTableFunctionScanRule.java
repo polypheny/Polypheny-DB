@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableFunctionScan;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import java.util.function.Predicate;
@@ -59,12 +58,6 @@ import java.util.function.Predicate;
  * Planner rule that converts a {@link LogicalTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableFunctionScanRule extends ConverterRule {
-
-    @Deprecated // to be removed before 2.0
-    public EnumerableTableFunctionScanRule() {
-        this( RelFactories.LOGICAL_BUILDER );
-    }
-
 
     /**
      * Creates an EnumerableTableFunctionScanRule.

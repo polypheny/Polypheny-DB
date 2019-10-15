@@ -56,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import java.util.List;
 
 
@@ -79,13 +78,6 @@ public class EnumerableProject extends Project implements EnumerableRel {
     public EnumerableProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() instanceof EnumerableConvention;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public EnumerableProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, int flags ) {
-        this( cluster, traitSet, input, projects, rowType );
-        Util.discard( flags );
     }
 
 

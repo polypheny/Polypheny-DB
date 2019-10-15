@@ -1564,7 +1564,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param type Its type; must not be null
      */
     @Override
-    @SuppressWarnings("deprecation")
     public final void setValidatedNodeType( SqlNode node, RelDataType type ) {
         Objects.requireNonNull( type );
         Objects.requireNonNull( node );
@@ -2729,7 +2728,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public boolean isAggregate( SqlNode selectNode ) {
         return aggFinder.findAgg( selectNode ) != null;
     }

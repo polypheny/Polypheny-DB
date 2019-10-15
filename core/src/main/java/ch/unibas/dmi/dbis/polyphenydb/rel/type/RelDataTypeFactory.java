@@ -267,7 +267,6 @@ public interface RelDataTypeFactory {
      * Creates a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder} is deprecated, we recommend that you use
      * its base class {@link Builder}, which is not deprecated.
      */
-    @SuppressWarnings("deprecation")
     FieldInfoBuilder builder();
 
 
@@ -307,7 +306,6 @@ public interface RelDataTypeFactory {
      * Implementation of {@link FieldInfo} that provides a fluid API to build a list of fields.
      */
     @Deprecated
-    @SuppressWarnings("deprecation")
     class FieldInfoBuilder extends Builder implements FieldInfo {
 
         public FieldInfoBuilder( RelDataTypeFactory typeFactory ) {

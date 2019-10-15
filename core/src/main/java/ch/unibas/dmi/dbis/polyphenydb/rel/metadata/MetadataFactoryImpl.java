@@ -62,7 +62,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class MetadataFactoryImpl implements MetadataFactory {
 
-    @SuppressWarnings("unchecked")
     public static final UnboundMetadata<Metadata> DUMMY = ( rel, mq ) -> null;
 
     private final LoadingCache<Pair<Class<RelNode>, Class<Metadata>>, UnboundMetadata<Metadata>> cache;

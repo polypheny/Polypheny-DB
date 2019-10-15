@@ -164,18 +164,6 @@ public abstract class RelOptUtil {
 
     public static final double EPSILON = 1.0e-5;
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Filter> FILTER_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Project> PROJECT_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Calc> CALC_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
 
     /**
      * Whether this node is a limit without sort specification.
@@ -255,26 +243,6 @@ public abstract class RelOptUtil {
         VariableSetVisitor visitor = new VariableSetVisitor();
         go( visitor, rel );
         return visitor.variables;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static List<CorrelationId> getVariablesSetAndUsed( RelNode rel0, RelNode rel1 ) {
-        Set<CorrelationId> set = getVariablesSet( rel0 );
-        if ( set.size() == 0 ) {
-            return ImmutableList.of();
-        }
-        Set<CorrelationId> used = getVariablesUsed( rel1 );
-        if ( used.size() == 0 ) {
-            return ImmutableList.of();
-        }
-        final List<CorrelationId> result = new ArrayList<>();
-        for ( CorrelationId s : set ) {
-            if ( used.contains( s ) && !result.contains( s ) ) {
-                result.add( s );
-            }
-        }
-        return result;
     }
 
 
@@ -2803,18 +2771,6 @@ public abstract class RelOptUtil {
             relBuilder.project( relBuilder.fields( mapping.inverse() ) );
         }
         return relBuilder.build();
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode pushDownJoinConditions( Join originalJoin ) {
-        return pushDownJoinConditions( originalJoin, RelFactories.LOGICAL_BUILDER );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode pushDownJoinConditions( Join originalJoin, RelFactories.ProjectFactory projectFactory ) {
-        return pushDownJoinConditions( originalJoin, RelBuilder.proto( projectFactory ) );
     }
 
 

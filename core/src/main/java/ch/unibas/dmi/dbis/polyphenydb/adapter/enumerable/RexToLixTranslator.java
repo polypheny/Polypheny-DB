@@ -1267,7 +1267,6 @@ public class RexToLixTranslator {
      */
     static class AlwaysNull extends ControlFlowException {
 
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
         public static final AlwaysNull INSTANCE = new AlwaysNull();
 
 

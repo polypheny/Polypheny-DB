@@ -784,5 +784,3 @@ public class MongoRules {
   }
 */
 }
-
-// End MongoRules.java

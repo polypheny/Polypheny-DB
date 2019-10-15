@@ -243,7 +243,7 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
     }
 
 
-    @SuppressWarnings({ "unchecked", "SuspiciousMethodCalls" })
+    @SuppressWarnings({ "unchecked" })
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass ) {
         List<Class<? extends RelNode>> newSources = new ArrayList<>();
         for ( ; ; ) {
@@ -307,7 +307,6 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
         /**
          * Finds an implementation of a method for {@code relNodeClass} or its nearest base class. Assumes that base classes have already been added to {@code map}.
          */
-        @SuppressWarnings({ "unchecked", "SuspiciousMethodCalls" })
         Method find( final Class<? extends RelNode> relNodeClass, Method method ) {
             Objects.requireNonNull( relNodeClass );
             for ( Class r = relNodeClass; ; ) {

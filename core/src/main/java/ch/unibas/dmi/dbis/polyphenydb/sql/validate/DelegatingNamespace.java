@@ -148,7 +148,6 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public void makeNullable() {
     }
 

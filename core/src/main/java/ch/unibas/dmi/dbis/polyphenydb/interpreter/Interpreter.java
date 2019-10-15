@@ -365,17 +365,6 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void end() throws InterruptedException {
         }
 
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-            // just copy over the source into the local list
-            final Enumerator<Row> enumerator = enumerable.enumerator();
-            while ( enumerator.moveNext() ) {
-                this.send( enumerator.current() );
-            }
-            enumerator.close();
-        }
     }
 
 
@@ -439,17 +428,6 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void end() throws InterruptedException {
         }
 
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-            // just copy over the source into the local list
-            final Enumerator<Row> enumerator = enumerable.enumerator();
-            while ( enumerator.moveNext() ) {
-                this.send( enumerator.current() );
-            }
-            enumerator.close();
-        }
     }
 
 

@@ -1412,7 +1412,6 @@ public class Util {
      * (e<sub>2</sub>, e<sub>3</sub>), ... ].
      */
     public static <E> List<Pair<E, E>> pairs( final List<E> list ) {
-        //noinspection unchecked
         return Pair.zip( quotientList( list, 2, 0 ), quotientList( list, 2, 1 ) );
     }
 
@@ -2055,7 +2054,6 @@ public class Util {
         /**
          * Singleton instance. Can be used if you don't care about node.
          */
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
         public static final FoundOne NULL = new FoundOne( null );
 
 

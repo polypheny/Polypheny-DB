@@ -59,7 +59,7 @@ import java.util.NoSuchElementException;
 public class Filterator<E> implements Iterator<E> {
 
     Class<E> includeFilter;
-    Iterator<? extends Object> iterator;
+    Iterator<?> iterator;
     E lookAhead;
     boolean ready;
 

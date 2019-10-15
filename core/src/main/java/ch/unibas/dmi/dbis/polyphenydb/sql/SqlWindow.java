@@ -360,9 +360,6 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    /**
-     * @see Util#deprecated(Object, boolean)
-     */
     static void checkSpecialLiterals( SqlWindow window, SqlValidator validator ) {
         final SqlNode lowerBound = window.getLowerBound();
         final SqlNode upperBound = window.getUpperBound();

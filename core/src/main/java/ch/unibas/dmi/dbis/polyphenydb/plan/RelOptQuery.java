@@ -47,9 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,61 +72,12 @@ public class RelOptQuery {
 
 
     /**
-     * Creates a query.
-     *
-     * @param planner Planner
-     */
-    @Deprecated // to be removed before 2.0
-    public RelOptQuery( RelOptPlanner planner ) {
-        this( planner, new AtomicInteger( 0 ), new HashMap<>() );
-    }
-
-
-    /**
      * For use by RelOptCluster only.
      */
     RelOptQuery( RelOptPlanner planner, AtomicInteger nextCorrel, Map<String, RelNode> mapCorrelToRel ) {
         this.planner = planner;
         this.nextCorrel = nextCorrel;
         this.mapCorrelToRel = mapCorrelToRel;
-    }
-
-
-    /**
-     * Converts a correlating variable name into an ordinal, unique within the query.
-     *
-     * @param correlName Name of correlating variable
-     * @return Correlating variable ordinal
-     */
-    @Deprecated // to be removed before 2.0
-    public static int getCorrelOrdinal( String correlName ) {
-        assert correlName.startsWith( CORREL_PREFIX );
-        return Integer.parseInt( correlName.substring( CORREL_PREFIX.length() ) );
-    }
-
-
-    /**
-     * Creates a cluster.
-     *
-     * @param typeFactory Type factory
-     * @param rexBuilder Expression builder
-     * @return New cluster
-     */
-    @Deprecated // to be removed before 2.0
-    public RelOptCluster createCluster( RelDataTypeFactory typeFactory, RexBuilder rexBuilder ) {
-        return new RelOptCluster( planner, typeFactory, rexBuilder, nextCorrel, mapCorrelToRel );
-    }
-
-
-    /**
-     * Constructs a new name for a correlating variable. It is unique within the whole query.
-     *
-     * @deprecated Use {@link RelOptCluster#createCorrel()}
-     */
-    @Deprecated // to be removed before 2.0
-    public String createCorrel() {
-        int n = nextCorrel.getAndIncrement();
-        return CORREL_PREFIX + n;
     }
 
 

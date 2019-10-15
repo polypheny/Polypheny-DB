@@ -66,7 +66,6 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public boolean isGeneratedAlways( RelOptTable table, int iColumn ) {
         switch ( generationStrategy( table, iColumn ) ) {
             case VIRTUAL:

@@ -149,12 +149,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
 
     private static final Map<String, PolyphenyDbConnectionProperty> NAME_TO_PROPS;
 
-    /**
-     * Deprecated; use {@link #TIME_ZONE}.
-     */
-    @Deprecated // to be removed before 2.0
-    public static final PolyphenyDbConnectionProperty TIMEZONE = TIME_ZONE;
-
 
     static {
         NAME_TO_PROPS = new HashMap<>();

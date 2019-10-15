@@ -304,7 +304,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Override
     public final PolyphenyDbSchema getSubSchema( String schemaName, boolean caseSensitive ) {
         // Check explicit schemas.
-        //noinspection LoopStatementThatDoesntLoop
         for ( Map.Entry<String, PolyphenyDbSchema> entry : subSchemaMap.range( schemaName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
@@ -318,7 +317,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Override
     public final TableEntry getTable( String tableName, boolean caseSensitive ) {
         // Check explicit tables.
-        //noinspection LoopStatementThatDoesntLoop
         for ( Map.Entry<String, TableEntry> entry : tableMap.range( tableName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
@@ -469,28 +467,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             }
         }
         return getImplicitTableBasedOnNullaryFunction( tableName, caseSensitive );
-    }
-
-
-    /**
-     * Returns a subset of a map whose keys match the given string case-insensitively.
-     *
-     * @deprecated use NameMap
-     */
-    @Deprecated // to be removed before 2.0
-    protected static <V> NavigableMap<String, V> find( NavigableMap<String, V> map, String s ) {
-        return NameMap.immutableCopyOf( map ).range( s, false );
-    }
-
-
-    /**
-     * Returns a subset of a set whose values match the given string case-insensitively.
-     *
-     * @deprecated use NameSet
-     */
-    @Deprecated // to be removed before 2.0
-    protected static Iterable<String> find( NavigableSet<String> set, String name ) {
-        return NameSet.immutableCopyOf( set ).range( name, false );
     }
 
 

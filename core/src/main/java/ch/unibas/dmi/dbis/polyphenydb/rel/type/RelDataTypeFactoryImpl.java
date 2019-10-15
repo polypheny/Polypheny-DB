@@ -89,7 +89,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         if ( k instanceof RelDataType ) {
             return (RelDataType) k;
         }
-        @SuppressWarnings("unchecked") final Key key = (Key) k;
+        final Key key = (Key) k;
         final ImmutableList.Builder<RelDataTypeField> list = ImmutableList.builder();
         for ( int i = 0; i < key.names.size(); i++ ) {
             list.add( new RelDataTypeFieldImpl( key.names.get( i ), i, key.types.get( i ) ) );

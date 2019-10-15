@@ -65,7 +65,7 @@ public class JaninoCompiler implements JavaCompiler {
 
     public JaninoCompilerArgs args = new JaninoCompilerArgs();
 
-    // REVIEW jvs 28-June-2004:  pool this instance?  Is it thread-safe?
+    // REVIEW jvs:  pool this instance?  Is it thread-safe?
     private AccountingClassLoader classLoader;
 
 
@@ -216,7 +216,7 @@ public class JaninoCompiler implements JavaCompiler {
                 }
             }
 
-            // NOTE jvs 18-Oct-2006:  Janino has actually compiled everything to bytecode even before all of the classes have actually been loaded.  So we intercept their sizes here just
+            // NOTE jvs:  Janino has actually compiled everything to bytecode even before all of the classes have actually been loaded.  So we intercept their sizes here just
             // after they've been compiled.
             for ( Object obj : map.values() ) {
                 byte[] bytes = (byte[]) obj;

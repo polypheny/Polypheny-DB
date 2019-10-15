@@ -348,14 +348,13 @@ public interface PolyphenyDbPrepare {
         private final Bindable<T> bindable;
 
 
-        @Deprecated // to be removed before 2.0
-        public PolyphenyDbSignature( String sql, List<AvaticaParameter> parameterList, Map<String, Object> internalParameters, RelDataType rowType, List<ColumnMetaData> columns, Meta.CursorFactory cursorFactory,
-                PolyphenyDbSchema rootSchema, List<RelCollation> collationList, long maxRowCount, Bindable<T> bindable ) {
-            this( sql, parameterList, internalParameters, rowType, columns, cursorFactory, rootSchema, collationList, maxRowCount, bindable, null );
-        }
-
-
-        public PolyphenyDbSignature( String sql, List<AvaticaParameter> parameterList, Map<String, Object> internalParameters, RelDataType rowType, List<ColumnMetaData> columns, Meta.CursorFactory cursorFactory,
+        public PolyphenyDbSignature(
+                String sql,
+                List<AvaticaParameter> parameterList,
+                Map<String, Object> internalParameters,
+                RelDataType rowType,
+                List<ColumnMetaData> columns,
+                Meta.CursorFactory cursorFactory,
                 PolyphenyDbSchema rootSchema, List<RelCollation> collationList, long maxRowCount, Bindable<T> bindable, Meta.StatementType statementType ) {
             super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
             this.rowType = rowType;

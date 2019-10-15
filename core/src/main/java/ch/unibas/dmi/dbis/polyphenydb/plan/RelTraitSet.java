@@ -307,7 +307,6 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
 
         if ( trait instanceof RelCompositeTrait ) {
             // Composite traits are canonized on creation
-            //noinspection unchecked
             return trait;
         }
 

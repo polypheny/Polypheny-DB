@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.util.CancelFlag;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -139,15 +138,6 @@ public interface RelOptPlanner {
      */
     void setRuleDescExclusionFilter( Pattern exclusionFilter );
 
-    /**
-     * Does nothing.
-     *
-     * @param cancelFlag flag which the planner should periodically check
-     * @deprecated Previously, this method installed the cancellation-checking flag for this planner, but is now deprecated. Now, you should add a {@link CancelFlag} to the {@link Context} passed to the constructor.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    void setCancelFlag( CancelFlag cancelFlag );
 
     /**
      * Changes a relational expression to an equivalent one with a different set of traits.
@@ -184,12 +174,6 @@ public interface RelOptPlanner {
      */
     RelOptCost getCost( RelNode rel, RelMetadataQuery mq );
 
-    /**
-     * @deprecated Use {@link #getCost(RelNode, RelMetadataQuery)} or, better, call {@link RelMetadataQuery#getCumulativeCost(RelNode)}.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelOptCost getCost( RelNode rel );
 
     /**
      * Registers a relational expression in the expression bank.
@@ -296,16 +280,6 @@ public interface RelOptPlanner {
      * Called when a relational expression is copied to a similar expression.
      */
     void onCopy( RelNode rel, RelNode newRel );
-
-    /**
-     * @deprecated Use {@link RexExecutor}
-     */
-    @Deprecated
-            // to be removed before 2.0
-    interface Executor extends RexExecutor {
-
-    }
-
 
     /**
      * Thrown by {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#findBestExp()}.

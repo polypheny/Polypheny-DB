@@ -530,16 +530,6 @@ class DruidConnectionImpl implements DruidConnection {
 
 
                     @Override
-                    @SuppressWarnings("deprecation")
-                    public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-                        for ( Row row : enumerable ) {
-                            send( row );
-                        }
-                        end();
-                    }
-
-
-                    @Override
                     public void run() {
                         try {
                             final Page page = new Page();

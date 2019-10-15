@@ -1072,6 +1072,7 @@ public abstract class SqlImplementor {
             for ( Clause clause : clauses ) {
                 if ( maxClause.ordinal() > clause.ordinal() || (maxClause == clause && !nonWrapSet.contains( clause )) ) {
                     needNew = true;
+                    break;
                 }
             }
             if ( rel instanceof LogicalAggregate && !dialect.supportsNestedAggregations() && hasNestedAggregations( (LogicalAggregate) rel ) ) {

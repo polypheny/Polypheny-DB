@@ -87,7 +87,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
 
@@ -2330,7 +2329,6 @@ public class RexUtil {
         @SuppressWarnings("serial")
         private static class OverflowError extends ControlFlowException {
 
-            @SuppressWarnings("ThrowableInstanceNeverThrown")
             protected static final OverflowError INSTANCE = new OverflowError();
 
 
@@ -2582,18 +2580,6 @@ public class RexUtil {
     public static class SubQueryFinder extends RexVisitorImpl<Void> {
 
         public static final SubQueryFinder INSTANCE = new SubQueryFinder();
-
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public static final com.google.common.base.Predicate<Project> PROJECT_PREDICATE = SubQueryFinder::containsSubQuery;
-
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public static final Predicate<Filter> FILTER_PREDICATE = SubQueryFinder::containsSubQuery;
-
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public static final com.google.common.base.Predicate<Join> JOIN_PREDICATE = SubQueryFinder::containsSubQuery;
 
 
         private SubQueryFinder() {

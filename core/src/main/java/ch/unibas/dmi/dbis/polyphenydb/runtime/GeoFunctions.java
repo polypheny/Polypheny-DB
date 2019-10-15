@@ -85,7 +85,7 @@ import org.apache.calcite.linq4j.function.Strict;
  * <li>Make {@link #ST_MakeLine(Geom, Geom)} varargs</li>
  * </ul>
  */
-@SuppressWarnings({ "UnnecessaryUnboxing", "WeakerAccess", "unused" })
+@SuppressWarnings({ "WeakerAccess", "unused" })
 @Deterministic
 @Strict
 @Experimental

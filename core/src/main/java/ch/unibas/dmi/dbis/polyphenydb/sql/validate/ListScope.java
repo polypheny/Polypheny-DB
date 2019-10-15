@@ -154,7 +154,6 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
-    @SuppressWarnings("deprecation")
     @Override
     public Pair<String, SqlValidatorNamespace>
     findQualifyingTableName( final String columnName, SqlNode ctx ) {

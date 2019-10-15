@@ -128,7 +128,6 @@ class CachingPolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     protected PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive ) {
         final long now = System.currentTimeMillis();
         final SubSchemaCache subSchemaCache = implicitSubSchemaCache.get( now );
-        //noinspection LoopStatementThatDoesntLoop
         for ( String schemaName2 : subSchemaCache.names.range( schemaName, caseSensitive ) ) {
             return subSchemaCache.cache.getUnchecked( schemaName2 );
         }

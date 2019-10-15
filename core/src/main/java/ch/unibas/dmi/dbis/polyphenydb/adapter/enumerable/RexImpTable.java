@@ -421,7 +421,7 @@ public class RexImpTable {
                 //   : b0 ? b1
                 //   : Boolean.FALSE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator() == SqlStdOperatorTable.AND : "AND null semantics is supported only for AND operator. Actual operator is " + String.valueOf( call.getOperator() );
+                    assert call.getOperator() == SqlStdOperatorTable.AND : "AND null semantics is supported only for AND operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( false, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:
@@ -455,7 +455,7 @@ public class RexImpTable {
                 //   : !b0 ? b1
                 //   : Boolean.TRUE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator() == SqlStdOperatorTable.OR : "OR null semantics is supported only for OR operator. Actual operator is " + String.valueOf( call.getOperator() );
+                    assert call.getOperator() == SqlStdOperatorTable.OR : "OR null semantics is supported only for OR operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( harmonize, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:

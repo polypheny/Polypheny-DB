@@ -127,7 +127,6 @@ public class ReflectiveSchema extends AbstractSchema {
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected Map<String, Table> getTableMap() {
         if ( tableMap == null ) {

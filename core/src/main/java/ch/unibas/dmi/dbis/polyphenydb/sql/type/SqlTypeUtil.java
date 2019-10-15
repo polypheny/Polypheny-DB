@@ -659,7 +659,6 @@ public abstract class SqlTypeUtil {
             case BOOLEAN:
                 return "Boolean";
             default:
-                //noinspection deprecation
                 return getNumericJavaClassName( type );
         }
     }

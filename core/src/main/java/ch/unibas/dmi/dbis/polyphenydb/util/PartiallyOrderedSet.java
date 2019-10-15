@@ -210,7 +210,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean remove( Object o ) {
-        @SuppressWarnings("SuspiciousMethodCalls") final Node<E> node = map.remove( o );
+        final Node<E> node = map.remove( o );
         if ( node == null ) {
             return false;
         }
@@ -393,7 +393,6 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
      * @param fail Whether to throw an assertion error
      * @return Whether valid
      */
-    @SuppressWarnings({ "ConstantConditions" })
     public boolean isValid( boolean fail ) {
         // Top has no parents.
         // Bottom has no children.

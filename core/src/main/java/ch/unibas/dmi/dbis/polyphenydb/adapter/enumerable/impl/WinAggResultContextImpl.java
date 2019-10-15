@@ -75,13 +75,6 @@ public abstract class WinAggResultContextImpl extends AggResultContextImpl imple
     }
 
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public WinAggResultContextImpl( BlockBuilder block, List<Expression> accumulator, com.google.common.base.Function<BlockBuilder, WinAggFrameResultContext> frameContextBuilder ) {
-        this( block, accumulator, (Function<BlockBuilder, WinAggFrameResultContext>) frameContextBuilder::apply );
-    }
-
-
     private WinAggFrameResultContext getFrame() {
         return frame.apply( currentBlock() );
     }

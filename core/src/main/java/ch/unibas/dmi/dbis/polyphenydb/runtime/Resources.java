@@ -74,6 +74,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
@@ -296,7 +297,7 @@ public class Resources {
      * Returns whether two objects are equal or are both null.
      */
     private static boolean equal( Object o0, Object o1 ) {
-        return o0 == o1 || o0 != null && o0.equals( o1 );
+        return Objects.equals( o0, o1 );
     }
 
 
@@ -528,11 +529,7 @@ public class Resources {
                     }
                 }
                 return ex;
-            } catch ( InstantiationException e ) {
-                throw new RuntimeException( e );
-            } catch ( IllegalAccessException e ) {
-                throw new RuntimeException( e );
-            } catch ( NoSuchMethodException e ) {
+            } catch ( InstantiationException | IllegalAccessException | NoSuchMethodException e ) {
                 throw new RuntimeException( e );
             } catch ( InvocationTargetException e ) {
                 if ( e.getCause() instanceof Error ) {
@@ -577,15 +574,13 @@ public class Resources {
 
         protected void validateException( Callable<Exception> exSupplier ) {
             Throwable cause = null;
+            //noinspection TryWithIdenticalCatches
             try {
-                //noinspection ThrowableResultOfMethodCallIgnored
                 final Exception ex = exSupplier.call();
                 if ( ex == null ) {
                     cause = new NullPointerException();
                 }
-            } catch ( AssertionError e ) {
-                cause = e;
-            } catch ( RuntimeException e ) {
+            } catch ( AssertionError | RuntimeException e ) {
                 cause = e;
             } catch ( Exception e ) {
                 // This can never happen since exSupplier should be just a ex() call. catch(Exception) is required since Callable#call throws Exception.

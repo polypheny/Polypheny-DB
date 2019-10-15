@@ -185,7 +185,6 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
                 final Constructor<?> constructor = method.getDeclaringClass().getConstructor();
                 o = constructor.newInstance();
             }
-            //noinspection unchecked
             final Object table = method.invoke( o, arguments.toArray() );
             return (Table) table;
         } catch ( IllegalArgumentException e ) {

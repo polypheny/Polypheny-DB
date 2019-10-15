@@ -771,7 +771,6 @@ public abstract class CalcRelSplitter {
      */
     private static class CannotImplement extends RuntimeException {
 
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
         static final CannotImplement INSTANCE = new CannotImplement();
     }
 

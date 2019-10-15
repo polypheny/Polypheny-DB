@@ -736,7 +736,6 @@ public class SubstitutionVisitor {
         if ( list == null ) {
             final ImmutableList.Builder<UnifyRule> builder = ImmutableList.builder();
             for ( UnifyRule rule : rules ) {
-                //noinspection unchecked
                 if ( mightMatch( rule, queryClass, targetClass ) ) {
                     builder.add( rule );
                 }
@@ -758,7 +757,6 @@ public class SubstitutionVisitor {
      */
     protected static class MatchFailed extends ControlFlowException {
 
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
         public static final MatchFailed INSTANCE = new MatchFailed();
     }
 

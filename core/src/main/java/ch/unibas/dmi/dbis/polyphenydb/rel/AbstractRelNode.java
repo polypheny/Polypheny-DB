@@ -157,7 +157,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public List<RexNode> getChildExps() {
         return ImmutableList.of();
     }
@@ -188,7 +187,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public boolean isDistinct() {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         return Boolean.TRUE.equals( mq.areRowsUnique( this ) );
@@ -196,7 +194,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public boolean isKey( ImmutableBitSet columns ) {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         return Boolean.TRUE.equals( mq.areColumnsUnique( this, columns ) );
@@ -251,7 +248,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public boolean isValid( boolean fail ) {
         return isValid( Litmus.THROW, null );
     }
@@ -296,7 +292,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public final double getRows() {
         return estimateRowCount( RelMetadataQuery.instance() );
     }
@@ -309,7 +304,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public final Set<String> getVariablesStopped() {
         return CorrelationId.names( getVariablesSet() );
     }
@@ -355,7 +349,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public final RelOptCost computeSelfCost( RelOptPlanner planner ) {
         return computeSelfCost( planner, RelMetadataQuery.instance() );
     }

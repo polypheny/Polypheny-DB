@@ -203,7 +203,6 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    @SuppressWarnings("deprecation")
     public void makeNullable() {
     }
 
