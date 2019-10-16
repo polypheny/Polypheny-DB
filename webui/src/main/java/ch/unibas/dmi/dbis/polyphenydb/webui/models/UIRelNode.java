@@ -51,7 +51,7 @@ public class UIRelNode {
     public int inputCount;
 
     //tableScan
-    public String table;
+    public String tableName;
 
     //join
     public JoinRelType join;
@@ -61,9 +61,19 @@ public class UIRelNode {
     public String col2;
 
     //filter
+    //(String operator)
     public String field;
     public String filter;
 
     //project
     public String fields;
+
+    //aggregate
+    public String groupBy;
+    public String aggregation;
+    public String alias;
+    //(String field)
+
+    //sort
+    public SortState[] sortColumns;
 }
