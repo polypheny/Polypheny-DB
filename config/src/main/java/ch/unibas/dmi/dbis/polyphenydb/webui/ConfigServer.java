@@ -37,18 +37,15 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import spark.Service;
 
 
 /**
  * RESTful server used by the Web UI to interact with the Config Manager.
  */
+@Slf4j
 public class ConfigServer implements ConfigListener {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigServer.class );
-
 
     public ConfigServer( final int port ) {
         Service http = ignite().port( port );
@@ -61,7 +58,7 @@ public class ConfigServer implements ConfigListener {
 
 
     public static void main( String[] args ) {
-        LOGGER.debug( "Starting config server..." );
+        log.debug( "Starting config server..." );
         new ConfigServer( 8081 );
     }
 
@@ -96,7 +93,7 @@ public class ConfigServer implements ConfigListener {
 
         // save changes from WebUi
         http.post( "/updateConfigs", ( req, res ) -> {
-            LOGGER.trace( req.body() );
+            log.trace( req.body() );
             Type clazzType = new TypeToken<Map<String, Object>>() {
             }.getType();
             Map<String, Object> changes = gson.fromJson( req.body(), clazzType );
@@ -145,7 +142,7 @@ public class ConfigServer implements ConfigListener {
                     default:
                         allValid = false;
                         feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
-                        LOGGER.error( "Config with type " + c.getConfigType() + " is not supported yet." );
+                        log.error( "Config with type " + c.getConfigType() + " is not supported yet." );
                 }
                 //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
@@ -163,7 +160,7 @@ public class ConfigServer implements ConfigListener {
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
      */
-    public static void enableCORS( final Service http ) {
+    private static void enableCORS( final Service http ) {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         http.options( "/*", ( req, res ) -> {

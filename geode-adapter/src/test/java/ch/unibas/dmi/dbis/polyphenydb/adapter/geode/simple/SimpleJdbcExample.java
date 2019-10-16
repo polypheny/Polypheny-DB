@@ -50,18 +50,14 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Properties;
-import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Example of using Geode via JDBC.
  */
+@Slf4j
 public class SimpleJdbcExample {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( SimpleJdbcExample.class.getName() );
-
 
     private SimpleJdbcExample() {
     }
@@ -104,7 +100,7 @@ public class SimpleJdbcExample {
                         .append( "=" )
                         .append( resultSet.getObject( i ) );
             }
-            LOGGER.info( "Entry: " + buf.toString() );
+            log.info( "Entry: " + buf.toString() );
 
             buf.setLength( 0 );
         }

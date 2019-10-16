@@ -35,16 +35,14 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.sql.SQLException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Tool to run sql scripts on the catalog database.
  */
+@Slf4j
 class ScriptRunner {
-
-    private static final Logger logger = LoggerFactory.getLogger( ScriptRunner.class );
 
     private static final String DEFAULT_DELIMITER = ";";
 
@@ -65,12 +63,12 @@ class ScriptRunner {
                 if ( line.startsWith( "--" ) ) {
                     // Comment
                     if ( logComments ) {
-                        logger.trace( "Ignoring SQL Comment in ScriptRunner: {}", line );
+                        log.trace( "Ignoring SQL Comment in ScriptRunner: {}", line );
                     }
                 } else if ( !line.isEmpty() && !line.startsWith( "//" ) ) {
                     if ( line.endsWith( delimiter ) ) {
                         builder.append( line.substring( 0, line.lastIndexOf( delimiter ) ) );
-                        logger.trace( "Executing SQL command in ScriptRunner: {}", builder.toString() );
+                        log.trace( "Executing SQL command in ScriptRunner: {}", builder.toString() );
                         transactionHandler.execute( builder.toString() );
                         builder = new StringBuilder();
                     } else {
@@ -81,11 +79,11 @@ class ScriptRunner {
             }
             return true;
         } catch ( SQLException | IOException e ) {
-            logger.error( "Error while executing SQL script in ScriptRunner! Executing Rollback", e );
+            log.error( "Error while executing SQL script in ScriptRunner! Executing Rollback", e );
             try {
                 transactionHandler.rollback();
             } catch ( CatalogTransactionException e1 ) {
-                logger.error( "Error while executing rollback in ScriptRunner!", e1 );
+                log.error( "Error while executing rollback in ScriptRunner!", e1 );
             }
             return false;
         } finally {

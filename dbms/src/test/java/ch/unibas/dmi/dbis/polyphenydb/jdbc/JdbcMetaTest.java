@@ -35,17 +35,15 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings("SqlDialectInspection")
+@Slf4j
 public class JdbcMetaTest {
-
-    private static final Logger LOG = LoggerFactory.getLogger( JdbcMetaTest.class );
 
 
     @BeforeClass
@@ -73,7 +71,7 @@ public class JdbcMetaTest {
                 connection.commit();
             }
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTables()", e );
+            log.error( "Exception while testing getTables()", e );
         }
     }
 
@@ -126,7 +124,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getTables( "%", "tes_", "foo_", null ),
                     ImmutableList.of( tableFoo2 ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTables()", e );
+            log.error( "Exception while testing getTables()", e );
         }
     }
 
@@ -177,7 +175,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getColumns( "APP", null, "foo", "id%" ),
                     ImmutableList.of( columnId ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getColumns()", e );
+            log.error( "Exception while testing getColumns()", e );
         }
     }
 
@@ -219,7 +217,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getSchemas( "AP_", "pub%" ),
                     ImmutableList.of( schemaPublic ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getSchemas()", e );
+            log.error( "Exception while testing getSchemas()", e );
         }
     }
 
@@ -247,7 +245,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getCatalogs(),
                     ImmutableList.of( databaseApp ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getCatalogs()", e );
+            log.error( "Exception while testing getCatalogs()", e );
         }
     }
 
@@ -273,7 +271,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getTableTypes(),
                     ImmutableList.of( tableTypeTable ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTableTypes()", e );
+            log.error( "Exception while testing getTableTypes()", e );
         }
     }
 
@@ -318,7 +316,7 @@ public class JdbcMetaTest {
                     connection.getMetaData().getPrimaryKeys( null, null, null ),
                     ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getPrimaryKeys()", e );
+            log.error( "Exception while testing getPrimaryKeys()", e );
         }
     }
 
@@ -369,7 +367,7 @@ public class JdbcMetaTest {
                     ImmutableList.of( foreignKey1a, foreignKey1b, foreignKey2 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getImportedKeys()", e );
+            log.error( "Exception while testing getImportedKeys()", e );
         }
     }
 
@@ -420,7 +418,7 @@ public class JdbcMetaTest {
                     ImmutableList.of( foreignKey2, foreignKey1a, foreignKey1b ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getExportedKeys()", e );
+            log.error( "Exception while testing getExportedKeys()", e );
         }
     }
 
@@ -457,7 +455,7 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 18 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTypeInfo()", e );
+            log.error( "Exception while testing getTypeInfo()", e );
         }
     }
 
@@ -512,7 +510,7 @@ public class JdbcMetaTest {
                     ImmutableList.of( index1 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getIndexInfo()", e );
+            log.error( "Exception while testing getIndexInfo()", e );
         }
     }
 

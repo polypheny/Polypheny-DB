@@ -63,6 +63,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
@@ -77,16 +78,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * Set of predefined functions for REST interaction with elastic search API. Performs HTTP requests and JSON (de)serialization.
  */
+@Slf4j
 final class ElasticsearchTransport {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ElasticsearchTable.class );
 
     static final int DEFAULT_FETCH_SIZE = 5196;
 
@@ -220,7 +218,7 @@ final class ElasticsearchTransport {
             request.setEntity( new StringEntity( json, ContentType.APPLICATION_JSON ) );
             rawHttp().apply( request );
         } catch ( IOException | UncheckedIOException e ) {
-            LOGGER.warn( "Failed to close scroll(s): {}", scrollIds, e );
+            log.warn( "Failed to close scroll(s): {}", scrollIds, e );
         }
     }
 
@@ -244,7 +242,7 @@ final class ElasticsearchTransport {
                 httpParams.forEach( builder::addParameter );
                 post = new HttpPost( builder.build() );
                 final String json = mapper.writeValueAsString( query );
-                LOGGER.debug( "Elasticsearch Query: {}", json );
+                log.debug( "Elasticsearch Query: {}", json );
                 post.setEntity( new StringEntity( json, ContentType.APPLICATION_JSON ) );
             } catch ( URISyntaxException e ) {
                 throw new RuntimeException( e );

@@ -76,16 +76,12 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.VerticaSqlDialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * The default implementation of a <code>SqlDialectFactory</code>.
  */
 public class SqlDialectFactoryImpl implements SqlDialectFactory {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( SqlDialectFactoryImpl.class );
 
     public static final SqlDialectFactoryImpl INSTANCE = new SqlDialectFactoryImpl();
 

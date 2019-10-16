@@ -71,17 +71,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * This class provides methods to interact with the catalog database. All SQL-stuff should be in this class.
  */
+@Slf4j
 final class Statements {
-
-    private static final Logger logger = LoggerFactory.getLogger( Statements.class );
-
 
     /**
      * Empty private constructor to prevent instantiation.
@@ -97,10 +94,10 @@ final class Statements {
      * @param transactionHandler The transaction handler which allows accessing the database and manages the (distributed) transaction.
      */
     static void createSchema( TransactionHandler transactionHandler ) {
-        logger.debug( "Creating the catalog schema" );
+        log.debug( "Creating the catalog schema" );
         boolean result = ScriptRunner.runScript( new InputStreamReader( Statements.class.getResourceAsStream( "/catalogSchema.sql" ) ), transactionHandler, false );
         if ( !result ) {
-            logger.error( "Exception while creating catalog schema" );
+            log.error( "Exception while creating catalog schema" );
         }
     }
 
@@ -111,7 +108,7 @@ final class Statements {
      * @param transactionHandler The transaction handler which allows accessing the database and manages the (distributed) transaction.
      */
     static void dropSchema( TransactionHandler transactionHandler ) {
-        logger.debug( "Dropping the catalog schema" );
+        log.debug( "Dropping the catalog schema" );
         try {
             transactionHandler.execute( "DROP TABLE IF EXISTS \"user\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"database\";" );
@@ -131,7 +128,7 @@ final class Statements {
             transactionHandler.execute( "DROP TABLE IF EXISTS \"foreign_key\";" );
             transactionHandler.execute( "DROP TABLE IF EXISTS \"index\";" );
         } catch ( SQLException e ) {
-            logger.error( "Exception while dropping catalog schema", e );
+            log.error( "Exception while dropping catalog schema", e );
         }
     }
 

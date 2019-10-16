@@ -15,14 +15,12 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
 import java.sql.SQLException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class HsqldbStore implements Store {
-
-    private static final Logger LOG = LoggerFactory.getLogger( HsqldbStore.class );
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
@@ -42,7 +40,6 @@ public class HsqldbStore implements Store {
         this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
     }
-
 
 
     @Override
@@ -153,7 +150,7 @@ public class HsqldbStore implements Store {
     @Override
     public boolean prepare( PolyXid xid ) {
         // TODO: implement
-        LOG.warn( "Not implemented yet" );
+        log.warn( "Not implemented yet" );
         return true;
     }
 
@@ -161,7 +158,7 @@ public class HsqldbStore implements Store {
     @Override
     public void commit( PolyXid xid ) {
         // TODO: implement
-        LOG.warn( "Not implemented yet" );
+        log.warn( "Not implemented yet" );
     }
 
 

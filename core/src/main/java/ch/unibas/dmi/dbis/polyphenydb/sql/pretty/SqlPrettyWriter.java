@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
@@ -68,8 +67,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -135,9 +134,8 @@ import org.slf4j.LoggerFactory;
  * </tr>
  * </table>
  */
+@Slf4j
 public class SqlPrettyWriter implements SqlWriter {
-
-    protected static final PolyphenyDbLogger LOGGER = new PolyphenyDbLogger( LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter" ) );
 
     /**
      * Bean holding the default property values.
@@ -911,7 +909,9 @@ public class SqlPrettyWriter implements SqlWriter {
         if ( result ) {
             nextWhitespace = NL;
         }
-        LOGGER.trace( "Token is '{}'; result is {}", s, result );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Token is '{}'; result is {}", s, result );
+        }
         return result;
     }
 

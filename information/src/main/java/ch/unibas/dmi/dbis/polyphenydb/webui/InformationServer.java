@@ -33,18 +33,15 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import spark.Service;
 
 
 /**
  * RESTful server for the WebUis, working with the InformationManager.
  */
+@Slf4j
 public class InformationServer implements InformationObserver {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( InformationServer.class );
-
 
     public InformationServer( final int port ) {
 
@@ -57,7 +54,7 @@ public class InformationServer implements InformationObserver {
 
         informationRoutes( http );
 
-        LOGGER.info( "InformationServer started." );
+        log.info( "InformationServer started." );
     }
 
 
@@ -94,7 +91,7 @@ public class InformationServer implements InformationObserver {
         try {
             InformationWebSocket.broadcast( info.asJson() );
         } catch ( IOException e ) {
-            LOGGER.info( "Error while sending information object to web ui!", e );
+            log.info( "Error while sending information object to web ui!", e );
         }
     }
 

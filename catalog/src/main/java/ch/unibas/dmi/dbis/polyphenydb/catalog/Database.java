@@ -32,21 +32,18 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import javax.sql.XAConnection;
+import lombok.extern.slf4j.Slf4j;
 import org.hsqldb.Server;
 import org.hsqldb.jdbc.pool.JDBCXADataSource;
 import org.hsqldb.persist.HsqlProperties;
 import org.hsqldb.server.ServerAcl.AclFormatException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * This class represents the database systems.
  */
+@Slf4j
 class Database {
-
-
-    private static final Logger logger = LoggerFactory.getLogger( Database.class );
 
     private static final Database INSTANCE = new Database();
     private static final String DATABASE_NAME = "catalog";
@@ -58,7 +55,7 @@ class Database {
     private Database() {
         try {
             Class.forName( "org.hsqldb.jdbcDriver" );
-            logger.info( "Starting catalog database on port {} ...", DATABASE_PORT );
+            log.info( "Starting catalog database on port {} ...", DATABASE_PORT );
             HsqlProperties p = new HsqlProperties();
             String caseSensitive = RuntimeConfig.CASE_SENSITIVE.getBoolean() ? "sql.ignore_case=false" : "sql.ignore_case=true";
             p.setProperty( "server.database.0", "mem:" + DATABASE_NAME + ";hsqldb.tx=mvcc;hsqldb.tx_level=SERIALIZABLE;" + caseSensitive );
@@ -71,9 +68,9 @@ class Database {
             server.setErrWriter( null );
             server.setSilent( true );
             server.start();
-            logger.info( "Catalog database started" );
+            log.info( "Catalog database started" );
         } catch ( IOException | ClassNotFoundException | AclFormatException e ) {
-            logger.error( "Fatal exception while starting catalog database!", e );
+            log.error( "Fatal exception while starting catalog database!", e );
             throw new RuntimeException( e );
         }
 

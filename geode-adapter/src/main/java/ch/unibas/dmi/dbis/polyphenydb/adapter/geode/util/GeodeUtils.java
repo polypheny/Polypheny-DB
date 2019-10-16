@@ -45,12 +45,21 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util;
 
 
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.tree.Primitive;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.geode.cache.CacheClosedException;
 import org.apache.geode.cache.GemFireCache;
@@ -62,26 +71,12 @@ import org.apache.geode.cache.query.Struct;
 import org.apache.geode.pdx.PdxInstance;
 import org.apache.geode.pdx.ReflectionBasedAutoSerializer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Type;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
 
 /**
  * Utilities for the Geode adapter.
  */
+@Slf4j
 public class GeodeUtils {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( GeodeUtils.class.getName() );
 
     /**
      * Cache for the client proxy regions created in the current ClientCache.
@@ -110,7 +105,7 @@ public class GeodeUtils {
      */
     public static synchronized ClientCache createClientCache( String locatorHost, int locatorPort, String autoSerializerPackagePath, boolean readSerialized ) {
         if ( locatorPort != currentLocatorPort || !StringUtils.equalsIgnoreCase( currentLocatorHost, locatorHost ) ) {
-            LOGGER.info( "Close existing ClientCache [" + currentLocatorHost + ":" + currentLocatorPort + "] for new Locator connection at: [" + locatorHost + ":" + locatorPort + "]" );
+            log.info( "Close existing ClientCache [" + currentLocatorHost + ":" + currentLocatorPort + "] for new Locator connection at: [" + locatorHost + ":" + locatorPort + "]" );
             currentLocatorHost = locatorHost;
             currentLocatorPort = locatorPort;
             closeClientCache();

@@ -78,21 +78,19 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
+import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * Unit test for {@link RelBuilder}.
  */
+@Slf4j
 public class RelBuilderTest {
-
-    private static final Logger LOG = LoggerFactory.getLogger( RelBuilderTest.class );
 
     private static Transaction transaction;
 
@@ -127,7 +125,7 @@ public class RelBuilderTest {
                 connection.commit();
             }
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTables()", e );
+            log.error( "Exception while testing getTables()", e );
         }
     }
 

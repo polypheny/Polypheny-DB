@@ -46,31 +46,24 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
-import org.apache.calcite.linq4j.Enumerator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
-
-import org.apache.geode.cache.query.SelectResults;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils.convertToRowValues;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.geode.cache.query.SelectResults;
 
 
 /**
  * Enumerator that reads from a Geode Regions.
  */
+@Slf4j
 class GeodeEnumerator implements Enumerator<Object> {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( GeodeEnumerator.class.getName() );
 
     private Iterator iterator;
     private Object current;
@@ -85,7 +78,7 @@ class GeodeEnumerator implements Enumerator<Object> {
      */
     GeodeEnumerator( SelectResults results, RelProtoDataType protoRowType ) {
         if ( results == null ) {
-            LOGGER.warn( "Null OQL results!" );
+            log.warn( "Null OQL results!" );
         }
         this.iterator = (results == null) ? Collections.emptyIterator() : results.iterator();
         this.current = null;

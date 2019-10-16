@@ -52,13 +52,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
+@Slf4j
 public class TransactionImpl implements Transaction {
-
-    private static final Logger LOG = LoggerFactory.getLogger( TransactionManagerImpl.class );
 
     @Getter
     private final PolyXid xid;
@@ -143,13 +141,13 @@ public class TransactionImpl implements Transaction {
                     store.commit( xid );
                 }
             } else {
-                LOG.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
+                log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
                 throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
             }
             transactionManager.removeTransaction( xid );
         } catch ( CatalogTransactionException e ) {
-            LOG.error( "Exception while committing changes. Execution rollback!" );
+            log.error( "Exception while committing changes. Execution rollback!" );
             rollback();
             throw new TransactionException( e );
         }

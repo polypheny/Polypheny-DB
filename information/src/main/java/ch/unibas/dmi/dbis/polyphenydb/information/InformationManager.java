@@ -31,16 +31,14 @@ import com.google.gson.Gson;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * The Information Manager manages information objects, Information Groups and Information Pages
  */
+@Slf4j
 public class InformationManager {
-
-    private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
 
     private static final String MAIN_MANAGER_IDENTIFIER = "0";
 

@@ -38,16 +38,14 @@ import javax.sql.XAConnection;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Implementation of the TransactionHandler for distributed transactions.
  */
+@Slf4j
 class XATransactionHandler extends TransactionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger( XATransactionHandler.class );
 
     private static final Map<Xid, XATransactionHandler> activeInstances;
     private static final Queue<XATransactionHandler> freeInstances;
@@ -127,7 +125,7 @@ class XATransactionHandler extends TransactionHandler {
 
     @SuppressWarnings("Duplicates")
     private void close() {
-        logger.info( "Closing a transaction handler for the catalog. Size of freeInstances before closing: " + freeInstances.size() );
+        log.info( "Closing a transaction handler for the catalog. Size of freeInstances before closing: " + freeInstances.size() );
         try {
             if ( openStatements != null ) {
                 for ( Statement openStatement : openStatements ) {
@@ -135,12 +133,12 @@ class XATransactionHandler extends TransactionHandler {
                 }
             }
         } catch ( SQLException e ) {
-            logger.debug( "Exception while closing connections in connection handler", e );
+            log.debug( "Exception while closing connections in connection handler", e );
         } finally {
             openStatements = null;
             activeInstances.remove( xid );
             freeInstances.add( this );
-            logger.info( "Size of freeInstances after closing: " + freeInstances.size() );
+            log.info( "Size of freeInstances after closing: " + freeInstances.size() );
         }
     }
 
@@ -169,7 +167,7 @@ class XATransactionHandler extends TransactionHandler {
     private static XATransactionHandler getFreeTransactionHandler() throws CatalogConnectionException {
         XATransactionHandler handler = freeInstances.poll();
         if ( handler == null ) {
-            logger.debug( "Creating a new transaction handler for the catalog. Current freeInstances-Size: " + freeInstances.size() );
+            log.debug( "Creating a new transaction handler for the catalog. Current freeInstances-Size: " + freeInstances.size() );
             handler = new XATransactionHandler();
         }
         return handler;

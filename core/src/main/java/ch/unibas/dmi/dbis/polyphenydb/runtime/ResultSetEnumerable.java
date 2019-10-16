@@ -70,6 +70,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -78,8 +79,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -87,14 +86,13 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> Element type
  */
+@Slf4j
 public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
     private final DataSource dataSource;
     private final String sql;
     private final Function1<ResultSet, Function0<T>> rowBuilderFactory;
     private final PreparedStatementEnricher preparedStatementEnricher;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ResultSetEnumerable.class );
 
     private Long queryStart;
     private long timeout;
@@ -198,7 +196,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             this.timeout = (Long) timeout;
         } else {
             if ( timeout != null ) {
-                LOGGER.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
+                log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
             }
             this.timeout = 0;
         }
@@ -347,9 +345,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         try {
             statement.setQueryTimeout( (int) secondsLeft );
         } catch ( SQLFeatureNotSupportedException e ) {
-            if ( !timeoutSetFailed && LOGGER.isDebugEnabled() ) {
+            if ( !timeoutSetFailed && log.isDebugEnabled() ) {
                 // We don't really want to print this again and again if enumerable is used multiple times
-                LOGGER.debug( "Failed to set query timeout " + secondsLeft + " seconds", e );
+                log.debug( "Failed to set query timeout " + secondsLeft + " seconds", e );
                 timeoutSetFailed = true;
             }
         }

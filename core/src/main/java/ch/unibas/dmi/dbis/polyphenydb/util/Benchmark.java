@@ -48,20 +48,17 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * Helps to run benchmarks by running the same task repeatedly and averaging the running times.
+ *
+ * Important: Certain tests are enabled only if logging is enabled at debug level or higher.
  */
+@Slf4j
 public class Benchmark {
-
-    /**
-     * Certain tests are enabled only if logging is enabled at debug level or higher.
-     */
-    public static final Logger LOGGER = LoggerFactory.getLogger( Benchmark.class );
 
     private final Function1<Statistician, Void> function;
     private final int repeat;
@@ -79,14 +76,14 @@ public class Benchmark {
      * Returns whether performance tests are enabled.
      */
     public static boolean enabled() {
-        return LOGGER.isDebugEnabled();
+        return log.isDebugEnabled();
     }
 
 
     static long printDuration( String desc, long t0 ) {
         final long t1 = System.nanoTime();
         final long duration = t1 - t0;
-        LOGGER.debug( "{} took {} nanos", desc, duration );
+        log.debug( "{} took {} nanos", desc, duration );
         return duration;
     }
 
@@ -120,7 +117,7 @@ public class Benchmark {
 
 
         private void printDurations() {
-            if ( !LOGGER.isDebugEnabled() ) {
+            if ( !log.isDebugEnabled() ) {
                 return;
             }
 
@@ -150,9 +147,9 @@ public class Benchmark {
             }
             final double stddev = Math.sqrt( y / count );
             if ( durations.size() == 0 ) {
-                LOGGER.debug( "{}: {}", desc, "no runs" );
+                log.debug( "{}: {}", desc, "no runs" );
             } else {
-                LOGGER.debug( "{}: {} first; {} +- {}; {} min; {} max; {} nanos", desc, durations.get( 0 ), avg, stddev, coreDurations.get( 0 ), Util.last( coreDurations ), durationsString );
+                log.debug( "{}: {} first; {} +- {}; {} min; {} max; {} nanos", desc, durations.get( 0 ), avg, stddev, coreDurations.get( 0 ), Util.last( coreDurations ), durationsString );
             }
         }
     }

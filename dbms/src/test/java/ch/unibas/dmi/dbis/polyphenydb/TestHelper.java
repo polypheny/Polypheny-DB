@@ -37,14 +37,12 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class TestHelper {
-
-    private static final Logger LOG = LoggerFactory.getLogger( TestHelper.class );
 
     private static final TestHelper INSTANCE = new TestHelper();
 
@@ -61,13 +59,13 @@ public class TestHelper {
 
     private TestHelper() {
         polyphenyDb = new PolyphenyDb();
-        LOG.info( "Starting Polypheny-DB..." );
+        log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
             try {
                 polyphenyDb.runPolyphenyDb();
             } catch ( GenericCatalogException | InstantiationException e ) {
-                LOG.error( "Exception while starting Polypheny-DB", e );
+                log.error( "Exception while starting Polypheny-DB", e );
             }
         };
         Thread thread = new Thread( runnable );
@@ -120,11 +118,11 @@ public class TestHelper {
             try {
                 Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
-                LOG.error( "Polypheny-DB Driver not found", e );
+                log.error( "Polypheny-DB Driver not found", e );
             }
             final String url = "jdbc:polypheny://" + dbHost + ":" + port;
             //String url = "jdbc:polypheny://" + dbHost + ":" + port + "/" + dbName + "?prepareThreshold=0";
-            LOG.debug( "Connecting to database @ {}", url );
+            log.debug( "Connecting to database @ {}", url );
 
             Properties props = new Properties();
             props.setProperty( "user", "pa" );

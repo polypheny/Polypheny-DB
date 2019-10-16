@@ -67,6 +67,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -76,16 +77,13 @@ import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.query.QueryService;
 import org.apache.geode.cache.query.SelectResults;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * Table based on a Geode Region
  */
+@Slf4j
 public class GeodeTable extends AbstractQueryableTable implements TranslatableTable {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( GeodeTable.class.getName() );
 
     private final String regionName;
     private final RelDataType rowType;
@@ -199,7 +197,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         final String oqlQuery = queryBuilder.toString();
 
         Hook.QUERY_PLAN.run( oqlQuery );
-        LOGGER.info( "OQL: " + oqlQuery );
+        log.info( "OQL: " + oqlQuery );
 
         return new AbstractEnumerable<Object>() {
             @Override

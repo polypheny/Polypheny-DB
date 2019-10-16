@@ -72,11 +72,10 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 import javax.annotation.Nonnull;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -86,9 +85,8 @@ import org.slf4j.LoggerFactory;
  * Note: The test is ignored since it would fail every build (there are lots of issues with {@link RexSimplify})
  */
 @Ignore
+@Slf4j
 public class RexProgramFuzzyTest extends RexProgramBuilderBase {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( RexProgramFuzzyTest.class );
 
     private static final Duration TEST_DURATION = Duration.of( Integer.getInteger( "rex.fuzzing.duration", 5 ), ChronoUnit.SECONDS );
     private static final long TEST_ITERATIONS = Long.getLong( "rex.fuzzing.iterations", 18 );
@@ -327,7 +325,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
             for ( Throwable t = e; t != null; t = t.getCause() ) {
                 trimStackTrace( t, 4 );
             }
-            LOGGER.info( "Randomized test identified a potential defect. Feel free to fix that issue", e );
+            log.info( "Randomized test identified a potential defect. Feel free to fix that issue", e );
         }
     }
 
@@ -345,7 +343,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         slowestTasks = new TopN<>( topnSlowest > 0 ? topnSlowest : 1 );
         Random r = new Random();
         if ( startSeed != 0 ) {
-            LOGGER.info( "Using seed {} for rex fuzzing", startSeed );
+            log.info( "Using seed {} for rex fuzzing", startSeed );
             r.setSeed( startSeed );
         }
         long start = System.currentTimeMillis();
@@ -387,17 +385,17 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
             }
         }
         long rate = total * 1000 / (System.currentTimeMillis() - start);
-        LOGGER.info( "Rex fuzzing results: number of cases tested={}, failed cases={}, duplicate failures={}, fuzz rate={} per second", total, fail, dup, rate );
+        log.info( "Rex fuzzing results: number of cases tested={}, failed cases={}, duplicate failures={}, fuzz rate={} per second", total, fail, dup, rate );
 
         if ( topnSlowest > 0 ) {
-            LOGGER.info( "The 5 slowest to simplify nodes were" );
+            log.info( "The 5 slowest to simplify nodes were" );
             SimplifyTask task;
             RexToTestCodeShuttle v = new RexToTestCodeShuttle();
             while ( (task = slowestTasks.poll()) != null ) {
-                LOGGER.info( task.duration / 1000 + " us (" + task.seed + ")" );
-                LOGGER.info( "      " + task.node.toString() );
-                LOGGER.info( "      " + task.node.accept( v ) );
-                LOGGER.info( "    =>" + task.result.toString() );
+                log.info( task.duration / 1000 + " us (" + task.seed + ")" );
+                log.info( "      " + task.node.toString() );
+                log.info( "      " + task.node.accept( v ) );
+                log.info( "    =>" + task.result.toString() );
             }
         }
 

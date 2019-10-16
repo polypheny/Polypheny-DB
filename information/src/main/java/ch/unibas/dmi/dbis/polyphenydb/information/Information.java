@@ -28,14 +28,11 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
+@Slf4j
 public abstract class Information {
-
-    private static final Logger LOG = LoggerFactory.getLogger( InformationManager.class );
-
 
     /**
      * The id needs to be unique for every Information object.
@@ -153,7 +150,7 @@ public abstract class Information {
      */
     protected void notifyManager() {
         if (informationManager == null) {
-            LOG.info( "Requested notification of the information manager but no manager set." );
+            log.info( "Requested notification of the information manager but no manager set." );
         } else {
             informationManager.notify( this );
         }

@@ -41,16 +41,15 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
+@Slf4j
 public class PolyphenyDb {
 
     public static final Logger GLOBAL_LOGGER = LoggerFactory.getLogger( "Polypheny-DB" );
-
-    private static final Logger log = LoggerFactory.getLogger( PolyphenyDb.class );
 
     private PUID shutdownHookId;
 
