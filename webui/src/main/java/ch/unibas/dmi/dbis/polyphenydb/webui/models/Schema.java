@@ -27,8 +27,6 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,8 +34,6 @@ import org.slf4j.LoggerFactory;
  */
 @Getter
 public class Schema {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( Schema.class );
 
     private String name;
     private String type; // TODO: enum
