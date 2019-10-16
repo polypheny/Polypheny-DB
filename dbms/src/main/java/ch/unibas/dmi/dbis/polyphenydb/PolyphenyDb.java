@@ -57,7 +57,7 @@ public class PolyphenyDb {
 
 
     @SuppressWarnings("unchecked")
-    public static void main( final String args[] ) {
+    public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );

@@ -80,7 +80,6 @@ import org.junit.Test;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
-@SuppressWarnings("SqlDialectInspection")
 @Ignore
 public class CsvTest {
 
@@ -586,7 +585,6 @@ public class CsvTest {
             Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIMESTAMP );
 
             Statement statement = connection.createStatement();
-            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" })
             ResultSet resultSet = statement.executeQuery( "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100" );
             resultSet.next();
 
@@ -616,7 +614,7 @@ public class CsvTest {
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             Statement statement = connection.createStatement();
-            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
+            final String sql = "select * from \"DATE\"\n" + "where EMPNO >= 140 and EMPNO < 200";
             ResultSet resultSet = statement.executeQuery( sql );
             int n = 0;
             while ( resultSet.next() ) {
@@ -654,7 +652,7 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
         // Use LIMIT to ensure that results are deterministic without ORDER BY
-        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
+        final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -676,7 +674,7 @@ public class CsvTest {
     public void testTimestampOrderBy() throws SQLException {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
-        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
+        final String sql = "select \"EMPNO\",\"JOINTIMES\" from \"DATE\"\n" + "order by \"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -696,7 +694,7 @@ public class CsvTest {
     public void testTimestampGroupByAndOrderBy() throws SQLException {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
-        @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
+        final String sql = "select \"EMPNO\", \"JOINTIMES\" from \"DATE\"\n" + "group by \"EMPNO\",\"JOINTIMES\" order by \"JOINTIMES\"";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -721,19 +719,19 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
+            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
+            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "07:15:56" ) ) );
 
             // timestamp
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES,\n"
+            final String sql3 = "select JOINTIMES,\n"
                     + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINTIMES)}\n"
                     + "from \"DATE\"\n"
                     + "where (JOINTIMES >= {ts '2003-01-01 00:00:00'}\n"
@@ -745,7 +743,7 @@ public class CsvTest {
             assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "2005-09-07 00:00:00" ) ) );
             assertThat( joinTimes.getTimestamp( 2 ), is( java.sql.Timestamp.valueOf( "2005-09-08 00:00:00" ) ) );
 
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql4 = "select JOINTIMES, extract(year from JOINTIMES)\n" + "from \"DATE\"";
+            final String sql4 = "select JOINTIMES, extract(year from JOINTIMES)\n" + "from \"DATE\"";
             final ResultSet joinTimes2 = statement.executeQuery( sql4 );
             assertThat( joinTimes2.next(), is( true ) );
             assertThat( joinTimes2.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
@@ -763,12 +761,12 @@ public class CsvTest {
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
+            final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
             final ResultSet joinTimes = statement.executeQuery( sql1 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getInt( 1 ), is( 2007 ) );
 
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
+            final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
             final ResultSet joinTimes2 = statement.executeQuery( sql2 );
             assertThat( joinTimes2.next(), is( true ) );
             assertThat( joinTimes2.getInt( 1 ), is( 2007 ) );
@@ -792,21 +790,21 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT is not null";
+            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT is not null";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME is not null";
+            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME is not null";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
 
             // timestamp
-            @SuppressWarnings({ "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES is not null";
+            final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES is not null";
             final ResultSet joinTimes = statement.executeQuery( sql3 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
@@ -827,21 +825,21 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT > {d '1990-01-01'}";
+            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT > {d '1990-01-01'}";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ).getClass(), equalTo( java.sql.Date.class ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME > {t '00:00:00'}";
+            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME > {t '00:00:00'}";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ).getClass(), equalTo( java.sql.Time.class ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "00:01:02" ) ) );
 
             // timestamp
-            @SuppressWarnings({ "SqlResolve", "SqlNoDataSourceInspection" }) final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES > {ts '1990-01-01 00:00:00'}";
+            final String sql3 = "select JOINTIMES from \"DATE\"\n" + "where JOINTIMES > {ts '1990-01-01 00:00:00'}";
             final ResultSet joinTimes = statement.executeQuery( sql3 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );

@@ -54,9 +54,7 @@ class ScriptRunner {
 
     static boolean runScript( Reader reader, TransactionHandler transactionHandler, boolean logComments, String delimiter ) {
         StringBuilder builder = new StringBuilder();
-        LineNumberReader lineReader = null;
-        try {
-            lineReader = new LineNumberReader( reader );
+        try ( LineNumberReader lineReader = new LineNumberReader( reader ) ) {
             String line;
             while ( (line = lineReader.readLine()) != null ) {
                 line = line.trim();
@@ -86,16 +84,8 @@ class ScriptRunner {
                 log.error( "Error while executing rollback in ScriptRunner!", e1 );
             }
             return false;
-        } finally {
-            if ( lineReader != null ) {
-                try {
-                    lineReader.close();
-                } catch ( IOException e ) {
-                    // ignore
-                }
-            }
         }
-
+        // ignore
 
     }
 

@@ -68,6 +68,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 
@@ -75,6 +76,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 /**
  * A <code>SqlDialect</code> implementation for the MySQL database.
  */
+@Slf4j
 public class MysqlSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
@@ -189,7 +191,7 @@ public class MysqlSqlDialect extends SqlDialect {
                                 SqlParserPos.ZERO,
                                 SqlStdOperatorTable.UNION_ALL.createCall( SqlParserPos.ZERO, unionOperand, unionOperand ) ) );
 
-        LOGGER.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
+        log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 
         return caseExpr;
     }

@@ -65,11 +65,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * A <code>SqlDialect</code> implementation for the JethroData database.
  */
+@Slf4j
 public class JethroDataSqlDialect extends SqlDialect {
 
     private final JethroInfo info;
@@ -138,7 +140,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 }
             }
         }
-        LOGGER.debug( "Unsupported function in jethro: " + operator + " with params " + paramTypes );
+        log.debug( "Unsupported function in jethro: " + operator + " with params " + paramTypes );
         return false;
     }
 
@@ -247,7 +249,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                     return info;
                 }
             } catch ( Exception e ) {
-                LOGGER.error( "Failed to create JethroDataDialect", e );
+                log.error( "Failed to create JethroDataDialect", e );
                 throw new RuntimeException( "Failed to create JethroDataDialect", e );
             }
         }
@@ -265,7 +267,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 return new JethroInfo( supportedFunctions );
             } catch ( Exception e ) {
                 final String msg = "Jethro server failed to execute 'show functions extended'";
-                LOGGER.error( msg, e );
+                log.error( msg, e );
                 throw new RuntimeException( msg + "; make sure your Jethro server is up to date", e );
             }
         }

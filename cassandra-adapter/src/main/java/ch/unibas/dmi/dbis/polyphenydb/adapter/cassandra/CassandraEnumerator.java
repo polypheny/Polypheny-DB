@@ -64,10 +64,9 @@ import org.apache.calcite.linq4j.Enumerator;
  */
 class CassandraEnumerator implements Enumerator<Object> {
 
-    private Iterator<Row> iterator;
+    private final Iterator<Row> iterator;
+    private final List<RelDataTypeField> fieldTypes;
     private Row current;
-    private List<RelDataTypeField> fieldTypes;
-
 
     /**
      * Creates a CassandraEnumerator.

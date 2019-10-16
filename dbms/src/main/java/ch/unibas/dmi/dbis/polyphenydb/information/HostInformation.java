@@ -161,7 +161,7 @@ public class HostInformation {
                     //}
                 }
 
-                GraphData<Double> data2 = new GraphData<Double>( "processes", procPerc.toArray( new Double[0] ) );
+                GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
                 graph.updateGraph( procNames.toArray( new String[0] ), data2 );
             }
         }, 0, 5000 );

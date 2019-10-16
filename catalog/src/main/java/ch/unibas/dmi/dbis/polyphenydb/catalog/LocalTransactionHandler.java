@@ -86,7 +86,6 @@ class LocalTransactionHandler extends TransactionHandler {
     }
 
 
-    @SuppressWarnings("Duplicates")
     private void close() {
         try {
             if ( openStatements != null ) {

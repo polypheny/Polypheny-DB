@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
@@ -55,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-
 import java.util.List;
 
 

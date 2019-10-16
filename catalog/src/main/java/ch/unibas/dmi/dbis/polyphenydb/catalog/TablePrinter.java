@@ -103,7 +103,7 @@ public class TablePrinter {
                 sb.append( "|\n" );
             }
             sb.append( horizontalLine );
-            sb.append( "Printed " + totalPrintRows + " rows out of " + totalRows + " rows\n" );
+            sb.append( "Printed " ).append( totalPrintRows ).append( " rows out of " ).append( totalRows ).append( " rows\n" );
         } catch ( SQLException e ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "SQLException while processing the ResultSet object.", e );
@@ -132,7 +132,7 @@ public class TablePrinter {
     private static class Column {
 
         private int maxLength = 0;
-        private ArrayList<String> data = new ArrayList<>();
+        private final ArrayList<String> data = new ArrayList<>();
 
 
         void addData( String dataStr, int maxLength ) {

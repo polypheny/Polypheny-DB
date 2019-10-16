@@ -79,7 +79,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
     private final List<String> partitionKeys;
     private Boolean singlePartition;
     private final List<String> clusteringKeys;
-    private List<RelFieldCollation> implicitFieldCollations;
+    private final List<RelFieldCollation> implicitFieldCollations;
     private RelCollation implicitCollation;
     private String match;
 
@@ -222,9 +222,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          */
         private static String literalValue( RexLiteral literal ) {
             Object value = literal.getValue2();
-            StringBuilder buf = new StringBuilder();
-            buf.append( value );
-            return buf.toString();
+            return String.valueOf( value );
         }
 
 

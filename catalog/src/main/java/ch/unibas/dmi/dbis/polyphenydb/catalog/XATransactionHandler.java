@@ -123,7 +123,6 @@ class XATransactionHandler extends TransactionHandler {
     }
 
 
-    @SuppressWarnings("Duplicates")
     private void close() {
         log.info( "Closing a transaction handler for the catalog. Size of freeInstances before closing: " + freeInstances.size() );
         try {

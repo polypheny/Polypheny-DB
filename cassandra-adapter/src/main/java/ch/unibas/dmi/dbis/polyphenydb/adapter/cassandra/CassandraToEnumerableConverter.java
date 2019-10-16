@@ -63,11 +63,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.google.common.collect.Lists;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -153,7 +153,7 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
      * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
      */
     private static <T> List<Expression> constantList( List<T> values ) {
-        return Lists.transform( values, Expressions::constant );
+        return values.stream().map( Expressions::constant ).collect( Collectors.toList() );
     }
 }
 

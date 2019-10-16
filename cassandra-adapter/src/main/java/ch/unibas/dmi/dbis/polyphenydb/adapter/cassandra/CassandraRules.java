@@ -232,8 +232,7 @@ public class CassandraRules {
 
             if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
                 final RexInputRef left1 = (RexInputRef) left;
-                String name = fieldNames.get( left1.getIndex() );
-                return name;
+                return fieldNames.get( left1.getIndex() );
             } else {
                 return null;
             }

@@ -216,7 +216,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         // Build and issue the query and return an Enumerator over the results
         StringBuilder queryBuilder = new StringBuilder( "SELECT " );
         queryBuilder.append( selectString );
-        queryBuilder.append( " FROM \"" + columnFamily + "\"" );
+        queryBuilder.append( " FROM \"" ).append( columnFamily ).append( "\"" );
         queryBuilder.append( whereClause );
         if ( !order.isEmpty() ) {
             queryBuilder.append( Util.toString( order, " ORDER BY ", ", ", "" ) );
@@ -227,7 +227,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
             limit += fetch;
         }
         if ( limit > 0 ) {
-            queryBuilder.append( " LIMIT " + limit );
+            queryBuilder.append( " LIMIT " ).append( limit );
         }
         queryBuilder.append( " ALLOW FILTERING" );
         final String query = queryBuilder.toString();
