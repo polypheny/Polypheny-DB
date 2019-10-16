@@ -71,6 +71,7 @@ class EnumerableProjectRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalProject project = (LogicalProject) rel;
         return EnumerableProject.create(

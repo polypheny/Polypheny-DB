@@ -61,7 +61,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.StreamableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
@@ -277,6 +276,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         // Note that representation is ARRAY. This assumes that the table returns a Object[] for each record. Actually a Table<T> can return any type T. And, if it is a JdbcTable, we'd like to be
         // able to generate alternate accessors that return e.g. synthetic records {T0 f0; T1 f1; ...} and don't box every primitive value.

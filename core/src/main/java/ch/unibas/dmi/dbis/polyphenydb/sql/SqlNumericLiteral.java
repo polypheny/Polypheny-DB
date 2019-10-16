@@ -95,11 +95,13 @@ public class SqlNumericLiteral extends SqlLiteral {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.literal( toValue() );
     }
 
 
+    @Override
     public String toValue() {
         BigDecimal bd = (BigDecimal) value;
         if ( isExact ) {
@@ -109,6 +111,7 @@ public class SqlNumericLiteral extends SqlLiteral {
     }
 
 
+    @Override
     public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
         if ( isExact ) {
             int scaleValue = scale.intValue();

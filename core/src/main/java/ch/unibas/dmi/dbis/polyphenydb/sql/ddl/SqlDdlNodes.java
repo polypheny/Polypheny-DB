@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
@@ -57,9 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
@@ -70,7 +67,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
 import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.PreparedStatement;
@@ -120,14 +116,6 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a CREATE MATERIALIZED VIEW.
-     */
-    public static SqlCreateMaterializedView createMaterializedView( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
-        return new SqlCreateMaterializedView( pos, replace, ifNotExists, name, columnList, query );
-    }
-
-
-    /**
      * Creates a CREATE FUNCTION.
      */
     public static SqlCreateFunction createFunction( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNode className, SqlNodeList usingList ) {
@@ -164,14 +152,6 @@ public class SqlDdlNodes {
      */
     public static SqlDrop dropView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
         return new SqlDropView( pos, ifExists, name );
-    }
-
-
-    /**
-     * Creates a DROP MATERIALIZED VIEW.
-     */
-    public static SqlDrop dropMaterializedView( SqlParserPos pos, boolean ifExists, SqlIdentifier name ) {
-        return new SqlDropMaterializedView( pos, ifExists, name );
     }
 
 
@@ -246,27 +226,6 @@ public class SqlDdlNodes {
             schema = schema.getSubSchema( p, true );
         }
         return Pair.of( schema, name );
-    }
-
-
-    /**
-     * Wraps a query to rename its columns. Used by CREATE VIEW and CREATE MATERIALIZED VIEW.
-     */
-    static SqlNode renameColumns( SqlNodeList columnList, SqlNode query ) {
-        if ( columnList == null ) {
-            return query;
-        }
-        final SqlParserPos p = query.getParserPosition();
-        final SqlNodeList selectList = new SqlNodeList( ImmutableList.<SqlNode>of( SqlIdentifier.star( p ) ), p );
-        final SqlCall from =
-                SqlStdOperatorTable.AS.createCall(
-                        p,
-                        ImmutableList.<SqlNode>builder()
-                                .add( query )
-                                .add( new SqlIdentifier( "_", p ) )
-                                .addAll( columnList )
-                                .build() );
-        return new SqlSelect( p, null, selectList, from, null, null, null, null, null, null, null );
     }
 
 

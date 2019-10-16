@@ -47,16 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
@@ -67,7 +57,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,6 +97,7 @@ public class MongoAggregate extends Aggregate implements MongoRel {
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         List<String> list = new ArrayList<>();

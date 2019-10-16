@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import com.google.common.collect.ImmutableList;
 
@@ -61,7 +60,6 @@ import com.google.common.collect.ImmutableList;
  * SchemaPlus is intended to be used by users but not instantiated by them.
  * Users should only use the SchemaPlus they are given by the system.
  * The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra information about schemas that Polypheny-DB builds up when a schema is registered.
- * It appears in several SPI calls as context; for example {@link SchemaFactory#create(SchemaPlus, String, java.util.Map)} contains a parent schema that might be a wrapped instance of a user-defined {@link Schema}, or indeed might not.
  */
 public interface SchemaPlus extends Schema {
 
@@ -82,6 +80,7 @@ public interface SchemaPlus extends Schema {
     String getName();
 
     // override with stricter return
+    @Override
     SchemaPlus getSubSchema( String name );
 
     /**
@@ -104,11 +103,7 @@ public interface SchemaPlus extends Schema {
      */
     void add( String name, RelProtoDataType type );
 
-    /**
-     * Adds a lattice to this schema.
-     */
-    void add( String name, Lattice lattice );
-
+    @Override
     boolean isMutable();
 
     /**

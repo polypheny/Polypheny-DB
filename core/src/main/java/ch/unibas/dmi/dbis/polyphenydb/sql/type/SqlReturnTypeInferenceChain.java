@@ -75,6 +75,7 @@ public class SqlReturnTypeInferenceChain implements SqlReturnTypeInference {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         for ( SqlReturnTypeInference rule : rules ) {
             RelDataType ret = rule.inferReturnType( opBinding );

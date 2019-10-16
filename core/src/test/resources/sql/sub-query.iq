@@ -18,7 +18,6 @@
 !use post
 !set outputformat psql
 
-# [CALCITE-373]
 # the following should return no rows, because the IN list has a null.
 # for details on this: see HIVE-784, Dayal's paper from VLDB-87
 with
@@ -252,7 +251,7 @@ where (gender, deptno) in (select gender, 10 from emp where gender = 'F');
 
 !use scott
 
-# [CALCITE-1155] Support columns for IN list
+# Support columns for IN list
 SELECT empno, ename, mgr FROM "scott".emp WHERE 7782 IN (empno, mgr);
 +-------+--------+------+
 | EMPNO | ENAME  | MGR  |
@@ -264,7 +263,7 @@ SELECT empno, ename, mgr FROM "scott".emp WHERE 7782 IN (empno, mgr);
 
 !ok
 
-# [CALCITE-694] Scan HAVING clause for sub-queries and IN-lists
+# Scan HAVING clause for sub-queries and IN-lists
 SELECT count(*) AS c
 FROM "scott".emp
 GROUP BY emp.deptno
@@ -279,7 +278,7 @@ HAVING sum(case when emp.empno in (7369, 7839, 7902) then emp.sal else 0 end)
 
 !ok
 
-# [CALCITE-716] Scalar sub-query and aggregate function in SELECT or HAVING
+# Scalar sub-query and aggregate function in SELECT or HAVING
 # clause gives AssertionError
 SELECT emp.deptno
 FROM "scott".emp
@@ -296,7 +295,7 @@ HAVING max(emp.empno) > (SELECT min(emp.empno) FROM "scott".emp);
 
 !ok
 
-# [CALCITE-716] Scalar sub-query and aggregate function in SELECT or HAVING
+# Scalar sub-query and aggregate function in SELECT or HAVING
 # clause gives AssertionError
 SELECT emp.deptno,
   max(emp.empno) > (SELECT min(emp.empno) FROM "scott".emp) as bbbb
@@ -439,7 +438,7 @@ where sal + 100 not in (
 !ok
 !}
 
-# [CALCITE-356] AssertionError while translating query with WITH and correlated sub-query
+# AssertionError while translating query with WITH and correlated sub-query
 with t (a, b) as (select * from (values (1, 2)))
 select * from t where exists (select 1 from "scott".emp where deptno = t.a);
 EnumerableCalc(expr#0..2=[{inputs}], proj#0..1=[{exprs}])
@@ -478,7 +477,7 @@ EnumerableCalc(expr#0..2=[{inputs}], A=[$t1], B=[$t2])
 
 !ok
 
-# [CALCITE-864] Correlation variable has incorrect row type if it is populated
+# Correlation variable has incorrect row type if it is populated
 # by right side of a Join
 select *
 from "scott".emp as e
@@ -500,7 +499,7 @@ where sal = (
 
 !ok
 
-# Simpler test case for [CALCITE-864]
+# Simpler test
 select empno, ename, sal, e.deptno, loc
 from "scott".emp as e
 join "scott".dept as d using (deptno)
@@ -520,7 +519,7 @@ where e.sal = (
 
 !ok
 
-# Simpler test case for [CALCITE-864]
+# Simpler test
 select *
 from "scott".emp as e
 join "scott".dept as d using (deptno)
@@ -551,7 +550,7 @@ where d.dname = (
 !ok
 
 # Two EXISTS
-# [CALCITE-1511] AssertionError while decorrelating query with two EXISTS sub-queries
+# Test case for "AssertionError while decorrelating query with two EXISTS sub-queries"
 select *
 from "scott".dept as d
 where exists (select 1 from "scott".emp where empno > d.deptno)
@@ -584,7 +583,7 @@ from "scott".dept as d;
 !ok
 !}
 
-# [CALCITE-1494] Inefficient plan for correlated sub-queries
+# Test case for "Inefficient plan for correlated sub-queries"
 # Plan must have only one scan each of emp and dept.
 select sal
 from "scott".emp
@@ -646,8 +645,7 @@ from (
 
 !ok
 
-# [CALCITE-2028] Un-correlated IN sub-query should be converted into a Join
-# rather than a Correlate without correlation variables
+# Test case for "Un-correlated IN sub-query should be converted into a Join rather than a Correlate without correlation variables"
 SELECT *
 FROM "scott".emp
 WHERE job in (select job from "scott".emp ee where ee.hiredate = DATE '1980-12-17')
@@ -664,7 +662,7 @@ AND EXISTS (select * from "scott".emp e where emp.deptno = e.deptno);
 
 !ok
 
-# Variant of [CALCITE-2028] above
+# Another variant
 SELECT *
 FROM "scott".emp
 WHERE job in (select job from "scott".emp ee where ee.hiredate = DATE '1980-12-17')
@@ -686,7 +684,7 @@ OR EXISTS (select * from "scott".emp e where emp.deptno = e.deptno + 20);
 
 !ok
 
-# [CALCITE-2071] Query with IN and OR in WHERE clause returns wrong result
+# Test case for "Query with IN and OR in WHERE clause returns wrong result"
 select empno
 from "scott".emp
 where (empno in (select empno from "scott".emp)
@@ -741,7 +739,7 @@ and empno in (7876, 7698, 7900);
 
 !ok
 
-# Similar to above, but never suffered from [CALCITE-2071] because AND
+# Similar to above
 select empno
 from "scott".emp
 where (empno in (select empno from "scott".emp)
@@ -762,7 +760,7 @@ and empno in (7876, 7698, 7900);
 
 !set expand false
 
-# [CALCITE-2329] Enhance SubQueryRemoveRule to rewrite IN operator with the constant from the left side more optimally
+# Test case for "Enhance SubQueryRemoveRule to rewrite IN operator with the constant from the left side more optimally"
 # Test project null IN null
 select sal,
   cast(null as int) IN (

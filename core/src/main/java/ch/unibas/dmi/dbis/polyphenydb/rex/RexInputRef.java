@@ -137,11 +137,13 @@ public class RexInputRef extends RexSlot {
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitInputRef( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitInputRef( this, arg );
     }

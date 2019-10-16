@@ -85,17 +85,20 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
 
 
     // implement SqlOperatorBinding
+    @Override
     public int getOperandCount() {
         return types.size();
     }
 
 
     // implement SqlOperatorBinding
+    @Override
     public RelDataType getOperandType( int ordinal ) {
         return types.get( ordinal );
     }
 
 
+    @Override
     public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
         if ( delegate != null ) {
             return delegate.newError( e );
@@ -105,6 +108,7 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
     }
 
 
+    @Override
     public boolean isOperandNull( int ordinal, boolean allowCast ) {
         // NOTE jvs 1-May-2006:  This call is only relevant for SQL validation, so anywhere else, just say everything's OK.
         return false;

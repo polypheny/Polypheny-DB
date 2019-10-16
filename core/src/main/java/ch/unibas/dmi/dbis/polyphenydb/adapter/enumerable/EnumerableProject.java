@@ -56,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import java.util.List;
 
 
@@ -82,13 +81,6 @@ public class EnumerableProject extends Project implements EnumerableRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public EnumerableProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, int flags ) {
-        this( cluster, traitSet, input, projects, rowType );
-        Util.discard( flags );
-    }
-
-
     /**
      * Creates an EnumerableProject, specifying row type rather than field names.
      */
@@ -108,11 +100,13 @@ public class EnumerableProject extends Project implements EnumerableRel {
     }
 
 
+    @Override
     public EnumerableProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
         return new EnumerableProject( getCluster(), traitSet, input, projects, rowType );
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         // EnumerableCalcRel is always better
         throw new UnsupportedOperationException();

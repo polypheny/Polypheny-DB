@@ -73,6 +73,7 @@ public class EnumerableCollect extends Collect implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableRel child = (EnumerableRel) getInput();

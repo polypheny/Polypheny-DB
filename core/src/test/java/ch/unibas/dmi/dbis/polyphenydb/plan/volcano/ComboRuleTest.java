@@ -116,6 +116,7 @@ public class ComboRuleTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( PHYS_CALLING_CONVENTION );
             return new IntermediateNode( getCluster(), sole( inputs ), nodesBelowCount );
@@ -133,11 +134,13 @@ public class ComboRuleTest {
         }
 
 
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneLeafRel leaf = call.rel( 0 );
 

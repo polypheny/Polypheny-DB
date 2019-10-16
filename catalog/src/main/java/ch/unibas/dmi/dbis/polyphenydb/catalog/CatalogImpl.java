@@ -64,14 +64,12 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.util.LinkedList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class CatalogImpl extends Catalog {
-
-    private static final Logger LOG = LoggerFactory.getLogger( CatalogManagerImpl.class );
 
 
     CatalogImpl( PolyXid xid ) {
@@ -854,7 +852,6 @@ public class CatalogImpl extends Catalog {
         }
     }
 
-
     // TODO: String is only a temporary solution
 
 
@@ -949,7 +946,6 @@ public class CatalogImpl extends Catalog {
             throw new GenericCatalogException( e );
         }
     }
-
 
 
     /**
@@ -1416,7 +1412,7 @@ public class CatalogImpl extends Catalog {
             return transactionHandler.prepare();
         } else {
             // e.g. SELECT 1; commit;
-            LOG.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
+            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
             return true;
         }
     }
@@ -1429,7 +1425,7 @@ public class CatalogImpl extends Catalog {
             transactionHandler.commit();
         } else {
             // e.g. SELECT 1; commit;
-            LOG.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
+            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
         }
         CatalogManagerImpl.getInstance().removeCatalog( xid );
     }
@@ -1442,7 +1438,7 @@ public class CatalogImpl extends Catalog {
             transactionHandler.rollback();
         } else {
             // e.g. SELECT 1; commit;
-            LOG.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
+            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
         }
         CatalogManagerImpl.getInstance().removeCatalog( xid );
     }

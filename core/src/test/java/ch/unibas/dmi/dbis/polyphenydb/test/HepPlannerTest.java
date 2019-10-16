@@ -50,7 +50,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepMatchOrder;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
@@ -68,7 +67,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToCalcRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ReduceExpressionsRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionToDistinctRule;
-import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
 
@@ -105,6 +103,7 @@ public class HepPlannerTest extends RelOptTestBase {
             + ") a";
 
 
+    @Override
     protected DiffRepository getDiffRepos() {
         return DiffRepository.lookup( HepPlannerTest.class );
     }
@@ -311,20 +310,6 @@ public class HepPlannerTest extends RelOptTestBase {
     }
 
 
-    @Test
-    public void testMaterialization() throws Exception {
-        HepPlanner planner = new HepPlanner( HepProgram.builder().build() );
-        RelNode tableRel = tester.convertSqlToRel( "select * from dept" ).rel;
-        RelNode queryRel = tableRel;
-        RelOptMaterialization mat1 = new RelOptMaterialization( tableRel, queryRel, null, ImmutableList.of( "default", "mv" ) );
-        planner.addMaterialization( mat1 );
-        assertEquals( planner.getMaterializations().size(), 1 );
-        assertEquals( planner.getMaterializations().get( 0 ), mat1 );
-        planner.clear();
-        assertEquals( planner.getMaterializations().size(), 0 );
-    }
-
-
     private long checkRuleApplyCount( HepMatchOrder matchOrder ) {
         final HepProgramBuilder programBuilder = HepProgram.builder();
         programBuilder.addMatchOrder( matchOrder );
@@ -343,7 +328,7 @@ public class HepPlannerTest extends RelOptTestBase {
     /**
      * Listener for HepPlannerTest; counts how many times rules fire.
      */
-    private class HepTestListener implements RelOptListener {
+    private static class HepTestListener implements RelOptListener {
 
         private long applyTimes;
 

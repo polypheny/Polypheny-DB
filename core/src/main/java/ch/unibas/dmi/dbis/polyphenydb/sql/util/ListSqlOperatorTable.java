@@ -78,6 +78,7 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
     }
 
 
+    @Override
     public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         for ( SqlOperator operator : this.operatorList ) {
             if ( operator.getSyntax() != syntax ) {
@@ -103,6 +104,7 @@ public class ListSqlOperatorTable implements SqlOperatorTable {
     }
 
 
+    @Override
     public List<SqlOperator> getOperatorList() {
         return operatorList;
     }

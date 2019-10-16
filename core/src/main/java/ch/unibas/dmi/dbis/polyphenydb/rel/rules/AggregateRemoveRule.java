@@ -85,6 +85,7 @@ public class AggregateRemoveRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Aggregate aggregate = call.rel( 0 );
         final RelNode input = call.rel( 1 );

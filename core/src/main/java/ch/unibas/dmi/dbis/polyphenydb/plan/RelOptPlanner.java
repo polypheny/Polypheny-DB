@@ -47,12 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.util.CancelFlag;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -100,7 +98,7 @@ public interface RelOptPlanner {
     List<RelTraitDef> getRelTraitDefs();
 
     /**
-     * Removes all internal state, including all registered rules, materialized views, and lattices.
+     * Removes all internal state, including all registered rules.
      */
     void clear();
 
@@ -140,15 +138,6 @@ public interface RelOptPlanner {
      */
     void setRuleDescExclusionFilter( Pattern exclusionFilter );
 
-    /**
-     * Does nothing.
-     *
-     * @param cancelFlag flag which the planner should periodically check
-     * @deprecated Previously, this method installed the cancellation-checking flag for this planner, but is now deprecated. Now, you should add a {@link CancelFlag} to the {@link Context} passed to the constructor.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    void setCancelFlag( CancelFlag cancelFlag );
 
     /**
      * Changes a relational expression to an equivalent one with a different set of traits.
@@ -163,32 +152,6 @@ public interface RelOptPlanner {
      * Negotiates an appropriate planner to deal with distributed queries. The idea is that the schemas decide among themselves which has the most knowledge. Right now, the local planner retains control.
      */
     RelOptPlanner chooseDelegate();
-
-    /**
-     * Defines a pair of relational expressions that are equivalent.
-     *
-     * Typically {@code tableRel} is a {@link LogicalTableScan} representing a table that is a materialized view and {@code queryRel} is the SQL expression that populates that view.
-     * The intention is that {@code tableRel} is cheaper to evaluate and therefore if the query being optimized uses (or can be rewritten to use) {@code queryRel} as a sub-expression then it can be optimized by
-     * using {@code tableRel} instead.
-     */
-    void addMaterialization( RelOptMaterialization materialization );
-
-    /**
-     * Returns the materializations that have been registered with the planner.
-     */
-    List<RelOptMaterialization> getMaterializations();
-
-    /**
-     * Defines a lattice.
-     *
-     * The lattice may have materializations; it is not necessary to call {@link #addMaterialization} for these; they are registered implicitly.
-     */
-    void addLattice( RelOptLattice lattice );
-
-    /**
-     * Retrieves a lattice, given its star table.
-     */
-    RelOptLattice getLattice( RelOptTable table );
 
     /**
      * Finds the most efficient expression to implement this query.
@@ -211,12 +174,6 @@ public interface RelOptPlanner {
      */
     RelOptCost getCost( RelNode rel, RelMetadataQuery mq );
 
-    /**
-     * @deprecated Use {@link #getCost(RelNode, RelMetadataQuery)} or, better, call {@link RelMetadataQuery#getCumulativeCost(RelNode)}.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelOptCost getCost( RelNode rel );
 
     /**
      * Registers a relational expression in the expression bank.
@@ -323,16 +280,6 @@ public interface RelOptPlanner {
      * Called when a relational expression is copied to a similar expression.
      */
     void onCopy( RelNode rel, RelNode newRel );
-
-    /**
-     * @deprecated Use {@link RexExecutor}
-     */
-    @Deprecated
-            // to be removed before 2.0
-    interface Executor extends RexExecutor {
-
-    }
-
 
     /**
      * Thrown by {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#findBestExp()}.

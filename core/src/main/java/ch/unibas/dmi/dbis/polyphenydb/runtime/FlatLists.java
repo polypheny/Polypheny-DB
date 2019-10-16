@@ -327,6 +327,7 @@ public class FlatLists {
      */
     public abstract static class AbstractFlatList<T> extends AbstractImmutableList<T> implements RandomAccess {
 
+        @Override
         protected final List<T> toList() {
             //noinspection unchecked
             return Arrays.asList( (T[]) toArray() );
@@ -366,6 +367,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -376,11 +378,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 1;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Collections.singletonList( t0 ).iterator();
         }
@@ -407,6 +411,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -421,6 +426,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -435,6 +441,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 1 ) {
@@ -446,16 +453,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return new Flat2List<>( t0, e );
         }
@@ -490,6 +500,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -502,11 +513,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 2;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Arrays.asList( t0, t1 ).iterator();
         }
@@ -536,6 +549,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -556,6 +570,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t1 == null ) {
@@ -576,6 +591,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 2 ) {
@@ -588,16 +604,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0, t1 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return new Flat3List<>( t0, t1, e );
         }
@@ -634,6 +653,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -648,11 +668,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 3;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Arrays.asList( t0, t1, t2 ).iterator();
         }
@@ -683,6 +705,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -709,6 +732,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t2 == null ) {
@@ -735,6 +759,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 3 ) {
@@ -748,16 +773,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0, t1, t2 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return new Flat4List<>( t0, t1, t2, e );
         }
@@ -796,6 +824,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -812,11 +841,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 4;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Arrays.asList( t0, t1, t2, t3 ).iterator();
         }
@@ -849,6 +880,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -881,6 +913,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t3 == null ) {
@@ -913,6 +946,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 4 ) {
@@ -927,16 +961,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0, t1, t2, t3 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return new Flat5List<>( t0, t1, t2, t3, e );
         }
@@ -977,6 +1014,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -995,11 +1033,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 5;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Arrays.asList( t0, t1, t2, t3, t4 ).iterator();
         }
@@ -1034,6 +1074,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -1072,6 +1113,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t4 == null ) {
@@ -1110,6 +1152,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 5 ) {
@@ -1125,16 +1168,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0, t1, t2, t3, t4 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return new Flat6List<>( t0, t1, t2, t3, t4, e );
         }
@@ -1177,6 +1223,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             switch ( index ) {
                 case 0:
@@ -1197,11 +1244,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 6;
         }
 
 
+        @Override
         public Iterator<T> iterator() {
             return Arrays.asList( t0, t1, t2, t3, t4, t5 ).iterator();
         }
@@ -1238,6 +1287,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int indexOf( Object o ) {
             if ( o == null ) {
                 if ( t0 == null ) {
@@ -1282,6 +1332,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public int lastIndexOf( Object o ) {
             if ( o == null ) {
                 if ( t5 == null ) {
@@ -1326,6 +1377,7 @@ public class FlatLists {
         }
 
 
+        @Override
         @SuppressWarnings({ "unchecked" })
         public <T2> T2[] toArray( T2[] a ) {
             if ( a.length < 6 ) {
@@ -1342,16 +1394,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public Object[] toArray() {
             return new Object[]{ t0, t1, t2, t3, t4, t5 };
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
 
 
+        @Override
         public List<T> append( T e ) {
             return ImmutableList.of( t0, t1, t2, t3, t5, e );
         }
@@ -1369,6 +1424,7 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             throw new IndexOutOfBoundsException();
         }
@@ -1384,11 +1440,13 @@ public class FlatLists {
         }
 
 
+        @Override
         public int size() {
             return 0;
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return ComparableListImpl.compare( (List) this, o );
         }
@@ -1423,16 +1481,19 @@ public class FlatLists {
         }
 
 
+        @Override
         public T get( int index ) {
             return list.get( index );
         }
 
 
+        @Override
         public int size() {
             return list.size();
         }
 
 
+        @Override
         public int compareTo( List o ) {
             return compare( list, o );
         }

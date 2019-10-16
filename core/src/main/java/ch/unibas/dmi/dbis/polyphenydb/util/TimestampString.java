@@ -55,15 +55,11 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 /**
  * Timestamp literal.
  *
- * <p>Immutable, internally represented as a string (in ISO format),
- * and can support unlimited precision (milliseconds, nanoseconds).
+ * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimestampString implements Comparable<TimestampString> {
 
-    private static final Pattern PATTERN =
-            Pattern.compile( "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
-                    + " "
-                    + "[0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\.[0-9]*[1-9])?" );
+    private static final Pattern PATTERN = Pattern.compile( "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9](\\.[0-9]*[1-9])?" );
 
     final String v;
 
@@ -78,8 +74,7 @@ public class TimestampString implements Comparable<TimestampString> {
 
 
     /**
-     * Creates a TimestampString for year, month, day, hour, minute, second,
-     * millisecond values.
+     * Creates a TimestampString for year, month, day, hour, minute, second, millisecond values.
      */
     public TimestampString( int year, int month, int day, int h, int m, int s ) {
         this( DateTimeStringUtils.ymdhms( new StringBuilder(), year, month, day, h, m, s ).toString() );
@@ -87,12 +82,9 @@ public class TimestampString implements Comparable<TimestampString> {
 
 
     /**
-     * Sets the fraction field of a {@code TimestampString} to a given number
-     * of milliseconds. Nukes the value set via {@link #withNanos}.
+     * Sets the fraction field of a {@code TimestampString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
      *
-     * <p>For example,
-     * {@code new TimestampString(1970, 1, 1, 2, 3, 4).withMillis(56)}
-     * yields {@code TIMESTAMP '1970-01-01 02:03:04.056'}.
+     * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withMillis(56)} yields {@code TIMESTAMP '1970-01-01 02:03:04.056'}.
      */
     public TimestampString withMillis( int millis ) {
         Preconditions.checkArgument( millis >= 0 && millis < 1000 );
@@ -101,12 +93,9 @@ public class TimestampString implements Comparable<TimestampString> {
 
 
     /**
-     * Sets the fraction field of a {@code TimestampString} to a given number
-     * of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
+     * Sets the fraction field of a {@code TimestampString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
      *
-     * <p>For example,
-     * {@code new TimestampString(1970, 1, 1, 2, 3, 4).withNanos(56789)}
-     * yields {@code TIMESTAMP '1970-01-01 02:03:04.000056789'}.
+     * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withNanos(56789)} yields {@code TIMESTAMP '1970-01-01 02:03:04.000056789'}.
      */
     public TimestampString withNanos( int nanos ) {
         Preconditions.checkArgument( nanos >= 0 && nanos < 1000000000 );
@@ -119,9 +108,7 @@ public class TimestampString implements Comparable<TimestampString> {
      * The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
      *
-     * <p>For example,
-     * {@code new TimestampString(1970, 1, 1, 2, 3, 4).withFraction("00506000")}
-     * yields {@code TIMESTAMP '1970-01-01 02:03:04.00506'}.
+     * For example, {@code new TimestampString(1970, 1, 1, 2, 3, 4).withFraction("00506000")} yields {@code TIMESTAMP '1970-01-01 02:03:04.00506'}.
      */
     public TimestampString withFraction( String fraction ) {
         String v = this.v;
@@ -231,12 +218,10 @@ public class TimestampString implements Comparable<TimestampString> {
 
 
     /**
-     * Creates a TimestampString that is a given number of milliseconds since
-     * the epoch.
+     * Creates a TimestampString that is a given number of milliseconds since the epoch.
      */
     public static TimestampString fromMillisSinceEpoch( long millis ) {
-        return new TimestampString( DateTimeUtils.unixTimestampToString( millis ) )
-                .withMillis( (int) DateTimeUtils.floorMod( millis, 1000 ) );
+        return new TimestampString( DateTimeUtils.unixTimestampToString( millis ) ).withMillis( (int) DateTimeUtils.floorMod( millis, 1000 ) );
     }
 
 
@@ -246,8 +231,7 @@ public class TimestampString implements Comparable<TimestampString> {
 
 
     /**
-     * Converts this TimestampString to a string, truncated or padded with
-     * zeroes to a given precision.
+     * Converts this TimestampString to a string, truncated or padded with zeroes to a given precision.
      */
     public String toString( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
@@ -271,4 +255,3 @@ public class TimestampString implements Comparable<TimestampString> {
     }
 }
 
-// End TimestampString.java

@@ -90,6 +90,7 @@ public class JoinUnionTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Join join = call.rel( 0 );
         final Union unionRel;

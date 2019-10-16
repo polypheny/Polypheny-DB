@@ -62,6 +62,7 @@ class EnumerableWindowRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalWindow winAgg = (LogicalWindow) rel;
         final RelTraitSet traitSet = winAgg.getTraitSet().replace( EnumerableConvention.INSTANCE );

@@ -110,6 +110,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final MultiJoin multiJoinRel = call.rel( 0 );
         final LoptMultiJoin multiJoin = new LoptMultiJoin( multiJoinRel );

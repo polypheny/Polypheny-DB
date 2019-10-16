@@ -12,13 +12,11 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import java.io.File;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
+@Slf4j
 public class CsvStore implements Store {
-
-    private static final Logger LOG = LoggerFactory.getLogger( CsvStore.class );
 
     private static File csvDir = new File( "testTestCsv" );
     private CsvSchema currentSchema;
@@ -54,38 +52,38 @@ public class CsvStore implements Store {
 
     @Override
     public void dropTable( CatalogCombinedTable combinedTable ) {
-        LOG.warn( "CSV adapter does not support dropping tables!" );
+        log.warn( "CSV adapter does not support dropping tables!" );
     }
 
 
     @Override
     public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        LOG.warn( "CSV adapter does not support adding columns!" );
+        log.warn( "CSV adapter does not support adding columns!" );
     }
 
 
     @Override
     public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        LOG.warn( "CSV adapter does not support dropping columns!" );
+        log.warn( "CSV adapter does not support dropping columns!" );
     }
 
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        LOG.warn( "CSV Store does not support distributed transactions." );
+        log.warn( "CSV Store does not support distributed transactions." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        LOG.warn( "CSV Store does not support distributed transactions." );
+        log.warn( "CSV Store does not support distributed transactions." );
     }
 
 
     @Override
     public void truncate( Transaction transaction, CatalogCombinedTable table ) {
-        LOG.warn( "CSV Store does not support truncate." );
+        log.warn( "CSV Store does not support truncate." );
     }
 
 

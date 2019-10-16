@@ -171,6 +171,7 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
     }
 
 
+    @Override
     public SqlNode getNode() {
         return select;
     }
@@ -200,6 +201,7 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
     }
 
 
+    @Override
     public SqlValidatorScope getOperandScope( SqlCall call ) {
         if ( call.getOperator().isAggregator() ) {
             // If we're the 'SUM' node in 'select a + sum(b + c) from t group by a', then we should validate our arguments in the non-aggregating scope, where 'b' and 'c' are valid
@@ -224,6 +226,7 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
     }
 
 
+    @Override
     public boolean checkAggregateExpr( SqlNode expr, boolean deep ) {
         // Fully-qualify any identifiers in expr.
         if ( deep ) {
@@ -242,6 +245,7 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
     }
 
 
+    @Override
     public void validateExpr( SqlNode expr ) {
         checkAggregateExpr( expr, true );
     }

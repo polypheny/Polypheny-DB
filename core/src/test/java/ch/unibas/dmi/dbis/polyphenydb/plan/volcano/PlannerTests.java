@@ -234,6 +234,7 @@ class PlannerTests {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( PHYS_CALLING_CONVENTION );
             return new PhysSingleRel( getCluster(), sole( inputs ) );
@@ -257,6 +258,7 @@ class PlannerTests {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneLeafRel leafRel = call.rel( 0 );
             call.transformTo( new PhysLeafRel( leafRel.getCluster(), leafRel.label ) );
@@ -280,6 +282,7 @@ class PlannerTests {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel single = call.rel( 0 );
             RelNode input = single.getInput();

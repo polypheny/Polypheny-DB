@@ -142,6 +142,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     private static final List<RexNode> EMPTY_LIST = ImmutableList.of();
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Predicates> getDef() {
         return BuiltInMetadata.Predicates.DEF;
     }
@@ -759,6 +760,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             }
 
 
+            @Override
             public boolean hasNext() {
                 if ( firstCall ) {
                     initializeMapping();
@@ -770,11 +772,13 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             }
 
 
+            @Override
             public Mapping next() {
                 return nextMapping;
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }

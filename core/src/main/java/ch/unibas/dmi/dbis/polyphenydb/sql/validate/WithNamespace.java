@@ -73,6 +73,7 @@ public class WithNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         for ( SqlNode withItem : with.withList ) {
             validator.validateWithItem( (SqlWithItem) withItem );
@@ -85,6 +86,7 @@ public class WithNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return with;
     }

@@ -26,13 +26,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
 import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -71,15 +69,23 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     protected final NameMap<TableEntry> tableMap;
     protected final NameMultimap<FunctionEntry> functionMap;
     protected final NameMap<TypeEntry> typeMap;
-    protected final NameMap<LatticeEntry> latticeMap;
     protected final NameSet functionNames;
     protected final NameMap<FunctionEntry> nullaryFunctionMap;
     protected final NameMap<PolyphenyDbSchema> subSchemaMap;
     private List<? extends List<String>> path;
 
 
-    protected AbstractPolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name, NameMap<PolyphenyDbSchema> subSchemaMap, NameMap<TableEntry> tableMap, NameMap<LatticeEntry> latticeMap, NameMap<TypeEntry> typeMap,
-            NameMultimap<FunctionEntry> functionMap, NameSet functionNames, NameMap<FunctionEntry> nullaryFunctionMap, List<? extends List<String>> path ) {
+    protected AbstractPolyphenyDbSchema(
+            AbstractPolyphenyDbSchema parent,
+            Schema schema,
+            String name,
+            NameMap<PolyphenyDbSchema> subSchemaMap,
+            NameMap<TableEntry> tableMap,
+            NameMap<TypeEntry> typeMap,
+            NameMultimap<FunctionEntry> functionMap,
+            NameSet functionNames,
+            NameMap<FunctionEntry> nullaryFunctionMap,
+            List<? extends List<String>> path ) {
         this.parent = parent;
         this.schema = schema;
         this.name = name;
@@ -87,11 +93,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             this.tableMap = new NameMap<>();
         } else {
             this.tableMap = Objects.requireNonNull( tableMap );
-        }
-        if ( latticeMap == null ) {
-            this.latticeMap = new NameMap<>();
-        } else {
-            this.latticeMap = Objects.requireNonNull( latticeMap );
         }
         if ( subSchemaMap == null ) {
             this.subSchemaMap = new NameMap<>();
@@ -261,16 +262,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     }
 
 
-    private LatticeEntry add( String name, Lattice lattice ) {
-        if ( latticeMap.containsKey( name, false ) ) {
-            throw new RuntimeException( "Duplicate lattice '" + name + "'" );
-        }
-        final LatticeEntryImpl entry = new LatticeEntryImpl( this, name, lattice );
-        latticeMap.put( name, entry );
-        return entry;
-    }
-
-
     @Override
     public AbstractPolyphenyDbSchema root() {
         for ( AbstractPolyphenyDbSchema schema = this; ; ) {
@@ -313,25 +304,10 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Override
     public final PolyphenyDbSchema getSubSchema( String schemaName, boolean caseSensitive ) {
         // Check explicit schemas.
-        //noinspection LoopStatementThatDoesntLoop
         for ( Map.Entry<String, PolyphenyDbSchema> entry : subSchemaMap.range( schemaName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
         return getImplicitSubSchema( schemaName, caseSensitive );
-    }
-
-
-    /**
-     * Returns a table that materializes the given SQL statement.
-     */
-    @Override
-    public final TableEntry getTableBySql( String sql ) {
-        for ( TableEntry tableEntry : tableMap.map().values() ) {
-            if ( tableEntry.sqls.contains( sql ) ) {
-                return tableEntry;
-            }
-        }
-        return null;
     }
 
 
@@ -341,7 +317,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     @Override
     public final TableEntry getTable( String tableName, boolean caseSensitive ) {
         // Check explicit tables.
-        //noinspection LoopStatementThatDoesntLoop
         for ( Map.Entry<String, TableEntry> entry : tableMap.range( tableName, caseSensitive ).entrySet() ) {
             return entry.getValue();
         }
@@ -385,17 +360,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         builder.putAll( subSchemaMap.map() );
         addImplicitSubSchemaToBuilder( builder );
         return builder.build();
-    }
-
-
-    /**
-     * Returns a collection of lattices.
-     *
-     * All are explicit (defined using {@link #add(String, Lattice)}).
-     */
-    @Override
-    public NavigableMap<String, LatticeEntry> getLatticeMap() {
-        return ImmutableSortedMap.copyOf( latticeMap.map() );
     }
 
 
@@ -490,8 +454,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a tables derived from explicit and implicit functions
-     * that take zero parameters.
+     * Returns a tables derived from explicit and implicit functions that take zero parameters.
      */
     @Override
     public final TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive ) {
@@ -504,44 +467,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
             }
         }
         return getImplicitTableBasedOnNullaryFunction( tableName, caseSensitive );
-    }
-
-
-    /**
-     * Creates a snapshot of this PolyphenyDbSchema as of the specified time. All explicit objects in this PolyphenyDbSchema will be copied into the snapshot PolyphenyDbSchema, while the contents of the snapshot of the underlying schema
-     * should not change as specified in {@link Schema#snapshot(SchemaVersion)}. Snapshots of explicit sub schemas will be created and copied recursively.
-     *
-     * Currently, to accommodate the requirement of creating tables on the fly for materializations, the snapshot will still use the same table map and lattice map as in the original PolyphenyDbSchema instead of making copies.
-     *
-     * @param version The current schema version
-     * @return the schema snapshot.
-     */
-    @Override
-    public PolyphenyDbSchema createSnapshot( SchemaVersion version ) {
-        Preconditions.checkArgument( this.isRoot(), "must be root schema" );
-        return snapshot( null, version );
-    }
-
-
-    /**
-     * Returns a subset of a map whose keys match the given string case-insensitively.
-     *
-     * @deprecated use NameMap
-     */
-    @Deprecated // to be removed before 2.0
-    protected static <V> NavigableMap<String, V> find( NavigableMap<String, V> map, String s ) {
-        return NameMap.immutableCopyOf( map ).range( s, false );
-    }
-
-
-    /**
-     * Returns a subset of a set whose values match the given string case-insensitively.
-     *
-     * @deprecated use NameSet
-     */
-    @Deprecated // to be removed before 2.0
-    protected static Iterable<String> find( NavigableSet<String> set, String name ) {
-        return NameSet.immutableCopyOf( set ).range( name, false );
     }
 
 
@@ -725,12 +650,6 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
         @Override
         public void add( String name, RelProtoDataType type ) {
             AbstractPolyphenyDbSchema.this.add( name, type );
-        }
-
-
-        @Override
-        public void add( String name, Lattice lattice ) {
-            AbstractPolyphenyDbSchema.this.add( name, lattice );
         }
     }
 

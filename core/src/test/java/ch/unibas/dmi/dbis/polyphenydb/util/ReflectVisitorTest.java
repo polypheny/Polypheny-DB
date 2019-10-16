@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -110,7 +111,7 @@ public class ReflectVisitorTest {
 
         // verify that negater is NOT capable of handling integers
         result = negater.negate( 5 );
-        assertEquals( null, result );
+        assertNull( result );
     }
 
 

@@ -112,6 +112,7 @@ public abstract class MutableRel {
 
     public abstract List<MutableRel> getInputs();
 
+    @Override
     public abstract MutableRel clone();
 
     public abstract void childrenAccept( MutableRelVisitor visitor );

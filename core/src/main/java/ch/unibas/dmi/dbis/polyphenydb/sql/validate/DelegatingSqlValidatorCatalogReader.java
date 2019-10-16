@@ -68,21 +68,25 @@ public abstract class DelegatingSqlValidatorCatalogReader implements SqlValidato
     }
 
 
+    @Override
     public SqlValidatorTable getTable( List<String> names ) {
         return catalogReader.getTable( names );
     }
 
 
+    @Override
     public RelDataType getNamedType( SqlIdentifier typeName ) {
         return catalogReader.getNamedType( typeName );
     }
 
 
+    @Override
     public List<SqlMoniker> getAllSchemaObjectNames( List<String> names ) {
         return catalogReader.getAllSchemaObjectNames( names );
     }
 
 
+    @Override
     public List<List<String>> getSchemaPaths() {
         return catalogReader.getSchemaPaths();
     }

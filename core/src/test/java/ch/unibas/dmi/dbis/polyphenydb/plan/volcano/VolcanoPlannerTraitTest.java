@@ -253,10 +253,12 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public void register( RelOptPlanner planner ) {
         }
 
 
+        @Override
         public RelTraitDef getTraitDef() {
             return traitDef;
         }
@@ -279,6 +281,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public boolean satisfies( RelTrait trait ) {
             return trait.equals( ALT_EMPTY_TRAIT ) || equals( trait );
         }
@@ -298,21 +301,25 @@ public class VolcanoPlannerTraitTest {
         private Multimap<RelTrait, Pair<RelTrait, ConverterRule>> conversionMap = HashMultimap.create();
 
 
+        @Override
         public Class<AltTrait> getTraitClass() {
             return AltTrait.class;
         }
 
 
+        @Override
         public String getSimpleName() {
             return "alt_phys";
         }
 
 
+        @Override
         public AltTrait getDefault() {
             return ALT_TRAIT;
         }
 
 
+        @Override
         public RelNode convert( RelOptPlanner planner, RelNode rel, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
             RelTrait fromTrait = rel.getTraitSet().getTrait( this );
 
@@ -337,6 +344,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public boolean canConvert( RelOptPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
             if ( conversionMap.containsKey( fromTrait ) ) {
                 for ( Pair<RelTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
@@ -350,6 +358,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public void registerConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
             if ( !converterRule.isGuaranteed() ) {
                 return;
@@ -383,12 +392,14 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelNode
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
 
         // implement RelNode
+        @Override
         protected RelDataType deriveRowType() {
             final RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
             return typeFactory.builder()
@@ -397,6 +408,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelWriter explainTerms( RelWriter pw ) {
             return super.explainTerms( pw ).item( "label", label );
         }
@@ -431,6 +443,7 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelNode
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
@@ -450,12 +463,14 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelNode
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
 
         // implement RelNode
+        @Override
         protected RelDataType deriveRowType() {
             return getInput().getRowType();
         }
@@ -479,6 +494,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             return new NoneSingleRel( getCluster(), traitSet, sole( inputs ) );
         }
@@ -504,11 +520,13 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelNode
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             return new IterSingleRel( getCluster(), sole( inputs ) );
@@ -533,12 +551,14 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelOptRule
+        @Override
         public Convention getOutConvention() {
             return PHYS_CALLING_CONVENTION;
         }
 
 
         // implement RelOptRule
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneLeafRel leafRel = call.rel( 0 );
             call.transformTo( new PhysLeafRel( leafRel.getCluster(), leafRel.getLabel() ) );
@@ -557,17 +577,20 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelOptRule
+        @Override
         public Convention getOutConvention() {
             return EnumerableConvention.INSTANCE;
         }
 
 
+        @Override
         public RelTrait getOutTrait() {
             return getOutConvention();
         }
 
 
         // implement RelOptRule
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel rel = call.rel( 0 );
 
@@ -589,17 +612,20 @@ public class VolcanoPlannerTraitTest {
 
 
         // implement RelOptRule
+        @Override
         public Convention getOutConvention() {
             return EnumerableConvention.INSTANCE;
         }
 
 
+        @Override
         public RelTrait getOutTrait() {
             return getOutConvention();
         }
 
 
         // implement RelOptRule
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel rel = call.rel( 0 );
 
@@ -626,11 +652,13 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             return new AltTraitConverter( rel.getCluster(), rel, toTrait );
         }
 
 
+        @Override
         public boolean isGuaranteed() {
             return true;
         }
@@ -651,6 +679,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             return new AltTraitConverter( getCluster(), AbstractRelNode.sole( inputs ), toTrait );
         }
@@ -667,6 +696,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             return new PhysToIteratorConverter( rel.getCluster(), rel );
         }
@@ -683,6 +713,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             return new PhysToIteratorConverter( getCluster(), AbstractRelNode.sole( inputs ) );
         }
@@ -723,6 +754,7 @@ public class VolcanoPlannerTraitTest {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             assert inputs.isEmpty();

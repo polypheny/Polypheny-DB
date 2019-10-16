@@ -123,6 +123,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
     }
 
 
+    @Override
     public RelTrait get( int index ) {
         return getTrait( index );
     }
@@ -285,6 +286,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
      *
      * @return the size of the RelTraitSet.
      */
+    @Override
     public int size() {
         return traits.length;
     }
@@ -305,7 +307,6 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
 
         if ( trait instanceof RelCompositeTrait ) {
             // Composite traits are canonized on creation
-            //noinspection unchecked
             return trait;
         }
 

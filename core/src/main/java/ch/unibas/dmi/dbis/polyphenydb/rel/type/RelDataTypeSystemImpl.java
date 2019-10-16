@@ -62,6 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
  */
 public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
+    @Override
     public int getMaxScale( SqlTypeName typeName ) {
         switch ( typeName ) {
             case DECIMAL:
@@ -290,11 +291,13 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
     }
 
 
+    @Override
     public boolean isSchemaCaseSensitive() {
         return true;
     }
 
 
+    @Override
     public boolean shouldConvertRaggedUnionTypesToVarying() {
         return false;
     }

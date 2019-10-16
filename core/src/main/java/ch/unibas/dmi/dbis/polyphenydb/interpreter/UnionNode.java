@@ -72,6 +72,7 @@ public class UnionNode implements Node {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         final Set<Row> rows = rel.all ? null : new HashSet<>();
         for ( Source source : sources ) {

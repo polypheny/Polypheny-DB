@@ -112,6 +112,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
     }
 
 
+    @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
     }
@@ -136,6 +137,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         }
 
 
+        @Override
         public Expression field( BlockBuilder list, int index, Type storageType ) {
             if ( index < actualInputFieldCount ) {
                 Expression current = list.append( "current", row );
@@ -193,6 +195,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final EnumerableRel child = (EnumerableRel) getInput();
@@ -482,6 +485,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             final DeclarationStatement jDecl,
             final PhysType inputPhysType ) {
         return block -> new WinAggFrameResultContext() {
+            @Override
             public RexToLixTranslator rowTranslator( Expression rowIndex ) {
                 Expression row = getRow( rowIndex );
                 final RexToLixTranslator.InputGetter inputGetter = new WindowRelInputGetter( row, inputPhysType, result.physType.getRowType().getFieldCount(), translatedConstants );
@@ -489,6 +493,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
 
 
+            @Override
             public Expression computeIndex( Expression offset, WinAggImplementor.SeekType seekType ) {
                 Expression index;
                 if ( seekType == WinAggImplementor.SeekType.AGG_INDEX ) {
@@ -527,16 +532,19 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
 
 
+            @Override
             public Expression rowInFrame( Expression rowIndex ) {
                 return checkBounds( rowIndex, startX, endX );
             }
 
 
+            @Override
             public Expression rowInPartition( Expression rowIndex ) {
                 return checkBounds( rowIndex, minX, maxX );
             }
 
 
+            @Override
             public Expression compareRows( Expression a, Expression b ) {
                 return Expressions.call( comparator_, BuiltInMethod.COMPARATOR_COMPARE.method, getRow( a ), getRow( b ) );
             }
@@ -547,31 +555,37 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
 
 
+            @Override
             public Expression index() {
                 return i_;
             }
 
 
+            @Override
             public Expression startIndex() {
                 return startX;
             }
 
 
+            @Override
             public Expression endIndex() {
                 return endX;
             }
 
 
+            @Override
             public Expression hasRows() {
                 return hasRows;
             }
 
 
+            @Override
             public Expression getFrameRowCount() {
                 return frameRowCount;
             }
 
 
+            @Override
             public Expression getPartitionRowCount() {
                 return partitionRowCount;
             }
@@ -673,48 +687,57 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         for ( final AggImpState agg : aggs ) {
             agg.context =
                     new WinAggContext() {
+                        @Override
                         public SqlAggFunction aggregation() {
                             return agg.call.getAggregation();
                         }
 
 
+                        @Override
                         public RelDataType returnRelType() {
                             return agg.call.type;
                         }
 
 
+                        @Override
                         public Type returnType() {
                             return EnumUtils.javaClass( typeFactory, returnRelType() );
                         }
 
 
+                        @Override
                         public List<? extends Type> parameterTypes() {
                             return EnumUtils.fieldTypes( typeFactory,
                                     parameterRelTypes() );
                         }
 
 
+                        @Override
                         public List<? extends RelDataType> parameterRelTypes() {
                             return EnumUtils.fieldRowTypes( result.physType.getRowType(),
                                     constants, agg.call.getArgList() );
                         }
 
 
+                        @Override
                         public List<ImmutableBitSet> groupSets() {
                             throw new UnsupportedOperationException();
                         }
 
 
+                        @Override
                         public List<Integer> keyOrdinals() {
                             throw new UnsupportedOperationException();
                         }
 
 
+                        @Override
                         public List<? extends RelDataType> keyRelTypes() {
                             throw new UnsupportedOperationException();
                         }
 
 
+                        @Override
                         public List<? extends Type> keyTypes() {
                             throw new UnsupportedOperationException();
                         }
@@ -756,16 +779,19 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         for ( final AggImpState agg : aggs ) {
             final WinAggAddContext addContext =
                     new WinAggAddContextImpl( builder7, agg.state, frame ) {
+                        @Override
                         public Expression currentPosition() {
                             return jDecl.parameter;
                         }
 
 
+                        @Override
                         public List<RexNode> rexArguments() {
                             return rexArguments.apply( agg );
                         }
 
 
+                        @Override
                         public RexNode rexFilterArgument() {
                             return null; // REVIEW
                         }
@@ -790,6 +816,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             nonEmpty = true;
             Expression res = agg.implementor.implementResult( agg.context,
                     new WinAggResultContextImpl( builder, agg.state, frame ) {
+                        @Override
                         public List<RexNode> rexArguments() {
                             return rexArguments.apply( agg );
                         }

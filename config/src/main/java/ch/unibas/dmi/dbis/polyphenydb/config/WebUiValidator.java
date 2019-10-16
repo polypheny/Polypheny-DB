@@ -34,5 +34,5 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
  */
 public enum WebUiValidator {
     REQUIRED,
-    EMAIL;
+    EMAIL
 }

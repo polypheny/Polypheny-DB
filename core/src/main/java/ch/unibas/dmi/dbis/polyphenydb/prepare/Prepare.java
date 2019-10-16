@@ -46,12 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.prepare;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptLattice;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -64,7 +61,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutorImpl;
@@ -73,12 +69,9 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Typed;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ExtensibleTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.LatticeEntry;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.TableEntry;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ModifiableViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.StarTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
@@ -100,7 +93,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTimingTracer;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -129,9 +121,9 @@ public abstract class Prepare {
     public static final TryThreadLocal<Boolean> THREAD_TRIM = TryThreadLocal.of( false );
 
     /**
-     * Temporary, until <a href="https://issues.apache.org/jira/browse/CALCITE-1045">[POLYPHENYDB-1045] Decorrelate sub-queries in Project and Join</a> is fixed.
+     * Temporary, until "Decorrelate sub-queries in Project and Join" is fixed.
      *
-     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true. After POLYPHENYDB-1045 is fixed, remove those overrides and use false everywhere.
+     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true. After it is fixed, remove those overrides and use false everywhere.
      */
     public static final TryThreadLocal<Boolean> THREAD_EXPAND = TryThreadLocal.of( false );
 
@@ -156,39 +148,13 @@ public abstract class Prepare {
      * Optimizes a query plan.
      *
      * @param root Root of relational expression tree
-     * @param materializations Tables known to be populated with a given query
-     * @param lattices Lattices
      * @return an equivalent optimized relational expression
      */
-    protected RelRoot optimize( RelRoot root, final List<Materialization> materializations, final List<LatticeEntry> lattices ) {
+    protected RelRoot optimize( RelRoot root ) {
         final RelOptPlanner planner = root.rel.getCluster().getPlanner();
 
         final DataContext dataContext = context.getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
-
-        final List<RelOptMaterialization> materializationList = new ArrayList<>();
-        for ( Materialization materialization : materializations ) {
-            List<String> qualifiedTableName = materialization.materializedTable.path();
-            materializationList.add(
-                    new RelOptMaterialization(
-                            materialization.tableRel,
-                            materialization.queryRel,
-                            materialization.starRelOptTable,
-                            qualifiedTableName ) );
-        }
-
-        final List<RelOptLattice> latticeList = new ArrayList<>();
-        for ( LatticeEntry lattice : lattices ) {
-            final TableEntry starTable = lattice.getStarTable();
-            final JavaTypeFactory typeFactory = context.getTypeFactory();
-            final RelOptTableImpl starRelOptTable =
-                    RelOptTableImpl.create(
-                            catalogReader,
-                            starTable.getTable().getRowType( typeFactory ),
-                            starTable,
-                            null );
-            latticeList.add( new RelOptLattice( lattice.getLattice(), starRelOptTable ) );
-        }
 
         final RelTraitSet desiredTraits = getDesiredRootTraitSet( root );
 
@@ -209,7 +175,7 @@ public abstract class Prepare {
         visitor.go( root.rel );
 
         final Program program = getProgram();
-        final RelNode rootRel4 = program.run( planner, root.rel, desiredTraits, materializationList, latticeList );
+        final RelNode rootRel4 = program.run( planner, root.rel, desiredTraits );
         if ( LOGGER.isDebugEnabled() ) {
             LOGGER.debug( "Plan after physical tweaks: {}", RelOptUtil.toString( rootRel4, SqlExplainLevel.ALL_ATTRIBUTES ) );
         }
@@ -316,12 +282,12 @@ public abstract class Prepare {
             switch ( sqlExplain.getDepth() ) {
                 case PHYSICAL:
                 default:
-                    root = optimize( root, getMaterializations(), getLattices() );
+                    root = optimize( root );
                     return createPreparedExplanation( null, parameterRowType, root, sqlExplain.getFormat(), sqlExplain.getDetailLevel() );
             }
         }
 
-        root = optimize( root, getMaterializations(), getLattices() );
+        root = optimize( root );
 
         if ( timingTracer != null ) {
             timingTracer.traceTime( "end optimization" );
@@ -363,10 +329,6 @@ public abstract class Prepare {
 
     protected abstract RelNode decorrelate( SqlToRelConverter sqlToRelConverter, SqlNode query, RelNode rootRel );
 
-    protected abstract List<Materialization> getMaterializations();
-
-    protected abstract List<LatticeEntry> getLattices();
-
 
     /**
      * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.
@@ -402,6 +364,7 @@ public abstract class Prepare {
      */
     public interface CatalogReader extends RelOptSchema, SqlValidatorCatalogReader, SqlOperatorTable {
 
+        @Override
         PreparingTable getTableForMember( List<String> names );
 
         /**
@@ -429,7 +392,7 @@ public abstract class Prepare {
      */
     public abstract static class AbstractPreparingTable implements PreparingTable {
 
-        @SuppressWarnings("deprecation")
+        @Override
         public boolean columnHasDefaultValue( RelDataType rowType, int ordinal, InitializerContext initializerContext ) {
             // This method is no longer used
             final Table table = this.unwrap( Table.class );
@@ -449,6 +412,7 @@ public abstract class Prepare {
         }
 
 
+        @Override
         public final RelOptTable extend( List<RelDataTypeField> extendedFields ) {
             final Table table = unwrap( Table.class );
 
@@ -475,6 +439,7 @@ public abstract class Prepare {
         protected abstract RelOptTable extend( Table extendedTable );
 
 
+        @Override
         public List<ColumnStrategy> getColumnStrategies() {
             return RelOptTableImpl.columnStrategies( AbstractPreparingTable.this );
         }
@@ -502,6 +467,7 @@ public abstract class Prepare {
         }
 
 
+        @Override
         public String getCode() {
             if ( root == null ) {
                 return RelOptUtil.dumpType( rowType );
@@ -511,21 +477,25 @@ public abstract class Prepare {
         }
 
 
+        @Override
         public RelDataType getParameterRowType() {
             return parameterRowType;
         }
 
 
+        @Override
         public boolean isDml() {
             return false;
         }
 
 
+        @Override
         public LogicalTableModify.Operation getTableModOp() {
             return null;
         }
 
 
+        @Override
         public List<List<String>> getFieldOrigins() {
             return Collections.singletonList( Collections.nCopies( 4, null ) );
         }
@@ -597,21 +567,25 @@ public abstract class Prepare {
         }
 
 
+        @Override
         public boolean isDml() {
             return isDml;
         }
 
 
+        @Override
         public LogicalTableModify.Operation getTableModOp() {
             return tableModOp;
         }
 
 
+        @Override
         public List<List<String>> getFieldOrigins() {
             return fieldOrigins;
         }
 
 
+        @Override
         public RelDataType getParameterRowType() {
             return parameterRowType;
         }
@@ -625,6 +599,7 @@ public abstract class Prepare {
         }
 
 
+        @Override
         public abstract Type getElementType();
 
 
@@ -633,52 +608,5 @@ public abstract class Prepare {
         }
     }
 
-
-    /**
-     * Describes that a given SQL query is materialized by a given table. The materialization is currently valid, and can be used in the planning process.
-     */
-    public static class Materialization {
-
-        /**
-         * The table that holds the materialized data.
-         */
-        final TableEntry materializedTable;
-        /**
-         * The query that derives the data.
-         */
-        final String sql;
-        /**
-         * The schema path for the query.
-         */
-        final List<String> viewSchemaPath;
-        /**
-         * Relational expression for the table. Usually a {@link LogicalTableScan}.
-         */
-        RelNode tableRel;
-        /**
-         * Relational expression for the query to populate the table.
-         */
-        RelNode queryRel;
-        /**
-         * Star table identified.
-         */
-        private RelOptTable starRelOptTable;
-
-
-        public Materialization( TableEntry materializedTable, String sql, List<String> viewSchemaPath ) {
-            assert materializedTable != null;
-            assert sql != null;
-            this.materializedTable = materializedTable;
-            this.sql = sql;
-            this.viewSchemaPath = viewSchemaPath;
-        }
-
-
-        public void materialize( RelNode queryRel, RelOptTable starRelOptTable ) {
-            this.queryRel = queryRel;
-            this.starRelOptTable = starRelOptTable;
-            assert starRelOptTable.unwrap( StarTable.class ) != null;
-        }
-    }
 }
 

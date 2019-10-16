@@ -67,11 +67,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
  */
 public class EnumerableUncollect extends Uncollect implements EnumerableRel {
 
-    @Deprecated // to be removed before 2.0
-    public EnumerableUncollect( RelOptCluster cluster, RelTraitSet traitSet, RelNode child ) {
-        this( cluster, traitSet, child, false );
-    }
-
 
     /**
      * Creates an EnumerableUncollect.
@@ -106,6 +101,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableRel child = (EnumerableRel) getInput();

@@ -76,10 +76,12 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     }
 
 
+    @Override
     public Enumerable<Object[]> scan( DataContext root ) {
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object[]>() {
+            @Override
             public Enumerator<Object[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, false, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }

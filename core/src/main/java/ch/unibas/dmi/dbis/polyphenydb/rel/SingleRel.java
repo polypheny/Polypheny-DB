@@ -99,6 +99,7 @@ public abstract class SingleRel extends AbstractRelNode {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw ).input( "input", getInput() );
     }
@@ -111,6 +112,7 @@ public abstract class SingleRel extends AbstractRelNode {
     }
 
 
+    @Override
     protected RelDataType deriveRowType() {
         return input.getRowType();
     }

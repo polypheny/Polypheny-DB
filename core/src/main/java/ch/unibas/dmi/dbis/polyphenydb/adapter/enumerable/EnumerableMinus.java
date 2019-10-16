@@ -68,11 +68,13 @@ public class EnumerableMinus extends Minus implements EnumerableRel {
     }
 
 
+    @Override
     public EnumerableMinus copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
         return new EnumerableMinus( getCluster(), traitSet, inputs, all );
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         Expression minusExp = null;

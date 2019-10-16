@@ -62,6 +62,7 @@ public class RexSqlReflectiveConvertletTable implements RexSqlConvertletTable {
     }
 
 
+    @Override
     public RexSqlConvertlet get( RexCall call ) {
         RexSqlConvertlet convertlet;
         final SqlOperator op = call.getOperator();
@@ -73,7 +74,7 @@ public class RexSqlReflectiveConvertletTable implements RexSqlConvertletTable {
         }
 
         // Is there a convertlet for this class of operator (e.g. SqlBinaryOperator)?
-        Class<? extends Object> clazz = op.getClass();
+        Class<?> clazz = op.getClass();
         while ( clazz != null ) {
             convertlet = (RexSqlConvertlet) map.get( clazz );
             if ( convertlet != null ) {

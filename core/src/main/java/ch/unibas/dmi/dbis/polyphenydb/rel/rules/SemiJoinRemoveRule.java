@@ -72,6 +72,7 @@ public class SemiJoinRemoveRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         call.transformTo( call.rel( 0 ).getInput( 0 ) );
     }

@@ -89,6 +89,7 @@ public class Sample extends SingleRel {
     }
 
 
+    @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new Sample( getCluster(), sole( inputs ), params );

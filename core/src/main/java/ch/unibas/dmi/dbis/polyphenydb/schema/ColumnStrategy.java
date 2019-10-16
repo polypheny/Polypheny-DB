@@ -55,25 +55,30 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
  * @see RelOptTable#getColumnStrategies()
  */
 public enum ColumnStrategy {
+
     /**
      * Column does not have a default value, but does allow null values.
      * If you don't specify it in an INSERT, it will get a NULL value.
      */
     NULLABLE,
+
     /**
      * Column does not have a default value, and does not allow nulls.
      * You must specify it in an INSERT.
      */
     NOT_NULLABLE,
+
     /**
      * Column has a default value.
      * If you don't specify it in an INSERT, it will get a NULL value.
      */
     DEFAULT,
+
     /**
      * Column is computed and stored. You cannot insert into it.
      */
     STORED,
+
     /**
      * Column is computed and not stored. You cannot insert into it.
      */

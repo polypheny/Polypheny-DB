@@ -51,8 +51,7 @@ select * from t;
 
 
 # Create a table with complex structure type
-# This is to test struct type inference in
-# <a href="https://issues.apache.org/jira/browse/CALCITE-1222">[CALCITE-2468]
+# This is to test struct type inference
 
 create type mytype1 as (ii int not null);
 (0 rows modified)

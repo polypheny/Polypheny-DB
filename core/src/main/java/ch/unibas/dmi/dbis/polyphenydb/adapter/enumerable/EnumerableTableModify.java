@@ -89,6 +89,7 @@ public class EnumerableTableModify extends TableModify implements EnumerableRel 
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result result = implementor.visitChild( this, 0, (EnumerableRel) getInput(), pref );

@@ -153,6 +153,7 @@ public abstract class Window extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         for ( Ord<Group> window : Ord.zip( groups ) ) {
@@ -165,11 +166,13 @@ public abstract class Window extends SingleRel {
     public static ImmutableIntList getProjectOrdinals( final List<RexNode> exprs ) {
         return ImmutableIntList.copyOf(
                 new AbstractList<Integer>() {
+                    @Override
                     public Integer get( int index ) {
                         return ((RexSlot) exprs.get( index )).getIndex();
                     }
 
 
+                    @Override
                     public int size() {
                         return exprs.size();
                     }
@@ -180,6 +183,7 @@ public abstract class Window extends SingleRel {
     public static RelCollation getCollation( final List<RexFieldCollation> collations ) {
         return RelCollations.of(
                 new AbstractList<RelFieldCollation>() {
+                    @Override
                     public RelFieldCollation get( int index ) {
                         final RexFieldCollation collation = collations.get( index );
                         return new RelFieldCollation(
@@ -189,6 +193,7 @@ public abstract class Window extends SingleRel {
                     }
 
 
+                    @Override
                     public int size() {
                         return collations.size();
                     }
@@ -333,11 +338,13 @@ public abstract class Window extends SingleRel {
         public List<AggregateCall> getAggregateCalls( Window windowRel ) {
             final List<String> fieldNames = Util.skip( windowRel.getRowType().getFieldNames(), windowRel.getInput().getRowType().getFieldCount() );
             return new AbstractList<AggregateCall>() {
+                @Override
                 public int size() {
                     return aggCalls.size();
                 }
 
 
+                @Override
                 public AggregateCall get( int index ) {
                     final RexWinAggCall aggCall = aggCalls.get( index );
                     final SqlAggFunction op = (SqlAggFunction) aggCall.getOperator();

@@ -45,12 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -64,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,6 +86,7 @@ public class MongoSort extends Sort implements MongoRel {
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         if ( !collation.getFieldCollations().isEmpty() ) {

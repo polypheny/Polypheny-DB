@@ -164,6 +164,7 @@ public class JoinProjectTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Join joinRel = call.rel( 0 );
         JoinRelType joinType = joinRel.getJoinType();

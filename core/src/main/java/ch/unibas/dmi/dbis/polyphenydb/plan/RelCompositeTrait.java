@@ -100,6 +100,7 @@ class RelCompositeTrait<T extends RelMultipleTrait> implements RelTrait {
     }
 
 
+    @Override
     public RelTraitDef getTraitDef() {
         return traitDef;
     }
@@ -125,6 +126,7 @@ class RelCompositeTrait<T extends RelMultipleTrait> implements RelTrait {
     }
 
 
+    @Override
     public boolean satisfies( RelTrait trait ) {
         for ( T t : traits ) {
             if ( t.satisfies( trait ) ) {
@@ -135,6 +137,7 @@ class RelCompositeTrait<T extends RelMultipleTrait> implements RelTrait {
     }
 
 
+    @Override
     public void register( RelOptPlanner planner ) {
     }
 

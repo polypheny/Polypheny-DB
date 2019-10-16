@@ -91,16 +91,19 @@ public abstract class SqlOperandCountRanges {
         }
 
 
+        @Override
         public boolean isValidCount( int count ) {
             return count >= min && (max == -1 || count <= max);
         }
 
 
+        @Override
         public int getMin() {
             return min;
         }
 
 
+        @Override
         public int getMax() {
             return max;
         }

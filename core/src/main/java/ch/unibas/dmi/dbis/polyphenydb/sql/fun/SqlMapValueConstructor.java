@@ -84,6 +84,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final List<RelDataType> argTypes =
                 SqlTypeUtil.deriveAndCollectTypes(

@@ -75,6 +75,7 @@ class WithScope extends ListScope {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return withItem;
     }

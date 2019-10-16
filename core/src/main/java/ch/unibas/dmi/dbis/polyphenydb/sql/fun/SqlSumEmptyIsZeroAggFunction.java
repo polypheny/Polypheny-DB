@@ -45,18 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSplittableAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**
@@ -78,21 +73,6 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
                 false,
                 false,
                 Optionality.FORBIDDEN );
-    }
-
-
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        return ImmutableList.of(
-                typeFactory.createTypeWithNullability(
-                        typeFactory.createSqlType( SqlTypeName.ANY ),
-                        true ) );
-    }
-
-
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
     }
 
 

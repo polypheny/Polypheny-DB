@@ -134,6 +134,7 @@ public class Uncollect extends SingleRel {
     }
 
 
+    @Override
     protected RelDataType deriveRowType() {
         return deriveUncollectRowType( input, withOrdinality );
     }

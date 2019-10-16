@@ -139,6 +139,7 @@ public class SqlFunction extends SqlOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.FUNCTION;
     }
@@ -179,6 +180,7 @@ public class SqlFunction extends SqlOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         getSyntax().unparse( writer, this, call, leftPrec, rightPrec );
     }
@@ -201,6 +203,7 @@ public class SqlFunction extends SqlOperator {
     }
 
 
+    @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         // This implementation looks for the quantifier keywords DISTINCT or ALL as the first operand in the list.  If found then the literal is not called to validate itself.  Further the function is checked to
         // make sure that a quantifier is valid for that particular function.
@@ -222,6 +225,7 @@ public class SqlFunction extends SqlOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         return deriveType( validator, scope, call, true );
     }

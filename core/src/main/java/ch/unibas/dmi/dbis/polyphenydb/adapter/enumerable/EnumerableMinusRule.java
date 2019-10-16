@@ -63,6 +63,7 @@ class EnumerableMinusRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalMinus minus = (LogicalMinus) rel;
         if ( minus.all ) {

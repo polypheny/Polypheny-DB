@@ -800,16 +800,19 @@ public final class SqlParserUtil {
         }
 
 
+        @Override
         public PrecedenceClimbingParser parser( int start, Predicate<PrecedenceClimbingParser.Token> predicate ) {
             return parser.copy( start, predicate );
         }
 
 
+        @Override
         public int size() {
             return list.size();
         }
 
 
+        @Override
         public SqlOperator op( int i ) {
             return ((ToTreeListItem) list.get( i ).o).getOperator();
         }
@@ -832,21 +835,25 @@ public final class SqlParserUtil {
         }
 
 
+        @Override
         public SqlParserPos pos( int i ) {
             return pos( list.get( i ) );
         }
 
 
+        @Override
         public boolean isOp( int i ) {
             return list.get( i ).o instanceof ToTreeListItem;
         }
 
 
+        @Override
         public SqlNode node( int i ) {
             return convert( list.get( i ) );
         }
 
 
+        @Override
         public void replaceSublist( int start, int end, SqlNode e ) {
             SqlParserUtil.replaceSublist( list, start, end, parser.atom( e ) );
         }
@@ -901,16 +908,19 @@ public final class SqlParserUtil {
         }
 
 
+        @Override
         public int size() {
             return list.size();
         }
 
 
+        @Override
         public SqlOperator op( int i ) {
             return ((ToTreeListItem) list.get( i )).op;
         }
 
 
+        @Override
         public SqlParserPos pos( int i ) {
             final Object o = list.get( i );
             return o instanceof ToTreeListItem
@@ -919,16 +929,19 @@ public final class SqlParserUtil {
         }
 
 
+        @Override
         public boolean isOp( int i ) {
             return list.get( i ) instanceof ToTreeListItem;
         }
 
 
+        @Override
         public SqlNode node( int i ) {
             return (SqlNode) list.get( i );
         }
 
 
+        @Override
         public void replaceSublist( int start, int end, SqlNode e ) {
             SqlParserUtil.replaceSublist( list, start, end, e );
         }

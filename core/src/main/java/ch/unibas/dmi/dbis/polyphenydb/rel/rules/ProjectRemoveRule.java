@@ -84,6 +84,7 @@ public class ProjectRemoveRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Project project = call.rel( 0 );
         assert isTrivial( project );

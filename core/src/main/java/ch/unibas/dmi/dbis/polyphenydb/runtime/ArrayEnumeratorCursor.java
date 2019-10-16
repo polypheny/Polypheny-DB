@@ -63,6 +63,7 @@ public class ArrayEnumeratorCursor extends EnumeratorCursor<Object[]> {
     }
 
 
+    @Override
     protected Getter createGetter( int ordinal ) {
         return new ArrayGetter( ordinal );
     }

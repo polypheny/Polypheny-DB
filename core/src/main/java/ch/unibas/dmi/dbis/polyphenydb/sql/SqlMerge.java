@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
@@ -82,6 +81,7 @@ public class SqlMerge extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return OPERATOR;
     }
@@ -93,6 +93,7 @@ public class SqlMerge extends SqlCall {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( targetTable, condition, source, updateCall, insertCall, sourceSelect, alias );
     }
@@ -184,7 +185,7 @@ public class SqlMerge extends SqlCall {
 
     /**
      * Gets the source SELECT expression for the data to be updated/inserted.
-     * Returns null before the statement has been expanded by {@link SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
+     * Returns null before the statement has been expanded by {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
      *
      * @return the source SELECT for the data to be updated
      */
@@ -250,6 +251,7 @@ public class SqlMerge extends SqlCall {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateMerge( this );
     }

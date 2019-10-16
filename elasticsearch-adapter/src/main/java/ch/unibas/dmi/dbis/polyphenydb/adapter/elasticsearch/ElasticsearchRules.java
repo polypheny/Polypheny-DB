@@ -45,13 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
@@ -77,7 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -301,6 +293,7 @@ class ElasticsearchRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalAggregate agg = (LogicalAggregate) rel;
             final RelTraitSet traitSet = agg.getTraitSet().replace( out );

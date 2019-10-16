@@ -63,21 +63,25 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
     }
 
 
+    @Override
     public R visitInputRef( RexInputRef inputRef ) {
         return null;
     }
 
 
+    @Override
     public R visitLocalRef( RexLocalRef localRef ) {
         return null;
     }
 
 
+    @Override
     public R visitLiteral( RexLiteral literal ) {
         return null;
     }
 
 
+    @Override
     public R visitOver( RexOver over ) {
         R r = visitCall( over );
         if ( !deep ) {
@@ -96,11 +100,13 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
     }
 
 
+    @Override
     public R visitCorrelVariable( RexCorrelVariable correlVariable ) {
         return null;
     }
 
 
+    @Override
     public R visitCall( RexCall call ) {
         if ( !deep ) {
             return null;
@@ -114,16 +120,19 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
     }
 
 
+    @Override
     public R visitDynamicParam( RexDynamicParam dynamicParam ) {
         return null;
     }
 
 
+    @Override
     public R visitRangeRef( RexRangeRef rangeRef ) {
         return null;
     }
 
 
+    @Override
     public R visitFieldAccess( RexFieldAccess fieldAccess ) {
         if ( !deep ) {
             return null;
@@ -133,6 +142,7 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
     }
 
 
+    @Override
     public R visitSubQuery( RexSubQuery subQuery ) {
         if ( !deep ) {
             return null;

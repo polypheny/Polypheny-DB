@@ -54,6 +54,7 @@ public abstract class DynamicRecordType extends RelDataTypeImpl {
     public static final String DYNAMIC_STAR_PREFIX = "**";
 
 
+    @Override
     public boolean isDynamicStruct() {
         return true;
     }

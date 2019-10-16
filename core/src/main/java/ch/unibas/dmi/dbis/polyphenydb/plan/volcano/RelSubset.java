@@ -157,6 +157,7 @@ public class RelSubset extends AbstractRelNode {
     }
 
 
+    @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         if ( inputs.isEmpty() ) {
             final RelTraitSet traitSet1 = traitSet.simplify();
@@ -169,11 +170,13 @@ public class RelSubset extends AbstractRelNode {
     }
 
 
+    @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }
 
 
+    @Override
     public double estimateRowCount( RelMetadataQuery mq ) {
         if ( best != null ) {
             return mq.getRowCount( best );

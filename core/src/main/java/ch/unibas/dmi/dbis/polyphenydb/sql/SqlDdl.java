@@ -85,6 +85,7 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return operator;
     }

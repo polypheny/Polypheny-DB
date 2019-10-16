@@ -62,9 +62,10 @@ import java.util.List;
 public interface CustomColumnResolvingTable extends Table {
 
     /**
-     * Resolve a column based on the name components. One or more the input name components can be resolved to one field in the table row type, along with a remainder list of name components which have not been
-     * resolved within this call, and which in turn can be potentially resolved as sub-field names. In the meantime, this method can return multiple matches, which is a list of pairs containing the resolved field and the
-     * remaining name components.
+     * Resolve a column based on the name components. One or more the input name components can be resolved to one field in the table row type,
+     * along with a remainder list of name components which have not been resolved within this call, and which in turn can be potentially
+     * resolved as sub-field names. In the meantime, this method can return multiple matches, which is a list of pairs containing the resolved
+     * field and the remaining name components.
      *
      * @param rowType the table row type
      * @param typeFactory the type factory

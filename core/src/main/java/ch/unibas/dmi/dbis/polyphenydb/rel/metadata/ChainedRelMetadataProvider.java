@@ -91,6 +91,7 @@ public class ChainedRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, final Class<? extends M> metadataClass ) {
         final List<UnboundMetadata<M>> functions = new ArrayList<>();
         for ( RelMetadataProvider provider : providers ) {
@@ -123,6 +124,7 @@ public class ChainedRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         final ImmutableMultimap.Builder<Method, MetadataHandler<M>> builder = ImmutableMultimap.builder();
         for ( RelMetadataProvider provider : providers.reverse() ) {
@@ -153,6 +155,7 @@ public class ChainedRelMetadataProvider implements RelMetadataProvider {
         }
 
 
+        @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
             for ( Metadata metadata : metadataList ) {
                 try {

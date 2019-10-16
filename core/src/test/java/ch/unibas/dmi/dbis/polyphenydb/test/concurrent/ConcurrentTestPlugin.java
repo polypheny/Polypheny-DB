@@ -69,7 +69,7 @@ public abstract class ConcurrentTestPlugin {
      * @return List of supported commands
      */
     public Iterable<String> getSupportedThreadCommands() {
-        return new ArrayList<String>();
+        return new ArrayList<>();
     }
 
 
@@ -79,7 +79,7 @@ public abstract class ConcurrentTestPlugin {
      * @return List of supported commands
      */
     public Iterable<String> getSupportedPreSetupCommands() {
-        return new ArrayList<String>();
+        return new ArrayList<>();
     }
 
 

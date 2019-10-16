@@ -56,8 +56,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 /**
  * Time with time-zone literal.
  *
- * <p>Immutable, internally represented as a string (in ISO format),
- * and can support unlimited precision (milliseconds, nanoseconds).
+ * Immutable, internally represented as a string (in ISO format), and can support unlimited precision (milliseconds, nanoseconds).
  */
 public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString> {
 
@@ -89,8 +88,7 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
 
 
     /**
-     * Creates a TimeWithTimeZoneString for hour, minute, second and millisecond values
-     * in the given time-zone.
+     * Creates a TimeWithTimeZoneString for hour, minute, second and millisecond values in the given time-zone.
      */
     public TimeWithTimeZoneString( int h, int m, int s, String timeZone ) {
         this( DateTimeStringUtils.hms( new StringBuilder(), h, m, s ).toString() + " " + timeZone );
@@ -98,12 +96,9 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
 
 
     /**
-     * Sets the fraction field of a {@code TimeWithTimeZoneString} to a given number
-     * of milliseconds. Nukes the value set via {@link #withNanos}.
+     * Sets the fraction field of a {@code TimeWithTimeZoneString} to a given number of milliseconds. Nukes the value set via {@link #withNanos}.
      *
-     * <p>For example,
-     * {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withMillis(56)}
-     * yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.056 UTC'}.
+     * For example, {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withMillis(56)} yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.056 UTC'}.
      */
     public TimeWithTimeZoneString withMillis( int millis ) {
         Preconditions.checkArgument( millis >= 0 && millis < 1000 );
@@ -112,12 +107,9 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
 
 
     /**
-     * Sets the fraction field of a {@code TimeString} to a given number
-     * of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
+     * Sets the fraction field of a {@code TimeString} to a given number of nanoseconds. Nukes the value set via {@link #withMillis(int)}.
      *
-     * <p>For example,
-     * {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withNanos(56789)}
-     * yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.000056789 UTC'}.
+     * For example, {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withNanos(56789)} yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.000056789 UTC'}.
      */
     public TimeWithTimeZoneString withNanos( int nanos ) {
         Preconditions.checkArgument( nanos >= 0 && nanos < 1000000000 );
@@ -130,9 +122,7 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
      * The precision is determined by the number of leading zeros.
      * Trailing zeros are stripped.
      *
-     * <p>For example,
-     * {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withFraction("00506000")}
-     * yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.00506 UTC'}.
+     * For example, {@code new TimeWithTimeZoneString(1970, 1, 1, 2, 3, 4, "UTC").withFraction("00506000")} yields {@code TIME WITH LOCAL TIME ZONE '1970-01-01 02:03:04.00506 UTC'}.
      */
     public TimeWithTimeZoneString withFraction( String fraction ) {
         String v = this.v;
@@ -168,18 +158,14 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
             v = localTimeString;
             fraction = null;
         }
-        final DateTimeUtils.PrecisionTime pt =
-                DateTimeUtils.parsePrecisionDateTimeLiteral( v,
-                        new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING, Locale.ROOT ),
-                        this.timeZone, -1 );
+        final DateTimeUtils.PrecisionTime pt = DateTimeUtils.parsePrecisionDateTimeLiteral( v, new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING, Locale.ROOT ), this.timeZone, -1 );
         pt.getCalendar().setTimeZone( timeZone );
         if ( fraction != null ) {
             return new TimeWithTimeZoneString(
                     pt.getCalendar().get( Calendar.HOUR_OF_DAY ),
                     pt.getCalendar().get( Calendar.MINUTE ),
                     pt.getCalendar().get( Calendar.SECOND ),
-                    timeZone.getID() )
-                    .withFraction( fraction );
+                    timeZone.getID() ).withFraction( fraction );
         }
         return new TimeWithTimeZoneString(
                 pt.getCalendar().get( Calendar.HOUR_OF_DAY ),
@@ -218,21 +204,17 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
 
     public TimeWithTimeZoneString round( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
-        return new TimeWithTimeZoneString(
-                localTime.round( precision ), timeZone );
+        return new TimeWithTimeZoneString( localTime.round( precision ), timeZone );
     }
 
 
     public static TimeWithTimeZoneString fromMillisOfDay( int i ) {
-        return new TimeWithTimeZoneString(
-                DateTimeUtils.unixTimeToString( i ) + " " + DateTimeUtils.UTC_ZONE.getID() )
-                .withMillis( (int) DateTimeUtils.floorMod( i, 1000 ) );
+        return new TimeWithTimeZoneString( DateTimeUtils.unixTimeToString( i ) + " " + DateTimeUtils.UTC_ZONE.getID() ).withMillis( (int) DateTimeUtils.floorMod( i, 1000 ) );
     }
 
 
     /**
-     * Converts this TimeWithTimeZoneString to a string, truncated or padded with
-     * zeroes to a given precision.
+     * Converts this TimeWithTimeZoneString to a string, truncated or padded with zeroes to a given precision.
      */
     public String toString( int precision ) {
         Preconditions.checkArgument( precision >= 0 );
@@ -246,4 +228,3 @@ public class TimeWithTimeZoneString implements Comparable<TimeWithTimeZoneString
 
 }
 
-// End TimeWithTimeZoneString.java

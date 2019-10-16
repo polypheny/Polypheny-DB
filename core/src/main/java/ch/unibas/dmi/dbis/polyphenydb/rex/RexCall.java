@@ -186,16 +186,19 @@ public class RexCall extends RexNode {
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitCall( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitCall( this, arg );
     }
 
 
+    @Override
     public RelDataType getType() {
         return type;
     }
@@ -241,6 +244,7 @@ public class RexCall extends RexNode {
     }
 
 
+    @Override
     public SqlKind getKind() {
         return op.kind;
     }

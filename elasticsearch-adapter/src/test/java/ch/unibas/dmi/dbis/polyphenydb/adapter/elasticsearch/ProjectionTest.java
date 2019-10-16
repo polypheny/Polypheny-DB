@@ -45,12 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
 import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert.ConnectionFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
@@ -72,83 +70,83 @@ import org.junit.Test;
 @Ignore
 public class ProjectionTest {
 
-    @ClassRule
-    public static final EmbeddedElasticsearchPolicy NODE = EmbeddedElasticsearchPolicy.create();
-
-    private static final String NAME = "docs";
-
-
-    @BeforeClass
-    public static void setupInstance() throws Exception {
-
-        final Map<String, String> mappings = ImmutableMap.of( "A", "keyword", "b", "keyword", "cCC", "keyword", "DDd", "keyword" );
-
-        NODE.createIndex( NAME, mappings );
-
-        String doc = "{'A': 'aa', 'b': 'bb', 'cCC': 'cc', 'DDd': 'dd'}".replace( '\'', '"' );
-        NODE.insertDocument( NAME, (ObjectNode) NODE.mapper().readTree( doc ) );
-    }
-
-
-    private ConnectionFactory newConnectionFactory() {
-        return new ConnectionFactory() {
-            @Override
-            public Connection createConnection() throws SQLException {
-                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
-                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
-
-                root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
-
-                // add Polypheny-DB view programmatically
-                final String viewSql = String.format( Locale.ROOT,
-                        "select cast(_MAP['A'] AS varchar(2)) AS a,"
-                                + " cast(_MAP['b'] AS varchar(2)) AS b, "
-                                + " cast(_MAP['cCC'] AS varchar(2)) AS c, "
-                                + " cast(_MAP['DDd'] AS varchar(2)) AS d "
-                                + " from \"elastic\".\"%s\"", NAME );
-
-                ViewTableMacro macro = ViewTable.viewMacro( root, viewSql, Collections.singletonList( "elastic" ), Arrays.asList( "elastic", "view" ), false );
-                root.add( "VIEW", macro );
-
-                return connection;
-            }
-        };
-    }
-
-
-    @Test
-    public void projection() {
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select * from view" )
-                .returns( "A=aa; B=bb; C=cc; D=dd\n" );
-
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select a, b, c, d from view" )
-                .returns( "A=aa; B=bb; C=cc; D=dd\n" );
-
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select d, c, b, a from view" )
-                .returns( "D=dd; C=cc; B=bb; A=aa\n" );
-
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select a from view" )
-                .returns( "A=aa\n" );
-
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select a, b from view" )
-                .returns( "A=aa; B=bb\n" );
-
-        PolyphenyDbAssert.that()
-                .with( newConnectionFactory() )
-                .query( "select b, a from view" )
-                .returns( "B=bb; A=aa\n" );
-
-    }
+//    @ClassRule
+//    public static final EmbeddedElasticsearchPolicy NODE = EmbeddedElasticsearchPolicy.create();
+//
+//    private static final String NAME = "docs";
+//
+//
+//    @BeforeClass
+//    public static void setupInstance() throws Exception {
+//
+//        final Map<String, String> mappings = ImmutableMap.of( "A", "keyword", "b", "keyword", "cCC", "keyword", "DDd", "keyword" );
+//
+//        NODE.createIndex( NAME, mappings );
+//
+//        String doc = "{'A': 'aa', 'b': 'bb', 'cCC': 'cc', 'DDd': 'dd'}".replace( '\'', '"' );
+//        NODE.insertDocument( NAME, (ObjectNode) NODE.mapper().readTree( doc ) );
+//    }
+//
+//
+//    private ConnectionFactory newConnectionFactory() {
+//        return new ConnectionFactory() {
+//            @Override
+//            public Connection createConnection() throws SQLException {
+//                final Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:" );
+//                final SchemaPlus root = connection.unwrap( PolyphenyDbEmbeddedConnection.class ).getRootSchema();
+//
+//                root.add( "elastic", new ElasticsearchSchema( NODE.restClient(), NODE.mapper(), NAME ) );
+//
+//                // add Polypheny-DB view programmatically
+//                final String viewSql = String.format( Locale.ROOT,
+//                        "select cast(_MAP['A'] AS varchar(2)) AS a,"
+//                                + " cast(_MAP['b'] AS varchar(2)) AS b, "
+//                                + " cast(_MAP['cCC'] AS varchar(2)) AS c, "
+//                                + " cast(_MAP['DDd'] AS varchar(2)) AS d "
+//                                + " from \"elastic\".\"%s\"", NAME );
+//
+//                ViewTableMacro macro = ViewTable.viewMacro( root, viewSql, Collections.singletonList( "elastic" ), Arrays.asList( "elastic", "view" ), false );
+//                root.add( "VIEW", macro );
+//
+//                return connection;
+//            }
+//        };
+//    }
+//
+//
+//    @Test
+//    public void projection() {
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select * from view" )
+//                .returns( "A=aa; B=bb; C=cc; D=dd\n" );
+//
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select a, b, c, d from view" )
+//                .returns( "A=aa; B=bb; C=cc; D=dd\n" );
+//
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select d, c, b, a from view" )
+//                .returns( "D=dd; C=cc; B=bb; A=aa\n" );
+//
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select a from view" )
+//                .returns( "A=aa\n" );
+//
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select a, b from view" )
+//                .returns( "A=aa; B=bb\n" );
+//
+//        PolyphenyDbAssert.that()
+//                .with( newConnectionFactory() )
+//                .query( "select b, a from view" )
+//                .returns( "B=bb; A=aa\n" );
+//
+//    }
 
 }
 

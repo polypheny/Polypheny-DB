@@ -382,7 +382,7 @@ public class RexBuilderTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2306">[POLYPHENYDB-2306] AssertionError in {@link RexLiteral#getValue3} with null literal of type DECIMAL</a>.
+     * Test case for "AssertionError in {@link RexLiteral#getValue3} with null literal of type DECIMAL".
      */
     @Test
     public void testDecimalLiteral() {

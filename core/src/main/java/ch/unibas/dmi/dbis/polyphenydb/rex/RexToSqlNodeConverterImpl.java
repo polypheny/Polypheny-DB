@@ -69,6 +69,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
 
 
     // implement RexToSqlNodeConverter
+    @Override
     public SqlNode convertNode( RexNode node ) {
         if ( node instanceof RexLiteral ) {
             return convertLiteral( (RexLiteral) node );
@@ -82,6 +83,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
 
 
     // implement RexToSqlNodeConverter
+    @Override
     public SqlNode convertCall( RexCall call ) {
         final RexSqlConvertlet convertlet = convertletTable.get( call );
         if ( convertlet != null ) {
@@ -93,6 +95,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
 
 
     // implement RexToSqlNodeConverter
+    @Override
     public SqlNode convertLiteral( RexLiteral literal ) {
         // Numeric
         if ( SqlTypeFamily.EXACT_NUMERIC.getTypeNames().contains( literal.getTypeName() ) ) {
@@ -154,6 +157,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
 
 
     // implement RexToSqlNodeConverter
+    @Override
     public SqlNode convertInputRef( RexInputRef ref ) {
         return null;
     }

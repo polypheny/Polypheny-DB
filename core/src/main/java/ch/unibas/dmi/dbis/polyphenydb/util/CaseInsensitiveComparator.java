@@ -49,16 +49,12 @@ import java.util.Comparator;
 
 
 /**
- * Comparator that compares all strings differently, but if two strings are
- * equal in case-insensitive match they are right next to each other.
+ * Comparator that compares all strings differently, but if two strings are equal in case-insensitive match they are right next to each other.
  *
- * <p>Note: strings that differ only in upper-lower case are treated by this comparator
- * as distinct.
+ * Note: strings that differ only in upper-lower case are treated by this comparator as distinct.
  *
- * <p>In a collection sorted on this comparator, we can find case-insensitive matches
- * for a given string using
- * {@link #floorKey(java.lang.String)}
- * and {@link #ceilingKey(java.lang.String)}.
+ * In a collection sorted on this comparator, we can find case-insensitive matches for a given string using
+ * {@link #floorKey(java.lang.String)} and {@link #ceilingKey(java.lang.String)}.
  */
 class CaseInsensitiveComparator implements Comparator {
 
@@ -114,5 +110,3 @@ class CaseInsensitiveComparator implements Comparator {
         return s1.compareTo( s2 );
     }
 }
-
-// End CaseInsensitiveComparator.java

@@ -56,8 +56,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 
 
 /**
- * Map whose keys are names and can be accessed with and without case
- * sensitivity.
+ * Map whose keys are names and can be accessed with and without case sensitivity.
  *
  * @param <V> Value type
  */
@@ -97,9 +96,7 @@ public class NameMap<V> {
 
     @Override
     public boolean equals( Object obj ) {
-        return this == obj
-                || obj instanceof NameMap
-                && map.equals( ((NameMap) obj).map );
+        return this == obj || obj instanceof NameMap && map.equals( ((NameMap) obj).map );
     }
 
 
@@ -117,8 +114,7 @@ public class NameMap<V> {
 
 
     /**
-     * Returns a map containing all the entries in the map that match the given
-     * name. If case-sensitive, that map will have 0 or 1 elements; if
+     * Returns a map containing all the entries in the map that match the given name. If case-sensitive, that map will have 0 or 1 elements; if
      * case-insensitive, it may have 0 or more.
      */
     public NavigableMap<String, V> range( String name, boolean caseSensitive ) {
@@ -137,8 +133,7 @@ public class NameMap<V> {
 
 
     /**
-     * Returns whether this map contains a given key, with a given
-     * case-sensitivity.
+     * Returns whether this map contains a given key, with a given case-sensitivity.
      */
     public boolean containsKey( String name, boolean caseSensitive ) {
         return !range( name, caseSensitive ).isEmpty();
@@ -158,5 +153,3 @@ public class NameMap<V> {
         return map.remove( key );
     }
 }
-
-// End NameMap.java

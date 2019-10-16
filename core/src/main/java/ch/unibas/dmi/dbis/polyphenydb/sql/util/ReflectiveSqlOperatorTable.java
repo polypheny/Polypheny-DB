@@ -101,6 +101,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
 
 
     // implement SqlOperatorTable
+    @Override
     public void lookupOperatorOverloads( SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList ) {
         // NOTE jvs 3-Mar-2005:  ignore category until someone cares
 
@@ -154,6 +155,7 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
     }
 
 
+    @Override
     public List<SqlOperator> getOperatorList() {
         return ImmutableList.copyOf( operators.values() );
     }

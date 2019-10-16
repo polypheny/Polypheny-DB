@@ -79,6 +79,7 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
     /**
      * Returns e.g. '03:05:67.456'.
      */
+    @Override
     public String toFormattedString() {
         TimestampString ts = getTimestamp();
         if ( precision > 0 ) {
@@ -88,6 +89,7 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseDateTimeLiteral( writer, this, leftPrec, rightPrec );
     }

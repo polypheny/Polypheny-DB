@@ -53,19 +53,15 @@ import java.util.RandomAccess;
 /**
  * A view onto an array that cannot be modified by the client.
  *
- * <p>Since the array is not copied, modifications to the array will be
- * reflected in the list.</p>
+ * Since the array is not copied, modifications to the array will be reflected in the list.
  *
- * <p>Null elements are allowed.</p>
+ * Null elements are allowed.
  *
- * <p>Quick and low-memory, like {@link java.util.Arrays#asList(Object[])}, but
- * unmodifiable.</p>
+ * Quick and low-memory, like {@link java.util.Arrays#asList(Object[])}, but unmodifiable.
  *
  * @param <E> Element type
  */
-public class UnmodifiableArrayList<E>
-        extends AbstractList<E>
-        implements RandomAccess {
+public class UnmodifiableArrayList<E> extends AbstractList<E> implements RandomAccess {
 
     private final E[] elements;
 
@@ -92,4 +88,3 @@ public class UnmodifiableArrayList<E>
     }
 }
 
-// End UnmodifiableArrayList.java

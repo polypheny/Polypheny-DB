@@ -90,6 +90,7 @@ public class FilterCorrelateRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Filter filter = call.rel( 0 );
         final Correlate corr = call.rel( 1 );

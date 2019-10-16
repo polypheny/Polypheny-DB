@@ -71,35 +71,42 @@ public enum EnumerableConvention implements Convention {
     }
 
 
+    @Override
     public Class getInterface() {
         return EnumerableRel.class;
     }
 
 
+    @Override
     public String getName() {
         return "ENUMERABLE";
     }
 
 
+    @Override
     public RelTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
     }
 
 
+    @Override
     public boolean satisfies( RelTrait trait ) {
         return this == trait;
     }
 
 
+    @Override
     public void register( RelOptPlanner planner ) {
     }
 
 
+    @Override
     public boolean canConvertConvention( Convention toConvention ) {
         return false;
     }
 
 
+    @Override
     public boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits ) {
         return false;
     }

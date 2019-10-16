@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -60,10 +59,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -90,11 +87,13 @@ public class MongoFilter extends Filter implements MongoRel {
     }
 
 
+    @Override
     public MongoFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
         return new MongoFilter( getCluster(), traitSet, input, condition );
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         Translator translator = new Translator( MongoRules.mongoFieldNames( getRowType() ) );

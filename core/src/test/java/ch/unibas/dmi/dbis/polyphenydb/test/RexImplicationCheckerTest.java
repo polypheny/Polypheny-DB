@@ -321,7 +321,6 @@ public class RexImplicationCheckerTest {
 
 
     /**
-     * Similar to {@link MaterializationTest#testAlias()}:
      * {@code x > 1 OR (y > 2 AND z > 4)}
      * implies
      * {@code (y > 3 AND z > 5)}.
@@ -405,7 +404,7 @@ public class RexImplicationCheckerTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2041">[POLYPHENYDB-2041] When simplifying a nullable expression, allow the result to change type to NOT NULL</a> and match nullability.
+     * Test case for "When simplifying a nullable expression, allow the result to change type to NOT NULL" and match nullability.
      *
      * @see RexSimplify#simplifyPreservingType(RexNode, RexUnknownAs, boolean)
      */
@@ -617,8 +616,9 @@ public class RexImplicationCheckerTest {
                     .build();
             Frameworks.withPrepare(
                     new Frameworks.PrepareAction<Void>( config ) {
+                        @Override
                         public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-                            DataContext dataContext = Schemas.createDataContext( null, rootSchema );
+                            DataContext dataContext = Schemas.createDataContext( rootSchema );
                             holder.set( new RexExecutorImpl( dataContext ) );
                             return null;
                         }

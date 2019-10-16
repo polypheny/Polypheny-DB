@@ -78,6 +78,7 @@ public class RexRangeRef extends RexNode {
     }
 
 
+    @Override
     public RelDataType getType() {
         return type;
     }
@@ -88,11 +89,13 @@ public class RexRangeRef extends RexNode {
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitRangeRef( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitRangeRef( this, arg );
     }

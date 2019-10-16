@@ -62,11 +62,13 @@ import com.google.common.collect.ImmutableList;
 public class MultisetOperandTypeChecker implements SqlOperandTypeChecker {
 
 
+    @Override
     public boolean isOptional( int i ) {
         return false;
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final SqlNode op0 = callBinding.operand( 0 );
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, op0, 0, throwOnFailure ) ) {
@@ -102,16 +104,19 @@ public class MultisetOperandTypeChecker implements SqlOperandTypeChecker {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 2 );
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         return "<MULTISET> " + opName + " <MULTISET>";
     }
 
 
+    @Override
     public Consistency getConsistency() {
         return Consistency.NONE;
     }

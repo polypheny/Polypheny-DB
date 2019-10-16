@@ -95,6 +95,7 @@ public class SemiJoinProjectTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         SemiJoin semiJoin = call.rel( 0 );
         LogicalProject project = call.rel( 1 );

@@ -88,7 +88,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 Integer index = subMap.get( names.get( 1 ) );
                 if ( index != null ) {
-                    ret.add( new Pair<RelDataTypeField, List<String>>( rowType.getFieldList().get( index ), names.subList( 2, names.size() ) ) );
+                    ret.add( new Pair<>( rowType.getFieldList().get( index ), names.subList( 2, names.size() ) ) );
                 }
             }
         }
@@ -97,7 +97,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
         final List<String> remainder = names.subList( 1, names.size() );
         Integer index = nameMap.get( columnName );
         if ( index != null ) {
-            ret.add( new Pair<RelDataTypeField, List<String>>( rowType.getFieldList().get( index ), remainder ) );
+            ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
             return ret;
         }
 
@@ -107,7 +107,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 index = subMap.get( columnName );
                 if ( index != null ) {
-                    ret.add( new Pair<RelDataTypeField, List<String>>( rowType.getFieldList().get( index ), remainder ) );
+                    ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
                     return ret;
                 }
             }
@@ -118,7 +118,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             }
             index = entry.getValue().get( columnName );
             if ( index != null ) {
-                ret.add( new Pair<RelDataTypeField, List<String>>( rowType.getFieldList().get( index ), remainder ) );
+                ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
             }
         }
 
@@ -127,7 +127,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 List<Map.Entry<String, Integer>> entries = new ArrayList<>( subMap.entrySet() );
                 entries.sort( ( o1, o2 ) -> o1.getValue() - o2.getValue() );
-                ret.add( new Pair<RelDataTypeField, List<String>>( new RelDataTypeFieldImpl( columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
+                ret.add( new Pair<>( new RelDataTypeFieldImpl( columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
             }
         }
 

@@ -73,6 +73,7 @@ class HepRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, final Class<? extends M> metadataClass ) {
         return ( rel, mq ) -> {
             if ( !(rel instanceof HepRelVertex) ) {
@@ -86,6 +87,7 @@ class HepRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         return ImmutableMultimap.of();
     }

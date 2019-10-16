@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.tools;
@@ -56,6 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
@@ -82,6 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.schema.HrSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Path;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
@@ -101,7 +84,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
@@ -128,6 +110,7 @@ public class FrameworksTest {
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
                     final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
                     final Table table = new AbstractTable() {
+                        @Override
                         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                             final RelDataType stringType = typeFactory.createJavaType( String.class );
                             final RelDataType integerType = typeFactory.createJavaType( Integer.class );
@@ -182,7 +165,7 @@ public class FrameworksTest {
     /**
      * Tests that validation (specifically, inferring the result of adding two DECIMAL(19, 0) values together) happens differently with a type system that allows a larger maximum precision for decimals.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-413">[POLYPHENYDB-413] Add RelDataTypeSystem plugin, allowing different max precision of a DECIMAL</a>.
+     * Test case for "Add RelDataTypeSystem plugin, allowing different max precision of a DECIMAL".
      *
      * Also tests the plugin system, by specifying implementations of a plugin interface with public and private constructors.
      */
@@ -251,15 +234,18 @@ public class FrameworksTest {
     /**
      * Tests that the validator expands identifiers by default.
      *
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-593">[POLYPHENYDB-593] Validator in Frameworks should expand identifiers</a>.
+     * Test case for "Validator in Frameworks should expand identifiers".
      */
     @Test
     public void testFrameworksValidatorWithIdentifierExpansion() throws Exception {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus schema = Frameworks
+                .createRootSchema( true )
+                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
+                .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
+                        PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -287,9 +273,12 @@ public class FrameworksTest {
      */
     @Test
     public void testSchemaPath() {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus schema = Frameworks
+                .createRootSchema( true )
+                .add( "hr", new ReflectiveSchema( new HrSchema() ) );
+
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
+                .defaultSchema( schema )
                 .build();
         final Path path = Schemas.path( config.getDefaultSchema() );
         assertThat( path.size(), is( 2 ) );
@@ -316,63 +305,7 @@ public class FrameworksTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1996">[POLYPHENYDB-1996] VALUES syntax</a>.
-     *
-     * With that bug, running a VALUES query would succeed before running a query that reads from a JDBC table, but fail after it. Before, the plan would use {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableValues},
-     * but after, it would use {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcValues}, and would generate invalid SQL syntax.
-     *
-     * Even though the SQL generator has been fixed, we are still interested in how JDBC convention gets lodged in the planner's state.
-     */
-    @Test
-    public void testJdbcValues() throws Exception {
-        PolyphenyDbAssert.that()
-                .with( PolyphenyDbAssert.SchemaSpec.JDBC_SCOTT )
-                .doWithConnection( connection -> {
-                    try {
-                        final FrameworkConfig config = Frameworks.newConfigBuilder()
-                                .defaultSchema( connection.getRootSchema() )
-                                .prepareContext( new ContextImpl(
-                                        PolyphenyDbSchema.from( connection.getRootSchema() ),
-                                        new SlimDataContext() {
-                                            @Override
-                                            public JavaTypeFactory getTypeFactory() {
-                                                return new JavaTypeFactoryImpl();
-                                            }
-                                        },
-                                        "",
-                                        0,
-                                        0,
-                                        null ) )
-                                .build();
-                        final RelBuilder builder = RelBuilder.create( config );
-                        final RelRunner runner = connection.unwrap( RelRunner.class );
-
-                        final RelNode values =
-                                builder.values( new String[]{ "a", "b" }, "X", 1, "Y", 2 )
-                                        .project( builder.field( "a" ) )
-                                        .build();
-
-                        // If you run the "values" query before the "scan" query, everything works fine. JdbcValues is never instantiated in any of the 3 queries.
-                        if ( false ) {
-                            runner.prepare( values ).executeQuery();
-                        }
-
-                        final RelNode scan = builder.scan( "JDBC_SCOTT", "EMP" ).build();
-                        runner.prepare( scan ).executeQuery();
-                        builder.clear();
-
-                        // running this after the scott query causes the exception
-                        RelRunner runner2 = connection.unwrap( RelRunner.class );
-                        runner2.prepare( values ).executeQuery();
-                    } catch ( Exception e ) {
-                        throw new RuntimeException( e );
-                    }
-                } );
-    }
-
-
-    /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2039">[POLYPHENYDB-2039] AssertionError when pushing project to ProjectableFilterableTable</a> using UPDATE via {@link Frameworks}.
+     * Test case for "AssertionError when pushing project to ProjectableFilterableTable" using UPDATE via {@link Frameworks}.
      */
     @Test
     public void testUpdate() throws Exception {
@@ -448,6 +381,7 @@ public class FrameworksTest {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "id", typeFactory.createSqlType( SqlTypeName.INTEGER ) )
@@ -456,36 +390,43 @@ public class FrameworksTest {
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.of( 15D, ImmutableList.of( ImmutableBitSet.of( 0 ) ), ImmutableList.of() );
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, int[] projects ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Collection getModifiableCollection() {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Type getElementType() {
             return Object.class;
         }
 
 
+        @Override
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             throw new UnsupportedOperationException();
         }

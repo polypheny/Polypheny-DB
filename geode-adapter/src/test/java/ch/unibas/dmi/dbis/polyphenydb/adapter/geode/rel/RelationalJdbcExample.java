@@ -51,8 +51,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -68,9 +67,8 @@ import org.slf4j.LoggerFactory;
  *
  * This will create a virtual machine with Geode and the "bookshop" and "zips" test data sets.
  */
+@Slf4j
 public class RelationalJdbcExample {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( RelationalJdbcExample.class.getName() );
 
 
     private RelationalJdbcExample() {
@@ -118,7 +116,7 @@ public class RelationalJdbcExample {
             for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
                 buf.append( i > 1 ? "; " : "" ).append( metaData.getColumnLabel( i ) ).append( "=" ).append( resultSet.getObject( i ) );
             }
-            LOGGER.info( "Result entry: " + buf.toString() );
+            log.info( "Result entry: " + buf.toString() );
             buf.setLength( 0 );
         }
         resultSet.close();

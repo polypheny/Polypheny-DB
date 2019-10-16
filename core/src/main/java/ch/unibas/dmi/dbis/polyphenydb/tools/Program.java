@@ -45,12 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptLattice;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import java.util.List;
 
 
 /**
@@ -61,6 +58,6 @@ import java.util.List;
  */
 public interface Program {
 
-    RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits, List<RelOptMaterialization> materializations, List<RelOptLattice> lattices );
+    RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits );
 }
 

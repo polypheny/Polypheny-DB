@@ -77,6 +77,7 @@ public class JoinAddRedundantSemiJoinRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Join origJoinRel = call.rel( 0 );
         if ( origJoinRel.isSemiJoinDone() ) {

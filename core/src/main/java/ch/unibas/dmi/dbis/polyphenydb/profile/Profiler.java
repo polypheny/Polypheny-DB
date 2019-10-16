@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.profile;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -55,7 +54,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +156,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "rowCount" );
@@ -180,6 +179,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "unique" );
@@ -204,6 +204,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "fd" );
@@ -260,6 +261,7 @@ public interface Profiler {
         }
 
 
+        @Override
         public Object toMap( JsonBuilder jsonBuilder ) {
             final Map<String, Object> map = jsonBuilder.map();
             map.put( "type", "distribution" );
@@ -344,17 +346,17 @@ public interface Profiler {
             for ( ; ; ) {
                 final Distribution distribution = distributionMap.get( columnOrdinals );
                 if ( distribution != null ) {
-                    if ( columnOrdinals == originalOrdinals ) {
+//                    if ( columnOrdinals == originalOrdinals ) {
                         return distribution.cardinality;
-                    } else {
-                        final List<Double> cardinalityList = new ArrayList<>();
-                        cardinalityList.add( distribution.cardinality );
-                        for ( int ordinal : originalOrdinals.except( columnOrdinals ) ) {
-                            final Distribution d = singletonDistributionList.get( ordinal );
-                            cardinalityList.add( d.cardinality );
-                        }
-                        return Lattice.getRowCount( rowCount.rowCount, cardinalityList );
-                    }
+//                    } else {
+//                        final List<Double> cardinalityList = new ArrayList<>();
+//                        cardinalityList.add( distribution.cardinality );
+//                        for ( int ordinal : originalOrdinals.except( columnOrdinals ) ) {
+//                            final Distribution d = singletonDistributionList.get( ordinal );
+//                            cardinalityList.add( d.cardinality );
+//                        }
+//                        return Lattice.getRowCount( rowCount.rowCount, cardinalityList );
+//                    }
                 }
                 // Clear the last bit and iterate.
                 // Better would be to combine all of our nearest ancestors.

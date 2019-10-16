@@ -67,6 +67,7 @@ public class EnumerableProjectToCalcRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final EnumerableProject project = call.rel( 0 );
         final RelNode input = project.getInput();

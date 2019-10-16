@@ -78,6 +78,7 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, callBinding.operand( 1 ), 0, throwOnFailure ) ) {
             return false;
@@ -104,6 +105,7 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 2 );
     }

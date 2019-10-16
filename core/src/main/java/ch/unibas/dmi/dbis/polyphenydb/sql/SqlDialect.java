@@ -49,9 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.JethroDataSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;
@@ -60,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -71,11 +68,10 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.function.Experimental;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -83,26 +79,13 @@ import org.slf4j.LoggerFactory;
  *
  * It is used by classes such as {@link SqlWriter} and {@link SqlBuilder}.
  */
+@Slf4j
 public class SqlDialect {
-
-    protected static final Logger LOGGER = LoggerFactory.getLogger( SqlDialect.class );
 
     /**
      * Empty context.
      */
     public static final Context EMPTY_CONTEXT = emptyContext();
-
-    /**
-     * @deprecated Use {@link AnsiSqlDialect#DEFAULT} instead.
-     */
-    @Deprecated // to be removed before 2.0
-    public static final SqlDialect DUMMY = AnsiSqlDialect.DEFAULT;
-
-    /**
-     * @deprecated Use {@link PolyphenyDbSqlDialect#DEFAULT} instead.
-     */
-    @Deprecated // to be removed before 2.0
-    public static final SqlDialect POLYSQL = PolyphenyDbSqlDialect.DEFAULT;
 
     /**
      * Built-in scalar functions and operators common for every dialect.
@@ -164,48 +147,6 @@ public class SqlDialect {
     private final DatabaseProduct databaseProduct;
     protected final NullCollation nullCollation;
     private final RelDataTypeSystem dataTypeSystem;
-
-
-    /**
-     * Creates a <code>SqlDialect</code> from a DatabaseMetaData.
-     *
-     * Does not maintain a reference to the DatabaseMetaData -- or, more importantly, to its {@link java.sql.Connection} -- after this call has returned.
-     *
-     * @param databaseMetaData used to determine which dialect of SQL to generate
-     * @deprecated Replaced by {@link SqlDialectFactory}
-     */
-    @Deprecated // to be removed before 2.0
-    public static SqlDialect create( DatabaseMetaData databaseMetaData ) {
-        return new SqlDialectFactoryImpl().create( databaseMetaData );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public SqlDialect( DatabaseProduct databaseProduct, String databaseProductName, String identifierQuoteString ) {
-        this( EMPTY_CONTEXT
-                .withDatabaseProduct( databaseProduct )
-                .withDatabaseProductName( databaseProductName )
-                .withIdentifierQuoteString( identifierQuoteString ) );
-    }
-
-
-    /**
-     * Creates a SqlDialect.
-     *
-     * @param databaseProduct Database product; may be UNKNOWN, never null
-     * @param databaseProductName Database product name from JDBC driver
-     * @param identifierQuoteString String to quote identifiers. Null if quoting is not supported. If "[", close quote is deemed to be "]".
-     * @param nullCollation Whether NULL values appear first or last
-     * @deprecated Use {@link #SqlDialect(Context)}
-     */
-    @Deprecated // to be removed before 2.0
-    public SqlDialect( DatabaseProduct databaseProduct, String databaseProductName, String identifierQuoteString, NullCollation nullCollation ) {
-        this( EMPTY_CONTEXT
-                .withDatabaseProduct( databaseProduct )
-                .withDatabaseProductName( databaseProductName )
-                .withIdentifierQuoteString( identifierQuoteString )
-                .withNullCollation( nullCollation ) );
-    }
 
 
     /**
@@ -745,7 +686,7 @@ public class SqlDialect {
      * E.g. HSQLDB, MYSQL, ORACLE, etc
      */
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
-        LOGGER.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
+        log.debug( "SINGLE_VALUE rewrite not supported for {}", databaseProduct );
         return aggCall;
     }
 
@@ -959,7 +900,7 @@ public class SqlDialect {
         NULL,
         LOCAL,
         DIRECT,
-        SHIFT;
+        SHIFT
     }
 
 
@@ -1134,12 +1075,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public DatabaseProduct databaseProduct() {
             return databaseProduct;
         }
 
 
+        @Override
         public Context withDatabaseProduct( @Nonnull DatabaseProduct databaseProduct ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1154,11 +1097,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String databaseProductName() {
             return databaseProductName;
         }
 
 
+        @Override
         public Context withDatabaseProductName( String databaseProductName ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1173,11 +1118,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String databaseVersion() {
             return databaseVersion;
         }
 
 
+        @Override
         public Context withDatabaseVersion( String databaseVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1192,11 +1139,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public int databaseMajorVersion() {
             return databaseMajorVersion;
         }
 
 
+        @Override
         public Context withDatabaseMajorVersion( int databaseMajorVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1211,11 +1160,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public int databaseMinorVersion() {
             return databaseMinorVersion;
         }
 
 
+        @Override
         public Context withDatabaseMinorVersion( int databaseMinorVersion ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1230,11 +1181,13 @@ public class SqlDialect {
         }
 
 
+        @Override
         public String identifierQuoteString() {
             return identifierQuoteString;
         }
 
 
+        @Override
         public Context withIdentifierQuoteString( String identifierQuoteString ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1249,12 +1202,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public NullCollation nullCollation() {
             return nullCollation;
         }
 
 
+        @Override
         public Context withNullCollation( @Nonnull NullCollation nullCollation ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1269,12 +1224,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public RelDataTypeSystem dataTypeSystem() {
             return dataTypeSystem;
         }
 
 
+        @Override
         public Context withDataTypeSystem( @Nonnull RelDataTypeSystem dataTypeSystem ) {
             return new ContextImpl(
                     databaseProduct,
@@ -1289,12 +1246,14 @@ public class SqlDialect {
         }
 
 
+        @Override
         @Nonnull
         public JethroDataSqlDialect.JethroInfo jethroInfo() {
             return jethroInfo;
         }
 
 
+        @Override
         public Context withJethroInfo( JethroDataSqlDialect.JethroInfo jethroInfo ) {
             return new ContextImpl(
                     databaseProduct,

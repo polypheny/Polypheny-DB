@@ -106,6 +106,7 @@ public class SortUnionTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
         final Union union = call.rel( 1 );

@@ -75,6 +75,7 @@ public class RelMdParallelism implements MetadataHandler<BuiltInMetadata.Paralle
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Parallelism> getDef() {
         return BuiltInMetadata.Parallelism.DEF;
     }

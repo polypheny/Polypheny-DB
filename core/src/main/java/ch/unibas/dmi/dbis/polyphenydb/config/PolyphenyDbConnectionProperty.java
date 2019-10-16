@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
 
-import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
@@ -67,16 +66,6 @@ import org.apache.calcite.avatica.util.Quoting;
  * Properties that may be specified on the JDBC connect string.
  */
 public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
-
-    /**
-     * Whether Polypheny-DB should use materializations.
-     */
-    MATERIALIZATIONS_ENABLED( "materializationsEnabled", Type.BOOLEAN, true, false ),
-
-    /**
-     * Whether Polypheny-DB should create materializations.
-     */
-    CREATE_MATERIALIZATIONS( "createMaterializations", Type.BOOLEAN, true, false ),
 
     /**
      * How NULL values should be sorted if neither NULLS FIRST nor NULLS LAST are specified. The default, HIGH, sorts NULL values the same as Oracle.
@@ -132,24 +121,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     SCHEMA( "schema", Type.STRING, null, false ),
 
     /**
-     * Schema factory.
-     *
-     * The name of a class that implements {@link ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory}.
-     *
-     * Ignored if {@link #MODEL} is specified.
-     */
-    SCHEMA_FACTORY( "schemaFactory", Type.PLUGIN, null, false ),
-
-    /**
-     * Schema type.
-     *
-     * Value may be null, "MAP", "JDBC", or "CUSTOM" (implicit if {@link #SCHEMA_FACTORY} is specified).
-     *
-     * Ignored if {@link #MODEL} is specified.
-     */
-    SCHEMA_TYPE( "schemaType", Type.ENUM, null, false, JsonSchema.Type.class ),
-
-    /**
      * Returns the time zone from the connect string, for example 'gmt-3'. If the time zone is not set then the JVM time zone is returned.
      * Never null.
      */
@@ -178,12 +149,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
 
     private static final Map<String, PolyphenyDbConnectionProperty> NAME_TO_PROPS;
 
-    /**
-     * Deprecated; use {@link #TIME_ZONE}.
-     */
-    @Deprecated // to be removed before 2.0
-    public static final PolyphenyDbConnectionProperty TIMEZONE = TIME_ZONE;
-
 
     static {
         NAME_TO_PROPS = new HashMap<>();
@@ -211,31 +176,37 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     }
 
 
+    @Override
     public String camelName() {
         return camelName;
     }
 
 
+    @Override
     public Object defaultValue() {
         return defaultValue;
     }
 
 
+    @Override
     public Type type() {
         return type;
     }
 
 
+    @Override
     public Class valueClass() {
         return valueClass;
     }
 
 
+    @Override
     public boolean required() {
         return required;
     }
 
 
+    @Override
     public PropEnv wrap( Properties properties ) {
         return new PropEnv( parse2( properties, NAME_TO_PROPS ), this );
     }

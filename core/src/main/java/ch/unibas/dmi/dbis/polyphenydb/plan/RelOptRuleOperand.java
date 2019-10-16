@@ -107,7 +107,6 @@ public class RelOptRuleOperand {
      * Do not call from outside package, and do not create a sub-class.
      *
      * The other constructor is deprecated; when it is removed, make fields {@link #parent}, {@link #ordinalInParent} and {@link #solveOrder} final, and add constructor parameters for them.
-     * See <a href="https://issues.apache.org/jira/browse/CALCITE-1166">[POLYPHENYDB-1166] Disallow sub-classes of RelOptRuleOperand</a>.
      */
     <R extends RelNode> RelOptRuleOperand( Class<R> clazz, RelTrait trait, Predicate<? super R> predicate, RelOptRuleOperandChildPolicy childPolicy, ImmutableList<RelOptRuleOperand> children ) {
         assert clazz != null;

@@ -780,6 +780,7 @@ public class SqlToRelConverter {
         try {
             SqlVisitor<Void> visitor =
                     new SqlBasicVisitor<Void>() {
+                        @Override
                         public Void visit( SqlCall call ) {
                             if ( call.getOperator() instanceof SqlInOperator ) {
                                 throw new Util.FoundOne( call );
@@ -3426,6 +3427,7 @@ public class SqlToRelConverter {
                     } else {
                         usedBb = createBlackboard(
                                 new ListScope( bb.scope ) {
+                                    @Override
                                     public SqlNode getNode() {
                                         return call;
                                     }
@@ -3807,6 +3809,7 @@ public class SqlToRelConverter {
                 RelDataType returnType =
                         typeFactory.createStructType(
                                 new AbstractList<Map.Entry<String, RelDataType>>() {
+                                    @Override
                                     public Map.Entry<String, RelDataType> get( int index ) {
                                         return join.getRowType()
                                                 .getFieldList()
@@ -3814,6 +3817,7 @@ public class SqlToRelConverter {
                                     }
 
 
+                                    @Override
                                     public int size() {
                                         return rexRangeRefLength;
                                     }
@@ -4017,6 +4021,7 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RexNode convertExpression( SqlNode expr ) {
             // If we're in aggregation mode and this is an expression in the GROUP BY clause, return a reference to the field.
             if ( agg != null ) {
@@ -4221,6 +4226,7 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public int getGroupCount() {
             if ( agg != null ) {
                 return agg.groupExprs.size();
@@ -4232,11 +4238,13 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RexBuilder getRexBuilder() {
             return rexBuilder;
         }
 
 
+        @Override
         public RexRangeRef getSubQueryExpr( SqlCall call ) {
             final SubQuery subQuery = getSubQuery( call );
             assert subQuery != null;
@@ -4244,21 +4252,25 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RelDataTypeFactory getTypeFactory() {
             return typeFactory;
         }
 
 
+        @Override
         public InitializerExpressionFactory getInitializerExpressionFactory() {
             return initializerExpressionFactory;
         }
 
 
+        @Override
         public SqlValidator getValidator() {
             return validator;
         }
 
 
+        @Override
         public RexNode convertLiteral( SqlLiteral literal ) {
             return exprConverter.convertLiteral( this, literal );
         }
@@ -4269,11 +4281,13 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RexNode visit( SqlLiteral literal ) {
             return exprConverter.convertLiteral( this, literal );
         }
 
 
+        @Override
         public RexNode visit( SqlCall call ) {
             if ( agg != null ) {
                 final SqlOperator op = call.getOperator();
@@ -4288,26 +4302,31 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RexNode visit( SqlNodeList nodeList ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public RexNode visit( SqlIdentifier id ) {
             return convertIdentifier( this, id );
         }
 
 
+        @Override
         public RexNode visit( SqlDataTypeSpec type ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public RexNode visit( SqlDynamicParam param ) {
             return convertDynamicParam( param );
         }
 
 
+        @Override
         public RexNode visit( SqlIntervalQualifier intervalQualifier ) {
             return convertInterval( intervalQualifier );
         }
@@ -4357,11 +4376,13 @@ public class SqlToRelConverter {
      */
     private class NoOpSubQueryConverter implements SubQueryConverter {
 
+        @Override
         public boolean canConvertSubQuery() {
             return false;
         }
 
 
+        @Override
         public RexNode convertSubQuery( SqlCall subQuery, SqlToRelConverter parentConverter, boolean isExists, boolean isExplain ) {
             throw new IllegalArgumentException();
         }
@@ -4504,11 +4525,13 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public Void visit( SqlIdentifier id ) {
             return null;
         }
 
 
+        @Override
         public Void visit( SqlNodeList nodeList ) {
             for ( int i = 0; i < nodeList.size(); i++ ) {
                 nodeList.get( i ).accept( this );
@@ -4517,26 +4540,31 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public Void visit( SqlLiteral lit ) {
             return null;
         }
 
 
+        @Override
         public Void visit( SqlDataTypeSpec type ) {
             return null;
         }
 
 
+        @Override
         public Void visit( SqlDynamicParam param ) {
             return null;
         }
 
 
+        @Override
         public Void visit( SqlIntervalQualifier intervalQualifier ) {
             return null;
         }
 
 
+        @Override
         public Void visit( SqlCall call ) {
             switch ( call.getKind() ) {
                 case FILTER:
@@ -4846,6 +4874,7 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public RexNode visitCall( RexCall call ) {
             final SqlOperator op = call.getOperator();
             if ( !(op instanceof SqlAggFunction) ) {
@@ -5012,7 +5041,6 @@ public class SqlToRelConverter {
 
             if ( call.getOperator().getKind() == SqlKind.FILTER ) {
                 // the WHERE in a FILTER must be tracked too so we can call replaceSubQueries on it.
-                // see https://issues.apache.org/jira/browse/CALCITE-1910
                 final SqlNode aggCall = call.getOperandList().get( 0 );
                 final SqlNode whereCall = call.getOperandList().get( 1 );
                 list.add( aggCall );
@@ -5022,7 +5050,6 @@ public class SqlToRelConverter {
 
             if ( call.getOperator().getKind() == SqlKind.WITHIN_GROUP ) {
                 // the WHERE in a WITHIN_GROUP must be tracked too so we can call replaceSubQueries on it.
-                // see https://issues.apache.org/jira/browse/CALCITE-1910
                 final SqlNode aggCall = call.getOperandList().get( 0 );
                 final SqlNodeList orderList = (SqlNodeList) call.getOperandList().get( 1 );
                 list.add( aggCall );
@@ -5260,41 +5287,49 @@ public class SqlToRelConverter {
         }
 
 
+        @Override
         public boolean isConvertTableAccess() {
             return convertTableAccess;
         }
 
 
+        @Override
         public boolean isDecorrelationEnabled() {
             return decorrelationEnabled;
         }
 
 
+        @Override
         public boolean isTrimUnusedFields() {
             return trimUnusedFields;
         }
 
 
+        @Override
         public boolean isCreateValuesRel() {
             return createValuesRel;
         }
 
 
+        @Override
         public boolean isExplain() {
             return explain;
         }
 
 
+        @Override
         public boolean isExpand() {
             return expand;
         }
 
 
+        @Override
         public int getInSubQueryThreshold() {
             return inSubQueryThreshold;
         }
 
 
+        @Override
         public RelBuilderFactory getRelBuilderFactory() {
             return relBuilderFactory;
         }

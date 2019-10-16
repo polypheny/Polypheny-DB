@@ -109,6 +109,7 @@ public class AggregateUnionTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Aggregate aggRel = call.rel( 0 );
         Union union = call.rel( 1 );

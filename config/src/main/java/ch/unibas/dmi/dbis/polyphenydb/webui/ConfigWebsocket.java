@@ -29,19 +29,17 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @WebSocket
+@Slf4j
 public class ConfigWebsocket {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigWebsocket.class );
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 
@@ -60,13 +58,13 @@ public class ConfigWebsocket {
 
     @OnWebSocketMessage
     public void configWebSocket( final Session session, final String message ) throws IOException {
-        LOGGER.trace( "Got: " + message );
+        log.trace( "Got: " + message );
         session.getRemote().sendString( message ); // and send it back
     }
 
 
     public static void broadcast( final String msg ) throws IOException {
-        LOGGER.trace( "broadcasting:\n" + msg );
+        log.trace( "broadcasting:\n" + msg );
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }

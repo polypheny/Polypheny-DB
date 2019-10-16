@@ -85,7 +85,7 @@ import org.apache.calcite.linq4j.function.Strict;
  * <li>Make {@link #ST_MakeLine(Geom, Geom)} varargs</li>
  * </ul>
  */
-@SuppressWarnings({ "UnnecessaryUnboxing", "WeakerAccess", "unused" })
+@SuppressWarnings({ "WeakerAccess", "unused" })
 @Deterministic
 @Strict
 @Experimental
@@ -710,16 +710,19 @@ public class GeoFunctions {
         }
 
 
+        @Override
         public Geometry g() {
             return g;
         }
 
 
+        @Override
         public SpatialReference sr() {
             return SPATIAL_REFERENCE;
         }
 
 
+        @Override
         public Geom transform( int srid ) {
             if ( srid == SPATIAL_REFERENCE.getID() ) {
                 return this;
@@ -728,6 +731,7 @@ public class GeoFunctions {
         }
 
 
+        @Override
         public Geom wrap( Geometry g ) {
             return new SimpleGeom( g );
         }
@@ -753,16 +757,19 @@ public class GeoFunctions {
         }
 
 
+        @Override
         public Geometry g() {
             return mg.getGeometry();
         }
 
 
+        @Override
         public SpatialReference sr() {
             return mg.getSpatialReference();
         }
 
 
+        @Override
         public Geom transform( int srid ) {
             if ( srid == NO_SRID ) {
                 return new SimpleGeom( mg.getGeometry() );
@@ -774,6 +781,7 @@ public class GeoFunctions {
         }
 
 
+        @Override
         public Geom wrap( Geometry g ) {
             return bind( g, this.mg.getSpatialReference() );
         }

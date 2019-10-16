@@ -52,6 +52,7 @@ package ch.unibas.dmi.dbis.polyphenydb.runtime;
  */
 public interface ArrayBindable extends Bindable<Object[]>, Typed {
 
+    @Override
     Class<Object[]> getElementType();
 }
 

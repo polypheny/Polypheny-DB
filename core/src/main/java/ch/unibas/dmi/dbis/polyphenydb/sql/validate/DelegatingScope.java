@@ -105,6 +105,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         parent.resolve( names, nameMatcher, deep, resolved );
     }
@@ -173,16 +174,19 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public void findAllColumnNames( List<SqlMoniker> result ) {
         parent.findAllColumnNames( result );
     }
 
 
+    @Override
     public void findAliases( Collection<SqlMoniker> result ) {
         parent.findAliases( result );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx ) {
         //noinspection deprecation
@@ -190,32 +194,38 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
         return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
     }
 
 
+    @Override
     public RelDataType resolveColumn( String name, SqlNode ctx ) {
         return parent.resolveColumn( name, ctx );
     }
 
 
+    @Override
     public RelDataType nullifyType( SqlNode node, RelDataType type ) {
         return parent.nullifyType( node, type );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
         return parent.getTableNamespace( names );
     }
 
 
+    @Override
     public void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
         parent.resolveTable( names, nameMatcher, path, resolved );
     }
 
 
+    @Override
     public SqlValidatorScope getOperandScope( SqlCall call ) {
         if ( call instanceof SqlSelect ) {
             return validator.getSelectScope( (SqlSelect) call );
@@ -224,6 +234,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public SqlValidator getValidator() {
         return validator;
     }
@@ -234,6 +245,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      *
      * If the identifier cannot be resolved, throws. Never returns null.
      */
+    @Override
     public SqlQualified fullyQualify( SqlIdentifier identifier ) {
         if ( identifier.isStar() ) {
             return SqlQualified.create( this, 1, null, identifier );
@@ -426,6 +438,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     default:
                         final Comparator<Resolve> c =
                                 new Comparator<Resolve>() {
+                                    @Override
                                     public int compare( Resolve o1, Resolve o2 ) {
                                         // Name resolution that uses fewer implicit steps wins.
                                         int c = Integer.compare( worstKind( o1.path ), worstKind( o2.path ) );
@@ -501,21 +514,25 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public void validateExpr( SqlNode expr ) {
         // Do not delegate to parent. An expression valid in this scope may not be valid in the parent scope.
     }
 
 
+    @Override
     public SqlWindow lookupWindow( String name ) {
         return parent.lookupWindow( name );
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlNode expr ) {
         return parent.getMonotonicity( expr );
     }
 
 
+    @Override
     public SqlNodeList getOrderList() {
         return parent.getOrderList();
     }

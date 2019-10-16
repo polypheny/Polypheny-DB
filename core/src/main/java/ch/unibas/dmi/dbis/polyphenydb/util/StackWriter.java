@@ -54,10 +54,8 @@ import java.util.Deque;
 
 
 /**
- * A helper class for generating formatted text. StackWriter keeps track of
- * nested formatting state like indentation level and quote escaping. Typically,
- * it is inserted between a PrintWriter and the real Writer; directives are
- * passed straight through the PrintWriter via the write method, as in the
+ * A helper class for generating formatted text. StackWriter keeps track of nested formatting state like indentation level and quote escaping. Typically,
+ * it is inserted between a PrintWriter and the real Writer; directives are passed straight through the PrintWriter via the write method, as in the
  * following example:
  *
  * <blockquote><pre><code>
@@ -78,7 +76,7 @@ import java.util.Deque;
  *    System.out.println(sw.toString());
  * </code></pre></blockquote>
  *
- * <p>which produces the following output:
+ * which produces the following output:
  *
  * <blockquote><pre><code>
  *      execute remote(link_name,'
@@ -87,7 +85,6 @@ import java.util.Deque;
  * </code></pre></blockquote>
  */
 public class StackWriter extends FilterWriter {
-    //~ Static fields/initializers ---------------------------------------------
 
     /**
      * directive for increasing the indentation level
@@ -131,30 +128,23 @@ public class StackWriter extends FilterWriter {
     private static final Character SINGLE_QUOTE = '\'';
     private static final Character DOUBLE_QUOTE = '"';
 
-    //~ Instance fields --------------------------------------------------------
 
     private int indentationDepth;
     private String indentation;
     private boolean needIndent;
     private final Deque<Character> quoteStack = new ArrayDeque<>();
 
-    //~ Constructors -----------------------------------------------------------
-
 
     /**
-     * Creates a new StackWriter on top of an existing Writer, with the
-     * specified string to be used for each level of indentation.
+     * Creates a new StackWriter on top of an existing Writer, with the specified string to be used for each level of indentation.
      *
      * @param writer underlying writer
-     * @param indentation indentation unit such as {@link #INDENT_TAB} or
-     * {@link #INDENT_SPACE4}
+     * @param indentation indentation unit such as {@link #INDENT_TAB} or {@link #INDENT_SPACE4}
      */
     public StackWriter( Writer writer, String indentation ) {
         super( writer );
         this.indentation = indentation;
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     private void indentIfNeeded() throws IOException {
@@ -195,6 +185,7 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( int c ) throws IOException {
         switch ( c ) {
             case INDENT:
@@ -220,9 +211,7 @@ public class StackWriter extends FilterWriter {
                 needIndent = true;
                 break;
             case '\r':
-
-                // NOTE jvs 3-Jan-2006:  suppress indentIfNeeded() in this case
-                // so that we don't get spurious diffs on Windows vs. Linux
+                // Suppress indentIfNeeded() in this case so that we don't get spurious diffs on Windows vs. Linux
                 out.write( c );
                 break;
             case '\'':
@@ -240,9 +229,9 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( char[] cbuf, int off, int len ) throws IOException {
-        // TODO: something more efficient using searches for
-        // special characters
+        // TODO: something more efficient using searches for special characters
         for ( int i = off; i < (off + len); i++ ) {
             write( cbuf[i] );
         }
@@ -250,9 +239,9 @@ public class StackWriter extends FilterWriter {
 
 
     // implement Writer
+    @Override
     public void write( String str, int off, int len ) throws IOException {
-        // TODO: something more efficient using searches for
-        // special characters
+        // TODO: something more efficient using searches for special characters
         for ( int i = off; i < (off + len); i++ ) {
             write( str.charAt( i ) );
         }
@@ -285,4 +274,3 @@ public class StackWriter extends FilterWriter {
     }
 }
 
-// End StackWriter.java

@@ -47,16 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 import ch.unibas.dmi.dbis.polyphenydb.piglet.Handler;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
-import ch.unibas.dmi.dbis.polyphenydb.piglet.Handler;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunners;
-
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Array;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -78,12 +72,13 @@ class PolyphenyDbHandler extends Handler {
 
     @Override
     protected void dump( RelNode rel ) {
-        try ( PreparedStatement preparedStatement = RelRunners.run( rel ) ) {
+        throw new RuntimeException( "Unsupported!" );
+        /* try ( PreparedStatement preparedStatement = RelRunners.run( rel ) ) {
             final ResultSet resultSet = preparedStatement.executeQuery();
             dump( resultSet, true );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
-        }
+        } */
     }
 
 

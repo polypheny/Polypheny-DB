@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.sql.test;
@@ -56,10 +37,13 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlSimpleParser.Tokenizer;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil.StringAndPos;
+import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
+import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase;
+import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTester;
+import ch.unibas.dmi.dbis.polyphenydb.sql.utils.WithLex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerType;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlValidatorTestCase;
-import ch.unibas.dmi.dbis.polyphenydb.test.WithLex;
+import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,8 +71,6 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     @Rule
     public MethodRule configureTester = SqlValidatorTestCase.TESTER_CONFIGURATION_RULE;
-
-    //~ Static fields/initializers ---------------------------------------------
 
     private static final List<String> STAR_KEYWORD =
             Arrays.asList(
@@ -396,14 +378,10 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     private static final String EMPNO_EMP = "COLUMN(EMPNO)\n" + "TABLE(EMP)\n";
 
-    //~ Constructors -----------------------------------------------------------
-
 
     public SqlAdvisorTest() {
         super();
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     protected List<String> getFromKeywords() {
@@ -549,7 +527,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     protected void assertEquals( String[] actualResults, List<String>... expectedResults ) throws Exception {
         List<String> expectedList = plus( expectedResults );
-        Map<String, String> uniqueResults = new HashMap<String, String>();
+        Map<String, String> uniqueResults = new HashMap<>();
         for ( String actualResult : actualResults ) {
             uniqueResults.put( actualResult, actualResult );
         }
@@ -563,7 +541,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
         if ( hints == null ) {
             return "<<NULL>>";
         }
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         for ( SqlMoniker hint : hints ) {
             if ( hint.getType() != SqlMonikerType.FUNCTION ) {
                 list.add( hint.id() );
@@ -602,7 +580,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
      * @return Sum list
      */
     protected static <T> List<T> plus( List<T>... lists ) {
-        final List<T> result = new ArrayList<T>();
+        final List<T> result = new ArrayList<>();
         for ( List<T> list : lists ) {
             result.addAll( list );
         }

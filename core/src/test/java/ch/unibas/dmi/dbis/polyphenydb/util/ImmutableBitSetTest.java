@@ -51,6 +51,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -99,7 +101,7 @@ public class ImmutableBitSetTest {
             if ( buf.length() > 0 ) {
                 buf.append( ", " );
             }
-            buf.append( Integer.toString( i ) );
+            buf.append( i );
         }
         assertEquals( expected, buf.toString() );
     }
@@ -147,11 +149,11 @@ public class ImmutableBitSetTest {
 
         final ImmutableBitSet e0 = ImmutableBitSet.range( 0, 0 );
         final ImmutableBitSet e1 = ImmutableBitSet.of();
-        assertTrue( e0.equals( e1 ) );
+        assertEquals( e0, e1 );
         assertThat( e0.hashCode(), equalTo( e1.hashCode() ) );
 
         // Empty builder returns the singleton empty set.
-        assertTrue( ImmutableBitSet.builder().build() == ImmutableBitSet.of() );
+        assertSame( ImmutableBitSet.builder().build(), ImmutableBitSet.of() );
     }
 
 
@@ -238,7 +240,7 @@ public class ImmutableBitSetTest {
             assertThat( setView.size(), equalTo( bitSet.cardinality() ) );
             assertThat( list1.toString(), equalTo( listView.toString() ) );
             assertThat( list1.toString(), equalTo( setView.toString() ) );
-            assertTrue( list1.equals( listView ) );
+            assertEquals( list1, listView );
             assertThat( list1.hashCode(), equalTo( listView.hashCode() ) );
 
             final Set<Integer> set = new HashSet<>( list1 );
@@ -279,7 +281,7 @@ public class ImmutableBitSetTest {
     @Test
     public void testIntersect() {
         assertThat( ImmutableBitSet.of( 1, 2, 3, 100, 200 ).intersect( ImmutableBitSet.of( 2, 100 ) ).toString(), equalTo( "{2, 100}" ) );
-        assertTrue( ImmutableBitSet.of( 1, 3, 5, 101, 20001 ).intersect( ImmutableBitSet.of( 2, 100 ) ) == ImmutableBitSet.of() );
+        assertSame( ImmutableBitSet.of( 1, 3, 5, 101, 20001 ).intersect( ImmutableBitSet.of( 2, 100 ) ), ImmutableBitSet.of() );
     }
 
 
@@ -362,13 +364,13 @@ public class ImmutableBitSetTest {
     public void testBuilderUseOriginal() {
         final ImmutableBitSet fives = ImmutableBitSet.of( 5, 10, 15 );
         final ImmutableBitSet fives1 = fives.rebuild().clear( 2 ).set( 10 ).build();
-        assertTrue( fives1 == fives );
+        assertSame( fives1, fives );
         final ImmutableBitSet fives2 = ImmutableBitSet.builder().addAll( fives ).clear( 2 ).set( 10 ).build( fives );
-        assertTrue( fives2 == fives );
+        assertSame( fives2, fives );
         final ImmutableBitSet fives3 = ImmutableBitSet.builder().addAll( fives ).clear( 2 ).set( 10 ).build();
-        assertTrue( fives3 != fives );
-        assertTrue( fives3.equals( fives ) );
-        assertTrue( fives3.equals( fives2 ) );
+        assertNotSame( fives3, fives );
+        assertEquals( fives3, fives );
+        assertEquals( fives3, fives2 );
     }
 
 

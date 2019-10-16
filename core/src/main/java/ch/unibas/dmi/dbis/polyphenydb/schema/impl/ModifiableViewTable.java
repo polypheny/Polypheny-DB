@@ -100,21 +100,25 @@ public class ModifiableViewTable extends ViewTable implements ModifiableView, Wr
     }
 
 
+    @Override
     public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
         return rexBuilder.copy( constraint );
     }
 
 
+    @Override
     public ImmutableIntList getColumnMapping() {
         return columnMapping;
     }
 
 
+    @Override
     public Table getTable() {
         return table;
     }
 
 
+    @Override
     public Path getTablePath() {
         return tablePath;
     }

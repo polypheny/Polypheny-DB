@@ -103,6 +103,7 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
     }
 
 
+    @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         sb.append( "RecordType" );
         switch ( kind ) {

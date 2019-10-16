@@ -104,6 +104,7 @@ public class Matchers {
             }
 
 
+            @Override
             protected boolean matchesSafely( ResultSet resultSet ) {
                 final List<String> actualList = new ArrayList<>();
                 try {
@@ -138,6 +139,7 @@ public class Matchers {
             }
 
 
+            @Override
             protected boolean matchesSafely( Iterable<E> actuals ) {
                 final List<String> actualList = Lists.newArrayList( toStringList( actuals ) );
                 Collections.sort( actualList );
@@ -159,7 +161,7 @@ public class Matchers {
      */
     @Factory
     public static <T extends Number> Matcher<T> within( T value, double epsilon ) {
-        return new IsWithin<T>( value, epsilon );
+        return new IsWithin<>( value, epsilon );
     }
 
 
@@ -239,11 +241,13 @@ public class Matchers {
         }
 
 
+        @Override
         public boolean matches( Object actualValue ) {
             return isWithin( actualValue, expectedValue, epsilon );
         }
 
 
+        @Override
         public void describeTo( Description description ) {
             description.appendValue( expectedValue + " +/-" + epsilon );
         }
@@ -282,11 +286,13 @@ public class Matchers {
         }
 
 
+        @Override
         protected boolean matchesSafely( F item ) {
             return matcher.matches( f.apply( item ) );
         }
 
 
+        @Override
         public void describeTo( Description description ) {
             matcher.describeTo( description );
         }

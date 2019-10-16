@@ -88,6 +88,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         RelDataType type =
                 getComponentType(
@@ -108,6 +109,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final List<RelDataType> argTypes =
                 SqlTypeUtil.deriveAndCollectTypes(
@@ -128,6 +130,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( getName() ); // "MULTISET" or "ARRAY"
         final SqlWriter.Frame frame = writer.startList( "[", "]" );

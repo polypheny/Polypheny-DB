@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.rex;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;

@@ -69,76 +69,90 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
     }
 
 
+    @Override
     public SqlValidator getValidator() {
         return namespace.getValidator();
     }
 
 
+    @Override
     public SqlValidatorTable getTable() {
         return namespace.getTable();
     }
 
 
+    @Override
     public RelDataType getRowType() {
         return namespace.getRowType();
     }
 
 
+    @Override
     public void setType( RelDataType type ) {
         namespace.setType( type );
     }
 
 
+    @Override
     public RelDataType getRowTypeSansSystemColumns() {
         return namespace.getRowTypeSansSystemColumns();
     }
 
 
+    @Override
     public RelDataType getType() {
         return namespace.getType();
     }
 
 
+    @Override
     public void validate( RelDataType targetRowType ) {
         namespace.validate( targetRowType );
     }
 
 
+    @Override
     public SqlNode getNode() {
         return namespace.getNode();
     }
 
 
+    @Override
     public SqlNode getEnclosingNode() {
         return namespace.getEnclosingNode();
     }
 
 
+    @Override
     public SqlValidatorNamespace lookupChild( String name ) {
         return namespace.lookupChild( name );
     }
 
 
+    @Override
     public boolean fieldExists( String name ) {
         return namespace.fieldExists( name );
     }
 
 
+    @Override
     public List<Pair<SqlNode, SqlMonotonicity>> getMonotonicExprs() {
         return namespace.getMonotonicExprs();
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         return namespace.getMonotonicity( columnName );
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public void makeNullable() {
     }
 
 
+    @Override
     public <T> T unwrap( Class<T> clazz ) {
         if ( clazz.isInstance( this ) ) {
             return clazz.cast( this );
@@ -148,6 +162,7 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
     }
 
 
+    @Override
     public boolean isWrapperFor( Class<?> clazz ) {
         return clazz.isInstance( this ) || namespace.isWrapperFor( clazz );
     }

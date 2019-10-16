@@ -51,10 +51,12 @@ import static org.junit.Assert.assertThat;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreter;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.schema.HrSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -74,7 +76,7 @@ import org.junit.Test;
 
 
 /**
- * Unit tests for {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreter}.
+ * Unit tests for {@link Interpreter}.
  */
 public class InterpreterTest {
 
@@ -97,21 +99,25 @@ public class InterpreterTest {
         }
 
 
+        @Override
         public SchemaPlus getRootSchema() {
             return rootSchema;
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             return (JavaTypeFactory) planner.getTypeFactory();
         }
 
 
+        @Override
         public QueryProvider getQueryProvider() {
             return null;
         }
 
 
+        @Override
         public Object get( String name ) {
             return null;
         }
@@ -120,10 +126,11 @@ public class InterpreterTest {
 
     @Before
     public void setUp() {
-        rootSchema = Frameworks.createRootSchema( true );
+        rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
+
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
-                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.HR ) )
+                .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),
                         new SlimDataContext() {
@@ -215,7 +222,7 @@ public class InterpreterTest {
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
-        assertRows( interpreter, "[100, 10, Bill, 10000.0, 1000]", "[110, 10, Theodore, 11500.0, 250]", "[150, 10, Sebastian, 7000.0, null]", "[200, 20, Eric, 8000.0, 500]" );
+        assertRows( interpreter, "[100, 1, Bill, 4000, 2]", "[150, 1, Sebastian, 6000, 2]", "[150, 4, Hans, 4400, 10]", "[200, 2, Eric, 2500, 3]" );
     }
 
 

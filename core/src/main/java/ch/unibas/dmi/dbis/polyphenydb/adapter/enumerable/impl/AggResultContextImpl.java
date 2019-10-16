@@ -80,11 +80,13 @@ public class AggResultContextImpl extends AggResetContextImpl implements AggResu
     }
 
 
+    @Override
     public Expression key() {
         return key;
     }
 
 
+    @Override
     public Expression keyField( int i ) {
         return keyPhysType.fieldReference( key, i );
     }

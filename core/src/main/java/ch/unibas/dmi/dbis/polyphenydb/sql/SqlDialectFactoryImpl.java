@@ -76,8 +76,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.VerticaSqlDialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -85,13 +83,12 @@ import org.slf4j.LoggerFactory;
  */
 public class SqlDialectFactoryImpl implements SqlDialectFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( SqlDialectFactoryImpl.class );
-
     public static final SqlDialectFactoryImpl INSTANCE = new SqlDialectFactoryImpl();
 
     private final JethroDataSqlDialect.JethroInfoCache jethroCache = JethroDataSqlDialect.createCache();
 
 
+    @Override
     public SqlDialect create( DatabaseMetaData databaseMetaData ) {
         String databaseProductName;
         int databaseMajorVersion;

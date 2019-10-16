@@ -59,19 +59,17 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCastFunction;
 import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbLogger;
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * DataContext for evaluating an RexExpression
  */
+@Slf4j
 public class VisitorDataContext implements DataContext {
-
-    private static final PolyphenyDbLogger LOGGER = new PolyphenyDbLogger( LoggerFactory.getLogger( VisitorDataContext.class.getName() ) );
 
     private final Object[] values;
 
@@ -81,21 +79,25 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
     public SchemaPlus getRootSchema() {
         throw new RuntimeException( "Unsupported" );
     }
 
 
+    @Override
     public JavaTypeFactory getTypeFactory() {
         throw new RuntimeException( "Unsupported" );
     }
 
 
+    @Override
     public QueryProvider getQueryProvider() {
         throw new RuntimeException( "Unsupported" );
     }
 
 
+    @Override
     public Object get( String name ) {
         if ( name.equals( "inputRecord" ) ) {
             return values;
@@ -133,7 +135,7 @@ public class VisitorDataContext implements DataContext {
         for ( Pair<RexInputRef, RexNode> elem : usageList ) {
             Pair<Integer, ?> value = getValue( elem.getKey(), elem.getValue() );
             if ( value == null ) {
-                LOGGER.warn( "{} is not handled for {} for checking implication", elem.getKey(), elem.getValue() );
+                log.warn( "{} is not handled for {} for checking implication", elem.getKey(), elem.getValue() );
                 return null;
             }
             int index = value.getKey();
@@ -153,7 +155,7 @@ public class VisitorDataContext implements DataContext {
             final RelDataType type = inputRef.getType();
 
             if ( type.getSqlTypeName() == null ) {
-                LOGGER.warn( "{} returned null SqlTypeName", inputRef.toString() );
+                log.warn( "{} returned null SqlTypeName", inputRef.toString() );
                 return null;
             }
 
@@ -183,7 +185,7 @@ public class VisitorDataContext implements DataContext {
                     return Pair.of( index, rexLiteral.getValueAs( String.class ) );
                 default:
                     // TODO: Support few more supported cases
-                    LOGGER.warn( "{} for value of class {} is being handled in default way", type.getSqlTypeName(), rexLiteral.getValue().getClass() );
+                    log.warn( "{} for value of class {} is being handled in default way", type.getSqlTypeName(), rexLiteral.getValue().getClass() );
                     if ( rexLiteral.getValue() instanceof NlsString ) {
                         return Pair.of( index, ((NlsString) rexLiteral.getValue()).getValue() );
                     } else {

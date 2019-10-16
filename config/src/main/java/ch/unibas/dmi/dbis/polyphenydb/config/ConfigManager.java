@@ -155,7 +155,7 @@ public class ConfigManager {
     public String getWebUiPageList() {
         //todo recursion with parentPage field
         // Angular wants: { id, name, icon, children[] }
-        ArrayList<PageListItem> out = new ArrayList<PageListItem>();
+        ArrayList<PageListItem> out = new ArrayList<>();
         for ( WebUiPage p : uiPages.values() ) {
             out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon() ) );
         }
@@ -201,15 +201,19 @@ public class ConfigManager {
      * The Web UI requires a Json Object with the fields id, name, icon, children[] for the Sidebar.
      * This class is required to convert a WebUiPage object into the format needed by the Angular WebUi
      */
-    class PageListItem {
+    static class PageListItem {
 
+        @SuppressWarnings({ "FieldCanBeLocal", "unused" })
         private String id;
+        @SuppressWarnings({ "FieldCanBeLocal", "unused" })
         private String name;
+        @SuppressWarnings({ "FieldCanBeLocal", "unused" })
         private String icon;
+        @SuppressWarnings({ "unused" })
         private PageListItem[] children;
 
 
-        public PageListItem( final String id, final String name, final String icon ) {
+        PageListItem( final String id, final String name, final String icon ) {
             this.id = id;
             this.name = name;
             this.icon = icon;

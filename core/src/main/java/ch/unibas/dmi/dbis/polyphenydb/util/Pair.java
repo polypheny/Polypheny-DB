@@ -59,21 +59,15 @@ import javax.annotation.Nonnull;
 /**
  * Pair of objects.
  *
- * <p>Because a pair implements {@link #equals(Object)}, {@link #hashCode()} and
- * {@link #compareTo(Pair)}, it can be used in any kind of
- * {@link java.util.Collection}.
+ * Because a pair implements {@link #equals(Object)}, {@link #hashCode()} and {@link #compareTo(Pair)}, it can be used in any kind of {@link java.util.Collection}.
  *
  * @param <T1> Left-hand type
  * @param <T2> Right-hand type
  */
-public class Pair<T1, T2>
-        implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
-    //~ Instance fields --------------------------------------------------------
+public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
 
     public final T1 left;
     public final T2 right;
-
-    //~ Constructors -----------------------------------------------------------
 
 
     /**
@@ -91,8 +85,7 @@ public class Pair<T1, T2>
     /**
      * Creates a Pair of appropriate type.
      *
-     * <p>This is a shorthand that allows you to omit implicit types. For
-     * example, you can write:
+     * This is a shorthand that allows you to omit implicit types. For example, you can write:
      * <blockquote>return Pair.of(s, n);</blockquote>
      * instead of
      * <blockquote>return new Pair&lt;String, Integer&gt;(s, n);</blockquote>
@@ -113,8 +106,6 @@ public class Pair<T1, T2>
         return of( entry.getKey(), entry.getValue() );
     }
 
-    //~ Methods ----------------------------------------------------------------
-
 
     public boolean equals( Object obj ) {
         return this == obj
@@ -127,8 +118,7 @@ public class Pair<T1, T2>
     /**
      * {@inheritDoc}
      *
-     * <p>Computes hash code consistent with
-     * {@link java.util.Map.Entry#hashCode()}.
+     * Computes hash code consistent with {@link java.util.Map.Entry#hashCode()}.
      */
     @Override
     public int hashCode() {
@@ -138,6 +128,7 @@ public class Pair<T1, T2>
     }
 
 
+    @Override
     public int compareTo( @Nonnull Pair<T1, T2> that ) {
         //noinspection unchecked
         int c = compare( (Comparable) this.left, (Comparable) that.left );
@@ -154,29 +145,30 @@ public class Pair<T1, T2>
     }
 
 
+    @Override
     public T1 getKey() {
         return left;
     }
 
 
+    @Override
     public T2 getValue() {
         return right;
     }
 
 
+    @Override
     public T2 setValue( T2 value ) {
         throw new UnsupportedOperationException();
     }
 
 
     /**
-     * Compares a pair of comparable values of the same type. Null collates
-     * less than everything else, but equal to itself.
+     * Compares a pair of comparable values of the same type. Null collates less than everything else, but equal to itself.
      *
      * @param c1 First value
      * @param c2 Second value
-     * @return a negative integer, zero, or a positive integer if c1
-     * is less than, equal to, or greater than c2.
+     * @return a negative integer, zero, or a positive integer if c1 is less than, equal to, or greater than c2.
      */
     private static <C extends Comparable<C>> int compare( C c1, C c2 ) {
         if ( c1 == null ) {
@@ -196,11 +188,9 @@ public class Pair<T1, T2>
     /**
      * Converts a collection of Pairs into a Map.
      *
-     * <p>This is an obvious thing to do because Pair is similar in structure to
-     * {@link java.util.Map.Entry}.
+     * This is an obvious thing to do because Pair is similar in structure to {@link java.util.Map.Entry}.
      *
-     * <p>The map contains a copy of the collection of Pairs; if you change the
-     * collection, the map does not change.
+     * The map contains a copy of the collection of Pairs; if you change the collection, the map does not change.
      *
      * @param pairs Collection of Pair objects
      * @return map with the same contents as the collection
@@ -215,9 +205,7 @@ public class Pair<T1, T2>
 
 
     /**
-     * Converts two lists into a list of {@link Pair}s,
-     * whose length is the lesser of the lengths of the
-     * source lists.
+     * Converts two lists into a list of {@link Pair}s, whose length is the lesser of the lengths of the source lists.
      *
      * @param ks Left list
      * @param vs Right list
@@ -232,8 +220,7 @@ public class Pair<T1, T2>
     /**
      * Converts two lists into a list of {@link Pair}s.
      *
-     * <p>The length of the combined list is the lesser of the lengths of the
-     * source lists. But typically the source lists will be the same length.</p>
+     * The length of the combined list is the lesser of the lengths of the source lists. But typically the source lists will be the same length.
      *
      * @param ks Left list
      * @param vs Right list
@@ -241,10 +228,7 @@ public class Pair<T1, T2>
      * @return List of pairs
      * @see org.apache.calcite.linq4j.Ord#zip(java.util.List)
      */
-    public static <K, V> List<Pair<K, V>> zip(
-            final List<K> ks,
-            final List<V> vs,
-            boolean strict ) {
+    public static <K, V> List<Pair<K, V>> zip( final List<K> ks, final List<V> vs, boolean strict ) {
         final int size;
         if ( strict ) {
             if ( ks.size() != vs.size() ) {
@@ -255,11 +239,13 @@ public class Pair<T1, T2>
             size = Math.min( ks.size(), vs.size() );
         }
         return new AbstractList<Pair<K, V>>() {
+            @Override
             public Pair<K, V> get( int index ) {
                 return Pair.of( ks.get( index ), vs.get( index ) );
             }
 
 
+            @Override
             public int size() {
                 return size;
             }
@@ -270,16 +256,13 @@ public class Pair<T1, T2>
     /**
      * Converts two iterables into an iterable of {@link Pair}s.
      *
-     * <p>The resulting iterator ends whenever the first of the input iterators
-     * ends. But typically the source iterators will be the same length.</p>
+     * The resulting iterator ends whenever the first of the input iterators ends. But typically the source iterators will be the same length.
      *
      * @param ks Left iterable
      * @param vs Right iterable
      * @return Iterable over pairs
      */
-    public static <K, V> Iterable<Pair<K, V>> zip(
-            final Iterable<? extends K> ks,
-            final Iterable<? extends V> vs ) {
+    public static <K, V> Iterable<Pair<K, V>> zip( final Iterable<? extends K> ks, final Iterable<? extends V> vs ) {
         return () -> {
             final Iterator<? extends K> kIterator = ks.iterator();
             final Iterator<? extends V> vIterator = vs.iterator();
@@ -292,23 +275,21 @@ public class Pair<T1, T2>
     /**
      * Converts two arrays into a list of {@link Pair}s.
      *
-     * <p>The length of the combined list is the lesser of the lengths of the
-     * source arrays. But typically the source arrays will be the same
-     * length.</p>
+     * The length of the combined list is the lesser of the lengths of the source arrays. But typically the source arrays will be the same length.
      *
      * @param ks Left array
      * @param vs Right array
      * @return List of pairs
      */
-    public static <K, V> List<Pair<K, V>> zip(
-            final K[] ks,
-            final V[] vs ) {
+    public static <K, V> List<Pair<K, V>> zip( final K[] ks, final V[] vs ) {
         return new AbstractList<Pair<K, V>>() {
+            @Override
             public Pair<K, V> get( int index ) {
                 return Pair.of( ks[index], vs[index] );
             }
 
 
+            @Override
             public int size() {
                 return Math.min( ks.length, vs.length );
             }
@@ -324,8 +305,7 @@ public class Pair<T1, T2>
      * @param <R> Right type
      * @return Iterable over the left elements
      */
-    public static <L, R> Iterable<L> left(
-            final Iterable<? extends Map.Entry<L, R>> iterable ) {
+    public static <L, R> Iterable<L> left( final Iterable<? extends Map.Entry<L, R>> iterable ) {
         return () -> new LeftIterator<>( iterable.iterator() );
     }
 
@@ -338,20 +318,20 @@ public class Pair<T1, T2>
      * @param <R> Right type
      * @return Iterable over the right elements
      */
-    public static <L, R> Iterable<R> right(
-            final Iterable<? extends Map.Entry<L, R>> iterable ) {
+    public static <L, R> Iterable<R> right( final Iterable<? extends Map.Entry<L, R>> iterable ) {
         return () -> new RightIterator<>( iterable.iterator() );
     }
 
 
-    public static <K, V> List<K> left(
-            final List<? extends Map.Entry<K, V>> pairs ) {
+    public static <K, V> List<K> left( final List<? extends Map.Entry<K, V>> pairs ) {
         return new AbstractList<K>() {
+            @Override
             public K get( int index ) {
                 return pairs.get( index ).getKey();
             }
 
 
+            @Override
             public int size() {
                 return pairs.size();
             }
@@ -359,14 +339,15 @@ public class Pair<T1, T2>
     }
 
 
-    public static <K, V> List<V> right(
-            final List<? extends Map.Entry<K, V>> pairs ) {
+    public static <K, V> List<V> right( final List<? extends Map.Entry<K, V>> pairs ) {
         return new AbstractList<V>() {
+            @Override
             public V get( int index ) {
                 return pairs.get( index ).getValue();
             }
 
 
+            @Override
             public int size() {
                 return pairs.size();
             }
@@ -377,7 +358,7 @@ public class Pair<T1, T2>
     /**
      * Returns an iterator that iterates over (i, i + 1) pairs in an iterable.
      *
-     * <p>For example, {@code adjacents([3, 5, 7])} returns [(3, 5), (5, 7)].</p>
+     * For example, {@code adjacents([3, 5, 7])} returns [(3, 5), (5, 7)].</p>
      *
      * @param iterable Source collection
      * @param <T> Element type
@@ -395,10 +376,9 @@ public class Pair<T1, T2>
 
 
     /**
-     * Returns an iterator that iterates over (0, i) pairs in an iterable for
-     * i &gt; 0.
+     * Returns an iterator that iterates over (0, i) pairs in an iterable for i &gt; 0.
      *
-     * <p>For example, {@code firstAnd([3, 5, 7])} returns [(3, 5), (3, 7)].</p>
+     * For example, {@code firstAnd([3, 5, 7])} returns [(3, 5), (3, 7)].
      *
      * @param iterable Source collection
      * @param <T> Element type
@@ -432,16 +412,19 @@ public class Pair<T1, T2>
         }
 
 
+        @Override
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
 
+        @Override
         public L next() {
             return iterator.next().getKey();
         }
 
 
+        @Override
         public void remove() {
             iterator.remove();
         }
@@ -464,16 +447,19 @@ public class Pair<T1, T2>
         }
 
 
+        @Override
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
 
+        @Override
         public R next() {
             return iterator.next().getValue();
         }
 
 
+        @Override
         public void remove() {
             iterator.remove();
         }
@@ -481,8 +467,7 @@ public class Pair<T1, T2>
 
 
     /**
-     * Iterator that returns the first element of a collection paired with every
-     * other element.
+     * Iterator that returns the first element of a collection paired with every other element.
      *
      * @param <E> Element type
      */
@@ -498,16 +483,19 @@ public class Pair<T1, T2>
         }
 
 
+        @Override
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
 
+        @Override
         public Pair<E, E> next() {
             return of( first, iterator.next() );
         }
 
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
@@ -526,23 +514,25 @@ public class Pair<T1, T2>
         private final Iterator<? extends R> rightIterator;
 
 
-        ZipIterator( Iterator<? extends L> leftIterator,
-                Iterator<? extends R> rightIterator ) {
+        ZipIterator( Iterator<? extends L> leftIterator, Iterator<? extends R> rightIterator ) {
             this.leftIterator = Objects.requireNonNull( leftIterator );
             this.rightIterator = Objects.requireNonNull( rightIterator );
         }
 
 
+        @Override
         public boolean hasNext() {
             return leftIterator.hasNext() && rightIterator.hasNext();
         }
 
 
+        @Override
         public Pair<L, R> next() {
             return Pair.of( leftIterator.next(), rightIterator.next() );
         }
 
 
+        @Override
         public void remove() {
             leftIterator.remove();
             rightIterator.remove();
@@ -551,8 +541,7 @@ public class Pair<T1, T2>
 
 
     /**
-     * Iterator that returns consecutive pairs of elements from an underlying
-     * iterator.
+     * Iterator that returns consecutive pairs of elements from an underlying iterator.
      *
      * @param <E> Element type
      */
@@ -570,11 +559,13 @@ public class Pair<T1, T2>
         }
 
 
+        @Override
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
 
+        @Override
         public Pair<E, E> next() {
             final E current = iterator.next();
             final Pair<E, E> pair = of( previous, current );
@@ -583,10 +574,10 @@ public class Pair<T1, T2>
         }
 
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
         }
     }
 }
 
-// End Pair.java

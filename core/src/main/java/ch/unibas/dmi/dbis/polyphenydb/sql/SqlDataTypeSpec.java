@@ -164,6 +164,7 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    @Override
     public SqlNode clone( SqlParserPos pos ) {
         return (collectionsTypeName != null)
                 ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, charSetName, pos )
@@ -171,6 +172,7 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         return SqlMonotonicity.CONSTANT;
     }
@@ -238,6 +240,7 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         String name = typeName.getSimple();
         if ( SqlTypeName.get( name ) != null ) {
@@ -275,16 +278,19 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateDataType( this );
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( !(node instanceof SqlDataTypeSpec) ) {
             return litmus.fail( "{} != {}", this, node );

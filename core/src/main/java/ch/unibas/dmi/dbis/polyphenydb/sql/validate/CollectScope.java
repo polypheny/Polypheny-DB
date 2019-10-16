@@ -67,6 +67,7 @@ class CollectScope extends ListScope {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return child;
     }

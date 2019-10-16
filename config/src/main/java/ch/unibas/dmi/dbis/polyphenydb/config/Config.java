@@ -62,6 +62,7 @@ public abstract class Config {
     /**
      * Name of the validation method to use in the web ui this field is parsed to Json by Gson
      */
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private WebUiValidator[] webUiValidators;
 
     /**
@@ -78,12 +79,13 @@ public abstract class Config {
      * Required by GSON.
      * Configs with a lower order will be rendered first.
      */
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int webUiOrder;
 
     /**
      * Type of configuration element. Required for GSON.
      */
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private final String configType;
 
     /**

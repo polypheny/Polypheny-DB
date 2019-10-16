@@ -121,6 +121,7 @@ public abstract class Calc extends SingleRel {
     }
 
 
+    @Override
     public boolean isValid( Litmus litmus, Context context ) {
         if ( !RelOptUtil.equal(
                 "program's input type",
@@ -160,11 +161,13 @@ public abstract class Calc extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return program.explainCalc( super.explainTerms( pw ) );
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         List<RexNode> oldExprs = program.getExprList();
         List<RexNode> exprs = shuttle.apply( oldExprs );

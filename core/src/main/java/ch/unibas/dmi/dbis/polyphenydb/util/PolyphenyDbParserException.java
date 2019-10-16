@@ -49,13 +49,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 
 
 /**
- * Tagging interface to allow a
- * {@link SqlParseException}
- * to be identified without adding a
- * dependency on it from client-side code.
+ * Tagging interface to allow a {@link SqlParseException} to be identified without adding a dependency on it from client-side code.
  */
 public interface PolyphenyDbParserException {
 
 }
 
-// End PolyphenyDbParserException.java

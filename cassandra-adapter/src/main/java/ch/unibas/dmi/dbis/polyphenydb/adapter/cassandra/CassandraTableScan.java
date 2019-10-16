@@ -53,7 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-
 import java.util.List;
 
 
@@ -107,6 +106,7 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.cassandraTable = cassandraTable;
         implementor.table = table;

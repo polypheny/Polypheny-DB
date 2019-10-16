@@ -164,18 +164,6 @@ public abstract class RelOptUtil {
 
     public static final double EPSILON = 1.0e-5;
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Filter> FILTER_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Project> PROJECT_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<Calc> CALC_PREDICATE = RelOptUtil::containsMultisetOrWindowedAgg;
-
 
     /**
      * Whether this node is a limit without sort specification.
@@ -255,26 +243,6 @@ public abstract class RelOptUtil {
         VariableSetVisitor visitor = new VariableSetVisitor();
         go( visitor, rel );
         return visitor.variables;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static List<CorrelationId> getVariablesSetAndUsed( RelNode rel0, RelNode rel1 ) {
-        Set<CorrelationId> set = getVariablesSet( rel0 );
-        if ( set.size() == 0 ) {
-            return ImmutableList.of();
-        }
-        Set<CorrelationId> used = getVariablesUsed( rel1 );
-        if ( used.size() == 0 ) {
-            return ImmutableList.of();
-        }
-        final List<CorrelationId> result = new ArrayList<>();
-        for ( CorrelationId s : set ) {
-            if ( used.contains( s ) && !result.contains( s ) ) {
-                result.add( s );
-            }
-        }
-        return result;
     }
 
 
@@ -2301,6 +2269,7 @@ public abstract class RelOptUtil {
         }
         try {
             new RelVisitor() {
+                @Override
                 public void visit( RelNode node, int ordinal, RelNode parent ) {
                     if ( node == target ) {
                         throw Util.FoundOne.NULL;
@@ -2455,11 +2424,13 @@ public abstract class RelOptUtil {
         assert fieldNames.size() == fields.size();
         final List<RexNode> refs =
                 new AbstractList<RexNode>() {
+                    @Override
                     public int size() {
                         return fields.size();
                     }
 
 
+                    @Override
                     public RexNode get( int index ) {
                         return RexInputRef.of( index, fields );
                     }
@@ -2552,22 +2523,26 @@ public abstract class RelOptUtil {
         final List<String> fieldNames = rowType.getFieldNames();
         final RelBuilder relBuilder = RelBuilder.proto( factory ).create( child.getCluster(), null );
         final List<RexNode> exprs = new AbstractList<RexNode>() {
+            @Override
             public int size() {
                 return posList.size();
             }
 
 
+            @Override
             public RexNode get( int index ) {
                 final int pos = posList.get( index );
                 return relBuilder.getRexBuilder().makeInputRef( child, pos );
             }
         };
         final List<String> names = new AbstractList<String>() {
+            @Override
             public int size() {
                 return posList.size();
             }
 
 
+            @Override
             public String get( int index ) {
                 final int pos = posList.get( index );
                 return fieldNames.get( pos );
@@ -2735,11 +2710,13 @@ public abstract class RelOptUtil {
             final List<RelDataTypeField> fields = relBuilder.peek().getRowType().getFieldList();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
+                        @Override
                         public int size() {
                             return leftCount + extraLeftExprs.size();
                         }
 
 
+                        @Override
                         public Pair<RexNode, String> get( int index ) {
                             if ( index < leftCount ) {
                                 RelDataTypeField field = fields.get( index );
@@ -2758,11 +2735,13 @@ public abstract class RelOptUtil {
             final int newLeftCount = leftCount + extraLeftExprs.size();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
+                        @Override
                         public int size() {
                             return rightCount + extraRightExprs.size();
                         }
 
 
+                        @Override
                         public Pair<RexNode, String> get( int index ) {
                             if ( index < rightCount ) {
                                 RelDataTypeField field = fields.get( index );
@@ -2792,18 +2771,6 @@ public abstract class RelOptUtil {
             relBuilder.project( relBuilder.fields( mapping.inverse() ) );
         }
         return relBuilder.build();
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode pushDownJoinConditions( Join originalJoin ) {
-        return pushDownJoinConditions( originalJoin, RelFactories.LOGICAL_BUILDER );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode pushDownJoinConditions( Join originalJoin, RelFactories.ProjectFactory projectFactory ) {
-        return pushDownJoinConditions( originalJoin, RelBuilder.proto( projectFactory ) );
     }
 
 
@@ -2947,6 +2914,7 @@ public abstract class RelOptUtil {
 
 
         // implement RelVisitor
+        @Override
         public void visit( RelNode p, int ordinal, RelNode parent ) {
             super.visit( p, ordinal, parent );
             p.collectVariablesUsed( variables );
@@ -3007,6 +2975,7 @@ public abstract class RelOptUtil {
         public final SortedSet<Integer> inputPosReferenced = new TreeSet<>();
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
             inputPosReferenced.add( inputRef.getIndex() );
             return inputRef;
@@ -3124,6 +3093,7 @@ public abstract class RelOptUtil {
         }
 
 
+        @Override
         public Void visitInputRef( RexInputRef inputRef ) {
             inputBitSet.set( inputRef.getIndex() );
             return null;
@@ -3194,6 +3164,7 @@ public abstract class RelOptUtil {
         }
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef var ) {
             int srcIndex = var.getIndex();
             int destIndex = srcIndex + adjustments[srcIndex];

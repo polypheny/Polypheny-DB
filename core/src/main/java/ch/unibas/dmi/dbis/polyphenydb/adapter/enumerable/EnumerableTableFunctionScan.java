@@ -81,6 +81,7 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         BlockBuilder bb = new BlockBuilder();
         // Non-array user-specified types are not supported yet

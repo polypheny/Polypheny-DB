@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
@@ -56,12 +37,8 @@ import org.junit.Test;
  *
  * <ul>
  * <li>"create table x (a int) as values 1, 2" should fail validation; data type not allowed in "create table ... as".<li>
- *
  * <li>"create table x (a int, b int as (a + 1)) stored" should not allow b to be specified in insert; should generate check constraint on b; should populate b in insert as if it had a default<li>
- *
  * <li>"create table as select" should store constraints deduced by planner<li>
- *
- * <li>during CREATE VIEW, check for a table and a materialized view with the same name (they have the same namespace)<li>
  * </ul>
  */
 public class DdlParserTest extends SqlParserTest {
@@ -87,38 +64,6 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testCreateOrReplaceSchema() {
         sql( "create or replace schema x" ).ok( "CREATE OR REPLACE SCHEMA `X`" );
-    }
-
-
-    @Test
-    public void testCreateForeignSchema() {
-        final String sql = "create or replace foreign schema x\n"
-                + "type 'jdbc'\n"
-                + "options (\n"
-                + "  aBoolean true,\n"
-                + "  anInteger -45,\n"
-                + "  aDate DATE '1970-03-21',\n"
-                + "  \"quoted.id\" TIMESTAMP '1970-03-21 12:4:56.78',\n"
-                + "  aString 'foo''bar')";
-        final String expected = "CREATE OR REPLACE FOREIGN SCHEMA `X` TYPE 'jdbc' "
-                + "OPTIONS (`ABOOLEAN` TRUE,"
-                + " `ANINTEGER` -45,"
-                + " `ADATE` DATE '1970-03-21',"
-                + " `quoted.id` TIMESTAMP '1970-03-21 12:04:56.78',"
-                + " `ASTRING` 'foo''bar')";
-        sql( sql ).ok( expected );
-    }
-
-
-    @Test
-    public void testCreateForeignSchema2() {
-        final String sql = "create or replace foreign schema x\n"
-                + "library 'com.example.ExampleSchemaFactory'\n"
-                + "options ()";
-        final String expected = "CREATE OR REPLACE FOREIGN SCHEMA `X` "
-                + "LIBRARY 'com.example.ExampleSchemaFactory' "
-                + "OPTIONS ()";
-        sql( sql ).ok( expected );
     }
 
 
@@ -226,46 +171,6 @@ public class DdlParserTest extends SqlParserTest {
 
 
     @Test
-    public void testCreateMaterializedView() {
-        final String sql = "create materialized view mv (d, v) as\n"
-                + "select deptno, count(*) from emp\n"
-                + "group by deptno order by deptno desc";
-        final String expected = "CREATE MATERIALIZED VIEW `MV` (`D`, `V`) AS\n"
-                + "SELECT `DEPTNO`, COUNT(*)\n"
-                + "FROM `EMP`\n"
-                + "GROUP BY `DEPTNO`\n"
-                + "ORDER BY `DEPTNO` DESC";
-        sql( sql ).ok( expected );
-    }
-
-
-    @Test
-    public void testCreateMaterializedView2() {
-        final String sql = "create materialized view if not exists mv as\n"
-                + "select deptno, count(*) from emp\n"
-                + "group by deptno order by deptno desc";
-        final String expected = "CREATE MATERIALIZED VIEW IF NOT EXISTS `MV` AS\n"
-                + "SELECT `DEPTNO`, COUNT(*)\n"
-                + "FROM `EMP`\n"
-                + "GROUP BY `DEPTNO`\n"
-                + "ORDER BY `DEPTNO` DESC";
-        sql( sql ).ok( expected );
-    }
-
-
-    // "OR REPLACE" is allowed by the parser, but the validator will give an error later
-    @Test
-    public void testCreateOrReplaceMaterializedView() {
-        final String sql = "create or replace materialized view mv as\n"
-                + "select * from emp";
-        final String expected = "CREATE MATERIALIZED VIEW `MV` AS\n"
-                + "SELECT *\n"
-                + "FROM `EMP`";
-        sql( sql ).ok( expected );
-    }
-
-
-    @Test
     public void testCreateOrReplaceFunction() {
         final String sql = "create or replace function if not exists x.udf\n"
                 + " as 'ch.unibas.dmi.dbis.polyphenydb.udf.TableFun.demoUdf'\n"
@@ -301,12 +206,6 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testDropSchemaIfExists() {
         sql( "drop schema if exists x" ).ok( "DROP SCHEMA IF EXISTS `X`" );
-    }
-
-
-    @Test
-    public void testDropForeignSchema() {
-        sql( "drop foreign schema x" ).ok( "DROP FOREIGN SCHEMA `X`" );
     }
 
 
@@ -349,18 +248,6 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testDropView() {
         sql( "drop view x" ).ok( "DROP VIEW `X`" );
-    }
-
-
-    @Test
-    public void testDropMaterializedView() {
-        sql( "drop materialized view x" ).ok( "DROP MATERIALIZED VIEW `X`" );
-    }
-
-
-    @Test
-    public void testDropMaterializedViewIfExists() {
-        sql( "drop materialized view if exists x" ).ok( "DROP MATERIALIZED VIEW IF EXISTS `X`" );
     }
 
 

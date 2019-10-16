@@ -147,6 +147,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public SqlKind getKind() {
         return SqlKind.IDENTIFIER;
     }
@@ -321,6 +322,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
         for ( String name : names ) {
@@ -339,11 +341,13 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateIdentifier( this, scope );
     }
 
 
+    @Override
     public void validateExpr( SqlValidator validator, SqlValidatorScope scope ) {
         // First check for builtin functions which don't have parentheses, like "LOCALTIME".
         SqlCall call = SqlUtil.makeCall( validator.getOperatorTable(), this );
@@ -356,6 +360,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( !(node instanceof SqlIdentifier) ) {
             return litmus.fail( "{} != {}", this, node );
@@ -373,6 +378,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
@@ -405,6 +411,7 @@ public class SqlIdentifier extends SqlNode {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         // for "star" column, whether it's static or dynamic return not_monotonic directly.
         if ( Util.last( names ).equals( "" ) || DynamicRecordType.isDynamicStarColName( Util.last( names ) ) ) {

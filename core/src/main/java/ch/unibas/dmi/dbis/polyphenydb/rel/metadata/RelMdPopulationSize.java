@@ -76,6 +76,7 @@ public class RelMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.PopulationSize> getDef() {
         return BuiltInMetadata.PopulationSize.DEF;
     }

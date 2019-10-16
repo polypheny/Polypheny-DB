@@ -214,25 +214,30 @@ public interface PolyphenyDbPrepare {
          */
         private static class TrivialSparkHandler implements SparkHandler {
 
+            @Override
             public RelNode flattenTypes( RelOptPlanner planner, RelNode rootRel, boolean restructure ) {
                 return rootRel;
             }
 
 
+            @Override
             public void registerRules( RuleSetBuilder builder ) {
             }
 
 
+            @Override
             public boolean enabled() {
                 return false;
             }
 
 
+            @Override
             public ArrayBindable compile( ClassDeclaration expr, String s ) {
                 throw new UnsupportedOperationException();
             }
 
 
+            @Override
             public Object sparkContext() {
                 throw new UnsupportedOperationException();
             }
@@ -343,14 +348,13 @@ public interface PolyphenyDbPrepare {
         private final Bindable<T> bindable;
 
 
-        @Deprecated // to be removed before 2.0
-        public PolyphenyDbSignature( String sql, List<AvaticaParameter> parameterList, Map<String, Object> internalParameters, RelDataType rowType, List<ColumnMetaData> columns, Meta.CursorFactory cursorFactory,
-                PolyphenyDbSchema rootSchema, List<RelCollation> collationList, long maxRowCount, Bindable<T> bindable ) {
-            this( sql, parameterList, internalParameters, rowType, columns, cursorFactory, rootSchema, collationList, maxRowCount, bindable, null );
-        }
-
-
-        public PolyphenyDbSignature( String sql, List<AvaticaParameter> parameterList, Map<String, Object> internalParameters, RelDataType rowType, List<ColumnMetaData> columns, Meta.CursorFactory cursorFactory,
+        public PolyphenyDbSignature(
+                String sql,
+                List<AvaticaParameter> parameterList,
+                Map<String, Object> internalParameters,
+                RelDataType rowType,
+                List<ColumnMetaData> columns,
+                Meta.CursorFactory cursorFactory,
                 PolyphenyDbSchema rootSchema, List<RelCollation> collationList, long maxRowCount, Bindable<T> bindable, Meta.StatementType statementType ) {
             super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
             this.rowType = rowType;

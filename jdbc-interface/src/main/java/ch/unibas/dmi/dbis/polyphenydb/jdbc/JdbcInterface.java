@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
 import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystem;
@@ -37,13 +38,10 @@ import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class JdbcInterface extends QueryInterface {
-
-    private static final Logger LOG = LoggerFactory.getLogger( JdbcInterface.class );
 
 
     private final MetricsSystemConfiguration metricsSystemConfiguration;
@@ -68,7 +66,7 @@ public class JdbcInterface extends QueryInterface {
             final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( RuntimeConfig.JDBC_PORT.getInteger(), handler );
             httpServerDispatcher.start();
         } catch ( Exception e ) {
-            LOG.error( "", e );
+            log.error( "", e );
         }
     }
 }

@@ -77,6 +77,7 @@ public class CachingRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, final Class<? extends M> metadataClass ) {
         final UnboundMetadata<M> function = underlyingProvider.apply( relClass, metadataClass );
         if ( function == null ) {
@@ -94,6 +95,7 @@ public class CachingRelMetadataProvider implements RelMetadataProvider {
     }
 
 
+    @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         return underlyingProvider.handlers( def );
     }
@@ -124,6 +126,7 @@ public class CachingRelMetadataProvider implements RelMetadataProvider {
         }
 
 
+        @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
             // Compute hash key.
             final ImmutableList.Builder<Object> builder = ImmutableList.builder();

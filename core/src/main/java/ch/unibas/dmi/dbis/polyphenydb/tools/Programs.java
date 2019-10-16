@@ -49,8 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.NoneToBindableConverterRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptLattice;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -68,7 +66,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.DefaultRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExpandDistinctAggregatesRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateStarTableRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcMergeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterCalcMergeRule;
@@ -156,8 +153,6 @@ public class Programs {
                     PolyphenyDbPrepareImpl.COMMUTE
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
-                    AggregateStarTableRule.INSTANCE,
-                    AggregateStarTableRule.INSTANCE2,
                     FilterTableScanRule.INSTANCE,
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
@@ -239,7 +234,7 @@ public class Programs {
      * Creates a program that executes a {@link HepProgram}.
      */
     public static Program of( final HepProgram hepProgram, final boolean noDag, final RelMetadataProvider metadataProvider ) {
-        return ( planner, rel, requiredOutputTraits, materializations, lattices ) -> {
+        return ( planner, rel, requiredOutputTraits ) -> {
             final HepPlanner hepPlanner = new HepPlanner(
                     hepProgram,
                     null,
@@ -266,7 +261,7 @@ public class Programs {
      * {@link LoptOptimizeJoinRule}) if there are 6 or more joins (7 or more relations).
      */
     public static Program heuristicJoinOrder( final Iterable<? extends RelOptRule> rules, final boolean bushy, final int minJoinCount ) {
-        return ( planner, rel, requiredOutputTraits, materializations, lattices ) -> {
+        return ( planner, rel, requiredOutputTraits ) -> {
             final int joinCount = RelOptUtil.countJoins( rel );
             final Program program;
             if ( joinCount < minJoinCount ) {
@@ -296,7 +291,7 @@ public class Programs {
 
                 program = sequence( program1, program2 );
             }
-            return program.run( planner, rel, requiredOutputTraits, materializations, lattices );
+            return program.run( planner, rel, requiredOutputTraits );
         };
     }
 
@@ -324,7 +319,7 @@ public class Programs {
 
 
     public static Program getProgram() {
-        return ( planner, rel, requiredOutputTraits, materializations, lattices ) -> null;
+        return ( planner, rel, requiredOutputTraits ) -> null;
     }
 
 
@@ -341,15 +336,8 @@ public class Programs {
      */
     public static Program standard( RelMetadataProvider metadataProvider ) {
         final Program program1 =
-                ( planner, rel, requiredOutputTraits, materializations, lattices ) -> {
+                ( planner, rel, requiredOutputTraits ) -> {
                     planner.setRoot( rel );
-
-                    for ( RelOptMaterialization materialization : materializations ) {
-                        planner.addMaterialization( materialization );
-                    }
-                    for ( RelOptLattice lattice : lattices ) {
-                        planner.addLattice( lattice );
-                    }
 
                     final RelNode rootRel2 =
                             rel.getTraitSet().equals( requiredOutputTraits )
@@ -387,16 +375,11 @@ public class Programs {
         }
 
 
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits, List<RelOptMaterialization> materializations, List<RelOptLattice> lattices ) {
+        @Override
+        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
             planner.clear();
             for ( RelOptRule rule : ruleSet ) {
                 planner.addRule( rule );
-            }
-            for ( RelOptMaterialization materialization : materializations ) {
-                planner.addMaterialization( materialization );
-            }
-            for ( RelOptLattice lattice : lattices ) {
-                planner.addLattice( lattice );
             }
             if ( !rel.getTraitSet().equals( requiredOutputTraits ) ) {
                 rel = planner.changeTraits( rel, requiredOutputTraits );
@@ -421,9 +404,10 @@ public class Programs {
         }
 
 
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits, List<RelOptMaterialization> materializations, List<RelOptLattice> lattices ) {
+        @Override
+        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
             for ( Program program : programs ) {
-                rel = program.run( planner, rel, requiredOutputTraits, materializations, lattices );
+                rel = program.run( planner, rel, requiredOutputTraits );
             }
             return rel;
         }
@@ -433,12 +417,12 @@ public class Programs {
     /**
      * Program that de-correlates a query.
      *
-     * To work around <a href="https://issues.apache.org/jira/browse/CALCITE-842">[POLYPHENYDB-842] Decorrelator gets field offsets confused if fields have been trimmed</a>,
-     * disable field-trimming in {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
+     * To work around "Decorrelator gets field offsets confused if fields have been trimmed", disable field-trimming in {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
      */
     private static class DecorrelateProgram implements Program {
 
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits, List<RelOptMaterialization> materializations, List<RelOptLattice> lattices ) {
+        @Override
+        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
             final PolyphenyDbConnectionConfig config = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
             if ( config != null && config.forceDecorrelate() ) {
                 final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
@@ -454,7 +438,8 @@ public class Programs {
      */
     private static class TrimFieldsProgram implements Program {
 
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits, List<RelOptMaterialization> materializations, List<RelOptLattice> lattices ) {
+        @Override
+        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
             final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
             return new RelFieldTrimmer( null, relBuilder ).trim( rel );
         }

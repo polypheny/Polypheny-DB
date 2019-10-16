@@ -73,17 +73,20 @@ public class SqlPostfixOperator extends SqlOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.POSTFIX;
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         Util.discard( operandsCount );
         return "{1} {0}";
     }
 
 
+    @Override
     protected RelDataType adjustType( SqlValidator validator, SqlCall call, RelDataType type ) {
         if ( SqlTypeUtil.inCharFamily( type ) ) {
             // Determine coercibility and resulting collation name of unary operator if needed.

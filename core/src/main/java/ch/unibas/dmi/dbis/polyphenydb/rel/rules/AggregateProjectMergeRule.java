@@ -88,6 +88,7 @@ public class AggregateProjectMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Aggregate aggregate = call.rel( 0 );
         final Project project = call.rel( 1 );

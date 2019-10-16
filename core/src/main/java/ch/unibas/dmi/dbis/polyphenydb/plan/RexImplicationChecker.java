@@ -59,7 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCastFunction;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbLogger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -69,7 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -85,9 +84,8 @@ import org.slf4j.LoggerFactory;
  * <li>(x &gt; 10 AND y = 20) &rArr; (x &gt; 5)
  * </ul>
  */
+@Slf4j
 public class RexImplicationChecker {
-
-    private static final PolyphenyDbLogger LOGGER = new PolyphenyDbLogger( LoggerFactory.getLogger( RexImplicationChecker.class ) );
 
     final RexBuilder builder;
     final RexExecutorImpl executor;
@@ -116,7 +114,9 @@ public class RexImplicationChecker {
             return false;
         }
 
-        LOGGER.debug( "Checking if {} => {}", first.toString(), second.toString() );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Checking if {} => {}", first.toString(), second.toString() );
+        }
 
         // Get DNF
         RexNode firstDnf = RexUtil.toDnf( builder, first );
@@ -142,12 +142,16 @@ public class RexImplicationChecker {
             // Check if f implies at least one of the conjunctions in list secondDnfs.
             // If f could not imply even one conjunction in secondDnfs, then final implication may be false.
             if ( !impliesAny( f, seconds ) ) {
-                LOGGER.debug( "{} does not imply {}", first, second );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "{} does not imply {}", first, second );
+                }
                 return false;
             }
         }
 
-        LOGGER.debug( "{} implies {}", first, second );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "{} implies {}", first, second );
+        }
         return true;
     }
 
@@ -225,7 +229,7 @@ public class RexImplicationChecker {
 
         // Check Support
         if ( !checkSupport( firstUsageFinder, secondUsageFinder ) ) {
-            LOGGER.warn( "Support for checking {} => {} is not there", first, second );
+            log.warn( "Support for checking {} => {} is not there", first, second );
             return false;
         }
 
@@ -277,7 +281,7 @@ public class RexImplicationChecker {
         } catch ( Exception e ) {
             // TODO: CheckSupport should not allow this exception to be thrown
             // Need to monitor it and handle all the cases raising them.
-            LOGGER.warn( "Exception thrown while checking if => {}: {}", second, e.getMessage() );
+            log.warn( "Exception thrown while checking if => {}: {}", second, e.getMessage() );
             return false;
         }
         return result != null && result.length == 1 && result[0] instanceof Boolean && (Boolean) result[0];
@@ -435,6 +439,7 @@ public class RexImplicationChecker {
         }
 
 
+        @Override
         public Void visitInputRef( RexInputRef inputRef ) {
             InputRefUsage<SqlOperator, RexNode> inputRefUse = getUsageMap( inputRef );
             inputRefUse.usageCount++;

@@ -69,11 +69,13 @@ public abstract class ViewExpanders {
             return (RelOptTable.ToRelContext) viewExpander;
         }
         return new RelOptTable.ToRelContext() {
+            @Override
             public RelOptCluster getCluster() {
                 return cluster;
             }
 
 
+            @Override
             public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
                 return viewExpander.expandView( rowType, queryString, schemaPath, viewPath );
             }
@@ -86,11 +88,13 @@ public abstract class ViewExpanders {
      */
     public static RelOptTable.ToRelContext simpleContext( RelOptCluster cluster ) {
         return new RelOptTable.ToRelContext() {
+            @Override
             public RelOptCluster getCluster() {
                 return cluster;
             }
 
 
+            @Override
             public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
                 throw new UnsupportedOperationException();
             }

@@ -85,6 +85,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( name, columnList, query );
     }

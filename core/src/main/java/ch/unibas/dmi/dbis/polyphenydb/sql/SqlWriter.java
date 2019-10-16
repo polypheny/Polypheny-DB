@@ -268,6 +268,7 @@ public interface SqlWriter {
         }
 
 
+        @Override
         public boolean needsIndent() {
             return needsIndent;
         }
@@ -281,11 +282,13 @@ public interface SqlWriter {
          */
         public static FrameType create( final String name ) {
             return new FrameType() {
+                @Override
                 public String getName() {
                     return name;
                 }
 
 
+                @Override
                 public boolean needsIndent() {
                     return true;
                 }
@@ -293,6 +296,7 @@ public interface SqlWriter {
         }
 
 
+        @Override
         public String getName() {
             return name();
         }

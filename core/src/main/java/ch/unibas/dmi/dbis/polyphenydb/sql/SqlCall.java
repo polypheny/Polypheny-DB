@@ -119,6 +119,7 @@ public abstract class SqlCall extends SqlNode {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlOperator operator = getOperator();
         final SqlDialect dialect = writer.getDialect();
@@ -140,11 +141,13 @@ public abstract class SqlCall extends SqlNode {
      * The default implementation delegates the validation to the operator's {@link SqlOperator#validateCall}. Derived classes may override (as do,
      * for example {@link SqlSelect} and {@link SqlUpdate}).
      */
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateCall( this, scope );
     }
 
 
+    @Override
     public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, SqlParserPos pos, Collection<SqlMoniker> hintList ) {
         for ( SqlNode operand : getOperandList() ) {
             if ( operand instanceof SqlIdentifier ) {
@@ -160,11 +163,13 @@ public abstract class SqlCall extends SqlNode {
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( node == this ) {
             return true;
@@ -199,6 +204,7 @@ public abstract class SqlCall extends SqlNode {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         // Delegate to operator.
         final SqlCallBinding binding = new SqlCallBinding( scope.getValidator(), scope, this );

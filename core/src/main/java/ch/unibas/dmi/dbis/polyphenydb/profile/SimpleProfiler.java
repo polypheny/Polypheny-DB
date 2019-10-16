@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.profile;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
@@ -73,6 +72,7 @@ import org.apache.calcite.linq4j.Ord;
  */
 public class SimpleProfiler implements Profiler {
 
+    @Override
     public Profile profile( Iterable<List<Comparable>> rows, final List<Column> columns, Collection<ImmutableBitSet> initialGroups ) {
         Util.discard( initialGroups ); // this profiler ignores initial groups
         return new Run( columns ).profile( rows );
@@ -240,12 +240,12 @@ public class SimpleProfiler implements Profiler {
                         break;
                     default:
                         expectedCardinality = rowCount;
-                        for ( Column column : space.columns ) {
-                            final Distribution d1 = distributions.get( ImmutableBitSet.of( column.ordinal ) );
-                            final Distribution d2 = distributions.get( space.columnOrdinals.clear( column.ordinal ) );
-                            final double d = Lattice.getRowCount( rowCount, d1.cardinality, d2.cardinality );
-                            expectedCardinality = Math.min( expectedCardinality, d );
-                        }
+//                        for ( Column column : space.columns ) {
+//                            final Distribution d1 = distributions.get( ImmutableBitSet.of( column.ordinal ) );
+//                            final Distribution d2 = distributions.get( space.columnOrdinals.clear( column.ordinal ) );
+//                            final double d = Lattice.getRowCount( rowCount, d1.cardinality, d2.cardinality );
+//                            expectedCardinality = Math.min( expectedCardinality, d );
+//                        }
                 }
                 final boolean minimal =
                         nonMinimal == 0
@@ -340,6 +340,7 @@ public class SimpleProfiler implements Profiler {
         }
 
 
+        @Override
         public int compareTo( @Nonnull Space o ) {
             return columnOrdinals.equals( o.columnOrdinals )
                     ? 0

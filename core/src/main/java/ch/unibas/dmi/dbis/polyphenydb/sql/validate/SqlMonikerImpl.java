@@ -94,16 +94,19 @@ public class SqlMonikerImpl implements SqlMoniker {
     }
 
 
+    @Override
     public SqlMonikerType getType() {
         return type;
     }
 
 
+    @Override
     public List<String> getFullyQualifiedNames() {
         return names;
     }
 
 
+    @Override
     public SqlIdentifier toIdentifier() {
         return new SqlIdentifier( names, SqlParserPos.ZERO );
     }
@@ -114,6 +117,7 @@ public class SqlMonikerImpl implements SqlMoniker {
     }
 
 
+    @Override
     public String id() {
         return type + "(" + this + ")";
     }

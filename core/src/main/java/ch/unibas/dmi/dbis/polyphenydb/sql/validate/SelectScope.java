@@ -145,11 +145,13 @@ public class SelectScope extends ListScope {
     }
 
 
+    @Override
     public SqlSelect getNode() {
         return select;
     }
 
 
+    @Override
     public SqlWindow lookupWindow( String name ) {
         final SqlNodeList windowList = select.getWindowList();
         for ( int i = 0; i < windowList.size(); i++ ) {
@@ -170,6 +172,7 @@ public class SelectScope extends ListScope {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlNode expr ) {
         SqlMonotonicity monotonicity = expr.getMonotonicity( this );
         if ( monotonicity != SqlMonotonicity.NOT_MONOTONIC ) {
@@ -194,6 +197,7 @@ public class SelectScope extends ListScope {
     }
 
 
+    @Override
     public SqlNodeList getOrderList() {
         if ( orderList == null ) {
             // Compute on demand first call.

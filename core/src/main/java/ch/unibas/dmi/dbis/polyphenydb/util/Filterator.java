@@ -50,24 +50,18 @@ import java.util.NoSuchElementException;
 
 
 /**
- * Filtered iterator class: an iterator that includes only elements that are
- * instanceof a specified class.
- *
- * <p>Apologies for the dorky name.
+ * Filtered iterator class: an iterator that includes only elements that are instanceof a specified class.
  *
  * @param <E> Element type
  * @see Util#cast(java.util.List, Class)
  * @see Util#cast(Iterator, Class)
  */
 public class Filterator<E> implements Iterator<E> {
-    //~ Instance fields --------------------------------------------------------
 
     Class<E> includeFilter;
-    Iterator<? extends Object> iterator;
+    Iterator<?> iterator;
     E lookAhead;
     boolean ready;
-
-    //~ Constructors -----------------------------------------------------------
 
 
     public Filterator( Iterator<?> iterator, Class<E> includeFilter ) {
@@ -75,9 +69,8 @@ public class Filterator<E> implements Iterator<E> {
         this.includeFilter = includeFilter;
     }
 
-    //~ Methods ----------------------------------------------------------------
 
-
+    @Override
     public boolean hasNext() {
         if ( ready ) {
             // Allow hasNext() to be called repeatedly.
@@ -96,6 +89,7 @@ public class Filterator<E> implements Iterator<E> {
     }
 
 
+    @Override
     public E next() {
         if ( ready ) {
             E o = lookAhead;
@@ -113,9 +107,9 @@ public class Filterator<E> implements Iterator<E> {
     }
 
 
+    @Override
     public void remove() {
         iterator.remove();
     }
 }
 
-// End Filterator.java

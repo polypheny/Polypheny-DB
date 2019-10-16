@@ -69,12 +69,14 @@ public class Graphs {
     public static <V, E extends DefaultEdge> List<V> predecessorListOf( DirectedGraph<V, E> graph, V vertex ) {
         final List<E> edges = graph.getInwardEdges( vertex );
         return new AbstractList<V>() {
+            @Override
             public V get( int index ) {
                 //noinspection unchecked
                 return (V) edges.get( index ).source;
             }
 
 
+            @Override
             public int size() {
                 return edges.size();
             }

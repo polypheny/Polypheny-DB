@@ -418,6 +418,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     }
 
 
+    @Override
     public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
         thisOperands = operands;
         return super.createCall( functionQualifier, pos, operands );
@@ -441,11 +442,13 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     }
 
 
+    @Override
     public String getAllowedSignatures( String name ) {
         return lookupMakeCallObj.getOperator().getAllowedSignatures( name );
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Override SqlFunction.deriveType, because function-resolution is not relevant to a JDBC function call.
         // REVIEW: jhyde, 2006/4/18: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
@@ -458,6 +461,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         // only expected to come here if validator called this method
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
@@ -483,6 +487,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.print( "{fn " );
         writer.print( jdbcName );
@@ -559,16 +564,19 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         }
 
 
+        @Override
         public SqlOperator getOperator() {
             return operator;
         }
 
 
+        @Override
         public SqlCall createCall( SqlParserPos pos, SqlNode... operands ) {
             return operator.createCall( pos, operands );
         }
 
 
+        @Override
         public String isValidArgCount( SqlCallBinding binding ) {
             return null; // any number of arguments is valid
         }

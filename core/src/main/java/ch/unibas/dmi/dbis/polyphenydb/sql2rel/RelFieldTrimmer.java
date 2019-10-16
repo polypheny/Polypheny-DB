@@ -219,6 +219,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         for ( final CorrelationId correlation : rel.getVariablesSet() ) {
             rel.accept(
                     new CorrelationReferenceFinder() {
+                        @Override
                         protected RexNode handle( RexFieldAccess fieldAccess ) {
                             final RexCorrelVariable v = (RexCorrelVariable) fieldAccess.getReferenceExpr();
                             if ( v.id.equals( correlation ) ) {
@@ -298,6 +299,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         for ( final CorrelationId correlation : r.getVariablesSet() ) {
             r = r.accept(
                     new CorrelationReferenceFinder() {
+                        @Override
                         protected RexNode handle( RexFieldAccess fieldAccess ) {
                             final RexCorrelVariable v = (RexCorrelVariable) fieldAccess.getReferenceExpr();
                             if ( v.id.equals( correlation ) && v.getType().getFieldCount() == mapping.getSourceCount() ) {

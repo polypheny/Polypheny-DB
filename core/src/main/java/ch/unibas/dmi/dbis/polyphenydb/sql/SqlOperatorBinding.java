@@ -222,11 +222,13 @@ public abstract class SqlOperatorBinding {
      */
     public List<RelDataType> collectOperandTypes() {
         return new AbstractList<RelDataType>() {
+            @Override
             public RelDataType get( int index ) {
                 return getOperandType( index );
             }
 
 
+            @Override
             public int size() {
                 return getOperandCount();
             }

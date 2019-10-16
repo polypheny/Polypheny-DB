@@ -88,6 +88,7 @@ public class ProjectCalcMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalProject project = call.rel( 0 );
         final LogicalCalc calc = call.rel( 1 );

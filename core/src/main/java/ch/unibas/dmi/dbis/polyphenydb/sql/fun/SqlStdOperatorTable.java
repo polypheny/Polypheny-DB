@@ -799,6 +799,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.BOOLEAN,
                     null,
                     OperandTypes.ANY ) {
+                @Override
                 public boolean argumentMustBeScalar( int ordinal ) {
                     return false;
                 }
@@ -1268,6 +1269,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      */
     public static final SqlSpecialOperator REINTERPRET =
             new SqlSpecialOperator( "Reinterpret", SqlKind.REINTERPRET ) {
+                @Override
                 public SqlOperandCountRange getOperandCountRange() {
                     return SqlOperandCountRanges.between( 1, 2 );
                 }
@@ -1884,6 +1886,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.MULTISET_RECORD,
                     null,
                     OperandTypes.MULTISET ) {
+                @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
                     SqlUtil.unparseFunctionSyntax( this, writer, call );
                 }
@@ -1901,6 +1904,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.RECORD_TO_SCALAR,
                     null,
                     OperandTypes.RECORD_TO_SCALAR ) {
+                @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
                     final SqlWriter.Frame frame = writer.startList( "(", ")" );
                     call.operand( 0 ).unparse( writer, 0, 0 );
@@ -1908,6 +1912,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                 }
 
 
+                @Override
                 public boolean argumentMustBeScalar( int ordinal ) {
                     // Obvious, really.
                     return false;
@@ -1999,6 +2004,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
                     ReturnTypes.ARG0,
                     null,
                     OperandTypes.VARIADIC ) {
+                @Override
                 public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
                     call.operand( 0 ).unparse( writer, leftPrec, 0 );
                     writer.keyword( "TABLESAMPLE" );

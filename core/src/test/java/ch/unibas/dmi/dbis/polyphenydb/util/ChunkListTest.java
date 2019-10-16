@@ -185,7 +185,6 @@ public class ChunkListTest {
         assertThat( new ChunkList<>( Collections.nCopies( 1000, 77 ) ).size(), is( 1000 ) );
 
         // add to an empty list via iterator
-        // noinspection MismatchedQueryAndUpdateOfCollection
         final ChunkList<String> list2 = new ChunkList<>();
         list2.listIterator( 0 ).add( "x" );
         assertEquals( "[x]", list2.toString() );
@@ -299,10 +298,10 @@ public class ChunkListTest {
     @Test
     public void testRandom() {
         final int iterationCount = 10000;
-        checkRandom( new Random( 1 ), new ChunkList<Integer>(), new ArrayList<Integer>(), iterationCount );
+        checkRandom( new Random( 1 ), new ChunkList<>(), new ArrayList<>(), iterationCount );
         final Random random = new Random( 2 );
         for ( int j = 0; j < 10; j++ ) {
-            checkRandom( random, new ChunkList<Integer>(), new ArrayList<Integer>(), iterationCount );
+            checkRandom( random, new ChunkList<>(), new ArrayList<>(), iterationCount );
         }
         final ChunkList<Integer> chunkList = new ChunkList<>( Collections.nCopies( 1000, 5 ) );
         final List<Integer> referenceList = new ArrayList<>( chunkList );
@@ -355,8 +354,8 @@ public class ChunkListTest {
                         assertTrue( list.size() < size );
                         assertTrue( list2.size() < size );
                     } else {
-                        assertTrue( list.size() == size );
-                        assertTrue( list2.size() == size );
+                        assertEquals( list.size(), size );
+                        assertEquals( list2.size(), size );
                     }
                     removeCount += size - list.size();
                     break;
@@ -411,7 +410,6 @@ public class ChunkListTest {
         if ( !Benchmark.enabled() ) {
             return;
         }
-        //noinspection unchecked
         final Iterable<Pair<Function0<List<Integer>>, String>> factories0 =
                 Pair.zip(
                         Arrays.asList( ArrayList::new, LinkedList::new, ChunkList::new ),

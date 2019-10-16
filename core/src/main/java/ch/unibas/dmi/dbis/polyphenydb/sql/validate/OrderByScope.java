@@ -82,17 +82,20 @@ public class OrderByScope extends DelegatingScope {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return orderList;
     }
 
 
+    @Override
     public void findAllColumnNames( List<SqlMoniker> result ) {
         final SqlValidatorNamespace ns = validator.getNamespace( select );
         addColumnNames( ns, result );
     }
 
 
+    @Override
     public SqlQualified fullyQualify( SqlIdentifier identifier ) {
         // If it's a simple identifier, look for an alias.
         if ( identifier.isSimple() && validator.getConformance().isSortByAlias() ) {
@@ -131,6 +134,7 @@ public class OrderByScope extends DelegatingScope {
     }
 
 
+    @Override
     public RelDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getNamespace( select );
         final RelDataType rowType = selectNs.getRowType();
@@ -144,6 +148,7 @@ public class OrderByScope extends DelegatingScope {
     }
 
 
+    @Override
     public void validateExpr( SqlNode expr ) {
         SqlNode expanded = validator.expandOrderExpr( select, expr );
 

@@ -38,7 +38,6 @@ data: {
         # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved keyword add it to 'nonReservedKeywords' section.
         keywords: [
             "IF"
-            "MATERIALIZED"
             "STORED"
             "VIRTUAL"
             "JAR"
@@ -386,7 +385,6 @@ data: {
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
         createStatementParserMethods: [
-            "SqlCreateMaterializedView"
             "SqlCreateSchema"
             "SqlCreateTable"
             "SqlCreateType"
@@ -396,7 +394,6 @@ data: {
 
         # List of methods for parsing extensions to "DROP" calls. Each must accept arguments "(SqlParserPos pos)".
         dropStatementParserMethods: [
-            "SqlDropMaterializedView"
             "SqlDropSchema"
             "SqlDropTable"
             "SqlDropType"

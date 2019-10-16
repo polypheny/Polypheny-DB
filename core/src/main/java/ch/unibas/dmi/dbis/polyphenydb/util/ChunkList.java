@@ -54,11 +54,9 @@ import java.util.NoSuchElementException;
 
 
 /**
- * Implementation of list similar to {@link LinkedList}, but stores elements
- * in chunks of 32 elements.
+ * Implementation of list similar to {@link LinkedList}, but stores elements in chunks of 32 elements.
  *
- * <p>ArrayList has O(n) insertion and deletion into the middle of the list.
- * ChunkList insertion and deletion are O(1).</p>
+ * ArrayList has O(n) insertion and deletion into the middle of the list. ChunkList insertion and deletion are O(1).</p>
  *
  * @param <E> element type
  */
@@ -277,8 +275,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         private int end;
 
 
-        ChunkListIterator( Object[] chunk, int start, int cursor, int lastRet,
-                int end ) {
+        ChunkListIterator( Object[] chunk, int start, int cursor, int lastRet, int end ) {
             this.chunk = chunk;
             this.start = start;
             this.cursor = cursor;
@@ -287,11 +284,13 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public boolean hasNext() {
             return cursor < size;
         }
 
 
+        @Override
         public E next() {
             if ( cursor >= size ) {
                 throw new NoSuchElementException();
@@ -309,17 +308,18 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
                     end = start + occupied( chunk );
                 }
             }
-            @SuppressWarnings("unchecked") final E element = (E) element( chunk,
-                    HEADER_SIZE + (lastRet = cursor++) - start );
+            @SuppressWarnings("unchecked") final E element = (E) element( chunk, HEADER_SIZE + (lastRet = cursor++) - start );
             return element;
         }
 
 
+        @Override
         public boolean hasPrevious() {
             return cursor > 0;
         }
 
 
+        @Override
         public E previous() {
             lastRet = cursor--;
             if ( cursor < start ) {
@@ -337,16 +337,19 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public int nextIndex() {
             return cursor;
         }
 
 
+        @Override
         public int previousIndex() {
             return cursor - 1;
         }
 
 
+        @Override
         public void remove() {
             if ( lastRet < 0 ) {
                 throw new IllegalStateException();
@@ -413,8 +416,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
                 }
             } else {
                 // Move existing contents down one.
-                System.arraycopy( chunk, HEADER_SIZE + r - start + 1,
-                        chunk, HEADER_SIZE + r - start, end - r - 1 );
+                System.arraycopy( chunk, HEADER_SIZE + r - start + 1, chunk, HEADER_SIZE + r - start, end - r - 1 );
                 --end;
                 final int o = end - start;
                 setElement( chunk, HEADER_SIZE + o, null ); // allow gc
@@ -423,6 +425,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public void set( E e ) {
             if ( lastRet < 0 ) {
                 throw new IllegalStateException();
@@ -439,6 +442,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
         }
 
 
+        @Override
         public void add( E e ) {
             if ( chunk == null ) {
                 Object[] newChunk = new Object[CHUNK_SIZE + HEADER_SIZE];
@@ -453,8 +457,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
                 chunk = newChunk;
                 end = start;
             } else if ( end == start + CHUNK_SIZE ) {
-                // FIXME We create a new chunk, but the next chunk might be
-                // less than half full. We should consider using it.
+                // FIXME We create a new chunk, but the next chunk might be less than half full. We should consider using it.
                 Object[] newChunk = new Object[CHUNK_SIZE + HEADER_SIZE];
                 final Object[] next = ChunkList.next( chunk );
                 setPrev( newChunk, chunk );
@@ -469,10 +472,8 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
 
                 setOccupied( chunk, CHUNK_SIZE / 2 );
                 setOccupied( newChunk, CHUNK_SIZE / 2 );
-                System.arraycopy( chunk, HEADER_SIZE + CHUNK_SIZE / 2,
-                        newChunk, HEADER_SIZE, CHUNK_SIZE / 2 );
-                Arrays.fill( chunk, HEADER_SIZE + CHUNK_SIZE / 2,
-                        HEADER_SIZE + CHUNK_SIZE, null );
+                System.arraycopy( chunk, HEADER_SIZE + CHUNK_SIZE / 2, newChunk, HEADER_SIZE, CHUNK_SIZE / 2 );
+                Arrays.fill( chunk, HEADER_SIZE + CHUNK_SIZE / 2, HEADER_SIZE + CHUNK_SIZE, null );
 
                 if ( cursor - start < CHUNK_SIZE / 2 ) {
                     end -= CHUNK_SIZE / 2;
@@ -482,8 +483,7 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
                 }
             }
             // Move existing contents up one.
-            System.arraycopy( chunk, HEADER_SIZE + cursor - start,
-                    chunk, HEADER_SIZE + cursor - start + 1, end - cursor );
+            System.arraycopy( chunk, HEADER_SIZE + cursor - start, chunk, HEADER_SIZE + cursor - start + 1, end - cursor );
             ++end;
             setElement( chunk, HEADER_SIZE + cursor - start, e );
             setOccupied( chunk, end - start );
@@ -492,4 +492,3 @@ public class ChunkList<E> extends AbstractSequentialList<E> {
     }
 }
 
-// End ChunkList.java

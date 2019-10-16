@@ -65,8 +65,7 @@ public final class BitSets {
 
 
     /**
-     * Returns true if all bits set in the second parameter are also set in the
-     * first. In other words, whether x is a super-set of y.
+     * Returns true if all bits set in the second parameter are also set in the first. In other words, whether x is a super-set of y.
      *
      * @param set0 Containing bitmap
      * @param set1 Bitmap to be checked
@@ -83,8 +82,7 @@ public final class BitSets {
 
 
     /**
-     * Returns true if all bits set in the second parameter are also set in the
-     * first. In other words, whether x is a super-set of y.
+     * Returns true if all bits set in the second parameter are also set in the first. In other words, whether x is a super-set of y.
      *
      * @param set0 Containing bitmap
      * @param set1 Bitmap to be checked
@@ -103,14 +101,15 @@ public final class BitSets {
     /**
      * Returns an iterable over the bits in a bitmap that are set to '1'.
      *
-     * <p>This allows you to iterate over a bit set using a 'foreach' construct.
+     * This allows you to iterate over a bit set using a 'foreach' construct.
      * For instance:
      *
-     * <blockquote><code>
-     * BitSet bitSet;<br>
-     * for (int i : Util.toIter(bitSet)) {<br>
-     * &nbsp;&nbsp;print(i);<br>
-     * }</code></blockquote>
+     * <code>
+     * BitSet bitSet;
+     * for (int i : Util.toIter(bitSet)) {
+     *   print(i);
+     * }
+     * </code>
      *
      * @param bitSet Bit set
      * @return Iterable
@@ -120,11 +119,13 @@ public final class BitSets {
             int i = bitSet.nextSetBit( 0 );
 
 
+            @Override
             public boolean hasNext() {
                 return i >= 0;
             }
 
 
+            @Override
             public Integer next() {
                 int prev = i;
                 i = bitSet.nextSetBit( i + 1 );
@@ -132,6 +133,7 @@ public final class BitSets {
             }
 
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -147,8 +149,7 @@ public final class BitSets {
     /**
      * Converts a bitset to a list.
      *
-     * <p>The list is mutable, and future changes to the list do not affect the
-     * contents of the bit set.
+     * The list is mutable, and future changes to the list do not affect the contents of the bit set.
      *
      * @param bitSet Bit set
      * @return List of set bits
@@ -181,8 +182,7 @@ public final class BitSets {
     /**
      * Creates a bitset with given bits set.
      *
-     * <p>For example, {@code of(0, 3)} returns a bit set with bits {0, 3}
-     * set.
+     * For example, {@code of(0, 3)} returns a bit set with bits {0, 3} set.
      *
      * @param bits Array of bits to set
      * @return Bit set
@@ -199,8 +199,7 @@ public final class BitSets {
     /**
      * Creates a BitSet with given bits set.
      *
-     * <p>For example, {@code of(new Integer[] {0, 3})} returns a bit set
-     * with bits {0, 3} set.
+     * For example, {@code of(new Integer[] {0, 3})} returns a bit set with bits {0, 3} set.
      *
      * @param bits Array of bits to set
      * @return Bit set
@@ -217,8 +216,7 @@ public final class BitSets {
     /**
      * Creates a BitSet with given bits set.
      *
-     * <p>For example, {@code of(Arrays.asList(0, 3)) } returns a bit set
-     * with bits {0, 3} set.
+     * For example, {@code of(Arrays.asList(0, 3)) } returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
      * @return Bit set
@@ -235,8 +233,7 @@ public final class BitSets {
     /**
      * Creates a BitSet with given bits set.
      *
-     * <p>For example, {@code of(ImmutableIntList.of(0, 3))} returns a bit set
-     * with bits {0, 3} set.
+     * For example, {@code of(ImmutableIntList.of(0, 3))} returns a bit set with bits {0, 3} set.
      *
      * @param bits Collection of bits to set
      * @return Bit set
@@ -251,11 +248,9 @@ public final class BitSets {
 
 
     /**
-     * Creates a bitset with bits from {@code fromIndex} (inclusive) to
-     * specified {@code toIndex} (exclusive) set to {@code true}.
+     * Creates a bitset with bits from {@code fromIndex} (inclusive) to specified {@code toIndex} (exclusive) set to {@code true}.
      *
-     * <p>For example, {@code range(0, 3)} returns a bit set with bits
-     * {0, 1, 2} set.
+     * For example, {@code range(0, 3)} returns a bit set with bits {0, 1, 2} set.
      *
      * @param fromIndex Index of the first bit to be set.
      * @param toIndex Index after the last bit to be set.
@@ -291,8 +286,7 @@ public final class BitSets {
 
 
     /**
-     * Returns a BitSet that is the union of the given BitSets. Does not modify
-     * any of the inputs.
+     * Returns a BitSet that is the union of the given BitSets. Does not modify any of the inputs.
      */
     public static BitSet union( BitSet set0, BitSet... sets ) {
         final BitSet s = (BitSet) set0.clone();
@@ -306,8 +300,7 @@ public final class BitSets {
     /**
      * Returns the previous clear bit.
      *
-     * <p>Has same behavior as {@link BitSet#previousClearBit}, but that method
-     * does not exist before 1.7.
+     * Has same behavior as {@link BitSet#previousClearBit}, but that method does not exist before 1.7.
      */
     public static int previousClearBit( BitSet bitSet, int fromIndex ) {
         if ( fromIndex < -1 ) {
@@ -326,12 +319,11 @@ public final class BitSets {
     /**
      * Computes the closure of a map from integers to bits.
      *
-     * <p>The input must have an entry for each position.
+     * The input must have an entry for each position.
      *
-     * <p>Does not modify the input map or its bit sets.
+     * Does not modify the input map or its bit sets.
      */
-    public static SortedMap<Integer, BitSet> closure(
-            SortedMap<Integer, BitSet> equivalence ) {
+    public static SortedMap<Integer, BitSet> closure( SortedMap<Integer, BitSet> equivalence ) {
         if ( equivalence.isEmpty() ) {
             return ImmutableSortedMap.of();
         }
@@ -339,8 +331,7 @@ public final class BitSets {
         for ( BitSet bitSet : equivalence.values() ) {
             length = Math.max( length, bitSet.length() );
         }
-        if ( equivalence.size() < length
-                || equivalence.firstKey() != 0 ) {
+        if ( equivalence.size() < length || equivalence.firstKey() != 0 ) {
             SortedMap<Integer, BitSet> old = equivalence;
             equivalence = new TreeMap<>();
             for ( int i = 0; i < length; i++ ) {
@@ -364,8 +355,7 @@ public final class BitSets {
 
 
     /**
-     * Populates a {@link BitSet} from an
-     * {@link ImmutableIntList}.
+     * Populates a {@link BitSet} from an {@link ImmutableIntList}.
      */
     public static void populate( BitSet bitSet, ImmutableIntList list ) {
         for ( int i = 0; i < list.size(); i++ ) {
@@ -375,12 +365,9 @@ public final class BitSets {
 
 
     /**
-     * Setup equivalence Sets for each position. If i and j are equivalent then
-     * they will have the same equivalence Set. The algorithm computes the
-     * closure relation at each position for the position wrt to positions
-     * greater than it. Once a closure is computed for a position, the closure
-     * Set is set on all its descendants. So the closure computation bubbles up
-     * from lower positions and the final equivalence Set is propagated down
+     * Setup equivalence Sets for each position. If i and j are equivalent then they will have the same equivalence Set. The algorithm computes the
+     * closure relation at each position for the position wrt to positions greater than it. Once a closure is computed for a position, the closure
+     * Set is set on all its descendants. So the closure computation bubbles up from lower positions and the final equivalence Set is propagated down
      * from the lowest element in the Set.
      */
     private static class Closure {
@@ -391,8 +378,7 @@ public final class BitSets {
 
         Closure( SortedMap<Integer, BitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys =
-                    ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }
@@ -420,4 +406,3 @@ public final class BitSets {
     }
 }
 
-// End BitSets.java

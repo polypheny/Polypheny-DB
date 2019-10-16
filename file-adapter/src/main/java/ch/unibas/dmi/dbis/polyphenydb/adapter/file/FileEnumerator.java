@@ -45,11 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
-import org.apache.calcite.linq4j.Enumerator;
-
-import org.jsoup.select.Elements;
-
 import java.util.Iterator;
+import org.apache.calcite.linq4j.Enumerator;
+import org.jsoup.select.Elements;
 
 
 /**
@@ -75,6 +73,7 @@ class FileEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public Object current() {
         if ( current == null ) {
             this.moveNext();
@@ -83,6 +82,7 @@ class FileEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public boolean moveNext() {
         try {
             if ( this.iterator.hasNext() ) {
@@ -102,12 +102,14 @@ class FileEnumerator implements Enumerator<Object> {
 
 
     // required by linq4j Enumerator interface
+    @Override
     public void reset() {
         throw new UnsupportedOperationException();
     }
 
 
     // required by linq4j Enumerator interface
+    @Override
     public void close() {
     }
 

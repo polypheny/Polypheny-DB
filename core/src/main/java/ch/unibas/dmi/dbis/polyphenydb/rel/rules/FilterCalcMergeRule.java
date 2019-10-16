@@ -78,6 +78,7 @@ public class FilterCalcMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalFilter filter = call.rel( 0 );
         final LogicalCalc calc = call.rel( 1 );

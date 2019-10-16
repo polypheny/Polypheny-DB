@@ -64,16 +64,19 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
  */
 public class SqlBasicVisitor<R> implements SqlVisitor<R> {
 
+    @Override
     public R visit( SqlLiteral literal ) {
         return null;
     }
 
 
+    @Override
     public R visit( SqlCall call ) {
         return call.getOperator().acceptCall( this, call );
     }
 
 
+    @Override
     public R visit( SqlNodeList nodeList ) {
         R result = null;
         for ( int i = 0; i < nodeList.size(); i++ ) {
@@ -84,21 +87,25 @@ public class SqlBasicVisitor<R> implements SqlVisitor<R> {
     }
 
 
+    @Override
     public R visit( SqlIdentifier id ) {
         return null;
     }
 
 
+    @Override
     public R visit( SqlDataTypeSpec type ) {
         return null;
     }
 
 
+    @Override
     public R visit( SqlDynamicParam param ) {
         return null;
     }
 
 
+    @Override
     public R visit( SqlIntervalQualifier intervalQualifier ) {
         return null;
     }
@@ -141,11 +148,13 @@ public class SqlBasicVisitor<R> implements SqlVisitor<R> {
         }
 
 
+        @Override
         public R result() {
             return null;
         }
 
 
+        @Override
         public R visitChild( SqlVisitor<R> visitor, SqlNode expr, int i, SqlNode operand ) {
             if ( operand == null ) {
                 return null;

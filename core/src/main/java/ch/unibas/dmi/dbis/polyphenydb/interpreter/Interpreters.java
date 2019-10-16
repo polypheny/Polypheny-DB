@@ -70,11 +70,13 @@ public class Interpreters {
             return (ArrayBindable) rel;
         }
         return new ArrayBindable() {
+            @Override
             public Enumerable<Object[]> bind( DataContext dataContext ) {
                 return new Interpreter( dataContext, rel );
             }
 
 
+            @Override
             public Class<Object[]> getElementType() {
                 return Object[].class;
             }

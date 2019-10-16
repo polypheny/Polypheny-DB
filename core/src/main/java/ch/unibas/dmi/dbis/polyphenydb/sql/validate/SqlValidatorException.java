@@ -48,8 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.util.PolyphenyDbValidatorException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
 
@@ -59,9 +58,8 @@ import org.slf4j.LoggerFactory;
  *
  * Unlike {@link PolyphenyDbException}, this is a checked exception, which reminds code authors to wrap it in another exception containing the line/column context.
  */
+@Slf4j
 public class SqlValidatorException extends Exception implements PolyphenyDbValidatorException {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException" );
 
     static final long serialVersionUID = -831683113957131387L;
 
@@ -76,9 +74,9 @@ public class SqlValidatorException extends Exception implements PolyphenyDbValid
         super( message, cause );
 
         // TODO: see note in PolyphenyDbException constructor
-        LOGGER.trace( "SqlValidatorException", this );
+        log.trace( "SqlValidatorException", this );
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
-            LOGGER.error( toString() );
+            log.error( toString() );
         }
     }
 }

@@ -53,8 +53,7 @@ import org.apache.calcite.avatica.util.Spaces;
 
 
 /**
- * Builder for JSON documents (represented as {@link List}, {@link Map},
- * {@link String}, {@link Boolean}, {@link Long}).
+ * Builder for JSON documents (represented as {@link List}, {@link Map}, {@link String}, {@link Boolean}, {@link Long}).
  */
 public class JsonBuilder {
 
@@ -87,8 +86,7 @@ public class JsonBuilder {
     /**
      * Adds a key/value pair to a JSON object if the value is not null.
      */
-    public JsonBuilder putIf(
-            Map<String, Object> map, String name, Object value ) {
+    public JsonBuilder putIf( Map<String, Object> map, String name, Object value ) {
         if ( value != null ) {
             map.put( name, value );
         }
@@ -97,11 +95,9 @@ public class JsonBuilder {
 
 
     /**
-     * Serializes an object consisting of maps, lists and atoms into a JSON
-     * string.
+     * Serializes an object consisting of maps, lists and atoms into a JSON string.
      *
-     * <p>We should use a JSON library such as Jackson when Mondrian needs
-     * one elsewhere.</p>
+     * We should use a JSON library such as Jackson when Mondrian needs one elsewhere.
      */
     public String toJsonString( Object o ) {
         StringBuilder buf = new StringBuilder();
@@ -124,9 +120,7 @@ public class JsonBuilder {
             appendList( buf, indent, (List) o );
         } else if ( o instanceof String ) {
             buf.append( '"' )
-                    .append(
-                            ((String) o).replace( "\"", "\\\"" )
-                                    .replace( "\n", "\\n" ) )
+                    .append( ((String) o).replace( "\"", "\\\"" ).replace( "\n", "\\n" ) )
                     .append( '"' );
         } else {
             assert o instanceof Number || o instanceof Boolean;
@@ -135,8 +129,7 @@ public class JsonBuilder {
     }
 
 
-    private void appendMap(
-            StringBuilder buf, int indent, Map<String, Object> map ) {
+    private void appendMap( StringBuilder buf, int indent, Map<String, Object> map ) {
         if ( map.isEmpty() ) {
             buf.append( "{}" );
             return;
@@ -163,8 +156,7 @@ public class JsonBuilder {
     }
 
 
-    private void appendList(
-            StringBuilder buf, int indent, List<Object> list ) {
+    private void appendList( StringBuilder buf, int indent, List<Object> list ) {
         if ( list.isEmpty() ) {
             buf.append( "[]" );
             return;
@@ -184,4 +176,3 @@ public class JsonBuilder {
     }
 }
 
-// End JsonBuilder.java

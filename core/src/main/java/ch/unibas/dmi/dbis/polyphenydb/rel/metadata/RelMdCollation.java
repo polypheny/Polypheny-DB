@@ -111,6 +111,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Collation> getDef() {
         return BuiltInMetadata.Collation.DEF;
     }
@@ -375,6 +376,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         switch ( fieldCollation.direction ) {
             case ASCENDING:
                 return new Ordering<List<RexLiteral>>() {
+                    @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
                         final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
                         final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );
@@ -383,6 +385,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
                 };
             default:
                 return new Ordering<List<RexLiteral>>() {
+                    @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
                         final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
                         final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );

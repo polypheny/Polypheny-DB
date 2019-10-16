@@ -26,64 +26,39 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyphenyDb;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.TestHelper;
+import ch.unibas.dmi.dbis.polyphenydb.TestHelper.JdbcConnection;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-import org.junit.AfterClass;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
-@RunWith(JUnit4.class)
+@SuppressWarnings("SqlDialectInspection")
+@Slf4j
 public class JdbcMetaTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger( JdbcMetaTest.class );
-
-    private static final PolyphenyDb polyphenyDb = new PolyphenyDb();
 
     @BeforeClass
-    public static void setup() {
-        LOG.info( "Starting Polypheny-DB..." );
-
-        Runnable runnable = () -> {
-            try {
-                polyphenyDb.runPolyphenyDb();
-            } catch ( GenericCatalogException | InstantiationException e ) {
-                LOG.error( "Exception while starting Polypheny-DB", e );
-            }
-        };
-        Thread thread = new Thread( runnable );
-        thread.start();
-
-        // Wait 10 seconds
-        try {
-            TimeUnit.SECONDS.sleep( 10 );
-        } catch ( InterruptedException e ) {
-            // Ignore
-        }
-
+    public static void start() {
+        // Ensures that Polypheny-DB is running
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
         addTestData();
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlResolve" })
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void addTestData() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
-            Connection connection = polyphenyDbConnection.getConnection();
+        try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
+            Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA test" );
                 statement.executeUpdate( "CREATE TABLE foo( id INTEGER NOT NULL, name VARCHAR(20) NULL, bar VARCHAR(33) COLLATE CASE SENSITIVE, PRIMARY KEY (id) )" );
@@ -96,21 +71,18 @@ public class JdbcMetaTest {
                 connection.commit();
             }
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTables()", e );
+            log.error( "Exception while testing getTables()", e );
         }
     }
 
-    @AfterClass
-    public static void tearDown() {
-        //LOG.info( "shutdown - closing DB connection" );
-    }
+
 
 
     // --------------- Tests ---------------
 
     @Test
     public void testMetaGetTables() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getTables( null, null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -152,14 +124,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getTables( "%", "tes_", "foo_", null ),
                     ImmutableList.of( tableFoo2 ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTables()", e );
+            log.error( "Exception while testing getTables()", e );
         }
     }
 
 
     @Test
     public void testMetaGetColumns() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getColumns( null, null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -203,14 +175,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getColumns( "APP", null, "foo", "id%" ),
                     ImmutableList.of( columnId ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getColumns()", e );
+            log.error( "Exception while testing getColumns()", e );
         }
     }
 
 
     @Test
     public void testMetaGetSchemas() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getSchemas( null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -245,14 +217,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getSchemas( "AP_", "pub%" ),
                     ImmutableList.of( schemaPublic ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getSchemas()", e );
+            log.error( "Exception while testing getSchemas()", e );
         }
     }
 
 
     @Test
     public void testGetCatalogs() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getCatalogs();
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -273,14 +245,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getCatalogs(),
                     ImmutableList.of( databaseApp ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getCatalogs()", e );
+            log.error( "Exception while testing getCatalogs()", e );
         }
     }
 
 
     @Test
     public void testGetTableTypes() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getTableTypes();
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -299,14 +271,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getTableTypes(),
                     ImmutableList.of( tableTypeTable ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTableTypes()", e );
+            log.error( "Exception while testing getTableTypes()", e );
         }
     }
 
 
     @Test
     public void testGetPrimaryKeys() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getPrimaryKeys( null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -344,14 +316,14 @@ public class JdbcMetaTest {
                     connection.getMetaData().getPrimaryKeys( null, null, null ),
                     ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getPrimaryKeys()", e );
+            log.error( "Exception while testing getPrimaryKeys()", e );
         }
     }
 
 
     @Test
     public void testGetImportedKeys() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getImportedKeys( null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -395,14 +367,14 @@ public class JdbcMetaTest {
                     ImmutableList.of( foreignKey1a, foreignKey1b, foreignKey2 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getImportedKeys()", e );
+            log.error( "Exception while testing getImportedKeys()", e );
         }
     }
 
 
     @Test
     public void testGetExportedKeys() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getExportedKeys( null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -446,14 +418,14 @@ public class JdbcMetaTest {
                     ImmutableList.of( foreignKey2, foreignKey1a, foreignKey1b ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getExportedKeys()", e );
+            log.error( "Exception while testing getExportedKeys()", e );
         }
     }
 
 
     @Test
     public void testGetTypeInfo() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getTypeInfo();
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -483,14 +455,14 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 18 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getTypeInfo()", e );
+            log.error( "Exception while testing getTypeInfo()", e );
         }
     }
 
 
     @Test
     public void testGetIndexInfo() {
-        try ( PolyphenyDbConnection polyphenyDbConnection = new PolyphenyDbConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getIndexInfo( null, null, null, false, false );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -538,7 +510,7 @@ public class JdbcMetaTest {
                     ImmutableList.of( index1 ) );
 
         } catch ( SQLException e ) {
-            LOG.error( "Exception while testing getIndexInfo()", e );
+            log.error( "Exception while testing getIndexInfo()", e );
         }
     }
 
@@ -558,44 +530,6 @@ public class JdbcMetaTest {
     }
 
 
-    static class PolyphenyDbConnection implements AutoCloseable {
 
-        private Connection conn;
-
-        private final static String dbHost = "localhost";
-        private final static int port = 20591;
-
-
-        PolyphenyDbConnection() throws SQLException {
-            try {
-                Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
-            } catch ( ClassNotFoundException e ) {
-                LOG.error( "Polypheny-DB Driver not found", e );
-            }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port;
-            //String url = "jdbc:polypheny://" + dbHost + ":" + port + "/" + dbName + "?prepareThreshold=0";
-            LOG.debug( "Connecting to database @ {}", url );
-
-            Properties props = new Properties();
-            props.setProperty( "user", "pa" );
-            //props.setProperty( "password", password );
-            //props.setProperty( "ssl", sslEnabled );
-            props.setProperty( "wire_protocol", "PROTO3" );
-
-            conn = DriverManager.getConnection( url, props );
-            //conn.setAutoCommit( false );
-        }
-
-
-        Connection getConnection() {
-            return conn;
-        }
-
-
-        @Override
-        public void close() throws SQLException {
-            conn.close();
-        }
-    }
 
 }

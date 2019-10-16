@@ -45,22 +45,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row.RowBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import org.apache.calcite.avatica.AvaticaUtils;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import static ch.unibas.dmi.dbis.polyphenydb.runtime.HttpUtils.post;
 
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row.RowBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -69,9 +62,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
-import org.joda.time.Interval;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,6 +82,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.avatica.AvaticaUtils;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.joda.time.Interval;
 
 
 /**
@@ -165,7 +162,7 @@ class DruidConnectionImpl implements DruidConnection {
 
         int posTimestampField = -1;
         for ( int i = 0; i < fieldTypes.size(); i++ ) {
-            // TODO: This need to be revisited. The logic seems implying that only one column of type timestamp is present, this is not necessarily true, see https://issues.apache.org/jira/browse/CALCITE-2175
+            // TODO: This need to be revisited. The logic seems implying that only one column of type timestamp is present, this is not necessarily true
             if ( fieldTypes.get( i ) == ColumnMetaData.Rep.JAVA_SQL_TIMESTAMP ) {
                 posTimestampField = i;
                 break;
@@ -516,28 +513,23 @@ class DruidConnectionImpl implements DruidConnection {
      */
     public Enumerable<Row> enumerable( final QueryType queryType, final String request, final List<String> fieldNames, final ExecutorService service ) throws IOException {
         return new AbstractEnumerable<Row>() {
+            @Override
             public Enumerator<Row> enumerator() {
                 final BlockingQueueEnumerator<Row> enumerator = new BlockingQueueEnumerator<>();
                 final RunnableQueueSink sink = new RunnableQueueSink() {
+                    @Override
                     public void send( Row row ) throws InterruptedException {
                         enumerator.queue.put( row );
                     }
 
 
+                    @Override
                     public void end() {
                         enumerator.done.set( true );
                     }
 
 
-                    @SuppressWarnings("deprecation")
-                    public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-                        for ( Row row : enumerable ) {
-                            send( row );
-                        }
-                        end();
-                    }
-
-
+                    @Override
                     public void run() {
                         try {
                             final Page page = new Page();
@@ -670,6 +662,7 @@ class DruidConnectionImpl implements DruidConnection {
         E next;
 
 
+        @Override
         public E current() {
             if ( next == null ) {
                 throw new NoSuchElementException();
@@ -678,6 +671,7 @@ class DruidConnectionImpl implements DruidConnection {
         }
 
 
+        @Override
         public boolean moveNext() {
             for ( ; ; ) {
                 next = queue.poll();
@@ -692,10 +686,12 @@ class DruidConnectionImpl implements DruidConnection {
         }
 
 
+        @Override
         public void reset() {
         }
 
 
+        @Override
         public void close() {
             final Throwable e = throwableHolder.get();
             if ( e != null ) {

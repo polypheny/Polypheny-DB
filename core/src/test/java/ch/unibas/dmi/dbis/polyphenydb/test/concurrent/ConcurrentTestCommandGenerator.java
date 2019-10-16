@@ -131,9 +131,9 @@ public class ConcurrentTestCommandGenerator {
      * Constructs a new ConcurrentTestCommandGenerator.
      */
     public ConcurrentTestCommandGenerator() {
-        threadMap = new TreeMap<Integer, TreeMap<Integer, ConcurrentTestCommand>>();
-        threadNameMap = new TreeMap<Integer, String>();
-        failedThreads = new ArrayList<FailedThread>();
+        threadMap = new TreeMap<>();
+        threadNameMap = new TreeMap<>();
+        failedThreads = new ArrayList<>();
     }
 
 
@@ -455,7 +455,7 @@ public class ConcurrentTestCommandGenerator {
         for ( Map.Entry<Integer, TreeMap<Integer, ConcurrentTestCommand>> entry : threadMap.entrySet() ) {
             TreeMap<Integer, ConcurrentTestCommand> commands = entry.getValue();
 
-            TreeMap<Integer, ConcurrentTestCommand> synchronizedCommands = new TreeMap<Integer, ConcurrentTestCommand>();
+            TreeMap<Integer, ConcurrentTestCommand> synchronizedCommands = new TreeMap<>();
 
             for ( Map.Entry<Integer, ConcurrentTestCommand> commandEntry : commands.entrySet() ) {
                 int orderKey = commandEntry.getKey();
@@ -576,6 +576,7 @@ public class ConcurrentTestCommandGenerator {
 
 
         // implement ConcurrentTestCommand
+        @Override
         public ConcurrentTestCommand markToFail( String comment, String pattern ) {
             shouldFail = true;
             failComment = comment;
@@ -584,11 +585,13 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         public boolean isFailureExpected() {
             return failureExpected;
         }
 
 
+        @Override
         public ConcurrentTestCommand markToFail() {
             this.failureExpected = true;
             return this;
@@ -600,6 +603,7 @@ public class ConcurrentTestCommandGenerator {
 
 
         // implement ConcurrentTestCommand
+        @Override
         public void execute( ConcurrentTestCommandExecutor exec ) throws Exception {
             try {
                 doExecute( exec );
@@ -645,6 +649,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor )
                 throws Exception {
             executor.getSynchronizer().waitForOthers();
@@ -677,6 +682,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws Exception {
             Thread.sleep( millis );
         }
@@ -696,6 +702,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             Statement stmt = executor.getConnection().createStatement();
 
@@ -733,6 +740,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             PreparedStatement stmt = executor.getConnection().prepareStatement( sql );
 
@@ -746,6 +754,7 @@ public class ConcurrentTestCommandGenerator {
      */
     private static class CloseCommand extends AbstractCommand {
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             Statement stmt = executor.getStatement();
 
@@ -800,6 +809,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             PreparedStatement stmt = (PreparedStatement) executor.getStatement();
 
@@ -807,12 +817,12 @@ public class ConcurrentTestCommandGenerator {
 
             ResultSet rset = stmt.executeQuery();
 
-            List<List<Object>> rows = new ArrayList<List<Object>>();
+            List<List<Object>> rows = new ArrayList<>();
             try {
                 int rsetColumnCount = rset.getMetaData().getColumnCount();
 
                 while ( rset.next() ) {
-                    List<Object> row = new ArrayList<Object>();
+                    List<Object> row = new ArrayList<>();
 
                     for ( int i = 1; i <= rsetColumnCount; i++ ) {
                         Object value = rset.getObject( i );
@@ -853,7 +863,7 @@ public class ConcurrentTestCommandGenerator {
          * @throws IllegalStateException if there are formatting errors in <code>expected</code>
          */
         private void parseExpected( String expected ) {
-            List<List<Object>> rows = new ArrayList<List<Object>>();
+            List<List<Object>> rows = new ArrayList<>();
             int state = STATE_ROW_START;
             List<Object> row = null;
             StringBuilder value = new StringBuilder();
@@ -864,7 +874,7 @@ public class ConcurrentTestCommandGenerator {
                 switch ( state ) {
                     case STATE_ROW_START: // find start of row
                         if ( ch == LEFT_BRACKET ) {
-                            row = new ArrayList<Object>();
+                            row = new ArrayList<>();
                             state = STATE_VALUE_START;
                         }
                         break;
@@ -1166,6 +1176,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             Statement stmt = executor.getConnection().createStatement();
 
@@ -1181,6 +1192,7 @@ public class ConcurrentTestCommandGenerator {
      */
     private static class CommitCommand extends AbstractCommand {
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             executor.getConnection().commit();
         }
@@ -1192,6 +1204,7 @@ public class ConcurrentTestCommandGenerator {
      */
     private static class RollbackCommand extends AbstractCommand {
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             executor.getConnection().rollback();
         }
@@ -1211,6 +1224,7 @@ public class ConcurrentTestCommandGenerator {
         }
 
 
+        @Override
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             Statement stmt = executor.getConnection().createStatement();
 

@@ -195,26 +195,31 @@ public abstract class OperandTypes {
 
     public static SqlOperandTypeChecker variadic( final SqlOperandCountRange range ) {
         return new SqlOperandTypeChecker() {
+            @Override
             public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                 return range.isValidCount( callBinding.getOperandCount() );
             }
 
 
+            @Override
             public SqlOperandCountRange getOperandCountRange() {
                 return range;
             }
 
 
+            @Override
             public String getAllowedSignatures( SqlOperator op, String opName ) {
                 return opName + "(...)";
             }
 
 
+            @Override
             public boolean isOptional( int i ) {
                 return false;
             }
 
 
+            @Override
             public Consistency getConsistency() {
                 return Consistency.NONE;
             }
@@ -286,6 +291,7 @@ public abstract class OperandTypes {
      */
     public static final SqlSingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
             new FamilyOperandTypeChecker( ImmutableList.of( SqlTypeFamily.INTEGER ), i -> false ) {
+                @Override
                 public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
                     if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
                         return false;
@@ -428,6 +434,7 @@ public abstract class OperandTypes {
 
     public static final FamilyOperandTypeChecker MINUS_DATE_OPERATOR =
             new FamilyOperandTypeChecker( ImmutableList.of( SqlTypeFamily.DATETIME, SqlTypeFamily.DATETIME, SqlTypeFamily.DATETIME_INTERVAL ), i -> false ) {
+                @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     if ( !super.checkOperandTypes( callBinding, throwOnFailure ) ) {
                         return false;
@@ -447,6 +454,7 @@ public abstract class OperandTypes {
      */
     public static final SqlSingleOperandTypeChecker RECORD_COLLECTION =
             new SqlSingleOperandTypeChecker() {
+                @Override
                 public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
                     RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
@@ -469,6 +477,7 @@ public abstract class OperandTypes {
                 }
 
 
+                @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     return checkSingleOperandType(
                             callBinding,
@@ -478,21 +487,25 @@ public abstract class OperandTypes {
                 }
 
 
+                @Override
                 public SqlOperandCountRange getOperandCountRange() {
                     return SqlOperandCountRanges.of( 1 );
                 }
 
 
+                @Override
                 public String getAllowedSignatures( SqlOperator op, String opName ) {
                     return "UNNEST(<MULTISET>)";
                 }
 
 
+                @Override
                 public boolean isOptional( int i ) {
                     return false;
                 }
 
 
+                @Override
                 public Consistency getConsistency() {
                     return Consistency.NONE;
                 }
@@ -514,6 +527,7 @@ public abstract class OperandTypes {
 
     public static final SqlOperandTypeChecker RECORD_TO_SCALAR =
             new SqlSingleOperandTypeChecker() {
+                @Override
                 public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
                     RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
@@ -531,6 +545,7 @@ public abstract class OperandTypes {
                 }
 
 
+                @Override
                 public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
                     return checkSingleOperandType(
                             callBinding,
@@ -540,21 +555,25 @@ public abstract class OperandTypes {
                 }
 
 
+                @Override
                 public SqlOperandCountRange getOperandCountRange() {
                     return SqlOperandCountRanges.of( 1 );
                 }
 
 
+                @Override
                 public String getAllowedSignatures( SqlOperator op, String opName ) {
                     return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( "RECORDTYPE(SINGLE FIELD)" ) );
                 }
 
 
+                @Override
                 public boolean isOptional( int i ) {
                     return false;
                 }
 
 
+                @Override
                 public Consistency getConsistency() {
                     return Consistency.NONE;
                 }
@@ -570,6 +589,7 @@ public abstract class OperandTypes {
      */
     private static class PeriodOperandTypeChecker implements SqlSingleOperandTypeChecker {
 
+        @Override
         public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
             assert 0 == iFormalOperand;
             RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
@@ -596,26 +616,31 @@ public abstract class OperandTypes {
         }
 
 
+        @Override
         public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
             return checkSingleOperandType( callBinding, callBinding.operand( 0 ), 0, throwOnFailure );
         }
 
 
+        @Override
         public SqlOperandCountRange getOperandCountRange() {
             return SqlOperandCountRanges.of( 1 );
         }
 
 
+        @Override
         public String getAllowedSignatures( SqlOperator op, String opName ) {
             return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( "PERIOD (DATETIME, INTERVAL)", "PERIOD (DATETIME, DATETIME)" ) );
         }
 
 
+        @Override
         public boolean isOptional( int i ) {
             return false;
         }
 
 
+        @Override
         public Consistency getConsistency() {
             return Consistency.NONE;
         }

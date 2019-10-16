@@ -50,22 +50,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import com.datastax.driver.core.AbstractTableMetadata;
 import com.datastax.driver.core.Cluster;
@@ -78,13 +68,10 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.avatica.util.Casing;
 import org.slf4j.Logger;
 
 
@@ -97,7 +84,6 @@ public class CassandraSchema extends AbstractSchema {
     final String keyspace;
     private final SchemaPlus parentSchema;
     final String name;
-    final Hook.Closeable hook;
 
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
@@ -169,10 +155,6 @@ public class CassandraSchema extends AbstractSchema {
         }
         this.parentSchema = parentSchema;
         this.name = name;
-
-        this.hook = Hook.TRIMMED.add( node -> {
-            CassandraSchema.this.addMaterializedViews();
-        } );
     }
 
 
@@ -275,61 +257,6 @@ public class CassandraSchema extends AbstractSchema {
         }
 
         return keyCollations;
-    }
-
-
-    /**
-     * Add all materialized views defined in the schema to this column family
-     */
-    private void addMaterializedViews() {
-        // Close the hook use to get us here
-        hook.close();
-
-        for ( MaterializedViewMetadata view : getKeyspace().getMaterializedViews() ) {
-            String tableName = view.getBaseTable().getName();
-            StringBuilder queryBuilder = new StringBuilder( "SELECT " );
-
-            // Add all the selected columns to the query
-            List<String> columnNames = new ArrayList<>();
-            for ( ColumnMetadata column : view.getColumns() ) {
-                columnNames.add( "\"" + column.getName() + "\"" );
-            }
-            queryBuilder.append( Util.toString( columnNames, "", ", ", "" ) );
-
-            queryBuilder.append( " FROM \"" + tableName + "\"" );
-
-            // Get the where clause from the system schema
-            String whereQuery = "SELECT where_clause from system_schema.views " + "WHERE keyspace_name='" + keyspace + "' AND view_name='" + view.getName() + "'";
-            queryBuilder.append( " WHERE " + session.execute( whereQuery ).one().getString( 0 ) );
-
-            // Parse and unparse the view query to get properly quoted field names
-            String query = queryBuilder.toString();
-            SqlParser.ConfigBuilder configBuilder = SqlParser.configBuilder();
-            configBuilder.setUnquotedCasing( Casing.UNCHANGED );
-
-            SqlSelect parsedQuery;
-            try {
-                parsedQuery = (SqlSelect) SqlParser.create( query, configBuilder.build() ).parseQuery();
-            } catch ( SqlParseException e ) {
-                LOGGER.warn( "Could not parse query {} for CQL view {}.{}", query, keyspace, view.getName() );
-                continue;
-            }
-
-            StringWriter stringWriter = new StringWriter( query.length() );
-            PrintWriter printWriter = new PrintWriter( stringWriter );
-            SqlWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT, true, printWriter );
-            parsedQuery.unparse( writer, 0, 0 );
-            query = stringWriter.toString();
-
-            // Add the view for this query
-            String viewName = "$" + getTableNames().size();
-            SchemaPlus schema = parentSchema.getSubSchema( name );
-            PolyphenyDbSchema polyphenyDbSchema = PolyphenyDbSchema.from( schema );
-
-            List<String> viewPath = polyphenyDbSchema.path( viewName );
-
-            schema.add( viewName, MaterializedViewTable.create( polyphenyDbSchema, query, null, viewPath, view.getName(), true ) );
-        }
     }
 
 

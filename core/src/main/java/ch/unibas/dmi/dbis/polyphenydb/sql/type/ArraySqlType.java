@@ -70,6 +70,7 @@ public class ArraySqlType extends AbstractSqlType {
 
 
     // implement RelDataTypeImpl
+    @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         if ( withDetail ) {
             sb.append( elementType.getFullTypeString() );
@@ -81,12 +82,14 @@ public class ArraySqlType extends AbstractSqlType {
 
 
     // implement RelDataType
+    @Override
     public RelDataType getComponentType() {
         return elementType;
     }
 
 
     // implement RelDataType
+    @Override
     public RelDataTypeFamily getFamily() {
         return this;
     }
@@ -95,6 +98,7 @@ public class ArraySqlType extends AbstractSqlType {
     @Override
     public RelDataTypePrecedenceList getPrecedenceList() {
         return new RelDataTypePrecedenceList() {
+            @Override
             public boolean containsType( RelDataType type ) {
                 return type.getSqlTypeName() == getSqlTypeName()
                         && type.getComponentType() != null
@@ -102,6 +106,7 @@ public class ArraySqlType extends AbstractSqlType {
             }
 
 
+            @Override
             public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
                 if ( !containsType( type1 ) ) {
                     throw new IllegalArgumentException( "must contain type: " + type1 );

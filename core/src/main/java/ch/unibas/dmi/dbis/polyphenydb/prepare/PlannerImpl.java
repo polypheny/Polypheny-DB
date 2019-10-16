@@ -155,11 +155,13 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public RelTraitSet getEmptyTraitSet() {
         return planner.emptyTraitSet();
     }
 
 
+    @Override
     public void close() {
         open = false;
         typeFactory = null;
@@ -167,6 +169,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public void reset() {
         ensure( State.STATE_0_CLOSED );
         open = true;
@@ -203,6 +206,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public SqlNode parse( final Reader reader ) throws SqlParseException {
         switch ( state ) {
             case STATE_0_CLOSED:
@@ -217,6 +221,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public SqlNode validate( SqlNode sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
         final SqlConformance conformance = conformance();
@@ -245,6 +250,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public Pair<SqlNode, RelDataType> validateAndGetType( SqlNode sqlNode ) throws ValidationException {
         final SqlNode validatedNode = this.validate( sqlNode );
         final RelDataType type = this.validator.getValidatedNodeType( validatedNode );
@@ -252,12 +258,13 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public final RelNode convert( SqlNode sql ) throws RelConversionException {
         return rel( sql ).rel;
     }
 
 
+    @Override
     public RelRoot rel( SqlNode sql ) throws RelConversionException {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;
@@ -276,22 +283,6 @@ public class PlannerImpl implements Planner, ViewExpander {
         root = root.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
         state = State.STATE_5_CONVERTED;
         return root;
-    }
-
-
-    /**
-     * @deprecated Now {@link PlannerImpl} implements {@link ViewExpander} directly.
-     */
-    @Deprecated
-    public class ViewExpanderImpl implements ViewExpander {
-
-        ViewExpanderImpl() {
-        }
-
-
-        public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-            return PlannerImpl.this.expandView( rowType, queryString, schemaPath, viewPath );
-        }
     }
 
 
@@ -357,11 +348,13 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
+    @Override
     public JavaTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
 
+    @Override
     public RelNode transform( int ruleSetIndex, RelTraitSet requiredOutputTraits, RelNode rel ) throws RelConversionException {
         ensure( State.STATE_5_CONVERTED );
         rel.getCluster().setMetadataProvider(
@@ -369,7 +362,7 @@ public class PlannerImpl implements Planner, ViewExpander {
                         rel.getCluster().getMetadataProvider(),
                         rel.getCluster().getPlanner() ) );
         Program program = programs.get( ruleSetIndex );
-        return program.run( planner, rel, requiredOutputTraits, ImmutableList.of(), ImmutableList.of() );
+        return program.run( planner, rel, requiredOutputTraits );
     }
 
 

@@ -56,8 +56,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 
 
 /**
- * Multimap whose keys are names and can be accessed with and without case
- * sensitivity.
+ * Multimap whose keys are names and can be accessed with and without case sensitivity.
  *
  * @param <V> Value type
  */
@@ -128,11 +127,9 @@ public class NameMultimap<V> {
 
 
     /**
-     * Returns a map containing all the entries in this multimap that match the
-     * given name.
+     * Returns a map containing all the entries in this multimap that match the given name.
      */
-    public Collection<Map.Entry<String, V>> range( String name,
-            boolean caseSensitive ) {
+    public Collection<Map.Entry<String, V>> range( String name, boolean caseSensitive ) {
         NavigableMap<String, List<V>> range = map.range( name, caseSensitive );
         List<Pair<String, V>> result = range.entrySet().stream()
                 .flatMap( e -> e.getValue().stream().map( v -> Pair.of( e.getKey(), v ) ) )
@@ -142,8 +139,7 @@ public class NameMultimap<V> {
 
 
     /**
-     * Returns whether this map contains a given key, with a given
-     * case-sensitivity.
+     * Returns whether this map contains a given key, with a given case-sensitivity.
      */
     public boolean containsKey( String name, boolean caseSensitive ) {
         return map.containsKey( name, caseSensitive );
@@ -159,4 +155,3 @@ public class NameMultimap<V> {
     }
 }
 
-// End NameMultimap.java

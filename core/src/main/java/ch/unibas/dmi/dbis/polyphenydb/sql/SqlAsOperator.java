@@ -101,6 +101,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() >= 2;
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
@@ -124,6 +125,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         // The base method validates all operands. We override because we don't want to validate the identifier.
         final List<SqlNode> operands = call.getOperandList();
@@ -137,6 +139,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
             // Do not visit operands[1] -- it is not an expression.
@@ -147,6 +150,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // special case for AS:  never try to derive type for alias
         RelDataType nodeType = validator.deriveType( scope, call.operand( 0 ) );

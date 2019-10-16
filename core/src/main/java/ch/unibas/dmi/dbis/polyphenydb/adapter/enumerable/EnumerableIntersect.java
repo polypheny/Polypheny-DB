@@ -68,11 +68,13 @@ public class EnumerableIntersect extends Intersect implements EnumerableRel {
     }
 
 
+    @Override
     public EnumerableIntersect copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
         return new EnumerableIntersect( getCluster(), traitSet, inputs, all );
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         Expression intersectExp = null;

@@ -74,6 +74,7 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         SqlSelect subSelect = call.operand( 0 );
         validator.declareCursor( subSelect, scope );
@@ -82,6 +83,7 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( "CURSOR" );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
@@ -91,6 +93,7 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public boolean argumentMustBeScalar( int ordinal ) {
         return false;
     }

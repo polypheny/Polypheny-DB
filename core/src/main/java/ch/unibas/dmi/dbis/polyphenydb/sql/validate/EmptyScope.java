@@ -87,26 +87,30 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public SqlValidator getValidator() {
         return validator;
     }
 
 
+    @Override
     public SqlQualified fullyQualify( SqlIdentifier identifier ) {
         return SqlQualified.create( this, 1, null, identifier );
     }
 
 
+    @Override
     public SqlNode getNode() {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void resolve( List<String> names, SqlNameMatcher nameMatcher, boolean deep, Resolved resolved ) {
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
         SqlValidatorTable table = validator.catalogReader.getTable( names );
         return table != null
@@ -115,6 +119,7 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public void resolveTable( List<String> names, SqlNameMatcher nameMatcher, Path path, Resolved resolved ) {
         final List<Resolve> imperfectResolves = new ArrayList<>();
         final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
@@ -187,11 +192,13 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public RelDataType nullifyType( SqlNode node, RelDataType type ) {
         return type;
     }
 
 
+    @Override
     public void findAllColumnNames( List<SqlMoniker> result ) {
     }
 
@@ -200,48 +207,56 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public void findAliases( Collection<SqlMoniker> result ) {
     }
 
 
+    @Override
     public RelDataType resolveColumn( String name, SqlNode ctx ) {
         return null;
     }
 
 
+    @Override
     public SqlValidatorScope getOperandScope( SqlCall call ) {
         return this;
     }
 
 
+    @Override
     public void validateExpr( SqlNode expr ) {
         // valid
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx ) {
         throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
     }
 
 
+    @Override
     public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, SqlNameMatcher nameMatcher ) {
         return ImmutableMap.of();
     }
 
 
+    @Override
     public void addChild( SqlValidatorNamespace ns, String alias, boolean nullable ) {
         // cannot add to the empty scope
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public SqlWindow lookupWindow( String name ) {
         // No windows defined in this scope.
         return null;
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlNode expr ) {
         return ((expr instanceof SqlLiteral) || (expr instanceof SqlDynamicParam) || (expr instanceof SqlDataTypeSpec))
                 ? SqlMonotonicity.CONSTANT
@@ -249,6 +264,7 @@ class EmptyScope implements SqlValidatorScope {
     }
 
 
+    @Override
     public SqlNodeList getOrderList() {
         // scope is not ordered
         return null;

@@ -75,6 +75,7 @@ public class RelMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Selectivity> getDef() {
         return BuiltInMetadata.Selectivity.DEF;
     }

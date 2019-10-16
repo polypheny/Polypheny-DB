@@ -93,13 +93,6 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
     }
 
 
-    @Deprecated
-// to be removed before 2.0
-    EnumerableMergeJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType, Set<String> variablesStopped ) throws InvalidRelException {
-        this( cluster, traits, left, right, condition, leftKeys, rightKeys, CorrelationId.setOf( variablesStopped ), joinType );
-    }
-
-
     public static EnumerableMergeJoin create( RelNode left, RelNode right, RexLiteral condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType ) throws InvalidRelException {
         final RelOptCluster cluster = right.getCluster();
         RelTraitSet traitSet = cluster.traitSet();
@@ -136,6 +129,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );

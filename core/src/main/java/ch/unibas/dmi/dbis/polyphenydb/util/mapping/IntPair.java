@@ -149,11 +149,13 @@ public class IntPair {
             size = Math.min( lefts.size(), rights.size() );
         }
         return new AbstractList<IntPair>() {
+            @Override
             public IntPair get( int index ) {
                 return IntPair.of( lefts.get( index ).intValue(), rights.get( index ).intValue() );
             }
 
 
+            @Override
             public int size() {
                 return size;
             }

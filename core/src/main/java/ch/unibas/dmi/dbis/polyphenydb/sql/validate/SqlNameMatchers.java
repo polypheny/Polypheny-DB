@@ -99,11 +99,13 @@ public class SqlNameMatchers {
         }
 
 
+        @Override
         public boolean isCaseSensitive() {
             return caseSensitive;
         }
 
 
+        @Override
         public boolean matches( String string, String name ) {
             return caseSensitive
                     ? string.equals( name )
@@ -126,6 +128,7 @@ public class SqlNameMatchers {
         }
 
 
+        @Override
         public <K extends List<String>, V> V get( Map<K, V> map, List<String> prefixNames, List<String> names ) {
             final List<String> key = concat( prefixNames, names );
             if ( caseSensitive ) {
@@ -163,16 +166,19 @@ public class SqlNameMatchers {
         }
 
 
+        @Override
         public String bestString() {
             return SqlIdentifier.getString( bestMatch() );
         }
 
 
+        @Override
         public RelDataTypeField field( RelDataType rowType, String fieldName ) {
             return rowType.getField( fieldName, caseSensitive, false );
         }
 
 
+        @Override
         public int frequency( Iterable<String> names, String name ) {
             int n = 0;
             for ( String s : names ) {
@@ -184,6 +190,7 @@ public class SqlNameMatchers {
         }
 
 
+        @Override
         public Set<String> createSet() {
             return isCaseSensitive()
                     ? new LinkedHashSet<>()

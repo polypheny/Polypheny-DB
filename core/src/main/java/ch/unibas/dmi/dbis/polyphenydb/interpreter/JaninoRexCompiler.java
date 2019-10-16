@@ -95,6 +95,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
     }
 
 
+    @Override
     public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         for ( RexNode node : nodes ) {

@@ -71,6 +71,7 @@ public class SqlColumnListConstructor extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( "ROW" );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );

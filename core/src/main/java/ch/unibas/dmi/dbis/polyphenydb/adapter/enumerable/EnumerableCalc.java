@@ -50,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -66,7 +65,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -100,13 +98,6 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public EnumerableCalc( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexProgram program, List<RelCollation> collationList ) {
-        this( cluster, traitSet, input, program );
-        Util.discard( collationList );
-    }
-
-
     /**
      * Creates an EnumerableCalc.
      */
@@ -128,6 +119,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
@@ -234,6 +226,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     }
 
 
+    @Override
     public RexProgram getProgram() {
         return program;
     }

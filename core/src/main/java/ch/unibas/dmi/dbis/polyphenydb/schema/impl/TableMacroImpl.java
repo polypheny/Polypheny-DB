@@ -105,6 +105,7 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
      * @param arguments Arguments
      * @return Table
      */
+    @Override
     public TranslatableTable apply( List<Object> arguments ) {
         try {
             Object o = null;
@@ -112,7 +113,6 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
                 final Constructor<?> constructor = method.getDeclaringClass().getConstructor();
                 o = constructor.newInstance();
             }
-            //noinspection unchecked
             return (TranslatableTable) method.invoke( o, arguments.toArray() );
         } catch ( IllegalArgumentException e ) {
             throw new RuntimeException( "Expected " + Arrays.toString( method.getParameterTypes() ) + " actual " + arguments, e );

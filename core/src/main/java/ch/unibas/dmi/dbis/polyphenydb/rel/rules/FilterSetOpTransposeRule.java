@@ -87,6 +87,7 @@ public class FilterSetOpTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Filter filterRel = call.rel( 0 );
         SetOp setOp = call.rel( 1 );

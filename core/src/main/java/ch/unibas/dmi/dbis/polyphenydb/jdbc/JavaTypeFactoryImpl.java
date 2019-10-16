@@ -99,6 +99,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public RelDataType createStructType( Class type ) {
         final List<RelDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getFields() ) {
@@ -131,6 +132,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public RelDataType createType( Type type ) {
         if ( type instanceof RelDataType ) {
             return (RelDataType) type;
@@ -178,6 +180,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public Type getJavaClass( RelDataType type ) {
         if ( type instanceof JavaType ) {
             JavaType javaType = (JavaType) type;
@@ -255,6 +258,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public RelDataType toSql( RelDataType type ) {
         return toSql( this, type );
     }
@@ -276,6 +280,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     }
 
 
+    @Override
     public Type createSyntheticType( List<Type> types ) {
         if ( types.isEmpty() ) {
             // Unit is a pre-defined synthetic type to be used when there are 0 fields. Because all instances are the same, we use a singleton.
@@ -293,12 +298,14 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
     private SyntheticRecordType register( final SyntheticRecordType syntheticType ) {
         final List<Pair<Type, Boolean>> key =
                 new AbstractList<Pair<Type, Boolean>>() {
+                    @Override
                     public Pair<Type, Boolean> get( int index ) {
                         final Types.RecordField field = syntheticType.getRecordFields().get( index );
                         return Pair.of( field.getType(), field.nullable() );
                     }
 
 
+                    @Override
                     public int size() {
                         return syntheticType.getRecordFields().size();
                     }
@@ -346,11 +353,13 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
         }
 
 
+        @Override
         public String getName() {
             return name;
         }
 
 
+        @Override
         public List<Types.RecordField> getRecordFields() {
             return fields;
         }
@@ -384,31 +393,37 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
         }
 
 
+        @Override
         public Type getType() {
             return type;
         }
 
 
+        @Override
         public String getName() {
             return name;
         }
 
 
+        @Override
         public int getModifiers() {
             return modifiers;
         }
 
 
+        @Override
         public boolean nullable() {
             return nullable;
         }
 
 
+        @Override
         public Object get( Object o ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public Type getDeclaringClass() {
             return syntheticType;
         }

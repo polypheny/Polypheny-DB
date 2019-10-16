@@ -64,81 +64,97 @@ public class DelegatingTypeSystem implements RelDataTypeSystem {
     }
 
 
+    @Override
     public int getMaxScale( SqlTypeName typeName ) {
         return typeSystem.getMaxScale( typeName );
     }
 
 
+    @Override
     public int getDefaultPrecision( SqlTypeName typeName ) {
         return typeSystem.getDefaultPrecision( typeName );
     }
 
 
+    @Override
     public int getMaxPrecision( SqlTypeName typeName ) {
         return typeSystem.getMaxPrecision( typeName );
     }
 
 
+    @Override
     public int getMaxNumericScale() {
         return typeSystem.getMaxNumericScale();
     }
 
 
+    @Override
     public int getMaxNumericPrecision() {
         return typeSystem.getMaxNumericPrecision();
     }
 
 
+    @Override
     public String getLiteral( SqlTypeName typeName, boolean isPrefix ) {
         return typeSystem.getLiteral( typeName, isPrefix );
     }
 
 
+    @Override
     public boolean isCaseSensitive( SqlTypeName typeName ) {
         return typeSystem.isCaseSensitive( typeName );
     }
 
 
+    @Override
     public boolean isAutoincrement( SqlTypeName typeName ) {
         return typeSystem.isAutoincrement( typeName );
     }
 
 
+    @Override
     public int getNumTypeRadix( SqlTypeName typeName ) {
         return typeSystem.getNumTypeRadix( typeName );
     }
 
 
+    @Override
     public RelDataType deriveSumType( RelDataTypeFactory typeFactory, RelDataType argumentType ) {
         return typeSystem.deriveSumType( typeFactory, argumentType );
     }
 
 
+    @Override
     public RelDataType deriveAvgAggType( RelDataTypeFactory typeFactory, RelDataType argumentType ) {
         return typeSystem.deriveAvgAggType( typeFactory, argumentType );
     }
 
 
+    @Override
     public RelDataType deriveCovarType( RelDataTypeFactory typeFactory, RelDataType arg0Type, RelDataType arg1Type ) {
         return typeSystem.deriveCovarType( typeFactory, arg0Type, arg1Type );
     }
 
 
+    @Override
     public RelDataType deriveFractionalRankType( RelDataTypeFactory typeFactory ) {
         return typeSystem.deriveFractionalRankType( typeFactory );
     }
 
 
+    @Override
     public RelDataType deriveRankType( RelDataTypeFactory typeFactory ) {
         return typeSystem.deriveRankType( typeFactory );
     }
 
 
+    @Override
     public boolean isSchemaCaseSensitive() {
         return typeSystem.isSchemaCaseSensitive();
     }
 
 
+    @Override
     public boolean shouldConvertRaggedUnionTypesToVarying() {
         return typeSystem.shouldConvertRaggedUnionTypesToVarying();
     }

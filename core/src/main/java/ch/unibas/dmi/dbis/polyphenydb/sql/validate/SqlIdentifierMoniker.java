@@ -66,16 +66,19 @@ public class SqlIdentifierMoniker implements SqlMoniker {
     }
 
 
+    @Override
     public SqlMonikerType getType() {
         return SqlMonikerType.COLUMN;
     }
 
 
+    @Override
     public List<String> getFullyQualifiedNames() {
         return id.names;
     }
 
 
+    @Override
     public SqlIdentifier toIdentifier() {
         return id;
     }
@@ -86,6 +89,7 @@ public class SqlIdentifierMoniker implements SqlMoniker {
     }
 
 
+    @Override
     public String id() {
         return id.toString();
     }

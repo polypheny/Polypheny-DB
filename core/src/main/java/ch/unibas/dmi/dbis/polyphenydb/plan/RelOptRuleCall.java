@@ -129,18 +129,6 @@ public abstract class RelOptRuleCall {
      * Returns a list of matched relational expressions.
      *
      * @return matched relational expressions
-     * @deprecated Use {@link #getRelList()} or {@link #rel(int)}
-     */
-    @Deprecated // to be removed before 2.0
-    public RelNode[] getRels() {
-        return rels;
-    }
-
-
-    /**
-     * Returns a list of matched relational expressions.
-     *
-     * @return matched relational expressions
      * @see #rel(int)
      */
     public List<RelNode> getRelList() {

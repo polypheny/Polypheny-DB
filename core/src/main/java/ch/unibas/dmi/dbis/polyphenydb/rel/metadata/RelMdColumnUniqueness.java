@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SemiJoinType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
@@ -93,6 +92,7 @@ public class RelMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.ColumnUniqueness> getDef() {
         return BuiltInMetadata.ColumnUniqueness.DEF;
     }

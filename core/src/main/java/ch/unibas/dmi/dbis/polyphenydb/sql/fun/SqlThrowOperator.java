@@ -80,6 +80,7 @@ public class SqlThrowOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         call.operand( 0 ).unparse( writer, 0, 0 );

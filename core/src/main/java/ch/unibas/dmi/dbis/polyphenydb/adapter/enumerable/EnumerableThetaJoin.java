@@ -83,12 +83,6 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected EnumerableThetaJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) throws InvalidRelException {
-        this( cluster, traits, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType );
-    }
-
-
     @Override
     public EnumerableThetaJoin copy( RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
         try {
@@ -117,7 +111,8 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         double rowCount = mq.getRowCount( this );
 
-        // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner, make one of the versions slightly more expensive.
+        // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner,
+        // make one of the versions slightly more expensive.
         switch ( joinType ) {
             case RIGHT:
                 rowCount = addEpsilon( rowCount );
@@ -162,6 +157,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );

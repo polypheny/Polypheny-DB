@@ -128,6 +128,7 @@ public class TraitConversionTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneSingleRel single = call.rel( 0 );
             RelNode input = single.getInput();
@@ -135,10 +136,7 @@ public class TraitConversionTest {
                     single.getTraitSet()
                             .replace( PHYS_CALLING_CONVENTION )
                             .plus( SIMPLE_DISTRIBUTION_RANDOM ) );
-            call.transformTo(
-                    new RandomSingleRel(
-                            single.getCluster(),
-                            physInput ) );
+            call.transformTo( new RandomSingleRel( single.getCluster(), physInput ) );
         }
     }
 
@@ -182,6 +180,7 @@ public class TraitConversionTest {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             NoneLeafRel leafRel = call.rel( 0 );
             call.transformTo( new SingletonLeafRel( leafRel.getCluster(), leafRel.label ) );

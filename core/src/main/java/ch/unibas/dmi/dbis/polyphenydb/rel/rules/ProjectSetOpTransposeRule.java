@@ -88,6 +88,7 @@ public class ProjectSetOpTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalProject origProj = call.rel( 0 );
         SetOp setOp = call.rel( 1 );

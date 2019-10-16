@@ -82,6 +82,7 @@ public class SelectNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public RelDataType validateImpl( RelDataType targetRowType ) {
         validator.validateSelect( select, targetRowType );
         return rowType;
@@ -94,6 +95,7 @@ public class SelectNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         final RelDataType rowType = this.getRowTypeSansSystemColumns();
         final int field = SqlTypeUtil.findField( rowType, columnName );

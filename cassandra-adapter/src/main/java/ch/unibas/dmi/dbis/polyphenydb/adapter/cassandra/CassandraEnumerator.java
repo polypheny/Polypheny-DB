@@ -45,20 +45,18 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import org.apache.calcite.linq4j.Enumerator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-
 import java.util.Iterator;
 import java.util.List;
+import org.apache.calcite.linq4j.Enumerator;
 
 
 /**
@@ -66,10 +64,9 @@ import java.util.List;
  */
 class CassandraEnumerator implements Enumerator<Object> {
 
-    private Iterator<Row> iterator;
+    private final Iterator<Row> iterator;
+    private final List<RelDataTypeField> fieldTypes;
     private Row current;
-    private List<RelDataTypeField> fieldTypes;
-
 
     /**
      * Creates a CassandraEnumerator.
@@ -91,6 +88,7 @@ class CassandraEnumerator implements Enumerator<Object> {
      *
      * @return A new row from the results
      */
+    @Override
     public Object current() {
         if ( fieldTypes.size() == 1 ) {
             // If we just have one field, produce it directly
@@ -132,6 +130,7 @@ class CassandraEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public boolean moveNext() {
         if ( iterator.hasNext() ) {
             current = iterator.next();
@@ -142,11 +141,13 @@ class CassandraEnumerator implements Enumerator<Object> {
     }
 
 
+    @Override
     public void reset() {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void close() {
         // Nothing to do here
     }

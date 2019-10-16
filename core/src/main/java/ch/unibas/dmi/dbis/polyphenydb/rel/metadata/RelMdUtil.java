@@ -700,6 +700,7 @@ public class RelMdUtil {
         }
 
 
+        @Override
         public Double visitInputRef( RexInputRef var ) {
             int index = var.getIndex();
             ImmutableBitSet col = ImmutableBitSet.of( index );
@@ -712,11 +713,13 @@ public class RelMdUtil {
         }
 
 
+        @Override
         public Double visitLiteral( RexLiteral literal ) {
             return numDistinctVals( 1.0, mq.getRowCount( rel ) );
         }
 
 
+        @Override
         public Double visitCall( RexCall call ) {
             Double distinctRowCount;
             Double rowCount = mq.getRowCount( rel );

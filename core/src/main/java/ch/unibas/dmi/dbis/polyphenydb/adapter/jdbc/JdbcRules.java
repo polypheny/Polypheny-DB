@@ -97,7 +97,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -150,26 +149,9 @@ public class JdbcRules {
 
         protected final JdbcConvention out;
 
-
-        @SuppressWarnings("unchecked")
-        @Deprecated
-            // to be removed before 2.0
-        JdbcConverterRule( Class<? extends RelNode> clazz, RelTrait in, JdbcConvention out, String description ) {
-            this( clazz, (Predicate<RelNode>) r -> true, in, out, RelFactories.LOGICAL_BUILDER, description );
-        }
-
-
         <R extends RelNode> JdbcConverterRule( Class<R> clazz, Predicate<? super R> predicate, RelTrait in, JdbcConvention out, RelBuilderFactory relBuilderFactory, String description ) {
             super( clazz, predicate, in, out, relBuilderFactory, description );
             this.out = out;
-        }
-
-
-        @SuppressWarnings({ "Guava", "unchecked" })
-        @Deprecated
-            // to be removed before 2.0
-        <R extends RelNode> JdbcConverterRule( Class<R> clazz, com.google.common.base.Predicate<? super R> predicate, RelTrait in, JdbcConvention out, RelBuilderFactory relBuilderFactory, String description ) {
-            this( clazz, (Predicate<R>) predicate, in, out, relBuilderFactory, description );
         }
     }
 
@@ -178,11 +160,6 @@ public class JdbcRules {
      * Rule that converts a join to JDBC.
      */
     public static class JdbcJoinRule extends JdbcConverterRule {
-
-        @Deprecated // to be removed before 2.0
-        public JdbcJoinRule( JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
 
 
         /**
@@ -284,12 +261,6 @@ public class JdbcRules {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        protected JdbcJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) throws InvalidRelException {
-            this( cluster, traitSet, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType );
-        }
-
-
         @Override
         public JdbcJoin copy( RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
             try {
@@ -318,6 +289,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -337,6 +309,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Calc calc = (Calc) rel;
 
@@ -368,13 +341,7 @@ public class JdbcRules {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        public JdbcCalc( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexProgram program, int flags ) {
-            this( cluster, traitSet, input, program );
-            Util.discard( flags );
-        }
-
-
+        @Override
         public RelWriter explainTerms( RelWriter pw ) {
             return program.explainCalc( super.explainTerms( pw ) );
         }
@@ -386,6 +353,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             double dRows = mq.getRowCount( this );
             double dCpu = mq.getRowCount( getInput() ) * program.getExprCount();
@@ -394,11 +362,13 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
             return new JdbcCalc( getCluster(), traitSet, sole( inputs ), program );
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -409,12 +379,6 @@ public class JdbcRules {
      * Rule to convert a {@link Project} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcProject}.
      */
     public static class JdbcProjectRule extends JdbcConverterRule {
-
-        @Deprecated // to be removed before 2.0
-        public JdbcProjectRule( final JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
-
 
         /**
          * Creates a JdbcProjectRule.
@@ -440,6 +404,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Project project = (Project) rel;
 
@@ -464,13 +429,6 @@ public class JdbcRules {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        public JdbcProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType, int flags ) {
-            this( cluster, traitSet, input, projects, rowType );
-            Util.discard( flags );
-        }
-
-
         @Override
         public JdbcProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
             return new JdbcProject( getCluster(), traitSet, input, projects, rowType );
@@ -483,6 +441,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -493,11 +452,6 @@ public class JdbcRules {
      * Rule to convert a {@link Filter} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcFilter}.
      */
     public static class JdbcFilterRule extends JdbcConverterRule {
-
-        @Deprecated // to be removed before 2.0
-        public JdbcFilterRule( JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
 
 
         /**
@@ -517,6 +471,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Filter filter = (Filter) rel;
 
@@ -540,11 +495,13 @@ public class JdbcRules {
         }
 
 
+        @Override
         public JdbcFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
             return new JdbcFilter( getCluster(), traitSet, input, condition );
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -556,12 +513,6 @@ public class JdbcRules {
      */
     public static class JdbcAggregateRule extends JdbcConverterRule {
 
-        @Deprecated // to be removed before 2.0
-        public JdbcAggregateRule( JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
-
-
         /**
          * Creates a JdbcAggregateRule.
          */
@@ -570,6 +521,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Aggregate agg = (Aggregate) rel;
             if ( agg.getGroupSets().size() != 1 ) {
@@ -634,6 +586,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -645,12 +598,6 @@ public class JdbcRules {
      */
     public static class JdbcSortRule extends JdbcConverterRule {
 
-        @Deprecated // to be removed before 2.0
-        public JdbcSortRule( JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
-
-
         /**
          * Creates a JdbcSortRule.
          */
@@ -659,6 +606,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             return convert( (Sort) rel, true );
         }
@@ -704,6 +652,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -715,12 +664,6 @@ public class JdbcRules {
      */
     public static class JdbcUnionRule extends JdbcConverterRule {
 
-        @Deprecated // to be removed before 2.0
-        public JdbcUnionRule( JdbcConvention out ) {
-            this( out, RelFactories.LOGICAL_BUILDER );
-        }
-
-
         /**
          * Creates a JdbcUnionRule.
          */
@@ -729,6 +672,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Union union = (Union) rel;
             final RelTraitSet traitSet = union.getTraitSet().replace( out );
@@ -747,6 +691,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public JdbcUnion copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
             return new JdbcUnion( getCluster(), traitSet, inputs, all );
         }
@@ -758,6 +703,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -777,6 +723,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Intersect intersect = (Intersect) rel;
             if ( intersect.all ) {
@@ -799,11 +746,13 @@ public class JdbcRules {
         }
 
 
+        @Override
         public JdbcIntersect copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
             return new JdbcIntersect( getCluster(), traitSet, inputs, all );
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -823,6 +772,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Minus minus = (Minus) rel;
             if ( minus.all ) {
@@ -845,11 +795,13 @@ public class JdbcRules {
         }
 
 
+        @Override
         public JdbcMinus copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
             return new JdbcMinus( getCluster(), traitSet, inputs, all );
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -934,6 +886,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
@@ -978,6 +931,7 @@ public class JdbcRules {
         }
 
 
+        @Override
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }

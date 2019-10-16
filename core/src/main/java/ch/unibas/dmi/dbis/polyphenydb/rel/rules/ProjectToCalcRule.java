@@ -85,6 +85,7 @@ public class ProjectToCalcRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalProject project = call.rel( 0 );
         final RelNode input = project.getInput();

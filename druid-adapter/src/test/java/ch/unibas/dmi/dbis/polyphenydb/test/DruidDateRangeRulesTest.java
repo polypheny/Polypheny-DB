@@ -45,34 +45,24 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidDateTimeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRules;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.test.RexImplicationCheckerTest.Fixture;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidDateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRules;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.test.RexImplicationCheckerTest.Fixture;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
-import com.google.common.collect.ImmutableList;
-
-import org.hamcrest.Matcher;
-import org.joda.time.Interval;
-import org.junit.Test;
-
-import java.util.Calendar;
-import java.util.List;
-
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
+
+import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidDateTimeUtils;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRules;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
+import ch.unibas.dmi.dbis.polyphenydb.test.RexImplicationCheckerTest.Fixture;
+import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import com.google.common.collect.ImmutableList;
+import java.util.Calendar;
+import java.util.List;
+import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.hamcrest.Matcher;
+import org.joda.time.Interval;
+import org.junit.Test;
 
 
 /**
@@ -167,7 +157,7 @@ public class DruidDateRangeRulesTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1738">[POLYPHENYDB-1738] Push CAST of literals to Druid</a>.
+     * Test case for "Push CAST of literals to Druid".
      */
     @Test
     public void testFilterWithCast() {

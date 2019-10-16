@@ -39,6 +39,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
  */
 public class AuthenticatorImpl implements Authenticator {
 
+    @Override
     public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         try {
             CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( username );

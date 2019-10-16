@@ -33,16 +33,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Represents a transaction and provides methods to interact with the database system.
  */
+@Slf4j
 abstract class TransactionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger( TransactionHandler.class );
 
     Connection connection;
     Statement statement;
@@ -54,19 +52,19 @@ abstract class TransactionHandler {
 
 
     int executeUpdate( final String sql ) throws SQLException {
-        logger.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: " + sql );
         return statement.executeUpdate( sql );
     }
 
 
     ResultSet executeSelect( final String sql ) throws SQLException {
-        logger.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: " + sql );
         return createStatement().executeQuery( sql );
     }
 
 
     void execute( final String sql ) throws SQLException {
-        logger.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: " + sql );
         statement.execute( sql );
     }
 

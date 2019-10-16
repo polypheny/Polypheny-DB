@@ -96,6 +96,7 @@ public class RelMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource( BuiltInMethod.ALL_PREDICATES.method, new RelMdAllPredicates() );
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.AllPredicates> getDef() {
         return BuiltInMetadata.AllPredicates.DEF;
     }

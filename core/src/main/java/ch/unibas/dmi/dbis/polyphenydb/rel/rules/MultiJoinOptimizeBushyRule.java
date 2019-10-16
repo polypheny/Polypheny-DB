@@ -140,6 +140,7 @@ public class MultiJoinOptimizeBushyRule extends RelOptRule {
         // Comparator that chooses the best edge. A "good edge" is one that has a large difference in the number of rows on LHS and RHS.
         final Comparator<LoptMultiJoin.Edge> edgeComparator =
                 new Comparator<LoptMultiJoin.Edge>() {
+                    @Override
                     public int compare( LoptMultiJoin.Edge e0, LoptMultiJoin.Edge e1 ) {
                         return Double.compare( rowCountDiff( e0 ), rowCountDiff( e1 ) );
                     }

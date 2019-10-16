@@ -81,12 +81,14 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     }
 
 
+    @Override
     public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object[]>() {
+            @Override
             public Enumerator<Object[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, false, filterValues, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }

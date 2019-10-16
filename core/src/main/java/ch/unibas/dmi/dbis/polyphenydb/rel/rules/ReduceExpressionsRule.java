@@ -363,6 +363,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             // Form a list of expressions with sub-expressions fully expanded.
             final List<RexNode> expandedExprList = new ArrayList<>();
             final RexShuttle shuttle = new RexShuttle() {
+                @Override
                 public RexNode visitLocalRef( RexLocalRef localRef ) {
                     return expandedExprList.get( localRef.getIndex() );
                 }
@@ -529,7 +530,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
 
         final List<RexNode> constExps2 = Lists.newArrayList( constExps );
         if ( !predicates.constantMap.isEmpty() ) {
-            //noinspection unchecked
             final List<Map.Entry<RexNode, RexNode>> pairs = Lists.newArrayList( predicates.constantMap.entrySet() );
             RexReplacer replacer = new RexReplacer( simplify, unknownAs, Pair.left( pairs ), Pair.right( pairs ), Collections.nCopies( pairs.size(), false ) );
             replacer.mutate( constExps2 );
@@ -877,6 +877,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             for ( Constancy operandConstancy : operandStack ) {
                 if ( operandConstancy == Constancy.NON_CONSTANT ) {
                     callConstancy = Constancy.NON_CONSTANT;
+                    break;
                 }
             }
 

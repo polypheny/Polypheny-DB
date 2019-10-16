@@ -146,16 +146,19 @@ public class AggregateFunctionImpl implements AggregateFunction, ImplementableAg
     }
 
 
+    @Override
     public List<FunctionParameter> getParameters() {
         return parameters;
     }
 
 
+    @Override
     public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
         return typeFactory.createJavaType( resultType );
     }
 
 
+    @Override
     public AggImplementor getImplementor( boolean windowContext ) {
         return new UserDefinedAggReflectiveImplementor( this );
     }
