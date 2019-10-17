@@ -62,6 +62,7 @@ class EnumerableUncollectRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final Uncollect uncollect = (Uncollect) rel;
         final RelTraitSet traitSet = uncollect.getTraitSet().replace( EnumerableConvention.INSTANCE );

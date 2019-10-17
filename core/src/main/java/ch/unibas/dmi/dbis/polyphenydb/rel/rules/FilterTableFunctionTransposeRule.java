@@ -82,6 +82,7 @@ public class FilterTableFunctionTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalFilter filter = call.rel( 0 );
         LogicalTableFunctionScan funcRel = call.rel( 1 );

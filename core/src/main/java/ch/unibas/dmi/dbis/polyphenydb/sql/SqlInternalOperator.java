@@ -87,6 +87,7 @@ public class SqlInternalOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.FUNCTION;
     }

@@ -215,6 +215,7 @@ public class SubstitutionVisitor {
         final List<MutableRel> allNodes = new ArrayList<>();
         final MutableRelVisitor visitor =
                 new MutableRelVisitor() {
+                    @Override
                     public void visit( MutableRel node ) {
                         parents.add( node.getParent() );
                         allNodes.add( node );
@@ -735,7 +736,6 @@ public class SubstitutionVisitor {
         if ( list == null ) {
             final ImmutableList.Builder<UnifyRule> builder = ImmutableList.builder();
             for ( UnifyRule rule : rules ) {
-                //noinspection unchecked
                 if ( mightMatch( rule, queryClass, targetClass ) ) {
                     builder.add( rule );
                 }
@@ -757,7 +757,6 @@ public class SubstitutionVisitor {
      */
     protected static class MatchFailed extends ControlFlowException {
 
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
         public static final MatchFailed INSTANCE = new MatchFailed();
     }
 
@@ -969,6 +968,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             if ( call.query.equals( call.target ) ) {
                 return call.result( call.query );
@@ -991,6 +991,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableProject target = (MutableProject) call.target;
             final MutableScan query = (MutableScan) call.query;
@@ -1026,6 +1027,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableProject target = (MutableProject) call.target;
             final MutableProject query = (MutableProject) call.query;
@@ -1056,6 +1058,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             // Child of projectTarget is equivalent to child of filterQuery.
             try {
@@ -1139,6 +1142,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             // in.query can be rewritten in terms of in.target if its condition
             // is weaker. For example:
@@ -1184,6 +1188,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             if ( call.query.getParent() instanceof MutableFilter ) {
                 final UnifyRuleCall in2 = call.create( call.query.getParent() );
@@ -1215,6 +1220,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableAggregate query = (MutableAggregate) call.query;
             final MutableAggregate target = (MutableAggregate) call.target;
@@ -1320,6 +1326,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public UnifyResult apply( UnifyRuleCall call ) {
             final MutableAggregate query = (MutableAggregate) call.query;
             final MutableAggregate target = (MutableAggregate) call.target;
@@ -1622,6 +1629,7 @@ public class SubstitutionVisitor {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final LogicalFilter filter = call.rel( 0 );
             final LogicalProject project = call.rel( 1 );

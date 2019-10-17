@@ -93,6 +93,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );

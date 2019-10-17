@@ -117,6 +117,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
     }
 
 
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
@@ -265,6 +266,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
             AggAddContext addContext =
                     new AggAddContextImpl( builder2, accumulator ) {
+                        @Override
                         public List<RexNode> rexArguments() {
                             List<RelDataTypeField> inputTypes = inputPhysType.getRowType().getFieldList();
                             List<RexNode> args = new ArrayList<>();
@@ -275,6 +277,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
                         }
 
 
+                        @Override
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
@@ -282,6 +285,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
                         }
 
 
+                        @Override
                         public RexToLixTranslator rowTranslator() {
                             return RexToLixTranslator.forAggregation(
                                     typeFactory,
@@ -462,46 +466,55 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
         }
 
 
+        @Override
         public SqlAggFunction aggregation() {
             return agg.call.getAggregation();
         }
 
 
+        @Override
         public RelDataType returnRelType() {
             return agg.call.type;
         }
 
 
+        @Override
         public Type returnType() {
             return EnumUtils.javaClass( typeFactory, returnRelType() );
         }
 
 
+        @Override
         public List<? extends RelDataType> parameterRelTypes() {
             return EnumUtils.fieldRowTypes( getInput().getRowType(), null, agg.call.getArgList() );
         }
 
 
+        @Override
         public List<? extends Type> parameterTypes() {
             return EnumUtils.fieldTypes( typeFactory, parameterRelTypes() );
         }
 
 
+        @Override
         public List<ImmutableBitSet> groupSets() {
             return groupSets;
         }
 
 
+        @Override
         public List<Integer> keyOrdinals() {
             return groupSet.asList();
         }
 
 
+        @Override
         public List<? extends RelDataType> keyRelTypes() {
             return EnumUtils.fieldRowTypes( getInput().getRowType(), null, groupSet.asList() );
         }
 
 
+        @Override
         public List<? extends Type> keyTypes() {
             return EnumUtils.fieldTypes( typeFactory, keyRelTypes() );
         }

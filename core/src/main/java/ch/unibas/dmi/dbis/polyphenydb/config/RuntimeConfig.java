@@ -126,7 +126,13 @@ public enum RuntimeConfig {
     DEFAULT_COLLATION( "runtime/defaultCollation",
             "Collation to use if no collation is specified",
             2,
-            ConfigType.INTEGER );
+            ConfigType.INTEGER ),
+
+
+    GENERATED_NAME_PREFIX( "runtime/generatedNamePrefix",
+            "Prefix for generated index, foreign key and constraint names.",
+            "auto",
+            ConfigType.STRING );
 
 
 

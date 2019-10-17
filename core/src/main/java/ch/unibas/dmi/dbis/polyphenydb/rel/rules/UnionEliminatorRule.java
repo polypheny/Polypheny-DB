@@ -69,6 +69,7 @@ public class UnionEliminatorRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Union union = call.rel( 0 );
         if ( union.getInputs().size() != 1 ) {

@@ -57,6 +57,7 @@ public interface Source extends AutoCloseable {
      */
     Row receive();
 
+    @Override
     void close();
 }
 

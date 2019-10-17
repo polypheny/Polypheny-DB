@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.plan;
@@ -50,6 +31,7 @@ import static org.junit.Assert.fail;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -61,11 +43,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.ScottSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
@@ -87,12 +69,15 @@ public class RelOptUtilTest {
      * Creates a config based on the "scott" schema.
      */
     private static Frameworks.ConfigBuilder config() {
-        final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
+        final SchemaPlus schema = Frameworks
+                .createRootSchema( true )
+                .add( "scott", new ReflectiveSchema( new ScottSchema() ) );
+
         return Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
-                .defaultSchema( PolyphenyDbAssert.addSchema( rootSchema, PolyphenyDbAssert.SchemaSpec.SCOTT ) )
+                .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
+                        PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -115,13 +100,9 @@ public class RelOptUtilTest {
 
     private static final List<RelDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFieldList(), DEPT_ROW.getFieldList() ) );
 
-    //~ Constructors -----------------------------------------------------------
-
 
     public RelOptUtilTest() {
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     @Test
@@ -172,8 +153,8 @@ public class RelOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionEquals() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "DEPTNO" );
-        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "DEPTNO" );
+        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call( SqlStdOperatorTable.EQUALS, RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ), RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -191,8 +172,8 @@ public class RelOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionIsNotDistinctFrom() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "DEPTNO" );
-        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "DEPTNO" );
+        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call( SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ), RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -205,8 +186,8 @@ public class RelOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionExpandedIsNotDistinctFrom() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "DEPTNO" );
-        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "DEPTNO" );
+        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexInputRef leftKeyInputRef = RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexInputRef rightKeyInputRef = RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );

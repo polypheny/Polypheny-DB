@@ -77,6 +77,7 @@ public class CalcMergeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Calc topCalc = call.rel( 0 );
         final Calc bottomCalc = call.rel( 1 );

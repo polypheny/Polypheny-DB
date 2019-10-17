@@ -80,16 +80,6 @@ public class RelOptCluster {
 
     /**
      * Creates a cluster.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelOptCluster( RelOptQuery query, RelOptPlanner planner, RelDataTypeFactory typeFactory, RexBuilder rexBuilder ) {
-        this( planner, typeFactory, rexBuilder, query.nextCorrel, query.mapCorrelToRel );
-    }
-
-
-    /**
-     * Creates a cluster.
      *
      * For use only from {@link #create} and {@link RelOptQuery}.
      */
@@ -119,18 +109,6 @@ public class RelOptCluster {
     @Deprecated // to be removed before 2.0
     public RelOptQuery getQuery() {
         return new RelOptQuery( planner, nextCorrel, mapCorrelToRel );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RexNode getOriginalExpression() {
-        return originalExpression;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public void setOriginalExpression( RexNode originalExpression ) {
-        this.originalExpression = originalExpression;
     }
 
 
@@ -205,19 +183,6 @@ public class RelOptCluster {
      */
     public RelTraitSet traitSet() {
         return emptyTraitSet;
-    }
-
-
-    /**
-     * @deprecated For {@code traitSetOf(t1, t2)}, use {@link #traitSet}().replace(t1).replace(t2).
-     */
-    @Deprecated // to be removed before 2.0
-    public RelTraitSet traitSetOf( RelTrait... traits ) {
-        RelTraitSet traitSet = emptyTraitSet;
-        for ( RelTrait trait : traits ) {
-            traitSet = traitSet.replace( trait );
-        }
-        return traitSet;
     }
 
 

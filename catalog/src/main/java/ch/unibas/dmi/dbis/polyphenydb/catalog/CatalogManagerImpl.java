@@ -35,17 +35,15 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  *
  */
+@Slf4j
 public class CatalogManagerImpl extends CatalogManager {
-
-    private static final Logger LOG = LoggerFactory.getLogger( CatalogManagerImpl.class );
 
     private static final boolean CREATE_SCHEMA = true;
 
@@ -54,7 +52,6 @@ public class CatalogManagerImpl extends CatalogManager {
     private final ConcurrentHashMap<PolyXid, CatalogImpl> catalogs = new ConcurrentHashMap<>();
 
 
-    @SuppressWarnings("WeakerAccess")
     public static CatalogManagerImpl getInstance() {
         return INSTANCE;
     }
@@ -69,13 +66,13 @@ public class CatalogManagerImpl extends CatalogManager {
                 Statements.createSchema( transactionHandler );
                 transactionHandler.commit();
             } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-                LOG.error( "Exception while creating catalog schema", e );
+                log.error( "Exception while creating catalog schema", e );
                 try {
                     if ( transactionHandler != null ) {
                         transactionHandler.rollback();
                     }
                 } catch ( CatalogTransactionException e1 ) {
-                    LOG.error( "Exception while rollback", e );
+                    log.error( "Exception while rollback", e );
                 }
             }
         }
@@ -125,7 +122,7 @@ public class CatalogManagerImpl extends CatalogManager {
 
     void removeCatalog( PolyXid xid ) {
         if ( !catalogs.containsKey( xid ) ) {
-            LOG.error( "There is no catalog instance associated with this transaction id." );
+            log.error( "There is no catalog instance associated with this transaction id." );
         } else {
             catalogs.remove( xid );
         }

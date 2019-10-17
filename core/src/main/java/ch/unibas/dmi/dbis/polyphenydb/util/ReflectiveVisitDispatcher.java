@@ -50,29 +50,22 @@ import java.util.List;
 
 
 /**
- * Interface for looking up methods relating to reflective visitation. One
- * possible implementation would cache the results.
+ * Interface for looking up methods relating to reflective visitation. One possible implementation would cache the results.
  *
- * <p>Type parameter 'R' is the base class of visitoR class; type parameter 'E'
- * is the base class of visiteE class.
+ * Type parameter 'R' is the base class of visitoR class; type parameter 'E' is the base class of visiteE class.
  *
- * <p>TODO: obsolete {@link ReflectUtil#lookupVisitMethod}, and use caching in
- * implementing that method.
+ * TODO: obsolete {@code ReflectUtil#lookupVisitMethod}, and use caching in implementing that method.
  *
  * @param <E> Argument type
  * @param <R> Return type
  */
 public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
-    //~ Methods ----------------------------------------------------------------
 
     /**
-     * Looks up a visit method taking additional parameters beyond the
-     * overloaded visitee type.
+     * Looks up a visit method taking additional parameters beyond the overloaded visitee type.
      *
-     * @param visitorClass class of object whose visit method is to be
-     * invoked
-     * @param visiteeClass class of object to be passed as a parameter
-     * to the visit method
+     * @param visitorClass class of object whose visit method is to be invoked
+     * @param visiteeClass class of object to be passed as a parameter to the visit method
      * @param visitMethodName name of visit method
      * @param additionalParameterTypes list of additional parameter types
      * @return method found, or null if none found
@@ -87,8 +80,7 @@ public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
      * Looks up a visit method.
      *
      * @param visitorClass class of object whose visit method is to be invoked
-     * @param visiteeClass class of object to be passed as a parameter to the
-     * visit method
+     * @param visiteeClass class of object to be passed as a parameter to the visit method
      * @param visitMethodName name of visit method
      * @return method found, or null if none found
      */
@@ -98,20 +90,14 @@ public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
             String visitMethodName );
 
     /**
-     * Implements the {@link Glossary#VISITOR_PATTERN} via
-     * reflection. The basic technique is taken from <a
-     * href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">a
-     * Javaworld article</a>. For an example of how to use it, see
-     * {@code ReflectVisitorTest}.
+     * Implements the {@link Glossary#VISITOR_PATTERN} via reflection. The basic technique is taken from <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">a Javaworld article</a>.
+     * For an example of how to use it, see {@code ReflectVisitorTest}.
      *
-     * <p>Visit method lookup follows the same rules as if compile-time resolution
-     * for VisitorClass.visit(VisiteeClass) were performed. An ambiguous match due
-     * to multiple interface inheritance results in an IllegalArgumentException. A
-     * non-match is indicated by returning false.</p>
+     * Visit method lookup follows the same rules as if compile-time resolution for VisitorClass.visit(VisiteeClass) were performed. An ambiguous match due
+     * to multiple interface inheritance results in an IllegalArgumentException. A non-match is indicated by returning false.
      *
      * @param visitor object whose visit method is to be invoked
-     * @param visitee object to be passed as a parameter to the visit
-     * method
+     * @param visitee object to be passed as a parameter to the visit method
      * @param visitMethodName name of visit method, e.g. "visit"
      * @return true if a matching visit method was found and invoked
      */
@@ -121,4 +107,3 @@ public interface ReflectiveVisitDispatcher<R extends ReflectiveVisitor, E> {
             String visitMethodName );
 }
 
-// End ReflectiveVisitDispatcher.java

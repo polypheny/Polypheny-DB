@@ -76,12 +76,14 @@ public class SqlExtractFunction extends SqlFunction {
     }
 
 
+    @Override
     public String getSignatureTemplate( int operandsCount ) {
         Util.discard( operandsCount );
         return "{0}({1} FROM {2})";
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         call.operand( 0 ).unparse( writer, 0, 0 );

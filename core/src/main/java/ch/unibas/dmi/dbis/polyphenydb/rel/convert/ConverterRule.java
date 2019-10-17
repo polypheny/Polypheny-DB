@@ -118,11 +118,13 @@ public abstract class ConverterRule extends RelOptRule {
     }
 
 
+    @Override
     public Convention getOutConvention() {
         return (Convention) outTrait;
     }
 
 
+    @Override
     public RelTrait getOutTrait() {
         return outTrait;
     }
@@ -158,6 +160,7 @@ public abstract class ConverterRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         RelNode rel = call.rel( 0 );
         if ( rel.getTraitSet().contains( inTrait ) ) {

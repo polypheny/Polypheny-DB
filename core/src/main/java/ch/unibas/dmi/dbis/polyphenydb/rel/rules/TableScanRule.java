@@ -73,6 +73,7 @@ public class TableScanRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalTableScan oldRel = call.rel( 0 );
         RelNode newRel = oldRel.getTable().toRel( ViewExpanders.simpleContext( oldRel.getCluster() ) );

@@ -81,11 +81,13 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.SPECIAL;
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseSqlDatetimeArithmetic( writer, call, SqlKind.MINUS, leftPrec, rightPrec );
     }

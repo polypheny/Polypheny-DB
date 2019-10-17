@@ -79,11 +79,13 @@ public class SqlSelectOperator extends SqlOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.SPECIAL;
     }
 
 
+    @Override
     public SqlCall createCall( SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands ) {
         assert functionQualifier == null;
         return new SqlSelect( pos,
@@ -143,6 +145,7 @@ public class SqlSelectOperator extends SqlOperator {
     }
 
 
+    @Override
     public <R> void acceptCall( SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler ) {
         if ( !onlyExpressions ) {
             // None of the arguments to the SELECT operator are expressions.
@@ -151,6 +154,7 @@ public class SqlSelectOperator extends SqlOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         SqlSelect select = (SqlSelect) call;
         final SqlWriter.Frame selectFrame = writer.startList( SqlWriter.FrameTypeEnum.SELECT );
@@ -248,6 +252,7 @@ public class SqlSelectOperator extends SqlOperator {
     }
 
 
+    @Override
     public boolean argumentMustBeScalar( int ordinal ) {
         return ordinal == SqlSelect.WHERE_OPERAND;
     }

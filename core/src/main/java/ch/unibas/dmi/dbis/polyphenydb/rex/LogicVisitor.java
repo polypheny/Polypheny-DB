@@ -106,6 +106,7 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
     }
 
 
+    @Override
     public Logic visitCall( RexCall call, Logic logic ) {
         final Logic arg0 = logic;
         switch ( call.getKind() ) {
@@ -152,46 +153,55 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
     }
 
 
+    @Override
     public Logic visitInputRef( RexInputRef inputRef, Logic arg ) {
         return end( inputRef, arg );
     }
 
 
+    @Override
     public Logic visitLocalRef( RexLocalRef localRef, Logic arg ) {
         return end( localRef, arg );
     }
 
 
+    @Override
     public Logic visitLiteral( RexLiteral literal, Logic arg ) {
         return end( literal, arg );
     }
 
 
+    @Override
     public Logic visitOver( RexOver over, Logic arg ) {
         return end( over, arg );
     }
 
 
+    @Override
     public Logic visitCorrelVariable( RexCorrelVariable correlVariable, Logic arg ) {
         return end( correlVariable, arg );
     }
 
 
+    @Override
     public Logic visitDynamicParam( RexDynamicParam dynamicParam, Logic arg ) {
         return end( dynamicParam, arg );
     }
 
 
+    @Override
     public Logic visitRangeRef( RexRangeRef rangeRef, Logic arg ) {
         return end( rangeRef, arg );
     }
 
 
+    @Override
     public Logic visitFieldAccess( RexFieldAccess fieldAccess, Logic arg ) {
         return end( fieldAccess, arg );
     }
 
 
+    @Override
     public Logic visitSubQuery( RexSubQuery subQuery, Logic arg ) {
         if ( !subQuery.getType().isNullable() ) {
             if ( arg == Logic.TRUE_FALSE_UNKNOWN ) {

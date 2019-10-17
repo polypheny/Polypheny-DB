@@ -46,8 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.runtime;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
 
@@ -57,14 +56,10 @@ import org.slf4j.LoggerFactory;
  *
  * @see PolyphenyDbContextException
  */
+@Slf4j
 public class PolyphenyDbException extends RuntimeException {
 
-    /**
-     * SerialVersionUID created with JDK 1.5 serialver tool. Prevents incompatible class conflict when serialized from JDK 1.5-built server to JDK 1.4-built client.
-     */
     private static final long serialVersionUID = -1314522633397794178L;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( PolyphenyDbException.class );
 
 
     /**
@@ -77,9 +72,9 @@ public class PolyphenyDbException extends RuntimeException {
         super( message, cause );
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
-        LOGGER.trace( "PolyphenyDbException", this );
+        log.trace( "PolyphenyDbException", this );
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
-            LOGGER.error( toString() );
+            log.error( toString() );
         }
     }
 
@@ -93,9 +88,9 @@ public class PolyphenyDbException extends RuntimeException {
         super( message );
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
-        LOGGER.trace( "PolyphenyDbException", this );
+        log.trace( "PolyphenyDbException", this );
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
-            LOGGER.error( toString() );
+            log.error( toString() );
         }
     }
 }

@@ -91,6 +91,7 @@ public class ProjectCorrelateTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Project origProj = call.rel( 0 );
         final Correlate corr = call.rel( 1 );

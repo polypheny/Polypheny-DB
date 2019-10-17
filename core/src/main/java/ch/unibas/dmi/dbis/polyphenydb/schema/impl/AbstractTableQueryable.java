@@ -80,21 +80,25 @@ public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
     }
 
 
+    @Override
     public Expression getExpression() {
         return table.getExpression( schema, tableName, Queryable.class );
     }
 
 
+    @Override
     public QueryProvider getProvider() {
         return queryProvider;
     }
 
 
+    @Override
     public Type getElementType() {
         return table.getElementType();
     }
 
 
+    @Override
     public Iterator<T> iterator() {
         return Linq4j.enumeratorIterator( enumerator() );
     }

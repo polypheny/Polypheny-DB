@@ -118,6 +118,7 @@ public class SortProjectTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
         final Project project = call.rel( 1 );

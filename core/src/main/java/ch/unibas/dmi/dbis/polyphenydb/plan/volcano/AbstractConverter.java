@@ -78,16 +78,19 @@ public class AbstractConverter extends ConverterImpl {
     }
 
 
+    @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return new AbstractConverter( getCluster(), (RelSubset) sole( inputs ), traitDef, traitSet );
     }
 
 
+    @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return planner.getCostFactory().makeInfiniteCost();
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         for ( RelTrait trait : traitSet ) {
@@ -122,6 +125,7 @@ public class AbstractConverter extends ConverterImpl {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final VolcanoPlanner planner = (VolcanoPlanner) call.getPlanner();
             AbstractConverter converter = call.rel( 0 );

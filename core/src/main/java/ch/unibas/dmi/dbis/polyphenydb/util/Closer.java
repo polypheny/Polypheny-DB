@@ -51,11 +51,9 @@ import java.util.List;
 
 
 /**
- * Helper that holds onto {@link AutoCloseable} resources and releases them
- * when its {@code #close} method is called.
+ * Helper that holds onto {@link AutoCloseable} resources and releases them when its {@code #close} method is called.
  *
- * <p>Similar to {@code com.google.common.io.Closer} but can deal with
- * {@link AutoCloseable}, and doesn't throw {@link IOException}.
+ * Similar to {@code com.google.common.io.Closer} but can deal with {@link AutoCloseable}, and doesn't throw {@link IOException}.
  */
 public final class Closer implements AutoCloseable {
 
@@ -71,6 +69,7 @@ public final class Closer implements AutoCloseable {
     }
 
 
+    @Override
     public void close() {
         for ( AutoCloseable closeable : list ) {
             try {
@@ -84,4 +83,3 @@ public final class Closer implements AutoCloseable {
     }
 }
 
-// End Closer.java

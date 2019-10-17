@@ -64,31 +64,37 @@ import java.util.List;
  */
 public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
+    @Override
     public SqlNode visit( SqlLiteral literal ) {
         return literal;
     }
 
 
+    @Override
     public SqlNode visit( SqlIdentifier id ) {
         return id;
     }
 
 
+    @Override
     public SqlNode visit( SqlDataTypeSpec type ) {
         return type;
     }
 
 
+    @Override
     public SqlNode visit( SqlDynamicParam param ) {
         return param;
     }
 
 
+    @Override
     public SqlNode visit( SqlIntervalQualifier intervalQualifier ) {
         return intervalQualifier;
     }
 
 
+    @Override
     public SqlNode visit( final SqlCall call ) {
         // Handler creates a new copy of 'call' only if one or more operands change.
         ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, false );
@@ -97,6 +103,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
     }
 
 
+    @Override
     public SqlNode visit( SqlNodeList nodeList ) {
         boolean update = false;
         List<SqlNode> exprs = nodeList.getList();
@@ -142,6 +149,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
         }
 
 
+        @Override
         public SqlNode result() {
             if ( update || alwaysCopy ) {
                 return call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), clonedOperands );
@@ -151,6 +159,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
         }
 
 
+        @Override
         public SqlNode visitChild( SqlVisitor<SqlNode> visitor, SqlNode expr, int i, SqlNode operand ) {
             if ( operand == null ) {
                 return null;

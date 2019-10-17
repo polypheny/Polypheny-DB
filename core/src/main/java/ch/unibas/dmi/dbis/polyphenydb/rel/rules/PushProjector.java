@@ -588,6 +588,7 @@ public class PushProjector {
         }
 
 
+        @Override
         public Void visitCall( RexCall call ) {
             if ( preserve( call ) ) {
                 return null;
@@ -629,6 +630,7 @@ public class PushProjector {
         }
 
 
+        @Override
         public Void visitInputRef( RexInputRef inputRef ) {
             rexRefs.set( inputRef.getIndex() );
             return null;
@@ -657,6 +659,7 @@ public class PushProjector {
         }
 
 
+        @Override
         public RexNode visitCall( RexCall call ) {
             // If the expression corresponds to one that needs to be preserved, convert it to a field reference; otherwise, convert the entire expression
             int match = findExprInLists( call, preserveLeft, firstLeftRef, preserveRight, firstRightRef );
@@ -708,6 +711,7 @@ public class PushProjector {
          * @param expr Expression
          * @return result of evaluating the condition
          */
+        @Override
         boolean test( RexNode expr );
 
         /**
@@ -740,6 +744,7 @@ public class PushProjector {
         }
 
 
+        @Override
         public boolean test( RexNode expr ) {
             return expr instanceof RexCall && operatorSet.contains( ((RexCall) expr).getOperator() );
         }

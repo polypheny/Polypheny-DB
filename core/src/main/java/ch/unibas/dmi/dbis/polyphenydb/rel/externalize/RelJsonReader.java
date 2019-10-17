@@ -72,10 +72,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -106,17 +109,19 @@ public class RelJsonReader {
         lastRel = null;
         final ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> o = mapper.readValue( s, TYPE_REF );
-        @SuppressWarnings("unchecked") final List<Map<String, Object>> rels = (List) o.get( "rels" );
+        @SuppressWarnings("unchecked") final Map<String, Object> rels = (Map) o.get( "Plan" );
         readRels( rels );
         System.out.println( lastRel );
         return lastRel;
     }
 
 
-    private void readRels( List<Map<String, Object>> jsonRels ) {
-        for ( Map<String, Object> jsonRel : jsonRels ) {
-            readRel( jsonRel );
+    private void readRels( Map<String, Object> jsonRels ) {
+        @SuppressWarnings("unchecked") List<Map<String, Object>> inputsList = (List) jsonRels.get( "inputs" );
+        for ( Map<String, Object> input : inputsList ) {
+            readRels( input );
         }
+        readRel( jsonRels );
     }
 
 
@@ -125,22 +130,39 @@ public class RelJsonReader {
         String type = (String) jsonRel.get( "relOp" );
         Constructor constructor = relJson.getConstructor( type );
         RelInput input = new RelInput() {
+            @Override
             public RelOptCluster getCluster() {
                 return cluster;
             }
 
 
+            @Override
             public RelTraitSet getTraitSet() {
                 return cluster.traitSetOf( Convention.NONE );
             }
 
 
+            @Override
             public RelOptTable getTable( String table ) {
-                final List<String> list = getStringList( table );
+                final List<String> list;
+                if ( jsonRel.get( table ) instanceof String ) {
+                    String str = (String) jsonRel.get( table );
+                    // MV: This is not a nice solution...
+                    if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
+                        str = str.substring( 1, str.length() - 1 );
+                        list = new LinkedList<>();
+                        list.add( StringUtils.join( Arrays.asList( str.split( "," ) ), ", " ) );
+                    } else {
+                        list = getStringList( table );
+                    }
+                } else {
+                    list = getStringList( table );
+                }
                 return relOptSchema.getTableForMember( list );
             }
 
 
+            @Override
             public RelNode getInput() {
                 final List<RelNode> inputs = getInputs();
                 assert inputs.size() == 1;
@@ -148,29 +170,33 @@ public class RelJsonReader {
             }
 
 
+            @Override
             public List<RelNode> getInputs() {
-                final List<String> jsonInputs = getStringList( "inputs" );
+                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List) get( "inputs" );
                 if ( jsonInputs == null ) {
                     return ImmutableList.of( lastRel );
                 }
                 final List<RelNode> inputs = new ArrayList<>();
-                for ( String jsonInput : jsonInputs ) {
+                for ( Map<String, Object> jsonInput : jsonInputs ) {
                     inputs.add( lookupInput( jsonInput ) );
                 }
                 return inputs;
             }
 
 
+            @Override
             public RexNode getExpression( String tag ) {
                 return relJson.toRex( this, jsonRel.get( tag ) );
             }
 
 
+            @Override
             public ImmutableBitSet getBitSet( String tag ) {
                 return ImmutableBitSet.of( getIntegerList( tag ) );
             }
 
 
+            @Override
             public List<ImmutableBitSet> getBitSetList( String tag ) {
                 List<List<Integer>> list = getIntegerListList( tag );
                 if ( list == null ) {
@@ -184,24 +210,28 @@ public class RelJsonReader {
             }
 
 
+            @Override
             public List<String> getStringList( String tag ) {
                 //noinspection unchecked
                 return (List<String>) jsonRel.get( tag );
             }
 
 
+            @Override
             public List<Integer> getIntegerList( String tag ) {
                 //noinspection unchecked
                 return (List<Integer>) jsonRel.get( tag );
             }
 
 
+            @Override
             public List<List<Integer>> getIntegerListList( String tag ) {
                 //noinspection unchecked
                 return (List<List<Integer>>) jsonRel.get( tag );
             }
 
 
+            @Override
             public List<AggregateCall> getAggregateCalls( String tag ) {
                 @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonAggs = (List) jsonRel.get( tag );
                 final List<AggregateCall> inputs = new ArrayList<>();
@@ -212,32 +242,38 @@ public class RelJsonReader {
             }
 
 
+            @Override
             public Object get( String tag ) {
                 return jsonRel.get( tag );
             }
 
 
+            @Override
             public String getString( String tag ) {
                 return (String) jsonRel.get( tag );
             }
 
 
+            @Override
             public float getFloat( String tag ) {
                 return ((Number) jsonRel.get( tag )).floatValue();
             }
 
 
+            @Override
             public boolean getBoolean( String tag, boolean default_ ) {
                 final Boolean b = (Boolean) jsonRel.get( tag );
                 return b != null ? b : default_;
             }
 
 
+            @Override
             public <E extends Enum<E>> E getEnum( String tag, Class<E> enumClass ) {
                 return Util.enumVal( enumClass, getString( tag ).toUpperCase( Locale.ROOT ) );
             }
 
 
+            @Override
             public List<RexNode> getExpressionList( String tag ) {
                 @SuppressWarnings("unchecked") final List<Object> jsonNodes = (List) jsonRel.get( tag );
                 final List<RexNode> nodes = new ArrayList<>();
@@ -248,12 +284,14 @@ public class RelJsonReader {
             }
 
 
+            @Override
             public RelDataType getRowType( String tag ) {
                 final Object o = jsonRel.get( tag );
                 return relJson.toType( cluster.getTypeFactory(), o );
             }
 
 
+            @Override
             public RelDataType getRowType( String expressionsTag, String fieldsTag ) {
                 final List<RexNode> expressionList = getExpressionList( expressionsTag );
                 @SuppressWarnings("unchecked") final List<String> names = (List<String>) get( fieldsTag );
@@ -273,17 +311,20 @@ public class RelJsonReader {
             }
 
 
+            @Override
             public RelCollation getCollation() {
                 //noinspection unchecked
                 return relJson.toCollation( (List) get( "collation" ) );
             }
 
 
+            @Override
             public RelDistribution getDistribution() {
                 return relJson.toDistribution( get( "distribution" ) );
             }
 
 
+            @Override
             public ImmutableList<ImmutableList<RexLiteral>> getTuples( String tag ) {
                 //noinspection unchecked
                 final List<List> jsonTuples = (List) get( tag );
@@ -330,10 +371,11 @@ public class RelJsonReader {
     }
 
 
-    private RelNode lookupInput( String jsonInput ) {
-        RelNode node = relMap.get( jsonInput );
+    private RelNode lookupInput( Map<String, Object> jsonInput ) {
+        String id = (String) jsonInput.get( "id" );
+        RelNode node = relMap.get( id );
         if ( node == null ) {
-            throw new RuntimeException( "unknown id " + jsonInput + " for relational expression" );
+            throw new RuntimeException( "unknown id " + id + " for relational expression" );
         }
         return node;
     }

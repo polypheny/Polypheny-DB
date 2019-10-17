@@ -86,6 +86,7 @@ public class SemiJoinJoinTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         SemiJoin semiJoin = call.rel( 0 );
         final Join join = call.rel( 1 );

@@ -158,6 +158,7 @@ public class JoinCommuteRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( final RelOptRuleCall call ) {
         Join join = call.rel( 0 );
 

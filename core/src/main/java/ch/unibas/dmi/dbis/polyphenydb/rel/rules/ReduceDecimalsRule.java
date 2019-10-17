@@ -104,12 +104,14 @@ public class ReduceDecimalsRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public Convention getOutConvention() {
         return Convention.NONE;
     }
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalCalc calc = call.rel( 0 );
 
@@ -167,6 +169,7 @@ public class ReduceDecimalsRule extends RelOptRule {
          * </ol>
          * </ol>
          */
+        @Override
         public RexNode visitCall( RexCall call ) {
             RexNode savedResult = lookup( call );
             if ( savedResult != null ) {
@@ -697,6 +700,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
 
         // implement RexExpander
+        @Override
         public RexNode expand( RexCall call ) {
             List<RexNode> operands = call.operands;
             assert call.isA( SqlKind.CAST );
@@ -785,6 +789,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
 
         // implement RexExpander
+        @Override
         public RexNode expand( RexCall call ) {
             List<RexNode> operands = call.operands;
             assert operands.size() == 2;
@@ -960,6 +965,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             assert call.getOperator() == SqlStdOperatorTable.FLOOR;
             RexNode decValue = call.operands.get( 0 );
@@ -1009,6 +1015,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             assert call.getOperator() == SqlStdOperatorTable.CEIL;
             RexNode decValue = call.operands.get( 0 );
@@ -1058,6 +1065,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             RelDataType retType = call.getType();
             int argCount = call.operands.size();
@@ -1095,11 +1103,13 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public boolean canExpand( RexCall call ) {
             return RexUtil.requiresDecimalExpansion( call, false );
         }
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             ImmutableList.Builder<RexNode> opBuilder = ImmutableList.builder();
             for ( RexNode operand : call.operands ) {
@@ -1130,6 +1140,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public RelDataType getArgType( RexCall call, int ordinal ) {
             RelDataType type = real8;
             if ( call.operands.get( ordinal ).getType().isNullable() ) {
@@ -1153,6 +1164,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         public abstract RelDataType getArgType( RexCall call, int ordinal );
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             ImmutableList.Builder<RexNode> opBuilder = ImmutableList.builder();
 
@@ -1183,11 +1195,13 @@ public class ReduceDecimalsRule extends RelOptRule {
         }
 
 
+        @Override
         public boolean canExpand( RexCall call ) {
             return call.isA( SqlKind.REINTERPRET ) && call.operands.get( 0 ).isA( SqlKind.REINTERPRET );
         }
 
 
+        @Override
         public RexNode expand( RexCall call ) {
             List<RexNode> operands = call.operands;
             RexCall subCall = (RexCall) operands.get( 0 );

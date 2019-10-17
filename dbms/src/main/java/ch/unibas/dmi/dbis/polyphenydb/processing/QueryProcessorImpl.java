@@ -116,6 +116,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -125,13 +126,10 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
-
-    private static final Logger LOG = LoggerFactory.getLogger( QueryProcessorImpl.class );
 
     private static InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
     private static InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
@@ -139,6 +137,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     private static InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     private final Transaction transaction;
+
 
     QueryProcessorImpl( Transaction transaction ) {
         this.transaction = transaction;
@@ -165,8 +164,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         //
         // Parsing
         final StopWatch stopWatch = new StopWatch();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Parsing PolySQL statement ..." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing PolySQL statement ..." );
         }
         stopWatch.start();
         SqlNode parsed;
@@ -181,11 +180,11 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }*/
         stopWatch.stop();
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Parsed query: [{}]", parsed );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Parsed query: [{}]", parsed );
         }
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
         }
 
         if ( parsed.isA( SqlKind.DDL ) ) {
@@ -259,8 +258,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         //
         // Validation
         stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating SQL ..." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Validating SQL ..." );
         }
         stopWatch.start();
         /*final SqlConformance conformance = parserConfig.conformance();
@@ -277,18 +276,18 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Validated query: [{}]", validated );
+        if ( log.isTraceEnabled() ) {
+            log.debug( "Validated query: [{}]", validated );
         }
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
         }
 
         //
         // Plan
         stopWatch.reset();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning Statement ..." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Planning Statement ..." );
         }
         stopWatch.start();
         RelNode logicalPlan;
@@ -298,12 +297,12 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         //RelNode logicalPlan = plan( validated, validator );
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        if ( log.isTraceEnabled() ) {
+            log.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Planning Statement ... done. [{}]", stopWatch );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Planning Statement ... done. [{}]", stopWatch );
         }
 
         if ( parsed.isA( SqlKind.DML ) ) {
@@ -345,15 +344,15 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         final StopWatch stopWatch = new StopWatch();
         //
         // Optimization
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimizing Statement  ..." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Optimizing Statement  ..." );
         }
         stopWatch.start();
         planner.setRoot( logicalPlan );
         RelNode optimalPlan;
         optimalPlan = planner.findBestExp();
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        if ( log.isTraceEnabled() ) {
+            log.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
@@ -366,8 +365,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
         stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimizing Statement ... done. [{}]", stopWatch );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Optimizing Statement ... done. [{}]", stopWatch );
         }
 
         //
@@ -410,8 +409,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         final StopWatch stopWatch = new StopWatch();
         //
         // Optimization
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimizing Statement  ..." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Optimizing Statement  ..." );
         }
         stopWatch.start();
         RelNode optimalPlan;
@@ -420,8 +419,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         } catch ( RelConversionException e ) {
             throw new RuntimeException( e );
         }
-        if ( LOG.isTraceEnabled() ) {
-            LOG.debug( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
@@ -434,8 +433,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
         stopWatch.stop();
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Optimizing Statement ... done. [{}]", stopWatch );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Optimizing Statement ... done. [{}]", stopWatch );
         }
 
         //

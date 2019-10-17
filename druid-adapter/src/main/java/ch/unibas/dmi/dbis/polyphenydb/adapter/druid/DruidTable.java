@@ -236,6 +236,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         final RelDataType rowType = protoRowType.apply( typeFactory );
         final List<String> fieldNames = rowType.getFieldNames();
@@ -245,6 +246,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
         final TableScan scan = LogicalTableScan.create( cluster, relOptTable );
@@ -278,6 +280,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
         }
 
 
+        @Override
         public RelDataType apply( RelDataTypeFactory typeFactory ) {
             final RelDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map.Entry<String, SqlTypeName> field : fields.entrySet() ) {

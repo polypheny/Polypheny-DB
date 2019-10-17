@@ -88,6 +88,7 @@ class TableNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         if ( extendedFields.isEmpty() ) {
             return table.getRowType();
@@ -99,6 +100,7 @@ class TableNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         // This is the only kind of namespace not based on a node in the parse tree.
         return null;

@@ -76,6 +76,7 @@ public class CalcRemoveRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         LogicalCalc calc = call.rel( 0 );
         RexProgram program = calc.getProgram();

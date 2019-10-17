@@ -77,53 +77,63 @@ class RexCopier extends RexShuttle {
     }
 
 
+    @Override
     public RexNode visitOver( RexOver over ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RexWindow visitWindow( RexWindow window ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RexNode visitCall( final RexCall call ) {
         final boolean[] update = null;
         return builder.makeCall( copy( call.getType() ), call.getOperator(), visitList( call.getOperands(), update ) );
     }
 
 
+    @Override
     public RexNode visitCorrelVariable( RexCorrelVariable variable ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
         return builder.makeFieldAccess( fieldAccess.getReferenceExpr().accept( this ), fieldAccess.getField().getIndex() );
     }
 
 
+    @Override
     public RexNode visitInputRef( RexInputRef inputRef ) {
         return builder.makeInputRef( copy( inputRef.getType() ), inputRef.getIndex() );
     }
 
 
+    @Override
     public RexNode visitLocalRef( RexLocalRef localRef ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         // Get the value as is
         return new RexLiteral( RexLiteral.value( literal ), copy( literal.getType() ), literal.getTypeName() );
     }
 
 
+    @Override
     public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public RexNode visitRangeRef( RexRangeRef rangeRef ) {
         throw new UnsupportedOperationException();
     }

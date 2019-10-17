@@ -76,7 +76,15 @@ public class WinAggResetContextImpl extends AggResetContextImpl implements WinAg
      * @param frameRowCount number of rows in the current frame
      * @param partitionRowCount number of rows in the current partition
      */
-    public WinAggResetContextImpl( BlockBuilder block, List<Expression> accumulator, Expression index, Expression startIndex, Expression endIndex, Expression hasRows, Expression frameRowCount, Expression partitionRowCount ) {
+    public WinAggResetContextImpl(
+            BlockBuilder block,
+            List<Expression> accumulator,
+            Expression index,
+            Expression startIndex,
+            Expression endIndex,
+            Expression hasRows,
+            Expression frameRowCount,
+            Expression partitionRowCount ) {
         super( block, accumulator );
         this.index = index;
         this.startIndex = startIndex;
@@ -87,31 +95,37 @@ public class WinAggResetContextImpl extends AggResetContextImpl implements WinAg
     }
 
 
+    @Override
     public Expression index() {
         return index;
     }
 
 
+    @Override
     public Expression startIndex() {
         return startIndex;
     }
 
 
+    @Override
     public Expression endIndex() {
         return endIndex;
     }
 
 
+    @Override
     public Expression hasRows() {
         return hasRows;
     }
 
 
+    @Override
     public Expression getFrameRowCount() {
         return frameRowCount;
     }
 
 
+    @Override
     public Expression getPartitionRowCount() {
         return partitionRowCount;
     }

@@ -245,6 +245,7 @@ public class Bindables {
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
@@ -279,12 +280,14 @@ public class Bindables {
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
             return table.unwrap( ScannableTable.class ).scan( dataContext );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             throw new UnsupportedOperationException(); // TODO:
         }
@@ -306,6 +309,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalFilter filter = (LogicalFilter) rel;
             return BindableFilter.create( convert( filter.getInput(), filter.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ), filter.getCondition() );
@@ -335,21 +339,25 @@ public class Bindables {
         }
 
 
+        @Override
         public BindableFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
             return new BindableFilter( getCluster(), traitSet, input, condition );
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new FilterNode( implementor.compiler, this );
         }
@@ -371,6 +379,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             return new BindableProject(
@@ -394,21 +403,25 @@ public class Bindables {
         }
 
 
+        @Override
         public BindableProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
             return new BindableProject( getCluster(), traitSet, input, projects, rowType );
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new ProjectNode( implementor.compiler, this );
         }
@@ -430,6 +443,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Sort sort = (Sort) rel;
             final RelTraitSet traitSet = sort.getTraitSet().replace( BindableConvention.INSTANCE );
@@ -456,16 +470,19 @@ public class Bindables {
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new SortNode( implementor.compiler, this );
         }
@@ -487,6 +504,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalJoin join = (LogicalJoin) rel;
             final BindableConvention out = BindableConvention.INSTANCE;
@@ -516,27 +534,25 @@ public class Bindables {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        protected BindableJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) {
-            this( cluster, traitSet, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType );
-        }
-
-
+        @Override
         public BindableJoin copy( RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
             return new BindableJoin( getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType );
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new JoinNode( implementor.compiler, this );
         }
@@ -558,6 +574,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalUnion union = (LogicalUnion) rel;
             final BindableConvention out = BindableConvention.INSTANCE;
@@ -577,21 +594,25 @@ public class Bindables {
         }
 
 
+        @Override
         public BindableUnion copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
             return new BindableUnion( getCluster(), traitSet, inputs, all );
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new UnionNode( implementor.compiler, this );
         }
@@ -615,16 +636,19 @@ public class Bindables {
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new ValuesNode( implementor.compiler, this );
         }
@@ -686,16 +710,19 @@ public class Bindables {
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new AggregateNode( implementor.compiler, this );
         }
@@ -717,6 +744,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalAggregate agg = (LogicalAggregate) rel;
             final RelTraitSet traitSet = agg.getTraitSet().replace( BindableConvention.INSTANCE );
@@ -755,16 +783,19 @@ public class Bindables {
         }
 
 
+        @Override
         public Class<Object[]> getElementType() {
             return Object[].class;
         }
 
 
+        @Override
         public Enumerable<Object[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
 
+        @Override
         public Node implement( InterpreterImplementor implementor ) {
             return new WindowNode( implementor.compiler, this );
         }
@@ -786,6 +817,7 @@ public class Bindables {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalWindow winAgg = (LogicalWindow) rel;
             final RelTraitSet traitSet = winAgg.getTraitSet().replace( BindableConvention.INSTANCE );

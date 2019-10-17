@@ -114,61 +114,73 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
+    @Override
     public Comparable visitInputRef( RexInputRef inputRef ) {
         return getOrUnbound( inputRef );
     }
 
 
+    @Override
     public Comparable visitLocalRef( RexLocalRef localRef ) {
         throw unbound( localRef );
     }
 
 
+    @Override
     public Comparable visitLiteral( RexLiteral literal ) {
         return Util.first( literal.getValue4(), N );
     }
 
 
+    @Override
     public Comparable visitOver( RexOver over ) {
         throw unbound( over );
     }
 
 
+    @Override
     public Comparable visitCorrelVariable( RexCorrelVariable correlVariable ) {
         return getOrUnbound( correlVariable );
     }
 
 
+    @Override
     public Comparable visitDynamicParam( RexDynamicParam dynamicParam ) {
         return getOrUnbound( dynamicParam );
     }
 
 
+    @Override
     public Comparable visitRangeRef( RexRangeRef rangeRef ) {
         throw unbound( rangeRef );
     }
 
 
+    @Override
     public Comparable visitFieldAccess( RexFieldAccess fieldAccess ) {
         return getOrUnbound( fieldAccess );
     }
 
 
+    @Override
     public Comparable visitSubQuery( RexSubQuery subQuery ) {
         throw unbound( subQuery );
     }
 
 
+    @Override
     public Comparable visitTableInputRef( RexTableInputRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
+    @Override
     public Comparable visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
+    @Override
     public Comparable visitCall( RexCall call ) {
         final List<Comparable> values = new ArrayList<>( call.operands.size() );
         for ( RexNode operand : call.operands ) {

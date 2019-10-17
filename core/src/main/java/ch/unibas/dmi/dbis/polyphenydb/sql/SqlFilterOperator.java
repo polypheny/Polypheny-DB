@@ -94,6 +94,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         assert call.getOperator() == this;
         assert call.operandCount() == 2;
@@ -116,6 +117,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Validate type of the inner aggregate call
         validateOperands( validator, scope, call );

@@ -108,16 +108,19 @@ public class DepthFirstIterator<V, E extends DefaultEdge> implements Iterator<V>
     }
 
 
+    @Override
     public boolean hasNext() {
         return iterator.hasNext();
     }
 
 
+    @Override
     public V next() {
         return iterator.next();
     }
 
 
+    @Override
     public void remove() {
         throw new UnsupportedOperationException();
     }

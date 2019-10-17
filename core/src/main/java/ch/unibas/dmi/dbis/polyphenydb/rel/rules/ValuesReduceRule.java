@@ -98,6 +98,7 @@ public abstract class ValuesReduceRule extends RelOptRule {
                     operand( LogicalFilter.class, operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ),
                     RelFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Filter)" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     LogicalFilter filter = call.rel( 0 );
                     LogicalValues values = call.rel( 1 );
@@ -113,6 +114,7 @@ public abstract class ValuesReduceRule extends RelOptRule {
                     operand( LogicalProject.class, operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ),
                     RelFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project)" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     LogicalProject project = call.rel( 0 );
                     LogicalValues values = call.rel( 1 );
@@ -131,6 +133,7 @@ public abstract class ValuesReduceRule extends RelOptRule {
                                     operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ) ),
                     RelFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project-Filter)" ) {
+                @Override
                 public void onMatch( RelOptRuleCall call ) {
                     LogicalProject project = call.rel( 0 );
                     LogicalFilter filter = call.rel( 1 );
@@ -261,6 +264,7 @@ public abstract class ValuesReduceRule extends RelOptRule {
         private List<RexLiteral> literalList;
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
             return literalList.get( inputRef.getIndex() );
         }

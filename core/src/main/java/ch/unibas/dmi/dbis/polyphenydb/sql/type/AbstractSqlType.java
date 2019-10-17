@@ -79,24 +79,28 @@ public abstract class AbstractSqlType extends RelDataTypeImpl implements Cloneab
 
 
     // implement RelDataType
+    @Override
     public SqlTypeName getSqlTypeName() {
         return typeName;
     }
 
 
     // implement RelDataType
+    @Override
     public boolean isNullable() {
         return isNullable;
     }
 
 
     // implement RelDataType
+    @Override
     public RelDataTypeFamily getFamily() {
         return typeName.getFamily();
     }
 
 
     // implement RelDataType
+    @Override
     public RelDataTypePrecedenceList getPrecedenceList() {
         RelDataTypePrecedenceList list = SqlTypeExplicitPrecedenceList.getListForType( this );
         if ( list != null ) {

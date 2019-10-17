@@ -48,13 +48,10 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 /**
  * A collection of terms.
  *
- * <p>(This is not a real class. It is here so that terms which do not map to
- * classes can be referenced in Javadoc.)</p>
+ * (This is not a real class. It is here so that terms which do not map to classes can be referenced in Javadoc.)
  */
 public interface Glossary {
-    //~ Static fields/initializers ---------------------------------------------
 
-    // CHECKSTYLE: OFF
     /**
      * <p>This table shows how and where the Gang of Four patterns are applied.
      * The table uses information from the GoF book and from a course on
@@ -611,4 +608,3 @@ public interface Glossary {
     Glossary SQL2003 = null;
 }
 
-// End Glossary.java

@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.model.JsonSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
@@ -58,16 +57,6 @@ import org.apache.calcite.avatica.util.Quoting;
  * Interface for reading connection properties within Polypheny-DB code. There is a method for every property. At some point there will be similar config classes for system and statement properties.
  */
 public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
-
-    /**
-     * @see PolyphenyDbConnectionProperty#MATERIALIZATIONS_ENABLED
-     */
-    boolean materializationsEnabled();
-
-    /**
-     * @see PolyphenyDbConnectionProperty#CREATE_MATERIALIZATIONS
-     */
-    boolean createMaterializations();
 
     /**
      * @see PolyphenyDbConnectionProperty#DEFAULT_NULL_COLLATION
@@ -108,16 +97,6 @@ public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
      * @see PolyphenyDbConnectionProperty#PARSER_FACTORY
      */
     <T> T parserFactory( Class<T> parserFactoryClass, T defaultParserFactory );
-
-    /**
-     * @see PolyphenyDbConnectionProperty#SCHEMA_FACTORY
-     */
-    <T> T schemaFactory( Class<T> schemaFactoryClass, T defaultSchemaFactory );
-
-    /**
-     * @see PolyphenyDbConnectionProperty#SCHEMA_TYPE
-     */
-    JsonSchema.Type schemaType();
 
     /**
      * @see PolyphenyDbConnectionProperty#FORCE_DECORRELATE

@@ -54,10 +54,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * CancelFlag is used to post and check cancellation requests.
  *
- * <p>Pass it to {@link RelOptPlanner} by putting it into a {@link Context}.
+ * Pass it to {@link RelOptPlanner} by putting it into a {@link Context}.
  */
 public class CancelFlag {
-    //~ Instance fields --------------------------------------------------------
 
     /**
      * The flag that holds the cancel state.
@@ -69,8 +68,6 @@ public class CancelFlag {
     public CancelFlag( AtomicBoolean atomicBoolean ) {
         this.atomicBoolean = Objects.requireNonNull( atomicBoolean );
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     /**
@@ -97,4 +94,3 @@ public class CancelFlag {
     }
 }
 
-// End CancelFlag.java

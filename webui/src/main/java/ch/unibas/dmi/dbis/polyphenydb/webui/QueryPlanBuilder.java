@@ -63,7 +63,7 @@ public class QueryPlanBuilder {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParser.Config.DEFAULT )
-                .defaultSchema( rootSchema )
+                .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(

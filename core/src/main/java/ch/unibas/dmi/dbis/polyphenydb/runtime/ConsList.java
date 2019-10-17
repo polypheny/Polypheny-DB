@@ -86,6 +86,7 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     }
 
 
+    @Override
     public E get( int index ) {
         for ( ConsList<E> c = this; ; c = (ConsList<E>) c.rest ) {
             if ( index == 0 ) {
@@ -99,6 +100,7 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     }
 
 
+    @Override
     public int size() {
         int s = 1;
         for ( ConsList c = this; ; c = (ConsList) c.rest, ++s ) {
@@ -127,6 +129,7 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     }
 
 
+    @Override
     protected final List<E> toList() {
         final List<E> list = new ArrayList<>();
         for ( ConsList<E> c = this; ; c = (ConsList<E>) c.rest ) {
@@ -160,12 +163,14 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     }
 
 
+    @Override
     @Nonnull
     public Object[] toArray() {
         return toList().toArray();
     }
 
 
+    @Override
     @Nonnull
     public <T> T[] toArray( @Nonnull T[] a ) {
         final int s = size();
@@ -188,11 +193,13 @@ public class ConsList<E> extends AbstractImmutableList<E> {
     }
 
 
+    @Override
     public int indexOf( Object o ) {
         return toList().indexOf( o );
     }
 
 
+    @Override
     public int lastIndexOf( Object o ) {
         return toList().lastIndexOf( o );
     }

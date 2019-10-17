@@ -178,28 +178,33 @@ public class RelWriterImpl implements RelWriter {
     }
 
 
+    @Override
     public final void explain( RelNode rel, List<Pair<String, Object>> valueList ) {
         explain_( rel, valueList );
     }
 
 
+    @Override
     public SqlExplainLevel getDetailLevel() {
         return detailLevel;
     }
 
 
+    @Override
     public RelWriter input( String term, RelNode input ) {
         values.add( Pair.of( term, (Object) input ) );
         return this;
     }
 
 
+    @Override
     public RelWriter item( String term, Object value ) {
         values.add( Pair.of( term, value ) );
         return this;
     }
 
 
+    @Override
     public RelWriter itemIf( String term, Object value, boolean condition ) {
         if ( condition ) {
             item( term, value );
@@ -208,6 +213,7 @@ public class RelWriterImpl implements RelWriter {
     }
 
 
+    @Override
     public RelWriter done( RelNode node ) {
         assert checkInputsPresentInExplain( node );
         final List<Pair<String, Object>> valuesCopy = ImmutableList.copyOf( values );
@@ -231,6 +237,7 @@ public class RelWriterImpl implements RelWriter {
     }
 
 
+    @Override
     public boolean nest() {
         return false;
     }

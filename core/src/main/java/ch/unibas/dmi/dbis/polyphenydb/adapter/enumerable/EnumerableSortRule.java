@@ -61,6 +61,7 @@ class EnumerableSortRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final Sort sort = (Sort) rel;
         if ( sort.offset != null || sort.fetch != null ) {

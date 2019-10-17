@@ -31,16 +31,14 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Utility to which returns rows from a given ResultSet as String, formatted to look like a table with rows and columns with borders.
  */
+@Slf4j
 public class TablePrinter {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( TablePrinter.class );
 
     public static final int DEFAULT_MAX_ROWS = 25;
     public static final int DEFAULT_MAX_DATA_LENGTH = 25;
@@ -105,10 +103,10 @@ public class TablePrinter {
                 sb.append( "|\n" );
             }
             sb.append( horizontalLine );
-            sb.append( "Printed " + totalPrintRows + " rows out of " + totalRows + " rows\n" );
+            sb.append( "Printed " ).append( totalPrintRows ).append( " rows out of " ).append( totalRows ).append( " rows\n" );
         } catch ( SQLException e ) {
-            if ( LOGGER.isErrorEnabled() ) {
-                LOGGER.error( "SQLException while processing the ResultSet object.", e );
+            if ( log.isErrorEnabled() ) {
+                log.error( "SQLException while processing the ResultSet object.", e );
             }
         }
 
@@ -134,7 +132,7 @@ public class TablePrinter {
     private static class Column {
 
         private int maxLength = 0;
-        private ArrayList<String> data = new ArrayList<>();
+        private final ArrayList<String> data = new ArrayList<>();
 
 
         void addData( String dataStr, int maxLength ) {

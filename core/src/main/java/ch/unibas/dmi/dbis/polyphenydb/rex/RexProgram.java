@@ -157,11 +157,13 @@ public class RexProgram {
      */
     public List<Pair<RexLocalRef, String>> getNamedProjects() {
         return new AbstractList<Pair<RexLocalRef, String>>() {
+            @Override
             public int size() {
                 return projects.size();
             }
 
 
+            @Override
             public Pair<RexLocalRef, String> get( int index ) {
                 return Pair.of(
                         projects.get( index ),
@@ -698,6 +700,7 @@ public class RexProgram {
         final Set<String> paramIdSet = new HashSet<>();
         RexUtil.apply(
                 new RexVisitorImpl<Void>( true ) {
+                    @Override
                     public Void visitCorrelVariable( RexCorrelVariable correlVariable ) {
                         paramIdSet.add( correlVariable.getName() );
                         return null;
@@ -820,6 +823,7 @@ public class RexProgram {
         }
 
 
+        @Override
         public RexNode visitLocalRef( RexLocalRef localRef ) {
             RexNode tree = exprs.get( localRef.getIndex() );
             return tree.accept( this );
@@ -863,22 +867,26 @@ public class RexProgram {
         }
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
             return inputRef;
         }
 
 
+        @Override
         public RexNode visitLocalRef( RexLocalRef localRef ) {
             final RexNode expr = exprs.get( localRef.index );
             return expr.accept( this );
         }
 
 
+        @Override
         public RexNode visitLiteral( RexLiteral literal ) {
             return literal;
         }
 
 
+        @Override
         public RexNode visitCall( RexCall call ) {
             final List<RexNode> newOperands = new ArrayList<>();
             for ( RexNode operand : call.getOperands() ) {
@@ -888,26 +896,31 @@ public class RexProgram {
         }
 
 
+        @Override
         public RexNode visitOver( RexOver over ) {
             return visitCall( over );
         }
 
 
+        @Override
         public RexNode visitCorrelVariable( RexCorrelVariable correlVariable ) {
             return correlVariable;
         }
 
 
+        @Override
         public RexNode visitDynamicParam( RexDynamicParam dynamicParam ) {
             return dynamicParam;
         }
 
 
+        @Override
         public RexNode visitRangeRef( RexRangeRef rangeRef ) {
             return rangeRef;
         }
 
 
+        @Override
         public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
             final RexNode referenceExpr = fieldAccess.getReferenceExpr().accept( this );
             return new RexFieldAccess( referenceExpr, fieldAccess.getField() );
@@ -925,6 +938,7 @@ public class RexProgram {
         }
 
 
+        @Override
         public Void visitLocalRef( RexLocalRef localRef ) {
             final int index = localRef.getIndex();
             refCounts[index]++;

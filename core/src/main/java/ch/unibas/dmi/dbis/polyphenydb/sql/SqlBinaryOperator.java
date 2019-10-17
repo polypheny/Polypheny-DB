@@ -97,11 +97,13 @@ public class SqlBinaryOperator extends SqlOperator {
     }
 
 
+    @Override
     public SqlSyntax getSyntax() {
         return SqlSyntax.BINARY;
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         Util.discard( operandsCount );
 
@@ -125,6 +127,7 @@ public class SqlBinaryOperator extends SqlOperator {
     }
 
 
+    @Override
     protected RelDataType adjustType( SqlValidator validator, final SqlCall call, RelDataType type ) {
         RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
         RelDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
@@ -151,6 +154,7 @@ public class SqlBinaryOperator extends SqlOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         RelDataType type = super.deriveType( validator, scope, call );
 

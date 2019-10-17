@@ -88,6 +88,7 @@ public abstract class SqlNode implements Cloneable {
     /**
      * @deprecated Please use {@link #clone(SqlNode)}; this method brings along too much baggage from early versions of Java
      */
+    @Override
     @Deprecated
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Object clone() {

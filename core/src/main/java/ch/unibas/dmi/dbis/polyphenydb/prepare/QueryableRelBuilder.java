@@ -137,6 +137,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TAccumulate, TResult> TResult aggregate(
             Queryable<T> source,
             TAccumulate seed,
@@ -146,176 +147,211 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public T aggregate( Queryable<T> source, FunctionExpression<Function2<T, T, T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TAccumulate> TAccumulate aggregate( Queryable<T> source, TAccumulate seed, FunctionExpression<Function2<TAccumulate, T, TAccumulate>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean all( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean any( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean any( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public BigDecimal averageBigDecimal( Queryable<T> source, FunctionExpression<BigDecimalFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public BigDecimal averageNullableBigDecimal( Queryable<T> source, FunctionExpression<NullableBigDecimalFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public double averageDouble( Queryable<T> source, FunctionExpression<DoubleFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Double averageNullableDouble( Queryable<T> source, FunctionExpression<NullableDoubleFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public int averageInteger( Queryable<T> source, FunctionExpression<IntegerFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Integer averageNullableInteger( Queryable<T> source, FunctionExpression<NullableIntegerFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public float averageFloat( Queryable<T> source, FunctionExpression<FloatFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Float averageNullableFloat( Queryable<T> source, FunctionExpression<NullableFloatFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public long averageLong( Queryable<T> source, FunctionExpression<LongFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Long averageNullableLong( Queryable<T> source, FunctionExpression<NullableLongFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> concat( Queryable<T> source, Enumerable<T> source2 ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean contains( Queryable<T> source, T element ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean contains( Queryable<T> source, T element, EqualityComparer<T> comparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public int count( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public int count( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> defaultIfEmpty( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> defaultIfEmpty( Queryable<T> source, T value ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> distinct( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> distinct( Queryable<T> source, EqualityComparer<T> comparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T elementAt( Queryable<T> source, int index ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T elementAtOrDefault( Queryable<T> source, int index ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T first( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T first( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T firstOrDefault( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T firstOrDefault( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> Queryable<Grouping<TKey, T>> groupBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> Queryable<Grouping<TKey, T>> groupBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, EqualityComparer<TKey> comparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey, TElement> Queryable<Grouping<TKey, TElement>> groupBy(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -324,6 +360,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TKey, TResult> Queryable<TResult> groupByK(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -332,6 +369,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TKey, TElement> Queryable<Grouping<TKey, TElement>> groupBy(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -341,6 +379,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TKey, TResult> Queryable<TResult> groupByK(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -350,6 +389,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TKey, TElement, TResult> Queryable<TResult> groupBy(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -359,6 +399,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TKey, TElement, TResult> Queryable<TResult> groupBy(
             Queryable<T> source,
             FunctionExpression<Function1<T, TKey>> keySelector,
@@ -369,6 +410,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TInner, TKey, TResult> Queryable<TResult> groupJoin(
             Queryable<T> source,
             Enumerable<TInner> inner,
@@ -379,6 +421,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TInner, TKey, TResult> Queryable<TResult> groupJoin(
             Queryable<T> source,
             Enumerable<TInner> inner,
@@ -390,16 +433,19 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TInner, TKey, TResult> Queryable<TResult> join(
             Queryable<T> source,
             Enumerable<TInner> inner,
@@ -410,6 +456,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TInner, TKey, TResult> Queryable<TResult> join(
             Queryable<T> source,
             Enumerable<TInner> inner,
@@ -421,91 +468,109 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public T last( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T last( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T lastOrDefault( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T lastOrDefault( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public long longCount( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public long longCount( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T max( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult extends Comparable<TResult>> TResult max( Queryable<T> source, FunctionExpression<Function1<T, TResult>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T min( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult extends Comparable<TResult>> TResult min( Queryable<T> source, FunctionExpression<Function1<T, TResult>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult> Queryable<TResult> ofType( Queryable<T> source, Class<TResult> clazz ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <T2> Queryable<T2> cast( Queryable<T> source, Class<T2> clazz ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey extends Comparable> OrderedQueryable<T> orderBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> OrderedQueryable<T> orderBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey extends Comparable> OrderedQueryable<T> orderByDescending( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> OrderedQueryable<T> orderByDescending( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> reverse( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult> Queryable<TResult> select( Queryable<T> source, FunctionExpression<Function1<T, TResult>> selector ) {
         RelNode child = toRel( source );
         List<RexNode> nodes = translator.toRexList( selector, child );
@@ -514,21 +579,25 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TResult> Queryable<TResult> selectN( Queryable<T> source, FunctionExpression<Function2<T, Integer, TResult>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult> Queryable<TResult> selectMany( Queryable<T> source, FunctionExpression<Function1<T, Enumerable<TResult>>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TResult> Queryable<TResult> selectManyN( Queryable<T> source, FunctionExpression<Function2<T, Integer, Enumerable<TResult>>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TCollection, TResult> Queryable<TResult> selectMany(
             Queryable<T> source,
             FunctionExpression<Function2<T, Integer, Enumerable<TCollection>>> collectionSelector,
@@ -537,6 +606,7 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public <TCollection, TResult> Queryable<TResult> selectManyN(
             Queryable<T> source,
             FunctionExpression<Function1<T, Enumerable<TCollection>>> collectionSelector,
@@ -545,146 +615,175 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public boolean sequenceEqual( Queryable<T> source, Enumerable<T> enumerable ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public boolean sequenceEqual( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T single( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T single( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T singleOrDefault( Queryable<T> source ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public T singleOrDefault( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> skip( Queryable<T> source, int count ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> skipWhile( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> skipWhileN( Queryable<T> source, FunctionExpression<Predicate2<T, Integer>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public BigDecimal sumBigDecimal( Queryable<T> source, FunctionExpression<BigDecimalFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public BigDecimal sumNullableBigDecimal( Queryable<T> source, FunctionExpression<NullableBigDecimalFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public double sumDouble( Queryable<T> source, FunctionExpression<DoubleFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Double sumNullableDouble( Queryable<T> source, FunctionExpression<NullableDoubleFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public int sumInteger( Queryable<T> source, FunctionExpression<IntegerFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Integer sumNullableInteger( Queryable<T> source, FunctionExpression<NullableIntegerFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public long sumLong( Queryable<T> source, FunctionExpression<LongFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Long sumNullableLong( Queryable<T> source, FunctionExpression<NullableLongFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public float sumFloat( Queryable<T> source, FunctionExpression<FloatFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Float sumNullableFloat( Queryable<T> source, FunctionExpression<NullableFloatFunction1<T>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> take( Queryable<T> source, int count ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> takeWhile( Queryable<T> source, FunctionExpression<Predicate1<T>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> takeWhileN( Queryable<T> source, FunctionExpression<Predicate2<T, Integer>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenBy( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> OrderedQueryable<T> thenBy( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenByDescending( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <TKey> OrderedQueryable<T> thenByDescending( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> union( Queryable<T> source, Enumerable<T> source1 ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> union( Queryable<T> source, Enumerable<T> source1, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public Queryable<T> where( Queryable<T> source, FunctionExpression<? extends Predicate1<T>> predicate ) {
         RelNode child = toRel( source );
         RexNode node = translator.toRex( predicate, child );
@@ -693,11 +792,13 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
     }
 
 
+    @Override
     public Queryable<T> whereN( Queryable<T> source, FunctionExpression<? extends Predicate2<T, Integer>> predicate ) {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public <T1, TResult> Queryable<TResult> zip( Queryable<T> source, Enumerable<T1> source1, FunctionExpression<Function2<T, T1, TResult>> resultSelector ) {
         throw new UnsupportedOperationException();
     }

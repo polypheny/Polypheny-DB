@@ -159,23 +159,27 @@ public class RelDistributions {
         }
 
 
+        @Override
         @Nonnull
         public Type getType() {
             return type;
         }
 
 
+        @Override
         @Nonnull
         public List<Integer> getKeys() {
             return keys;
         }
 
 
+        @Override
         public RelDistributionTraitDef getTraitDef() {
             return RelDistributionTraitDef.INSTANCE;
         }
 
 
+        @Override
         public RelDistribution apply( Mappings.TargetMapping mapping ) {
             if ( keys.isEmpty() ) {
                 return this;
@@ -184,6 +188,7 @@ public class RelDistributions {
         }
 
 
+        @Override
         public boolean satisfies( RelTrait trait ) {
             if ( trait == this || trait == ANY ) {
                 return true;
@@ -213,6 +218,7 @@ public class RelDistributions {
         }
 
 
+        @Override
         public void register( RelOptPlanner planner ) {
         }
 

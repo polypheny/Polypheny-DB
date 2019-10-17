@@ -85,6 +85,7 @@ public class ProjectJoinTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Project origProj = call.rel( 0 );
         final Join join = call.rel( 1 );

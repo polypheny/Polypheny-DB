@@ -148,6 +148,7 @@ public final class MultiJoin extends AbstractRelNode {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         List<String> joinTypeNames = new ArrayList<>();
         List<String> outerJoinConds = new ArrayList<>();
@@ -179,11 +180,13 @@ public final class MultiJoin extends AbstractRelNode {
     }
 
 
+    @Override
     public RelDataType deriveRowType() {
         return rowType;
     }
 
 
+    @Override
     public List<RelNode> getInputs() {
         return inputs;
     }
@@ -195,6 +198,7 @@ public final class MultiJoin extends AbstractRelNode {
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         RexNode joinFilter = shuttle.apply( this.joinFilter );
         List<RexNode> outerJoinConditions = shuttle.apply( this.outerJoinConditions );

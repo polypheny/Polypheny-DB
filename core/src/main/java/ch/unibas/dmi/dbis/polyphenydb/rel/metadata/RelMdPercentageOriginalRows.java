@@ -75,6 +75,7 @@ public class RelMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.PercentageOriginalRows> getDef() {
         return BuiltInMetadata.PercentageOriginalRows.DEF;
     }

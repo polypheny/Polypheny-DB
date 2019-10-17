@@ -83,6 +83,7 @@ class WithItemNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return withItem;
     }

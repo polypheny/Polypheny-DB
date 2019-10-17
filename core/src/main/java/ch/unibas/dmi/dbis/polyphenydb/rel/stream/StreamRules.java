@@ -348,6 +348,7 @@ public class StreamRules {
         }
 
 
+        @Override
         public void onMatch( RelOptRuleCall call ) {
             final Delta delta = call.rel( 0 );
             Util.discard( delta );

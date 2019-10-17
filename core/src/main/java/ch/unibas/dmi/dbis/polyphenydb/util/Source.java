@@ -70,23 +70,19 @@ public interface Source {
     String protocol();
 
     /**
-     * Looks for a suffix on a path and returns
-     * either the path with the suffix removed
-     * or the original path.
+     * Looks for a suffix on a path and returns either the path with the suffix removed or the original path.
      */
     Source trim( String suffix );
 
     /**
-     * Looks for a suffix on a path and returns
-     * either the path with the suffix removed
-     * or null.
+     * Looks for a suffix on a path and returns either the path with the suffix removed or null.
      */
     Source trimOrNull( String suffix );
 
     /**
      * Returns a source whose path concatenates this with a child.
      *
-     * <p>For example,
+     * For example,
      * <ul>
      * <li>source("/foo").append(source("bar"))
      * returns source("/foo/bar")
@@ -100,7 +96,7 @@ public interface Source {
     /**
      * Returns a relative source, if this source is a child of a given base.
      *
-     * <p>For example,
+     * For example,
      * <ul>
      * <li>source("/foo/bar").relative(source("/foo"))
      * returns source("bar")
@@ -111,4 +107,3 @@ public interface Source {
     Source relative( Source source );
 }
 
-// End Source.java

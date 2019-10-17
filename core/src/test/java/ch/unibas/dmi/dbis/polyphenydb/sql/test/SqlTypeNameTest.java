@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.test;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
@@ -145,7 +146,7 @@ public class SqlTypeNameTest {
     @Test
     public void testLongvarchar() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.LONGVARCHAR );
-        assertEquals( "LONGVARCHAR did not map to null", null, tn );
+        assertNull( "LONGVARCHAR did not map to null", tn );
     }
 
 
@@ -187,28 +188,28 @@ public class SqlTypeNameTest {
     @Test
     public void testLongvarbinary() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.LONGVARBINARY );
-        assertEquals( "LONGVARBINARY did not map to null", null, tn );
+        assertNull( "LONGVARBINARY did not map to null", tn );
     }
 
 
     @Test
     public void testNull() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.NULL );
-        assertEquals( "NULL did not map to null", null, tn );
+        assertNull( "NULL did not map to null", tn );
     }
 
 
     @Test
     public void testOther() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.OTHER );
-        assertEquals( "OTHER did not map to null", null, tn );
+        assertNull( "OTHER did not map to null", tn );
     }
 
 
     @Test
     public void testJavaobject() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.JAVA_OBJECT );
-        assertEquals( "JAVA_OBJECT did not map to null", null, tn );
+        assertNull( "JAVA_OBJECT did not map to null", tn );
     }
 
 
@@ -236,28 +237,28 @@ public class SqlTypeNameTest {
     @Test
     public void testBlob() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.BLOB );
-        assertEquals( "BLOB did not map to null", null, tn );
+        assertNull( "BLOB did not map to null", tn );
     }
 
 
     @Test
     public void testClob() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.CLOB );
-        assertEquals( "CLOB did not map to null", null, tn );
+        assertNull( "CLOB did not map to null", tn );
     }
 
 
     @Test
     public void testRef() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.REF );
-        assertEquals( "REF did not map to null", null, tn );
+        assertNull( "REF did not map to null", tn );
     }
 
 
     @Test
     public void testDatalink() {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( Types.DATALINK );
-        assertEquals( "DATALINK did not map to null", null, tn );
+        assertNull( "DATALINK did not map to null", tn );
     }
 
 
@@ -273,7 +274,7 @@ public class SqlTypeNameTest {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( ExtraSqlTypes.ROWID );
 
         // ROWID not supported yet
-        assertEquals( "ROWID maps to non-null type", null, tn );
+        assertNull( "ROWID maps to non-null type", tn );
     }
 
 
@@ -300,7 +301,7 @@ public class SqlTypeNameTest {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( ExtraSqlTypes.LONGNVARCHAR );
 
         // LONGNVARCHAR not supported yet
-        assertEquals( "LONGNVARCHAR maps to non-null type", null, tn );
+        assertNull( "LONGNVARCHAR maps to non-null type", tn );
     }
 
 
@@ -309,7 +310,7 @@ public class SqlTypeNameTest {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( ExtraSqlTypes.NCLOB );
 
         // NCLOB not supported yet
-        assertEquals( "NCLOB maps to non-null type", null, tn );
+        assertNull( "NCLOB maps to non-null type", tn );
     }
 
 
@@ -318,7 +319,7 @@ public class SqlTypeNameTest {
         SqlTypeName tn = SqlTypeName.getNameForJdbcType( ExtraSqlTypes.SQLXML );
 
         // SQLXML not supported yet
-        assertEquals( "SQLXML maps to non-null type", null, tn );
+        assertNull( "SQLXML maps to non-null type", tn );
     }
 }
 

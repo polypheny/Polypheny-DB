@@ -53,7 +53,7 @@ import java.util.List;
 /**
  * Parse tree node that represents an {@code ORDER BY} on a query other than a {@code SELECT} (e.g. {@code VALUES} or {@code UNION}).
  *
- * It is a purely syntactic operator, and is eliminated by {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
+ * It is a purely syntactic operator, and is eliminated by {@code ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
  */
 public class SqlOrderBy extends SqlCall {
 
@@ -85,11 +85,13 @@ public class SqlOrderBy extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return OPERATOR;
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( query, orderList, offset, fetch );
     }
@@ -106,11 +108,13 @@ public class SqlOrderBy extends SqlCall {
         }
 
 
+        @Override
         public SqlSyntax getSyntax() {
             return SqlSyntax.POSTFIX;
         }
 
 
+        @Override
         public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
             SqlOrderBy orderBy = (SqlOrderBy) call;
             final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.ORDER_BY );

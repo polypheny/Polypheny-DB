@@ -124,7 +124,7 @@ public final class SortRemoveRuleTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2554">[POLYPHENYDB-2554] Enrich enumerable join operators with order preserving information</a>.
+     * Test case for "Enrich enumerable join operators with order preserving information".
      *
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
@@ -148,7 +148,7 @@ public final class SortRemoveRuleTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2554">[POLYPHENYDB-2554] Enrich enumerable join operators with order preserving information</a>.
+     * Test case for "Enrich enumerable join operators with order preserving information".
      *
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
@@ -173,7 +173,7 @@ public final class SortRemoveRuleTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2554">[POLYPHENYDB-2554] Enrich enumerable join operators with order preserving information</a>.
+     * Test case for "Enrich enumerable join operators with order preserving information".
      *
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
@@ -199,7 +199,7 @@ public final class SortRemoveRuleTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2554">[POLYPHENYDB-2554] Enrich enumerable join operators with order preserving information</a>.
+     * Test case for "Enrich enumerable join operators with order preserving information".
      *
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */

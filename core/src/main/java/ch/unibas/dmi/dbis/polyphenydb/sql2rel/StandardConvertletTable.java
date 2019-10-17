@@ -634,11 +634,13 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         int n = type.getFieldCount();
         ImmutableList.Builder<RexNode> initializationExprs = ImmutableList.builder();
         final InitializerContext initializerContext = new InitializerContext() {
+            @Override
             public RexBuilder getRexBuilder() {
                 return rexBuilder;
             }
 
 
+            @Override
             public RexNode convertExpression( SqlNode e ) {
                 throw new UnsupportedOperationException();
             }
@@ -995,6 +997,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
 
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             assert call.operandCount() == 2;
             final SqlNode arg1 = call.operand( 0 );
@@ -1113,6 +1116,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
 
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             assert call.operandCount() == 1;
             final SqlNode arg = call.operand( 0 );
@@ -1242,6 +1246,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
 
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             final RexBuilder rexBuilder = cx.getRexBuilder();
             final RexNode operand = cx.convertExpression( call.getOperandList().get( 0 ) );
@@ -1259,6 +1264,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      */
     private static class GreatestConvertlet implements SqlRexConvertlet {
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             // Translate
             //   GREATEST(a, b, c, d)
@@ -1316,6 +1322,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      */
     private class FloorCeilConvertlet implements SqlRexConvertlet {
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             return convertFloorCeil( cx, call );
         }
@@ -1327,6 +1334,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      */
     private static class TimestampAddConvertlet implements SqlRexConvertlet {
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             // TIMESTAMPADD(unit, count, timestamp)
             //  => timestamp + count * INTERVAL '1' UNIT
@@ -1368,6 +1376,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      */
     private static class TimestampDiffConvertlet implements SqlRexConvertlet {
 
+        @Override
         public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
             // TIMESTAMPDIFF(unit, t1, t2)
             //    => (t2 - t1) UNIT

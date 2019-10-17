@@ -62,6 +62,7 @@ class EnumerableIntersectRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalIntersect intersect = (LogicalIntersect) rel;
         if ( intersect.all ) {

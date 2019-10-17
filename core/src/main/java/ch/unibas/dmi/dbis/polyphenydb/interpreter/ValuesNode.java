@@ -89,6 +89,7 @@ public class ValuesNode implements Node {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         for ( Row row : rows ) {
             sink.send( row );

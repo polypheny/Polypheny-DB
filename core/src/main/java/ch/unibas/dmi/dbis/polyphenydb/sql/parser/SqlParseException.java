@@ -165,6 +165,7 @@ public class SqlParseException extends Exception implements PolyphenyDbParserExc
 
 
     // override Exception
+    @Override
     public Throwable getCause() {
         return parserException;
     }

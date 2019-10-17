@@ -45,18 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
+import au.com.bytecode.opencsv.CSVReader;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Enumerator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
-import org.apache.commons.lang3.time.FastDateFormat;
-
-import au.com.bytecode.opencsv.CSVReader;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -65,6 +59,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.time.FastDateFormat;
 
 
 /**
@@ -83,6 +80,11 @@ class CsvEnumerator<E> implements Enumerator<E> {
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
     private static final FastDateFormat TIME_FORMAT_TIMESTAMP;
+
+    /**
+     * Name of the column that is implicitly created in a CSV stream table to hold the data arrival time.
+     */
+    private static final String ROWTIME_COLUMN_NAME = "ROWTIME";
 
 
     static {
@@ -146,7 +148,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         final List<RelDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
         if ( stream ) {
-            names.add( CsvSchemaFactory.ROWTIME_COLUMN_NAME );
+            names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createSqlType( SqlTypeName.TIMESTAMP ) );
         }
         try ( CSVReader reader = openCsv( source ) ) {
@@ -198,11 +200,13 @@ class CsvEnumerator<E> implements Enumerator<E> {
     }
 
 
+    @Override
     public E current() {
         return current;
     }
 
 
+    @Override
     public boolean moveNext() {
         try {
             outer:
@@ -243,11 +247,13 @@ class CsvEnumerator<E> implements Enumerator<E> {
     }
 
 
+    @Override
     public void reset() {
         throw new UnsupportedOperationException();
     }
 
 
+    @Override
     public void close() {
         try {
             reader.close();
@@ -382,6 +388,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
 
 
+        @Override
         public Object[] convertRow( String[] strings ) {
             if ( stream ) {
                 return convertStreamRow( strings );
@@ -428,6 +435,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
 
 
+        @Override
         public Object convertRow( String[] strings ) {
             return convert( fieldType, strings[fieldIndex] );
         }

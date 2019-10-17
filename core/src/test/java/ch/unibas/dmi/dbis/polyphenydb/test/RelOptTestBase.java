@@ -47,8 +47,8 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -192,7 +192,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
         final RelRoot root = tester.convertSqlToRel( sql2 );
         final RelNode relInitial = root.rel;
 
-        assertTrue( relInitial != null );
+        assertNotNull( relInitial );
 
         List<RelMetadataProvider> list = new ArrayList<>();
         list.add( DefaultRelMetadataProvider.INSTANCE );

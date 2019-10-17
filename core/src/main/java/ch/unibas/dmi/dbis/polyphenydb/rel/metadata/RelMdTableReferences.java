@@ -88,6 +88,7 @@ public class RelMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.TableReferences> getDef() {
         return BuiltInMetadata.TableReferences.DEF;
     }

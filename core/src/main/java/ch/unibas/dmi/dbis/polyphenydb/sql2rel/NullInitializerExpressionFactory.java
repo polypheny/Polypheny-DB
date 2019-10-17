@@ -65,7 +65,7 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public boolean isGeneratedAlways( RelOptTable table, int iColumn ) {
         switch ( generationStrategy( table, iColumn ) ) {
             case VIRTUAL:
@@ -77,6 +77,7 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
     }
 
 
+    @Override
     public ColumnStrategy generationStrategy( RelOptTable table, int iColumn ) {
         return table.getRowType().getFieldList().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
@@ -84,11 +85,13 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
     }
 
 
+    @Override
     public RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
 
 
+    @Override
     public RexNode newAttributeInitializer( RelDataType type, SqlFunction constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }

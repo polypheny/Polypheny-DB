@@ -630,11 +630,13 @@ public class RexLiteral extends RexNode {
                 @SuppressWarnings("unchecked") final List<RexLiteral> list = (List) value;
                 pw.print(
                         new AbstractList<String>() {
+                            @Override
                             public String get( int index ) {
                                 return list.get( index ).computeDigest( includeType );
                             }
 
 
+                            @Override
                             public int size() {
                                 return list.size();
                             }
@@ -759,6 +761,7 @@ public class RexLiteral extends RexNode {
     }
 
 
+    @Override
     public RelDataType getType() {
         return type;
     }
@@ -1001,6 +1004,7 @@ public class RexLiteral extends RexNode {
     }
 
 
+    @Override
     public boolean isAlwaysTrue() {
         if ( typeName != SqlTypeName.BOOLEAN ) {
             return false;
@@ -1009,6 +1013,7 @@ public class RexLiteral extends RexNode {
     }
 
 
+    @Override
     public boolean isAlwaysFalse() {
         if ( typeName != SqlTypeName.BOOLEAN ) {
             return false;
@@ -1075,11 +1080,13 @@ public class RexLiteral extends RexNode {
     }
 
 
+    @Override
     public <R> R accept( RexVisitor<R> visitor ) {
         return visitor.visitLiteral( this );
     }
 
 
+    @Override
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitLiteral( this, arg );
     }

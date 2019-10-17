@@ -123,6 +123,7 @@ public class JoinToMultiJoinRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Join origJoin = call.rel( 0 );
         final RelNode left = call.rel( 1 );
@@ -483,6 +484,7 @@ public class JoinToMultiJoinRule extends RelOptRule {
         }
 
 
+        @Override
         public Void visitInputRef( RexInputRef inputRef ) {
             refCounts[inputRef.getIndex()]++;
             return null;

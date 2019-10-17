@@ -45,14 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
@@ -61,12 +53,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -74,6 +64,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 
 
 /**
@@ -498,6 +489,7 @@ abstract class DruidJsonFilter implements DruidJson {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type.lowercase() );
@@ -542,6 +534,7 @@ abstract class DruidJsonFilter implements DruidJson {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type.lowercase() );
@@ -584,6 +577,7 @@ abstract class DruidJsonFilter implements DruidJson {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type.lowercase() );
@@ -619,6 +613,7 @@ abstract class DruidJsonFilter implements DruidJson {
         }
 
 
+        @Override
         public void write( JsonGenerator generator ) throws IOException {
             generator.writeStartObject();
             generator.writeStringField( "type", type.lowercase() );

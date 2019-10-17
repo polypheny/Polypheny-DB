@@ -124,21 +124,25 @@ public abstract class RexProgramBuilderBase {
         }
 
 
+        @Override
         public SchemaPlus getRootSchema() {
             return null;
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             return null;
         }
 
 
+        @Override
         public QueryProvider getQueryProvider() {
             return null;
         }
 
 
+        @Override
         public Object get( String name ) {
             return map.get( name );
         }

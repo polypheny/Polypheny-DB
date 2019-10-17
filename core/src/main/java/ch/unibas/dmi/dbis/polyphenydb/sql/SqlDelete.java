@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.List;
@@ -81,11 +80,13 @@ public class SqlDelete extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return OPERATOR;
     }
 
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of( targetTable, condition, alias );
     }
@@ -140,7 +141,7 @@ public class SqlDelete extends SqlCall {
 
     /**
      * Gets the source SELECT expression for the data to be deleted. This returns null before the condition has been expanded by
-     * {@link SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
+     * {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
      *
      * @return the source SELECT for the data to be inserted
      */
@@ -167,6 +168,7 @@ public class SqlDelete extends SqlCall {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateDelete( this );
     }

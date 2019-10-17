@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptMaterialization;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
@@ -122,8 +121,6 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     private final Function2<RelNode, RelNode, Void> onCopyHook;
 
-    private final List<RelOptMaterialization> materializations = new ArrayList<>();
-
 
     /**
      * Creates a new HepPlanner that allows DAG.
@@ -162,6 +159,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public void setRoot( RelNode rel ) {
         root = addRelToGraph( rel );
         dumpGraph();
@@ -169,17 +167,20 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public RelNode getRoot() {
         return root;
     }
 
 
+    @Override
     public List<RelOptRule> getRules() {
         return ImmutableList.copyOf( allRules );
     }
 
 
     // implement RelOptPlanner
+    @Override
     public boolean addRule( RelOptRule rule ) {
         boolean added = allRules.add( rule );
         if ( added ) {
@@ -195,10 +196,10 @@ public class HepPlanner extends AbstractRelOptPlanner {
         for ( RelOptRule rule : ImmutableList.copyOf( allRules ) ) {
             removeRule( rule );
         }
-        this.materializations.clear();
     }
 
 
+    @Override
     public boolean removeRule( RelOptRule rule ) {
         unmapRuleDescription( rule );
         return allRules.remove( rule );
@@ -206,6 +207,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public RelNode changeTraits( RelNode rel, RelTraitSet toTraits ) {
         // Ignore traits, except for the root, where we remember what the final conversion should be.
         if ( (rel == root) || (rel == root.getCurrentRel()) ) {
@@ -216,6 +218,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public RelNode findBestExp() {
         assert root != null;
 
@@ -708,6 +711,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public RelNode register( RelNode rel, RelNode equivRel ) {
         // Ignore; this call is mostly to tell Volcano how to avoid infinite loops.
         return rel;
@@ -721,12 +725,14 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public RelNode ensureRegistered( RelNode rel, RelNode equivRel ) {
         return rel;
     }
 
 
     // implement RelOptPlanner
+    @Override
     public boolean isRegistered( RelNode rel ) {
         return true;
     }
@@ -935,27 +941,17 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
 
     // implement RelOptPlanner
+    @Override
     public void registerMetadataProviders( List<RelMetadataProvider> list ) {
         list.add( 0, new HepRelMetadataProvider() );
     }
 
 
     // implement RelOptPlanner
+    @Override
     public long getRelMetadataTimestamp( RelNode rel ) {
         // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepRelVertex, and update only affected vertices and all ancestors on each transformation.
         return nTransformations;
-    }
-
-
-    @Override
-    public ImmutableList<RelOptMaterialization> getMaterializations() {
-        return ImmutableList.copyOf( materializations );
-    }
-
-
-    @Override
-    public void addMaterialization( RelOptMaterialization materialization ) {
-        materializations.add( materialization );
     }
 }
 

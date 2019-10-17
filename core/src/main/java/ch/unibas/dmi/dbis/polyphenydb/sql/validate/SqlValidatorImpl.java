@@ -312,31 +312,37 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlConformance getConformance() {
         return conformance;
     }
 
 
+    @Override
     public SqlValidatorCatalogReader getCatalogReader() {
         return catalogReader;
     }
 
 
+    @Override
     public SqlOperatorTable getOperatorTable() {
         return opTab;
     }
 
 
+    @Override
     public RelDataTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
 
+    @Override
     public RelDataType getUnknownType() {
         return unknownType;
     }
 
 
+    @Override
     public SqlNodeList expandStar( SqlNodeList selectList, SqlSelect select, boolean includeSystemVars ) {
         final List<SqlNode> list = new ArrayList<>();
         final List<Map.Entry<String, RelDataType>> types = new ArrayList<>();
@@ -358,6 +364,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     // implement SqlValidator
+    @Override
     public void declareCursor( SqlSelect select, SqlValidatorScope parentScope ) {
         cursorSet.add( select );
 
@@ -377,6 +384,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     // implement SqlValidator
+    @Override
     public void pushFunctionCall() {
         FunctionParamInfo funcInfo = new FunctionParamInfo();
         functionCallStack.push( funcInfo );
@@ -384,12 +392,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     // implement SqlValidator
+    @Override
     public void popFunctionCall() {
         functionCallStack.pop();
     }
 
 
     // implement SqlValidator
+    @Override
     public String getParentCursor( String columnListParamName ) {
         FunctionParamInfo funcParamInfo = functionCallStack.peek();
         Map<String, String> parentCursorMap = funcParamInfo.columnListParamToParentCursorMap;
@@ -594,6 +604,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlNode validate( SqlNode topNode ) {
         SqlValidatorScope scope = new EmptyScope( this );
         scope = new CatalogScope( scope, ImmutableList.of( "CATALOG" ) );
@@ -604,6 +615,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public List<SqlMoniker> lookupHints( SqlNode topNode, SqlParserPos pos ) {
         SqlValidatorScope scope = new EmptyScope( this );
         SqlNode outermostNode = performUnconditionalRewrites( topNode, false );
@@ -627,6 +639,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlMoniker lookupQualifiedName( SqlNode topNode, SqlParserPos pos ) {
         final String posString = pos.toString();
         IdInfo info = idPositions.get( posString );
@@ -825,6 +838,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlNode validateParameterizedExpression( SqlNode topNode, final Map<String, RelDataType> nameToTypeMap ) {
         SqlValidatorScope scope = new ParameterScope( this, nameToTypeMap );
         return validateScopedExpression( topNode, scope );
@@ -849,6 +863,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateQuery( SqlNode node, SqlValidatorScope scope, RelDataType targetRowType ) {
         final SqlValidatorNamespace ns = getNamespace( node, scope );
         if ( node.getKind() == SqlKind.TABLESAMPLE ) {
@@ -899,16 +914,19 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlValidatorScope getWhereScope( SqlSelect select ) {
         return whereScopes.get( select );
     }
 
 
+    @Override
     public SqlValidatorScope getSelectScope( SqlSelect select ) {
         return selectScopes.get( select );
     }
 
 
+    @Override
     public SelectScope getRawSelectScope( SqlSelect select ) {
         SqlValidatorScope scope = getSelectScope( select );
         if ( scope instanceof AggregatingSelectScope ) {
@@ -918,38 +936,45 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlValidatorScope getHavingScope( SqlSelect select ) {
         // Yes, it's the same as getSelectScope
         return selectScopes.get( select );
     }
 
 
+    @Override
     public SqlValidatorScope getGroupScope( SqlSelect select ) {
         // Yes, it's the same as getWhereScope
         return groupByScopes.get( select );
     }
 
 
+    @Override
     public SqlValidatorScope getFromScope( SqlSelect select ) {
         return scopes.get( select );
     }
 
 
+    @Override
     public SqlValidatorScope getOrderScope( SqlSelect select ) {
         return orderScopes.get( select );
     }
 
 
+    @Override
     public SqlValidatorScope getMatchRecognizeScope( SqlMatchRecognize node ) {
         return scopes.get( node );
     }
 
 
+    @Override
     public SqlValidatorScope getJoinScope( SqlNode node ) {
         return scopes.get( stripAs( node ) );
     }
 
 
+    @Override
     public SqlValidatorScope getOverScope( SqlNode node ) {
         return scopes.get( node );
     }
@@ -994,6 +1019,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlValidatorNamespace getNamespace( SqlNode node ) {
         switch ( node.getKind() ) {
             case AS:
@@ -1496,6 +1522,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public RelDataType getValidatedNodeType( SqlNode node ) {
         RelDataType type = getValidatedNodeTypeIfKnown( node );
         if ( type == null ) {
@@ -1506,6 +1533,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public RelDataType getValidatedNodeTypeIfKnown( SqlNode node ) {
         final RelDataType type = nodeToTypeMap.get( node );
         if ( type != null ) {
@@ -1535,7 +1563,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param node A SQL parse tree node, never null
      * @param type Its type; must not be null
      */
-    @SuppressWarnings("deprecation")
+    @Override
     public final void setValidatedNodeType( SqlNode node, RelDataType type ) {
         Objects.requireNonNull( type );
         Objects.requireNonNull( node );
@@ -1547,11 +1575,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void removeValidatedNodeType( SqlNode node ) {
         nodeToTypeMap.remove( node );
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidatorScope scope, SqlNode expr ) {
         Objects.requireNonNull( scope );
         Objects.requireNonNull( expr );
@@ -1582,6 +1612,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public RelDataType deriveConstructorType( SqlValidatorScope scope, SqlCall call, SqlFunction unresolvedConstructor, SqlFunction resolvedConstructor, List<RelDataType> argTypes ) {
         SqlIdentifier sqlIdentifier = unresolvedConstructor.getSqlIdentifier();
         assert sqlIdentifier != null;
@@ -1621,6 +1652,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public PolyphenyDbException handleUnresolvedFunction( SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames ) {
         // For builtins, we can give a better error message
         final List<SqlOperator> overloads = new ArrayList<>();
@@ -1739,45 +1771,53 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public String deriveAlias( SqlNode node, int ordinal ) {
         return SqlValidatorUtil.getAlias( node, ordinal );
     }
 
 
     // implement SqlValidator
+    @Override
     public void setIdentifierExpansion( boolean expandIdentifiers ) {
         this.expandIdentifiers = expandIdentifiers;
     }
 
 
     // implement SqlValidator
+    @Override
     public void setColumnReferenceExpansion( boolean expandColumnReferences ) {
         this.expandColumnReferences = expandColumnReferences;
     }
 
 
     // implement SqlValidator
+    @Override
     public boolean getColumnReferenceExpansion() {
         return expandColumnReferences;
     }
 
 
+    @Override
     public void setDefaultNullCollation( NullCollation nullCollation ) {
         this.nullCollation = Objects.requireNonNull( nullCollation );
     }
 
 
+    @Override
     public NullCollation getDefaultNullCollation() {
         return nullCollation;
     }
 
 
     // implement SqlValidator
+    @Override
     public void setCallRewrite( boolean rewriteCalls ) {
         this.rewriteCalls = rewriteCalls;
     }
 
 
+    @Override
     public boolean shouldExpandIdentifiers() {
         return expandIdentifiers;
     }
@@ -2624,6 +2664,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public boolean isAggregate( SqlSelect select ) {
         if ( getAggregate( select ) != null ) {
             return true;
@@ -2686,7 +2727,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public boolean isAggregate( SqlNode selectNode ) {
         return aggFinder.findAgg( selectNode ) != null;
     }
@@ -2752,6 +2793,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateIdentifier( SqlIdentifier id, SqlValidatorScope scope ) {
         final SqlQualified fqId = scope.fullyQualify( id );
         if ( expandColumnReferences ) {
@@ -2763,6 +2805,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateLiteral( SqlLiteral literal ) {
         switch ( literal.getTypeName() ) {
             case DECIMAL:
@@ -2845,6 +2888,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateIntervalQualifier( SqlIntervalQualifier qualifier ) {
         assert qualifier != null;
         boolean startPrecisionOutOfRange = false;
@@ -3435,6 +3479,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public boolean validateModality( SqlSelect select, SqlModality modality, boolean fail ) {
         final SelectScope scope = getRawSelectScope( select );
 
@@ -3593,12 +3638,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateWith( SqlWith with, SqlValidatorScope scope ) {
         final SqlValidatorNamespace namespace = getNamespace( with );
         validateNamespace( namespace, unknownType );
     }
 
 
+    @Override
     public void validateWithItem( SqlWithItem withItem ) {
         if ( withItem.columnList != null ) {
             final RelDataType rowType = getValidatedNodeType( withItem.query );
@@ -3618,6 +3665,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateSequenceValue( SqlValidatorScope scope, SqlIdentifier id ) {
         // Resolve identifier as a table.
         final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
@@ -3639,6 +3687,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlValidatorScope getWithScope( SqlNode withItem ) {
         assert withItem.getKind() == SqlKind.WITH_ITEM;
         return scopes.get( withItem );
@@ -3710,6 +3759,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlNode expandOrderExpr( SqlSelect select, SqlNode orderExpr ) {
         final SqlNode newSqlNode = new OrderExpressionExpander( select, orderExpr ).go();
         if ( newSqlNode != orderExpr ) {
@@ -4008,6 +4058,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
@@ -4154,11 +4205,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // Ensure that non-nullable fields are targeted.
         final InitializerContext rexBuilder =
                 new InitializerContext() {
+                    @Override
                     public RexBuilder getRexBuilder() {
                         return new RexBuilder( typeFactory );
                     }
 
 
+                    @Override
                     public RexNode convertExpression( SqlNode e ) {
                         throw new UnsupportedOperationException();
                     }
@@ -4311,6 +4364,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateDelete( SqlDelete call ) {
         final SqlSelect sqlSelect = call.getSourceSelect();
         validateSelect( sqlSelect, unknownType );
@@ -4323,6 +4377,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getNamespace( call );
         validateNamespace( targetNamespace, unknownType );
@@ -4355,6 +4410,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateMerge( SqlMerge call ) {
         SqlSelect sqlSelect = call.getSourceSelect();
         // REVIEW zfong 5/25/06 - Does an actual type have to be passed into validateSelect()?
@@ -4472,12 +4528,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 final RelDataType type =
                         typeFactory.leastRestrictive(
                                 new AbstractList<RelDataType>() {
+                                    @Override
                                     public RelDataType get( int row ) {
                                         SqlCall thisRow = (SqlCall) operands.get( row );
                                         return deriveType( scope, thisRow.operand( c ) );
                                     }
 
 
+                                    @Override
                                     public int size() {
                                         return rowCount;
                                     }
@@ -4491,10 +4549,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateDataType( SqlDataTypeSpec dataType ) {
     }
 
 
+    @Override
     public void validateDynamicParam( SqlDynamicParam dynamicParam ) {
     }
 
@@ -4515,6 +4575,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public PolyphenyDbContextException get() {
             return newValidationError( sqlNode, validatorException );
         }
@@ -4539,6 +4600,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public PolyphenyDbContextException newValidationError( SqlNode node, Resources.ExInst<SqlValidatorException> e ) {
         assert node != null;
         final SqlParserPos pos = node.getParserPosition();
@@ -4559,6 +4621,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlWindow resolveWindow( SqlNode windowOrRef, SqlValidatorScope scope, boolean populateBounds ) {
         SqlWindow window;
         if ( windowOrRef instanceof SqlIdentifier ) {
@@ -4611,6 +4674,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateWindow( SqlNode windowOrId, SqlValidatorScope scope, SqlCall call ) {
         // Enable nested aggregates with window aggregates (OVER operator)
         inWindow = true;
@@ -4901,6 +4965,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateAggregateParams( SqlCall aggCall, SqlNode filter, SqlNodeList orderList, SqlValidatorScope scope ) {
         // For "agg(expr)", expr cannot itself contain aggregate function invocations.  For example, "SUM(2 * MAX(x))" is illegal; when we see it, we'll report the error for the SUM (not the MAX).
         // For more than one level of nesting, the error which results depends on the traversal order for validation.
@@ -4963,6 +5028,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateCall( SqlCall call, SqlValidatorScope scope ) {
         final SqlOperator operator = call.getOperator();
         if ( (call.operandCount() == 0)
@@ -4998,6 +5064,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public SqlNode expand( SqlNode expr, SqlValidatorScope scope ) {
         final Expander expander = new Expander( this, scope );
         SqlNode newExpr = expr.accept( expander );
@@ -5018,11 +5085,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public boolean isSystemField( RelDataTypeField field ) {
         return false;
     }
 
 
+    @Override
     public List<List<String>> getFieldOrigins( SqlNode sqlQuery ) {
         if ( sqlQuery instanceof SqlExplain ) {
             return Collections.emptyList();
@@ -5072,6 +5141,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public RelDataType getParameterRowType( SqlNode sqlQuery ) {
         // NOTE: We assume that bind variables occur in depth-first tree traversal in the same order that they occurred in the SQL text.
         final List<RelDataType> types = new ArrayList<>();
@@ -5106,6 +5176,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
+    @Override
     public void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<SqlNode> operands ) {
         throw new UnsupportedOperationException();
     }
@@ -5168,6 +5239,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlInsert getNode() {
             return node;
         }
@@ -5188,6 +5260,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlUpdate getNode() {
             return node;
         }
@@ -5208,6 +5281,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlDelete getNode() {
             return node;
         }
@@ -5228,6 +5302,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlMerge getNode() {
             return node;
         }
@@ -5310,17 +5385,20 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public RelDataType visit( SqlLiteral literal ) {
             return literal.createSqlType( typeFactory );
         }
 
 
+        @Override
         public RelDataType visit( SqlCall call ) {
             final SqlOperator operator = call.getOperator();
             return operator.deriveType( SqlValidatorImpl.this, scope, call );
         }
 
 
+        @Override
         public RelDataType visit( SqlNodeList nodeList ) {
             // Operand is of a type that we can't derive a type for. If the operand is of a peculiar type, such as a SqlNodeList, then you should override the operator's validateCall() method so that it
             // doesn't try to validate that operand as an expression.
@@ -5328,6 +5406,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public RelDataType visit( SqlIdentifier id ) {
             // First check for builtin functions which don't have parentheses, like "LOCALTIME".
             SqlCall call = SqlUtil.makeCall( opTab, id );
@@ -5397,6 +5476,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public RelDataType visit( SqlDataTypeSpec dataType ) {
             // Q. How can a data type have a type?
             // A. When it appears in an expression. (Say as the 2nd arg to the CAST operator.)
@@ -5405,11 +5485,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public RelDataType visit( SqlDynamicParam param ) {
             return unknownType;
         }
 
 
+        @Override
         public RelDataType visit( SqlIntervalQualifier intervalQualifier ) {
             return typeFactory.createSqlIntervalType( intervalQualifier );
         }
@@ -5498,6 +5580,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlNode visit( SqlLiteral literal ) {
             // Ordinal markers, e.g. 'select a, b from t order by 2'.
             // Only recognize them if they are the whole expression, and if the dialect permits.
@@ -5545,6 +5628,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlNode visit( SqlIdentifier id ) {
             // Aliases, e.g. 'select a as x, b from t order by x'.
             if ( id.isSimple() && getConformance().isSortByAlias() ) {
@@ -5563,6 +5647,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         protected SqlNode visitScoped( SqlCall call ) {
             // Don't attempt to expand sub-queries. We haven't implemented these yet.
             if ( call instanceof SqlSelect ) {
@@ -5628,6 +5713,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
 
+        @Override
         public SqlNode visit( SqlLiteral literal ) {
             if ( havingExpr || !validator.getConformance().isGroupByOrdinal() ) {
                 return super.visit( literal );

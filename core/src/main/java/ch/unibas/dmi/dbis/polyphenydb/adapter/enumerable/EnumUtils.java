@@ -114,11 +114,13 @@ public class EnumUtils {
 
     static List<Type> fieldTypes( final JavaTypeFactory typeFactory, final List<? extends RelDataType> inputTypes ) {
         return new AbstractList<Type>() {
+            @Override
             public Type get( int index ) {
                 return EnumUtils.javaClass( typeFactory, inputTypes.get( index ) );
             }
 
 
+            @Override
             public int size() {
                 return inputTypes.size();
             }
@@ -129,6 +131,7 @@ public class EnumUtils {
     static List<RelDataType> fieldRowTypes( final RelDataType inputRowType, final List<? extends RexNode> extraInputs, final List<Integer> argList ) {
         final List<RelDataTypeField> inputFields = inputRowType.getFieldList();
         return new AbstractList<RelDataType>() {
+            @Override
             public RelDataType get( int index ) {
                 final int arg = argList.get( index );
                 return arg < inputFields.size()
@@ -137,6 +140,7 @@ public class EnumUtils {
             }
 
 
+            @Override
             public int size() {
                 return argList.size();
             }

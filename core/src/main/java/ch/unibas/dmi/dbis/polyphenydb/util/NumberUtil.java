@@ -62,8 +62,6 @@ public class NumberUtil {
     private NumberUtil() {
     }
 
-    //~ Static fields/initializers ---------------------------------------------
-
     private static final DecimalFormat FLOAT_FORMATTER;
     private static final DecimalFormat DOUBLE_FORMATTER;
     private static final BigInteger[] BIG_INT_TEN_POW;
@@ -95,15 +93,12 @@ public class NumberUtil {
         }
     }
 
-    //~ Methods ----------------------------------------------------------------
-
 
     /**
      * Creates a format. Locale-independent.
      */
     public static DecimalFormat decimalFormat( String pattern ) {
-        return new DecimalFormat( pattern,
-                DecimalFormatSymbols.getInstance( Locale.ROOT ) );
+        return new DecimalFormat( pattern, DecimalFormatSymbols.getInstance( Locale.ROOT ) );
     }
 
 
@@ -158,9 +153,7 @@ public class NumberUtil {
 
 
     /**
-     * @return whether a BigDecimal is a valid Farrago decimal. If a
-     * BigDecimal's unscaled value overflows a long, then it is not a valid
-     * Farrago decimal.
+     * @return whether a BigDecimal is a valid Farrago decimal. If a BigDecimal's unscaled value overflows a long, then it is not a valid Farrago decimal.
      */
     public static boolean isValidDecimal( BigDecimal bd ) {
         BigInteger usv = bd.unscaledValue();
@@ -224,4 +217,3 @@ public class NumberUtil {
     }
 }
 
-// End NumberUtil.java

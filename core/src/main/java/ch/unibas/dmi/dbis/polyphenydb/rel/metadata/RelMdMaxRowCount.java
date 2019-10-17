@@ -72,6 +72,7 @@ public class RelMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource( BuiltInMethod.MAX_ROW_COUNT.method, new RelMdMaxRowCount() );
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.MaxRowCount> getDef() {
         return BuiltInMetadata.MaxRowCount.DEF;
     }

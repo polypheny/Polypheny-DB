@@ -71,6 +71,7 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
     }
 
 
+    @Override
     public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
         assert allowedRules.size() >= 1;
 

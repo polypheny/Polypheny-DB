@@ -89,6 +89,7 @@ public class ProjectFilterTransposeRule extends RelOptRule {
 
 
     // implement RelOptRule
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Project origProj;
         Filter filter;

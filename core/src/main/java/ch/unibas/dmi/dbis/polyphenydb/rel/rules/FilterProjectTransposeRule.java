@@ -130,6 +130,7 @@ public class FilterProjectTransposeRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Filter filter = call.rel( 0 );
         final Project project = call.rel( 1 );

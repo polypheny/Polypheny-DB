@@ -62,6 +62,7 @@ class EnumerableCollectRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final Collect collect = (Collect) rel;
         final RelTraitSet traitSet = collect.getTraitSet().replace( EnumerableConvention.INSTANCE );

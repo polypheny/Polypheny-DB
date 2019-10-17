@@ -128,7 +128,7 @@ public class ConfigManagerTest implements ConfigListener {
         Config c = new ConfigString( "test.restart", "restart" ).setRequiresRestart( true ).addObserver( this );
         cm.registerConfig( c );
         cm.getConfig( c.getKey() ).setString( "someValue" );
-        Assert.assertEquals( true, this.wasRestarted );
+        Assert.assertTrue( this.wasRestarted );
     }
 
 
@@ -188,9 +188,9 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if it works for boolean values
         c = new ConfigBoolean( "test.junit.boolean", false );
-        Assert.assertEquals( c.getBoolean(), false );
+        Assert.assertFalse( c.getBoolean() );
         cm.registerConfig( c );
-        Assert.assertEquals( c.getBoolean(), true );
+        Assert.assertTrue( c.getBoolean() );
 
         // Check if it works for decimal values
         c = new ConfigDecimal( "test.junit.decimal", new BigDecimal( "2.22222222222" ) );
@@ -220,18 +220,21 @@ public class ConfigManagerTest implements ConfigListener {
 
     }
 
+
+    @Override
     public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
     }
 
 
+    @Override
     public void restart( Config c ) {
         System.out.println( "Config " + c.getKey() + " triggered restart;" );
         this.wasRestarted = true;
     }
 
 
-    class ConfigObserver implements ConfigListener {
+    static class ConfigObserver implements ConfigListener {
 
         private boolean wasNotified = false;
 
@@ -241,11 +244,13 @@ public class ConfigManagerTest implements ConfigListener {
         int n = 0;
 
 
+        @Override
         public void restart( Config c ) {
             this.wasNotified = true;
         }
 
 
+        @Override
         public void onConfigChange( Config c ) {
             this.wasNotified = true;
             this.n++;

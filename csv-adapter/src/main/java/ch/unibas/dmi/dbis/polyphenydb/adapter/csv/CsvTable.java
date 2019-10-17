@@ -75,6 +75,7 @@ public abstract class CsvTable extends AbstractTable {
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );

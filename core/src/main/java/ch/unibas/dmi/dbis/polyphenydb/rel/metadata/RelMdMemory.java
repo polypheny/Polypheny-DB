@@ -72,6 +72,7 @@ public class RelMdMemory implements MetadataHandler<BuiltInMetadata.Memory> {
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Memory> getDef() {
         return BuiltInMetadata.Memory.DEF;
     }

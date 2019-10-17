@@ -62,7 +62,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class MetadataFactoryImpl implements MetadataFactory {
 
-    @SuppressWarnings("unchecked")
     public static final UnboundMetadata<Metadata> DUMMY = ( rel, mq ) -> null;
 
     private final LoadingCache<Pair<Class<RelNode>, Class<Metadata>>, UnboundMetadata<Metadata>> cache;
@@ -82,6 +81,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
     }
 
 
+    @Override
     public <M extends Metadata> M query( RelNode rel, RelMetadataQuery mq, Class<M> metadataClazz ) {
         try {
             //noinspection unchecked

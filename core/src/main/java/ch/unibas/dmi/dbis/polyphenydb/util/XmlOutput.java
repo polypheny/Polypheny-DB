@@ -57,15 +57,13 @@ import java.util.Deque;
 /**
  * Streaming XML output.
  *
- * <p>Use this class to write XML to any streaming source.
- * While the class itself is unstructured and doesn't enforce any DTD
- * specification, use of the class
- * does ensure that the output is syntactically valid XML.</p>
+ * Use this class to write XML to any streaming source.
+ * While the class itself is unstructured and doesn't enforce any DTD specification, use of the class
+ * does ensure that the output is syntactically valid XML.
  */
 public class XmlOutput {
 
-    // This Writer is the underlying output stream to which all XML is
-    // written.
+    // This Writer is the underlying output stream to which all XML is written.
     private final PrintWriter out;
 
     // The tagStack is maintained to check that tags are balanced.
@@ -74,13 +72,11 @@ public class XmlOutput {
     // The class maintains an indentation level to improve output quality.
     private int indent;
 
-    // The class also maintains the total number of tags written.  This
-    // is used to monitor changes to the output
+    // The class also maintains the total number of tags written.  This is used to monitor changes to the output
     private int tagsWritten;
 
     // This flag is set to true if the output should be compacted.
-    // Compacted output is free of extraneous whitespace and is designed
-    // for easier transport.
+    // Compacted output is free of extraneous whitespace and is designed for easier transport.
     private boolean compact;
 
     /**
@@ -94,10 +90,8 @@ public class XmlOutput {
     private boolean glob;
 
     /**
-     * Whether we have started but not finished a start tag. This only happens
-     * if <code>glob</code> is true. The start tag is automatically closed
-     * when we start a child node. If there are no child nodes, {@link #endTag}
-     * creates an empty tag.
+     * Whether we have started but not finished a start tag. This only happens if <code>glob</code> is true. The start tag is automatically closed
+     * when we start a child node. If there are no child nodes, {@link #endTag} creates an empty tag.
      */
     private boolean inTag;
 
@@ -150,9 +144,7 @@ public class XmlOutput {
 
 
     /**
-     * Sets or unsets the compact mode.  Compact mode causes the generated
-     * XML to be free of extraneous whitespace and other unnecessary
-     * characters.
+     * Sets or unsets the compact mode.  Compact mode causes the generated XML to be free of extraneous whitespace and other unnecessary characters.
      *
      * @param compact true to turn on compact mode, or false to turn it off.
      */
@@ -167,11 +159,8 @@ public class XmlOutput {
 
 
     /**
-     * Sets the string to print for each level of indentation. The default is a
-     * tab. The value must not be <code>null</code>. Set this to the empty
-     * string to achieve no indentation (note that
-     * <code>{@link #setCompact}(true)</code> removes indentation <em>and</em>
-     * newlines).
+     * Sets the string to print for each level of indentation. The default is a tab. The value must not be <code>null</code>. Set this to the empty
+     * string to achieve no indentation (note that <code>{@link #setCompact}(true)</code> removes indentation <em>and</em> newlines).
      */
     public void setIndentString( String indentString ) {
         this.indentString = indentString;
@@ -187,8 +176,7 @@ public class XmlOutput {
 
 
     /**
-     * Sets whether to always quote cdata segments (even if they don't contain
-     * special characters).
+     * Sets whether to always quote cdata segments (even if they don't contain special characters).
      */
     public void setAlwaysQuoteCData( boolean alwaysQuoteCData ) {
         this.alwaysQuoteCData = alwaysQuoteCData;
@@ -209,8 +197,7 @@ public class XmlOutput {
 
 
     /**
-     * Sends a string directly to the output stream, without escaping any
-     * characters.  Use with caution!
+     * Sends a string directly to the output stream, without escaping any characters.  Use with caution!
      */
     public void print( String s ) {
         out.print( s );
@@ -218,13 +205,10 @@ public class XmlOutput {
 
 
     /**
-     * Starts writing a new tag to the stream.  The tag's name must be given and
-     * its attributes should be specified by a fully constructed AttrVector
-     * object.
+     * Starts writing a new tag to the stream. The tag's name must be given and its attributes should be specified by a fully constructed AttrVector object.
      *
      * @param tagName the name of the tag to write.
-     * @param attributes an XMLAttrVector containing the attributes to include
-     * in the tag.
+     * @param attributes an XMLAttrVector containing the attributes to include in the tag.
      */
     public void beginTag( String tagName, XMLAttrVector attributes ) {
         beginBeginTag( tagName );
@@ -291,9 +275,7 @@ public class XmlOutput {
 
 
     /**
-     * Completes a tag.  This outputs the end tag corresponding to the
-     * last exposed beginTag.  The tag name must match the name of the
-     * corresponding beginTag.
+     * Completes a tag.  This outputs the end tag corresponding to the last exposed beginTag. The tag name must match the name of the corresponding beginTag.
      *
      * @param tagName the name of the end tag to write.
      */
@@ -327,12 +309,10 @@ public class XmlOutput {
 
 
     /**
-     * Writes an empty tag to the stream.  An empty tag is one with no
-     * tags inside it, although it may still have attributes.
+     * Writes an empty tag to the stream.  An empty tag is one with no tags inside it, although it may still have attributes.
      *
      * @param tagName the name of the empty tag.
-     * @param attributes an XMLAttrVector containing the attributes to
-     * include in the tag.
+     * @param attributes an XMLAttrVector containing the attributes to include in the tag.
      */
     public void emptyTag( String tagName, XMLAttrVector attributes ) {
         if ( inTag ) {
@@ -364,8 +344,8 @@ public class XmlOutput {
 
     /**
      * Writes a CDATA section.  Such sections always appear on their own line.
-     * The nature in which the CDATA section is written depends on the actual
-     * string content with respect to these special characters/sequences:
+     * The nature in which the CDATA section is written depends on the actual string content with respect to these special characters/sequences:
+     *
      * <ul>
      * <li><code>&amp;</code>
      * <li><code>&quot;</code>
@@ -373,17 +353,16 @@ public class XmlOutput {
      * <li><code>&lt;</code>
      * <li><code>&gt;</code>
      * </ul>
+
      * Additionally, the sequence <code>]]&gt;</code> is special.
      * <ul>
      * <li>Content containing no special characters will be left as-is.
-     * <li>Content containing one or more special characters but not the
-     * sequence <code>]]&gt;</code> will be enclosed in a CDATA section.
+     * <li>Content containing one or more special characters but not the sequence <code>]]&gt;</code> will be enclosed in a CDATA section.
      * <li>Content containing special characters AND at least one
-     * <code>]]&gt;</code> sequence will be left as-is but have all of its
-     * special characters encoded as entities.
+     * <code>]]&gt;</code> sequence will be left as-is but have all of its special characters encoded as entities.
      * </ul>
-     * These special treatment rules are required to allow cdata sections
-     * to contain XML strings which may themselves contain cdata sections.
+     *
+     * These special treatment rules are required to allow cdata sections to contain XML strings which may themselves contain cdata sections.
      * Traditional CDATA sections <b>do not nest</b>.
      */
     public void cdata( String data ) {
@@ -395,9 +374,7 @@ public class XmlOutput {
      * Writes a CDATA section (as {@link #cdata(String)}).
      *
      * @param data string to write
-     * @param quote if true, quote in a <code>&lt;![CDATA[</code>
-     * ... <code>]]&gt;</code> regardless of the content of
-     * <code>data</code>; if false, quote only if the content needs it
+     * @param quote if true, quote in a <code>&lt;![CDATA[</code> ... <code>]]&gt;</code> regardless of the content of <code>data</code>; if false, quote only if the content needs it
      */
     public void cdata( String data, boolean quote ) {
         if ( inTag ) {
@@ -455,18 +432,14 @@ public class XmlOutput {
      * Writes content.
      */
     public void content( String content ) {
-        // This method previously used a LineNumberReader, but that class is
-        // susceptible to a form of DoS attack. It uses lots of memory and CPU if a
+        // This method previously used a LineNumberReader, but that class is susceptible to a form of DoS attack. It uses lots of memory and CPU if a
         // malicious client gives it input with very long lines.
         if ( content != null ) {
             indent++;
             final char[] chars = content.toCharArray();
             int prev = 0;
             for ( int i = 0; i < chars.length; i++ ) {
-                if ( chars[i] == '\n'
-                        || chars[i] == '\r'
-                        && i + 1 < chars.length
-                        && chars[i + 1] == '\n' ) {
+                if ( chars[i] == '\n' || chars[i] == '\r' && i + 1 < chars.length && chars[i + 1] == '\n' ) {
                     displayIndent( out, indent );
                     out.println( content.substring( prev, i ) );
                     if ( chars[i] == '\r' ) {
@@ -532,8 +505,7 @@ public class XmlOutput {
 
     /**
      * Encode a String for XML output, displaying it to a PrintWriter.
-     * The String to be encoded is displayed, except that
-     * special characters are converted into entities.
+     * The String to be encoded is displayed, except that special characters are converted into entities.
      *
      * @param input a String to convert.
      * @param out a PrintWriter to which to write the results.
@@ -567,12 +539,9 @@ public class XmlOutput {
     /**
      * Returns whether a string contains any XML special characters.
      *
-     * <p>If this function returns true, the string will need to be
-     * encoded either using the stringEncodeXML function above or using a
-     * CDATA section.  Note that MSXML has a nasty bug whereby whitespace
-     * characters outside of a CDATA section are lost when parsing.  To
-     * avoid hitting this bug, this method treats many whitespace characters
-     * as "special".</p>
+     * If this function returns true, the string will need to be encoded either using the stringEncodeXML function above or using a
+     * CDATA section.  Note that MSXML has a nasty bug whereby whitespace characters outside of a CDATA section are lost when parsing.
+     * To avoid hitting this bug, this method treats many whitespace characters as "special".
      *
      * @param input the String to scan for XML special characters.
      * @return true if the String contains any such characters.
@@ -597,14 +566,10 @@ public class XmlOutput {
 
 
     /**
-     * Utility for replacing special characters
-     * with escape sequences in strings.
+     * Utility for replacing special characters with escape sequences in strings.
      *
-     * <p>A StringEscaper starts out as an identity transform in the "mutable"
-     * state.  Call {@link #defineEscape} as many times as necessary to set up
-     * mappings, and then call {@link #makeImmutable} before
-     * actually applying the defined transform.  Or,
-     * use one of the global mappings pre-defined here.</p>
+     * A StringEscaper starts out as an identity transform in the "mutable" state. Call {@link #defineEscape} as many times as necessary to set up
+     * mappings, and then call {@link #makeImmutable} before actually applying the defined transform. Or, use one of the global mappings pre-defined here.
      */
     static class StringEscaper implements Cloneable {
 
@@ -641,12 +606,10 @@ public class XmlOutput {
 
 
         /**
-         * Call this before attempting to escape strings; after this,
-         * defineEscape may not be called again.
+         * Call this before attempting to escape strings; after this, defineEscape may not be called again.
          */
         public void makeImmutable() {
-            translationTable =
-                    translationVector.toArray( new String[0] );
+            translationTable = translationVector.toArray( new String[0] );
             translationVector = null;
         }
 
@@ -689,6 +652,7 @@ public class XmlOutput {
         }
 
 
+        @Override
         protected StringEscaper clone() {
             StringEscaper clone = new StringEscaper();
             if ( translationVector != null ) {
@@ -702,8 +666,7 @@ public class XmlOutput {
 
 
         /**
-         * Create a mutable escaper from an existing escaper, which may
-         * already be immutable.
+         * Create a mutable escaper from an existing escaper, which may already be immutable.
          */
         public StringEscaper getMutableClone() {
             StringEscaper clone = clone();
@@ -762,4 +725,3 @@ public class XmlOutput {
     }
 }
 
-// End XmlOutput.java

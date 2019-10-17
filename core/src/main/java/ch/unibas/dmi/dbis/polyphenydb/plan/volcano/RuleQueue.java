@@ -239,6 +239,7 @@ class RuleQueue {
         }
 
         boostRemovals.sort( new Comparator<RelSubset>() {
+            @Override
             public int compare( RelSubset o1, RelSubset o2 ) {
                 int o1children = countChildren( o1 );
                 int o2children = countChildren( o2 );
@@ -584,6 +585,7 @@ class RuleQueue {
      */
     private class RelImportanceComparator implements Comparator<RelSubset> {
 
+        @Override
         public int compare( RelSubset rel1, RelSubset rel2 ) {
             double imp1 = getImportance( rel1 );
             double imp2 = getImportance( rel2 );
@@ -602,6 +604,7 @@ class RuleQueue {
      */
     private static class RuleMatchImportanceComparator implements Comparator<VolcanoRuleMatch> {
 
+        @Override
         public int compare( VolcanoRuleMatch match1, VolcanoRuleMatch match2 ) {
             double imp1 = match1.getImportance();
             double imp2 = match2.getImportance();

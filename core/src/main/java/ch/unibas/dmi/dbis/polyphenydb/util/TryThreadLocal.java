@@ -71,9 +71,7 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
 
 
     // It is important that this method is final.
-    // This ensures that the sub-class does not choose a different initial
-    // value. Then the close logic can detect whether the previous value was
-    // equal to the initial value.
+    // This ensures that the sub-class does not choose a different initial value. Then the close logic can detect whether the previous value was equal to the initial value.
     @Override
     protected final T initialValue() {
         return initialValue;
@@ -82,8 +80,7 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
 
     /**
      * Assigns the value as {@code value} for the current thread.
-     * Returns a {@link Memo} which, when closed, will assign the value
-     * back to the previous value.
+     * Returns a {@link Memo} which, when closed, will assign the value back to the previous value.
      */
     public Memo push( T value ) {
         final T previous = get();
@@ -111,4 +108,3 @@ public class TryThreadLocal<T> extends ThreadLocal<T> {
     }
 }
 
-// End TryThreadLocal.java

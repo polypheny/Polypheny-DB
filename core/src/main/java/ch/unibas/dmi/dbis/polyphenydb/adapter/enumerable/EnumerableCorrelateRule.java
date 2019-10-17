@@ -68,6 +68,7 @@ public class EnumerableCorrelateRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalCorrelate c = (LogicalCorrelate) rel;
         return EnumerableCorrelate.create(

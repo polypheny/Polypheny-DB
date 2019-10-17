@@ -118,9 +118,10 @@ public class RexExecutorTest {
                 .build();
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
+                    @Override
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
-                        DataContext dataContext = Schemas.createDataContext( null, rootSchema );
+                        DataContext dataContext = Schemas.createDataContext( rootSchema );
                         final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
                         action.check( rexBuilder, executor );
                         return null;
@@ -297,7 +298,7 @@ public class RexExecutorTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1009">[POLYPHENYDB-1009] SelfPopulatingList is not thread-safe</a>.
+     * Test case for "SelfPopulatingList is not thread-safe".
      */
     @Test
     public void testSelfPopulatingList() {
@@ -307,15 +308,13 @@ public class RexExecutorTest {
         final Random random = new Random();
         for ( int i = 0; i < 10; i++ ) {
             threads.add(
-                    new Thread() {
-                        public void run() {
-                            for ( int j = 0; j < 1000; j++ ) {
-                                // Random numbers between 0 and ~1m, smaller values more common
-                                final int index = random.nextInt( 1234567 ) >> random.nextInt( 16 ) >> random.nextInt( 16 );
-                                list.get( index );
-                            }
+                    new Thread( () -> {
+                        for ( int j = 0; j < 1000; j++ ) {
+                            // Random numbers between 0 and ~1m, smaller values more common
+                            final int index = random.nextInt( 1234567 ) >> random.nextInt( 16 ) >> random.nextInt( 16 );
+                            list.get( index );
                         }
-                    } );
+                    } ) );
         }
         for ( Thread runnable : threads ) {
             runnable.start();
@@ -365,21 +364,25 @@ public class RexExecutorTest {
         }
 
 
+        @Override
         public SchemaPlus getRootSchema() {
             throw new RuntimeException( "Unsupported" );
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             throw new RuntimeException( "Unsupported" );
         }
 
 
+        @Override
         public QueryProvider getQueryProvider() {
             throw new RuntimeException( "Unsupported" );
         }
 
 
+        @Override
         public Object get( String name ) {
             if ( name.equals( "inputRecord" ) ) {
                 return values;

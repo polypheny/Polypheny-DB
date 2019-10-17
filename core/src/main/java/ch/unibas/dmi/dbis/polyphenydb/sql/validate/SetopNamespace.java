@@ -74,6 +74,7 @@ public class SetopNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return call;
     }
@@ -114,6 +115,7 @@ public class SetopNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public RelDataType validateImpl( RelDataType targetRowType ) {
         switch ( call.getKind() ) {
             case UNION:

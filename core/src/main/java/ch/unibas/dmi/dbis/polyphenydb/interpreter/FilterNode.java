@@ -65,6 +65,7 @@ public class FilterNode extends AbstractSingleNode<Filter> {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         Row row;
         while ( (row = source.receive()) != null ) {

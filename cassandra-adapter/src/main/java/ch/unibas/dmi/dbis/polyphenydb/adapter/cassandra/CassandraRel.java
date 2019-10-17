@@ -46,11 +46,8 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

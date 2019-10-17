@@ -77,6 +77,7 @@ public class CsvStreamScannableTable extends CsvScannableTable implements Stream
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
@@ -95,10 +96,12 @@ public class CsvStreamScannableTable extends CsvScannableTable implements Stream
     }
 
 
+    @Override
     public Enumerable<Object[]> scan( DataContext root ) {
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object[]>() {
+            @Override
             public Enumerator<Object[]> enumerator() {
                 return new CsvEnumerator<>( source, cancelFlag, true, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields, true ) );
             }

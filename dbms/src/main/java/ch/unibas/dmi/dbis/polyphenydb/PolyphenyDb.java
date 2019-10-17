@@ -41,22 +41,23 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
+@Slf4j
 public class PolyphenyDb {
 
     public static final Logger GLOBAL_LOGGER = LoggerFactory.getLogger( "Polypheny-DB" );
 
-    private static final Logger log = LoggerFactory.getLogger( PolyphenyDb.class );
-
     private PUID shutdownHookId;
+
+    private final TransactionManager transactionManager = new TransactionManagerImpl();
 
 
     @SuppressWarnings("unchecked")
-    public static void main( final String args[] ) {
+    public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
@@ -150,7 +151,6 @@ public class PolyphenyDb {
             }
         } );*/
 
-        final TransactionManager transactionManager = new TransactionManagerImpl();
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
@@ -163,8 +163,9 @@ public class PolyphenyDb {
 
         try {
             jdbcInterfaceThread.join();
+            webUiInterfaceThread.join();
         } catch ( InterruptedException e ) {
-            GLOBAL_LOGGER.warn( "Interrupted on ServerSocketDispatcher.join()", e );
+            GLOBAL_LOGGER.warn( "Interrupted on join()", e );
         }
 
         try {

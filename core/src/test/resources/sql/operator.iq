@@ -18,7 +18,7 @@
 !use scott
 !set outputformat mysql
 
-# [CALCITE-1095] NOT precedence
+# Test case for "NOT precedence"
 select * from "scott".emp where not sal > 1300;
 +-------+--------+----------+------+------------+---------+---------+--------+
 | EMPNO | ENAME  | JOB      | MGR  | HIREDATE   | SAL     | COMM    | DEPTNO |

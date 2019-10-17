@@ -94,6 +94,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     /**
      * Registers the identifier and its scope into a map keyed by ParserPosition.
      */
+    @Override
     public void validateIdentifier( SqlIdentifier id, SqlValidatorScope scope ) {
         registerId( id, scope );
         try {
@@ -116,12 +117,14 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     }
 
 
+    @Override
     public SqlNode expand( SqlNode expr, SqlValidatorScope scope ) {
         // Disable expansion. It doesn't help us come up with better hints.
         return expr;
     }
 
 
+    @Override
     public SqlNode expandOrderExpr( SqlSelect select, SqlNode orderExpr ) {
         // Disable expansion. It doesn't help us come up with better hints.
         return orderExpr;
@@ -131,6 +134,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     /**
      * Calls the parent class method and mask Farrago exception thrown.
      */
+    @Override
     public RelDataType deriveType( SqlValidatorScope scope, SqlNode operand ) {
         // REVIEW Do not mask Error (indicates a serious system problem) or UnsupportedOperationException (a bug). I have to mask UnsupportedOperationException because SqlValidatorImpl.getValidatedNodeType
         // throws it for an unrecognized identifier node I have to mask Error as well because AbstractNamespace.getRowType  called in super.deriveType can do a Util.permAssert that throws Error
@@ -143,6 +147,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
 
     // we do not need to validate from clause for traversing the parse tree because there is no SqlIdentifier in from clause that need to be registered into {@link #idPositions} map
+    @Override
     protected void validateFrom( SqlNode node, RelDataType targetRowType, SqlValidatorScope scope ) {
         try {
             super.validateFrom( node, targetRowType, scope );
@@ -155,6 +160,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     /**
      * Calls the parent class method and masks Farrago exception thrown.
      */
+    @Override
     protected void validateWhereClause( SqlSelect select ) {
         try {
             super.validateWhereClause( select );
@@ -167,6 +173,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     /**
      * Calls the parent class method and masks Farrago exception thrown.
      */
+    @Override
     protected void validateHavingClause( SqlSelect select ) {
         try {
             super.validateHavingClause( select );
@@ -176,6 +183,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     }
 
 
+    @Override
     protected void validateOver( SqlCall call, SqlValidatorScope scope ) {
         try {
             final OverScope overScope = (OverScope) getOverScope( call );
@@ -193,6 +201,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     }
 
 
+    @Override
     protected void validateNamespace( final SqlValidatorNamespace namespace, RelDataType targetRowType ) {
         // Only attempt to validate each namespace once. Otherwise if validation fails, we may end up cycling.
         if ( activeNamespaces.add( namespace ) ) {
@@ -209,6 +218,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     }
 
 
+    @Override
     protected boolean shouldAllowOverRelation() {
         return true; // no reason not to be lenient
     }

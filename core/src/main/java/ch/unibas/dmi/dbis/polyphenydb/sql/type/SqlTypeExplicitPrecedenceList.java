@@ -147,6 +147,7 @@ public class SqlTypeExplicitPrecedenceList implements RelDataTypePrecedenceList 
 
 
     // implement RelDataTypePrecedenceList
+    @Override
     public boolean containsType( RelDataType type ) {
         SqlTypeName typeName = type.getSqlTypeName();
         return typeName != null && typeNames.contains( typeName );
@@ -154,6 +155,7 @@ public class SqlTypeExplicitPrecedenceList implements RelDataTypePrecedenceList 
 
 
     // implement RelDataTypePrecedenceList
+    @Override
     public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
         assert containsType( type1 ) : type1;
         assert containsType( type2 ) : type2;

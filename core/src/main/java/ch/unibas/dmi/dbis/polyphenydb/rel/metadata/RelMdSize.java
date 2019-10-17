@@ -104,6 +104,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.Size> getDef() {
         return BuiltInMetadata.Size.DEF;
     }

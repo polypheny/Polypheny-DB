@@ -46,11 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.util;
 
 
 /**
- * Exception intended to be used for control flow, as opposed to the usual
- * use of exceptions which is to signal an error condition.
+ * Exception intended to be used for control flow, as opposed to the usual use of exceptions which is to signal an error condition.
  *
- * <p>{@code ControlFlowException} does not populate its own stack trace, which
- * makes instantiating one of these (or a sub-class) more efficient.</p>
+ * {@code ControlFlowException} does not populate its own stack trace, which makes instantiating one of these (or a sub-class) more efficient.
  */
 public class ControlFlowException extends RuntimeException {
 
@@ -60,4 +58,3 @@ public class ControlFlowException extends RuntimeException {
     }
 }
 
-// End ControlFlowException.java

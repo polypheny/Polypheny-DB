@@ -249,6 +249,7 @@ public class RelBuilder {
         final RelOptSchema[] relOptSchemas = { null };
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
+                    @Override
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         clusters[0] = cluster;
                         relOptSchemas[0] = relOptSchema;
@@ -2053,11 +2054,13 @@ public class RelBuilder {
                             : "expr$" + fieldName.i;
             final RelDataType type = typeFactory.leastRestrictive(
                     new AbstractList<RelDataType>() {
+                        @Override
                         public RelDataType get( int index ) {
                             return tupleList.get( index ).get( fieldName.i ).getType();
                         }
 
 
+                        @Override
                         public int size() {
                             return rowCount;
                         }
@@ -2538,6 +2541,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public GroupKey alias( String alias ) {
             return Objects.equals( this.alias, alias )
                     ? this
@@ -2579,6 +2583,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall sort( Iterable<RexNode> orderKeys ) {
             final ImmutableList<RexNode> orderKeyList = ImmutableList.copyOf( orderKeys );
             return orderKeyList.equals( this.orderKeys )
@@ -2587,11 +2592,13 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall sort( RexNode... orderKeys ) {
             return sort( ImmutableList.copyOf( orderKeys ) );
         }
 
 
+        @Override
         public AggCall approximate( boolean approximate ) {
             return approximate == this.approximate
                     ? this
@@ -2599,6 +2606,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall filter( RexNode condition ) {
             return Objects.equals( condition, this.filter )
                     ? this
@@ -2606,6 +2614,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall as( String alias ) {
             return Objects.equals( alias, this.alias )
                     ? this
@@ -2613,6 +2622,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall distinct( boolean distinct ) {
             return distinct == this.distinct
                     ? this
@@ -2620,6 +2630,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall distinct() {
             return distinct( true );
         }
@@ -2639,36 +2650,43 @@ public class RelBuilder {
         }
 
 
+        @Override
         public AggCall sort( Iterable<RexNode> orderKeys ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall sort( RexNode... orderKeys ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall approximate( boolean approximate ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall filter( RexNode condition ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall as( String alias ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall distinct( boolean distinct ) {
             throw new UnsupportedOperationException();
         }
 
 
+        @Override
         public AggCall distinct() {
             throw new UnsupportedOperationException();
         }
@@ -2800,6 +2818,7 @@ public class RelBuilder {
         }
 
 
+        @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
             final RelDataType leftRowType = left.getRowType();
             final RexBuilder rexBuilder = getRexBuilder();

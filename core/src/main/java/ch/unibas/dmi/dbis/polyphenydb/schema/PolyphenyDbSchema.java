@@ -27,11 +27,8 @@ package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.MaterializedViewTable.MaterializedViewTableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.StarTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
@@ -71,8 +68,6 @@ public interface PolyphenyDbSchema {
      */
     PolyphenyDbSchema add( String name, Schema schema );
 
-    TableEntry getTableBySql( String sql );
-
     TableEntry getTable( String tableName, boolean caseSensitive );
 
     String getName();
@@ -89,8 +84,6 @@ public interface PolyphenyDbSchema {
 
     NavigableMap<String, PolyphenyDbSchema> getSubSchemaMap();
 
-    NavigableMap<String, LatticeEntry> getLatticeMap();
-
     NavigableSet<String> getTableNames();
 
     NavigableSet<String> getTypeNames();
@@ -104,8 +97,6 @@ public interface PolyphenyDbSchema {
     NavigableMap<String, Table> getTablesBasedOnNullaryFunctions();
 
     TableEntry getTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
-
-    PolyphenyDbSchema createSnapshot( SchemaVersion version );
 
     @Experimental
     boolean removeSubSchema( String name );
@@ -194,26 +185,6 @@ public interface PolyphenyDbSchema {
 
         public abstract Function getFunction();
 
-        /**
-         * Whether this represents a materialized view. (At a given point in time, it may or may not be materialized as a table.)
-         */
-        public abstract boolean isMaterialization();
-    }
-
-
-    /**
-     * Membership of a lattice in a schema.
-     */
-    abstract class LatticeEntry extends Entry {
-
-        public LatticeEntry( PolyphenyDbSchema schema, String name ) {
-            super( schema, name );
-        }
-
-
-        public abstract Lattice getLattice();
-
-        public abstract TableEntry getStarTable();
     }
 
 
@@ -234,6 +205,7 @@ public interface PolyphenyDbSchema {
         }
 
 
+        @Override
         public Table getTable() {
             return table;
         }
@@ -257,6 +229,7 @@ public interface PolyphenyDbSchema {
         }
 
 
+        @Override
         public RelProtoDataType getType() {
             return protoDataType;
         }
@@ -280,47 +253,11 @@ public interface PolyphenyDbSchema {
         }
 
 
+        @Override
         public Function getFunction() {
             return function;
         }
 
-
-        public boolean isMaterialization() {
-            return function instanceof MaterializedViewTableMacro;
-        }
-    }
-
-
-    /**
-     * Implementation of {@link LatticeEntry} where all properties are held in fields.
-     */
-    class LatticeEntryImpl extends LatticeEntry {
-
-        private final Lattice lattice;
-        private final PolyphenyDbSchema.TableEntry starTableEntry;
-
-
-        /**
-         * Creates a LatticeEntryImpl.
-         */
-        public LatticeEntryImpl( PolyphenyDbSchema schema, String name, Lattice lattice ) {
-            super( schema, name );
-            this.lattice = lattice;
-
-            // Star table has same name as lattice and is in same schema.
-            final StarTable starTable = lattice.createStarTable();
-            starTableEntry = schema.add( name, starTable );
-        }
-
-
-        public Lattice getLattice() {
-            return lattice;
-        }
-
-
-        public TableEntry getStarTable() {
-            return starTableEntry;
-        }
     }
 
 

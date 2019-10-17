@@ -140,6 +140,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         // Note that empty set equals empty set, so relational expressions with zero inputs do not generally need to implement their own copy method.
         if ( getInputs().equals( inputs ) && traitSet == getTraitSet() ) {
@@ -155,68 +156,77 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public List<RexNode> getChildExps() {
         return ImmutableList.of();
     }
 
 
+    @Override
     public final RelOptCluster getCluster() {
         return cluster;
     }
 
 
+    @Override
     public final Convention getConvention() {
         return traitSet.getTrait( ConventionTraitDef.INSTANCE );
     }
 
 
+    @Override
     public RelTraitSet getTraitSet() {
         return traitSet;
     }
 
 
+    @Override
     public String getCorrelVariable() {
         return null;
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public boolean isDistinct() {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         return Boolean.TRUE.equals( mq.areRowsUnique( this ) );
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public boolean isKey( ImmutableBitSet columns ) {
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         return Boolean.TRUE.equals( mq.areColumnsUnique( this, columns ) );
     }
 
 
+    @Override
     public int getId() {
         return id;
     }
 
 
+    @Override
     public RelNode getInput( int i ) {
         List<RelNode> inputs = getInputs();
         return inputs.get( i );
     }
 
 
+    @Override
     @SuppressWarnings("deprecation")
     public final RelOptQuery getQuery() {
         return getCluster().getQuery();
     }
 
 
+    @Override
     public void register( RelOptPlanner planner ) {
         Util.discard( planner );
     }
 
 
+    @Override
     public final String getRelTypeName() {
         String className = getClass().getName();
         int i = className.lastIndexOf( "$" );
@@ -231,12 +241,13 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public boolean isValid( Litmus litmus, Context context ) {
         return litmus.succeed();
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public boolean isValid( boolean fail ) {
         return isValid( Litmus.THROW, null );
     }
@@ -245,12 +256,14 @@ public abstract class AbstractRelNode implements RelNode {
     /**
      * @deprecated Use {@link RelMetadataQuery#collations(RelNode)}
      */
+    @Override
     @Deprecated // to be removed before 2.0
     public List<RelCollation> getCollationList() {
         return ImmutableList.of();
     }
 
 
+    @Override
     public final RelDataType getRowType() {
         if ( rowType == null ) {
             rowType = deriveRowType();
@@ -266,47 +279,54 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public RelDataType getExpectedInputRowType( int ordinalInParent ) {
         return getRowType();
     }
 
 
+    @Override
     public List<RelNode> getInputs() {
         return Collections.emptyList();
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public final double getRows() {
         return estimateRowCount( RelMetadataQuery.instance() );
     }
 
 
+    @Override
     public double estimateRowCount( RelMetadataQuery mq ) {
         return 1.0;
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public final Set<String> getVariablesStopped() {
         return CorrelationId.names( getVariablesSet() );
     }
 
 
+    @Override
     public Set<CorrelationId> getVariablesSet() {
         return ImmutableSet.of();
     }
 
 
+    @Override
     public void collectVariablesUsed( Set<CorrelationId> variableSet ) {
         // for default case, nothing to do
     }
 
 
+    @Override
     public void collectVariablesSet( Set<CorrelationId> variableSet ) {
     }
 
 
+    @Override
     public void childrenAccept( RelVisitor visitor ) {
         List<RelNode> inputs = getInputs();
         for ( int i = 0; i < inputs.size(); i++ ) {
@@ -315,23 +335,26 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public RelNode accept( RelShuttle shuttle ) {
         // Call fall-back method. Specific logical types (such as LogicalProject and LogicalJoin) have their own RelShuttle.visit methods.
         return shuttle.visit( this );
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         return this;
     }
 
 
-    @SuppressWarnings("deprecation")
+    @Override
     public final RelOptCost computeSelfCost( RelOptPlanner planner ) {
         return computeSelfCost( planner, RelMetadataQuery.instance() );
     }
 
 
+    @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
         double rowCount = mq.getRowCount( this );
@@ -340,6 +363,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public final <M extends Metadata> M metadata( Class<M> metadataClass, RelMetadataQuery mq ) {
         final MetadataFactory factory = cluster.getMetadataFactory();
         final M metadata = factory.query( this, mq, metadataClass );
@@ -350,6 +374,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public void explain( RelWriter pw ) {
         explainTerms( pw ).done( this );
     }
@@ -368,6 +393,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public RelNode onRegister( RelOptPlanner planner ) {
         List<RelNode> oldInputs = getInputs();
         List<RelNode> inputs = new ArrayList<>( oldInputs.size() );
@@ -394,6 +420,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public String recomputeDigest() {
         String tempDigest = computeDigest();
         assert tempDigest != null : "computeDigest() should be non-null";
@@ -404,6 +431,7 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public void replaceInput( int ordinalInParent, RelNode p ) {
         throw new UnsupportedOperationException( "replaceInput called on " + this );
     }
@@ -414,16 +442,19 @@ public abstract class AbstractRelNode implements RelNode {
     }
 
 
+    @Override
     public final String getDescription() {
         return desc;
     }
 
 
+    @Override
     public final String getDigest() {
         return digest;
     }
 
 
+    @Override
     public RelOptTable getTable() {
         return null;
     }
@@ -438,6 +469,7 @@ public abstract class AbstractRelNode implements RelNode {
         StringWriter sw = new StringWriter();
         RelWriter pw =
                 new RelWriterImpl( new PrintWriter( sw ), SqlExplainLevel.DIGEST_ATTRIBUTES, false ) {
+                    @Override
                     protected void explain_( RelNode rel, List<Pair<String, Object>> values ) {
                         pw.write( getRelTypeName() );
 

@@ -82,6 +82,7 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction {
      *
      * @return function that implements given operator call
      */
+    @Override
     public TableFunction getFunction() {
         return (TableFunction) super.getFunction();
     }

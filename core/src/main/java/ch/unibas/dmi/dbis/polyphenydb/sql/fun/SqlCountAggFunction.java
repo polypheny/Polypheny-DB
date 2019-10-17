@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
@@ -60,8 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**
@@ -98,21 +95,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
     }
 
 
-    @SuppressWarnings("deprecation")
-    public List<RelDataType> getParameterTypes( RelDataTypeFactory typeFactory ) {
-        return ImmutableList.of(
-                typeFactory.createTypeWithNullability(
-                        typeFactory.createSqlType( SqlTypeName.ANY ),
-                        true ) );
-    }
-
-
-    @SuppressWarnings("deprecation")
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createSqlType( SqlTypeName.BIGINT );
-    }
-
-
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {

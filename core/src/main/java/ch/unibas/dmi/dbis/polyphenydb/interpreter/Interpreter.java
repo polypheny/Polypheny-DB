@@ -135,6 +135,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     }
 
 
+    @Override
     public Enumerator<Object[]> enumerator() {
         start();
         final NodeInfo nodeInfo = nodes.get( rootRel );
@@ -147,6 +148,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
         return new TransformedEnumerator<Row, Object[]>( rows ) {
+            @Override
             protected Object[] transform( Row row ) {
                 return row.getValues();
             }
@@ -167,6 +169,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     }
 
 
+    @Override
     public void close() {
     }
 
@@ -176,6 +179,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
      */
     private class FooCompiler implements ScalarCompiler {
 
+        @Override
         public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
             final RexNode node = nodes.get( 0 );
             if ( node instanceof RexCall ) {
@@ -185,11 +189,13 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                     final Object[] args = new Object[call.getOperands().size()];
 
 
+                    @Override
                     public void execute( final Context context, Object[] results ) {
                         results[0] = execute( context );
                     }
 
 
+                    @Override
                     public Object execute( Context context ) {
                         Comparable o0;
                         Comparable o1;
@@ -265,11 +271,13 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 };
             }
             return new Scalar() {
+                @Override
                 public void execute( Context context, Object[] results ) {
                     results[0] = execute( context );
                 }
 
 
+                @Override
                 public Object execute( Context context ) {
                     switch ( node.getKind() ) {
                         case LITERAL:
@@ -347,25 +355,16 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public void send( Row row ) throws InterruptedException {
             list.add( row );
         }
 
 
+        @Override
         public void end() throws InterruptedException {
         }
 
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-            // just copy over the source into the local list
-            final Enumerator<Row> enumerator = enumerable.enumerator();
-            while ( enumerator.moveNext() ) {
-                this.send( enumerator.current() );
-            }
-            enumerator.close();
-        }
     }
 
 
@@ -383,6 +382,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public Row receive() {
             try {
                 if ( iterator == null ) {
@@ -416,6 +416,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public void send( Row row ) throws InterruptedException {
             for ( ArrayDeque<Row> queue : queues ) {
                 queue.add( row );
@@ -423,20 +424,10 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public void end() throws InterruptedException {
         }
 
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException {
-            // just copy over the source into the local list
-            final Enumerator<Row> enumerator = enumerable.enumerator();
-            while ( enumerator.moveNext() ) {
-                this.send( enumerator.current() );
-            }
-            enumerator.close();
-        }
     }
 
 
@@ -552,6 +543,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
             if ( inputRowType == null ) {
                 inputRowType = interpreter.dataContext.getTypeFactory().builder().build();
@@ -560,6 +552,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public RelDataType combinedRowType( List<RelNode> inputs ) {
             final Builder builder = interpreter.dataContext.getTypeFactory().builder();
             for ( RelNode input : inputs ) {
@@ -569,6 +562,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public Source source( RelNode rel, int ordinal ) {
             final RelNode input = getInput( rel, ordinal );
             final Edge edge = new Edge( rel, ordinal );
@@ -598,6 +592,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public Sink sink( RelNode rel ) {
             final Collection<Edge> edges = outEdges.get( rel );
             final Collection<Edge> edges2 =
@@ -624,17 +619,20 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
+        @Override
         public void enumerable( RelNode rel, Enumerable<Row> rowEnumerable ) {
             NodeInfo nodeInfo = new NodeInfo( rel, rowEnumerable );
             nodes.put( rel, nodeInfo );
         }
 
 
+        @Override
         public Context createContext() {
             return new Context( getDataContext() );
         }
 
 
+        @Override
         public DataContext getDataContext() {
             return interpreter.dataContext;
         }

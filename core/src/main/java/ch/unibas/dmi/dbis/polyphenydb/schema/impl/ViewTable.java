@@ -144,16 +144,19 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
 
+    @Override
     public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
         return queryProvider.createQuery( getExpression( schema, tableName, Queryable.class ), elementType );
     }
 
 
+    @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         return expandView( context, relOptTable.getRowType(), viewSql ).rel;
     }

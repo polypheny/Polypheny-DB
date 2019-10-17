@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.SqlStatisticProvider;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -133,16 +132,6 @@ public interface FrameworkConfig {
      * Returns the type system.
      */
     RelDataTypeSystem getTypeSystem();
-
-    /**
-     * Returns whether the lattice suggester should try to widen a lattice when a new query arrives that doesn't quite fit, as opposed to creating a new lattice.
-     */
-    boolean isEvolveLattice();
-
-    /**
-     * Returns the source of statistics about tables and columns to be used by the lattice suggester to deduce primary keys, foreign keys, and the direction of relationships.
-     */
-    SqlStatisticProvider getStatisticProvider();
 
     /**
      * Returns a view expander.

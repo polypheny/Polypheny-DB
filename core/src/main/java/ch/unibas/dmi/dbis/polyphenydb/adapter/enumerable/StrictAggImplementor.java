@@ -96,6 +96,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
+    @Override
     public final List<Type> getStateType( AggContext info ) {
         List<Type> subState = getNotNullState( info );
         stateSize = subState.size();
@@ -131,6 +132,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
+    @Override
     public final void implementReset( AggContext info, AggResetContext reset ) {
         if ( trackNullsPerRow ) {
             List<Expression> acc = reset.accumulator();
@@ -160,6 +162,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
+    @Override
     public final void implementAdd( AggContext info, final AggAddContext add ) {
         final List<RexNode> args = add.rexArguments();
         final RexToLixTranslator translator = add.rowTranslator();
@@ -209,6 +212,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
     protected abstract void implementNotNullAdd( AggContext info, AggAddContext add );
 
 
+    @Override
     public final Expression implementResult( AggContext info, final AggResultContext result ) {
         if ( !needTrackEmptySet ) {
             return RexToLixTranslator.convert( implementNotNullResult( info, result ), info.returnType() );

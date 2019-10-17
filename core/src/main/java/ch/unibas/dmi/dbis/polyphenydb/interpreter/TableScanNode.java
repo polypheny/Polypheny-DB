@@ -91,6 +91,7 @@ public class TableScanNode implements Node {
     }
 
 
+    @Override
     public void run() {
         // nothing to do
     }

@@ -49,12 +49,10 @@ import java.io.StringWriter;
 
 
 /**
- * Contains methods that call JDK methods that the
- * <a href="https://github.com/policeman-tools/forbidden-apis">forbidden
- * APIs checker</a> does not approve of.
+ * Contains methods that call JDK methods that the <a href="https://github.com/policeman-tools/forbidden-apis">forbidden APIs checker</a>
+ * does not approve of.
  *
- * <p>This class is excluded from the check, so methods called via this class
- * will not fail the build.
+ * This class is excluded from the check, so methods called via this class will not fail the build.
  */
 public class Unsafe {
 
@@ -104,4 +102,3 @@ public class Unsafe {
     }
 }
 
-// End Unsafe.java

@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
@@ -59,10 +40,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSetOption;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
+import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.test.DiffTestCase;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlValidatorTestCase;
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.ConversionUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
@@ -352,7 +333,6 @@ public class SqlParserTest {
             "MATCHES", "2014", "c",
             "MATCH_NUMBER", "2014", "c",
             "MATCH_RECOGNIZE", "2014", "c",
-            "MATERIALIZED", "92", "99", "2003", "2011", "2014", "c",  // MV: Added for DDL Parser
             "MAX", "92", "2011", "2014", "c",
             "MAX_CARDINALITY", "2011",
             "MEASURES", "c",
@@ -586,10 +566,10 @@ public class SqlParserTest {
 
     private static final ThreadLocal<boolean[]> LINUXIFY = ThreadLocal.withInitial( () -> new boolean[]{ true } );
 
-    Quoting quoting = Quoting.DOUBLE_QUOTE;
-    Casing unquotedCasing = Casing.TO_UPPER;
-    Casing quotedCasing = Casing.UNCHANGED;
-    SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+    private Quoting quoting = Quoting.DOUBLE_QUOTE;
+    private Casing unquotedCasing = Casing.TO_UPPER;
+    private Casing quotedCasing = Casing.UNCHANGED;
+    private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -670,11 +650,13 @@ public class SqlParserTest {
      */
     public static Matcher<SqlNode> isDdl() {
         return new BaseMatcher<SqlNode>() {
+            @Override
             public boolean matches( Object item ) {
                 return item instanceof SqlNode && SqlKind.DDL.contains( ((SqlNode) item).getKind() );
             }
 
 
+            @Override
             public void describeTo( Description description ) {
                 description.appendText( "isDdl" );
             }
@@ -768,7 +750,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case that does not reproduce but is related to <a href="https://issues.apache.org/jira/browse/CALCITE-2637">[POLYPHENYDB-2637] Prefix '-' operator failed between BETWEEN and AND</a>.
+     * Test case that does not reproduce but is related to "Prefix '-' operator failed between BETWEEN and AND".
      */
     @Test
     public void testBetweenAnd() {
@@ -817,15 +799,13 @@ public class SqlParserTest {
 
     @Test
     public void testColumnAliasWithAs() {
-        check( "select 1 as foo from emp",
-                "SELECT 1 AS `FOO`\n" + "FROM `EMP`" );
+        check( "select 1 as foo from emp", "SELECT 1 AS `FOO`\n" + "FROM `EMP`" );
     }
 
 
     @Test
     public void testColumnAliasWithoutAs() {
-        check( "select 1 foo from emp",
-                "SELECT 1 AS `FOO`\n" + "FROM `EMP`" );
+        check( "select 1 foo from emp", "SELECT 1 AS `FOO`\n" + "FROM `EMP`" );
     }
 
 
@@ -2740,7 +2720,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case that does not reproduce but is related to <a href="https://issues.apache.org/jira/browse/CALCITE-1238">[POLYPHENYDB-1238] Unparsing LIMIT without ORDER BY after validation</a>.
+     * Test case that does not reproduce but is related to "Unparsing LIMIT without ORDER BY after validation".
      */
     @Test
     public void testLimitWithoutOrder() {
@@ -3249,7 +3229,7 @@ public class SqlParserTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-493">[POLYPHENYDB-493] Add EXTEND clause, for defining columns and their types at query/DML time</a>.
+     * Test case for "Add EXTEND clause, for defining columns and their types at query/DML time".
      */
     @Test
     public void testTableExtend() {
@@ -6197,8 +6177,6 @@ public class SqlParserTest {
 
     /**
      * Tests that you can't quote the names of builtin functions.
-     *
-     * @see ch.unibas.dmi.dbis.polyphenydb.test.SqlValidatorTest#testQuotedFunction()
      */
     @Test
     public void testQuotedFunction() {
@@ -7331,6 +7309,7 @@ public class SqlParserTest {
      */
     protected class TesterImpl implements Tester {
 
+        @Override
         public void check( String sql, String expected ) {
             final SqlNode sqlNode = parseStmtAndHandleEx( sql );
 
@@ -7354,6 +7333,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkExp( String sql, String expected ) {
             final SqlNode sqlNode = parseExpressionAndHandleEx( sql );
             String actual = sqlNode.toSqlString( null, true ).getSql();
@@ -7375,6 +7355,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkFails( String sql, String expectedMsgPattern ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             Throwable thrown = null;
@@ -7389,6 +7370,7 @@ public class SqlParserTest {
         }
 
 
+        @Override
         public void checkNode( String sql, Matcher<SqlNode> matcher ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             try {
@@ -7404,6 +7386,7 @@ public class SqlParserTest {
          * Tests that an expression throws an exception which matches the given
          * pattern.
          */
+        @Override
         public void checkExpFails( String sql, String expectedMsgPattern ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             Throwable thrown = null;

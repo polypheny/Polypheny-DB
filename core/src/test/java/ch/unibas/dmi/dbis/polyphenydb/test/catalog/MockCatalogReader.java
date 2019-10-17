@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
@@ -156,6 +137,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
+    @Override
     public SqlNameMatcher nameMatcher() {
         return nameMatcher;
     }
@@ -214,6 +196,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         if ( table.stream ) {
             registerTable( table.names,
                     new StreamableWrapperTable( table ) {
+                        @Override
                         public Table stream() {
                             return wrapperTable;
                         }
@@ -304,7 +287,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
     /**
      * Mock implementation of
-     * {@link ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparingTable}.
+     * {@link Prepare.PreparingTable}.
      */
     public static class MockTable extends Prepare.AbstractPreparingTable {
 
@@ -472,6 +455,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public <T> T unwrap( Class<T> clazz ) {
             if ( clazz.isInstance( this ) ) {
                 return clazz.cast( this );
@@ -489,46 +473,55 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public double getRowCount() {
             return rowCount;
         }
 
 
+        @Override
         public RelOptSchema getRelOptSchema() {
             return catalogReader;
         }
 
 
+        @Override
         public RelNode toRel( ToRelContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 
 
+        @Override
         public List<RelCollation> getCollationList() {
             return collationList;
         }
 
 
+        @Override
         public RelDistribution getDistribution() {
             return RelDistributions.BROADCAST_DISTRIBUTED;
         }
 
 
+        @Override
         public boolean isKey( ImmutableBitSet columns ) {
             return !keyList.isEmpty() && columns.contains( ImmutableBitSet.of( keyList ) );
         }
 
 
+        @Override
         public List<RelReferentialConstraint> getReferentialConstraints() {
             return referentialConstraints;
         }
 
 
+        @Override
         public RelDataType getRowType() {
             return rowType;
         }
 
 
+        @Override
         public boolean supportsModality( SqlModality modality ) {
             return modality == (stream ? SqlModality.STREAM : SqlModality.RELATION);
         }
@@ -540,11 +533,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public List<String> getQualifiedName() {
             return names;
         }
 
 
+        @Override
         public SqlMonotonicity getMonotonicity( String columnName ) {
             return monotonicColumnSet.contains( columnName )
                     ? SqlMonotonicity.INCREASING
@@ -552,11 +547,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public SqlAccessType getAllowedAccess() {
             return SqlAccessType.ALL;
         }
 
 
+        @Override
         public Expression getExpression( Class clazz ) {
             throw new UnsupportedOperationException();
         }
@@ -637,7 +634,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public static MockModifiableViewRelOptTable create( MockModifiableViewTable modifiableViewTable, MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount, ColumnResolver resolver ) {
             final Table underlying = modifiableViewTable.unwrap( Table.class );
             final InitializerExpressionFactory initializerExpressionFactory =
-                    underlying != null && underlying instanceof Wrapper
+                    underlying instanceof Wrapper
                             ? ((Wrapper) underlying).unwrap( InitializerExpressionFactory.class )
                             : NullInitializerExpressionFactory.INSTANCE;
             return new MockModifiableViewRelOptTable( modifiableViewTable, catalogReader, catalogName, schemaName, name, stream, rowCount, resolver, Util.first( initializerExpressionFactory, NullInitializerExpressionFactory.INSTANCE ) );
@@ -712,7 +709,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Mock implementation of {@link ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparingTable} for views.
+     * Mock implementation of {@link Prepare.PreparingTable} for views.
      */
     public abstract static class MockViewTable extends MockTable {
 
@@ -869,7 +866,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     /**
-     * Mock implementation of {@link ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.PreparingTable} with dynamic record type.
+     * Mock implementation of {@link Prepare.PreparingTable} with dynamic record type.
      */
     public static class MockDynamicTable extends MockTable {
 
@@ -878,6 +875,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public void onRegister( RelDataTypeFactory typeFactory ) {
             rowType = new DynamicRecordTypeImpl( typeFactory );
         }
@@ -886,6 +884,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
+        @Override
         public RelNode toRel( ToRelContext context ) {
             if ( rowType.isDynamicStruct() ) {
                 rowType = new RelRecordType( rowType.getFieldList() );
@@ -911,111 +910,133 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public boolean isStruct() {
             return delegate.isStruct();
         }
 
 
+        @Override
         public boolean isDynamicStruct() {
             return delegate.isDynamicStruct();
         }
 
 
+        @Override
         public List<RelDataTypeField> getFieldList() {
             return delegate.getFieldList();
         }
 
 
+        @Override
         public List<String> getFieldNames() {
             return delegate.getFieldNames();
         }
 
 
+        @Override
         public int getFieldCount() {
             return delegate.getFieldCount();
         }
 
 
+        @Override
         public StructKind getStructKind() {
             return structKind;
         }
 
 
+        @Override
         public RelDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
             return delegate.getField( fieldName, caseSensitive, elideRecord );
         }
 
 
+        @Override
         public boolean isNullable() {
             return delegate.isNullable();
         }
 
 
+        @Override
         public RelDataType getComponentType() {
             return delegate.getComponentType();
         }
 
 
+        @Override
         public RelDataType getKeyType() {
             return delegate.getKeyType();
         }
 
 
+        @Override
         public RelDataType getValueType() {
             return delegate.getValueType();
         }
 
 
+        @Override
         public Charset getCharset() {
             return delegate.getCharset();
         }
 
 
+        @Override
         public SqlCollation getCollation() {
             return delegate.getCollation();
         }
 
 
+        @Override
         public SqlIntervalQualifier getIntervalQualifier() {
             return delegate.getIntervalQualifier();
         }
 
 
+        @Override
         public int getPrecision() {
             return delegate.getPrecision();
         }
 
 
+        @Override
         public int getScale() {
             return delegate.getScale();
         }
 
 
+        @Override
         public SqlTypeName getSqlTypeName() {
             return delegate.getSqlTypeName();
         }
 
 
+        @Override
         public SqlIdentifier getSqlIdentifier() {
             return delegate.getSqlIdentifier();
         }
 
 
+        @Override
         public String getFullTypeString() {
             return delegate.getFullTypeString();
         }
 
 
+        @Override
         public RelDataTypeFamily getFamily() {
             return delegate.getFamily();
         }
 
 
+        @Override
         public RelDataTypePrecedenceList getPrecedenceList() {
             return delegate.getPrecedenceList();
         }
 
 
+        @Override
         public RelDataTypeComparability getComparability() {
             return delegate.getComparability();
         }
@@ -1035,6 +1056,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public <C> C unwrap( Class<C> aClass ) {
             return aClass.isInstance( this )
                     ? aClass.cast( this )
@@ -1044,33 +1066,40 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return table.getRowType();
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return new Statistic() {
+                @Override
                 public Double getRowCount() {
                     return table.rowCount;
                 }
 
 
+                @Override
                 public boolean isKey( ImmutableBitSet columns ) {
                     return table.isKey( columns );
                 }
 
 
+                @Override
                 public List<RelReferentialConstraint> getReferentialConstraints() {
                     return table.getReferentialConstraints();
                 }
 
 
+                @Override
                 public List<RelCollation> getCollations() {
                     return table.collationList;
                 }
 
 
+                @Override
                 public RelDistribution getDistribution() {
                     return table.getDistribution();
                 }
@@ -1091,6 +1120,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public Schema.TableType getJdbcTableType() {
             return table.stream ? Schema.TableType.STREAM : Schema.TableType.TABLE;
         }
@@ -1107,6 +1137,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+        @Override
         public Table stream() {
             return this;
         }

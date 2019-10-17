@@ -173,23 +173,27 @@ public interface DataContext {
     /**
      * Implementation of {@link DataContext} that has few variables and is {@link Serializable}. For Spark.
      */
-    public static class SlimDataContext implements DataContext, Serializable {
+    class SlimDataContext implements DataContext, Serializable {
 
+        @Override
         public SchemaPlus getRootSchema() {
             return null;
         }
 
 
+        @Override
         public JavaTypeFactory getTypeFactory() {
             return null;
         }
 
 
+        @Override
         public QueryProvider getQueryProvider() {
             return null;
         }
 
 
+        @Override
         public Object get( String name ) {
             return null;
         }

@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 /**
@@ -115,11 +114,6 @@ public enum Hook {
     TRIMMED,
 
     /**
-     * Called by the planner after substituting a materialization.
-     */
-    SUB,
-
-    /**
      * Called when a constant expression is being reduced.
      */
     EXPRESSION_REDUCER,
@@ -128,11 +122,6 @@ public enum Hook {
      * Called to create a Program to optimize the statement.
      */
     PROGRAM,
-
-    /**
-     * Called when materialization is created.
-     */
-    CREATE_MATERIALIZATION,
 
     /**
      * Called with a query that has been generated to send to a back-end system.
@@ -167,16 +156,6 @@ public enum Hook {
 
 
     /**
-     * @deprecated Use {@link #add(Consumer)}.
-     */
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed in 2.0
-    public <T, R> Closeable add( final Function<T, R> handler ) {
-        return add( (Consumer<T>) handler::apply );
-    }
-
-
-    /**
      * Removes a handler from this Hook.
      */
     private boolean remove( Consumer handler ) {
@@ -195,33 +174,10 @@ public enum Hook {
 
 
     /**
-     * @deprecated Use {@link #addThread(Consumer)}.
-     */
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed in 2.0
-    public <T, R> Closeable addThread( final com.google.common.base.Function<T, R> handler ) {
-        return addThread( (Consumer<T>) handler::apply );
-    }
-
-
-    /**
      * Removes a thread handler from this Hook.
      */
     private boolean removeThread( Consumer handler ) {
         return threadHandlers.get().remove( handler );
-    }
-
-
-    /**
-     * @deprecated Use {@link #propertyJ}.
-     */
-    @SuppressWarnings("Guava")
-    @Deprecated // return type will change in 2.0
-    public static <V> com.google.common.base.Function<Holder<V>, Void> property( final V v ) {
-        return holder -> {
-            holder.set( v );
-            return null;
-        };
     }
 
 

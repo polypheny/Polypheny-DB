@@ -65,6 +65,7 @@ public class SortNode extends AbstractSingleNode<Sort> {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         final int offset =
                 rel.offset == null

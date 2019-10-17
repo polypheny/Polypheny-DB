@@ -68,21 +68,25 @@ public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
     }
 
 
+    @Override
     public RelDataType getRowType() {
         return table.getRowType();
     }
 
 
+    @Override
     public List<String> getQualifiedName() {
         return table.getQualifiedName();
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         return table.getMonotonicity( columnName );
     }
 
 
+    @Override
     public SqlAccessType getAllowedAccess() {
         return table.getAllowedAccess();
     }

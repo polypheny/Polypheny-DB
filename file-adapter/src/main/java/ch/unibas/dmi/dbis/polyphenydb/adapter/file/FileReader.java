@@ -46,18 +46,15 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 
 /**
@@ -180,6 +177,7 @@ public class FileReader implements Iterable<Elements> {
     }
 
 
+    @Override
     public FileReaderIterator iterator() {
         if ( this.tableElement == null ) {
             try {
@@ -239,6 +237,7 @@ public class FileReader implements Iterable<Elements> {
         }
 
 
+        @Override
         public boolean hasNext() {
             return this.rowIterator.hasNext();
         }
@@ -252,11 +251,13 @@ public class FileReader implements Iterable<Elements> {
 
 
         // return th and td elements by default
+        @Override
         public Elements next() {
             return next( "th,td" );
         }
 
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException( "NFW - can't remove!" );
         }

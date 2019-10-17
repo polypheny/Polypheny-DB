@@ -126,6 +126,7 @@ public abstract class Exchange extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw ).item( "distribution", distribution );
     }

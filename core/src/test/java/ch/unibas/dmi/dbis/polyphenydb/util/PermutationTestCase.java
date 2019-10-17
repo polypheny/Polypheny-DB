@@ -49,6 +49,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -102,12 +103,12 @@ public class PermutationTestCase {
 
         Permutation perm2 = (Permutation) perm.clone();
         assertEquals( "[3, 2, 0, 1]", perm2.toString() );
-        assertTrue( perm.equals( perm2 ) );
-        assertTrue( perm2.equals( perm ) );
+        assertEquals( perm, perm2 );
+        assertEquals( perm2, perm );
 
         perm.set( 2, 1 );
         assertEquals( "[3, 2, 1, 0]", perm.toString() );
-        assertFalse( perm.equals( perm2 ) );
+        assertNotEquals( perm, perm2 );
 
         // clone not affected
         assertEquals( "[3, 2, 0, 1]", perm2.toString() );
@@ -145,8 +146,8 @@ public class PermutationTestCase {
         final Permutation perm = new Permutation( 0 );
         assertTrue( perm.isIdentity() );
         assertEquals( "[]", perm.toString() );
-        assertTrue( perm.equals( perm ) );
-        assertTrue( perm.equals( perm.inverse() ) );
+        assertEquals( perm, perm );
+        assertEquals( perm, perm.inverse() );
 
         try {
             perm.set( 1, 0 );

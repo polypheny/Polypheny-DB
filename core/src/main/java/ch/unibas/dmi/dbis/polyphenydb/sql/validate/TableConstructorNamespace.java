@@ -76,6 +76,7 @@ public class TableConstructorNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         // First, validate the VALUES. If VALUES is inside INSERT, infers the type of NULL values based on the types of target columns.
         validator.validateValues( values, targetRowType, scope );
@@ -87,6 +88,7 @@ public class TableConstructorNamespace extends AbstractNamespace {
     }
 
 
+    @Override
     public SqlNode getNode() {
         return values;
     }

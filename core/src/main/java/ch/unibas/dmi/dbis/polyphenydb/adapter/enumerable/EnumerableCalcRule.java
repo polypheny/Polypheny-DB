@@ -66,6 +66,7 @@ class EnumerableCalcRule extends ConverterRule {
     }
 
 
+    @Override
     public RelNode convert( RelNode rel ) {
         final LogicalCalc calc = (LogicalCalc) rel;
         final RelNode input = calc.getInput();

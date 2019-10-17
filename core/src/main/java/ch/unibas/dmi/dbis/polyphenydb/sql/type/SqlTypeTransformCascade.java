@@ -70,6 +70,7 @@ public class SqlTypeTransformCascade implements SqlReturnTypeInference {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         RelDataType ret = rule.inferReturnType( opBinding );
         if ( ret == null ) {

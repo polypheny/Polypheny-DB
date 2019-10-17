@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.interpreter;
 
 
-import org.apache.calcite.linq4j.Enumerable;
-
-
 /**
  * Sink to which to send rows.
  *
@@ -59,10 +56,5 @@ public interface Sink {
 
     void end() throws InterruptedException;
 
-    /**
-     * This method is temporary. It will be removed without notice.
-     */
-    @Deprecated
-    void setSourceEnumerable( Enumerable<Row> enumerable ) throws InterruptedException;
 }
 

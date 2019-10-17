@@ -46,9 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -58,9 +55,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-
 import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 
 
@@ -90,6 +85,7 @@ public class PigRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalFilter filter = (LogicalFilter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( PigRel.CONVENTION );
@@ -111,6 +107,7 @@ public class PigRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalTableScan scan = (LogicalTableScan) rel;
             final RelTraitSet traitSet = scan.getTraitSet().replace( PigRel.CONVENTION );
@@ -132,6 +129,7 @@ public class PigRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             final RelTraitSet traitSet = project.getTraitSet().replace( PigRel.CONVENTION );
@@ -153,6 +151,7 @@ public class PigRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalAggregate agg = (LogicalAggregate) rel;
             final RelTraitSet traitSet = agg.getTraitSet().replace( PigRel.CONVENTION );
@@ -174,6 +173,7 @@ public class PigRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalJoin join = (LogicalJoin) rel;
             final RelTraitSet traitSet = join.getTraitSet().replace( PigRel.CONVENTION );

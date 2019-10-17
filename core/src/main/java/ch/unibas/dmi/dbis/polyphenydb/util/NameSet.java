@@ -114,8 +114,7 @@ public class NameSet {
 
 
     /**
-     * Returns an iterable over all the entries in the set that match the given
-     * name. If case-sensitive, that iterable will have 0 or 1 elements; if
+     * Returns an iterable over all the entries in the set that match the given name. If case-sensitive, that iterable will have 0 or 1 elements; if
      * case-insensitive, it may have 0 or more.
      */
     public Collection<String> range( String name, boolean caseSensitive ) {
@@ -124,8 +123,7 @@ public class NameSet {
 
 
     /**
-     * Returns whether this set contains the given name, with a given
-     * case-sensitivity.
+     * Returns whether this set contains the given name, with a given case-sensitivity.
      */
     public boolean contains( String name, boolean caseSensitive ) {
         return names.containsKey( name, caseSensitive );
@@ -140,4 +138,3 @@ public class NameSet {
     }
 }
 
-// End NameSet.java

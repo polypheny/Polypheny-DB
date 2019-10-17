@@ -79,6 +79,7 @@ public class RelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource( BuiltInMethod.ROW_COUNT.method, new RelMdRowCount() );
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.RowCount> getDef() {
         return BuiltInMetadata.RowCount.DEF;
     }

@@ -158,6 +158,7 @@ public abstract class Project extends SingleRel {
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         List<RexNode> exps = shuttle.apply( this.exps );
         if ( this.exps == exps ) {
@@ -193,6 +194,7 @@ public abstract class Project extends SingleRel {
     }
 
 
+    @Override
     public boolean isValid( Litmus litmus, Context context ) {
         if ( !super.isValid( litmus, context ) ) {
             return litmus.fail( null );
@@ -231,6 +233,7 @@ public abstract class Project extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         if ( pw.nest() ) {

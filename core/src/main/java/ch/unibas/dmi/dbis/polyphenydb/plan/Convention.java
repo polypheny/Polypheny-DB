@@ -107,35 +107,42 @@ public interface Convention extends RelTrait {
         }
 
 
+        @Override
         public void register( RelOptPlanner planner ) {
         }
 
 
+        @Override
         public boolean satisfies( RelTrait trait ) {
             return this == trait;
         }
 
 
+        @Override
         public Class getInterface() {
             return relClass;
         }
 
 
+        @Override
         public String getName() {
             return name;
         }
 
 
+        @Override
         public RelTraitDef getTraitDef() {
             return ConventionTraitDef.INSTANCE;
         }
 
 
+        @Override
         public boolean canConvertConvention( Convention toConvention ) {
             return false;
         }
 
 
+        @Override
         public boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits ) {
             return false;
         }

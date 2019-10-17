@@ -103,11 +103,13 @@ public abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
     public abstract String toFormattedString();
 
 
+    @Override
     public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
         return typeFactory.createSqlType( getTypeName(), getPrec() );
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.literal( this.toString() );
     }

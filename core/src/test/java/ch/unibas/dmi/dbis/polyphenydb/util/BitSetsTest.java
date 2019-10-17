@@ -95,7 +95,7 @@ public class BitSetsTest {
             if ( buf.length() > 0 ) {
                 buf.append( ", " );
             }
-            buf.append( Integer.toString( i ) );
+            buf.append( i );
         }
         assertEquals( expected, buf.toString() );
     }

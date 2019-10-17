@@ -153,6 +153,7 @@ public abstract class TableFunctionScan extends AbstractRelNode {
     }
 
 
+    @Override
     public RelNode accept( RexShuttle shuttle ) {
         RexNode rexCall = shuttle.apply( this.rexCall );
         if ( rexCall == this.rexCall ) {
@@ -202,6 +203,7 @@ public abstract class TableFunctionScan extends AbstractRelNode {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         super.explainTerms( pw );
         for ( Ord<RelNode> ord : Ord.zip( inputs ) ) {

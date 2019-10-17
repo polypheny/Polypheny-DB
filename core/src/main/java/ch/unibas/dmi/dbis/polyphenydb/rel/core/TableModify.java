@@ -149,6 +149,7 @@ public abstract class TableModify extends SingleRel {
     }
 
 
+    @Override
     public RelOptTable getTable() {
         return table;
     }

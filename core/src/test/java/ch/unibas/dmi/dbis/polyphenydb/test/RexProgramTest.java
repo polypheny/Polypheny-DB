@@ -1,45 +1,26 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * The MIT License (MIT)
  *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.test;
@@ -116,6 +97,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     }
 
 
+    @Override
     @Before
     public void setUp() {
         super.setUp();
@@ -578,7 +560,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil#isLosslessCast(RexNode)}.
+     * Unit test for {@link RexUtil#isLosslessCast(RexNode)}.
      */
     @Test
     public void testLosslessCast() {
@@ -686,7 +668,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil#toCnf}.
+     * Unit test for {@link RexUtil#toCnf}.
      */
     @Test
     public void testCnf() {
@@ -750,7 +732,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-394">[POLYPHENYDB-394] Add RexUtil.toCnf, to convert expressions to conjunctive normal form (CNF)</a>.
+     * Unit test for "Add RexUtil.toCnf, to convert expressions to conjunctive normal form (CNF)".
      */
     @Test
     public void testCnf2() {
@@ -820,8 +802,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-1290">[POLYPHENYDB-1290]
-     * When converting to CNF, fail if the expression exceeds a threshold</a>.
+     * Unit test for "When converting to CNF, fail if the expression exceeds a threshold".
      */
     @Test
     public void testThresholdCnf() {
@@ -899,7 +880,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil#pullFactors}.
+     * Unit test for {@link RexUtil#pullFactors}.
      */
     @Test
     public void testPullFactors() {
@@ -1599,7 +1580,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-1289">[POLYPHENYDB-1289] RexUtil.simplifyCase() should account for nullability</a>.
+     * Unit test for "RexUtil.simplifyCase() should account for nullability".
      */
     @Test
     public void testSimplifyCaseNotNullableBoolean() {
@@ -2130,7 +2111,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit test for <a href="https://issues.apache.org/jira/browse/CALCITE-2505">[POLYPHENYDB-2505] RexSimplify wrongly simplifies "COALESCE(+(NULL), x)" to "NULL"</a>.
+     * Unit test for "RexSimplify wrongly simplifies "COALESCE(+(NULL), x)" to "NULL"".
      */
     @Test
     public void testSimplifyCoalesce() {
@@ -2287,7 +2268,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     /**
-     * Unit tests for <a href="https://issues.apache.org/jira/browse/CALCITE-2438">[POLYPHENYDB-2438] RexCall#isAlwaysTrue returns incorrect result</a>.
+     * Unit tests for "RexCall#isAlwaysTrue returns incorrect result".
      */
     @Test
     public void testIsAlwaysTrueAndFalseXisNullisNotNullisFalse() {

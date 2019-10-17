@@ -105,11 +105,13 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public SqlOperandCountRange getOperandCountRange() {
         return SqlOperandCountRanges.of( 2 );
     }
 
 
+    @Override
     public String getAllowedSignatures( String opName ) {
         final String d = "DATETIME";
         final String i = "INTERVAL";
@@ -131,6 +133,7 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         if ( !OperandTypes.PERIOD.checkSingleOperandType( callBinding, callBinding.operand( 0 ), 0, throwOnFailure ) ) {
             return false;

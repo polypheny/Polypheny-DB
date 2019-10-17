@@ -42,11 +42,15 @@ public class WebUiGroup {
      * Field "order" is used by Gson.
      * Groups with lower order are rendered first in the GUI
      */
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int order;
     private String title;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private String description;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private String icon;
-    private ConcurrentMap<String, Config> configs = new ConcurrentHashMap<String, Config>();
+    @SuppressWarnings({ "unused" })
+    private ConcurrentMap<String, Config> configs = new ConcurrentHashMap<>();
 
 
     /**

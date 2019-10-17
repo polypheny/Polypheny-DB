@@ -99,6 +99,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
         }
 
 
+        @Override
         public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
@@ -118,6 +119,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
         }
 
 
+        @Override
         public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()

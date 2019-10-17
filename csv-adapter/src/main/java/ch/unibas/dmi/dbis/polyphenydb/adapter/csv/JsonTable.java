@@ -45,17 +45,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Source;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 
 
 /**
@@ -79,6 +78,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
     }
 
 
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return typeFactory.builder().add( "_MAP",
                 typeFactory.createMapType(
@@ -87,8 +87,10 @@ public class JsonTable extends AbstractTable implements ScannableTable {
     }
 
 
+    @Override
     public Enumerable<Object[]> scan( DataContext root ) {
         return new AbstractEnumerable<Object[]>() {
+            @Override
             public Enumerator<Object[]> enumerator() {
                 return new JsonEnumerator( source );
             }

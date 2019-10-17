@@ -84,6 +84,7 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         Filter oldFilter = call.rel( 0 );
         RexNode oldFilterCond = oldFilter.getCondition();
@@ -122,6 +123,7 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
 
 
         // override RexShuttle
+        @Override
         public RexNode visitCall( RexCall call ) {
             RexNode newCall = super.visitCall( call );
 

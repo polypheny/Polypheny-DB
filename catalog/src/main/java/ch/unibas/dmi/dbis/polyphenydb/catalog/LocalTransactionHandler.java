@@ -32,16 +32,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Implementation of the TransactionHandler for local transaction (e.g., reads which must not be executed on all other nodes).
  */
+@Slf4j
 class LocalTransactionHandler extends TransactionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger( LocalTransactionHandler.class );
 
     private static final Queue<LocalTransactionHandler> freeInstances = new ConcurrentLinkedQueue<>();
 
@@ -88,7 +86,6 @@ class LocalTransactionHandler extends TransactionHandler {
     }
 
 
-    @SuppressWarnings("Duplicates")
     private void close() {
         try {
             if ( openStatements != null ) {
@@ -97,7 +94,7 @@ class LocalTransactionHandler extends TransactionHandler {
                 }
             }
         } catch ( SQLException e ) {
-            logger.debug( "Exception while closing connections in connection handler", e );
+            log.debug( "Exception while closing connections in connection handler", e );
         } finally {
             openStatements = null;
             freeInstances.add( this );

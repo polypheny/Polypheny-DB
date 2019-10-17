@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.profile;
 
 import static ch.unibas.dmi.dbis.polyphenydb.profile.ProfilerImpl.CompositeCollector.OF;
 
-import ch.unibas.dmi.dbis.polyphenydb.materialize.Lattice;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
@@ -129,6 +128,7 @@ public class ProfilerImpl implements Profiler {
     }
 
 
+    @Override
     public Profile profile( Iterable<List<Comparable>> rows, final List<Column> columns, Collection<ImmutableBitSet> initialGroups ) {
         return new Run( columns, initialGroups ).profile( rows );
     }
@@ -433,16 +433,16 @@ public class ProfilerImpl implements Profiler {
                     return rowCount;
                 default:
                     double c = rowCount;
-                    for ( ImmutableBitSet bitSet : keyPoset.getParents( columns, true ) ) {
-                        if ( bitSet.isEmpty() ) {
-                            // If the parent is the empty group (i.e. "GROUP BY ()", the grand total) we cannot improve on the estimate.
-                            continue;
-                        }
-                        final Distribution d1 = distributions.get( bitSet );
-                        final double c2 = cardinality( rowCount, columns.except( bitSet ) );
-                        final double d = Lattice.getRowCount( rowCount, d1.cardinality, c2 );
-                        c = Math.min( c, d );
-                    }
+//                    for ( ImmutableBitSet bitSet : keyPoset.getParents( columns, true ) ) {
+//                        if ( bitSet.isEmpty() ) {
+//                            // If the parent is the empty group (i.e. "GROUP BY ()", the grand total) we cannot improve on the estimate.
+//                            continue;
+//                        }
+//                        final Distribution d1 = distributions.get( bitSet );
+//                        final double c2 = cardinality( rowCount, columns.except( bitSet ) );
+//                        final double d = Lattice.getRowCount( rowCount, d1.cardinality, c2 );
+//                        c = Math.min( c, d );
+//                    }
                     for ( ImmutableBitSet bitSet : keyPoset.getChildren( columns, true ) ) {
                         final Distribution d1 = distributions.get( bitSet );
                         c = Math.min( c, d1.cardinality );
@@ -601,6 +601,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             final Comparable v = row.get( columnOrdinal );
             if ( v == NullSentinel.INSTANCE ) {
@@ -618,6 +619,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             space.nullCount = nullCount;
             space.cardinality = values.size() + (nullCount > 0 ? 1 : 0);
@@ -647,6 +649,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             if ( space.columnOrdinals.equals( OF ) ) {
                 Util.discard( 0 );
@@ -678,6 +681,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             // number of input rows (not distinct values) that were null or partially null
             space.nullCount = nullCount;
@@ -724,6 +728,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void finish() {
             space.nullCount = nullCount;
             space.cardinality = (int) sketch.getEstimate();
@@ -746,6 +751,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             final Comparable value = row.get( columnOrdinal );
             if ( value == NullSentinel.INSTANCE ) {
@@ -773,6 +779,7 @@ public class ProfilerImpl implements Profiler {
         }
 
 
+        @Override
         public void add( List<Comparable> row ) {
             if ( space.columnOrdinals.equals( OF ) ) {
                 Util.discard( 0 );

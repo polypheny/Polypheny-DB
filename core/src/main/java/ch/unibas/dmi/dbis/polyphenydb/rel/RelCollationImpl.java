@@ -93,11 +93,13 @@ public class RelCollationImpl implements RelCollation {
     }
 
 
+    @Override
     public RelTraitDef getTraitDef() {
         return RelCollationTraitDef.INSTANCE;
     }
 
 
+    @Override
     public List<RelFieldCollation> getFieldCollations() {
         return fieldCollations;
     }
@@ -120,11 +122,13 @@ public class RelCollationImpl implements RelCollation {
     }
 
 
+    @Override
     public boolean isTop() {
         return fieldCollations.isEmpty();
     }
 
 
+    @Override
     public int compareTo( @Nonnull RelMultipleTrait o ) {
         final RelCollationImpl that = (RelCollationImpl) o;
         final UnmodifiableIterator<RelFieldCollation> iterator = that.fieldCollations.iterator();
@@ -142,10 +146,12 @@ public class RelCollationImpl implements RelCollation {
     }
 
 
+    @Override
     public void register( RelOptPlanner planner ) {
     }
 
 
+    @Override
     public boolean satisfies( RelTrait trait ) {
         return this == trait
                 || trait instanceof RelCollationImpl

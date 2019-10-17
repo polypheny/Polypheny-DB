@@ -288,6 +288,7 @@ public abstract class Aggregate extends SingleRel {
     }
 
 
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         // We skip the "groups" element if it is a singleton of "group".
         super.explainTerms( pw )
@@ -335,6 +336,7 @@ public abstract class Aggregate extends SingleRel {
     }
 
 
+    @Override
     protected RelDataType deriveRowType() {
         return deriveRowType( getCluster().getTypeFactory(), getInput().getRowType(), indicator, groupSet, groupSets, aggCalls );
     }
@@ -407,6 +409,7 @@ public abstract class Aggregate extends SingleRel {
     }
 
 
+    @Override
     public boolean isValid( Litmus litmus, Context context ) {
         return super.isValid( litmus, context ) && litmus.check( Util.isDistinct( getRowType().getFieldNames() ), "distinct field names: {}", getRowType() );
     }
@@ -532,16 +535,19 @@ public abstract class Aggregate extends SingleRel {
         }
 
 
+        @Override
         public int getOperandCount() {
             return operands.size();
         }
 
 
+        @Override
         public RelDataType getOperandType( int ordinal ) {
             return operands.get( ordinal );
         }
 
 
+        @Override
         public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
             return SqlUtil.newContextException( SqlParserPos.ZERO, e );
         }

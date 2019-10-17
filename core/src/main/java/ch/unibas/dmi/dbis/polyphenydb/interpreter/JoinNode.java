@@ -75,6 +75,7 @@ public class JoinNode implements Node {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         List<Row> rightList = null;
         final int leftCount = rel.getLeft().getRowType().getFieldCount();

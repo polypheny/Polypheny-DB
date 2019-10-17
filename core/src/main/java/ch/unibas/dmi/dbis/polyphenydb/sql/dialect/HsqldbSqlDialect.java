@@ -56,12 +56,14 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCase;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlFloorFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**
  * A <code>SqlDialect</code> implementation for the Hsqldb database.
  */
+@Slf4j
 public class HsqldbSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT = new HsqldbSqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.HSQLDB ) );
@@ -139,7 +141,7 @@ public class HsqldbSqlDialect extends SqlDialect {
                         SqlStdOperatorTable.SCALAR_QUERY.createCall( SqlParserPos.ZERO,
                                 SqlStdOperatorTable.UNION_ALL.createCall( SqlParserPos.ZERO, unionOperand, unionOperand ) ) );
 
-        LOGGER.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
+        log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 
         return caseExpr;
     }

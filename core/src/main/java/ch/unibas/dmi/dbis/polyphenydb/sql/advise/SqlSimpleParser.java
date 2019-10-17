@@ -73,6 +73,7 @@ public class SqlSimpleParser {
          * left parenthesis
          */
         LPAREN {
+            @Override
             public String sql() {
                 return "(";
             }
@@ -82,6 +83,7 @@ public class SqlSimpleParser {
          * right parenthesis
          */
         RPAREN {
+            @Override
             public String sql() {
                 return ")";
             }
@@ -103,6 +105,7 @@ public class SqlSimpleParser {
         SQID,
         COMMENT,
         COMMA {
+            @Override
             public String sql() {
                 return ",";
             }
@@ -529,6 +532,7 @@ public class SqlSimpleParser {
         }
 
 
+        @Override
         public void unparse( StringBuilder buf ) {
             int k = -1;
             for ( Token token : tokenList ) {

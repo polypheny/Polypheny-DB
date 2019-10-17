@@ -79,6 +79,7 @@ abstract class HepInstruction {
         Set<RelOptRule> ruleSet;
 
 
+        @Override
         void initialize( boolean clearCache ) {
             if ( !clearCache ) {
                 return;
@@ -87,6 +88,7 @@ abstract class HepInstruction {
         }
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -104,6 +106,7 @@ abstract class HepInstruction {
         Collection<RelOptRule> rules;
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -123,6 +126,7 @@ abstract class HepInstruction {
         Set<RelOptRule> ruleSet;
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -137,6 +141,7 @@ abstract class HepInstruction {
         Set<RelOptRule> ruleSet;
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -159,6 +164,7 @@ abstract class HepInstruction {
         RelOptRule rule;
 
 
+        @Override
         void initialize( boolean clearCache ) {
             if ( !clearCache ) {
                 return;
@@ -171,6 +177,7 @@ abstract class HepInstruction {
         }
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -185,6 +192,7 @@ abstract class HepInstruction {
         HepMatchOrder order;
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -199,6 +207,7 @@ abstract class HepInstruction {
         int limit;
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -213,11 +222,13 @@ abstract class HepInstruction {
         HepProgram subprogram;
 
 
+        @Override
         void initialize( boolean clearCache ) {
             subprogram.initialize( clearCache );
         }
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -232,10 +243,12 @@ abstract class HepInstruction {
         EndGroup endGroup;
 
 
+        @Override
         void initialize( boolean clearCache ) {
         }
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
@@ -255,6 +268,7 @@ abstract class HepInstruction {
         boolean collecting;
 
 
+        @Override
         void initialize( boolean clearCache ) {
             if ( !clearCache ) {
                 return;
@@ -265,6 +279,7 @@ abstract class HepInstruction {
         }
 
 
+        @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }

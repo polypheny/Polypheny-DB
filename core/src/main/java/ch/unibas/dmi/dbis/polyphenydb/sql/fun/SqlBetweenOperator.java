@@ -148,6 +148,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
         ExplicitOperatorBinding newOpBinding =
@@ -161,6 +162,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     }
 
 
+    @Override
     public String getSignatureTemplate( final int operandsCount ) {
         Util.discard( operandsCount );
         return "{1} {0} {2} AND {3}";
@@ -173,6 +175,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( FRAME_TYPE, "", "" );
         call.operand( VALUE_OPERAND ).unparse( writer, getLeftPrec(), 0 );
@@ -200,6 +203,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     }
 
 
+    @Override
     public ReduceResult reduceExpr( int opOrdinal, TokenSequence list ) {
         SqlOperator op = list.op( opOrdinal );
         assert op == this;
@@ -248,6 +252,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
      */
     private static class AndFinder extends SqlBasicVisitor<Void> {
 
+        @Override
         public Void visit( SqlCall call ) {
             final SqlOperator operator = call.getOperator();
             if ( operator == SqlStdOperatorTable.AND ) {

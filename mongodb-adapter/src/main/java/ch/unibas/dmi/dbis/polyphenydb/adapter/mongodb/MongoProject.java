@@ -45,11 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -62,7 +57,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -98,6 +92,7 @@ public class MongoProject extends Project implements MongoRel {
     }
 
 
+    @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
 

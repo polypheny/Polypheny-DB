@@ -70,6 +70,7 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
     }
 
 
+    @Override
     protected boolean checkOperandTypesImpl( SqlOperatorBinding operatorBinding, boolean throwOnFailure, SqlCallBinding callBinding ) {
         int nOperandsActual = nOperands;
         if ( nOperandsActual == -1 ) {
@@ -106,6 +107,7 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
     }
 
 
+    @Override
     public String getAllowedSignatures( SqlOperator op, String opName ) {
         final String typeName = getTypeName();
         if ( nOperands == -1 ) {

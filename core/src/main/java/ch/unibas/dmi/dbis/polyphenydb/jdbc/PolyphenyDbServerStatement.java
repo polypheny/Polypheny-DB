@@ -25,8 +25,6 @@
 
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
-
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
 import java.util.Iterator;
 import org.apache.calcite.avatica.Meta;
 
@@ -40,11 +38,6 @@ public interface PolyphenyDbServerStatement {
      * Creates a context for preparing a statement for execution.
      */
     Context createPrepareContext();
-
-    /**
-     * Returns the connection.
-     */
-    PolyphenyDbEmbeddedConnection getConnection();
 
     void setSignature( Meta.Signature signature );
 

@@ -64,6 +64,7 @@ public class CursorReturnTypeInference implements SqlReturnTypeInference {
     }
 
 
+    @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         return opBinding.getCursorOperand( ordinal );
     }

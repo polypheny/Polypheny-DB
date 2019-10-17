@@ -52,101 +52,121 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
  */
 public abstract class SqlAbstractConformance implements SqlConformance {
 
+    @Override
     public boolean isLiberal() {
         return SqlConformanceEnum.DEFAULT.isLiberal();
     }
 
 
+    @Override
     public boolean isGroupByAlias() {
         return SqlConformanceEnum.DEFAULT.isGroupByAlias();
     }
 
 
+    @Override
     public boolean isGroupByOrdinal() {
         return SqlConformanceEnum.DEFAULT.isGroupByOrdinal();
     }
 
 
+    @Override
     public boolean isHavingAlias() {
         return SqlConformanceEnum.DEFAULT.isHavingAlias();
     }
 
 
+    @Override
     public boolean isSortByOrdinal() {
         return SqlConformanceEnum.DEFAULT.isSortByOrdinal();
     }
 
 
+    @Override
     public boolean isSortByAlias() {
         return SqlConformanceEnum.DEFAULT.isSortByAlias();
     }
 
 
+    @Override
     public boolean isSortByAliasObscures() {
         return SqlConformanceEnum.DEFAULT.isSortByAliasObscures();
     }
 
 
+    @Override
     public boolean isFromRequired() {
         return SqlConformanceEnum.DEFAULT.isFromRequired();
     }
 
 
+    @Override
     public boolean isBangEqualAllowed() {
         return SqlConformanceEnum.DEFAULT.isBangEqualAllowed();
     }
 
 
+    @Override
     public boolean isMinusAllowed() {
         return SqlConformanceEnum.DEFAULT.isMinusAllowed();
     }
 
 
+    @Override
     public boolean isApplyAllowed() {
         return SqlConformanceEnum.DEFAULT.isApplyAllowed();
     }
 
 
+    @Override
     public boolean isInsertSubsetColumnsAllowed() {
         return SqlConformanceEnum.DEFAULT.isInsertSubsetColumnsAllowed();
     }
 
 
+    @Override
     public boolean allowNiladicParentheses() {
         return SqlConformanceEnum.DEFAULT.allowNiladicParentheses();
     }
 
 
+    @Override
     public boolean allowExplicitRowValueConstructor() {
         return SqlConformanceEnum.DEFAULT.allowExplicitRowValueConstructor();
     }
 
 
+    @Override
     public boolean allowExtend() {
         return SqlConformanceEnum.DEFAULT.allowExtend();
     }
 
 
+    @Override
     public boolean isLimitStartCountAllowed() {
         return SqlConformanceEnum.DEFAULT.isLimitStartCountAllowed();
     }
 
 
+    @Override
     public boolean isPercentRemainderAllowed() {
         return SqlConformanceEnum.DEFAULT.isPercentRemainderAllowed();
     }
 
 
+    @Override
     public boolean allowGeometry() {
         return SqlConformanceEnum.DEFAULT.allowGeometry();
     }
 
 
+    @Override
     public boolean shouldConvertRaggedUnionTypesToVarying() {
         return SqlConformanceEnum.DEFAULT.shouldConvertRaggedUnionTypesToVarying();
     }
 
 
+    @Override
     public boolean allowExtendedTrim() {
         return SqlConformanceEnum.DEFAULT.allowExtendedTrim();
     }

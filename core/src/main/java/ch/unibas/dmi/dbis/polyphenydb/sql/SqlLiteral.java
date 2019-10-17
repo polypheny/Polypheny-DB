@@ -232,11 +232,13 @@ public class SqlLiteral extends SqlNode {
     }
 
 
+    @Override
     public SqlLiteral clone( SqlParserPos pos ) {
         return new SqlLiteral( value, typeName, pos );
     }
 
 
+    @Override
     public SqlKind getKind() {
         return SqlKind.LITERAL;
     }
@@ -460,7 +462,6 @@ public class SqlLiteral extends SqlNode {
             assert SqlTypeUtil.inCharFamily( literal.getTypeName() );
             return literal.value.toString();
         } else if ( node instanceof SqlCall && ((SqlCall) node).getOperator() == SqlStdOperatorTable.CAST ) {
-            //noinspection deprecation
             return stringValue( ((SqlCall) node).operand( 0 ) );
         } else {
             throw new AssertionError( "invalid string literal: " + node );
@@ -518,16 +519,19 @@ public class SqlLiteral extends SqlNode {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateLiteral( this );
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( !(node instanceof SqlLiteral) ) {
             return litmus.fail( "{} != {}", this, node );
@@ -540,6 +544,7 @@ public class SqlLiteral extends SqlNode {
     }
 
 
+    @Override
     public SqlMonotonicity getMonotonicity( SqlValidatorScope scope ) {
         return SqlMonotonicity.CONSTANT;
     }
@@ -685,6 +690,7 @@ public class SqlLiteral extends SqlNode {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         switch ( typeName ) {
             case BOOLEAN:

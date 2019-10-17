@@ -113,6 +113,7 @@ public class SqlInOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         final List<SqlNode> operands = call.getOperandList();
         assert operands.size() == 2;
@@ -174,6 +175,7 @@ public class SqlInOperator extends SqlBinaryOperator {
     }
 
 
+    @Override
     public boolean argumentMustBeScalar( int ordinal ) {
         // Argument #0 must be scalar, argument #1 can be a list (1, 2) or a query (select deptno from emp). So, only coerce argument #0 into a scalar sub-query. For example, in
         //  select * from emp

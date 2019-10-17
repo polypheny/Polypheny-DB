@@ -61,6 +61,7 @@ public class LongSchemaVersion implements SchemaVersion {
     }
 
 
+    @Override
     public boolean isBefore( SchemaVersion other ) {
         if ( !(other instanceof LongSchemaVersion) ) {
             throw new IllegalArgumentException( "Cannot compare a LongSchemaVersion object with a " + other.getClass() + " object." );

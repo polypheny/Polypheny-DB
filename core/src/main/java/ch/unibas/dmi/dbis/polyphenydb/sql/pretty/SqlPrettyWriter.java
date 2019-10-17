@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
@@ -68,8 +67,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -135,9 +134,8 @@ import org.slf4j.LoggerFactory;
  * </tr>
  * </table>
  */
+@Slf4j
 public class SqlPrettyWriter implements SqlWriter {
-
-    protected static final PolyphenyDbLogger LOGGER = new PolyphenyDbLogger( LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter" ) );
 
     /**
      * Bean holding the default property values.
@@ -222,16 +220,19 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public int getIndentation() {
         return indentation;
     }
 
 
+    @Override
     public boolean isAlwaysUseParentheses() {
         return alwaysUseParentheses;
     }
 
 
+    @Override
     public boolean inQuery() {
         return (frame == null)
                 || (frame.frameType == FrameTypeEnum.ORDER_BY)
@@ -240,16 +241,19 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public boolean isQuoteAllIdentifiers() {
         return quoteAllIdentifiers;
     }
 
 
+    @Override
     public boolean isClauseStartsLine() {
         return clauseStartsLine;
     }
 
 
+    @Override
     public boolean isSelectListItemsOnSeparateLines() {
         return selectListItemsOnSeparateLines;
     }
@@ -265,6 +269,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public boolean isKeywordsLowerCase() {
         return keywordsLowerCase;
     }
@@ -275,6 +280,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void resetSettings() {
         reset();
         indentation = 4;
@@ -294,6 +300,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void reset() {
         pw.flush();
         Unsafe.clear( sw );
@@ -431,6 +438,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void newlineAndIndent() {
         pw.println();
         charCount = 0;
@@ -700,6 +708,7 @@ public class SqlPrettyWriter implements SqlWriter {
                             isClauseStartsLine(), // newline after UNION, EXCEPT
                             false,
                             false ) {
+                        @Override
                         protected void sep( boolean printFirst, String sep ) {
                             boolean newlineBefore = newlineBeforeSep && !sep.equals( "," );
                             boolean newlineAfter = newlineAfterSep && sep.equals( "," );
@@ -773,6 +782,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void endList( Frame frame ) {
         FrameImpl endedFrame = (FrameImpl) frame;
         Preconditions.checkArgument( frame == this.frame, "Frame does not match current frame" );
@@ -819,23 +829,27 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public SqlString toSqlString() {
         ImmutableList<Integer> dynamicParameters = this.dynamicParameters == null ? null : this.dynamicParameters.build();
         return new SqlString( dialect, toString(), dynamicParameters );
     }
 
 
+    @Override
     public SqlDialect getDialect() {
         return dialect;
     }
 
 
+    @Override
     public void literal( String s ) {
         print( s );
         setNeedWhitespace( true );
     }
 
 
+    @Override
     public void keyword( String s ) {
         maybeWhitespace( s );
         pw.print(
@@ -895,11 +909,14 @@ public class SqlPrettyWriter implements SqlWriter {
         if ( result ) {
             nextWhitespace = NL;
         }
-        LOGGER.trace( "Token is '{}'; result is {}", s, result );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Token is '{}'; result is {}", s, result );
+        }
         return result;
     }
 
 
+    @Override
     public void print( String s ) {
         maybeWhitespace( s );
         pw.print( s );
@@ -907,6 +924,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void print( int x ) {
         maybeWhitespace( "0" );
         pw.print( x );
@@ -914,6 +932,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void identifier( String name ) {
         String qName = name;
         if ( isQuoteAllIdentifiers() || dialect.identifierNeedsToBeQuoted( name ) ) {
@@ -937,6 +956,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void fetchOffset( SqlNode fetch, SqlNode offset ) {
         if ( fetch == null && offset == null ) {
             return;
@@ -945,6 +965,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public Frame startFunCall( String funName ) {
         keyword( funName );
         setNeedWhitespace( false );
@@ -952,33 +973,39 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void endFunCall( Frame frame ) {
         endList( this.frame );
     }
 
 
+    @Override
     public Frame startList( String open, String close ) {
         return startList( FrameTypeEnum.SIMPLE, null, open, close );
     }
 
 
+    @Override
     public Frame startList( FrameTypeEnum frameType ) {
         assert frameType != null;
         return startList( frameType, null, "", "" );
     }
 
 
+    @Override
     public Frame startList( FrameType frameType, String open, String close ) {
         assert frameType != null;
         return startList( frameType, null, open, close );
     }
 
 
+    @Override
     public void sep( String sep ) {
         sep( sep, !(sep.equals( "," ) || sep.equals( "." )) );
     }
 
 
+    @Override
     public void sep( String sep, boolean printFirst ) {
         if ( frame == null ) {
             throw new RuntimeException( "No list started" );
@@ -990,6 +1017,7 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
+    @Override
     public void setNeedWhitespace( boolean needWhitespace ) {
         this.needWhitespace = needWhitespace;
     }

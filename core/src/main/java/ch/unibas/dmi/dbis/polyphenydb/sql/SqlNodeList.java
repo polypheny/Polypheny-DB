@@ -67,6 +67,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
      */
     public static final SqlNodeList EMPTY =
             new SqlNodeList( SqlParserPos.ZERO ) {
+                @Override
                 public void add( SqlNode node ) {
                     throw new UnsupportedOperationException();
                 }
@@ -95,6 +96,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
 
 
     // implement Iterable<SqlNode>
+    @Override
     public Iterator<SqlNode> iterator() {
         return list.iterator();
     }
@@ -110,6 +112,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
+    @Override
     public SqlNodeList clone( SqlParserPos pos ) {
         return new SqlNodeList( list, pos );
     }
@@ -130,6 +133,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame =
                 ((leftPrec > 0) || (rightPrec > 0))
@@ -170,6 +174,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         for ( SqlNode child : list ) {
             child.validate( validator, scope );
@@ -177,11 +182,13 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
+    @Override
     public <R> R accept( SqlVisitor<R> visitor ) {
         return visitor.visit( this );
     }
 
 
+    @Override
     public boolean equalsDeep( SqlNode node, Litmus litmus ) {
         if ( !(node instanceof SqlNodeList) ) {
             return litmus.fail( "{} != {}", this, node );
@@ -242,6 +249,7 @@ public class SqlNodeList extends SqlNode implements Iterable<SqlNode> {
     }
 
 
+    @Override
     public void validateExpr( SqlValidator validator, SqlValidatorScope scope ) {
         // While a SqlNodeList is not always a valid expression, this implementation makes that assumption. It just validates the members of the list.
         //

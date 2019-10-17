@@ -61,12 +61,10 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.examples.RelBuilderExample;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ConsList;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBuilder;
@@ -230,6 +228,7 @@ public class UtilTest {
         byte[] bytes2 = {
                 64, 32, 43, -45, -23, 0, 43, 54, 119, -32, -56, -34
         };
+        //noinspection CharsetObjectCanBeUsed
         assertEquals(
                 "ID$0$_30c__3617__2117__2d15__7fde__a48f_",
                 Util.toJavaId(
@@ -1230,7 +1229,7 @@ public class UtilTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-2287">[POLYPHENYDB-2287] FlatList.equals throws StackOverflowError</a>.
+     * Test case for "FlatList.equals throws StackOverflowError".
      */
     @Test
     public void testFlat34Equals() {
@@ -1413,7 +1412,7 @@ public class UtilTest {
     @Test
     public void testCompositeMap() {
         String[] beatles = { "john", "paul", "george", "ringo" };
-        Map<String, Integer> beatleMap = new LinkedHashMap<String, Integer>();
+        Map<String, Integer> beatleMap = new LinkedHashMap<>();
         for ( String beatle : beatles ) {
             beatleMap.put( beatle, beatle.length() );
         }
@@ -1430,7 +1429,7 @@ public class UtilTest {
         map = CompositeMap.of( beatleMap, beatleMap );
         checkCompositeMap( beatles, map );
 
-        final Map<String, Integer> founderMap = new LinkedHashMap<String, Integer>();
+        final Map<String, Integer> founderMap = new LinkedHashMap<>();
         founderMap.put( "ben", 1706 );
         founderMap.put( "george", 1732 );
         founderMap.put( "thomas", 1743 );
@@ -1456,7 +1455,7 @@ public class UtilTest {
     private void checkCompositeMap( String[] beatles, Map<String, Integer> map ) {
         assertThat( 4, equalTo( map.size() ) );
         assertThat( false, equalTo( map.isEmpty() ) );
-        assertThat( map.keySet(), equalTo( (Set<String>) new HashSet<String>( Arrays.asList( beatles ) ) ) );
+        assertThat( map.keySet(), equalTo( (Set<String>) new HashSet<>( Arrays.asList( beatles ) ) ) );
         assertThat( ImmutableMultiset.copyOf( map.values() ), equalTo( ImmutableMultiset.copyOf( Arrays.asList( 4, 4, 6, 5 ) ) ) );
     }
 
@@ -1509,9 +1508,9 @@ public class UtilTest {
             final int size = i;
             new Benchmark( "isDistinct " + i + " (set)", statistician -> {
                 final Random random = new Random( 0 );
-                final List<List<Integer>> lists = new ArrayList<List<Integer>>();
+                final List<List<Integer>> lists = new ArrayList<>();
                 for ( int z = 0; z < zMax; z++ ) {
-                    final List<Integer> list = new ArrayList<Integer>();
+                    final List<Integer> list = new ArrayList<>();
                     for ( int k = 0; k < size; k++ ) {
                         list.add( random.nextInt( size * size ) );
                     }
@@ -1562,34 +1561,6 @@ public class UtilTest {
 
 
     /**
-     * Unit test for {@link Utilities#hashCode(double)}.
-     */
-    @Test
-    public void testHash() {
-        checkHash( 0d );
-        checkHash( 1d );
-        checkHash( -2.5d );
-        checkHash( 10d / 3d );
-        checkHash( Double.NEGATIVE_INFINITY );
-        checkHash( Double.POSITIVE_INFINITY );
-        checkHash( Double.MAX_VALUE );
-        checkHash( Double.MIN_VALUE );
-    }
-
-
-    @SuppressWarnings("deprecation")
-    public void checkHash( double v ) {
-        assertThat( Double.valueOf( v ).hashCode(), is( Utilities.hashCode( v ) ) );
-        final long long_ = (long) v;
-        assertThat( Long.valueOf( long_ ).hashCode(), is( Utilities.hashCode( long_ ) ) );
-        final float float_ = (float) v;
-        assertThat( Float.valueOf( float_ ).hashCode(), is( Utilities.hashCode( float_ ) ) );
-        final boolean boolean_ = v != 0;
-        assertThat( Boolean.valueOf( boolean_ ).hashCode(), is( Utilities.hashCode( boolean_ ) ) );
-    }
-
-
-    /**
      * Unit test for {@link Util#startsWith}.
      */
     @Test
@@ -1630,11 +1601,11 @@ public class UtilTest {
      */
     @Test
     public void testSortedSet() {
-        final TreeSet<String> treeSet = new TreeSet<String>();
+        final TreeSet<String> treeSet = new TreeSet<>();
         Collections.addAll( treeSet, "foo", "bar", "fOo", "FOO", "pug" );
         assertThat( treeSet.size(), equalTo( 5 ) );
 
-        final TreeSet<String> treeSet2 = new TreeSet<String>( String.CASE_INSENSITIVE_ORDER );
+        final TreeSet<String> treeSet2 = new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
         treeSet2.addAll( treeSet );
         assertThat( treeSet2.size(), equalTo( 3 ) );
 
@@ -1647,7 +1618,7 @@ public class UtilTest {
             }
             return c;
         };
-        final TreeSet<String> treeSet3 = new TreeSet<String>( comparator );
+        final TreeSet<String> treeSet3 = new TreeSet<>( comparator );
         treeSet3.addAll( treeSet );
         assertThat( treeSet3.size(), equalTo( 5 ) );
 
@@ -1872,12 +1843,6 @@ public class UtilTest {
 
 
     @Test
-    public void testRelBuilderExample() {
-        new RelBuilderExample( false ).runAllExamples();
-    }
-
-
-    @Test
     public void testOrdReverse() {
         checkOrdReverse( Ord.reverse( Arrays.asList( "a", "b", "c" ) ) );
         checkOrdReverse( Ord.reverse( "a", "b", "c" ) );
@@ -1942,7 +1907,7 @@ public class UtilTest {
     /**
      * Tests {@link ch.unibas.dmi.dbis.polyphenydb.util.TryThreadLocal}.
      *
-     * TryThreadLocal was introduced to fix <a href="https://issues.apache.org/jira/browse/CALCITE-915">[POLYPHENYDB-915] Tests do not unset ThreadLocal values on exit</a>.
+     * TryThreadLocal was introduced to fix "Tests do not unset ThreadLocal values on exit".
      */
     @Test
     public void testTryThreadLocal() {
@@ -1978,7 +1943,7 @@ public class UtilTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1264">[POLYPHENYDB-1264] Litmus argument interpolation</a>.
+     * Test case for "Litmus argument interpolation".
      */
     @Test
     public void testLitmus() {
@@ -2484,11 +2449,13 @@ public class UtilTest {
     private static <E> Matcher<Iterable<E>> isIterable( final Iterable<E> iterable ) {
         final List<E> list = toList( iterable );
         return new TypeSafeMatcher<Iterable<E>>() {
+            @Override
             protected boolean matchesSafely( Iterable<E> iterable ) {
                 return list.equals( toList( iterable ) );
             }
 
 
+            @Override
             public void describeTo( Description description ) {
                 description.appendText( "is iterable " ).appendValue( list );
             }

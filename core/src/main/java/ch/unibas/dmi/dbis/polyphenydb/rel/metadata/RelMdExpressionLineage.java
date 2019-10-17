@@ -105,6 +105,7 @@ public class RelMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
     }
 
 
+    @Override
     public MetadataDef<BuiltInMetadata.ExpressionLineage> getDef() {
         return BuiltInMetadata.ExpressionLineage.DEF;
     }

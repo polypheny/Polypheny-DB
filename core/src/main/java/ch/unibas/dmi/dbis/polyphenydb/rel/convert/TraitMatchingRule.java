@@ -92,6 +92,7 @@ public class TraitMatchingRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         RelNode input = call.rel( 1 );
         if ( input.getTraitSet().contains( converter.getOutTrait() ) ) {

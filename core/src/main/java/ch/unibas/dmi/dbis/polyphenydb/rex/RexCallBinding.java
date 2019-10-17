@@ -154,17 +154,20 @@ public class RexCallBinding extends SqlOperatorBinding {
 
 
     // implement SqlOperatorBinding
+    @Override
     public int getOperandCount() {
         return operands.size();
     }
 
 
     // implement SqlOperatorBinding
+    @Override
     public RelDataType getOperandType( int ordinal ) {
         return operands.get( ordinal ).getType();
     }
 
 
+    @Override
     public PolyphenyDbException newError( ExInst<SqlValidatorException> e ) {
         return SqlUtil.newContextException( SqlParserPos.ZERO, e );
     }

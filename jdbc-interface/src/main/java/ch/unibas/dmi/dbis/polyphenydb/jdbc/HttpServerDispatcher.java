@@ -32,6 +32,7 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.eclipse.jetty.server.Connector;
@@ -43,16 +44,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  *
  */
+@Slf4j
 public class HttpServerDispatcher {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( HttpServerDispatcher.class );
 
     private int threadPoolMinThreads = 10;
     private int threadPoolMaxThreads = 100;
@@ -102,8 +100,8 @@ public class HttpServerDispatcher {
             throw new Exception( "HTTP Dispatcher was not started on the specified port. It would have listended on " + port );
         }
 
-        if ( LOGGER.isInfoEnabled() ) {
-            LOGGER.info( "HTTP Dispatcher is listening on port {}", connector.getLocalPort() );
+        if ( log.isInfoEnabled() ) {
+            log.info( "HTTP Dispatcher is listening on port {}", connector.getLocalPort() );
         } else {
             System.out.println( "HTTP Dispatcher is listening on port " + connector.getLocalPort() );
         }

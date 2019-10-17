@@ -56,50 +56,49 @@ import java.util.Map;
 /**
  * String template.
  *
- * <p>It is extended from {@link java.text.MessageFormat} to allow parameters
- * to be substituted by name as well as by position.
+ * It is extended from {@link java.text.MessageFormat} to allow parameters to be substituted by name as well as by position.
  *
- * <p>The following example, using MessageFormat, yields "Happy 64th birthday,
- * Ringo!":
+ * The following example, using MessageFormat, yields "Happy 64th birthday, Ringo!":
  *
- * <blockquote>MessageFormat f =
- * new MessageFormat("Happy {0,number}th birthday, {1}!");<br>
+ * <blockquote>
+ * MessageFormat f = new MessageFormat("Happy {0,number}th birthday, {1}!");<br>
  * Object[] args = {64, "Ringo"};<br>
- * System.out.println(f.format(args);</blockquote>
+ * System.out.println(f.format(args);
+ * </blockquote>
  *
- * <p>Here is the same example using a Template and named parameters:
+ * Here is the same example using a Template and named parameters:
  *
- * <blockquote>Template f =
- * new Template("Happy {age,number}th birthday, {name}!");<br>
+ * <blockquote>
+ * Template f = new Template("Happy {age,number}th birthday, {name}!");<br>
  * Map&lt;Object, Object&gt; args = new HashMap&lt;Object, Object&gt;();<br>
  * args.put("age", 64);<br>
  * args.put("name", "Ringo");<br>
- * System.out.println(f.format(args);</blockquote>
+ * System.out.println(f.format(args);
+ * </blockquote>
  *
- * <p>Using a Template you can also use positional parameters:
+ * Using a Template you can also use positional parameters:
  *
- * <blockquote>Template f =
- * new Template("Happy {age,number}th birthday, {name}!");<br>
+ * <blockquote>
+ * Template f = new Template("Happy {age,number}th birthday, {name}!");<br>
  * Object[] args = {64, "Ringo"};<br>
  * System.out.println(f.format(args);</blockquote>
  *
- * <p>Or a hybrid; here, one argument is specified by name, another by position:
+ * Or a hybrid; here, one argument is specified by name, another by position:
  *
- * <blockquote>Template f =
- * new Template("Happy {age,number}th birthday, {name}!");<br>
+ * <blockquote>
+ * Template f = new Template("Happy {age,number}th birthday, {name}!");<br>
  * Map&lt;Object, Object&gt; args = new HashMap&lt;Object, Object&gt;();<br>
  * args.put(0, 64);<br>
  * args.put("name", "Ringo");<br>
- * System.out.println(f.format(args);</blockquote>
+ * System.out.println(f.format(args);
+ * </blockquote>
  */
 public class Template extends MessageFormat {
 
     private final List<String> parameterNames;
 
-
     /**
-     * Creates a Template for the default locale and the
-     * specified pattern.
+     * Creates a Template for the default locale and the specified pattern.
      *
      * @param pattern the pattern for this message format
      * @throws IllegalArgumentException if the pattern is invalid
@@ -110,8 +109,7 @@ public class Template extends MessageFormat {
 
 
     /**
-     * Creates a Template for the specified locale and
-     * pattern.
+     * Creates a Template for the specified locale and pattern.
      *
      * @param pattern the pattern for this message format
      * @param locale the locale for this message format
@@ -124,19 +122,16 @@ public class Template extends MessageFormat {
     }
 
 
-    private Template(
-            String pattern, List<String> parameterNames, Locale locale ) {
+    private Template( String pattern, List<String> parameterNames, Locale locale ) {
         super( pattern, locale );
         this.parameterNames = ImmutableList.copyOf( parameterNames );
     }
 
 
     /**
-     * Parses the pattern, populates the parameter names, and returns the
-     * pattern with parameter names converted to parameter ordinals.
+     * Parses the pattern, populates the parameter names, and returns the pattern with parameter names converted to parameter ordinals.
      *
-     * <p>To ensure that the same parsing rules apply, this code is copied from
-     * {@link java.text.MessageFormat#applyPattern(String)} but with different
+     * To ensure that the same parsing rules apply, this code is copied from {@link java.text.MessageFormat#applyPattern(String)} but with different
      * actions when a parameter is recognized.
      *
      * @param pattern Pattern
@@ -155,9 +150,8 @@ public class Template extends MessageFormat {
             char ch = pattern.charAt( i );
             if ( part == 0 ) {
                 if ( ch == '\'' ) {
-                    segments[part].append( ch ); // jhyde: don't lose orig quote
-                    if ( i + 1 < pattern.length()
-                            && pattern.charAt( i + 1 ) == '\'' ) {
+                    segments[part].append( ch ); // don't lose orig quote
+                    if ( i + 1 < pattern.length() && pattern.charAt( i + 1 ) == '\'' ) {
                         segments[part].append( ch );  // handle doubles
                         ++i;
                     } else {
@@ -205,8 +199,7 @@ public class Template extends MessageFormat {
             }
         }
         if ( braceStack == 0 && part != 0 ) {
-            throw new IllegalArgumentException(
-                    "Unmatched braces in the pattern." );
+            throw new IllegalArgumentException( "Unmatched braces in the pattern." );
         }
         return segments[0].toString();
     }
@@ -218,9 +211,7 @@ public class Template extends MessageFormat {
      * @param segments Comma-separated segments of the parameter definition
      * @param parameterNames List of parameter names seen so far
      */
-    private static void makeFormat(
-            StringBuilder[] segments,
-            List<String> parameterNames ) {
+    private static void makeFormat( StringBuilder[] segments, List<String> parameterNames ) {
         final String parameterName = segments[1].toString();
         final int parameterOrdinal = parameterNames.size();
         parameterNames.add( parameterName );
@@ -244,14 +235,11 @@ public class Template extends MessageFormat {
     /**
      * Formats a set of arguments to produce a string.
      *
-     * <p>Arguments may appear in the map using named keys (of type String), or
-     * positional keys (0-based ordinals represented either as type String or
-     * Integer).
+     * Arguments may appear in the map using named keys (of type String), or positional keys (0-based ordinals represented either as type String or Integer).
      *
      * @param argMap A map containing the arguments as (key, value) pairs
      * @return Formatted string.
-     * @throws IllegalArgumentException if the Format cannot format the given
-     * object
+     * @throws IllegalArgumentException if the Format cannot format the given object
      */
     public String format( Map<Object, Object> argMap ) {
         Object[] args = new Object[parameterNames.size()];
@@ -287,28 +275,18 @@ public class Template extends MessageFormat {
 
 
     /**
-     * Creates a Template with the given pattern and uses it
-     * to format the given arguments. This is equivalent to
-     * <blockquote>
+     * Creates a Template with the given pattern and uses it to format the given arguments. This is equivalent to
      * <code>{@link #of(String) Template}(pattern).{@link #format}(args)</code>
-     * </blockquote>
      *
-     * @throws IllegalArgumentException if the pattern is invalid,
-     * or if an argument in the
-     * <code>arguments</code> array is not of the
-     * type expected by the format element(s)
-     * that use it.
+     * @throws IllegalArgumentException if the pattern is invalid, or if an argument in the <code>arguments</code> array is not of the type expected by the format element(s) that use it.
      */
-    public static String formatByName(
-            String pattern,
-            Map<Object, Object> argMap ) {
+    public static String formatByName( String pattern, Map<Object, Object> argMap ) {
         return Template.of( pattern ).format( argMap );
     }
 
 
     /**
-     * Returns the names of the parameters, in the order that they appeared in
-     * the template string.
+     * Returns the names of the parameters, in the order that they appeared in the template string.
      *
      * @return List of parameter names
      */
@@ -317,4 +295,3 @@ public class Template extends MessageFormat {
     }
 }
 
-// End Template.java

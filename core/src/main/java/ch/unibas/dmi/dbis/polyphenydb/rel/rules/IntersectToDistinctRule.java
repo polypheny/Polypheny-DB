@@ -104,6 +104,7 @@ public class IntersectToDistinctRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final Intersect intersect = call.rel( 0 );
         if ( intersect.all ) {

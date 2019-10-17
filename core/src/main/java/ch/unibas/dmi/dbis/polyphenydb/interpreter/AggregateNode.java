@@ -118,6 +118,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     }
 
 
+    @Override
     public void run() throws InterruptedException {
         Row r;
         while ( (r = source.receive()) != null ) {
@@ -223,6 +224,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
             AggAddContext addContext =
                     new AggAddContextImpl( builder2, accumulator ) {
+                        @Override
                         public List<RexNode> rexArguments() {
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
@@ -232,6 +234,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         }
 
 
+                        @Override
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
@@ -239,6 +242,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         }
 
 
+                        @Override
                         public RexToLixTranslator rowTranslator() {
                             final SqlConformance conformance = SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
                             return RexToLixTranslator.forAggregation(
@@ -275,6 +279,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public void send( Row row ) {
             boolean notNull = true;
             for ( Integer i : call.getArgList() ) {
@@ -289,6 +294,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Object end() {
             return cnt;
         }
@@ -330,6 +336,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Accumulator get() {
             return new ScalarAccumulator( this, new Object[accumulatorLength] );
         }
@@ -351,6 +358,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public void send( Row row ) {
             System.arraycopy( row.getValues(), 0, def.sendContext.values, 0, def.rowLength );
             System.arraycopy( values, 0, def.sendContext.values, def.rowLength, values.length );
@@ -358,6 +366,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Object end() {
             System.arraycopy( values, 0, def.endContext.values, 0, values.length );
             return def.endScalar.execute( def.endContext );
@@ -704,6 +713,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Accumulator get() {
             return new UdaAccumulator( this );
         }
@@ -731,6 +741,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public void send( Row row ) {
             final Object[] args = { value, row.getValues()[factory.argOrdinal] };
             for ( int i = 1; i < args.length; i++ ) {
@@ -747,6 +758,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Object end() {
             if ( factory.nullIfEmpty && empty ) {
                 return null;
@@ -776,6 +788,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public void send( Row row ) {
             if ( row.getValues()[filterArg] == Boolean.TRUE ) {
                 accumulator.send( row );
@@ -783,6 +796,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
+        @Override
         public Object end() {
             return accumulator.end();
         }

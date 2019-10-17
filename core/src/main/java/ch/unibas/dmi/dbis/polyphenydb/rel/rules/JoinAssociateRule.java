@@ -91,6 +91,7 @@ public class JoinAssociateRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( final RelOptRuleCall call ) {
         final Join topJoin = call.rel( 0 );
         final Join bottomJoin = call.rel( 1 );

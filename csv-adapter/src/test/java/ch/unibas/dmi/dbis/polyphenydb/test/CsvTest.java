@@ -45,29 +45,19 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStreamTableFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.PolyphenyDbEmbeddedConnection;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
-import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -76,7 +66,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -282,7 +271,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-898">[POLYPHENYDB-898] Type inference multiplying Java long by SQL INTEGER</a>.
+     * Test case for "Type inference multiplying Java long by SQL INTEGER".
      */
     @Test
     public void testSelectLongMultiplyInteger() throws SQLException {
@@ -486,7 +475,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1754">[POLYPHENYDB-1754] In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long</a>.
+     * Test case for "In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long".
      */
     @Test
     public void testGroupByTimestampAdd() throws SQLException {
@@ -540,7 +529,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-824">[POLYPHENYDB-824] Type inference when converting IN clause to semijoin</a>.
+     * Test case for "Type inference when converting IN clause to semijoin".
      */
     @Test
     public void testInToSemiJoinWithCast() throws SQLException {
@@ -556,7 +545,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1051">[POLYPHENYDB-1051] Underflow exception due to scaling IN clause literals</a>.
+     * Test case for "Underflow exception due to scaling IN clause literals".
      */
     @Test
     public void testInToSemiJoinWithoutCast() throws SQLException {
@@ -616,7 +605,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1072">[POLYPHENYDB-1072] CSV adapter incorrectly parses TIMESTAMP values after noon</a>.
+     * Test case for "CSV adapter incorrectly parses TIMESTAMP values after noon".
      */
     @Test
     public void testDateType2() throws SQLException {
@@ -656,7 +645,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1673">[POLYPHENYDB-1673] Query with ORDER BY or GROUP BY on TIMESTAMP column throws CompileException</a>.
+     * Test case for "Query with ORDER BY or GROUP BY on TIMESTAMP column throws CompileException".
      */
     @Test
     public void testTimestampGroupBy() throws SQLException {
@@ -719,32 +708,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1031">[POLYPHENYDB-1031] In prepared statement, CsvScannableTable.scan is called twice</a>.
-     * To see the bug, place a breakpoint in CsvScannableTable.scan, and note that it is called twice. It should only be called once.
-     */
-    @Test
-    public void testPrepared() throws SQLException {
-        final Properties properties = new Properties();
-        properties.setProperty( "caseSensitive", "true" );
-        try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", properties ) ) {
-            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-
-            final Schema schema = CsvSchemaFactory.INSTANCE.create( polyphenyDbEmbeddedConnection.getRootSchema(), null,
-                    ImmutableMap.of( "directory", resourcePath( "sales" ), "flavor", "scannable" ) );
-            polyphenyDbEmbeddedConnection.getRootSchema().add( "TEST", schema );
-            final String sql = "select * from \"TEST\".\"DEPTS\" where \"NAME\" = ?";
-            final PreparedStatement statement2 = polyphenyDbEmbeddedConnection.prepareStatement( sql );
-
-            statement2.setString( 1, "Sales" );
-            final ResultSet resultSet1 = statement2.executeQuery();
-            Consumer<ResultSet> expect = expect( "DEPTNO=10; NAME=Sales" );
-            expect.accept( resultSet1 );
-        }
-    }
-
-
-    /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1054">[POLYPHENYDB-1054] NPE caused by wrong code generation for Timestamp fields</a>.
+     * Test case for "NPE caused by wrong code generation for Timestamp fields".
      */
     @Test
     public void testFilterOnNullableTimestamp() throws Exception {
@@ -788,7 +752,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1118">[POLYPHENYDB-1118] NullPointerException in EXTRACT with WHERE ... IN clause if field has null value</a>.
+     * Test case for "NullPointerException in EXTRACT with WHERE ... IN clause if field has null value".
      */
     @Test
     public void testFilterOnNullableTimestamp2() throws Exception {
@@ -815,7 +779,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1427">[POLYPHENYDB-1427] Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields</a>.
+     * Test case for "Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields".
      */
     @Test
     public void testNonNullFilterOnDateType() throws SQLException {
@@ -850,7 +814,7 @@ public class CsvTest {
 
 
     /**
-     * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-1427">[POLYPHENYDB-1427] Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields</a>.
+     * Test case for "Code generation incorrect (does not compile) for DATE, TIME and TIMESTAMP fields".
      */
     @Test
     public void testGreaterThanFilterOnDateType() throws SQLException {
@@ -880,83 +844,6 @@ public class CsvTest {
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ).getClass(), equalTo( java.sql.Timestamp.class ) );
             assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
-        }
-    }
-
-
-    @Ignore("POLYPHENYDB-1894: there's a bug in the test code, so it does not test what it should")
-    @Test(timeout = 10000)
-    public void testCsvStream() throws Exception {
-        final File file = File.createTempFile( "stream", "csv" );
-        final String model = "{\n"
-                + "  version: '1.0',\n"
-                + "  defaultSchema: 'STREAM',\n"
-                + "  schemas: [\n"
-                + "    {\n"
-                + "      name: 'SS',\n"
-                + "      tables: [\n"
-                + "        {\n"
-                + "          name: 'DEPTS',\n"
-                + "          type: 'custom',\n"
-                + "          factory: '" + CsvStreamTableFactory.class.getName()
-                + "',\n"
-                + "          stream: {\n"
-                + "            stream: true\n"
-                + "          },\n"
-                + "          operand: {\n"
-                + "            file: " + escapeString( file.getAbsolutePath() ) + ",\n"
-                + "            flavor: \"scannable\"\n"
-                + "          }\n"
-                + "        }\n"
-                + "      ]\n"
-                + "    }\n"
-                + "  ]\n"
-                + "}\n";
-        final String[] strings = {
-                "DEPTNO:int,NAME:string",
-                "10,\"Sales\"",
-                "20,\"Marketing\"",
-                "30,\"Engineering\""
-        };
-
-        try (
-                Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:model=inline:" + model );
-                PrintWriter pw = Util.printWriter( file );
-                Worker<Void> worker = new Worker<>()
-        ) {
-            final Thread thread = new Thread( worker );
-            thread.start();
-
-            // Add some rows so that the table can deduce its row type.
-            final Iterator<String> lines = Arrays.asList( strings ).iterator();
-            pw.println( lines.next() ); // header
-            pw.flush();
-            worker.queue.put( writeLine( pw, lines.next() ) ); // first row
-            worker.queue.put( writeLine( pw, lines.next() ) ); // second row
-            final PolyphenyDbEmbeddedConnection polyphenyDbEmbeddedConnection = connection.unwrap( PolyphenyDbEmbeddedConnection.class );
-            final String sql = "select stream * from \"SS\".\"DEPTS\"";
-            final PreparedStatement statement = polyphenyDbEmbeddedConnection.prepareStatement( sql );
-            final ResultSet resultSet = statement.executeQuery();
-            int count = 0;
-            try {
-                while ( resultSet.next() ) {
-                    ++count;
-                    if ( lines.hasNext() ) {
-                        worker.queue.put( sleep( 10 ) );
-                        worker.queue.put( writeLine( pw, lines.next() ) );
-                    } else {
-                        worker.queue.put( cancel( statement ) );
-                    }
-                }
-                fail( "expected exception, got end of data" );
-            } catch ( SQLException e ) {
-                assertThat( e.getMessage(), is( "Statement canceled" ) );
-            }
-            assertThat( count, anyOf( is( strings.length - 2 ), is( strings.length - 1 ) ) );
-            assertThat( worker.e, nullValue() );
-            assertThat( worker.v, nullValue() );
-        } finally {
-            Util.discard( file.delete() );
         }
     }
 
@@ -1030,6 +917,7 @@ public class CsvTest {
         private Exception e;
 
 
+        @Override
         public void run() {
             try {
                 for ( ; ; ) {
@@ -1045,6 +933,7 @@ public class CsvTest {
         }
 
 
+        @Override
         public void close() {
             try {
                 queue.put( end );

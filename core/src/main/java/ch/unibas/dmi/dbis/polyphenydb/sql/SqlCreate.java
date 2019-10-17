@@ -57,7 +57,7 @@ public abstract class SqlCreate extends SqlDdl {
     /**
      * Whether "OR REPLACE" was specified.
      */
-    boolean replace;
+    protected boolean replace;
 
     /**
      * Whether "IF NOT EXISTS" was specified.

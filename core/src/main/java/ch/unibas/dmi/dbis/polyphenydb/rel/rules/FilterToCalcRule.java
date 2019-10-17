@@ -85,6 +85,7 @@ public class FilterToCalcRule extends RelOptRule {
     }
 
 
+    @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalFilter filter = call.rel( 0 );
         final RelNode rel = filter.getInput();

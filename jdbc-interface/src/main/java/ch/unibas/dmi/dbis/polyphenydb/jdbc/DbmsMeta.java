@@ -91,6 +91,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -109,10 +110,9 @@ import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.commons.lang3.time.StopWatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public class DbmsMeta implements ProtobufMeta {
 
     /**
@@ -121,7 +121,6 @@ public class DbmsMeta implements ProtobufMeta {
      * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
      */
     public static final int UNLIMITED_COUNT = -2;
-    private static final Logger LOG = LoggerFactory.getLogger( DbmsMeta.class );
 
     private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
@@ -144,7 +143,6 @@ public class DbmsMeta implements ProtobufMeta {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
     }
-
 
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -226,14 +224,14 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
         }
 
         final Map<DatabaseProperty, Object> map = new HashMap<>();
         // TODO
 
-        LOG.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
+        log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
         return map;
     }
 
@@ -241,8 +239,8 @@ public class DbmsMeta implements ProtobufMeta {
     // TODO: typeList is ignored
     @Override
     public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -280,8 +278,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -327,8 +325,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -357,8 +355,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getCatalogs( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getCatalogs( ConnectionHandle {} )", ch );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -383,8 +381,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTableTypes( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getTableTypes( ConnectionHandle {} )", ch );
         }
         final TableType[] tableTypes = TableType.values();
         final List<Object> objects = new LinkedList<>();
@@ -405,78 +403,78 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
         }
 
         // TODO
 
-        LOG.error( "[NOT IMPLEMENTED YET] getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         }
 
         // TODO
 
-        LOG.error( "[NOT IMPLEMENTED YET] getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
+        log.error( "[NOT IMPLEMENTED YET] getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
         return null;
     }
 
 
     @Override
     public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+        log.error( "[NOT IMPLEMENTED YET] getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
         return null;
     }
 
 
     @Override
     public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -514,8 +512,8 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -559,8 +557,8 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -603,21 +601,21 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
         }
 
         // TODO
 
-        LOG.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+        log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
         return null;
     }
 
 
     @Override
     public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getTypeInfo( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
         }
         final StatementHandle statementHandle = createStatement( ch );
         final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
@@ -672,8 +670,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -718,88 +716,88 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
+        log.error( "[NOT IMPLEMENTED YET] getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
         return null;
     }
 
 
     @Override
     public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getClientInfoProperties( ConnectionHandle {} )", ch );
+        log.error( "[NOT IMPLEMENTED YET] getClientInfoProperties( ConnectionHandle {} )", ch );
         return null;
     }
 
 
     @Override
     public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
         return null;
     }
 
 
     @Override
     public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+        log.error( "[NOT IMPLEMENTED YET] getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
         return null;
     }
 
@@ -813,11 +811,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatchProtobuf( final StatementHandle h, final List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
+        log.error( "[NOT IMPLEMENTED YET] executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
         return null;
     }
 
@@ -830,11 +828,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Iterable<Object> createIterable( final StatementHandle stmt, final QueryState state, final Signature signature, final List<TypedValue> parameters, final Frame firstFrame ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
+        log.error( "[NOT IMPLEMENTED YET] createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", stmt, state, signature, parameters, firstFrame );
         return null;
     }
 
@@ -849,11 +847,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
+        log.error( "[NOT IMPLEMENTED YET] prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
         return null;
     }
 
@@ -870,8 +868,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final PrepareCallback callback ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, PrepareCallback {} )", h, sql, maxRowCount, callback );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, PrepareCallback {} )", h, sql, maxRowCount, callback );
         }
         return prepareAndExecute( h, sql, maxRowCount, AvaticaUtils.toSaturatedInt( maxRowCount ), callback );
     }
@@ -890,8 +888,8 @@ public class DbmsMeta implements ProtobufMeta {
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
 
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
         }
         final StopWatch stopWatch = new StopWatch();
 
@@ -950,11 +948,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
+        log.error( "[NOT IMPLEMENTED YET] prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
         return null;
     }
 
@@ -968,11 +966,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
+        log.error( "[NOT IMPLEMENTED YET] executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
         return null;
     }
 
@@ -989,8 +987,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
         }
 
         final PolyphenyDbStatementHandle statement;
@@ -1035,11 +1033,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final long maxRowCount ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
+        log.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
         return null;
     }
 
@@ -1054,11 +1052,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
+        log.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
         return null;
     }
 
@@ -1070,8 +1068,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "createStatement( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "createStatement( ConnectionHandle {} )", ch );
         }
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
@@ -1082,7 +1080,7 @@ public class DbmsMeta implements ProtobufMeta {
         OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
 
         StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
-        LOG.trace( "created statement {}", h );
+        log.trace( "created statement {}", h );
         return h;
     }
 
@@ -1096,8 +1094,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeStatement( final StatementHandle statementHandle ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "closeStatement( StatementHandle {} )", statementHandle );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "closeStatement( StatementHandle {} )", statementHandle );
         }
 
         final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
@@ -1117,19 +1115,19 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void openConnection( final ConnectionHandle ch, final Map<String, String> connectionParameters ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
         }
 
         if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
-            if ( LOG.isDebugEnabled() ) {
-                LOG.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
             throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
         }
 
-        if ( LOG.isDebugEnabled() ) {
-            LOG.debug( "Creating a new connection." );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Creating a new connection." );
         }
 
         final CatalogUser user;
@@ -1193,14 +1191,14 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeConnection( ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "closeConnection( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "closeConnection( ConnectionHandle {} )", ch );
         }
 
         final PolyphenyDbConnectionHandle connectionToClose = OPEN_CONNECTIONS.remove( ch.id );
         if ( connectionToClose == null ) {
-            if ( LOG.isDebugEnabled() ) {
-                LOG.debug( "Connection {} already closed.", ch.id );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Connection {} already closed.", ch.id );
             }
             return;
         }
@@ -1208,8 +1206,8 @@ public class DbmsMeta implements ProtobufMeta {
         // Check if there is an running transaction
         Transaction transaction = connectionToClose.getCurrentTransaction();
         if ( transaction != null ) {
-            LOG.warn( "There is a running transaction associated with this connection {}", connectionToClose );
-            LOG.warn( "Rollback transaction {}", transaction );
+            log.warn( "There is a running transaction associated with this connection {}", connectionToClose );
+            log.warn( "Rollback transaction {}", transaction );
             rollback( ch );
         }
 
@@ -1239,11 +1237,11 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public boolean syncResults( final StatementHandle sh, final QueryState state, final long offset ) throws NoSuchStatementException {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
         }
 
-        LOG.error( "[NOT IMPLEMENTED YET] syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
+        log.error( "[NOT IMPLEMENTED YET] syncResults( StatementHandle {}, QueryState {}, long {} )", sh, state, offset );
         return false;
     }
 
@@ -1253,15 +1251,15 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "commit( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "commit( ConnectionHandle {} )", ch );
         }
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
         Transaction transaction = connection.getCurrentTransaction();
 
         if ( transaction == null ) {
-            if ( LOG.isTraceEnabled() ) {
-                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for ConnectionHandle {}", connection );
             }
             return;
         }
@@ -1281,15 +1279,15 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "rollback( ConnectionHandle {} )", ch );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "rollback( ConnectionHandle {} )", ch );
         }
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
         Transaction transaction = connection.getCurrentTransaction();
 
         if ( transaction == null ) {
-            if ( LOG.isTraceEnabled() ) {
-                LOG.trace( "No open transaction for ConnectionHandle {}", connection );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for ConnectionHandle {}", connection );
             }
             return;
         }
@@ -1312,14 +1310,14 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ConnectionProperties connectionSync( ConnectionHandle ch, ConnectionProperties connProps ) {
-        if ( LOG.isTraceEnabled() ) {
-            LOG.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
         }
 
         final PolyphenyDbConnectionHandle connectionToSync = OPEN_CONNECTIONS.get( ch.id );
         if ( connectionToSync == null ) {
-            if ( LOG.isDebugEnabled() ) {
-                LOG.debug( "Connection {} is not open.", ch.id );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Connection {} is not open.", ch.id );
             }
             throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
         }

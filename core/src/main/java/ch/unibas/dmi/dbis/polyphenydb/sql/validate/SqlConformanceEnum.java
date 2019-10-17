@@ -115,6 +115,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     SQL_SERVER_2008;
 
 
+    @Override
     public boolean isLiberal() {
         switch ( this ) {
             case BABEL:
@@ -125,6 +126,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isGroupByAlias() {
         switch ( this ) {
             case BABEL:
@@ -137,6 +139,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isGroupByOrdinal() {
         switch ( this ) {
             case BABEL:
@@ -149,6 +152,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isHavingAlias() {
         switch ( this ) {
             case BABEL:
@@ -161,6 +165,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isSortByOrdinal() {
         switch ( this ) {
             case DEFAULT:
@@ -180,6 +185,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isSortByAlias() {
         switch ( this ) {
             case DEFAULT:
@@ -197,11 +203,13 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isSortByAliasObscures() {
         return this == SqlConformanceEnum.STRICT_92;
     }
 
 
+    @Override
     public boolean isFromRequired() {
         switch ( this ) {
             case ORACLE_10:
@@ -216,6 +224,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isBangEqualAllowed() {
         switch ( this ) {
             case LENIENT:
@@ -257,6 +266,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isApplyAllowed() {
         switch ( this ) {
             case BABEL:
@@ -270,6 +280,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isInsertSubsetColumnsAllowed() {
         switch ( this ) {
             case BABEL:
@@ -283,6 +294,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean allowNiladicParentheses() {
         switch ( this ) {
             case BABEL:
@@ -295,6 +307,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean allowExplicitRowValueConstructor() {
         switch ( this ) {
             case DEFAULT:
@@ -306,6 +319,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean allowExtend() {
         switch ( this ) {
             case BABEL:
@@ -317,6 +331,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean isLimitStartCountAllowed() {
         switch ( this ) {
             case BABEL:
@@ -329,6 +344,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean allowGeometry() {
         switch ( this ) {
             case BABEL:
@@ -342,6 +358,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean shouldConvertRaggedUnionTypesToVarying() {
         switch ( this ) {
             case PRAGMATIC_99:
@@ -357,6 +374,7 @@ public enum SqlConformanceEnum implements SqlConformance {
     }
 
 
+    @Override
     public boolean allowExtendedTrim() {
         switch ( this ) {
             case BABEL:

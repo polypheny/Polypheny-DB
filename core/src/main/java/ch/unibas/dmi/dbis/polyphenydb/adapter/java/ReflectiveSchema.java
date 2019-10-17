@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
@@ -70,7 +69,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -129,7 +127,6 @@ public class ReflectiveSchema extends AbstractSchema {
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected Map<String, Table> getTableMap() {
         if ( tableMap == null ) {
@@ -269,16 +266,19 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return ((JavaTypeFactory) typeFactory).createType( elementType );
         }
 
 
+        @Override
         public Statistic getStatistic() {
             return Statistics.UNKNOWN;
         }
 
 
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             if ( elementType == Object[].class ) {
                 //noinspection unchecked
@@ -290,77 +290,15 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
             return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+                @Override
                 @SuppressWarnings("unchecked")
                 public Enumerator<T> enumerator() {
                     return (Enumerator<T>) enumerable.enumerator();
                 }
             };
-        }
-    }
-
-
-    /**
-     * Factory that creates a schema by instantiating an object and looking at its public fields.
-     *
-     * The following example instantiates a {@code FoodMart} object as a schema that contains tables called {@code EMPS} and {@code DEPTS} based on the object's fields.
-     *
-     * <blockquote><pre>
-     * schemas: [
-     *     {
-     *       name: "foodmart",
-     *       type: "custom",
-     *       factory: "ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema$Factory",
-     *       operand: {
-     *         class: "com.acme.FoodMart",
-     *         staticMethod: "instance"
-     *       }
-     *     }
-     *   ]
-     * &nbsp;
-     * class FoodMart {
-     *   public static final FoodMart instance() {
-     *     return new FoodMart();
-     *   }
-     * &nbsp;
-     *   Employee[] EMPS;
-     *   Department[] DEPTS;
-     * }</pre></blockquote>
-     */
-    public static class Factory implements SchemaFactory {
-
-        public Schema create( SchemaPlus parentSchema, String name, Map<String, Object> operand ) {
-            Class<?> clazz;
-            Object target;
-            final Object className = operand.get( "class" );
-            if ( className != null ) {
-                try {
-                    clazz = Class.forName( (String) className );
-                } catch ( ClassNotFoundException e ) {
-                    throw new RuntimeException( "Error loading class " + className, e );
-                }
-            } else {
-                throw new RuntimeException( "Operand 'class' is required" );
-            }
-            final Object methodName = operand.get( "staticMethod" );
-            if ( methodName != null ) {
-                try {
-                    //noinspection unchecked
-                    Method method = clazz.getMethod( (String) methodName );
-                    target = method.invoke( null );
-                } catch ( Exception e ) {
-                    throw new RuntimeException( "Error invoking method " + methodName, e );
-                }
-            } else {
-                try {
-                    final Constructor<?> constructor = clazz.getConstructor();
-                    target = constructor.newInstance();
-                } catch ( Exception e ) {
-                    throw new RuntimeException( "Error instantiating class " + className, e );
-                }
-            }
-            return new ReflectiveSchema( target );
         }
     }
 
@@ -385,6 +323,7 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public TranslatableTable apply( final List<Object> arguments ) {
             try {
                 final Object o = method.invoke( schema.getTarget(), arguments.toArray() );
@@ -450,6 +389,7 @@ public class ReflectiveSchema extends AbstractSchema {
         }
 
 
+        @Override
         public Object[] apply( Object o ) {
             try {
                 final Object[] objects = new Object[fields.length];

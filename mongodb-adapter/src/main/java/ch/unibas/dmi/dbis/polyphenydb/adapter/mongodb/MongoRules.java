@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
@@ -57,6 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
@@ -74,14 +74,12 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
-
-import org.slf4j.Logger;
-
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
 
 
 /**
@@ -317,6 +315,7 @@ public class MongoRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Sort sort = (Sort) rel;
             final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
@@ -338,6 +337,7 @@ public class MongoRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalFilter filter = (LogicalFilter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( out );
@@ -359,6 +359,7 @@ public class MongoRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
@@ -551,6 +552,7 @@ public class MongoRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final LogicalAggregate agg = (LogicalAggregate) rel;
             final RelTraitSet traitSet =
@@ -782,5 +784,3 @@ public class MongoRules {
   }
 */
 }
-
-// End MongoRules.java

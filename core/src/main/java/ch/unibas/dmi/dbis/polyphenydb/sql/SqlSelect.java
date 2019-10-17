@@ -108,6 +108,7 @@ public class SqlSelect extends SqlCall {
     }
 
 
+    @Override
     public SqlOperator getOperator() {
         return SqlSelectOperator.INSTANCE;
     }
@@ -266,6 +267,7 @@ public class SqlSelect extends SqlCall {
     }
 
 
+    @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateQuery( this, scope, validator.getUnknownType() );
     }
