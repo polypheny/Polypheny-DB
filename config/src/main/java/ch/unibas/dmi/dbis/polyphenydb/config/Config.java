@@ -31,6 +31,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -321,6 +322,41 @@ public abstract class Config {
     public boolean setDecimal( final BigDecimal value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type BigDecimal on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
+
+
+    /**
+     * Get a list af valid enum values.
+     *
+     * @return List of enum values
+     * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
+     */
+    public List<Enum> getEnumValues() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a List of Enum values!" );
+    }
+
+
+    /**
+     * Get the current value of the enum type.
+     *
+     * @return List of enum values
+     * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
+     */
+    public Enum getEnum() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Set the value of this config.
+     *
+     * @param value New value for this config
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as BigDecimal.
+     */
+    public boolean setEnum( final Enum value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type Enum value on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
 
     // ----- Arrays ------
 

@@ -132,6 +132,36 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    enum testEnum {FOO, BAR, FOO_BAR}
+
+
+    ;
+
+
+    @Test
+    public void configEnum() {
+        Config c = new ConfigEnum( "enum", testEnum.class, testEnum.FOO );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "enum" ).addObserver( o );
+
+        Assert.assertSame( testEnum.FOO, c.getEnum() );
+
+        c.setEnum( testEnum.BAR );
+
+        Assert.assertSame( testEnum.BAR, c.getEnum() );
+        Assert.assertEquals( c.getEnumValues().get( 0 ), testEnum.FOO );
+        Assert.assertEquals( c.getEnumValues().get( 1 ), testEnum.BAR );
+        Assert.assertEquals( c.getEnumValues().get( 2 ), testEnum.FOO_BAR );
+
+        c.setEnum( c.getEnumValues().get( 2 ) );
+        Assert.assertSame( testEnum.FOO_BAR, c.getEnum() );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 2, o.n );
+    }
+
+
     @Test
     public void configArray() {
         int[] array = { 1, 2, 3, 4, 5 };
