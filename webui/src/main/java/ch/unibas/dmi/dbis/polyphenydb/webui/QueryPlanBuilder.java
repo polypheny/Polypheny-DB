@@ -163,8 +163,12 @@ public class QueryPlanBuilder {
                     }
                 }
                 return builder.sort( columns );
+            case "Union":
+                return builder.union( node.all, node.inputCount );
+            case "Minus":
+                return builder.minus( node.all );
             default:
-                throw new IllegalArgumentException( "Node of type " + node.type + " is not supported yet." );
+                throw new IllegalArgumentException( "PlanBuilder node of type '" + node.type + "' is not supported yet." );
         }
     }
 

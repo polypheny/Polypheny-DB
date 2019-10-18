@@ -76,4 +76,7 @@ public class UIRelNode {
 
     //sort
     public SortState[] sortColumns;
+
+    //union, minus
+    public boolean all;
 }
