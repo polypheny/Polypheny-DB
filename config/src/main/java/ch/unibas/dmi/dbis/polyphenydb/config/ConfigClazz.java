@@ -27,39 +27,39 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.Set;
+import org.reflections.Reflections;
 
 
-public class ConfigEnum extends Config {
+public class ConfigClazz extends Config {
 
-    private List<Enum> enumValues;
-    private Enum value;
+    private Set<Class<?>> classes;
+    private Class value;
 
 
-    public ConfigEnum( final String key, final Class enumClass, final Enum defaultValue ) {
+    public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
         super( key );
-        enumValues = new ArrayList<Enum>( EnumSet.allOf( enumClass ) );
+        Reflections reflections = new Reflections( "ch.unibas.dmi.dbis.polyphenydb" );
+        classes = reflections.getSubTypesOf( superClass );
         this.value = defaultValue;
     }
 
 
     @Override
-    public List<Enum> getEnumValues() {
-        return enumValues;
+    public Set<Class<?>> getClazzes() {
+        return classes;
     }
 
 
     @Override
-    public Enum getEnum() {
+    public Class getClazz() {
         return value;
     }
 
 
     @Override
-    public boolean setEnum( final Enum value ) {
-        if ( enumValues.contains( value ) ) {
+    public boolean setClazz( final Class value ) {
+        if ( classes.contains( value ) ) {
             if ( validate( value ) ) {
                 this.value = value;
                 notifyConfigListeners();
@@ -68,14 +68,14 @@ public class ConfigEnum extends Config {
                 return false;
             }
         } else {
-            throw new ConfigRuntimeException( "This enum in the specified enum class." );
+            throw new ConfigRuntimeException( "This class does not implement the specified super class" );
         }
     }
 
 
     @Override
     void setValueFromFile( final com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading enum of values from config files is not supported yet." );
+        throw new ConfigRuntimeException( "Reading class from config files is not supported yet." );
     }
 
 }

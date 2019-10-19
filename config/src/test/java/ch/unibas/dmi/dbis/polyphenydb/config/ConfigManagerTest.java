@@ -132,10 +132,7 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
-    enum testEnum {FOO, BAR, FOO_BAR}
-
-
-    ;
+    private enum testEnum {FOO, BAR, FOO_BAR}
 
 
     @Test
@@ -159,6 +156,40 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertTrue( o.wasNotified() );
         Assert.assertEquals( 2, o.n );
+    }
+
+
+    @Test
+    public void configClazz() {
+
+        class TestClass {
+
+            int a;
+        }
+        class FooImplementation extends TestClass {
+
+            int b;
+        }
+        class BarImplementation extends TestClass {
+
+            int c;
+        }
+
+        Config c = new ConfigClazz( "clazz", TestClass.class, FooImplementation.class );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "clazz" ).addObserver( o );
+
+        Assert.assertSame( FooImplementation.class, c.getClazz() );
+
+        c.setClazz( BarImplementation.class );
+
+        Assert.assertSame( BarImplementation.class, c.getClazz() );
+        Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 1, o.n );
     }
 
 

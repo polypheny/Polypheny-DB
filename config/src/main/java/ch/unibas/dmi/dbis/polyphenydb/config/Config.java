@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -356,6 +357,38 @@ public abstract class Config {
         throw new ConfigRuntimeException( "Not possible to set a value of type Enum value on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
+
+    /**
+     * Get a list af classes implementing the specified super type.
+     *
+     * @return Set of classes
+     * @throws ConfigRuntimeException If config value can not be converted into a set of classes.
+     */
+    public Set<Class<?>> getClazzes() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a set of classes!" );
+    }
+
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of enum values
+     * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
+     */
+    public Class getClazz() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+    }
+
+
+    /**
+     * Set the value of this config.
+     *
+     * @param value New value for this config
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as BigDecimal.
+     */
+    public boolean setClazz( final Class value ) {
+        throw new ConfigRuntimeException( "Not possible to set a value of type Class on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
 
 
     // ----- Arrays ------
