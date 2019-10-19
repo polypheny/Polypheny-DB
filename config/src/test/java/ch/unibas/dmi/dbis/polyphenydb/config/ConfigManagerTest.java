@@ -28,6 +28,8 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -147,11 +149,11 @@ public class ConfigManagerTest implements ConfigListener {
         c.setEnum( testEnum.BAR );
 
         Assert.assertSame( testEnum.BAR, c.getEnum() );
-        Assert.assertEquals( c.getEnumValues().get( 0 ), testEnum.FOO );
-        Assert.assertEquals( c.getEnumValues().get( 1 ), testEnum.BAR );
-        Assert.assertEquals( c.getEnumValues().get( 2 ), testEnum.FOO_BAR );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
 
-        c.setEnum( c.getEnumValues().get( 2 ) );
+        c.setEnum( testEnum.FOO_BAR );
         Assert.assertSame( testEnum.FOO_BAR, c.getEnum() );
 
         Assert.assertTrue( o.wasNotified() );
@@ -190,6 +192,54 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertTrue( o.wasNotified() );
         Assert.assertEquals( 1, o.n );
+    }
+
+
+    @Test
+    public void configClazzList() {
+
+        class TestClass {
+
+            int a;
+        }
+        class FooImplementation extends TestClass {
+
+            int b;
+        }
+        class BarImplementation extends TestClass {
+
+            int c;
+        }
+        class FooBarImplementation extends TestClass {
+
+            int d;
+        }
+
+        List<Class> l = new ArrayList<>();
+        l.add( FooImplementation.class );
+        l.add( BarImplementation.class );
+        Config c = new ConfigClazzList( "clazzList", TestClass.class, l );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "clazzList" ).addObserver( o );
+
+        Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzList().contains( BarImplementation.class ) );
+        Assert.assertFalse( c.getClazzList().contains( FooBarImplementation.class ) );
+
+        c.addClazz( FooBarImplementation.class );
+        c.removeClazz( BarImplementation.class );
+
+        Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+        Assert.assertFalse( c.getClazzList().contains( BarImplementation.class ) );
+        Assert.assertTrue( c.getClazzList().contains( FooBarImplementation.class ) );
+
+        Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( FooBarImplementation.class ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 2, o.n );
     }
 
 

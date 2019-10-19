@@ -27,26 +27,27 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
-import java.util.ArrayList;
+import com.google.common.collect.ImmutableSet;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Set;
 
 
 public class ConfigEnum extends Config {
 
-    private List<Enum> enumValues;
+    private Set<Enum> enumValues;
     private Enum value;
 
 
     public ConfigEnum( final String key, final Class enumClass, final Enum defaultValue ) {
         super( key );
-        enumValues = new ArrayList<Enum>( EnumSet.allOf( enumClass ) );
-        this.value = defaultValue;
+        //noinspection unchecked
+        enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
+        setEnum( defaultValue );
     }
 
 
     @Override
-    public List<Enum> getEnumValues() {
+    public Set<Enum> getEnumValues() {
         return enumValues;
     }
 

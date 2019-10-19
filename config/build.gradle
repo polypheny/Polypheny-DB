@@ -62,6 +62,8 @@ dependencies {
     compile group: "com.typesafe", name: "config", version: "1.2.1"
 
     compile group: "org.reflections", name: "reflections", version: "0.9.11"
+
+    compile group: "com.google.guava", name: "guava", version: "11.0.2"
     
 
     // --- Test Compile ---

@@ -27,23 +27,32 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.reflections.Reflections;
 
 
-public class ConfigClazz extends Config {
+public class ConfigClazzList extends Config {
 
     private final Set<Class> classes;
-    private Class value;
+    private final List<Class> value;
 
 
-    public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
+    public ConfigClazzList( final String key, final Class superClass ) {
         super( key );
         Reflections reflections = new Reflections( "ch.unibas.dmi.dbis.polyphenydb" );
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
-        setClazz( defaultValue );
+        this.value = new ArrayList<>();
+    }
+
+
+    public ConfigClazzList( final String key, final Class superClass, final List<Class> defaultValue ) {
+        this( key, superClass );
+        setClazzList( defaultValue );
     }
 
 
@@ -54,30 +63,55 @@ public class ConfigClazz extends Config {
 
 
     @Override
-    public Class getClazz() {
-        return value;
+    public List<Class> getClazzList() {
+        return ImmutableList.copyOf( value );
     }
 
 
     @Override
-    public boolean setClazz( final Class value ) {
-        if ( classes.contains( value ) ) {
+    public boolean setClazzList( final List<Class> value ) {
+        if ( classes.containsAll( value ) ) {
             if ( validate( value ) ) {
-                this.value = value;
+                this.value.clear();
+                this.value.addAll( value );
                 notifyConfigListeners();
                 return true;
             } else {
                 return false;
             }
         } else {
-            throw new ConfigRuntimeException( "This class does not implement the specified super class" );
+            throw new ConfigRuntimeException( "This list contains at least one class that does not implement the specified super class!" );
         }
     }
 
 
     @Override
+    public boolean addClazz( final Class value ) {
+        if ( classes.contains( value ) ) {
+            if ( validate( value ) ) {
+                this.value.add( value );
+                notifyConfigListeners();
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new ConfigRuntimeException( "This class does not implement the specified super class!" );
+        }
+    }
+
+
+    @Override
+    public boolean removeClazz( final Class value ) {
+        boolean b = this.value.remove( value );
+        notifyConfigListeners();
+        return b;
+    }
+
+
+    @Override
     void setValueFromFile( final com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading class from config files is not supported yet." );
+        throw new ConfigRuntimeException( "Reading class list from config files is not supported yet." );
     }
 
 }

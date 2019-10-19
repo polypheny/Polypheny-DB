@@ -326,13 +326,13 @@ public abstract class Config {
 
 
     /**
-     * Get a list af valid enum values.
+     * Get a set af valid enum values.
      *
      * @return List of enum values
      * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
      */
-    public List<Enum> getEnumValues() {
-        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a List of Enum values!" );
+    public Set<Enum> getEnumValues() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a set of Enum values!" );
     }
 
 
@@ -351,7 +351,7 @@ public abstract class Config {
      * Set the value of this config.
      *
      * @param value New value for this config
-     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as BigDecimal.
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as class.
      */
     public boolean setEnum( final Enum value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type Enum value on a configuration element of type " + this.getClass().getSimpleName() + "!" );
@@ -364,7 +364,7 @@ public abstract class Config {
      * @return Set of classes
      * @throws ConfigRuntimeException If config value can not be converted into a set of classes.
      */
-    public Set<Class<?>> getClazzes() {
+    public Set<Class> getClazzes() {
         throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a set of classes!" );
     }
 
@@ -372,11 +372,11 @@ public abstract class Config {
     /**
      * Get the current value of this config
      *
-     * @return List of enum values
-     * @throws ConfigRuntimeException If config value can not be converted into a Enum value representation.
+     * @return The current class
+     * @throws ConfigRuntimeException If config value can not be converted into a class.
      */
     public Class getClazz() {
-        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a Enum value!" );
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a class!" );
     }
 
 
@@ -384,12 +384,55 @@ public abstract class Config {
      * Set the value of this config.
      *
      * @param value New value for this config
-     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as BigDecimal.
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as class.
      */
     public boolean setClazz( final Class value ) {
         throw new ConfigRuntimeException( "Not possible to set a value of type Class on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 
+
+    /**
+     * Get the current value of this config
+     *
+     * @return List of enum values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of classes.
+     */
+    public List<Class> getClazzList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a list of classes!" );
+    }
+
+
+    /**
+     * Set the value of this config.
+     *
+     * @param value New value for this config
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of classes.
+     */
+    public boolean setClazzList( final List<Class> value ) {
+        throw new ConfigRuntimeException( "Not possible to set a list of classes on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Add the value to the list.
+     *
+     * @param value Value to add
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of classes.
+     */
+    public boolean addClazz( final Class value ) {
+        throw new ConfigRuntimeException( "Not possible add a class on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Remove the value to the list.
+     *
+     * @param value Value to remove
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of classes.
+     */
+    public boolean removeClazz( final Class value ) {
+        throw new ConfigRuntimeException( "Not possible remove a class on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
 
     // ----- Arrays ------
 
