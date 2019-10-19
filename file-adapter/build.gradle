@@ -54,7 +54,7 @@ targetCompatibility = 1.8
 
 dependencies {
     compile project(":core")
-	compile project(":csv-adapter")
+    compile project(":csv-adapter")
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
 

@@ -57,18 +57,18 @@ dependencies {
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
 
-	compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
-	
+    compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
+
     compile group: "com.google.guava", name: "guava", version:"19.0"
     compile group: "org.apache.pig", name: "pig", version:"0.16.0", classifier:"h2"
 
-	
+
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version:"4.12"
-	
+
     testCompile group: "org.apache.hadoop", name: "hadoop-client", version:"2.7.5"
     testCompile group: "org.apache.hadoop", name: "hadoop-common", version:"2.7.5"
     testCompile group: "org.apache.pig", name: "pigunit", version:"0.16.0"

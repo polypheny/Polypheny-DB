@@ -152,7 +152,7 @@ task generateFmppSources {
 task generateParser (type: CompileJavaccTask) {
     dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
-	arguments = [static: "false", lookahead: "2"]
+    arguments = [static: "false", lookahead: "2"]
     inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/ch/unibas/dmi/dbis/polyphenydb/sql/parser/impl")
 }
