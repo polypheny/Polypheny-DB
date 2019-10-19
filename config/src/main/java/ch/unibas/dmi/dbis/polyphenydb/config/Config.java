@@ -359,6 +359,51 @@ public abstract class Config {
 
 
     /**
+     * Get the current value of this config
+     *
+     * @return List of enum values
+     * @throws ConfigRuntimeException If config value can not be converted into a list of enums.
+     */
+    public List<Enum> getEnumList() {
+        throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a list of enums!" );
+    }
+
+
+    /**
+     * Set the value of this config.
+     *
+     * @param value New value for this config
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of enums.
+     */
+    public boolean setEnumList( final List<Enum> value ) {
+        throw new ConfigRuntimeException( "Not possible to set a list of enmus on a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Add the value to the list.
+     *
+     * @param value Value to add
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of enums.
+     */
+    public boolean addEnum( final Enum value ) {
+        throw new ConfigRuntimeException( "Not possible add a enum to a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+    /**
+     * Remove the value from the list.
+     *
+     * @param value Value to remove
+     * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as list of enums.
+     */
+    public boolean removeEnum( final Enum value ) {
+        throw new ConfigRuntimeException( "Not possible remove a enum from a configuration element of type " + this.getClass().getSimpleName() + "!" );
+    }
+
+
+
+    /**
      * Get a list af classes implementing the specified super type.
      *
      * @return Set of classes
@@ -381,7 +426,7 @@ public abstract class Config {
 
 
     /**
-     * Set the value of this config.
+     * Set the value from this config.
      *
      * @param value New value for this config
      * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as class.

@@ -27,22 +27,31 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 
-public class ConfigEnum extends Config {
+public class ConfigEnumList extends Config {
 
     private final Set<Enum> enumValues;
-    private Enum value;
+    private final List<Enum> value;
 
 
-    public ConfigEnum( final String key, final Class enumClass, final Enum defaultValue ) {
+    public ConfigEnumList( final String key, final Class enumClass ) {
         super( key );
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
-        setEnum( defaultValue );
+        this.value = new ArrayList<>();
+    }
+
+
+    public ConfigEnumList( final String key, final Class superClass, final List<Enum> defaultValue ) {
+        this( key, superClass );
+        setEnumList( defaultValue );
     }
 
 
@@ -53,30 +62,55 @@ public class ConfigEnum extends Config {
 
 
     @Override
-    public Enum getEnum() {
-        return value;
+    public List<Enum> getEnumList() {
+        return ImmutableList.copyOf( value );
     }
 
 
     @Override
-    public boolean setEnum( final Enum value ) {
-        if ( enumValues.contains( value ) ) {
+    public boolean setEnumList( final List<Enum> value ) {
+        if ( enumValues.containsAll( value ) ) {
             if ( validate( value ) ) {
-                this.value = value;
+                this.value.clear();
+                this.value.addAll( value );
                 notifyConfigListeners();
                 return true;
             } else {
                 return false;
             }
         } else {
-            throw new ConfigRuntimeException( "This enum in the specified enum class." );
+            throw new ConfigRuntimeException( "This list contains at least one enum that does not belong to the defined enum class!" );
         }
     }
 
 
     @Override
+    public boolean addEnum( final Enum value ) {
+        if ( enumValues.contains( value ) ) {
+            if ( validate( value ) ) {
+                this.value.add( value );
+                notifyConfigListeners();
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new ConfigRuntimeException( "This enum does not belong to the specified enum class!" );
+        }
+    }
+
+
+    @Override
+    public boolean removeEnum( final Enum value ) {
+        boolean b = this.value.remove( value );
+        notifyConfigListeners();
+        return b;
+    }
+
+
+    @Override
     void setValueFromFile( final com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading enum of values from config files is not supported yet." );
+        throw new ConfigRuntimeException( "Reading enum list from config files is not supported yet." );
     }
 
 }

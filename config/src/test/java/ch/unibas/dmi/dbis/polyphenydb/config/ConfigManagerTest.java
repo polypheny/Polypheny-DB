@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,6 +163,34 @@ public class ConfigManagerTest implements ConfigListener {
 
 
     @Test
+    public void configEnumList() {
+        Config c = new ConfigEnumList( "enumList", testEnum.class, ImmutableList.of( testEnum.BAR ) );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "enumList" ).addObserver( o );
+
+        Assert.assertTrue( c.getEnumList().contains( testEnum.BAR ) );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.FOO ) );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( c.removeEnum( testEnum.BAR ) );
+        Assert.assertFalse( c.removeEnum( testEnum.FOO ) );
+        c.addEnum( testEnum.FOO );
+        c.addEnum( testEnum.FOO_BAR );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumList().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumList().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 4, o.n );
+    }
+
+
+    @Test
     public void configClazz() {
 
         class TestClass {
@@ -227,8 +256,9 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertTrue( c.getClazzList().contains( BarImplementation.class ) );
         Assert.assertFalse( c.getClazzList().contains( FooBarImplementation.class ) );
 
+        Assert.assertFalse( c.removeClazz( FooBarImplementation.class ) );
         c.addClazz( FooBarImplementation.class );
-        c.removeClazz( BarImplementation.class );
+        Assert.assertTrue( c.removeClazz( BarImplementation.class ) );
 
         Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
         Assert.assertFalse( c.getClazzList().contains( BarImplementation.class ) );
@@ -239,7 +269,7 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertTrue( c.getClazzes().contains( FooBarImplementation.class ) );
 
         Assert.assertTrue( o.wasNotified() );
-        Assert.assertEquals( 2, o.n );
+        Assert.assertEquals( 3, o.n );
     }
 
 
