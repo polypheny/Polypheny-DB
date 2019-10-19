@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
+import com.typesafe.config.ConfigException;
 import java.util.Set;
 import org.reflections.Reflections;
 
@@ -77,7 +78,25 @@ public class ConfigClazz extends Config {
 
     @Override
     void setValueFromFile( final com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading class from config files is not supported yet." );
+        try {
+            setClazz( getByString( conf.getString( this.getKey() ) ) );
+        } catch ( ConfigException.Missing e ) {
+            // This should have been checked before!
+            throw new ConfigRuntimeException( "No config with this key found in the configuration file." );
+        } catch ( ConfigException.WrongType e ) {
+            throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
+        }
+
+    }
+
+
+    private Class getByString( String str ) throws ConfigRuntimeException {
+        for ( Class c : classes ) {
+            if ( str.equalsIgnoreCase( c.getCanonicalName() ) ) {
+                return c;
+            }
+        }
+        throw new ConfigRuntimeException( "No class with name " + str + " found in the list of valid classes." );
     }
 
 }

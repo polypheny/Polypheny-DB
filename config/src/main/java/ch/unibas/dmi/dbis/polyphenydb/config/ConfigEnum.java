@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
+import com.typesafe.config.ConfigException;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -76,7 +77,24 @@ public class ConfigEnum extends Config {
 
     @Override
     void setValueFromFile( final com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading enum of values from config files is not supported yet." );
+        try {
+            setEnum( getByString( conf.getString( this.getKey() ) ) );
+        } catch ( ConfigException.Missing e ) {
+            // This should have been checked before!
+            throw new ConfigRuntimeException( "No config with this key found in the configuration file." );
+        } catch ( ConfigException.WrongType e ) {
+            throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
+        }
+
     }
 
+
+    private Enum getByString( String str ) throws ConfigRuntimeException {
+        for ( Enum e : enumValues ) {
+            if ( str.equalsIgnoreCase( e.name() ) ) {
+                return e;
+            }
+        }
+        throw new ConfigRuntimeException( "No enum with name \"" + str + "\" found in the set of valid enums." );
+    }
 }
