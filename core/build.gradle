@@ -69,44 +69,44 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: "4.0"
 
-    compile group: "org.slf4j", name: "slf4j-api", version: "1.7.26"
+    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
     
-    compile group: "com.google.guava", name: "guava", version: "11.0.2"
-    compile group: "org.apache.commons", name: "commons-dbcp2", version:"2.5.0"
-    compile group: "org.apache.commons", name: "commons-lang3", version:"3.8"
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
+    compile group: "com.google.guava", name: "guava", version: guava_version
+    compile group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version
+    compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+    compile group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
-    compile group: "com.esri.geometry", name: "esri-geometry-api", version:"2.2.0"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version:"2.9.6"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version:"2.9.6"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version:"2.9.6"
-    compile group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version:"2.9.6"
-    compile group: "com.google.code.findbugs", name: "jsr305", version:"3.0.1"
-    compile group: "com.yahoo.datasketches", name: "sketches-core", version:"0.9.0"
-    compile(group: "com.jayway.jsonpath", name: "json-path", version:"2.4.0") { exclude(module: "json-smart") }
-    compile group: "net.hydromatic", name: "aggdesigner-algorithm", version:"6.0"
-    compile group: "org.codehaus.janino", name: "janino", version:"3.0.11"
-    compile group: "org.codehaus.janino", name: "commons-compiler", version:"3.0.11"
+    compile group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    compile group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
+    compile group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
+    compile group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version
+    compile(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }
+    compile group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version
+    compile group: "org.codehaus.janino", name: "janino", version: janino_version
+    compile group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version:"1.16.0-POLYPHENYDB"
+    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
     
 
     // --- Test Compile ---
-    testCompile group: "junit", name: "junit", version: "4.12"
+    testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
-    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version:"1.16.0-POLYPHENYDB"
+    testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version
 
-    testCompile group: "org.apache.commons", name: "commons-pool2", version:"2.6.0"
-    testCompile group: "com.h2database", name: "h2", version:"1.4.197"
-    testCompile group: "mysql", name: "mysql-connector-java", version:"5.1.20"
-    testCompile group: "org.hsqldb", name: "hsqldb", version:"2.4.1"
-    testCompile group: "org.postgresql", name: "postgresql", version:"9.3-1102-jdbc41"
+    testCompile group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version
+    testCompile group: "com.h2database", name: "h2", version: h2_version
+    testCompile group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
+    testCompile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
+    testCompile group: "org.postgresql", name: "postgresql", version: postgresql_version
 
-    testCompile group: "org.incava", name: "java-diff", version:"1.1.2"
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version:"1.3"
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version:"1.7.25"
+    testCompile group: "org.incava", name: "java-diff", version: java_diff_version
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 }
 
 
