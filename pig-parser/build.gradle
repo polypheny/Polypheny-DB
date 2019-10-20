@@ -62,7 +62,7 @@ targetCompatibility = 1.8
 
 dependencies {
     // Javacc
-    javacc group: 'net.java.dev.javacc', name: 'javacc', version: '4.0'
+    javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version
     
     compile project(':core')
 
