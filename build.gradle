@@ -54,7 +54,7 @@ ext {
     mysql_connector_java_version = "5.1.20"
     natty_version = "0.13"
     opencsv_version = "2.3"
-    oshi_core_version = "4.0.0" // alternative version: 3.13.2
+    oshi_core_version = "3.13.2" // alternative version: 4.0.0
     pigunit_version = "0.16.0"
     pig_version = "0.16.0"
     polyphenydb_jdbc_driver_version = "1.0-SNAPSHOT"
