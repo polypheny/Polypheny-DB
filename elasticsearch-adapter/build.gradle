@@ -55,31 +55,31 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
+    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
+    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
 
-    compile group: "com.google.guava", name: "guava", version:"19.0"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version:"2.9.6"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version:"2.9.6"
-    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version:"2.9.6"
-    compile group: "com.google.code.findbugs", name: "jsr305", version:"3.0.1"
-    compile group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version:"6.2.4"
-    compile group: "org.apache.httpcomponents", name: "httpcore", version:"4.4.10"
-    compile group: "org.apache.httpcomponents", name: "httpclient", version:"4.5.6"
+    compile group: "com.google.guava", name: "guava", version: guava_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
+    compile group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
+    compile group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version
+    compile group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version
+    compile group: "org.apache.httpcomponents", name: "httpclient", version: httpclient_version
 
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version:"4.12"
+    testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.elasticsearch", name: "elasticsearch", version:"6.2.4"
-    testCompile group: "org.elasticsearch.plugin", name: "transport-netty4-client", version:"6.2.4"
-    testCompile group: "org.codelibs.elasticsearch.module", name: "lang-painless", version:"6.2.4"
-    testCompile group: "org.apache.logging.log4j", name: "log4j-api", version:"2.11.0"
-    testCompile group: "org.apache.logging.log4j", name: "log4j-core", version:"2.11.0"
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version:"1.3"
+    testCompile group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version
+    testCompile group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version
+    testCompile group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version
+    testCompile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
+    testCompile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
 }
 
 

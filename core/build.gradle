@@ -67,7 +67,7 @@ dependencies {
     compile project(":config")
     compile project(":information")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: "4.0"
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version
 
     compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
     
