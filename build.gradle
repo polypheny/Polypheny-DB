@@ -5,6 +5,7 @@ ext {
     avatica_server_version = "1.16.0-POLYPHENYDB"
     byteunits_version = "0.9.1"
     calcite_linq4j_version = "1.18.0"
+    cassandra_all_version = "3.11.2"
     cassandra_driver_core_version = "3.6.0"
     cassandra_unit_version = "3.5.0.1"
     commons_codec_version = "1.12"
