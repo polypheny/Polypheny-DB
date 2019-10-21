@@ -61,15 +61,12 @@ dependencies {
     compile project(":jdbc-interface")
 
     ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version // License: Apache 2.0
     compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
     compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
+    compile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 
     ////// CLI PARSING
     compile group: "com.github.rvesse", name: "airline", version: airline_version
-
-    ////// APACHE COMMONS LANG
-    //compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
     compile group: "com.github.oshi", name: "oshi-core", version: oshi_core_version
     
@@ -79,10 +76,10 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
-    testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
-    testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
-    testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
+    //testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
+    //testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
+    //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
+    //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
     testCompile group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
 }

@@ -53,18 +53,13 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
-    
     compile group: "com.sparkjava", name: "spark-core", version: spark_core_version
-
     compile group: "com.google.code.gson", name: "gson", version: gson_version
-    
     compile group: "com.typesafe", name: "config", version: config_version
     
 
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: junit_version
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 }
 
 
