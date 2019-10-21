@@ -54,20 +54,20 @@ targetCompatibility = 1.8
 
 dependencies {
     compile project(":core")
-	compile project(":csv-adapter")
+    compile project(":csv-adapter")
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
+    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    compile group: "com.google.guava", name: "guava", version:"19.0"
-    compile group: "org.hamcrest", name: "hamcrest-core", version:"1.3"
-    compile group: "com.joestelmach", name: "natty", version:"0.13"
-    compile group: "org.jsoup", name: "jsoup", version:"1.11.3"
+    compile group: "com.google.guava", name: "guava", version: guava_version
+    compile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    compile group: "com.joestelmach", name: "natty", version: natty_version
+    compile group: "org.jsoup", name: "jsoup", version: jsoup_version
 
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version:"4.12"
+    testCompile group: "junit", name: "junit", version: junit_version
 }
 
 
