@@ -68,8 +68,6 @@ dependencies {
 
     compile group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
 
-    compile group: 'org.slf4j', name: 'slf4j-api', version: slf4j_api_version
-
     compile group: 'com.google.guava', name: 'guava', version: guava_version
 
 
@@ -82,7 +80,6 @@ dependencies {
     testCompile group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version
     testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: hamcrest_core_version
     testCompile group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version
-    testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: slf4j_log4j12_version
 }
 
 

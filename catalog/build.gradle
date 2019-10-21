@@ -55,18 +55,13 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
 
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
-
-    // https://mvnrepository.com/artifact/org.hsqldb/hsqldb
     compile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
-
 
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version: junit_version
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 }
 
 
