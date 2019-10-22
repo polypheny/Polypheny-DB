@@ -85,12 +85,5 @@ public class Enumerables {
         return () -> toRow( supplier.get() );
     }
 
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static com.google.common.base.Supplier<Enumerable<Row>> toRow( final com.google.common.base.Supplier<Enumerable<Object[]>> supplier ) {
-        return () -> toRow( supplier.get() );
-    }
-
 }
 

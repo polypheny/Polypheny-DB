@@ -202,11 +202,6 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     }
 
 
-    @Override
-    public void makeNullable() {
-    }
-
-
     public String translate( String name ) {
         return name;
     }

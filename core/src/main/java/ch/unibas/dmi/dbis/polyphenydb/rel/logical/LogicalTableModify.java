@@ -71,12 +71,6 @@ public final class LogicalTableModify extends TableModify {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalTableModify( RelOptCluster cluster, RelOptTable table, CatalogReader schema, RelNode input, Operation operation, List<String> updateColumnList, boolean flattened ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), table, schema, input, operation, updateColumnList, null, flattened );
-    }
-
-
     /**
      * Creates a LogicalTableModify.
      */

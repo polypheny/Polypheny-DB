@@ -61,7 +61,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 
@@ -185,13 +184,6 @@ public abstract class Sort extends SingleRel {
      */
     public RelCollation getCollation() {
         return collation;
-    }
-
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public List<RelCollation> getCollationList() {
-        return Collections.singletonList( getCollation() );
     }
 
 

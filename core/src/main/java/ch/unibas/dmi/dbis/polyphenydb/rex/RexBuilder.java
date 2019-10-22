@@ -1027,28 +1027,10 @@ public class RexBuilder {
 
 
     /**
-     * @deprecated Use {@link #makeDateLiteral(DateString)}.
-     */
-    @Deprecated // to be removed before 2.0
-    public RexLiteral makeDateLiteral( Calendar calendar ) {
-        return makeDateLiteral( DateString.fromCalendarFields( calendar ) );
-    }
-
-
-    /**
      * Creates a Date literal.
      */
     public RexLiteral makeDateLiteral( DateString date ) {
         return makeLiteral( Objects.requireNonNull( date ), typeFactory.createSqlType( SqlTypeName.DATE ), SqlTypeName.DATE );
-    }
-
-
-    /**
-     * @deprecated Use {@link #makeTimeLiteral(TimeString, int)}.
-     */
-    @Deprecated // to be removed before 2.0
-    public RexLiteral makeTimeLiteral( Calendar calendar, int precision ) {
-        return makeTimeLiteral( TimeString.fromCalendarFields( calendar ), precision );
     }
 
 
@@ -1071,15 +1053,6 @@ public class RexBuilder {
                 Objects.requireNonNull( time ),
                 typeFactory.createSqlType( SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE, precision ),
                 SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE );
-    }
-
-
-    /**
-     * @deprecated Use {@link #makeTimestampLiteral(TimestampString, int)}.
-     */
-    @Deprecated // to be removed before 2.0
-    public RexLiteral makeTimestampLiteral( Calendar calendar, int precision ) {
-        return makeTimestampLiteral( TimestampString.fromCalendarFields( calendar ), precision );
     }
 
 
@@ -1151,24 +1124,6 @@ public class RexBuilder {
             type = typeFactory.createTypeWithNullability( type, true );
         }
         return (RexLiteral) makeCast( type, constantNull() );
-    }
-
-
-    /**
-     * @deprecated Use {@link #makeNullLiteral(RelDataType)}
-     */
-    @Deprecated // to be removed before 2.0
-    public RexNode makeNullLiteral( SqlTypeName typeName, int precision ) {
-        return makeNullLiteral( typeFactory.createSqlType( typeName, precision ) );
-    }
-
-
-    /**
-     * @deprecated Use {@link #makeNullLiteral(RelDataType)}
-     */
-    @Deprecated // to be removed before 2.0
-    public RexNode makeNullLiteral( SqlTypeName typeName ) {
-        return makeNullLiteral( typeFactory.createSqlType( typeName ) );
     }
 
 

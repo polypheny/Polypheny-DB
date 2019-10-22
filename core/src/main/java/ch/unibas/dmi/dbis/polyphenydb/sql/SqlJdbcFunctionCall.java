@@ -451,7 +451,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Override SqlFunction.deriveType, because function-resolution is not relevant to a JDBC function call.
-        // REVIEW: jhyde, 2006/4/18: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
+        // REVIEW: jhyde: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
 
         for ( SqlNode operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );

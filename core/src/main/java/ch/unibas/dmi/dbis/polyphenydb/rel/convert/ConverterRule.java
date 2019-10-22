@@ -79,13 +79,6 @@ public abstract class ConverterRule extends RelOptRule {
     }
 
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public <R extends RelNode> ConverterRule( Class<R> clazz, com.google.common.base.Predicate<? super R> predicate, RelTrait in, RelTrait out, String description ) {
-        this( clazz, predicate, in, out, RelFactories.LOGICAL_BUILDER, description );
-    }
-
-
     /**
      * Creates a <code>ConverterRule</code> with a predicate.
      *
@@ -108,13 +101,6 @@ public abstract class ConverterRule extends RelOptRule {
 
         // Source and target traits must have same type
         assert in.getTraitDef() == out.getTraitDef();
-    }
-
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public <R extends RelNode> ConverterRule( Class<R> clazz, com.google.common.base.Predicate<? super R> predicate, RelTrait in, RelTrait out, RelBuilderFactory relBuilderFactory, String description ) {
-        this( clazz, (Predicate<? super R>) predicate::apply, in, out, relBuilderFactory, description );
     }
 
 

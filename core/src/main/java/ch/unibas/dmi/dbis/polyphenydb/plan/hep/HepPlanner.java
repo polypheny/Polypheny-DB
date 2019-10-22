@@ -819,7 +819,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     private void updateVertex( HepRelVertex vertex, RelNode rel ) {
         if ( rel != vertex.getCurrentRel() ) {
-            // REVIEW jvs 5-Apr-2006:  We'll do this again later during garbage collection.  Or we could get rid of mark/sweep garbage collection and do it precisely
+            // REVIEW jvs: We'll do this again later during garbage collection.  Or we could get rid of mark/sweep garbage collection and do it precisely
             // at this point by walking down to all rels which are only reachable from here.
             notifyDiscard( vertex.getCurrentRel() );
         }

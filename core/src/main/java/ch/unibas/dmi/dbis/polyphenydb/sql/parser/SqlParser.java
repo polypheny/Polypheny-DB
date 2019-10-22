@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlDelegatingConformance;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
 import java.io.Reader;
 import java.io.StringReader;
@@ -67,9 +66,6 @@ import org.apache.calcite.avatica.util.Quoting;
 public class SqlParser {
 
     public static final int DEFAULT_IDENTIFIER_MAX_LENGTH = 128;
-
-    @Deprecated // to be removed before 2.0
-    public static final boolean DEFAULT_ALLOW_BANG_EQUAL = SqlConformanceEnum.DEFAULT.isBangEqualAllowed();
 
     private final SqlAbstractParserImpl parser;
 
@@ -252,10 +248,6 @@ public class SqlParser {
 
         SqlConformance conformance();
 
-        @Deprecated
-            // to be removed before 2.0
-        boolean allowBangEqual();
-
         SqlParserImplFactory parserFactory();
     }
 
@@ -322,22 +314,6 @@ public class SqlParser {
         }
 
 
-        @SuppressWarnings("unused")
-        @Deprecated // to be removed before 2.0
-        public ConfigBuilder setAllowBangEqual( final boolean allowBangEqual ) {
-            if ( allowBangEqual != conformance.isBangEqualAllowed() ) {
-                setConformance(
-                        new SqlDelegatingConformance( conformance ) {
-                            @Override
-                            public boolean isBangEqualAllowed() {
-                                return allowBangEqual;
-                            }
-                        } );
-            }
-            return this;
-        }
-
-
         public ConfigBuilder setConformance( SqlConformance conformance ) {
             this.conformance = conformance;
             return this;
@@ -360,8 +336,7 @@ public class SqlParser {
 
 
         /**
-         * Builds a
-         * {@link Config}.
+         * Builds a {@link Config}.
          */
         public Config build() {
             return new ConfigImpl( identifierMaxLength, quotedCasing, unquotedCasing, quoting, caseSensitive, conformance, parserFactory );
@@ -429,12 +404,6 @@ public class SqlParser {
         @Override
         public SqlConformance conformance() {
             return conformance;
-        }
-
-
-        @Override
-        public boolean allowBangEqual() {
-            return conformance.isBangEqualAllowed();
         }
 
 

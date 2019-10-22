@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -77,12 +76,6 @@ public class FilterSetOpTransposeRule extends RelOptRule {
         super(
                 operand( Filter.class, operand( SetOp.class, any() ) ),
                 relBuilderFactory, null );
-    }
-
-
-    @Deprecated // to  be removed before 2.0
-    public FilterSetOpTransposeRule( RelFactories.FilterFactory filterFactory ) {
-        this( RelBuilder.proto( Contexts.of( filterFactory ) ) );
     }
 
 

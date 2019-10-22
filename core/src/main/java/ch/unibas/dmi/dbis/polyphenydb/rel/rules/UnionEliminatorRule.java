@@ -79,7 +79,7 @@ public class UnionEliminatorRule extends RelOptRule {
             return;
         }
 
-        // REVIEW jvs 14-Mar-2006:  why don't we need to register the equivalence here like we do in AggregateRemoveRule?
+        // REVIEW jvs: why don't we need to register the equivalence here like we do in AggregateRemoveRule?
 
         call.transformTo( union.getInputs().get( 0 ) );
     }

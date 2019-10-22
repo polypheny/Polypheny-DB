@@ -137,19 +137,6 @@ public abstract class SqlNode implements Cloneable {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static SqlNode[] cloneArray( SqlNode[] nodes ) {
-        SqlNode[] clones = nodes.clone();
-        for ( int i = 0; i < clones.length; i++ ) {
-            SqlNode node = clones[i];
-            if ( node != null ) {
-                clones[i] = SqlNode.clone( node );
-            }
-        }
-        return clones;
-    }
-
-
     public String toString() {
         return toSqlString( null ).getSql();
     }
@@ -263,12 +250,6 @@ public abstract class SqlNode implements Cloneable {
      * </ul>
      */
     public abstract boolean equalsDeep( SqlNode node, Litmus litmus );
-
-
-    @Deprecated // to be removed before 2.0
-    public final boolean equalsDeep( SqlNode node, boolean fail ) {
-        return equalsDeep( node, fail ? Litmus.THROW : Litmus.IGNORE );
-    }
 
 
     /**

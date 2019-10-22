@@ -68,18 +68,6 @@ public class RelCollations {
      */
     public static final RelCollation EMPTY = RelCollationTraitDef.INSTANCE.canonize( new RelCollationImpl( ImmutableList.of() ) );
 
-    /**
-     * A collation that cannot be replicated by applying a sort. The only implementation choice is to apply operations that preserve order.
-     */
-    @Deprecated // to be removed before 2.0
-    public static final RelCollation PRESERVE =
-            RelCollationTraitDef.INSTANCE.canonize(
-                    new RelCollationImpl( ImmutableList.of( new RelFieldCollation( -1 ) ) ) {
-                        public String toString() {
-                            return "PRESERVE";
-                        }
-                    } );
-
 
     private RelCollations() {
     }

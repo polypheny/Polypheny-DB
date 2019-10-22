@@ -91,18 +91,6 @@ public final class LogicalFilter extends Filter {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition ) {
-        this( cluster, traitSet, child, condition, ImmutableSet.of() );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalFilter( RelOptCluster cluster, RelNode child, RexNode condition ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), child, condition, ImmutableSet.of() );
-    }
-
-
     /**
      * Creates a LogicalFilter by parsing serialized output.
      */

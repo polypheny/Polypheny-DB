@@ -114,30 +114,6 @@ public abstract class SqlOperatorBinding {
 
 
     /**
-     * Gets the string value of a string literal operand.
-     *
-     * @param ordinal zero-based ordinal of operand of interest
-     * @return string value
-     */
-    @Deprecated // to be removed before 2.0
-    public String getStringLiteralOperand( int ordinal ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    /**
-     * Gets the integer value of a numeric literal operand.
-     *
-     * @param ordinal zero-based ordinal of operand of interest
-     * @return integer value
-     */
-    @Deprecated // to be removed before 2.0
-    public int getIntLiteralOperand( int ordinal ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    /**
      * Gets the value of a literal operand.
      *
      * Cases:
@@ -155,12 +131,6 @@ public abstract class SqlOperatorBinding {
      */
     public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
         throw new UnsupportedOperationException();
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public Comparable getOperandLiteralValue( int ordinal ) {
-        return getOperandLiteralValue( ordinal, Comparable.class );
     }
 
 

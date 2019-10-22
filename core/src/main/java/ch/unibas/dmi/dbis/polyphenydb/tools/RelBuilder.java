@@ -141,7 +141,8 @@ import org.apache.calcite.linq4j.function.Experimental;
 /**
  * Builder for relational expressions.
  *
- * {@code RelBuilder} does not make possible anything that you could not also accomplish by calling the factory methods of the particular relational expression. But it makes common tasks more straightforward and concise.
+ * {@code RelBuilder} does not make possible anything that you could not also accomplish by calling the factory methods of the particular relational expression.
+ * But it makes common tasks more straightforward and concise.
  *
  * {@code RelBuilder} uses factories to create relational expressions.
  * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter}, {@link LogicalProject} and so forth).
@@ -937,58 +938,6 @@ public class RelBuilder {
         final ImmutableList<RexNode> nodes = fields( ImmutableIntList.of( groupSet.toArray() ) );
         final List<ImmutableList<RexNode>> nodeLists = Util.transform( groupSets, bitSet -> fields( ImmutableIntList.of( bitSet.toArray() ) ) );
         return groupKey_( nodes, indicator, nodeLists );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggCall aggregateCall( SqlAggFunction aggFunction, boolean distinct, RexNode filter, String alias, RexNode... operands ) {
-        return aggregateCall(
-                aggFunction,
-                distinct,
-                false,
-                filter,
-                ImmutableList.of(),
-                alias,
-                ImmutableList.copyOf( operands ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggCall aggregateCall( SqlAggFunction aggFunction, boolean distinct, boolean approximate, RexNode filter, String alias, RexNode... operands ) {
-        return aggregateCall(
-                aggFunction,
-                distinct,
-                approximate,
-                filter,
-                ImmutableList.of(),
-                alias,
-                ImmutableList.copyOf( operands ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggCall aggregateCall( SqlAggFunction aggFunction, boolean distinct, RexNode filter, String alias, Iterable<? extends RexNode> operands ) {
-        return aggregateCall(
-                aggFunction,
-                distinct,
-                false,
-                filter,
-                ImmutableList.of(),
-                alias,
-                ImmutableList.copyOf( operands ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggCall aggregateCall( SqlAggFunction aggFunction, boolean distinct, boolean approximate, RexNode filter, String alias, Iterable<? extends RexNode> operands ) {
-        return aggregateCall(
-                aggFunction,
-                distinct,
-                approximate,
-                filter,
-                ImmutableList.of(),
-                alias,
-                ImmutableList.copyOf( operands ) );
     }
 
 
@@ -2378,7 +2327,18 @@ public class RelBuilder {
     /**
      * Creates a {@link Match}.
      */
-    public RelBuilder match( RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Iterable<? extends RexNode> measureList, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, Iterable<? extends RexNode> partitionKeys, Iterable<? extends RexNode> orderKeys, RexNode interval ) {
+    public RelBuilder match(
+            RexNode pattern,
+            boolean strictStart,
+            boolean strictEnd,
+            Map<String, RexNode> patternDefinitions,
+            Iterable<? extends RexNode> measureList,
+            RexNode after,
+            Map<String, ? extends SortedSet<String>> subsets,
+            boolean allRows,
+            Iterable<? extends RexNode> partitionKeys,
+            Iterable<? extends RexNode> orderKeys,
+            RexNode interval ) {
         final List<RelFieldCollation> fieldCollations = new ArrayList<>();
         for ( RexNode orderKey : orderKeys ) {
             final RelFieldCollation.Direction direction;

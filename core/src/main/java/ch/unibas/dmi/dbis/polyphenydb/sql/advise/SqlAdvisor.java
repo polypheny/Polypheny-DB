@@ -101,18 +101,6 @@ public class SqlAdvisor {
 
 
     /**
-     * Creates a SqlAdvisor with a validator instance
-     *
-     * @param validator Validator
-     * @deprecated use {@link #SqlAdvisor(SqlValidatorWithHints, SqlParser.Config)}
-     */
-    @Deprecated
-    public SqlAdvisor( SqlValidatorWithHints validator ) {
-        this( validator, SqlParser.Config.DEFAULT );
-    }
-
-
-    /**
      * Creates a SqlAdvisor with a validator instance and given parser configuration
      *
      * @param validator Validator

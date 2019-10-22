@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
@@ -114,18 +113,6 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
     public AggregateExpandDistinctAggregatesRule( Class<? extends Aggregate> clazz, boolean useGroupingSets, RelBuilderFactory relBuilderFactory ) {
         super( operand( clazz, any() ), relBuilderFactory, null );
         this.useGroupingSets = useGroupingSets;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateExpandDistinctAggregatesRule( Class<? extends LogicalAggregate> clazz, boolean useGroupingSets, RelFactories.JoinFactory joinFactory ) {
-        this( clazz, useGroupingSets, RelBuilder.proto( Contexts.of( joinFactory ) ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateExpandDistinctAggregatesRule( Class<? extends LogicalAggregate> clazz, RelFactories.JoinFactory joinFactory ) {
-        this( clazz, false, RelBuilder.proto( Contexts.of( joinFactory ) ) );
     }
 
 

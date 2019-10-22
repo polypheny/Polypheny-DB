@@ -259,12 +259,6 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public final RelNode convert( SqlNode sql ) throws RelConversionException {
-        return rel( sql ).rel;
-    }
-
-
-    @Override
     public RelRoot rel( SqlNode sql ) throws RelConversionException {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;

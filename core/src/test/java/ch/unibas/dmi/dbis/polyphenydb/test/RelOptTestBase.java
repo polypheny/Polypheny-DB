@@ -304,16 +304,6 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
         }
 
 
-        /**
-         * @deprecated Use {@link #withHook(Hook, Consumer)}.
-         */
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public <T> Sql withHook( Hook hook, com.google.common.base.Function<T, Void> handler ) {
-            return withHook( hook, (Consumer<T>) handler::apply );
-        }
-
-
         public <V> Sql withProperty( Hook hook, V value ) {
             return withHook( hook, Hook.propertyJ( value ) );
         }

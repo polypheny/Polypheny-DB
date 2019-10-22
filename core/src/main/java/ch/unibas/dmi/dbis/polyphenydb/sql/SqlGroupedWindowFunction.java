@@ -102,18 +102,6 @@ public class SqlGroupedWindowFunction extends SqlFunction {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public SqlGroupedWindowFunction( String name, SqlKind kind, SqlGroupedWindowFunction groupFunction, SqlOperandTypeChecker operandTypeChecker ) {
-        this( name, kind, groupFunction, ReturnTypes.ARG0, null, operandTypeChecker, SqlFunctionCategory.SYSTEM );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public SqlGroupedWindowFunction( SqlKind kind, SqlGroupedWindowFunction groupFunction, SqlOperandTypeChecker operandTypeChecker ) {
-        this( kind.name(), kind, groupFunction, ReturnTypes.ARG0, null, operandTypeChecker, SqlFunctionCategory.SYSTEM );
-    }
-
-
     /**
      * Creates an auxiliary function from this grouped window function.
      *

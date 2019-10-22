@@ -57,38 +57,6 @@ import java.util.Map;
 public interface RelDataTypeField extends Map.Entry<String, RelDataType> {
 
     /**
-     * Function to transform a set of {@link RelDataTypeField} to a set of {@link Integer} of the field keys.
-     *
-     * @deprecated Use {@code RelDataTypeField::getIndex}
-     */
-    @Deprecated
-            // to be removed before 2.0
-    class ToFieldIndex implements com.google.common.base.Function<RelDataTypeField, Integer> {
-
-        @Override
-        public Integer apply( RelDataTypeField o ) {
-            return o.getIndex();
-        }
-    }
-
-
-    /**
-     * Function to transform a set of {@link RelDataTypeField} to a set of {@link String} of the field names.
-     *
-     * @deprecated Use {@code RelDataTypeField::getName}
-     */
-    @Deprecated
-// to be removed before 2.0
-    class ToFieldName implements com.google.common.base.Function<RelDataTypeField, String> {
-
-        @Override
-        public String apply( RelDataTypeField o ) {
-            return o.getName();
-        }
-    }
-
-
-    /**
      * Gets the name of this field, which is unique within its containing type.
      *
      * @return field name
@@ -113,5 +81,6 @@ public interface RelDataTypeField extends Map.Entry<String, RelDataType> {
      * Returns true if this is a dynamic star field.
      */
     boolean isDynamicStar();
+
 }
 

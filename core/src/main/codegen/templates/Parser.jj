@@ -714,7 +714,7 @@ SqlNode ParenthesizedExpression(ExprContext exprContext) :
 /**
  * Parses a parenthesized query or comma-list of row expressions.
  *
- * <p>REVIEW jvs 8-Feb-2004: There's a small hole in this production.  It can be
+ * <p>REVIEW jvs: There's a small hole in this production.  It can be
  * used to construct something like
  *
  * <blockquote><pre>
@@ -2170,7 +2170,7 @@ SqlNode RowConstructor() :
         }
     )
     {
-        // REVIEW jvs 8-Feb-2004: Should we discriminate between scalar
+        // REVIEW jvs: Should we discriminate between scalar
         // sub-queries inside of ROW and row sub-queries?  The standard does,
         // but the distinction seems to be purely syntactic.
         return SqlStdOperatorTable.ROW.createCall(s.end(valueList),valueList.toArray());

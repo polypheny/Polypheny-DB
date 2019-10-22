@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -101,32 +100,11 @@ public interface SqlValidatorCatalogReader extends Wrapper {
     List<List<String>> getSchemaPaths();
 
     /**
-     * @deprecated Use {@link #nameMatcher()}.{@link SqlNameMatcher#field(RelDataType, String)}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelDataTypeField field( RelDataType rowType, String alias );
-
-    /**
      * Returns an implementation of {@link SqlNameMatcher} that matches the case-sensitivity policy.
      */
     SqlNameMatcher nameMatcher();
 
-    /**
-     * @deprecated Use {@link #nameMatcher()}.{@link SqlNameMatcher#matches(String, String)}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean matches( String string, String name );
-
     RelDataType createTypeFromProjection( RelDataType type, List<String> columnNameList );
-
-    /**
-     * @deprecated Use {@link #nameMatcher()}.{@link SqlNameMatcher#isCaseSensitive()}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean isCaseSensitive();
 
     /**
      * Returns the root namespace for name resolution.

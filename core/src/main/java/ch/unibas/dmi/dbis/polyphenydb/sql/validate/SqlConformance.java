@@ -60,55 +60,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 public interface SqlConformance {
 
     /**
-     * Short-cut for {@link SqlConformanceEnum#DEFAULT}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum DEFAULT = SqlConformanceEnum.DEFAULT;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#STRICT_92}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum STRICT_92 = SqlConformanceEnum.STRICT_92;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#STRICT_99}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum STRICT_99 = SqlConformanceEnum.STRICT_99;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#PRAGMATIC_99}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum PRAGMATIC_99 = SqlConformanceEnum.PRAGMATIC_99;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#ORACLE_10}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum ORACLE_10 = SqlConformanceEnum.ORACLE_10;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#STRICT_2003}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum STRICT_2003 = SqlConformanceEnum.STRICT_2003;
-
-    /**
-     * Short-cut for {@link SqlConformanceEnum#PRAGMATIC_2003}.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated // to be removed before 2.0
-            SqlConformanceEnum PRAGMATIC_2003 = SqlConformanceEnum.PRAGMATIC_2003;
-
-    /**
      * Whether this dialect supports features from a wide variety of dialects. This is enabled for the Babel parser, disabled otherwise.
      */
     boolean isLiberal();

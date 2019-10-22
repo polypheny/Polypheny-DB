@@ -104,8 +104,6 @@ public class AggregateUnionAggregateRule extends RelOptRule {
                     RelFactories.LOGICAL_BUILDER,
                     "AggregateUnionAggregateRule" );
 
-    //~ Constructors -----------------------------------------------------------
-
 
     /**
      * Creates a AggregateUnionAggregateRule.
@@ -118,12 +116,6 @@ public class AggregateUnionAggregateRule extends RelOptRule {
                         Aggregate::isSimple,
                         operand( unionClass, operand( firstUnionInputClass, any() ), operand( secondUnionInputClass, any() ) ) ),
                 relBuilderFactory, desc );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateUnionAggregateRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Union> unionClass, RelFactories.SetOpFactory setOpFactory ) {
-        this( aggregateClass, unionClass, RelNode.class, RelNode.class, RelBuilder.proto( aggregateFactory, setOpFactory ), "AggregateUnionAggregateRule" );
     }
 
 

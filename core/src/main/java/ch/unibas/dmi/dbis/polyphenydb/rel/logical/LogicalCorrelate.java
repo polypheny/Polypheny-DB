@@ -87,12 +87,6 @@ public final class LogicalCorrelate extends Correlate {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalCorrelate( RelOptCluster cluster, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), left, right, correlationId, requiredColumns, joinType );
-    }
-
-
     /**
      * Creates a LogicalCorrelate by parsing serialized output.
      */

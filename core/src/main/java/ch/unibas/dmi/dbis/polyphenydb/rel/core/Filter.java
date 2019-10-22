@@ -58,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexChecker;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
@@ -160,20 +159,6 @@ public abstract class Filter extends SingleRel {
     @Override
     public double estimateRowCount( RelMetadataQuery mq ) {
         return RelMdUtil.estimateFilteredRows( getInput(), condition, mq );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static double estimateFilteredRows( RelNode child, RexProgram program ) {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return RelMdUtil.estimateFilteredRows( child, program, mq );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static double estimateFilteredRows( RelNode child, RexNode condition ) {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return RelMdUtil.estimateFilteredRows( child, condition, mq );
     }
 
 

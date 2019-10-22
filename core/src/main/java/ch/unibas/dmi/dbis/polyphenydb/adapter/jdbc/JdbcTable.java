@@ -257,15 +257,15 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             StringBuilder builder = new StringBuilder();
             builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
             for ( String columnName : columnNames ) {
-                builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) + "," );
+                builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) ).append( "," );
             }
             builder.setLength( builder.length() - 1 ); // remove last comma
             builder.append( ") VALUES ( " );
             for ( Object object : o ) {
                 if ( object instanceof String ) {
-                    builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) + "," );
+                    builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) ).append( "," );
                 } else if ( object != null ) {
-                    builder.append( object.toString() + "," );
+                    builder.append( object.toString() ).append( "," );
                 } else {
                     builder.append( " NULL," );
                 }

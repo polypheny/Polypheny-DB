@@ -106,12 +106,6 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
                     "MultiJoinProjectTransposeRule: with LogicalProject on right" );
 
 
-    @Deprecated // to be removed before 2.0
-    public MultiJoinProjectTransposeRule( RelOptRuleOperand operand, String description ) {
-        this( operand, RelFactories.LOGICAL_BUILDER, description );
-    }
-
-
     /**
      * Creates a MultiJoinProjectTransposeRule.
      */

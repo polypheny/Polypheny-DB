@@ -161,10 +161,6 @@ public interface SqlValidatorNamespace {
      */
     SqlMonotonicity getMonotonicity( String columnName );
 
-    @Deprecated
-        // to be removed before 2.0
-    void makeNullable();
-
     /**
      * Returns this namespace, or a wrapped namespace, cast to a particular class.
      *

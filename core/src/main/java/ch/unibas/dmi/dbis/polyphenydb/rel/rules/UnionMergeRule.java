@@ -86,12 +86,6 @@ public class UnionMergeRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public UnionMergeRule( Class<? extends Union> unionClazz, RelFactories.SetOpFactory setOpFactory ) {
-        this( unionClazz, null, RelBuilder.proto( setOpFactory ) );
-    }
-
-
     @Override
     public void onMatch( RelOptRuleCall call ) {
         final SetOp topOp = call.rel( 0 );

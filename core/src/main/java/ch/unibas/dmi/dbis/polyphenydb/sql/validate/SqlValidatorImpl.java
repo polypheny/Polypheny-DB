@@ -267,7 +267,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private SqlNode top;
 
-    // REVIEW jvs 30-June-2006: subclasses may override shouldExpandIdentifiers in a way that ignores this; we should probably get rid of the protected method and always use this variable (or better, move preferences like
+    // REVIEW jvs: subclasses may override shouldExpandIdentifiers in a way that ignores this; we should probably get rid of the protected method and always use this variable (or better, move preferences like
     // this to a separate "parameter" class)
     protected boolean expandIdentifiers;
 
@@ -1503,7 +1503,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             assert row.getKind() == SqlKind.ROW;
             SqlCall rowConstructor = (SqlCall) row;
 
-            // REVIEW jvs 10-Sept-2003: Once we support single-row queries as rows, need to infer aliases from there.
+            // REVIEW jvs: Once we support single-row queries as rows, need to infer aliases from there.
             final List<String> aliasList = new ArrayList<>();
             final List<RelDataType> typeList = new ArrayList<>();
             for ( Ord<SqlNode> column : Ord.zip( rowConstructor.getOperandList() ) ) {
@@ -1515,7 +1515,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             rowTypes.add( typeFactory.createStructType( typeList, aliasList ) );
         }
         if ( rows.size() == 1 ) {
-            // TODO jvs 10-Oct-2005:  get rid of this workaround once leastRestrictive can handle all cases
+            // TODO jvs: Get rid of this workaround once leastRestrictive can handle all cases
             return rowTypes.get( 0 );
         }
         return typeFactory.leastRestrictive( rowTypes );
@@ -1618,7 +1618,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         assert sqlIdentifier != null;
         RelDataType type = catalogReader.getNamedType( sqlIdentifier );
         if ( type == null ) {
-            // TODO jvs 12-Feb-2005:  proper type name formatting
+            // TODO: Proper type name formatting
             throw newValidationError( sqlIdentifier, RESOURCE.unknownDatatypeName( sqlIdentifier.toString() ) );
         }
 
@@ -2811,9 +2811,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             case DECIMAL:
                 // Decimal and long have the same precision (as 64-bit integers), so the unscaled value of a decimal must fit into a long.
 
-                // REVIEW jvs 4-Aug-2004:  This should probably be calling over to the available calculator implementations to see what they support.  For now use ESP instead.
+                // REVIEW jvs:  This should probably be calling over to the available calculator implementations to see what they support.  For now use ESP instead.
                 //
-                // jhyde 2006/12/21: I think the limits should be baked into the type system, not dependent on the calculator implementation.
+                // jhyde: I think the limits should be baked into the type system, not dependent on the calculator implementation.
                 BigDecimal bd = (BigDecimal) literal.getValue();
                 BigInteger unscaled = bd.unscaledValue();
                 long longValue = unscaled.longValue();
@@ -2884,7 +2884,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( literal, RESOURCE.numberLiteralOutOfRange( Util.toScientificNotation( bd ) ) );
         }
 
-        // REVIEW jvs 4-Aug-2004:  what about underflow?
+        // REVIEW jvs: what about underflow?
     }
 
 
@@ -4085,7 +4085,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             validateQuery( source, scope, targetRowType );
         }
 
-        // REVIEW jvs 4-Dec-2008: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
+        // REVIEW jvs: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
         // It would be better if that information were used here so that we never saw any untyped nulls during checkTypeAssignment.
         final RelDataType sourceRowType = getNamespace( source ).getRowType();
         final RelDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert );
@@ -4413,12 +4413,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public void validateMerge( SqlMerge call ) {
         SqlSelect sqlSelect = call.getSourceSelect();
-        // REVIEW zfong 5/25/06 - Does an actual type have to be passed into validateSelect()?
+        // REVIEW zfong: Does an actual type have to be passed into validateSelect()?
 
-        // REVIEW jvs 6-June-2006:  In general, passing unknownType like this means we won't be able to correctly infer the types for dynamic parameter markers (SET x = ?).
+        // REVIEW jvs:  In general, passing unknownType like this means we won't be able to correctly infer the types for dynamic parameter markers (SET x = ?).
         // But maybe validateUpdate and validateInsert below will do the job?
 
-        // REVIEW ksecretan 15-July-2011: They didn't get a chance to since validateSelect() would bail. Let's use the update/insert targetRowType when available.
+        // REVIEW ksecretan: They didn't get a chance to since validateSelect() would bail. Let's use the update/insert targetRowType when available.
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getNamespace( call.getTargetTable() );
         validateNamespace( targetNamespace, unknownType );
 
@@ -5422,7 +5422,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             // Resolve the longest prefix of id that we can
             int i;
             for ( i = id.names.size() - 1; i > 0; i-- ) {
-                // REVIEW jvs 9-June-2005: The name resolution rules used here are supposed to match SQL:2003 Part 2 Section 6.6 (identifier chain), but we don't currently have enough
+                // REVIEW jvs: The name resolution rules used here are supposed to match SQL:2003 Part 2 Section 6.6 (identifier chain), but we don't currently have enough
                 // information to get everything right.  In particular, routine parameters are currently looked up via resolve; we could do a better job if they were looked up via resolveColumn.
 
                 final SqlNameMatcher nameMatcher = catalogReader.nameMatcher();

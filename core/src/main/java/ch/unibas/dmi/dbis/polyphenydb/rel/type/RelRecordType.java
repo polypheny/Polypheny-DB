@@ -92,7 +92,7 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
 
     @Override
     public int getPrecision() {
-        // REVIEW: angel 18-Aug-2005 Put in fake implementation for precision
+        // REVIEW angel: Put in fake implementation for precision
         return 0;
     }
 

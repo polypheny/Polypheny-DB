@@ -59,9 +59,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorNamespace;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
 import com.google.common.collect.Lists;
-import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -217,32 +215,6 @@ public class SqlCallBinding extends SqlOperatorBinding {
     @Override
     public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
         return call.getOperandList().get( ordinal ).getMonotonicity( scope );
-    }
-
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public String getStringLiteralOperand( int ordinal ) {
-        SqlNode node = call.operand( ordinal );
-        final Object o = SqlLiteral.value( node );
-        return o instanceof NlsString ? ((NlsString) o).getValue() : null;
-    }
-
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public int getIntLiteralOperand( int ordinal ) {
-        SqlNode node = call.operand( ordinal );
-        final Object o = SqlLiteral.value( node );
-        if ( o instanceof BigDecimal ) {
-            BigDecimal bd = (BigDecimal) o;
-            try {
-                return bd.intValueExact();
-            } catch ( ArithmeticException e ) {
-                throw SqlUtil.newContextException( node.pos, RESOURCE.numberLiteralOutOfRange( bd.toString() ) );
-            }
-        }
-        throw new AssertionError();
     }
 
 

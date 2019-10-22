@@ -136,7 +136,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      */
     @Override
     public RelDataType deriveType( SqlValidatorScope scope, SqlNode operand ) {
-        // REVIEW Do not mask Error (indicates a serious system problem) or UnsupportedOperationException (a bug). I have to mask UnsupportedOperationException because SqlValidatorImpl.getValidatedNodeType
+        // REVIEW: Do not mask Error (indicates a serious system problem) or UnsupportedOperationException (a bug). I have to mask UnsupportedOperationException because SqlValidatorImpl.getValidatedNodeType
         // throws it for an unrecognized identifier node I have to mask Error as well because AbstractNamespace.getRowType  called in super.deriveType can do a Util.permAssert that throws Error
         try {
             return super.deriveType( scope, operand );

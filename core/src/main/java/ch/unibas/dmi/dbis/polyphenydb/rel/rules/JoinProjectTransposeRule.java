@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
@@ -55,7 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.ProjectFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -148,18 +146,6 @@ public class JoinProjectTransposeRule extends RelOptRule {
      */
     public JoinProjectTransposeRule( RelOptRuleOperand operand, String description ) {
         this( operand, description, false, RelFactories.LOGICAL_BUILDER );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinProjectTransposeRule( RelOptRuleOperand operand, String description, ProjectFactory projectFactory ) {
-        this( operand, description, false, RelBuilder.proto( Contexts.of( projectFactory ) ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinProjectTransposeRule( RelOptRuleOperand operand, String description, boolean includeOuter, ProjectFactory projectFactory ) {
-        this( operand, description, includeOuter, RelBuilder.proto( Contexts.of( projectFactory ) ) );
     }
 
 
