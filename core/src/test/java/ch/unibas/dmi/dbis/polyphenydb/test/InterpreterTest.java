@@ -61,7 +61,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
@@ -129,7 +129,7 @@ public class InterpreterTest {
         rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),

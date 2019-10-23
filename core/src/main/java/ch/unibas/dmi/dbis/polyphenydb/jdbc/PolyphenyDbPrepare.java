@@ -160,7 +160,8 @@ public interface PolyphenyDbPrepare {
 
 
         /**
-         * Returns a spark handler. Returns a trivial handler, for which {@link SparkHandler#enabled()} returns {@code false}, if {@code enable} is {@code false} or if Spark is not on the class path. Never returns null.
+         * Returns a spark handler. Returns a trivial handler, for which {@link SparkHandler#enabled()} returns {@code false},
+         * if {@code enable} is {@code false} or if Spark is not on the class path. Never returns null.
          */
         public static synchronized SparkHandler getSparkHandler( boolean enable ) {
             if ( sparkHandler == null ) {
@@ -318,8 +319,18 @@ public interface PolyphenyDbPrepare {
         public final boolean modifiable;
 
 
-        public AnalyzeViewResult( PolyphenyDbPrepareImpl prepare, SqlValidator validator, String sql, SqlNode sqlNode, RelDataType rowType, RelRoot root, Table table, ImmutableList<String> tablePath,
-                RexNode constraint, ImmutableIntList columnMapping, boolean modifiable ) {
+        public AnalyzeViewResult(
+                PolyphenyDbPrepareImpl prepare,
+                SqlValidator validator,
+                String sql,
+                SqlNode sqlNode,
+                RelDataType rowType,
+                RelRoot root,
+                Table table,
+                ImmutableList<String> tablePath,
+                RexNode constraint,
+                ImmutableIntList columnMapping,
+                boolean modifiable ) {
             super( prepare, validator, sql, sqlNode, rowType, root );
             this.table = table;
             this.tablePath = tablePath;
@@ -355,7 +366,11 @@ public interface PolyphenyDbPrepare {
                 RelDataType rowType,
                 List<ColumnMetaData> columns,
                 Meta.CursorFactory cursorFactory,
-                PolyphenyDbSchema rootSchema, List<RelCollation> collationList, long maxRowCount, Bindable<T> bindable, Meta.StatementType statementType ) {
+                PolyphenyDbSchema rootSchema,
+                List<RelCollation> collationList,
+                long maxRowCount,
+                Bindable<T> bindable,
+                Meta.StatementType statementType ) {
             super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
             this.rowType = rowType;
             this.rootSchema = rootSchema;

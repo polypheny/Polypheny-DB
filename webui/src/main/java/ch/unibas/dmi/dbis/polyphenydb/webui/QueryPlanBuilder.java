@@ -38,7 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
@@ -59,7 +59,7 @@ public class QueryPlanBuilder {
     public static RelBuilder createRelBuilder( final Transaction transaction ) {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )

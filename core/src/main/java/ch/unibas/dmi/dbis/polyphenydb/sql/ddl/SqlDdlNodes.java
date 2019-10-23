@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
@@ -56,21 +55,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
-import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 
 
@@ -226,41 +213,6 @@ public class SqlDdlNodes {
             schema = schema.getSubSchema( p, true );
         }
         return Pair.of( schema, name );
-    }
-
-
-    /**
-     * Populates the table called {@code name} by executing {@code query}.
-     */
-    protected static void populate( SqlIdentifier name, SqlNode query, Context context ) {
-        // Generate, prepare and execute an "INSERT INTO table query" statement.
-        // (It's a bit inefficient that we convert from SqlNode to SQL and back again.)
-        final FrameworkConfig config =
-                Frameworks.newConfigBuilder()
-                        .defaultSchema( context.getRootSchema().plus() )
-                        .prepareContext( context )
-                        .build();
-        final Planner planner = Frameworks.getPlanner( config );
-        try {
-            final StringWriter sw = new StringWriter();
-            final PrintWriter pw = new PrintWriter( sw );
-            final SqlPrettyWriter w = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT, false, pw );
-            pw.print( "INSERT INTO " );
-            name.unparse( w, 0, 0 );
-            pw.print( " " );
-            query.unparse( w, 0, 0 );
-            pw.flush();
-            final String sql = sw.toString();
-            final SqlNode query1 = planner.parse( sql );
-            final SqlNode query2 = planner.validate( query1 );
-            final RelRoot r = planner.rel( query2 );
-            final PreparedStatement prepare = context.getRelRunner().prepare( r.rel );
-            int rowCount = prepare.executeUpdate();
-            Util.discard( rowCount );
-            prepare.close();
-        } catch ( SqlParseException | ValidationException | RelConversionException | SQLException e ) {
-            throw new RuntimeException( e );
-        }
     }
 
 

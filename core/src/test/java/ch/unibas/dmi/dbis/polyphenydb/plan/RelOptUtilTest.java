@@ -45,7 +45,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScottSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
@@ -74,7 +74,7 @@ public class RelOptUtilTest {
                 .add( "scott", new ReflectiveSchema( new ScottSchema() ) );
 
         return Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( schema ),

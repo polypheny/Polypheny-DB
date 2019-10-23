@@ -65,7 +65,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
@@ -99,7 +99,7 @@ public class PlannerImpl implements Planner, ViewExpander {
      */
     private final ImmutableList<RelTraitDef> traitDefs;
 
-    private final Config parserConfig;
+    private final SqlParserConfig parserConfig;
     private final SqlToRelConverter.Config sqlToRelConverterConfig;
     private final SqlRexConvertletTable convertletTable;
 

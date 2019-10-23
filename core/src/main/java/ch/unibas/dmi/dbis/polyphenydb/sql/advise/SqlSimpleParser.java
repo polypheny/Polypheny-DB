@@ -45,8 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.advise;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -124,7 +123,7 @@ public class SqlSimpleParser {
 
 
     private final String hintToken;
-    private final Config parserConfig;
+    private final SqlParserConfig parserConfig;
 
 
     /**
@@ -133,7 +132,7 @@ public class SqlSimpleParser {
      * @param hintToken Hint token
      * @param parserConfig parser configuration
      */
-    public SqlSimpleParser( String hintToken, SqlParser.Config parserConfig ) {
+    public SqlSimpleParser( String hintToken, SqlParserConfig parserConfig ) {
         this.hintToken = hintToken;
         this.parserConfig = parserConfig;
     }

@@ -34,7 +34,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisorValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlSimpleParser.Token;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlSimpleParser.Tokenizer;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil.StringAndPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
@@ -1143,7 +1143,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    private String replaceQuotes( Config parserConfig, String sql ) {
+    private String replaceQuotes( SqlParserConfig parserConfig, String sql ) {
         char openQuote = parserConfig.quoting().string.charAt( 0 );
         char closeQuote = openQuote == '[' ? ']' : openQuote;
         return sql.replace( '[', openQuote ).replace( ']', closeQuote );
@@ -1151,7 +1151,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     private void testSimpleParserQuotedIdImpl() {
-        Config parserConfig = tester.getFactory().getParserConfig();
+        SqlParserConfig parserConfig = tester.getFactory().getParserConfig();
         String sql;
         String expected;
 

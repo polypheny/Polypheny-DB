@@ -49,7 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
@@ -66,7 +66,7 @@ import org.junit.Test;
  */
 public class LexCaseSensitiveTest {
 
-    private static Planner getPlanner( List<RelTraitDef> traitDefs, Config parserConfig, Program... programs ) {
+    private static Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -92,7 +92,7 @@ public class LexCaseSensitiveTest {
     private static void runProjectQueryWithLex( Lex lex, String sql ) throws SqlParseException, ValidationException, RelConversionException {
         boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try {
-            Config javaLex = SqlParser.configBuilder().setLex( lex ).build();
+            SqlParserConfig javaLex = SqlParser.configBuilder().setLex( lex ).build();
             RuntimeConfig.CASE_SENSITIVE.setBoolean( lex.caseSensitive );
             Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
             SqlNode parse = planner.parse( sql );

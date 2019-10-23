@@ -54,7 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlAbstractParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
@@ -89,7 +89,7 @@ public class SqlAdvisor {
 
     // Flags indicating precision/scale combinations
     private final SqlValidatorWithHints validator;
-    private final Config parserConfig;
+    private final SqlParserConfig parserConfig;
 
     // Cache for getPreferredCasing
     private String prevWord;
@@ -106,7 +106,7 @@ public class SqlAdvisor {
      * @param validator Validator
      * @param parserConfig parser config
      */
-    public SqlAdvisor( SqlValidatorWithHints validator, SqlParser.Config parserConfig ) {
+    public SqlAdvisor( SqlValidatorWithHints validator, SqlParserConfig parserConfig ) {
         this.validator = validator;
         this.parserConfig = parserConfig;
     }

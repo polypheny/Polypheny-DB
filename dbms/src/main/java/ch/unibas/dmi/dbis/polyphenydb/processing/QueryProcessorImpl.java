@@ -54,6 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -63,10 +64,13 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoCost;
+import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbSqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -90,22 +94,20 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
+import ch.unibas.dmi.dbis.polyphenydb.tools.Program;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException;
-import ch.unibas.dmi.dbis.polyphenydb.tools.ValidationException;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -146,12 +148,13 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature processSqlQuery( final String sql, final Config parserConfig ) {
+    public PolyphenyDbSignature processSqlQuery( final String sql, final SqlParserConfig parserConfig ) {
         PolyphenyDbSchema rootSchema = transaction.getSchema();
         Context prepareContext = transaction.getPrepareContext();
 
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
+        /*
         FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .traitDefs( traitDefs )
@@ -159,8 +162,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                 .prepareContext( prepareContext )
                 //.sqlToRelConverterConfig( sqlToRelConfig )
                 .programs( Programs.ofRules( Programs.RULE_SET ) )
-                .build();
-        Planner planner = Frameworks.getPlanner( frameworkConfig );
+                .build();*/
 
         //
         // Parsing
@@ -171,15 +173,10 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         stopWatch.start();
         SqlNode parsed;
         try {
-            parsed = planner.parse( sql );
+            parsed = parseSql( sql, parserConfig );
         } catch ( SqlParseException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }/*
-        try {
-            parsed = parseSql( sql, frameworkConfig );
-        } catch ( SqlParseException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }*/
+        }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
             log.trace( "Parsed query: [{}]", parsed );
@@ -263,17 +260,18 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             log.debug( "Validating SQL ..." );
         }
         stopWatch.start();
-        /*final SqlConformance conformance = parserConfig.conformance();
+
+        final SqlConformance conformance = parserConfig.conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
         PolyphenyDbSqlValidator validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
-        Pair<SqlNode, RelDataType> validatePair;*/
+        validator.setIdentifierExpansion( true );
+
         SqlNode validated;
         RelDataType type;
         try {
-            Pair<SqlNode, RelDataType> validatePair = planner.validateAndGetType( parsed );
-            validated = validatePair.left;
-            type = validatePair.right;
-        } catch ( ValidationException e ) {
+            validated = validator.validate( parsed );
+            type = validator.getValidatedNodeType( validated );
+        } catch ( RuntimeException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();
@@ -284,6 +282,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             log.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
         }
 
+
         //
         // Plan
         stopWatch.reset();
@@ -291,13 +290,21 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             log.debug( "Planning Statement ..." );
         }
         stopWatch.start();
-        RelNode logicalPlan;
-        try {
-            logicalPlan = planner.rel( validated ).rel;
-        } catch ( RelConversionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+
+        RelOptPlanner planner;
+        if ( parsed.isA( SqlKind.DML ) ) {
+            planner = getVolcanoOptimizer( prepareContext );
+            planner.clearRelTraitDefs();
+            for ( RelTraitDef def : traitDefs ) {
+                planner.addRelTraitDef( def );
+            }
+        } else {
+            planner = getHepOptimizer();
         }
-        //RelNode logicalPlan = plan( validated, validator );
+
+        RelNode logicalPlan;
+        logicalPlan = plan( planner, validated, validator );
+
         if ( log.isTraceEnabled() ) {
             log.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -309,13 +316,12 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( parsed.isA( SqlKind.DML ) ) {
             return processQuery( logicalPlan, planner, parsed.getKind() );
         } else {
-            return processQuery( logicalPlan );
+            return processQuery( logicalPlan, planner );
         }
     }
 
 
-    @Override
-    public PolyphenyDbSignature processQuery( final RelNode logicalPlan ) {
+    private RelOptPlanner getHepOptimizer() {
         HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
@@ -325,24 +331,24 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                         .addRuleInstance( ProjectTableScanRule.INSTANCE )
                         .addRuleInstance( ProjectTableScanRule.INTERPRETER ) */
                         .build();
-        RelOptPlanner planner = new HepPlanner( hepProgram );
+        return new HepPlanner( hepProgram );
+    }
+
+
+    private RelOptPlanner getVolcanoOptimizer( Context prepareContext ) {
+        return new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( prepareContext.config() ) );
+    }
+
+
+    @Override
+    public PolyphenyDbSignature processQuery( final RelNode logicalPlan ) {
+        RelOptPlanner planner = getHepOptimizer();
         return processQuery( logicalPlan, planner );
     }
 
 
     @Override
     public PolyphenyDbSignature processQuery( final RelNode logicalPlan, RelOptPlanner planner ) {
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            queryAnalyzer.addPage( informationPageLogical );
-            queryAnalyzer.addGroup( informationGroupLogical );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    "LogicalQueryPlan",
-                    informationGroupLogical.getId(),
-                    RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }
-
         final StopWatch stopWatch = new StopWatch();
         //
         // Optimization
@@ -396,13 +402,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature processQuery( final RelNode logicalPlan, Planner planner, SqlKind kind ) {
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                "LogicalQueryPlan",
-                informationGroupLogical.getId(),
-                RelOptUtil.dumpPlan( "", logicalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
-
+    public PolyphenyDbSignature processQuery( final RelNode logicalPlan, RelOptPlanner planner, SqlKind kind ) {
         final StopWatch stopWatch = new StopWatch();
         //
         // Optimization
@@ -411,19 +411,25 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         }
         stopWatch.start();
         RelNode optimalPlan;
-        try {
-            optimalPlan = planner.transform( 0, planner.getEmptyTraitSet().replace( EnumerableConvention.INSTANCE ), logicalPlan );
-        } catch ( RelConversionException e ) {
-            throw new RuntimeException( e );
-        }
+        logicalPlan.getCluster().setMetadataProvider(
+                new CachingRelMetadataProvider(
+                        logicalPlan.getCluster().getMetadataProvider(),
+                        logicalPlan.getCluster().getPlanner() ) );
+        Program program = Programs.ofRules( Programs.RULE_SET );
+        optimalPlan = program.run( planner, logicalPlan, planner.emptyTraitSet().replace( EnumerableConvention.INSTANCE ) );
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalPlan, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        informationQueryPlan = new InformationQueryPlan(
-                "PhysicalQueryPlan",
-                informationGroupPhysical.getId(),
-                RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-        InformationManager.getInstance().registerInformation( informationQueryPlan );
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPagePhysical );
+            queryAnalyzer.addGroup( informationGroupPhysical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "PhysicalQueryPlan",
+                    informationGroupPhysical.getId(),
+                    RelOptUtil.dumpPlan( "", optimalPlan, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
             log.debug( "Optimizing Statement ... done. [{}]", stopWatch );
@@ -439,13 +445,13 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             for ( int field : Pair.left( root.fields ) ) {
                 projects.add( rexBuilder.makeInputRef( enumerable, field ) );
             }
-            RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
-            enumerable = EnumerableCalc.create( enumerable, program );
+            RexProgram rexProgram = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+            enumerable = EnumerableCalc.create( enumerable, rexProgram );
         }
 
         Bindable bindable = EnumerableInterpretable.toBindable( ImmutableMap.of(), null, enumerable, Prefer.ARRAY );
 
-        return new PolyphenyDbSignature(
+        return new PolyphenyDbSignature<Object[]>(
                 "",
                 ImmutableList.of(),
                 ImmutableMap.of(),
@@ -487,7 +493,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
             jdbcType = transaction.getTypeFactory().builder().add( "$0", type ).build();
         }
 
-        return new PolyphenyDbSignature(
+        return new PolyphenyDbSignature<>(
                 "",
                 parameters,
                 ImmutableMap.of(),
@@ -502,8 +508,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     }
 
 
-    private SqlNode parseSql( String sql, FrameworkConfig config ) throws SqlParseException {
-        SqlParser parser = SqlParser.create( new SourceStringReader( sql ), config.getParserConfig() );
+    private SqlNode parseSql( String sql, SqlParserConfig parserConfig ) throws SqlParseException {
+        SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
         return parser.parseStmt();
     }
 
@@ -526,19 +532,6 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         } else {
             throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
         }
-    }
-
-
-    private Pair<SqlNode, RelDataType> validateSql( PolyphenyDbSqlValidator validator, final SqlNode parsed ) throws ValidationException {
-        validator.setIdentifierExpansion( true );
-        SqlNode validated;
-        try {
-            validated = validator.validate( parsed );
-        } catch ( RuntimeException e ) {
-            throw new ValidationException( e );
-        }
-
-        return Pair.of( validated, validator.getValidatedNodeType( validated ) );
     }
 
 
@@ -568,6 +561,18 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                         .build();
         final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, createCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         RelRoot logicalPlan = sqlToRelConverter.convertQuery( validated, false, true );
+
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPageLogical );
+            queryAnalyzer.addGroup( informationGroupLogical );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    "LogicalQueryPlan",
+                    informationGroupLogical.getId(),
+                    RelOptUtil.dumpPlan( "", logicalPlan.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
+
         logicalPlan = logicalPlan.withRel( sqlToRelConverter.flattenTypes( logicalPlan.rel, true ) );
         final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
         logicalPlan = logicalPlan.withRel( RelDecorrelator.decorrelateQuery( logicalPlan.rel, relBuilder ) );

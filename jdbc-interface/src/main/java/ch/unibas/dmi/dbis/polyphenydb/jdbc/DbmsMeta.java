@@ -67,7 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import com.google.common.collect.ImmutableList;
@@ -908,7 +908,7 @@ public class DbmsMeta implements ProtobufMeta {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
         // Execute
         PolyphenyDbSignature signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().processSqlQuery( sql, parserConfig );

@@ -67,6 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
@@ -1479,7 +1480,7 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParser.Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
         try {
@@ -1568,7 +1569,7 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParser.Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
         try {

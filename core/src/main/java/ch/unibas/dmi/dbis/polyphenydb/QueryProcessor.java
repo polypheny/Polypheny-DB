@@ -30,18 +30,17 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignatu
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 
 
 public interface QueryProcessor {
 
-    PolyphenyDbSignature processSqlQuery( String sql, Config parserConfig );
+    PolyphenyDbSignature processSqlQuery( String sql, SqlParserConfig parserConfig );
 
 
     PolyphenyDbSignature processQuery( RelNode logicalPlan );
 
     PolyphenyDbSignature processQuery( RelNode logicalPlan, RelOptPlanner planner );
 
-    PolyphenyDbSignature processQuery( RelNode logicalPlan, Planner planner, SqlKind kind );
+    PolyphenyDbSignature processQuery( RelNode logicalPlan, RelOptPlanner planner, SqlKind kind );
 }

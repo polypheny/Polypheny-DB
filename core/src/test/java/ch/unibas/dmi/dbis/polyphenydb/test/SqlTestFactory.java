@@ -34,7 +34,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.advise.SqlAdvisor;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
@@ -80,7 +80,7 @@ public class SqlTestFactory {
     private final Supplier<RelDataTypeFactory> typeFactory;
     private final Supplier<SqlOperatorTable> operatorTable;
     private final Supplier<SqlValidatorCatalogReader> catalogReader;
-    private final Supplier<Config> parserConfig;
+    private final Supplier<SqlParserConfig> parserConfig;
 
 
     protected SqlTestFactory() {
@@ -107,7 +107,7 @@ public class SqlTestFactory {
     }
 
 
-    public Config getParserConfig() {
+    public SqlParserConfig getParserConfig() {
         return parserConfig.get();
     }
 
@@ -117,7 +117,7 @@ public class SqlTestFactory {
     }
 
 
-    public static Config createParserConfig( ImmutableMap<String, Object> options ) {
+    public static SqlParserConfig createParserConfig( ImmutableMap<String, Object> options ) {
         return SqlParser.configBuilder()
                 .setQuoting( (Quoting) options.get( "quoting" ) )
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
