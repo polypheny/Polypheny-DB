@@ -60,11 +60,12 @@ import org.apache.calcite.avatica.util.TimeUnit;
 
 
 /**
- * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types. The factory also provides methods for return type inference for arithmetic in cases where
- * SQL 2003 is implementation defined or impractical.
+ * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types.
+ * The factory also provides methods for return type inference for arithmetic in cases where SQL 2003 is implementation defined or impractical.
  *
  * This interface is an example of the {@link Glossary#ABSTRACT_FACTORY_PATTERN abstract factory pattern}.
- * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
+ * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object.
+ * This reduces memory consumption and comparison cost.
  */
 public interface RelDataTypeFactory {
 

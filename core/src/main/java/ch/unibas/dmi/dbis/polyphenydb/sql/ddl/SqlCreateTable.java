@@ -52,6 +52,7 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.NameGenerator;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -98,14 +99,12 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -258,9 +257,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     } else if ( constraint.getOperator() == SqlKeyConstraint.UNIQUE ) {
                         String constraintName;
                         if ( constraint.getName() == null ) {
-                            Random rand = new Random();
-                            int x = rand.nextInt( 1000 );
-                            constraintName = "auto_" + x + "_unique_" + tableName + "_" + StringUtils.join( columnIds, "_" );
+                            constraintName = NameGenerator.generateConstraintName();
                         } else {
                             constraintName = constraint.getName().getSimple();
                         }
@@ -290,7 +287,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
         @Override
-        public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList,
+        public TableModify toModificationRel(
+                RelOptCluster cluster,
+                RelOptTable table,
+                Prepare.CatalogReader catalogReader,
+                RelNode child,
+                TableModify.Operation operation,
+                List<String> updateColumnList,
+                List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
