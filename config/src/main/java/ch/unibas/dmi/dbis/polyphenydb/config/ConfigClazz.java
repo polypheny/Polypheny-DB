@@ -28,14 +28,22 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.typesafe.config.ConfigException;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 import org.reflections.Reflections;
 
 
 public class ConfigClazz extends Config {
 
+    @JsonAdapter(ClassesAdapter.class)
     private final Set<Class> classes;
+    @JsonAdapter(ValueAdapter.class)
     private Class value;
 
 
@@ -92,11 +100,68 @@ public class ConfigClazz extends Config {
 
     private Class getByString( String str ) throws ConfigRuntimeException {
         for ( Class c : classes ) {
-            if ( str.equalsIgnoreCase( c.getCanonicalName() ) ) {
+            if ( str.equalsIgnoreCase( c.getName() ) ) {
                 return c;
             }
         }
         throw new ConfigRuntimeException( "No class with name " + str + " found in the list of valid classes." );
+    }
+
+
+    class ClassesAdapter extends TypeAdapter<Set<Class>> {
+
+        @Override
+        public void write( final JsonWriter out, final Set<Class> classes ) throws IOException {
+            if ( classes == null ) {
+                out.nullValue();
+                return;
+            }
+            out.beginArray();
+            for ( Class c : classes ) {
+                out.value( c.getName() );
+            }
+            out.endArray();
+        }
+
+        @Override
+        public Set<Class> read( final JsonReader in ) throws IOException {
+            Set<Class> set = new HashSet<>();
+            in.beginArray();
+            while ( in.hasNext() ) {
+                try {
+                    Class c = Class.forName( in.nextString() );
+                    set.add( c );
+                } catch ( ClassNotFoundException e ) {
+                    e.printStackTrace();
+                    set.add( null );
+                }
+            }
+            in.endArray();
+            return ImmutableSet.copyOf( set );
+        }
+    }
+
+
+    class ValueAdapter extends TypeAdapter<Class> {
+
+        @Override
+        public void write( final JsonWriter out, final Class value ) throws IOException {
+            if ( value == null ) {
+                out.nullValue();
+                return;
+            }
+            out.value( value.getName() );
+        }
+
+        @Override
+        public Class read( final JsonReader in ) throws IOException {
+            try {
+                return Class.forName( in.nextString() );
+            } catch ( ClassNotFoundException e ) {
+                e.printStackTrace();
+                return null;
+            }
+        }
     }
 
 }

@@ -98,8 +98,9 @@ public abstract class Config {
 
     /**
      * List of observers
+     * field is transient, so it will not be (de)serialized by Gson and produce a "Unable to invoke no-args constructor" error
      */
-    private final Map<Integer, ConfigListener> listeners = new HashMap<>();
+    private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
 
     /**

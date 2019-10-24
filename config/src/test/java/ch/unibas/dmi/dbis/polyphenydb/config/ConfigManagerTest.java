@@ -28,6 +28,7 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -231,6 +232,11 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertTrue( o.wasNotified() );
         Assert.assertEquals( 1, o.n );
+
+        String json = c.toJson();
+        Gson gson = new Gson();
+        ConfigClazz z = gson.fromJson( json, ConfigClazz.class );
+        Assert.assertEquals( json, z.toJson() );
     }
 
 
@@ -262,6 +268,11 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertTrue( o.wasNotified() );
         Assert.assertEquals( 3, o.n );
+
+        String json = c.toJson();
+        Gson gson = new Gson();
+        ConfigClazzList z = gson.fromJson( json, ConfigClazzList.class );
+        Assert.assertEquals( json, z.toJson() );
     }
 
 
