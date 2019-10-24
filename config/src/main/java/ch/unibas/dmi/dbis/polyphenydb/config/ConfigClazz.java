@@ -36,9 +36,11 @@ import com.typesafe.config.ConfigException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 
 
+@Slf4j
 public class ConfigClazz extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
@@ -132,7 +134,7 @@ public class ConfigClazz extends Config {
                     Class c = Class.forName( in.nextString() );
                     set.add( c );
                 } catch ( ClassNotFoundException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception!", e );
                     set.add( null );
                 }
             }
@@ -158,7 +160,7 @@ public class ConfigClazz extends Config {
             try {
                 return Class.forName( in.nextString() );
             } catch ( ClassNotFoundException e ) {
-                e.printStackTrace();
+                log.error( "Caught exection!", e );
                 return null;
             }
         }

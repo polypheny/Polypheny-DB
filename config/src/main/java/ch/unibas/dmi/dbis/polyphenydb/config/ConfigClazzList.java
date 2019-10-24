@@ -39,9 +39,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 
 
+@Slf4j
 public class ConfigClazzList extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
@@ -171,7 +173,7 @@ public class ConfigClazzList extends Config {
                     Class c = Class.forName( in.nextString() );
                     list.add( c );
                 } catch ( ClassNotFoundException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception!", e );
                     list.add( null );
                 }
             }
