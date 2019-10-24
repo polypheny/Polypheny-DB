@@ -106,7 +106,6 @@ dependencies {
 
     testCompile group: "org.incava", name: "java-diff", version: java_diff_version
     testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 }
 
 

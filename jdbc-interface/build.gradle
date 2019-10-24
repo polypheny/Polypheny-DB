@@ -55,17 +55,8 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
 
-    ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-
-    ////// APACHE COMMONS LANG
-    //compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
-
     ////// BYTE UNITS
     compile group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version// License: Apache 2.0
-
 
     ////// APACHE CALCITE AVATICA
     compile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version

@@ -71,7 +71,6 @@ dependencies {
     testCompile group: "junit", name: "junit", version: junit_version
 
     testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
-    testCompile group: "sqlline", name: "sqlline", version: sqlline_version
 }
 
 

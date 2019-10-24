@@ -57,8 +57,6 @@ dependencies {
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
-
     compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
     compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
@@ -73,7 +71,6 @@ dependencies {
     testCompile group: "junit", name: "junit", version: junit_version
 
     testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
     testCompile group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }
 

@@ -62,9 +62,6 @@ dependencies {
     compile project(":core")
 
     uiFiles group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-ui", version: polyphenydb_ui_version
-
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
-    compile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
     
     compile group: "com.sparkjava", name: "spark-core", version: spark_core_version
 
@@ -75,7 +72,6 @@ dependencies {
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version: junit_version
-    testCompile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
 }
 
 

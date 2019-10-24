@@ -57,8 +57,6 @@ dependencies {
 
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
-
     compile group: "com.google.guava", name: "guava", version: guava_version
     compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
     compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version

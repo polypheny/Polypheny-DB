@@ -67,6 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbSqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
@@ -318,6 +319,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
+                        .addRuleInstance( AggregateReduceFunctionsRule.INSTANCE )
                         /*.addRuleInstance( FilterTableScanRule.INSTANCE )
                         .addRuleInstance( FilterTableScanRule.INTERPRETER )
                         .addRuleInstance( ProjectTableScanRule.INSTANCE )
