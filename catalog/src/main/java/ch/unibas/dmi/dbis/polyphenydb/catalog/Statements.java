@@ -208,7 +208,7 @@ final class Statements {
             resultSet = transactionHandler.executeSelect( "SELECT * FROM \"index\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
         } catch ( SQLException e ) {
-            e.printStackTrace();
+            log.error( "Caught exception while creating catalog schema!", e );
         }
     }
 
@@ -276,7 +276,7 @@ final class Statements {
                 }
             }
         } catch ( SQLException | UnknownTableTypeException | UnknownTypeException | UnknownCollationException e ) {
-            e.printStackTrace();
+            log.error( "Caught exception while exporting catalog!", e );
         }
     }
 
