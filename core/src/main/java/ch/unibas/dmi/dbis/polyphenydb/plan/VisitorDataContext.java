@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
@@ -104,6 +105,12 @@ public class VisitorDataContext implements DataContext {
         } else {
             return null;
         }
+    }
+
+
+    @Override
+    public Transaction getTransaction() {
+        return null;
     }
 
 

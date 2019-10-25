@@ -277,7 +277,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private NullCollation nullCollation = NullCollation.HIGH;
 
-    // TODO jvs 11-Dec-2008:  make this local to performUnconditionalRewrites if it's OK to expand the signature of that method.
+    // TODO jvs:  make this local to performUnconditionalRewrites if it's OK to expand the signature of that method.
     private boolean validatingSqlMerge;
 
     private boolean inWindow; // Allow nested aggregates
@@ -1557,14 +1557,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Saves the type of a {@link SqlNode}, now that it has been validated.
      *
-     * Unlike the base class method, this method is not deprecated.
-     * It is available from within Polypheny-DB, but is not part of the public API.
-     *
      * @param node A SQL parse tree node, never null
      * @param type Its type; must not be null
      */
-    @Override
-    public final void setValidatedNodeType( SqlNode node, RelDataType type ) {
+    public void setValidatedNodeType( SqlNode node, RelDataType type ) {
         Objects.requireNonNull( type );
         Objects.requireNonNull( node );
         if ( type.equals( unknownType ) ) {

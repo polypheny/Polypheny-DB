@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
@@ -35,6 +36,7 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.TimeZone;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 
@@ -50,13 +52,16 @@ public class DataContextImpl implements DataContext {
     private final QueryProvider queryProvider;
     private final JavaTypeFactory typeFactory;
     private final TimeZone timeZone = TimeZone.getDefault();
+    @Getter
+    private final Transaction transaction;
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Transaction transaction ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.rootSchema = rootSchema;
-
+        this.transaction = transaction;
+        
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 

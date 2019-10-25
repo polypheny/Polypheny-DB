@@ -46,6 +46,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Compiler;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.InterpretableConvention;
@@ -90,6 +94,9 @@ import org.codehaus.commons.compiler.ICompilerFactory;
  */
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
+    private static InformationPage informationPageGeneratedCode = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+    private static InformationGroup informationGroupGeneratedCode = new InformationGroup( "informationGroupGeneratedCode", informationPageGeneratedCode.getId() );
+
     protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
@@ -103,25 +110,32 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
-        final Bindable bindable = toBindable( implementor.internalParameters, implementor.spark, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY );
+        final Bindable bindable = toBindable( implementor.internalParameters, implementor.spark, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY, implementor.dataContext );
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer ) {
+    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, DataContext dataContext ) {
         EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
-        //
-        // TODO: Information: Add to query analyzer
-        //
-
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
             Util.debugCode( System.out, s );
+        }
+
+        if ( dataContext != null && dataContext.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
+            queryAnalyzer.addPage( informationPageGeneratedCode );
+            queryAnalyzer.addGroup( informationGroupGeneratedCode );
+            InformationHtml informationHtml = new InformationHtml(
+                    "GeneratedCode",
+                    informationGroupGeneratedCode.getId(),
+                    s );
+            queryAnalyzer.registerInformation( informationHtml );
         }
 
         Hook.JAVA_PLAN.run( s );

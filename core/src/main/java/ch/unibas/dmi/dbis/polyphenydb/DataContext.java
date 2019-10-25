@@ -91,6 +91,9 @@ public interface DataContext {
      */
     Object get( String name );
 
+
+    Transaction getTransaction();
+
     /**
      * Variable that may be asked for in a call to {@link DataContext#get}.
      */
@@ -195,6 +198,12 @@ public interface DataContext {
 
         @Override
         public Object get( String name ) {
+            return null;
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
             return null;
         }
     }

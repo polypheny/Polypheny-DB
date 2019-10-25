@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
@@ -145,6 +146,12 @@ public abstract class RexProgramBuilderBase {
         @Override
         public Object get( String name ) {
             return map.get( name );
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
         }
     }
 

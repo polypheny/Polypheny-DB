@@ -27,14 +27,20 @@ package ch.unibas.dmi.dbis.polyphenydb;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 
 
-public interface QueryProcessor {
+public interface SqlProcessor {
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
+    SqlNode parse( String sql );
 
-    RelOptPlanner getPlanner();
+    Pair<SqlNode, RelDataType> validate( SqlNode parsed );
+
+    RelRoot translate( SqlNode sql );
+
+    PolyphenyDbSignature prepareDdl( SqlNode parsed );
 
 }

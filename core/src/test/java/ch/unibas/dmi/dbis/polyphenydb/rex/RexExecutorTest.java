@@ -54,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
@@ -390,6 +391,12 @@ public class RexExecutorTest {
                 Assert.fail( "Wrong DataContext access" );
                 return null;
             }
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
         }
     }
 }

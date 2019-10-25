@@ -604,6 +604,12 @@ public final class Schemas {
         public Object get( String name ) {
             return map.get( name );
         }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
+        }
     }
 
 

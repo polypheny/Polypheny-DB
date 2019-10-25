@@ -50,6 +50,7 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreter;
@@ -119,6 +120,12 @@ public class InterpreterTest {
 
         @Override
         public Object get( String name ) {
+            return null;
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
             return null;
         }
     }

@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -65,11 +66,16 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -910,8 +916,22 @@ public class DbmsMeta implements ProtobufMeta {
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
-        // Execute
-        PolyphenyDbSignature signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().processSqlQuery( sql, parserConfig );
+        Transaction transaction = connection.getCurrentOrCreateNewTransaction();
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        PolyphenyDbSignature signature;
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+
+            // Prepare
+            signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot );
+        }
 
         // Build response
         List<MetaResultSet> resultSets;
