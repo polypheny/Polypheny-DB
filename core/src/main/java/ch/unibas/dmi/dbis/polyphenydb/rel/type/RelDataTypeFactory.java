@@ -108,16 +108,6 @@ public interface RelDataTypeFactory {
     RelDataType createStructType( List<RelDataType> typeList, List<String> fieldNameList );
 
     /**
-     * Creates a type that represents a structured collection of fields, obtaining the field information via a callback.
-     *
-     * @param fieldInfo callback for field information
-     * @return canonical struct type descriptor
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelDataType createStructType( FieldInfo fieldInfo );
-
-    /**
      * Creates a type that represents a structured collection of fieldList, obtaining the field information from a list of (name, type) pairs.
      *
      * @param fieldList List of (name, type) pairs

@@ -150,6 +150,12 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
         public Transaction getTransaction() {
             return null;
         }

@@ -70,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -87,8 +88,7 @@ public class InterpreterTest {
 
 
     /**
-     * Implementation of {@link DataContext} for executing queries without a
-     * connection.
+     * Implementation of {@link DataContext} for executing queries without a connection.
      */
     private class MyDataContext implements DataContext {
 
@@ -121,6 +121,12 @@ public class InterpreterTest {
         @Override
         public Object get( String name ) {
             return null;
+        }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
         }
 
 

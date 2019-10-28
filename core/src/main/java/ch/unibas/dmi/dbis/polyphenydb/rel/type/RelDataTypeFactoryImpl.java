@@ -174,37 +174,6 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
 
     @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType createStructType( final RelDataTypeFactory.FieldInfo fieldInfo ) {
-        return canonize( StructKind.FULLY_QUALIFIED,
-                new AbstractList<String>() {
-                    @Override
-                    public String get( int index ) {
-                        return fieldInfo.getFieldName( index );
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldInfo.getFieldCount();
-                    }
-                },
-                new AbstractList<RelDataType>() {
-                    @Override
-                    public RelDataType get( int index ) {
-                        return fieldInfo.getFieldType( index );
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldInfo.getFieldCount();
-                    }
-                } );
-    }
-
-
-    @Override
     public final RelDataType createStructType( final List<? extends Map.Entry<String, RelDataType>> fieldList ) {
         return canonize( StructKind.FULLY_QUALIFIED,
                 new AbstractList<String>() {
@@ -575,7 +544,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         return new FieldInfoBuilder( this );
     }
 
-    // TODO jvs 13-Dec-2004:  move to OJTypeFactoryImpl?
+    // TODO jvs: move to OJTypeFactoryImpl?
 
 
     /**

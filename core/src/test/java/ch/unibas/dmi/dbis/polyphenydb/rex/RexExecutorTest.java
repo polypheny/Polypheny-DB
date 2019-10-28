@@ -83,6 +83,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import org.apache.calcite.avatica.util.ByteString;
@@ -391,6 +392,12 @@ public class RexExecutorTest {
                 Assert.fail( "Wrong DataContext access" );
                 return null;
             }
+        }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
         }
 
 
