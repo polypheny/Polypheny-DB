@@ -277,7 +277,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private NullCollation nullCollation = NullCollation.HIGH;
 
-    // TODO jvs:  make this local to performUnconditionalRewrites if it's OK to expand the signature of that method.
+    // TODO jvs: make this local to performUnconditionalRewrites if it's OK to expand the signature of that method.
     private boolean validatingSqlMerge;
 
     private boolean inWindow; // Allow nested aggregates

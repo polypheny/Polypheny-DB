@@ -142,9 +142,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         stopWatch.start();
 
         // Add default values for unset fields
-        // TODO: Add config
-        if ( parsed.getKind() == SqlKind.INSERT ) {
-            parsed = addDefaultValues( (SqlInsert) parsed );
+        if ( RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ) {
+            if ( parsed.getKind() == SqlKind.INSERT ) {
+                addDefaultValues( (SqlInsert) parsed );
+            }
         }
 
         final SqlConformance conformance = parserConfig.conformance();
@@ -210,7 +211,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
 
         // Trim unused fields.
-        logicalRoot = trimUnusedFields( logicalRoot, sqlToRelConverter );
+        if ( RuntimeConfig.TRIM_UNUSED_FIELDS.getBoolean() ) {
+            logicalRoot = trimUnusedFields( logicalRoot, sqlToRelConverter );
+        }
 
         if ( log.isTraceEnabled() ) {
             log.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
@@ -247,7 +250,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     // Add default values for unset fields
-    private SqlInsert addDefaultValues( SqlInsert insert ) {
+    private void addDefaultValues( SqlInsert insert ) {
         Context prepareContext = transaction.getPrepareContext();
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
@@ -308,7 +311,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
             }
         }
-        return insert;
     }
 
 
