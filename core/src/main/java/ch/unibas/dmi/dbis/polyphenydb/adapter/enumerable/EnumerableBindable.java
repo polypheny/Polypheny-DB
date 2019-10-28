@@ -99,6 +99,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
         final Map<String, Object> map = new HashMap<>();
         final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY, dataContext );
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
+        dataContext.addAll( map );
         return arrayBindable.bind( dataContext );
     }
 

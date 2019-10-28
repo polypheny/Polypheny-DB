@@ -62,6 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
 
@@ -105,6 +106,12 @@ public class VisitorDataContext implements DataContext {
         } else {
             return null;
         }
+    }
+
+
+    @Override
+    public void addAll( Map<String, Object> map ) {
+        throw new UnsupportedOperationException();
     }
 
 

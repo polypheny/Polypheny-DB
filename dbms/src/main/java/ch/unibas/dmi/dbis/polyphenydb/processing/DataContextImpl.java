@@ -33,7 +33,7 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import com.google.common.collect.ImmutableMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.Getter;
@@ -47,7 +47,7 @@ import org.apache.calcite.linq4j.QueryProvider;
  */
 public class DataContextImpl implements DataContext {
 
-    private final ImmutableMap<Object, Object> map;
+    private final HashMap<String, Object> map;
     private final PolyphenyDbSchema rootSchema;
     private final QueryProvider queryProvider;
     private final JavaTypeFactory typeFactory;
@@ -75,22 +75,21 @@ public class DataContextImpl implements DataContext {
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
-        ImmutableMap.Builder<Object, Object> builder = ImmutableMap.builder();
-        builder.put( Variable.UTC_TIMESTAMP.camelName, time )
-                .put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset )
-                .put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset )
-                .put( Variable.TIME_ZONE.camelName, timeZone )
-                .put( Variable.STDIN.camelName, streamHolder.get()[0] )
-                .put( Variable.STDOUT.camelName, streamHolder.get()[1] )
-                .put( Variable.STDERR.camelName, streamHolder.get()[2] );
+        map = new HashMap<>();
+        map.put( Variable.UTC_TIMESTAMP.camelName, time );
+        map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
+        map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
+        map.put( Variable.TIME_ZONE.camelName, timeZone );
+        map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
+        map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
+        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );
         for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
             Object e = entry.getValue();
             if ( e == null ) {
                 e = AvaticaSite.DUMMY_VALUE;
             }
-            builder.put( entry.getKey(), e );
+            map.put( entry.getKey(), e );
         }
-        map = builder.build();
     }
 
 
@@ -104,6 +103,12 @@ public class DataContextImpl implements DataContext {
             return getSqlAdvisor();
         } */
         return o;
+    }
+
+
+    @Override
+    public void addAll( Map<String, Object> map ) {
+        this.map.putAll( map );
     }
 
 /*

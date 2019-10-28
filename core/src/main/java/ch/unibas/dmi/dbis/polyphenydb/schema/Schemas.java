@@ -607,6 +607,12 @@ public final class Schemas {
 
 
         @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
         public Transaction getTransaction() {
             return null;
         }
