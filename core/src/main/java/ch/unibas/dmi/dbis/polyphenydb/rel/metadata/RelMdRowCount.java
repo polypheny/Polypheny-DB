@@ -69,11 +69,13 @@ import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.NumberUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * RelMdRowCount supplies a default implementation of {@link RelMetadataQuery#getRowCount} for the standard logical algebra.
  */
+@Slf4j
 public class RelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> {
 
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource( BuiltInMethod.ROW_COUNT.method, new RelMdRowCount() );
@@ -106,7 +108,7 @@ public class RelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
             } catch ( CyclicMetadataException e ) {
                 // ignore this rel; there will be other, non-cyclic ones
             } catch ( Throwable e ) {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
         }
         return Util.first( v, 1e6d ); // if set is empty, estimate large

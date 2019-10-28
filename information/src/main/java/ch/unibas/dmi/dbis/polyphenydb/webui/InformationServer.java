@@ -76,7 +76,7 @@ public class InformationServer implements InformationObserver {
                 return im.getPage( req.body() ).asJson();
             } catch ( Exception e ) {
                 // if input not number or page does not exist
-                e.printStackTrace();
+                log.error( "Caught exception", e );
                 return "";
             }
         } );
