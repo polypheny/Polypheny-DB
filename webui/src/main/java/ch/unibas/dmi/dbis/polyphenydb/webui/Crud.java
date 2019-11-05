@@ -584,6 +584,17 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Return all available statistics to the client
+     * TODO: potentially change all to specific statistics
+     */
+    Result getStatistics( final Request req, final Response res ) {
+        Result result = new Result( new DbColumn[0] , new String[0][] );
+
+        return result;
+    }
+
+
+    /**
      * Delete a row from a table.
      * The row is determined by the value of every column in that row (conjunction).
      * The transaction is being rolled back, if more that one row would be deleted.
