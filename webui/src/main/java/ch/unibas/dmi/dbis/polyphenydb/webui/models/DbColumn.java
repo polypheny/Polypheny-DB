@@ -46,6 +46,10 @@ public class DbColumn {
     public Integer maxLength;
     public String defaultValue;
 
+    //for statistics
+    public Integer max;
+    public Integer min;
+
 
     public DbColumn( final String name ) {
         this.name = name;

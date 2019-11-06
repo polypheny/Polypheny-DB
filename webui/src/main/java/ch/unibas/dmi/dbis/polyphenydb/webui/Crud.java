@@ -68,19 +68,7 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignatu
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.*;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
@@ -548,6 +536,7 @@ public class Crud implements InformationObserver {
                     }
                 }
             }
+
         }
 
         try {
@@ -579,6 +568,7 @@ public class Crud implements InformationObserver {
             queryAnalyzer.registerInformation( html );
         }
 
+        LOGGER.debug(results.toArray().toString());
         return results;
     }
 
@@ -587,10 +577,16 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      * TODO: potentially change all to specific statistics
      */
-    Result getStatistics( final Request req, final Response res ) {
-        Result result = new Result( new DbColumn[0] , new String[0][] );
+    ArrayList<Result> getStatistics(final Request req, final Response res ) {
+        ArrayList<Result> results = new ArrayList<>();
+        DbColumn[] col = new DbColumn[1];
+        col[0] = new DbColumn("test");
+        col[0].min = 2;
+        col[0].max = 6;
 
-        return result;
+        results.add(new Result(col));
+
+        return results;
     }
 
 
