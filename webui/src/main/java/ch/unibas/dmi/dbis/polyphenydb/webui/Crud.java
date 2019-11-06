@@ -158,8 +158,10 @@ public class Crud implements InformationObserver {
         if ( request.sortState != null ) {
             orderBy = sortTable( request.sortState );
         }
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         query.append( "SELECT * FROM " )
-                .append( request.tableId )
+                .append( tableId )
                 .append( where )
                 .append( orderBy )
                 .append( " LIMIT " )
@@ -184,7 +186,6 @@ public class Crud implements InformationObserver {
 
         // determine if it is a view or a table
         try {
-            String[] t = request.tableId.split( "\\." );
             CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
             if ( catalogTable.tableType.equalsIgnoreCase( "TABLE" ) ) {
                 result.setType( ResultType.TABLE );
@@ -306,7 +307,8 @@ public class Crud implements InformationObserver {
         } else if ( request.action.toLowerCase().equals( "truncate" ) ) {
             query.append( "TRUNCATE TABLE " );
         }
-        query.append( request.schema ).append( "." ).append( request.table );
+        String tableId = String.format( "\"%s\".\"%s\"", request.schema, request.table );
+        query.append( tableId );
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
             result = new Result( new Debug().setAffectedRows( a ).setGeneratedQuery( query.toString() ) );
@@ -332,14 +334,15 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         StringBuilder query = new StringBuilder();
         StringJoiner colJoiner = new StringJoiner( "," );
-        query.append( "CREATE TABLE " ).append( request.schema ).append( "." ).append( request.table ).append( "(" );
+        String tableId = String.format( "\"%s\".\"%s\"", request.schema, request.table );
+        query.append( "CREATE TABLE " ).append( tableId ).append( "(" );
         StringBuilder colBuilder;
         Result result;
         StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
         int primaryCounter = 0;
         for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
-            colBuilder.append( col.name ).append( " " ).append( col.dataType );
+            colBuilder.append( "\"" ).append( col.name ).append( "\" " ).append( col.dataType );
             if ( col.maxLength != null ) {
                 colBuilder.append( String.format( "(%d)", col.maxLength ) );
             }
@@ -401,13 +404,14 @@ public class Crud implements InformationObserver {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
         StringJoiner cols = new StringJoiner( ",", "(", ")" );
         StringBuilder query = new StringBuilder();
-        query.append( "INSERT INTO " ).append( request.tableId );
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        query.append( "INSERT INTO " ).append( tableId );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        String[] t = request.tableId.split( "\\." );
         Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
-            cols.add( entry.getKey() );
+            cols.add( "\"" + entry.getKey() + "\"" );
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
@@ -602,18 +606,19 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder builder = new StringBuilder();
-        builder.append( "DELETE FROM " ).append( request.tableId ).append( " WHERE " );
-        StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
+        StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition = "";
             if ( entry.getValue() == null ) {
-                condition = String.format( "%s IS NULL", entry.getKey() );
+                condition = String.format( "\"%s\" IS NULL", entry.getKey() );
             } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
-                condition = String.format( "%s = %s", entry.getKey(), entry.getValue() );
+                condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
-                condition = String.format( "%s = '%s'", entry.getKey(), entry.getValue() );
+                condition = String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() );
             }
             joiner.add( condition );
         }
@@ -647,22 +652,24 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder builder = new StringBuilder();
-        builder.append( "UPDATE " ).append( request.tableId ).append( " SET " );
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        builder.append( "UPDATE " ).append( tableId ).append( " SET " );
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             if ( entry.getValue() == null ) {
-                setStatements.add( String.format( "%s = NULL", entry.getKey() ) );
+                setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
-                setStatements.add( String.format( "%s = %s", entry.getKey(), entry.getValue() ) );
+                setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
-                setStatements.add( String.format( "%s = '%s'", entry.getKey(), entry.getValue() ) );
+                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
             }
         }
         builder.append( setStatements.toString() );
 
         StringJoiner where = new StringJoiner( " AND ", "", "" );
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
-            where.add( String.format( "%s = '%s'", entry.getKey(), entry.getValue() ) );
+            where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
         }
         builder.append( " WHERE " ).append( where.toString() );
 
@@ -747,9 +754,12 @@ public class Crud implements InformationObserver {
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         // rename column if needed
         if ( !oldColumn.name.equals( newColumn.name ) ) {
-            String query = String.format( "ALTER TABLE %s RENAME COLUMN %s TO %s", request.tableId, oldColumn.name, newColumn.name );
+            String query = String.format( "ALTER TABLE %s RENAME COLUMN \"%s\" TO \"%s\"", tableId, oldColumn.name, newColumn.name );
             queries.add( query );
         }
 
@@ -757,11 +767,11 @@ public class Crud implements InformationObserver {
         // TODO: cast if needed
         if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
             if ( newColumn.maxLength != null ) {
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET TYPE %s(%s)", request.tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s(%s)", tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
                 queries.add( query );
             } else {
                 // TODO: drop maxlength if requested
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET TYPE %s", request.tableId, newColumn.name, newColumn.dataType );
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
                 queries.add( query );
             }
         }
@@ -772,7 +782,7 @@ public class Crud implements InformationObserver {
             if ( newColumn.nullable ) {
                 nullable = "DROP";
             }
-            String query = "ALTER TABLE " + request.tableId + " MODIFY COLUMN " + newColumn.name + " " + nullable + " NOT NULL";
+            String query = "ALTER TABLE " + tableId + " MODIFY COLUMN \"" + newColumn.name + "\" " + nullable + " NOT NULL";
             queries.add( query );
         }
 
@@ -780,9 +790,9 @@ public class Crud implements InformationObserver {
         if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
             String query;
             if ( newColumn.defaultValue == null ) {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN %s DROP DEFAULT", request.tableId, newColumn.name );
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
             } else {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN %s SET DEFAULT ", request.tableId, newColumn.name );
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
                 switch ( newColumn.dataType ) {
                     case "BIGINT":
                     case "INTEGER":
@@ -834,7 +844,10 @@ public class Crud implements InformationObserver {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         Transaction transaction = getTransaction();
 
-        String query = String.format( "ALTER TABLE %s ADD COLUMN %s %s", request.tableId, request.newColumn.name, request.newColumn.dataType );
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
+        String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s", tableId, request.newColumn.name, request.newColumn.dataType );
         if ( request.newColumn.maxLength != null ) {
             query = query + String.format( "(%d)", request.newColumn.maxLength );
         }
@@ -886,8 +899,11 @@ public class Crud implements InformationObserver {
         ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
         Transaction transaction = getTransaction();
 
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         Result result;
-        String query = String.format( "ALTER TABLE %s DROP COLUMN %s", request.tableId, request.oldColumn.name );
+        String query = String.format( "ALTER TABLE %s DROP COLUMN \"%s\"", tableId, request.oldColumn.name );
         try {
             int affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -983,13 +999,16 @@ public class Crud implements InformationObserver {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
+        String[] t = request.table.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         String query;
         if ( request.constraint.type.equals( "PRIMARY KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", request.table );
+            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", tableId );
         } else if ( request.constraint.type.equals( "FOREIGN KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY %s", request.table, request.constraint.name );
+            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", tableId, request.constraint.name );
         } else {
-            query = String.format( "ALTER TABLE %s DROP CONSTRAINT %s", request.table, request.constraint.name );
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", tableId, request.constraint.name );
         }
         Result result;
         try {
@@ -1016,13 +1035,16 @@ public class Crud implements InformationObserver {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
+        String[] t = request.table.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         Result result;
         if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
             for ( String s : request.constraint.columns ) {
-                joiner.add( s );
+                joiner.add( "\"" + s + "\"" );
             }
-            String query = "ALTER TABLE " + request.table + " ADD PRIMARY KEY " + joiner.toString();
+            String query = "ALTER TABLE " + tableId + " ADD PRIMARY KEY " + joiner.toString();
             try {
                 int rows = executeSqlUpdate( transaction, query );
                 transaction.commit();
@@ -1050,13 +1072,16 @@ public class Crud implements InformationObserver {
         ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
+        String[] t = request.table.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         Result result;
         if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
             for ( String s : request.constraint.columns ) {
-                joiner.add( s );
+                joiner.add( "\"" + s + "\"" );
             }
-            String query = "ALTER TABLE " + request.table + " ADD CONSTRAINT " + request.constraint.name + " UNIQUE " + joiner.toString();
+            String query = "ALTER TABLE " + tableId + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner.toString();
             try {
                 int rows = executeSqlUpdate( transaction, query );
                 transaction.commit();
@@ -1121,7 +1146,8 @@ public class Crud implements InformationObserver {
         Index index = gson.fromJson( req.body(), Index.class );
         Transaction transaction = getTransaction();
 
-        String query = String.format( "ALTER TABLE %s DROP INDEX %s", index.getTable(), index.getName() );
+        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
+        String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableId, index.getName() );
         Result result;
         try {
             int a = executeSqlUpdate( transaction, query );
@@ -1147,12 +1173,13 @@ public class Crud implements InformationObserver {
         Index index = this.gson.fromJson( req.body(), Index.class );
         Transaction transaction = getTransaction();
 
+        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
         Result result;
         StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
         for ( String col : index.getColumns() ) {
-            colJoiner.add( col );
+            colJoiner.add( "\"" + col + "\"" );
         }
-        String query = String.format( "ALTER TABLE %s.%s ADD INDEX %s ON %s USING %s", index.getSchema(), index.getTable(), index.getName(), colJoiner.toString(), index.getMethod() );
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING %s", tableId, index.getName(), colJoiner.toString(), index.getMethod() );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1267,10 +1294,15 @@ public class Crud implements InformationObserver {
         ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
         Transaction transaction = getTransaction();
 
+        String[] t = fk.getFkTableName().split( "\\." );
+        String fkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        t = fk.getPkTableName().split( "\\." );
+        String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+
         Result result;
         try {
-            String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE %s ON DELETE %s",
-                    fk.getFkTableName(), fk.getFkName(), fk.getFkColumnName(), fk.getPkTableName(), fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
+            String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
+                    fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
             executeSqlUpdate( transaction, sql );
             transaction.commit();
             result = new Result( new Debug().setAffectedRows( 1 ) );
@@ -1619,7 +1651,9 @@ public class Crud implements InformationObserver {
      * Get the Number of rows in a table
      */
     private int getTableSize( Transaction transaction, final UIRequest request ) throws QueryExecutionException {
-        String query = "SELECT count(*) FROM " + request.tableId;
+        String[] t = request.tableId.split( "\\." );
+        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        String query = "SELECT count(*) FROM " + tableId;
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
@@ -1646,7 +1680,7 @@ public class Crud implements InformationObserver {
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             if ( !entry.getValue().equals( "" ) ) {
-                joiner.add( "CAST (" + entry.getKey() + " AS VARCHAR) LIKE '" + entry.getValue() + "%'" );
+                joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR) LIKE '" + entry.getValue() + "%'" );
                 counter++;
             }
         }
@@ -1666,7 +1700,7 @@ public class Crud implements InformationObserver {
         int counter = 0;
         for ( Map.Entry<String, SortState> entry : sorting.entrySet() ) {
             if ( entry.getValue().sorting ) {
-                joiner.add( entry.getKey() + " " + entry.getValue().direction );
+                joiner.add( "\"" + entry.getKey() + "\" " + entry.getValue().direction );
                 counter++;
             }
         }
