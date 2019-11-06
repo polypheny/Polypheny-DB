@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -258,6 +259,13 @@ public class RelBuilder {
                     }
                 } );
         return new RelBuilder( config.getContext(), clusters[0], relOptSchemas[0] );
+    }
+
+
+    public static RelBuilder create( Transaction transaction ) {
+        final RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
+        final RelOptCluster cluster = RelOptCluster.create( transaction.getQueryProcessor().getPlanner(), rexBuilder );
+        return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, transaction.getCatalogReader() );
     }
 
 
