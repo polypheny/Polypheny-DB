@@ -196,6 +196,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
             }
 
+            if ( this.columnList == null ) {
+                // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+            }
+
             long tableId = transaction.getCatalog().addTable(
                     tableName,
                     schemaId,
@@ -204,11 +209,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     null );
 
             transaction.getCatalog().addDataPlacement( context.getDefaultStore(), tableId );
-
-            if ( this.columnList == null ) {
-                // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
-            }
 
             List<SqlNode> columnList = this.columnList.getList();
             int position = 1;

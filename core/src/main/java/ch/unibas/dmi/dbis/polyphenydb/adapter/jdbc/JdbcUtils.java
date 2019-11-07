@@ -79,7 +79,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 /**
  * Utilities for the JDBC provider.
  */
-final class JdbcUtils {
+public final class JdbcUtils {
 
     private JdbcUtils() {
         throw new AssertionError( "no instances!" );
@@ -163,10 +163,7 @@ final class JdbcUtils {
         public static Function1<ResultSet, Function0<Object[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
             return resultSet -> {
                 try {
-                    return new ObjectArrayRowBuilder(
-                            resultSet,
-                            Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
-                            Ints.toArray( Pair.right( list ) ) );
+                    return new ObjectArrayRowBuilder( resultSet, Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ), Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
                     throw new RuntimeException( e );
                 }
@@ -241,10 +238,9 @@ final class JdbcUtils {
     /**
      * Ensures that if two data sources have the same definition, they will use the same object.
      *
-     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source, we have to open a connection to find out what
-     * database product and version it is.
+     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source, we have to open a connection to find out what database product and version it is.
      */
-    static class DataSourcePool {
+    public static class DataSourcePool {
 
         public static final DataSourcePool INSTANCE = new DataSourcePool();
 

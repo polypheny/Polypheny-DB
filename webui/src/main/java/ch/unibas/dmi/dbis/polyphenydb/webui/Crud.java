@@ -120,6 +120,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1504,81 +1505,98 @@ public class Crud implements InformationObserver {
 
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
+        Iterator<Object> iterator = null;
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
+            final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
+            //noinspection unchecked
+            iterator = enumerable.iterator();
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
         } catch ( Throwable t ) {
+            if ( iterator != null ) {
+                try {
+                    ((AutoCloseable) iterator).close();
+                } catch ( Exception e ) {
+                    LOGGER.error( "Exception while closing result iterator", e );
+                }
+            }
             throw new QueryExecutionException( t );
         }
 
-        CatalogTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
-            try {
-                catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
-            } catch ( UnknownTableException | GenericCatalogException e ) {
-                LOGGER.error( "Caught exception", e );
-            }
-        }
-
-        ArrayList<DbColumn> header = new ArrayList<>();
-        for ( ColumnMetaData metaData : signature.columns ) {
-            String columnName = metaData.columnName;
-
-            String filter = "";
-            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                filter = request.filter.get( columnName );
-            }
-
-            SortState sort;
-            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                sort = request.sortState.get( columnName );
-            } else {
-                sort = new SortState();
-            }
-
-            DbColumn dbCol = new DbColumn(
-                    metaData.columnName,
-                    metaData.type.name,
-                    metaData.nullable == ResultSetMetaData.columnNullable,
-                    metaData.displaySize,
-                    sort,
-                    filter );
-
-            // Get column default values
-            if ( catalogTable != null ) {
+        try {
+            CatalogTable catalogTable = null;
+            if ( request.tableId != null ) {
+                String[] t = request.tableId.split( "\\." );
                 try {
-                    if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
-                        if ( catalogColumn.defaultValue != null ) {
-                            dbCol.defaultValue = catalogColumn.defaultValue.value;
-                        }
-                    }
-                } catch ( UnknownColumnException | GenericCatalogException e ) {
+                    catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
                     LOGGER.error( "Caught exception", e );
                 }
             }
-            header.add( dbCol );
-        }
 
-        ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( Object o : row ) {
-                if ( o == null ) {
-                    temp[counter] = null;
-                } else {
-                    temp[counter] = o.toString();
+            ArrayList<DbColumn> header = new ArrayList<>();
+            for ( ColumnMetaData metaData : signature.columns ) {
+                String columnName = metaData.columnName;
+
+                String filter = "";
+                if ( request.filter != null && request.filter.containsKey( columnName ) ) {
+                    filter = request.filter.get( columnName );
                 }
-                counter++;
-            }
-            data.add( temp );
-        }
 
-        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+                SortState sort;
+                if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
+                    sort = request.sortState.get( columnName );
+                } else {
+                    sort = new SortState();
+                }
+
+                DbColumn dbCol = new DbColumn(
+                        metaData.columnName,
+                        metaData.type.name,
+                        metaData.nullable == ResultSetMetaData.columnNullable,
+                        metaData.displaySize,
+                        sort,
+                        filter );
+
+                // Get column default values
+                if ( catalogTable != null ) {
+                    try {
+                        if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                            CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
+                            if ( catalogColumn.defaultValue != null ) {
+                                dbCol.defaultValue = catalogColumn.defaultValue.value;
+                            }
+                        }
+                    } catch ( UnknownColumnException | GenericCatalogException e ) {
+                        LOGGER.error( "Caught exception", e );
+                    }
+                }
+                header.add( dbCol );
+            }
+
+            ArrayList<String[]> data = new ArrayList<>();
+            for ( List<Object> row : rows ) {
+                String[] temp = new String[row.size()];
+                int counter = 0;
+                for ( Object o : row ) {
+                    if ( o == null ) {
+                        temp[counter] = null;
+                    } else {
+                        temp[counter] = o.toString();
+                    }
+                    counter++;
+                }
+                data.add( temp );
+            }
+
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+        } finally {
+            try {
+                ((AutoCloseable) iterator).close();
+            } catch ( Exception e ) {
+                LOGGER.error( "Exception while closing result iterator", e );
+            }
+        }
     }
 
 

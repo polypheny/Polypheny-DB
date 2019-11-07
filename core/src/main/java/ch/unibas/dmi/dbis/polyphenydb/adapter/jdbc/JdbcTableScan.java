@@ -79,7 +79,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
 
     @Override
     public Result implement( JdbcImplementor implementor ) {
-        return implementor.result( jdbcTable.tableName(), ImmutableList.of( JdbcImplementor.Clause.FROM ), this, null );
+        return implementor.result( implementor.getPhysicalTableName( jdbcTable.tableName().names ), ImmutableList.of( JdbcImplementor.Clause.FROM ), this, null );
     }
 }
 

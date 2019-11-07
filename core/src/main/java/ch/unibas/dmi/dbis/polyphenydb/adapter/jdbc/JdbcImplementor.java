@@ -49,8 +49,10 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 
 /**
@@ -58,9 +60,13 @@ import com.google.common.collect.ImmutableList;
  */
 public class JdbcImplementor extends RelToSqlConverter {
 
-    public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory ) {
+    private final JdbcPhysicalNameProvider physicalNameProvider;
+
+
+    public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory, JdbcPhysicalNameProvider physicalNameProvider ) {
         super( dialect );
         Util.discard( typeFactory );
+        this.physicalNameProvider = physicalNameProvider;
     }
 
 
@@ -68,12 +74,18 @@ public class JdbcImplementor extends RelToSqlConverter {
      * @see #dispatch
      */
     public Result visit( JdbcTableScan scan ) {
-        return result( scan.jdbcTable.tableName(), ImmutableList.of( Clause.FROM ), scan, null );
+        return result( getPhysicalTableName( scan.jdbcTable.tableName().names ), ImmutableList.of( Clause.FROM ), scan, null );
     }
 
 
     public Result implement( RelNode node ) {
         return dispatch( node );
+    }
+
+
+    @Override
+    public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
+        return physicalNameProvider.getPhysicalTableName( qualifiedName );
     }
 }
 

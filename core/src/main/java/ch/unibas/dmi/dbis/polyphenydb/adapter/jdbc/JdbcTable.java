@@ -80,6 +80,7 @@ import com.google.common.collect.Lists;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -123,7 +124,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public String toString() {
-        return "JdbcTable {" + jdbcTableName + "}";
+        return "JdbcTable {" + jdbcSchemaName + "." + jdbcTableName + "}";
     }
 
 
@@ -152,7 +153,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlString generateSql() {
         final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
-        SqlSelect node = new SqlSelect( SqlParserPos.ZERO, SqlNodeList.EMPTY, selectList, tableName(), null, null, null, null, null, null, null );
+        SqlIdentifier physicalTableName = jdbcSchema.physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
+        SqlSelect node = new SqlSelect( SqlParserPos.ZERO, SqlNodeList.EMPTY, selectList, physicalTableName, null, null, null, null, null, null, null );
         final SqlPrettyWriter writer = new SqlPrettyWriter( jdbcSchema.dialect );
         node.unparse( writer, 0, 0 );
         return writer.toSqlString();
@@ -161,12 +163,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlIdentifier tableName() {
         final List<String> strings = new ArrayList<>();
-        if ( jdbcSchema != null && jdbcSchema.database != null ) {
+        /*if ( jdbcSchema != null && jdbcSchema.database != null ) {
             strings.add( jdbcSchema.database );
         }
         if ( jdbcSchema != null && jdbcSchema.schema != null ) {
             strings.add( jdbcSchema.schema );
-        }
+        }*/
+        strings.add( jdbcSchemaName );
         strings.add( jdbcTableName );
         return new SqlIdentifier( strings, SqlParserPos.ZERO );
     }
@@ -225,7 +228,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public String toString() {
-            return "JdbcTableQueryable {table: " + tableName + "}";
+            return "JdbcTableQueryable {table: " + jdbcSchemaName + "." + tableName + "}";
         }
 
 
@@ -241,6 +244,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    // TODO MV: This should no longer be required. Consider removing
     private class DummyCollection extends HashSet {
 
         @Override
@@ -255,7 +259,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
             super.add( o ); // Add to the hash set in case we need any other method like contains
             StringBuilder builder = new StringBuilder();
-            builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( jdbcTableName ) + " ( " );
+            SqlIdentifier physicalTableName = jdbcSchema.physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
+            builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( physicalTableName.names.get( 0 ) ) + " ( " );
             for ( String columnName : columnNames ) {
                 builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) ).append( "," );
             }
@@ -280,5 +285,6 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             }
         }
     }
+
 }
 

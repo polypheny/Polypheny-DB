@@ -40,6 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionMergeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
@@ -196,7 +197,7 @@ public class RelToSqlConverterTest {
      * Converts a relational expression to SQL in a given dialect.
      */
     private static String toSql( RelNode root, SqlDialect dialect ) {
-        final RelToSqlConverter converter = new RelToSqlConverter( dialect );
+        final RelToSqlConverter converter = new PlainRelToSqlConverter( dialect );
         final SqlNode sqlNode = converter.visitChild( 0, root ).asStatement();
         return sqlNode.toSqlString( dialect ).getSql();
     }

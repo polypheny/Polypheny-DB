@@ -338,7 +338,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     private SqlString generateSql( SqlDialect dialect ) {
-        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory() );
+        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), new JdbcPhysicalNameProvider() ); // TODO: Potential Bug, wrong PhysicalNameProvider
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }
