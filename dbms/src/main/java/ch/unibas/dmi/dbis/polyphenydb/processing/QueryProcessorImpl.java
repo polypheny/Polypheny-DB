@@ -115,6 +115,7 @@ import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -467,6 +468,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         final List<List<String>> origins = Collections.nCopies( optimalPlan.getRowType().getFieldCount(), null );
         List<ColumnMetaData> columnMetaData = getColumnMetaDataList( typeFactory, optimalPlan.getRowType(), optimalPlan.getRowType(), origins );
 
+        log.info("test");
+        log.info(Arrays.toString(columnMetaData.toArray()));
         final List<AvaticaParameter> parameters = new ArrayList<>();
         final RelDataType parameterRowType = optimalPlan.getRowType();
         for ( RelDataTypeField field : parameterRowType.getFieldList() ) {

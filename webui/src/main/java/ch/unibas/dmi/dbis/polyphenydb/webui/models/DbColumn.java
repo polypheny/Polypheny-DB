@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
+import java.util.ArrayList;
+
 /**
  * Information about a column of a table for the header of a table in the UI
  */
@@ -49,6 +51,7 @@ public class DbColumn {
     //for statistics
     public Integer max;
     public Integer min;
+    private ArrayList<DbColumn> children = new ArrayList<>();
 
 
     public DbColumn( final String name ) {
@@ -75,6 +78,22 @@ public class DbColumn {
         this.maxLength = maxLength;
         this.primary = primary;
         this.defaultValue = defaultValue;
+    }
+
+    /**
+     * Add a DbColumn as a child of this one.
+     */
+    public DbColumn addChild( final DbColumn child ) {
+        this.children.add( child );
+        return this;
+    }
+
+    /**
+     * Add an ArrayList of DbColumn as children of this one.
+     */
+    public DbColumn addChildren( final ArrayList<DbColumn> children ) {
+        this.children.addAll( children );
+        return this;
     }
 
 }

@@ -200,6 +200,7 @@ public class Crud implements InformationObserver {
 
     ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
+        System.out.println(req.body());
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         if ( request.depth < 1 ) {
@@ -259,6 +260,8 @@ public class Crud implements InformationObserver {
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Transaction transaction = getTransaction();
+
+        System.out.println(req.body());
         Result result;
         try {
             List<CatalogTable> tables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
@@ -577,16 +580,67 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      * TODO: potentially change all to specific statistics
      */
-    ArrayList<Result> getStatistics(final Request req, final Response res ) {
-        ArrayList<Result> results = new ArrayList<>();
-        DbColumn[] col = new DbColumn[1];
-        col[0] = new DbColumn("test");
-        col[0].min = 2;
-        col[0].max = 6;
+    ArrayList<DbColumn> getStatistics(final Request req, final Response res ) {
+        SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
+        System.out.println(req.body());
+        ArrayList<DbColumn> result = new ArrayList<>();
 
-        results.add(new Result(col));
+        if ( request.depth < 1 ) {
+            LOGGER.error( "Trying to fetch a schemaTree with depth < 1" );
+            return new ArrayList<>();
+        }
 
-        return results;
+        Transaction transaction = getTransaction();
+        try {
+
+            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+                DbColumn schemaTree = new DbColumn( combinedSchema.getSchema().name );
+                schemaTree.min = 0;
+                schemaTree.max = 10;
+
+                if ( request.depth > 1 ) {
+                    ArrayList<DbColumn> tables = new ArrayList<>();
+                    ArrayList<DbColumn> views = new ArrayList<>();
+                    for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                        DbColumn table = new DbColumn( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
+                        table.min = 3;
+                        table.max = 33;
+
+                        if ( request.depth > 2 ) {
+                            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+                                DbColumn column = new DbColumn( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
+                                column.min = 3;
+                                table.addChild( column );
+                            }
+                        }
+                        if ( combinedTable.getTable().tableType.equals( "TABLE" ) ) {
+                            tables.add( table );
+                        } else if ( request.views && combinedTable.getTable().tableType.equals( "VIEW" ) ) {
+                            views.add( table );
+                        }
+                    }
+                    DbColumn tree = new DbColumn( combinedSchema.getSchema().name + ".tables" ).addChildren( tables );
+                    tree.max = 333;
+                    schemaTree.addChild( tree );
+                    if ( request.views ) {
+                        schemaTree.addChild( new DbColumn( combinedSchema.getSchema().name + ".views" ).addChildren( views ) );
+                    }
+                }
+                result.add( schemaTree );
+            }
+            transaction.commit();
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+            LOGGER.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                LOGGER.error( "Caught exception while rollback", e );
+            }
+        }
+
+        return result;
     }
 
 
