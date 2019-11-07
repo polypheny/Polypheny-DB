@@ -173,10 +173,10 @@ public class QueryPlanBuilder {
     }
 
 
-    private static ArrayList<RexNode> getFields ( String fields, int inputCount, RelBuilder builder ) {
-        String[] _fields = fields.split( "[\\s]*,[\\s]*" );
+    private static ArrayList<RexNode> getFields ( String[] fields, int inputCount, RelBuilder builder ) {
         ArrayList<RexNode> nodes = new ArrayList<>();
-        for ( String f : _fields ) {
+        for ( String f : fields ) {
+            if( f.equals( "" ) ) continue;
             String[] field = f.split( "\\." );
             nodes.add( builder.field( inputCount, field[0], field[1] ) );
         }

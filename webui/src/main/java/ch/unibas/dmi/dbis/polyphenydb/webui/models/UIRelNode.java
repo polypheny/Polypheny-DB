@@ -66,7 +66,7 @@ public class UIRelNode {
     public String filter;
 
     //project
-    public String fields;
+    public String[] fields;
 
     //aggregate
     public String groupBy;
