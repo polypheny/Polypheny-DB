@@ -470,8 +470,11 @@ public class Crud implements InformationObserver {
         long temp = 0;
         // remove all comments
         String allQueries = request.query;
+        //remove comments
         allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
         allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
+        //remove whitespace at the end
+        allQueries = allQueries.replaceAll( "(\\s*)$", "" );
         String[] queries = allQueries.split( ";", 0 );
         for ( String query : queries ) {
             Result result;
