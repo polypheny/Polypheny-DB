@@ -320,15 +320,6 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Factory method for {@link SqlValidator}, with default conformance.
-     */
-    @Deprecated // to be removed before 2.0
-    public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory ) {
-        return newValidator( opTab, catalogReader, typeFactory, SqlConformanceEnum.DEFAULT );
-    }
-
-
-    /**
      * Makes a name distinct from other names which have already been used, adds it to the list, and returns it.
      *
      * @param name Suggested name, may not be unique
