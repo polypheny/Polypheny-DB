@@ -41,7 +41,6 @@ public class HsqldbStore implements Store {
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
-    private final JdbcPhysicalNameProvider physicalNameProvider;
 
 
     public HsqldbStore() {
@@ -56,7 +55,6 @@ public class HsqldbStore implements Store {
 
         this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
-        this.physicalNameProvider = new JdbcPhysicalNameProvider();
 
         // ------ Information Manager -----------
         final InformationPage informationPage = new InformationPage( "hsqldb", "HSQLDB" );
@@ -87,9 +85,9 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
+    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, physicalNameProvider );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between mutliple transactions
     }
 
 
@@ -112,7 +110,7 @@ public class HsqldbStore implements Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
         for ( CatalogColumn column : combinedTable.getColumns() ) {
@@ -137,24 +135,24 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public void dropTable( CatalogCombinedTable combinedTable ) {
+    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder );
     }
 
 
     @Override
-    public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.getSchema().name );
         qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
         builder.append( catalogColumn.type.name() );
@@ -180,12 +178,12 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.getSchema().name );
         qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
         executeUpdate( builder );
@@ -208,24 +206,24 @@ public class HsqldbStore implements Store {
 
 
     @Override
-    public void truncate( Transaction transaction, CatalogCombinedTable combinedTable ) {
+    public void truncate( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder );
     }
 
 
     @Override
-    public void updateColumnType( CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogColumn.schemaName );
         qualifiedNames.add( catalogColumn.tableName );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " ).append( catalogColumn.type );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );

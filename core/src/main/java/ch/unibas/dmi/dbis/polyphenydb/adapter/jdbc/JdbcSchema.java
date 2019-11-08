@@ -91,7 +91,6 @@ public class JdbcSchema implements Schema {
     final String database;
     final String schema;
     public final SqlDialect dialect;
-    final JdbcPhysicalNameProvider physicalNameProvider;
 
     @Getter
     private final JdbcConvention convention;
@@ -99,7 +98,7 @@ public class JdbcSchema implements Schema {
     private final Map<String, JdbcTable> tableMap;
 
 
-    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
+    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
         super();
         this.dataSource = Objects.requireNonNull( dataSource );
         this.dialect = Objects.requireNonNull( dialect );
@@ -107,7 +106,6 @@ public class JdbcSchema implements Schema {
         this.database = catalog;
         this.schema = schema;
         this.tableMap = tableMap;
-        this.physicalNameProvider = physicalNameProvider;
     }
 
 
@@ -120,7 +118,7 @@ public class JdbcSchema implements Schema {
      * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String database, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
+    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
         super();
         this.dataSource = Objects.requireNonNull( dataSource );
         this.dialect = Objects.requireNonNull( dialect );
@@ -128,7 +126,6 @@ public class JdbcSchema implements Schema {
         this.database = database;
         this.schema = schema;
         this.tableMap = new HashMap<>();
-        this.physicalNameProvider = physicalNameProvider;
     }
 
 
@@ -157,8 +154,8 @@ public class JdbcSchema implements Schema {
     public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final SqlDialect dialect = createDialect( dialectFactory, dataSource );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, physicalNameProvider );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
+        return new JdbcSchema( dataSource, dialect, convention, catalog, schema );
     }
 
 
@@ -172,8 +169,8 @@ public class JdbcSchema implements Schema {
     public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final SqlDialect dialect = createDialect( dialectFactory, dataSource );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap, physicalNameProvider );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
+        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
     }
 
 
@@ -193,7 +190,7 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap, physicalNameProvider );
+        return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap );
     }
 
 

@@ -90,7 +90,7 @@ public class PolySchemaBuilder {
             SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), combinedSchema.getSchema().name ).plus();
             // Create schema on stores
             for ( Store store : StoreManager.getInstance().getStores().values() ) {
-                store.createNewSchema( rootSchema, combinedSchema.getSchema().name );
+                store.createNewSchema( transaction, rootSchema, combinedSchema.getSchema().name );
             }
             for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
                 int storeId = combinedTable.getPlacements().get( 0 ).storeId;

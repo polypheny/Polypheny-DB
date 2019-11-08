@@ -123,7 +123,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                         getRowType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
-        SqlString sqlString = generateSql( jdbcConvention.dialect );
+        SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.physicalNameProvider );
         String sql = sqlString.getSql();
         if ( PolyphenyDbPrepareImpl.DEBUG ) {
             System.out.println( "[" + sql + "]" );
@@ -337,8 +337,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private SqlString generateSql( SqlDialect dialect ) {
-        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), new JdbcPhysicalNameProvider() ); // TODO: Potential Bug, wrong PhysicalNameProvider
+    private SqlString generateSql( SqlDialect dialect, JdbcPhysicalNameProvider physicalNameProvider ) {
+        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), physicalNameProvider );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }

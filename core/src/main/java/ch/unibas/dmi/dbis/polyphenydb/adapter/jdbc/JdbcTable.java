@@ -153,7 +153,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     SqlString generateSql() {
         final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
-        SqlIdentifier physicalTableName = jdbcSchema.physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
+        SqlIdentifier physicalTableName = jdbcSchema.getConvention().physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
         SqlSelect node = new SqlSelect( SqlParserPos.ZERO, SqlNodeList.EMPTY, selectList, physicalTableName, null, null, null, null, null, null, null );
         final SqlPrettyWriter writer = new SqlPrettyWriter( jdbcSchema.dialect );
         node.unparse( writer, 0, 0 );
@@ -259,7 +259,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
             super.add( o ); // Add to the hash set in case we need any other method like contains
             StringBuilder builder = new StringBuilder();
-            SqlIdentifier physicalTableName = jdbcSchema.physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
+            SqlIdentifier physicalTableName = jdbcSchema.getConvention().physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
             builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( physicalTableName.names.get( 0 ) ) + " ( " );
             for ( String columnName : columnNames ) {
                 builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) ).append( "," );

@@ -26,22 +26,46 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import java.util.List;
 
 
+
 public class JdbcPhysicalNameProvider {
 
+    private final Catalog catalog;
+
+
+    public JdbcPhysicalNameProvider( Catalog catalog ) {
+        this.catalog = catalog;
+    }
+
+
     public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
-        String physicalName;
+        String schemaName;
+        String tableName;
         if ( qualifiedName.size() == 1 ) {
-            physicalName = "public_" + qualifiedName.get( 0 );
+            schemaName = "public";
+            tableName = qualifiedName.get( 0 );
         } else if ( qualifiedName.size() == 2 ) {
-            physicalName = qualifiedName.get( 0 ) + "_" + qualifiedName.get( 1 );
+            schemaName = qualifiedName.get( 0 );
+            tableName = qualifiedName.get( 1 );
         } else {
             throw new RuntimeException( "Unknown format for qualified name! Size: " + qualifiedName.size() );
         }
+
+        CatalogTable catalogTable;
+        try {
+            catalogTable = catalog.getTable( "APP", schemaName, tableName );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+        String physicalName = "tab" + catalogTable.id;
         return new SqlIdentifier( physicalName, SqlParserPos.ZERO );
     }
 
