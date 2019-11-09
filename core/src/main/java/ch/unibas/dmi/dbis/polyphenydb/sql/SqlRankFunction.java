@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
 import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
 
@@ -55,12 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
  * Operator which aggregates sets of values into a result.
  */
 public class SqlRankFunction extends SqlAggFunction {
-
-
-    @Deprecated
-    public SqlRankFunction( boolean requiresOrder, SqlKind kind ) {
-        this( kind, ReturnTypes.INTEGER, requiresOrder );
-    }
 
 
     public SqlRankFunction( SqlKind kind, SqlReturnTypeInference returnTypes, boolean requiresOrder ) {

@@ -114,30 +114,6 @@ public class AggregateJoinTransposeRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Join> joinClass, RelFactories.JoinFactory joinFactory ) {
-        this( aggregateClass, joinClass, RelBuilder.proto( aggregateFactory, joinFactory ), false );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Join> joinClass, RelFactories.JoinFactory joinFactory, boolean allowFunctions ) {
-        this( aggregateClass, joinClass, RelBuilder.proto( aggregateFactory, joinFactory ), allowFunctions );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Join> joinClass, RelFactories.JoinFactory joinFactory, RelFactories.ProjectFactory projectFactory ) {
-        this( aggregateClass, joinClass, RelBuilder.proto( aggregateFactory, joinFactory, projectFactory ), false );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Join> joinClass, RelFactories.JoinFactory joinFactory, RelFactories.ProjectFactory projectFactory, boolean allowFunctions ) {
-        this( aggregateClass, joinClass, RelBuilder.proto( aggregateFactory, joinFactory, projectFactory ), allowFunctions );
-    }
-
-
     private static boolean isAggregateSupported( Aggregate aggregate, boolean allowFunctions ) {
         if ( !allowFunctions && !aggregate.getAggCallList().isEmpty() ) {
             return false;

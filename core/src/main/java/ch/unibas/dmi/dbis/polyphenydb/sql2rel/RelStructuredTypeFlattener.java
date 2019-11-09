@@ -53,7 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Collect;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sample;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
@@ -160,12 +159,6 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
     private final RelOptTable.ToRelContext toRelContext;
 
 
-    @Deprecated // to be removed before 2.0
-    public RelStructuredTypeFlattener( RexBuilder rexBuilder, RelOptTable.ToRelContext toRelContext, boolean restructure ) {
-        this( RelFactories.LOGICAL_BUILDER.create( toRelContext.getCluster(), null ), rexBuilder, toRelContext, restructure );
-    }
-
-
     public RelStructuredTypeFlattener( RelBuilder relBuilder, RexBuilder rexBuilder, RelOptTable.ToRelContext toRelContext, boolean restructure ) {
         this.relBuilder = relBuilder;
         this.rexBuilder = rexBuilder;
@@ -211,7 +204,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             structuringExps = restructureFields( root.getRowType() );
         }
         if ( restructured ) {
-            // REVIEW jvs 23-Mar-2005:  How do we make sure that this implementation stays in Java?  Fennel can't handle structured types.
+            // REVIEW jvs: How do we make sure that this implementation stays in Java?  Fennel can't handle structured types.
             return relBuilder.push( flattened )
                     .projectNamed( structuringExps, root.getRowType().getFieldNames(), true )
                     .build();
@@ -598,7 +591,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                     flattenedExps.add( Pair.of( new RexInputRef( newField.i + j, newField.e ), fieldName ) );
                 }
             } else if ( isConstructor( exp ) || exp.isA( SqlKind.CAST ) ) {
-                // REVIEW jvs 27-Feb-2005:  for cast, see corresponding note in RewriteRexShuttle
+                // REVIEW jvs: For cast, see corresponding note in RewriteRexShuttle
                 RexCall call = (RexCall) exp;
                 if ( exp.isA( SqlKind.NEW_SPECIFICATION ) ) {
                     // For object constructors, prepend a FALSE null indicator.
@@ -612,7 +605,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 }
                 flattenProjections( new RewriteRexShuttle(), call.getOperands(), Collections.nCopies( call.getOperands().size(), null ), fieldName, flattenedExps );
             } else if ( exp instanceof RexCall ) {
-                // NOTE jvs 10-Feb-2005:  This is a lame hack to keep special functions which return row types working.
+                // NOTE jvs: This is a lame hack to keep special functions which return row types working.
 
                 int j = 0;
                 RexNode newExp = exp;

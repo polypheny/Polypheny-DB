@@ -210,9 +210,9 @@ public class TimeString implements Comparable<TimeString> {
 
 
     public int getMillisOfDay() {
-        int h = Integer.valueOf( v.substring( 0, 2 ) );
-        int m = Integer.valueOf( v.substring( 3, 5 ) );
-        int s = Integer.valueOf( v.substring( 6, 8 ) );
+        int h = Integer.parseInt( v.substring( 0, 2 ) );
+        int m = Integer.parseInt( v.substring( 3, 5 ) );
+        int s = Integer.parseInt( v.substring( 6, 8 ) );
         int ms = getMillisInSecond();
         return (int) (h * DateTimeUtils.MILLIS_PER_HOUR + m * DateTimeUtils.MILLIS_PER_MINUTE + s * DateTimeUtils.MILLIS_PER_SECOND + ms);
     }
@@ -223,12 +223,12 @@ public class TimeString implements Comparable<TimeString> {
             case 8: // "12:34:56"
                 return 0;
             case 10: // "12:34:56.7"
-                return Integer.valueOf( v.substring( 9 ) ) * 100;
+                return Integer.parseInt( v.substring( 9 ) ) * 100;
             case 11: // "12:34:56.78"
-                return Integer.valueOf( v.substring( 9 ) ) * 10;
+                return Integer.parseInt( v.substring( 9 ) ) * 10;
             case 12: // "12:34:56.789"
             default: // "12:34:56.7890000012345"
-                return Integer.valueOf( v.substring( 9, 12 ) );
+                return Integer.parseInt( v.substring( 9, 12 ) );
         }
     }
 

@@ -104,12 +104,6 @@ public class LoptOptimizeJoinRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LoptOptimizeJoinRule( RelFactories.JoinFactory joinFactory, RelFactories.ProjectFactory projectFactory, RelFactories.FilterFactory filterFactory ) {
-        this( RelBuilder.proto( joinFactory, projectFactory, filterFactory ) );
-    }
-
-
     @Override
     public void onMatch( RelOptRuleCall call ) {
         final MultiJoin multiJoinRel = call.rel( 0 );

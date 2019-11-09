@@ -50,6 +50,7 @@ import static org.junit.Assert.assertThat;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreter;
@@ -61,7 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
@@ -69,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -86,8 +88,7 @@ public class InterpreterTest {
 
 
     /**
-     * Implementation of {@link DataContext} for executing queries without a
-     * connection.
+     * Implementation of {@link DataContext} for executing queries without a connection.
      */
     private class MyDataContext implements DataContext {
 
@@ -121,6 +122,18 @@ public class InterpreterTest {
         public Object get( String name ) {
             return null;
         }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
+        }
     }
 
 
@@ -129,7 +142,7 @@ public class InterpreterTest {
         rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ) );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),

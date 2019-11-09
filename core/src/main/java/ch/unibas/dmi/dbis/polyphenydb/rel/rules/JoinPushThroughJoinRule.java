@@ -53,7 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.ProjectFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
@@ -110,12 +109,6 @@ public class JoinPushThroughJoinRule extends RelOptRule {
                 operand( clazz, operand( clazz, any() ), operand( RelNode.class, any() ) ),
                 relBuilderFactory, description );
         this.right = right;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinPushThroughJoinRule( String description, boolean right, Class<? extends Join> clazz, ProjectFactory projectFactory ) {
-        this( description, right, clazz, RelBuilder.proto( projectFactory ) );
     }
 
 

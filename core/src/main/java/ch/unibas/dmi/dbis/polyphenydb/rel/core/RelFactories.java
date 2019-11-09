@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.rel.core;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ViewExpanders;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
@@ -173,10 +172,6 @@ public class RelFactories {
          * Creates a sort.
          */
         RelNode createSort( RelNode input, RelCollation collation, RexNode offset, RexNode fetch );
-
-        @Deprecated
-            // to be removed before 2.0
-        RelNode createSort( RelTraitSet traits, RelNode input, RelCollation collation, RexNode offset, RexNode fetch );
     }
 
 
@@ -190,12 +185,6 @@ public class RelFactories {
             return LogicalSort.create( input, collation, offset, fetch );
         }
 
-
-        @Override
-        @Deprecated // to be removed before 2.0
-        public RelNode createSort( RelTraitSet traits, RelNode input, RelCollation collation, RexNode offset, RexNode fetch ) {
-            return createSort( input, collation, offset, fetch );
-        }
     }
 
 
@@ -347,10 +336,6 @@ public class RelFactories {
          * @param semiJoinDone Whether this join has been translated to a semi-join
          */
         RelNode createJoin( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, boolean semiJoinDone );
-
-        @Deprecated
-            // to be removed before 2.0
-        RelNode createJoin( RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone );
     }
 
 
@@ -362,12 +347,6 @@ public class RelFactories {
         @Override
         public RelNode createJoin( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, boolean semiJoinDone ) {
             return LogicalJoin.create( left, right, condition, variablesSet, joinType, semiJoinDone, ImmutableList.of() );
-        }
-
-
-        @Override
-        public RelNode createJoin( RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone ) {
-            return createJoin( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone );
         }
     }
 

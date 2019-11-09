@@ -82,7 +82,7 @@ public class RelMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
 
 
     public Double getPercentageOriginalRows( Aggregate rel, RelMetadataQuery mq ) {
-        // REVIEW jvs 28-Mar-2006: The assumption here seems to be that aggregation does not apply any filtering, so it does not modify the percentage.  That's very much oversimplified.
+        // REVIEW jvs: The assumption here seems to be that aggregation does not apply any filtering, so it does not modify the percentage. That's very much oversimplified.
         return mq.getPercentageOriginalRows( rel.getInput() );
     }
 
@@ -93,7 +93,7 @@ public class RelMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
 
         // Ignore rel.isDistinct() because it's the same as an aggregate.
 
-        // REVIEW jvs 28-Mar-2006: The original Broadbase formula was broken. It was multiplying percentage into the numerator term rather than than dividing it out of the denominator term, which would be OK if
+        // REVIEW jvs: The original Broadbase formula was broken. It was multiplying percentage into the numerator term rather than than dividing it out of the denominator term, which would be OK if
         // there weren't summation going on.  Probably the cause of the error was the desire to avoid division by zero, which I don't know how to handle so I punt, meaning we return a totally wrong answer in the
         // case where a huge table has been completely filtered away.
 
@@ -113,9 +113,9 @@ public class RelMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     public Double getPercentageOriginalRows( Join rel, RelMetadataQuery mq ) {
         // Assume any single-table filter conditions have already been pushed down.
 
-        // REVIEW jvs 28-Mar-2006: As with aggregation, this is oversimplified.
+        // REVIEW jvs: As with aggregation, this is oversimplified.
 
-        // REVIEW jvs 28-Mar-2006:  need any special casing for SemiJoin?
+        // REVIEW jvs:  need any special casing for SemiJoin?
 
         double left = mq.getPercentageOriginalRows( rel.getLeft() );
         double right = mq.getPercentageOriginalRows( rel.getRight() );

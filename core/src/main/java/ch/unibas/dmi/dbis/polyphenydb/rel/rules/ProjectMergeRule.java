@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.ProjectFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
@@ -85,12 +84,6 @@ public class ProjectMergeRule extends RelOptRule {
                 relBuilderFactory,
                 "ProjectMergeRule" + (force ? ":force_mode" : "") );
         this.force = force;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public ProjectMergeRule( boolean force, ProjectFactory projectFactory ) {
-        this( force, RelBuilder.proto( projectFactory ) );
     }
 
 

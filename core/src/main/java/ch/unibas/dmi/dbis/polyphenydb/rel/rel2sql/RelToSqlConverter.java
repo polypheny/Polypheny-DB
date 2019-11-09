@@ -109,7 +109,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 /**
  * Utility to convert relational expressions to SQL abstract syntax tree.
  */
-public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisitor {
+public abstract class RelToSqlConverter extends SqlImplementor implements ReflectiveVisitor {
 
     /**
      * Similar to {@link SqlStdOperatorTable#ROW}, but does not print "ROW".
@@ -225,8 +225,7 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
         if ( isStar( e.getChildExps(), e.getInput().getRowType(), e.getRowType() ) ) {
             return x;
         }
-        final Builder builder =
-                x.builder( e, Clause.SELECT );
+        final Builder builder = x.builder( e, Clause.SELECT );
         final List<SqlNode> selectList = new ArrayList<>();
         for ( RexNode ref : e.getChildExps() ) {
             SqlNode sqlExpr = builder.context.toSql( null, ref );
@@ -278,7 +277,7 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
      * @see #dispatch
      */
     public Result visit( TableScan e ) {
-        final SqlIdentifier identifier = new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO );
+        final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
         return result( identifier, ImmutableList.of( Clause.FROM ), e, null );
     }
 
@@ -443,9 +442,8 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        // TODO: MV: Here the SQL target table name can be changed
         //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
-        final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName().get( modify.getTable().getQualifiedName().size() - 1 ), POS ); // TODO: MV: This is not nice...
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getQualifiedName() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -638,6 +636,9 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
     }
 
 
+    public abstract SqlIdentifier getPhysicalTableName( List<String> qualifiedName );
+
+
     /**
      * Stack frame.
      */
@@ -652,5 +653,23 @@ public class RelToSqlConverter extends SqlImplementor implements ReflectiveVisit
             this.r = r;
         }
     }
+
+
+    public static class PlainRelToSqlConverter extends RelToSqlConverter {
+
+        /**
+         * Creates a RelToSqlConverter.
+         */
+        public PlainRelToSqlConverter( SqlDialect dialect ) {
+            super( dialect );
+        }
+
+
+        @Override
+        public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
+            return new SqlIdentifier( qualifiedName, POS );
+        }
+    }
+
 }
 

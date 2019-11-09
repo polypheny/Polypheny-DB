@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -54,7 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.ProjectFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
@@ -104,30 +102,6 @@ public class JoinCommuteRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public JoinCommuteRule( Class<? extends Join> clazz, ProjectFactory projectFactory ) {
-        this( clazz, RelBuilder.proto( Contexts.of( projectFactory ) ), false );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinCommuteRule( Class<? extends Join> clazz, ProjectFactory projectFactory, boolean swapOuter ) {
-        this( clazz, RelBuilder.proto( Contexts.of( projectFactory ) ), swapOuter );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode swap( Join join ) {
-        return swap( join, false, RelFactories.LOGICAL_BUILDER.create( join.getCluster(), null ) );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode swap( Join join, boolean swapOuterJoins ) {
-        return swap( join, swapOuterJoins, RelFactories.LOGICAL_BUILDER.create( join.getCluster(), null ) );
-    }
-
-
     /**
      * Returns a relational expression with the inputs switched round. Does not modify <code>join</code>. Returns null if the join cannot be swapped (for example, because it is an outer join).
      *
@@ -148,7 +122,7 @@ public class JoinCommuteRule extends RelOptRule {
         final RexNode oldCondition = join.getCondition();
         RexNode condition = variableReplacer.go( oldCondition );
 
-        // NOTE jvs 14-Mar-2006: We preserve attribute semiJoinDone after the swap.  This way, we will generate one semijoin for the original join, and one for the swapped join, and no more.  This
+        // NOTE jvs: We preserve attribute semiJoinDone after the swap.  This way, we will generate one semijoin for the original join, and one for the swapped join, and no more.  This
         // doesn't prevent us from seeing any new combinations assuming that the planner tries the desired order (semijoins after swaps).
         Join newJoin = join.copy( join.getTraitSet(), condition, join.getRight(), join.getLeft(), joinType.swap(), join.isSemiJoinDone() );
         final List<RexNode> exps = RelOptUtil.createSwappedJoinExprs( newJoin, join, true );

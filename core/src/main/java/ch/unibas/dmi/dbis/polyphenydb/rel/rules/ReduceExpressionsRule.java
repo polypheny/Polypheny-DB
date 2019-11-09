@@ -149,12 +149,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      */
     public static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
 
-        @Deprecated // to be removed before 2.0
-        public FilterReduceExpressionsRule( Class<? extends Filter> filterClass, RelBuilderFactory relBuilderFactory ) {
-            this( filterClass, true, relBuilderFactory );
-        }
-
-
         public FilterReduceExpressionsRule( Class<? extends Filter> filterClass, boolean matchNullability, RelBuilderFactory relBuilderFactory ) {
             super( filterClass, matchNullability, relBuilderFactory, "ReduceExpressionsRule(Filter)" );
         }
@@ -256,12 +250,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      */
     public static class ProjectReduceExpressionsRule extends ReduceExpressionsRule {
 
-        @Deprecated // to be removed before 2.0
-        public ProjectReduceExpressionsRule( Class<? extends Project> projectClass, RelBuilderFactory relBuilderFactory ) {
-            this( projectClass, true, relBuilderFactory );
-        }
-
-
         public ProjectReduceExpressionsRule( Class<? extends Project> projectClass, boolean matchNullability, RelBuilderFactory relBuilderFactory ) {
             super( projectClass, matchNullability, relBuilderFactory, "ReduceExpressionsRule(Project)" );
         }
@@ -291,12 +279,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      * Rule that reduces constants inside a {@link Join}.
      */
     public static class JoinReduceExpressionsRule extends ReduceExpressionsRule {
-
-        @Deprecated // to be removed before 2.0
-        public JoinReduceExpressionsRule( Class<? extends Join> joinClass, RelBuilderFactory relBuilderFactory ) {
-            this( joinClass, true, relBuilderFactory );
-        }
-
 
         public JoinReduceExpressionsRule( Class<? extends Join> joinClass, boolean matchNullability, RelBuilderFactory relBuilderFactory ) {
             super( joinClass, matchNullability, relBuilderFactory, "ReduceExpressionsRule(Join)" );
@@ -342,12 +324,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      * Rule that reduces constants inside a {@link Calc}.
      */
     public static class CalcReduceExpressionsRule extends ReduceExpressionsRule {
-
-        @Deprecated // to be removed before 2.0
-        public CalcReduceExpressionsRule( Class<? extends Calc> calcClass, RelBuilderFactory relBuilderFactory ) {
-            this( calcClass, true, relBuilderFactory );
-        }
-
 
         public CalcReduceExpressionsRule( Class<? extends Calc> calcClass, boolean matchNullability, RelBuilderFactory relBuilderFactory ) {
             super( calcClass, matchNullability, relBuilderFactory, "ReduceExpressionsRule(Calc)" );
@@ -431,12 +407,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected ReduceExpressionsRule( Class<? extends RelNode> clazz, RelBuilderFactory relBuilderFactory, String description ) {
-        this( clazz, true, relBuilderFactory, description );
-    }
-
-
     /**
      * Reduces a list of expressions.
      *
@@ -447,12 +417,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      */
     protected static boolean reduceExpressions( RelNode rel, List<RexNode> expList, RelOptPredicateList predicates ) {
         return reduceExpressions( rel, expList, predicates, false, true );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    protected static boolean reduceExpressions( RelNode rel, List<RexNode> expList, RelOptPredicateList predicates, boolean unknownAsFalse ) {
-        return reduceExpressions( rel, expList, predicates, unknownAsFalse, true );
     }
 
 
@@ -582,22 +546,6 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             gardener.analyze( exp );
         }
         assert constExps.size() == addCasts.size();
-    }
-
-
-    /**
-     * Creates a map containing each (e, constant) pair that occurs within a predicate list.
-     *
-     * @param clazz Class of expression that is considered constant
-     * @param rexBuilder Rex builder
-     * @param predicates Predicate list
-     * @param <C> what to consider a constant: {@link RexLiteral} to use a narrow definition of constant, or {@link RexNode} to use {@link RexUtil#isConstant(RexNode)}
-     * @return Map from values to constants
-     * @deprecated Use {@link RelOptPredicateList#constantMap}
-     */
-    @Deprecated // to be removed before 2.0
-    public static <C extends RexNode> ImmutableMap<RexNode, C> predicateConstants( Class<C> clazz, RexBuilder rexBuilder, RelOptPredicateList predicates ) {
-        return RexUtil.predicateConstants( clazz, rexBuilder, predicates.pulledUpPredicates );
     }
 
 
@@ -799,7 +747,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
 
             // In the case where the expression corresponds to a UDR argument, we need to preserve casts.  Note that this only applies to the topmost argument, not expressions nested within the UDR call.
             //
-            // REVIEW zfong 6/13/08 - Are there other expressions where we also need to preserve casts?
+            // REVIEW zfong: Are there other expressions where we also need to preserve casts?
             if ( parentCallTypeStack.isEmpty() ) {
                 addCasts.add( false );
             } else {
@@ -937,7 +885,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
             // CAST((CAST x AS type) AS type NOT NULL)
             // -> CAST(x AS type NOT NULL)
             // applies.
-            // TODO jvs 15-Dec-2008:  consider similar cases for precision changes.
+            // TODO jvs:  consider similar cases for precision changes.
             if ( !(operands.get( 0 ) instanceof RexCall) ) {
                 return;
             }

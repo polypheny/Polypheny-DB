@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -90,6 +91,11 @@ public interface DataContext {
      * @param name Name of variable
      */
     Object get( String name );
+
+    void addAll( Map<String, Object> map );
+
+
+    Transaction getTransaction();
 
     /**
      * Variable that may be asked for in a call to {@link DataContext#get}.
@@ -195,6 +201,18 @@ public interface DataContext {
 
         @Override
         public Object get( String name ) {
+            return null;
+        }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
             return null;
         }
     }

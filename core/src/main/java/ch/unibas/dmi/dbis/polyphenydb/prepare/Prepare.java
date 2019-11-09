@@ -70,7 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Typed;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ExtensibleTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ModifiableViewTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplain;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
@@ -78,12 +77,9 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerContext;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Program;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
@@ -158,7 +154,7 @@ public abstract class Prepare {
 
         final RelTraitSet desiredTraits = getDesiredRootTraitSet( root );
 
-        // Work around [POLYPHENYDB-1774] Allow rules to be registered during planning process by briefly creating each kind of physical table to let it register its rules.
+        // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table to let it register its rules.
         // The problem occurs when plans are created via RelBuilder, not the usual process (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
         final RelVisitor visitor = new RelVisitor() {
             @Override
@@ -388,29 +384,9 @@ public abstract class Prepare {
 
 
     /**
-     * Abstract implementation of {@link PreparingTable} with an implementation for {@link #columnHasDefaultValue}.
+     * Abstract implementation of {@link PreparingTable}.
      */
     public abstract static class AbstractPreparingTable implements PreparingTable {
-
-        @Override
-        public boolean columnHasDefaultValue( RelDataType rowType, int ordinal, InitializerContext initializerContext ) {
-            // This method is no longer used
-            final Table table = this.unwrap( Table.class );
-            if ( table != null && table instanceof Wrapper ) {
-                final InitializerExpressionFactory initializerExpressionFactory = ((Wrapper) table).unwrap( InitializerExpressionFactory.class );
-                if ( initializerExpressionFactory != null ) {
-                    return initializerExpressionFactory
-                            .newColumnDefaultValue( this, ordinal, initializerContext )
-                            .getType()
-                            .getSqlTypeName() != SqlTypeName.NULL;
-                }
-            }
-            if ( ordinal >= rowType.getFieldList().size() ) {
-                return true;
-            }
-            return !rowType.getFieldList().get( ordinal ).getType().isNullable();
-        }
-
 
         @Override
         public final RelOptTable extend( List<RelDataTypeField> extendedFields ) {

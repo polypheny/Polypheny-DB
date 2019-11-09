@@ -50,11 +50,8 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import java.util.List;
 
 
 /**
@@ -115,10 +112,5 @@ public class ProjectRemoveRule extends RelOptRule {
         return RexUtil.isIdentity( project.getProjects(), project.getInput().getRowType() );
     }
 
-
-    @Deprecated // to be removed before 1.5
-    public static boolean isIdentity( List<? extends RexNode> exps, RelDataType childRowType ) {
-        return RexUtil.isIdentity( exps, childRowType );
-    }
 }
 

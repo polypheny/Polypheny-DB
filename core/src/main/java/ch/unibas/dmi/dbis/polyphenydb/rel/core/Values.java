@@ -74,14 +74,6 @@ public abstract class Values extends AbstractRelNode {
 
     public static final Predicate<? super Values> IS_EMPTY_J = Values::isEmpty;
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<? super Values> IS_EMPTY = Values::isEmpty;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<? super Values> IS_NOT_EMPTY = Values::isNotEmpty;
-
 
     public final ImmutableList<ImmutableList<RexLiteral>> tuples;
 

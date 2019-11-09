@@ -326,7 +326,7 @@ public abstract class SqlOperator {
     }
 
 
-    // REVIEW jvs 9-June-2006: See http://issues.eigenbase.org/browse/FRG-149 for why this method exists.
+    // REVIEW jvs: See http://issues.eigenbase.org/browse/FRG-149 for why this method exists.
     protected void unparseListClause( SqlWriter writer, SqlNode clause ) {
         unparseListClause( writer, clause, null );
     }
@@ -785,21 +785,6 @@ public abstract class SqlOperator {
      */
     public SqlReturnTypeInference getReturnTypeInference() {
         return returnTypeInference;
-    }
-
-
-    /**
-     * Returns whether this operator is monotonic.
-     *
-     * Default implementation returns {@link SqlMonotonicity#NOT_MONOTONIC}.
-     *
-     * @param call Call to this operator
-     * @param scope Scope in which the call occurs
-     * @deprecated Use {@link #getMonotonicity(SqlOperatorBinding)}
-     */
-    @Deprecated // to be removed before 2.0
-    public SqlMonotonicity getMonotonicity( SqlCall call, SqlValidatorScope scope ) {
-        return getMonotonicity( new SqlCallBinding( scope.getValidator(), scope, call ) );
     }
 
 

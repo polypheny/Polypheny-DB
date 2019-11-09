@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelXmlWriter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateProjectPullUpConstantsRule;
@@ -715,50 +714,6 @@ public abstract class RelOptUtil {
 
 
     /**
-     * @deprecated Use {@link RelBuilder#distinct()}.
-     */
-    @Deprecated // to be removed before 2.0
-    public static RelNode createDistinctRel( RelNode rel ) {
-        return LogicalAggregate.create( rel, ImmutableBitSet.range( rel.getRowType().getFieldCount() ), null, ImmutableList.of() );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static boolean analyzeSimpleEquiJoin( LogicalJoin join, int[] joinFieldOrdinals ) {
-        RexNode joinExp = join.getCondition();
-        if ( joinExp.getKind() != SqlKind.EQUALS ) {
-            return false;
-        }
-        RexCall binaryExpression = (RexCall) joinExp;
-        RexNode leftComparand = binaryExpression.operands.get( 0 );
-        RexNode rightComparand = binaryExpression.operands.get( 1 );
-        if ( !(leftComparand instanceof RexInputRef) ) {
-            return false;
-        }
-        if ( !(rightComparand instanceof RexInputRef) ) {
-            return false;
-        }
-
-        final int leftFieldCount = join.getLeft().getRowType().getFieldCount();
-        RexInputRef leftFieldAccess = (RexInputRef) leftComparand;
-        if ( !(leftFieldAccess.getIndex() < leftFieldCount) ) {
-            // left field must access left side of join
-            return false;
-        }
-
-        RexInputRef rightFieldAccess = (RexInputRef) rightComparand;
-        if ( !(rightFieldAccess.getIndex() >= leftFieldCount) ) {
-            // right field must access right side of join
-            return false;
-        }
-
-        joinFieldOrdinals[0] = leftFieldAccess.getIndex();
-        joinFieldOrdinals[1] = rightFieldAccess.getIndex() - leftFieldCount;
-        return true;
-    }
-
-
-    /**
      * Splits out the equi-join components of a join condition, and returns what's left. For example, given the condition
      *
      * <blockquote><code>L.A = R.X AND L.B = L.C AND (L.D = 5 OR L.E = R.Y)</code></blockquote>
@@ -793,24 +748,6 @@ public abstract class RelOptUtil {
                 nonEquiList );
 
         return RexUtil.composeConjunction( left.getCluster().getRexBuilder(), nonEquiList );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static boolean isEqui( RelNode left, RelNode right, RexNode condition ) {
-        final List<Integer> leftKeys = new ArrayList<>();
-        final List<Integer> rightKeys = new ArrayList<>();
-        final List<Boolean> filterNulls = new ArrayList<>();
-        final List<RexNode> nonEquiList = new ArrayList<>();
-        splitJoinCondition(
-                left.getCluster().getRexBuilder(),
-                left.getRowType().getFieldCount(),
-                condition,
-                leftKeys,
-                rightKeys,
-                filterNulls,
-                nonEquiList );
-        return nonEquiList.size() == 0;
     }
 
 
@@ -851,15 +788,6 @@ public abstract class RelOptUtil {
         splitJoinCondition( sysFieldList, inputs, condition, joinKeys, filterNulls, rangeOp, nonEquiList );
         // Convert the remainders into a list that are AND'ed together.
         return RexUtil.composeConjunction( inputs.get( 0 ).getCluster().getRexBuilder(), nonEquiList );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RexNode splitCorrelatedFilterCondition( LogicalFilter filter, List<RexInputRef> joinKeys, List<RexNode> correlatedJoinKeys ) {
-        final List<RexNode> nonEquiList = new ArrayList<>();
-        splitCorrelatedFilterCondition( filter, filter.getCondition(), joinKeys, correlatedJoinKeys, nonEquiList );
-        // Convert the remainders into a list that are AND'ed together.
-        return RexUtil.composeConjunction( filter.getCluster().getRexBuilder(), nonEquiList, true );
     }
 
 
@@ -2395,26 +2323,6 @@ public abstract class RelOptUtil {
      */
     public static RelNode createProject( final RelNode child, final List<Integer> posList ) {
         return createProject( RelFactories.DEFAULT_PROJECT_FACTORY, child, posList );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode createProject( RelNode child, List<? extends RexNode> exprs, List<String> fieldNames, boolean optimize ) {
-        final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( child.getCluster(), null );
-        return relBuilder.push( child )
-                .projectNamed( exprs, fieldNames, !optimize )
-                .build();
-    }
-
-
-    /**
-     * @deprecated Use {@link RelBuilder#projectNamed(Iterable, Iterable, boolean)}
-     */
-    @Deprecated // to be removed before 2.0
-    public static RelNode createProject( RelNode child, List<? extends RexNode> exprs, List<String> fieldNames, boolean optimize, RelBuilder relBuilder ) {
-        return relBuilder.push( child )
-                .projectNamed( exprs, fieldNames, !optimize )
-                .build();
     }
 
 

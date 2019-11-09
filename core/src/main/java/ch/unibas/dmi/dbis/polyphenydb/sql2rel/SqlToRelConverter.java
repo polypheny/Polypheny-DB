@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql2rel;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSamplingParameters;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander;
@@ -248,10 +247,6 @@ public class SqlToRelConverter {
      */
     public static final int DEFAULT_IN_SUB_QUERY_THRESHOLD = 20;
 
-    @Deprecated // to be removed before 2.0
-    public static final int DEFAULT_IN_SUBQUERY_THRESHOLD = DEFAULT_IN_SUB_QUERY_THRESHOLD;
-
-
     protected final SqlValidator validator;
     protected final RexBuilder rexBuilder;
     protected final CatalogReader catalogReader;
@@ -282,28 +277,6 @@ public class SqlToRelConverter {
     private final Map<SqlNode, RexNode> mapConvertedNonCorrSubqs = new HashMap<>();
 
     public final ViewExpander viewExpander;
-
-
-    /**
-     * Creates a converter.
-     *
-     * @param viewExpander Preparing statement
-     * @param validator Validator
-     * @param catalogReader Schema
-     * @param planner Planner
-     * @param rexBuilder Rex builder
-     * @param convertletTable Expression converter
-     */
-    @Deprecated // to be removed before 2.0
-    public SqlToRelConverter( ViewExpander viewExpander, SqlValidator validator, CatalogReader catalogReader, RelOptPlanner planner, RexBuilder rexBuilder, SqlRexConvertletTable convertletTable ) {
-        this( viewExpander, validator, catalogReader, RelOptCluster.create( planner, rexBuilder ), convertletTable, Config.DEFAULT );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public SqlToRelConverter( ViewExpander viewExpander, SqlValidator validator, CatalogReader catalogReader, RelOptCluster cluster, SqlRexConvertletTable convertletTable ) {
-        this( viewExpander, validator, catalogReader, cluster, convertletTable, Config.DEFAULT );
-    }
 
 
     /* Creates a converter. */
@@ -1389,24 +1362,10 @@ public class SqlToRelConverter {
      */
     private RexNode ensureSqlType( RelDataType type, RexNode node ) {
         if ( type.getSqlTypeName() == node.getType().getSqlTypeName()
-                || (type.getSqlTypeName() == SqlTypeName.VARCHAR
-                && node.getType().getSqlTypeName() == SqlTypeName.CHAR) ) {
+                || (type.getSqlTypeName() == SqlTypeName.VARCHAR && node.getType().getSqlTypeName() == SqlTypeName.CHAR) ) {
             return node;
         }
         return rexBuilder.ensureType( type, node, true );
-    }
-
-
-    /**
-     * Gets the list size threshold under which {@link #convertInToOr} is used.
-     * Lists of this size or greater will instead be converted to use a join against an inline table ({@link LogicalValues}) rather than a predicate. A threshold of 0 forces usage of an inline table in all cases; a
-     * threshold of Integer.MAX_VALUE forces usage of OR in all cases
-     *
-     * @return threshold, default {@link #DEFAULT_IN_SUB_QUERY_THRESHOLD}
-     */
-    @Deprecated // to be removed before 2.0
-    protected int getInSubqueryThreshold() {
-        return config.getInSubQueryThreshold();
     }
 
 
@@ -2547,7 +2506,7 @@ public class SqlToRelConverter {
                     false );
             bb.mapRootRelToFieldProjection.put( bb.root, r.groupExprProjection );
 
-            // REVIEW jvs 31-Oct-2007:  doesn't the declaration of monotonicity here assume sort-based aggregation at the physical level?
+            // REVIEW jvs: doesn't the declaration of monotonicity here assume sort-based aggregation at the physical level?
 
             // Tell bb which of group columns are sorted.
             bb.columnMonotonicities.clear();
@@ -2641,7 +2600,7 @@ public class SqlToRelConverter {
 
 
     public RexDynamicParam convertDynamicParam( final SqlDynamicParam dynamicParam ) {
-        // REVIEW jvs 8-Jan-2005:  dynamic params may be encountered out of order.  Should probably cross-check with the count from the parser at the end and make sure they all got filled in.  Why doesn't List have a resize() method?!?  Make this a utility.
+        // REVIEW jvs: dynamic params may be encountered out of order.  Should probably cross-check with the count from the parser at the end and make sure they all got filled in.  Why doesn't List have a resize() method?!?  Make this a utility.
         while ( dynamicParam.getIndex() >= dynamicParamSqlNodes.size() ) {
             dynamicParamSqlNodes.add( null );
         }
@@ -2666,7 +2625,7 @@ public class SqlToRelConverter {
      * @param collationList List of collations (output)
      */
     protected void gatherOrderExprs( Blackboard bb, SqlSelect select, SqlNodeList orderList, List<SqlNode> extraOrderExprs, List<RelFieldCollation> collationList ) {
-        // TODO:  add validation rules to SqlValidator also
+        // TODO: add validation rules to SqlValidator also
         assert bb.root != null : "precondition: child != null";
         assert select != null;
         if ( orderList == null ) {
@@ -2749,7 +2708,7 @@ public class SqlToRelConverter {
             }
         }
 
-        // TODO:  handle collation sequence
+        // TODO: handle collation sequence
         // TODO: flag expressions as non-standard
 
         extraExprs.add( converted );
@@ -5229,12 +5188,6 @@ public class SqlToRelConverter {
         public ConfigBuilder withExpand( boolean expand ) {
             this.expand = expand;
             return this;
-        }
-
-
-        @Deprecated // to be removed before 2.0
-        public ConfigBuilder withInSubqueryThreshold( int inSubQueryThreshold ) {
-            return withInSubQueryThreshold( inSubQueryThreshold );
         }
 
 

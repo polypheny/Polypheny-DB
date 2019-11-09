@@ -141,19 +141,6 @@ public class FlatLists {
 
 
     /**
-     * Creates a memory-, CPU- and cache-efficient immutable list, always copying the contents.
-     *
-     * @param t Array of members of list
-     * @param <T> Element type
-     * @return List containing the given members
-     */
-    @Deprecated // to be removed before 2.0
-    public static <T> List<T> copy( T... t ) {
-        return flatListNotComparable( t );
-    }
-
-
-    /**
      * Creates a memory-, CPU- and cache-efficient comparable immutable list, always copying the contents.
      *
      * The elements are comparable, and so is the returned list.

@@ -50,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
@@ -61,7 +60,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import java.util.List;
 
 
@@ -89,13 +87,6 @@ public abstract class Calc extends SingleRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected Calc( RelOptCluster cluster, RelTraitSet traits, RelNode child, RexProgram program, List<RelCollation> collationList ) {
-        this( cluster, traits, child, program );
-        Util.discard( collationList );
-    }
-
-
     @Override
     public final Calc copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return copy( traitSet, sole( inputs ), program );
@@ -112,13 +103,6 @@ public abstract class Calc extends SingleRel {
      * @see #copy(ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet, java.util.List)
      */
     public abstract Calc copy( RelTraitSet traitSet, RelNode child, RexProgram program );
-
-
-    @Deprecated // to be removed before 2.0
-    public Calc copy( RelTraitSet traitSet, RelNode child, RexProgram program, List<RelCollation> collationList ) {
-        Util.discard( collationList );
-        return copy( traitSet, child, program );
-    }
 
 
     @Override

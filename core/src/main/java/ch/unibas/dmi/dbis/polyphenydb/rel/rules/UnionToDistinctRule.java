@@ -71,12 +71,6 @@ public class UnionToDistinctRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public UnionToDistinctRule( Class<? extends Union> unionClazz, RelFactories.SetOpFactory setOpFactory ) {
-        this( unionClazz, RelBuilder.proto( setOpFactory ) );
-    }
-
-
     @Override
     public void onMatch( RelOptRuleCall call ) {
         final Union union = call.rel( 0 );

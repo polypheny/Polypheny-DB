@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -79,32 +78,4 @@ public class SqlCovarAggFunction extends SqlAggFunction {
         Preconditions.checkArgument( SqlKind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ), "unsupported sql kind: " + kind );
     }
 
-
-    @Deprecated // to be removed before 2.0
-    public SqlCovarAggFunction( RelDataType type, Subtype subtype ) {
-        this( SqlKind.valueOf( subtype.name() ) );
-    }
-
-
-    /**
-     * Returns the specific function, e.g. COVAR_POP or COVAR_SAMP.
-     *
-     * @return Subtype
-     */
-    @Deprecated // to be removed before 2.0
-    public Subtype getSubtype() {
-        return Subtype.valueOf( kind.name() );
-    }
-
-
-    /**
-     * Enum for defining specific types.
-     */
-    @Deprecated // to be removed before 2.0
-    public enum Subtype {
-        COVAR_POP,
-        COVAR_SAMP,
-        REGR_SXX,
-        REGR_SYY
-    }
 }

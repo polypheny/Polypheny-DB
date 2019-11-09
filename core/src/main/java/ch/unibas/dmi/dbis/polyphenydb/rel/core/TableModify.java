@@ -250,7 +250,7 @@ public abstract class TableModify extends SingleRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // REVIEW jvs 21-Apr-2006:  Just for now...
+        // REVIEW jvs: Just for now...
         double rowCount = mq.getRowCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }

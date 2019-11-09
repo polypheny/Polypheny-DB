@@ -98,12 +98,6 @@ public class SqlInOperator extends SqlBinaryOperator {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public boolean isNotIn() {
-        return kind == SqlKind.NOT_IN;
-    }
-
-
     @Override
     public boolean validRexOperands( int count, Litmus litmus ) {
         if ( count == 0 ) {

@@ -57,7 +57,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
@@ -111,7 +110,7 @@ import org.apache.calcite.linq4j.Ord;
  * Uses multi-methods to fire the right rule for each type of relational expression. This allows the transformer to be extended without having to add a new method to RelNode,
  * and without requiring a collection of rule classes scattered to the four winds.
  *
- * REVIEW: jhyde, 2009/7/28: Is sql2rel the correct package for this class? Trimming fields is not an essential part of SQL-to-Rel translation, and arguably belongs in the optimization phase. But this transformer does not
+ * REVIEW: jhyde: Is sql2rel the correct package for this class? Trimming fields is not an essential part of SQL-to-Rel translation, and arguably belongs in the optimization phase. But this transformer does not
  * obey the usual pattern for planner rules; it is difficult to do so, because each {@link RelNode} needs to return a different set of fields after trimming.
  *
  * TODO: Change 2nd arg of the {@link #trimFields} method from BitSet to Mapping. Sometimes it helps the consumer if you return the columns in a particular order. For instance, it may avoid a project at the top of the tree just
@@ -139,31 +138,6 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
                         RelNode.class,
                         ImmutableBitSet.class,
                         Set.class );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RelFieldTrimmer(
-            SqlValidator validator,
-            RelOptCluster cluster,
-            RelFactories.ProjectFactory projectFactory,
-            RelFactories.FilterFactory filterFactory,
-            RelFactories.JoinFactory joinFactory,
-            RelFactories.SemiJoinFactory semiJoinFactory,
-            RelFactories.SortFactory sortFactory,
-            RelFactories.AggregateFactory aggregateFactory,
-            RelFactories.SetOpFactory setOpFactory ) {
-        this(
-                validator,
-                RelBuilder.proto(
-                        projectFactory,
-                        filterFactory,
-                        joinFactory,
-                        semiJoinFactory,
-                        sortFactory,
-                        aggregateFactory,
-                        setOpFactory )
-                        .create( cluster, null ) );
     }
 
 

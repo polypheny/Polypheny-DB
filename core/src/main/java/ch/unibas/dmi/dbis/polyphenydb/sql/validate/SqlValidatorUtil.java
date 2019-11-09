@@ -61,9 +61,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.TypeEntry;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDynamicParam;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
@@ -237,12 +235,6 @@ public class SqlValidatorUtil {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static RelDataTypeField lookupField( boolean caseSensitive, final RelDataType rowType, String columnName ) {
-        return rowType.getField( columnName, caseSensitive, false );
-    }
-
-
     public static void checkCharsetAndCollateConsistentIfCharType( RelDataType type ) {
         // (every charset must have a default collation)
         if ( SqlTypeUtil.inCharFamily( type ) ) {
@@ -328,15 +320,6 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Factory method for {@link SqlValidator}, with default conformance.
-     */
-    @Deprecated // to be removed before 2.0
-    public static SqlValidatorWithHints newValidator( SqlOperatorTable opTab, SqlValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory ) {
-        return newValidator( opTab, catalogReader, typeFactory, SqlConformanceEnum.DEFAULT );
-    }
-
-
-    /**
      * Makes a name distinct from other names which have already been used, adds it to the list, and returns it.
      *
      * @param name Suggested name, may not be unique
@@ -357,36 +340,6 @@ public class SqlValidatorUtil {
                 return name;
             }
         }
-    }
-
-
-    /**
-     * Makes sure that the names in a list are unique.
-     *
-     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list. Deprecated in favor of caseSensitive aware version.
-     *
-     * @param nameList List of strings
-     * @return List of unique strings
-     */
-    @Deprecated // to be removed before 2.0
-    public static List<String> uniquify( List<String> nameList ) {
-        return uniquify( nameList, EXPR_SUGGESTER, true );
-    }
-
-
-    /**
-     * Makes sure that the names in a list are unique.
-     *
-     * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
-     *
-     * @param nameList List of strings
-     * @param suggester How to generate new names if duplicate names are found
-     * @return List of unique strings
-     * @deprecated Use {@link #uniquify(List, Suggester, boolean)}
-     */
-    @Deprecated // to be removed before 2.0
-    public static List<String> uniquify( List<String> nameList, Suggester suggester ) {
-        return uniquify( nameList, suggester, true );
     }
 
 
@@ -990,81 +943,6 @@ public class SqlValidatorUtil {
             }
         }
         return false;
-    }
-
-
-    /**
-     * Walks over an expression, copying every node, and fully-qualifying every identifier.
-     */
-    @Deprecated // to be removed before 2.0
-    public static class DeepCopier extends SqlScopedShuttle {
-
-        DeepCopier( SqlValidatorScope scope ) {
-            super( scope );
-        }
-
-
-        /**
-         * Copies a list of nodes.
-         */
-        public static SqlNodeList copy( SqlValidatorScope scope, SqlNodeList list ) {
-            return (SqlNodeList) list.accept( new DeepCopier( scope ) );
-        }
-
-
-        @Override
-        public SqlNode visit( SqlNodeList list ) {
-            SqlNodeList copy = new SqlNodeList( list.getParserPosition() );
-            for ( SqlNode node : list ) {
-                copy.add( node.accept( this ) );
-            }
-            return copy;
-        }
-
-
-        // Override to copy all arguments regardless of whether visitor changes them.
-        @Override
-        protected SqlNode visitScoped( SqlCall call ) {
-            ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, true );
-            call.getOperator().acceptCall( this, call, false, argHandler );
-            return argHandler.result();
-        }
-
-
-        @Override
-        public SqlNode visit( SqlLiteral literal ) {
-            return SqlNode.clone( literal );
-        }
-
-
-        @Override
-        public SqlNode visit( SqlIdentifier id ) {
-            // First check for builtin functions which don't have parentheses, like "LOCALTIME".
-            final SqlCall call = SqlUtil.makeCall( getScope().getValidator().getOperatorTable(), id );
-            if ( call != null ) {
-                return call;
-            }
-
-            return getScope().fullyQualify( id ).identifier;
-        }
-
-
-        @Override
-        public SqlNode visit( SqlDataTypeSpec type ) {
-            return SqlNode.clone( type );
-        }
-
-
-        @Override
-        public SqlNode visit( SqlDynamicParam param ) {
-            return SqlNode.clone( param );
-        }
-
-
-        @Override
-        public SqlNode visit( SqlIntervalQualifier intervalQualifier ) {
-            return SqlNode.clone( intervalQualifier );
-        }
     }
 
 

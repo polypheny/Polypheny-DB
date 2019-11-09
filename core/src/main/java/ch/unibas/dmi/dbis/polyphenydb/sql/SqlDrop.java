@@ -67,10 +67,4 @@ public abstract class SqlDrop extends SqlDdl {
         this.ifExists = ifExists;
     }
 
-
-    @Deprecated // to be removed before 2.0
-    public SqlDrop( SqlParserPos pos ) {
-        this( DDL_OPERATOR, pos, false );
-    }
-
 }

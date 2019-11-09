@@ -70,12 +70,6 @@ public final class LogicalIntersect extends Intersect {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalIntersect( RelOptCluster cluster, List<RelNode> inputs, boolean all ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), inputs, all );
-    }
-
-
     /**
      * Creates a LogicalIntersect by parsing serialized output.
      */

@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
@@ -93,12 +92,6 @@ public class FilterAggregateTransposeRule extends RelOptRule {
 
     protected FilterAggregateTransposeRule( RelOptRuleOperand operand, RelBuilderFactory builderFactory ) {
         super( operand, builderFactory, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public FilterAggregateTransposeRule( Class<? extends Filter> filterClass, RelFactories.FilterFactory filterFactory, Class<? extends Aggregate> aggregateClass ) {
-        this( filterClass, RelBuilder.proto( Contexts.of( filterFactory ) ), aggregateClass );
     }
 
 

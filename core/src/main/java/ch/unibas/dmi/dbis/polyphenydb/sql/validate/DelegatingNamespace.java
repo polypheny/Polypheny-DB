@@ -148,11 +148,6 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public void makeNullable() {
-    }
-
-
-    @Override
     public <T> T unwrap( Class<T> clazz ) {
         if ( clazz.isInstance( this ) ) {
             return clazz.cast( this );

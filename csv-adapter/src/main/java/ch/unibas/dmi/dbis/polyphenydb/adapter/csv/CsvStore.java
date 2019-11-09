@@ -27,8 +27,8 @@ public class CsvStore implements Store {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.FILTERABLE );
+    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+        currentSchema = new CsvSchema( csvDir, Flavor.TRANSLATABLE );
     }
 
 
@@ -51,19 +51,19 @@ public class CsvStore implements Store {
 
 
     @Override
-    public void dropTable( CatalogCombinedTable combinedTable ) {
+    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
         log.warn( "CSV adapter does not support dropping tables!" );
     }
 
 
     @Override
-    public void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         log.warn( "CSV adapter does not support adding columns!" );
     }
 
 
     @Override
-    public void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         log.warn( "CSV adapter does not support dropping columns!" );
     }
 
@@ -82,13 +82,13 @@ public class CsvStore implements Store {
 
 
     @Override
-    public void truncate( Transaction transaction, CatalogCombinedTable table ) {
+    public void truncate( Context context, CatalogCombinedTable table ) {
         log.warn( "CSV Store does not support truncate." );
     }
 
 
     @Override
-    public void updateColumnType( CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         throw new RuntimeException( "CSV adapter does not support updating column types!" );
     }
 }

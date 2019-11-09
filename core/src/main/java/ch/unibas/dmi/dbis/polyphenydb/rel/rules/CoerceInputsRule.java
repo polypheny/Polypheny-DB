@@ -50,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import java.util.ArrayList;
@@ -65,12 +64,6 @@ public class CoerceInputsRule extends RelOptRule {
     private final Class consumerRelClass;
 
     private final boolean coerceNames;
-
-
-    @Deprecated // to be removed before 2.0
-    public CoerceInputsRule( Class<? extends RelNode> consumerRelClass, boolean coerceNames ) {
-        this( consumerRelClass, coerceNames, RelFactories.LOGICAL_BUILDER );
-    }
 
 
     /**

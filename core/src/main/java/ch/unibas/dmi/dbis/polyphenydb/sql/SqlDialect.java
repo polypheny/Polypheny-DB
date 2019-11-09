@@ -569,21 +569,6 @@ public class SqlDialect {
 
 
     /**
-     * Returns the database this dialect belongs to, {@link SqlDialect.DatabaseProduct#UNKNOWN} if not known, never null.
-     *
-     * Please be judicious in how you use this method. If you wish to determine whether a dialect has a particular capability or behavior, it is usually
-     * better to add a method to SqlDialect and override that method in particular sub-classes of SqlDialect.
-     *
-     * @return Database product
-     * @deprecated To be removed without replacement
-     */
-    @Deprecated // to be removed before 2.0
-    public DatabaseProduct getDatabaseProduct() {
-        return databaseProduct;
-    }
-
-
-    /**
      * Returns whether the dialect supports character set names as part of a data type, for instance {@code VARCHAR(30) CHARACTER SET `ISO-8859-1`}.
      */
     public boolean supportsCharSet() {
@@ -715,18 +700,6 @@ public class SqlDialect {
             node = SqlStdOperatorTable.DESC.createCall( SqlParserPos.ZERO, node );
         }
         return node;
-    }
-
-
-    /**
-     * Returns whether the dialect supports OFFSET/FETCH clauses introduced by SQL:2008, for instance {@code OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY}.
-     * If false, we assume that the dialect supports the alternative syntax {@code LIMIT 20 OFFSET 10}.
-     *
-     * @deprecated This method is no longer used. To change how the dialect unparses offset/fetch, override the {@link #unparseOffsetFetch} method.
-     */
-    @Deprecated
-    public boolean supportsOffsetFetch() {
-        return true;
     }
 
 

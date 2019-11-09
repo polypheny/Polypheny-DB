@@ -117,7 +117,7 @@ public class SameOperandTypeChecker implements SqlSingleOperandTypeChecker {
                         return false;
                     }
 
-                    // REVIEW jvs 5-June-2005: Why don't we use newValidationSignatureError() here?  It gives more specific diagnostics.
+                    // REVIEW jvs: Why don't we use newValidationSignatureError() here?  It gives more specific diagnostics.
                     throw callBinding.newValidationError( RESOURCE.needSameTypeParameter() );
                 }
             }

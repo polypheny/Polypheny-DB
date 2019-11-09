@@ -197,7 +197,7 @@ public class GeodeUtils {
             } catch ( IllegalArgumentException e ) {
                 rawValue = "<error>";
                 System.err.println( "Could find field : " + relDataTypeField.getName() );
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
             values[index++] = convert( rawValue, (Class) javaType );
         }
@@ -239,7 +239,7 @@ public class GeodeUtils {
                 javaField.setAccessible( true );
                 return javaField.get( obj );
             } catch ( Exception e ) {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
             return null;
         }
@@ -253,7 +253,7 @@ public class GeodeUtils {
                 javaField.setAccessible( true );
                 values[index++] = javaField.get( obj );
             } catch ( Exception e ) {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
         }
         return values;

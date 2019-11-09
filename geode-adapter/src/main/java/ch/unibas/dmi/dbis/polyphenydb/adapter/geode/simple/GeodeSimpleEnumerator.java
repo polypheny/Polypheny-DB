@@ -45,13 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
 
 
+import java.util.Iterator;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
-
 import org.apache.geode.cache.client.ClientCache;
 import org.apache.geode.cache.query.QueryService;
 import org.apache.geode.cache.query.SelectResults;
-
-import java.util.Iterator;
 
 
 /**
@@ -59,6 +58,7 @@ import java.util.Iterator;
  *
  * @param <E> Element type
  */
+@Slf4j
 public abstract class GeodeSimpleEnumerator<E> implements Enumerator<E> {
 
     private Iterator results;
@@ -74,7 +74,7 @@ public abstract class GeodeSimpleEnumerator<E> implements Enumerator<E> {
         try {
             results = ((SelectResults) queryService.newQuery( oql ).execute()).iterator();
         } catch ( Exception e ) {
-            e.printStackTrace();
+            log.error( "Caught exception", e );
             results = null;
         }
     }

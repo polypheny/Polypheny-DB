@@ -27,14 +27,16 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import com.google.common.collect.ImmutableMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 
@@ -45,18 +47,21 @@ import org.apache.calcite.linq4j.QueryProvider;
  */
 public class DataContextImpl implements DataContext {
 
-    private final ImmutableMap<Object, Object> map;
+    private final HashMap<String, Object> map;
     private final PolyphenyDbSchema rootSchema;
     private final QueryProvider queryProvider;
     private final JavaTypeFactory typeFactory;
     private final TimeZone timeZone = TimeZone.getDefault();
+    @Getter
+    private final Transaction transaction;
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory ) {
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Transaction transaction ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.rootSchema = rootSchema;
-
+        this.transaction = transaction;
+        
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 
@@ -70,22 +75,21 @@ public class DataContextImpl implements DataContext {
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
-        ImmutableMap.Builder<Object, Object> builder = ImmutableMap.builder();
-        builder.put( Variable.UTC_TIMESTAMP.camelName, time )
-                .put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset )
-                .put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset )
-                .put( Variable.TIME_ZONE.camelName, timeZone )
-                .put( Variable.STDIN.camelName, streamHolder.get()[0] )
-                .put( Variable.STDOUT.camelName, streamHolder.get()[1] )
-                .put( Variable.STDERR.camelName, streamHolder.get()[2] );
+        map = new HashMap<>();
+        map.put( Variable.UTC_TIMESTAMP.camelName, time );
+        map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
+        map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
+        map.put( Variable.TIME_ZONE.camelName, timeZone );
+        map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
+        map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
+        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );
         for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
             Object e = entry.getValue();
             if ( e == null ) {
                 e = AvaticaSite.DUMMY_VALUE;
             }
-            builder.put( entry.getKey(), e );
+            map.put( entry.getKey(), e );
         }
-        map = builder.build();
     }
 
 
@@ -99,6 +103,12 @@ public class DataContextImpl implements DataContext {
             return getSqlAdvisor();
         } */
         return o;
+    }
+
+
+    @Override
+    public void addAll( Map<String, Object> map ) {
+        this.map.putAll( map );
     }
 
 /*

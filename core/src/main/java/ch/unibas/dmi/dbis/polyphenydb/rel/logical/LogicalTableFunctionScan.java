@@ -82,12 +82,6 @@ public class LogicalTableFunctionScan extends TableFunctionScan {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalTableFunctionScan( RelOptCluster cluster, List<RelNode> inputs, RexNode rexCall, Type elementType, RelDataType rowType, Set<RelColumnMapping> columnMappings ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), inputs, rexCall, elementType, rowType, columnMappings );
-    }
-
-
     /**
      * Creates a LogicalTableFunctionScan by parsing serialized output.
      */
@@ -114,7 +108,7 @@ public class LogicalTableFunctionScan extends TableFunctionScan {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // REVIEW jvs 8-Jan-2006:  what is supposed to be here for an abstract rel?
+        // REVIEW jvs: what is supposed to be here for an abstract rel?
         return planner.getCostFactory().makeHugeCost();
     }
 }

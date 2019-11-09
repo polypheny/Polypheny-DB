@@ -155,7 +155,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                         type.getPrecision() == -1 ? null : type.getPrecision(),
                         type.getScale() == -1 ? null : type.getScale() );
                 for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
-                    StoreManager.getInstance().getStore( dp.storeId ).updateColumnType( getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
+                    StoreManager.getInstance().getStore( dp.storeId ).updateColumnType( context, getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
                 }
             } else if ( nullable != null ) {
                 transaction.getCatalog().setNullable( catalogColumn.id, nullable );

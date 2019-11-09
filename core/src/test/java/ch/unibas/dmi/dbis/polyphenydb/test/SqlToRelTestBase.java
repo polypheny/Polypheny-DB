@@ -59,7 +59,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
@@ -714,8 +714,8 @@ public abstract class SqlToRelTestBase {
 
         @Override
         public SqlNode parseQuery( String sql ) throws Exception {
-            final Config config = SqlParser.configBuilder().setConformance( getConformance() ).build();
-            SqlParser parser = SqlParser.create( sql, config );
+            final SqlParserConfig sqlParserConfig = SqlParser.configBuilder().setConformance( getConformance() ).build();
+            SqlParser parser = SqlParser.create( sql, sqlParserConfig );
             return parser.parseQuery();
         }
 

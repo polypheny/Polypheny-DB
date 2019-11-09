@@ -107,12 +107,6 @@ public class MultiJoinOptimizeBushyRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public MultiJoinOptimizeBushyRule( RelFactories.JoinFactory joinFactory, RelFactories.ProjectFactory projectFactory ) {
-        this( RelBuilder.proto( joinFactory, projectFactory ) );
-    }
-
-
     @Override
     public void onMatch( RelOptRuleCall call ) {
         final MultiJoin multiJoinRel = call.rel( 0 );

@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
@@ -78,12 +77,6 @@ public class JoinPushTransitivePredicatesRule extends RelOptRule {
      */
     public JoinPushTransitivePredicatesRule( Class<? extends Join> clazz, RelBuilderFactory relBuilderFactory ) {
         super( operand( clazz, any() ), relBuilderFactory, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinPushTransitivePredicatesRule( Class<? extends Join> clazz, RelFactories.FilterFactory filterFactory ) {
-        this( clazz, RelBuilder.proto( Contexts.of( filterFactory ) ) );
     }
 
 

@@ -107,12 +107,6 @@ public class JoinToMultiJoinRule extends RelOptRule {
     public static final JoinToMultiJoinRule INSTANCE = new JoinToMultiJoinRule( LogicalJoin.class, RelFactories.LOGICAL_BUILDER );
 
 
-    @Deprecated // to be removed before 2.0
-    public JoinToMultiJoinRule( Class<? extends Join> clazz ) {
-        this( clazz, RelFactories.LOGICAL_BUILDER );
-    }
-
-
     /**
      * Creates a JoinToMultiJoinRule.
      */

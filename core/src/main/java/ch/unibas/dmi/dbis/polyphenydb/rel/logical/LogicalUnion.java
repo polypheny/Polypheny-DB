@@ -70,12 +70,6 @@ public final class LogicalUnion extends Union {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalUnion( RelOptCluster cluster, List<RelNode> inputs, boolean all ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), inputs, all );
-    }
-
-
     /**
      * Creates a LogicalUnion by parsing serialized output.
      */

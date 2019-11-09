@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperandChildPolicy;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 
 
@@ -62,13 +61,6 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 public class TraitMatchingRule extends RelOptRule {
 
     private final ConverterRule converter;
-
-
-    @Deprecated // to be removed before 2.0
-    public TraitMatchingRule( ConverterRule converterRule ) {
-        this( converterRule, RelFactories.LOGICAL_BUILDER );
-    }
-
 
     /**
      * Creates a TraitMatchingRule.

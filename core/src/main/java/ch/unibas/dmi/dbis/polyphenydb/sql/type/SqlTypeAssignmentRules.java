@@ -392,12 +392,6 @@ public class SqlTypeAssignmentRules {
     }
 
 
-    @Deprecated
-    public boolean canCastFrom( SqlTypeName to, SqlTypeName from, boolean coerce ) {
-        return instance( coerce ).canCastFrom( to, from );
-    }
-
-
     /**
      * Returns whether it is valid to cast a value of from type {@code from} to type {@code to}.
      */

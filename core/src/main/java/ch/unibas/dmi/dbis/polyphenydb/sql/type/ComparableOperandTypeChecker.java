@@ -61,12 +61,6 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     private final Consistency consistency;
 
 
-    @Deprecated // to be removed before 2.0
-    public ComparableOperandTypeChecker( int nOperands, RelDataTypeComparability requiredComparability ) {
-        this( nOperands, requiredComparability, Consistency.NONE );
-    }
-
-
     public ComparableOperandTypeChecker( int nOperands, RelDataTypeComparability requiredComparability, Consistency consistency ) {
         super( nOperands );
         this.requiredComparability = requiredComparability;

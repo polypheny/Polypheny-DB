@@ -374,7 +374,7 @@ public class ImmutableIntList extends FlatLists.AbstractFlatList<Integer> {
 
         @Override
         public Iterator<Integer> iterator() {
-            return Collections.<Integer>emptyList().iterator();
+            return Collections.emptyIterator();
         }
 
 

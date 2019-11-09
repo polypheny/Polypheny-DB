@@ -127,7 +127,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         // Delete column from underlying data stores
         for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
-            StoreManager.getInstance().getStore( dp.storeId ).dropColumn( catalogTable, catalogColumn );
+            StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, catalogTable, catalogColumn );
         }
     }
 

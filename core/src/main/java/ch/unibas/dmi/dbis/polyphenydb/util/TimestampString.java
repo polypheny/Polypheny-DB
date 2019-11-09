@@ -186,12 +186,12 @@ public class TimestampString implements Comparable<TimestampString> {
      * Returns the number of milliseconds since the epoch.
      */
     public long getMillisSinceEpoch() {
-        final int year = Integer.valueOf( v.substring( 0, 4 ) );
-        final int month = Integer.valueOf( v.substring( 5, 7 ) );
-        final int day = Integer.valueOf( v.substring( 8, 10 ) );
-        final int h = Integer.valueOf( v.substring( 11, 13 ) );
-        final int m = Integer.valueOf( v.substring( 14, 16 ) );
-        final int s = Integer.valueOf( v.substring( 17, 19 ) );
+        final int year = Integer.parseInt( v.substring( 0, 4 ) );
+        final int month = Integer.parseInt( v.substring( 5, 7 ) );
+        final int day = Integer.parseInt( v.substring( 8, 10 ) );
+        final int h = Integer.parseInt( v.substring( 11, 13 ) );
+        final int m = Integer.parseInt( v.substring( 14, 16 ) );
+        final int s = Integer.parseInt( v.substring( 17, 19 ) );
         final int ms = getMillisInSecond();
         final int d = DateTimeUtils.ymdToUnixDate( year, month, day );
         return d * DateTimeUtils.MILLIS_PER_DAY
@@ -207,12 +207,12 @@ public class TimestampString implements Comparable<TimestampString> {
             case 19: // "1999-12-31 12:34:56"
                 return 0;
             case 21: // "1999-12-31 12:34:56.7"
-                return Integer.valueOf( v.substring( 20 ) ) * 100;
+                return Integer.parseInt( v.substring( 20 ) ) * 100;
             case 22: // "1999-12-31 12:34:56.78"
-                return Integer.valueOf( v.substring( 20 ) ) * 10;
+                return Integer.parseInt( v.substring( 20 ) ) * 10;
             case 23: // "1999-12-31 12:34:56.789"
             default:  // "1999-12-31 12:34:56.789123456"
-                return Integer.valueOf( v.substring( 20, 23 ) );
+                return Integer.parseInt( v.substring( 20, 23 ) );
         }
     }
 

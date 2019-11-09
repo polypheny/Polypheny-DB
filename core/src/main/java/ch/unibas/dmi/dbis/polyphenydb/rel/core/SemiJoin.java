@@ -107,7 +107,7 @@ public class SemiJoin extends EquiJoin {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // REVIEW jvs 9-Apr-2006:  Just for now...
+        // REVIEW jvs:  Just for now...
         return planner.getCostFactory().makeTinyCost();
     }
 
