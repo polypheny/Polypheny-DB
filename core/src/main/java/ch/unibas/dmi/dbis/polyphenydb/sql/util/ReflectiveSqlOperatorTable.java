@@ -131,13 +131,13 @@ public abstract class ReflectiveSqlOperatorTable implements SqlOperatorTable {
             }
         }
 
-        // REVIEW jvs 1-Jan-2005:  why is this extra lookup required? Shouldn't it be covered by search above?
+        // REVIEW jvs: Why is this extra lookup required? Shouldn't it be covered by search above?
         switch ( syntax ) {
             case BINARY:
             case PREFIX:
             case POSTFIX:
                 for ( SqlOperator extra : operators.get( new Key( simpleName, syntax ) ) ) {
-                    // REVIEW: should only search operators added during this method?
+                    // REVIEW: Should only search operators added during this method?
                     if ( extra != null && !operatorList.contains( extra ) ) {
                         operatorList.add( extra );
                     }

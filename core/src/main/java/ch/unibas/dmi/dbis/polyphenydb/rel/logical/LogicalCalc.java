@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -63,8 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterToCalcRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToCalcRule;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import java.util.List;
 import java.util.Set;
 
 
@@ -91,13 +88,6 @@ public final class LogicalCalc extends Calc {
      */
     public LogicalCalc( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexProgram program ) {
         super( cluster, traitSet, child, program );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalCalc( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexProgram program, List<RelCollation> collationList ) {
-        this( cluster, traitSet, child, program );
-        Util.discard( collationList );
     }
 
 

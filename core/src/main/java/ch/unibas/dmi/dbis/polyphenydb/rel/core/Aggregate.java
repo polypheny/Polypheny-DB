@@ -108,19 +108,6 @@ public abstract class Aggregate extends SingleRel {
     }
 
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be converted to Java Predicate before 2.0
-    public static final com.google.common.base.Predicate<Aggregate> IS_SIMPLE = Aggregate::isSimple;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be converted to Java Predicate before 2.0
-    public static final com.google.common.base.Predicate<Aggregate> NO_INDICATOR = Aggregate::noIndicator;
-
-    @SuppressWarnings("Guava")
-    @Deprecated // to be converted to Java Predicate before 2.0
-    public static final com.google.common.base.Predicate<Aggregate> IS_NOT_GRAND_TOTAL = Aggregate::isNotGrandTotal;
-
-
     /**
      * Whether there are indicator fields.
      *
@@ -322,7 +309,7 @@ public abstract class Aggregate extends SingleRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // REVIEW jvs 24-Aug-2008:  This is bogus, but no more bogus than what's currently in Join.
+        // REVIEW jvs:  This is bogus, but no more bogus than what's currently in Join.
         double rowCount = mq.getRowCount( this );
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;

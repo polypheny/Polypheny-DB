@@ -83,7 +83,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
 
     @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
-        // REVIEW jvs 20-Feb-2005: Need to take care of time zones.
+        // REVIEW jvs: Need to take care of time zones.
         int precision = 0;
         if ( opBinding.getOperandCount() == 1 ) {
             RelDataType type = opBinding.getOperandType( 0 );

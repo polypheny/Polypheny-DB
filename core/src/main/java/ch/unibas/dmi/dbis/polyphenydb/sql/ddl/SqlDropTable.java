@@ -120,7 +120,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete data from the stores and remove the data placement
         try {
             for ( CatalogDataPlacement dp : table.getPlacements() ) {
-                StoreManager.getInstance().getStore( dp.storeId ).dropTable( table );
+                StoreManager.getInstance().getStore( dp.storeId ).dropTable( context, table );
                 // Delete data placement in catalog
                 transaction.getCatalog().deleteDataPlacement( dp.storeId, dp.tableId );
             }

@@ -145,13 +145,6 @@ public class JethroDataSqlDialect extends SqlDialect {
     }
 
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public boolean supportsOffsetFetch() {
-        return false;
-    }
-
-
     @Override
     public boolean supportsNestedAggregations() {
         return false;

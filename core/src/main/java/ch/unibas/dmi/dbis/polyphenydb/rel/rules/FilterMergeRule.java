@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
@@ -73,12 +72,6 @@ public class FilterMergeRule extends RelOptRule {
         super(
                 operand( Filter.class, operand( Filter.class, any() ) ),
                 relBuilderFactory, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public FilterMergeRule( RelFactories.FilterFactory filterFactory ) {
-        this( RelBuilder.proto( Contexts.of( filterFactory ) ) );
     }
 
 

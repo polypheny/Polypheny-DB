@@ -75,12 +75,6 @@ public class Uncollect extends SingleRel {
     public final boolean withOrdinality;
 
 
-    @Deprecated // to be removed before 2.0
-    public Uncollect( RelOptCluster cluster, RelTraitSet traitSet, RelNode child ) {
-        this( cluster, traitSet, child, false );
-    }
-
-
     /**
      * Creates an Uncollect.
      *

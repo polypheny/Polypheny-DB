@@ -52,6 +52,7 @@ import com.google.common.collect.Ordering;
 import java.util.AbstractList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -175,7 +176,7 @@ public class IntPair {
      * Returns the right side of a list of pairs.
      */
     public static List<Integer> right( final List<IntPair> pairs ) {
-        return Lists.transform( pairs, RIGHT );
+        return pairs.stream().map( RIGHT::apply ).collect( Collectors.toList() );
     }
 }
 

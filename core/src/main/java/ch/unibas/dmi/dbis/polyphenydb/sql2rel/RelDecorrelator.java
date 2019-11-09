@@ -65,7 +65,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
@@ -183,13 +182,6 @@ public class RelDecorrelator implements ReflectiveVisitor {
         this.cm = cm;
         this.context = context;
         this.relBuilder = relBuilder;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelNode decorrelateQuery( RelNode rootRel ) {
-        final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rootRel.getCluster(), null );
-        return decorrelateQuery( rootRel, relBuilder );
     }
 
 
@@ -2176,10 +2168,10 @@ public class RelDecorrelator implements ReflectiveVisitor {
         }
     }
 
-    // REVIEW jhyde 29-Oct-2007: This rule is non-static, depends on the state of members in RelDecorrelator, and has side-effects in the decorrelator.
+    // REVIEW jhyde: This rule is non-static, depends on the state of members in RelDecorrelator, and has side-effects in the decorrelator.
     // This breaks the contract of a planner rule, and the rule will not be reusable in other planners.
 
-    // REVIEW jvs 29-Oct-2007:  Shouldn't it also be incorporating the flavor attribute into the description?
+    // REVIEW jvs: Shouldn't it also be incorporating the flavor attribute into the description?
 
 
     /**

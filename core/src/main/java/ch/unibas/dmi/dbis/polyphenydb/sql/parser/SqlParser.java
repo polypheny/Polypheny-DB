@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlDelegatingConformance;
 import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
 import java.io.Reader;
 import java.io.StringReader;
@@ -68,20 +67,17 @@ public class SqlParser {
 
     public static final int DEFAULT_IDENTIFIER_MAX_LENGTH = 128;
 
-    @Deprecated // to be removed before 2.0
-    public static final boolean DEFAULT_ALLOW_BANG_EQUAL = SqlConformanceEnum.DEFAULT.isBangEqualAllowed();
-
     private final SqlAbstractParserImpl parser;
 
 
-    private SqlParser( SqlAbstractParserImpl parser, Config config ) {
+    private SqlParser( SqlAbstractParserImpl parser, SqlParserConfig sqlParserConfig ) {
         this.parser = parser;
         parser.setTabSize( 1 );
-        parser.setQuotedCasing( config.quotedCasing() );
-        parser.setUnquotedCasing( config.unquotedCasing() );
-        parser.setIdentifierMaxLength( config.identifierMaxLength() );
-        parser.setConformance( config.conformance() );
-        switch ( config.quoting() ) {
+        parser.setQuotedCasing( sqlParserConfig.quotedCasing() );
+        parser.setUnquotedCasing( sqlParserConfig.unquotedCasing() );
+        parser.setIdentifierMaxLength( sqlParserConfig.identifierMaxLength() );
+        parser.setConformance( sqlParserConfig.conformance() );
+        switch ( sqlParserConfig.quoting() ) {
             case DOUBLE_QUOTE:
                 parser.switchTo( "DQID" );
                 break;
@@ -113,27 +109,27 @@ public class SqlParser {
      * Creates a <code>SqlParser</code> to parse the given string using the parser implementation created from given {@link SqlParserImplFactory} with given quoting syntax and casing policies for identifiers.
      *
      * @param sql A SQL statement or expression to parse
-     * @param config The parser configuration (identifier max length, etc.)
+     * @param sqlParserConfig The parser configuration (identifier max length, etc.)
      * @return A parser
      */
-    public static SqlParser create( String sql, Config config ) {
-        return create( new SourceStringReader( sql ), config );
+    public static SqlParser create( String sql, SqlParserConfig sqlParserConfig ) {
+        return create( new SourceStringReader( sql ), sqlParserConfig );
     }
 
 
     /**
      * Creates a <code>SqlParser</code> to parse the given string using the parser implementation created from given {@link SqlParserImplFactory} with given quoting syntax and casing policies for identifiers.
      *
-     * Unlike {@link #create(java.lang.String, ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config)}, the parser is not able to return the original query string, but will instead return "?".
+     * Unlike {@link #create(java.lang.String, SqlParserConfig)}, the parser is not able to return the original query string, but will instead return "?".
      *
      * @param reader The source for the SQL statement or expression to parse
-     * @param config The parser configuration (identifier max length, etc.)
+     * @param sqlParserConfig The parser configuration (identifier max length, etc.)
      * @return A parser
      */
-    public static SqlParser create( Reader reader, Config config ) {
-        SqlAbstractParserImpl parser = config.parserFactory().getParser( reader );
+    public static SqlParser create( Reader reader, SqlParserConfig sqlParserConfig ) {
+        SqlAbstractParserImpl parser = sqlParserConfig.parserFactory().getParser( reader );
 
-        return new SqlParser( parser, config );
+        return new SqlParser( parser, sqlParserConfig );
     }
 
 
@@ -213,7 +209,7 @@ public class SqlParser {
 
 
     /**
-     * Builder for a {@link Config}.
+     * Builder for a {@link SqlParserConfig}.
      */
     public static ConfigBuilder configBuilder() {
         return new ConfigBuilder();
@@ -221,10 +217,10 @@ public class SqlParser {
 
 
     /**
-     * Builder for a {@link Config} that starts with an existing {@code Config}.
+     * Builder for a {@link SqlParserConfig} that starts with an existing {@code Config}.
      */
-    public static ConfigBuilder configBuilder( Config config ) {
-        return new ConfigBuilder().setConfig( config );
+    public static ConfigBuilder configBuilder( SqlParserConfig sqlParserConfig ) {
+        return new ConfigBuilder().setConfig( sqlParserConfig );
     }
 
 
@@ -233,12 +229,12 @@ public class SqlParser {
      *
      * @see ConfigBuilder
      */
-    public interface Config {
+    public interface SqlParserConfig {
 
         /**
          * Default configuration.
          */
-        Config DEFAULT = configBuilder().build();
+        SqlParserConfig DEFAULT = configBuilder().build();
 
         int identifierMaxLength();
 
@@ -252,16 +248,12 @@ public class SqlParser {
 
         SqlConformance conformance();
 
-        @Deprecated
-            // to be removed before 2.0
-        boolean allowBangEqual();
-
         SqlParserImplFactory parserFactory();
     }
 
 
     /**
-     * Builder for a {@link Config}.
+     * Builder for a {@link SqlParserConfig}.
      */
     public static class ConfigBuilder {
 
@@ -279,15 +271,15 @@ public class SqlParser {
 
 
         /**
-         * Sets configuration identical to a given {@link Config}.
+         * Sets configuration identical to a given {@link SqlParserConfig}.
          */
-        public ConfigBuilder setConfig( Config config ) {
-            this.quotedCasing = config.quotedCasing();
-            this.unquotedCasing = config.unquotedCasing();
-            this.quoting = config.quoting();
-            this.identifierMaxLength = config.identifierMaxLength();
-            this.conformance = config.conformance();
-            this.parserFactory = config.parserFactory();
+        public ConfigBuilder setConfig( SqlParserConfig sqlParserConfig ) {
+            this.quotedCasing = sqlParserConfig.quotedCasing();
+            this.unquotedCasing = sqlParserConfig.unquotedCasing();
+            this.quoting = sqlParserConfig.quoting();
+            this.identifierMaxLength = sqlParserConfig.identifierMaxLength();
+            this.conformance = sqlParserConfig.conformance();
+            this.parserFactory = sqlParserConfig.parserFactory();
             return this;
         }
 
@@ -322,22 +314,6 @@ public class SqlParser {
         }
 
 
-        @SuppressWarnings("unused")
-        @Deprecated // to be removed before 2.0
-        public ConfigBuilder setAllowBangEqual( final boolean allowBangEqual ) {
-            if ( allowBangEqual != conformance.isBangEqualAllowed() ) {
-                setConformance(
-                        new SqlDelegatingConformance( conformance ) {
-                            @Override
-                            public boolean isBangEqualAllowed() {
-                                return allowBangEqual;
-                            }
-                        } );
-            }
-            return this;
-        }
-
-
         public ConfigBuilder setConformance( SqlConformance conformance ) {
             this.conformance = conformance;
             return this;
@@ -360,10 +336,9 @@ public class SqlParser {
 
 
         /**
-         * Builds a
-         * {@link Config}.
+         * Builds a {@link SqlParserConfig}.
          */
-        public Config build() {
+        public SqlParserConfig build() {
             return new ConfigImpl( identifierMaxLength, quotedCasing, unquotedCasing, quoting, caseSensitive, conformance, parserFactory );
         }
 
@@ -371,10 +346,10 @@ public class SqlParser {
 
 
     /**
-     * Implementation of {@link Config}.
+     * Implementation of {@link SqlParserConfig}.
      * Called by builder; all values are in private final fields.
      */
-    private static class ConfigImpl implements Config {
+    private static class ConfigImpl implements SqlParserConfig {
 
         private final int identifierMaxLength;
         private final boolean caseSensitive;
@@ -429,12 +404,6 @@ public class SqlParser {
         @Override
         public SqlConformance conformance() {
             return conformance;
-        }
-
-
-        @Override
-        public boolean allowBangEqual() {
-            return conformance.isBangEqualAllowed();
         }
 
 

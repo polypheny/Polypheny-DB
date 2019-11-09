@@ -70,12 +70,6 @@ public final class LogicalMinus extends Minus {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalMinus( RelOptCluster cluster, List<RelNode> inputs, boolean all ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), inputs, all );
-    }
-
-
     /**
      * Creates a LogicalMinus by parsing serialized output.
      */

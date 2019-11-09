@@ -59,16 +59,6 @@ import java.util.List;
 public interface InitializerExpressionFactory {
 
     /**
-     * Whether a column is always generated. If a column is always generated, then non-generated values cannot be inserted into the column.
-     *
-     * @see #generationStrategy(RelOptTable, int)
-     * @deprecated Use {@code c.generationStrategy(t, i) == VIRTUAL || c.generationStrategy(t, i) == STORED}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean isGeneratedAlways( RelOptTable table, int iColumn );
-
-    /**
      * Returns how a column is populated.
      *
      * @param table the table containing the column

@@ -362,13 +362,6 @@ public abstract class PruneEmptyRules {
         }
 
 
-        @SuppressWarnings("Guava")
-        @Deprecated // to be removed before 2.0
-        public <R extends SingleRel> RemoveEmptySingleRule( Class<R> clazz, com.google.common.base.Predicate<R> predicate, RelBuilderFactory relBuilderFactory, String description ) {
-            this( clazz, (Predicate<R>) predicate::apply, relBuilderFactory, description );
-        }
-
-
         @Override
         public void onMatch( RelOptRuleCall call ) {
             SingleRel single = call.rel( 0 );

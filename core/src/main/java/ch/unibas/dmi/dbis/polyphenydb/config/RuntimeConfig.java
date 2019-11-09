@@ -128,12 +128,22 @@ public enum RuntimeConfig {
             2,
             ConfigType.INTEGER ),
 
-
     GENERATED_NAME_PREFIX( "runtime/generatedNamePrefix",
             "Prefix for generated index, foreign key and constraint names.",
             "auto",
-            ConfigType.STRING );
+            ConfigType.STRING ),
 
+    ADD_DEFAULT_VALUES_IN_INSERTS( "processing/addDefaultValuesInInserts",
+            "Reorder columns and add default values in insert statements.",
+            true,
+            ConfigType.BOOLEAN,
+            "parsingGroup" ),
+
+    TRIM_UNUSED_FIELDS( "processing/trimUnusedFields",
+            "Walks over a tree of relational expressions, replacing each RelNode with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
+            true,
+            ConfigType.BOOLEAN,
+            "planningGroup" );
 
 
     private final String key;
@@ -142,84 +152,109 @@ public enum RuntimeConfig {
     private final ConfigManager configManager = ConfigManager.getInstance();
 
 
+    static {
+        final ConfigManager configManager = ConfigManager.getInstance();
+
+        final WebUiPage processingPage = new WebUiPage( "processingPage", "Query Processing", "Settings influencing the query processing." );
+        final WebUiGroup planningGroup = new WebUiGroup( "planningGroup", processingPage.getId() );
+        final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
+
+        configManager.registerWebUiPage( processingPage );
+        configManager.registerWebUiGroup( parsingGroup );
+        configManager.registerWebUiGroup( planningGroup );
+    }
+
+
     RuntimeConfig( final String key, final String description, final Object defaultValue, final ConfigType configType ) {
+        this( key, description, defaultValue, configType, null );
+    }
+
+
+    RuntimeConfig( final String key, final String description, final Object defaultValue, final ConfigType configType, final String webUiGroup ) {
         this.key = key;
         this.description = description;
 
+        final Config config;
         switch ( configType ) {
             case BOOLEAN:
-                configManager.registerConfig( new ConfigBoolean( key, description, (boolean) defaultValue ) );
+                config = new ConfigBoolean( key, description, (boolean) defaultValue );
                 break;
 
             case DECIMAL:
-                configManager.registerConfig( new ConfigDecimal( key, description, (BigDecimal) defaultValue ) );
+                config = new ConfigDecimal( key, description, (BigDecimal) defaultValue );
                 break;
 
             case DOUBLE:
-                configManager.registerConfig( new ConfigDouble( key, description, (double) defaultValue ) );
+                config = new ConfigDouble( key, description, (double) defaultValue );
                 break;
 
             case INTEGER:
-                configManager.registerConfig( new ConfigInteger( key, description, (int) defaultValue ) );
+                config = new ConfigInteger( key, description, (int) defaultValue );
                 break;
 
             case LONG:
-                configManager.registerConfig( new ConfigLong( key, description, (long) defaultValue ) );
+                config = new ConfigLong( key, description, (long) defaultValue );
                 break;
 
             case STRING:
-                configManager.registerConfig( new ConfigString( key, description, (String) defaultValue ) );
+                config = new ConfigString( key, description, (String) defaultValue );
                 break;
 
             case BOOLEAN_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (boolean[][]) defaultValue ) );
+                config = new ConfigTable( key, (boolean[][]) defaultValue );
                 break;
 
             case DECIMAL_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (BigDecimal[][]) defaultValue ) );
+                config = new ConfigTable( key, (BigDecimal[][]) defaultValue );
                 break;
 
             case DOUBLE_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (double[][]) defaultValue ) );
+                config = new ConfigTable( key, (double[][]) defaultValue );
                 break;
 
             case INTEGER_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (int[][]) defaultValue ) );
+                config = new ConfigTable( key, (int[][]) defaultValue );
                 break;
 
             case LONG_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (long[][]) defaultValue ) );
+                config = new ConfigTable( key, (long[][]) defaultValue );
                 break;
 
             case STRING_TABLE:
-                configManager.registerConfig( new ConfigTable( key, (String[][]) defaultValue ) );
+                config = new ConfigTable( key, (String[][]) defaultValue );
                 break;
 
             case BOOLEAN_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (boolean[]) defaultValue ) );
+                config = new ConfigArray( key, (boolean[]) defaultValue );
                 break;
 
             case DECIMAL_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (BigDecimal[]) defaultValue ) );
+                config = new ConfigArray( key, (BigDecimal[]) defaultValue );
                 break;
 
             case DOUBLE_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (double[]) defaultValue ) );
+                config = new ConfigArray( key, (double[]) defaultValue );
                 break;
 
             case INTEGER_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (int[]) defaultValue ) );
+                config = new ConfigArray( key, (int[]) defaultValue );
                 break;
 
             case LONG_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (long[]) defaultValue ) );
+                config = new ConfigArray( key, (long[]) defaultValue );
                 break;
 
             case STRING_ARRAY:
-                configManager.registerConfig( new ConfigArray( key, (String[]) defaultValue ) );
+                config = new ConfigArray( key, (String[]) defaultValue );
                 break;
-        }
 
+            default:
+                throw new RuntimeException( "Unknown config type: " + configType.name() );
+        }
+        configManager.registerConfig( config );
+        if ( webUiGroup != null ) {
+            config.withUi( webUiGroup );
+        }
     }
 
 

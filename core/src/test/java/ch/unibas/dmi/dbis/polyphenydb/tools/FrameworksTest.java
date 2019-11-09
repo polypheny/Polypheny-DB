@@ -83,6 +83,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -316,8 +317,8 @@ public class FrameworksTest {
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelDistributionTraitDef.INSTANCE );
-        SqlParser.Config parserConfig =
-                SqlParser.configBuilder( SqlParser.Config.DEFAULT )
+        SqlParserConfig parserConfig =
+                SqlParser.configBuilder( SqlParserConfig.DEFAULT )
                         .setCaseSensitive( false )
                         .build();
 

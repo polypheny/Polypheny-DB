@@ -11,7 +11,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 
 public interface Store {
 
-    void createNewSchema( SchemaPlus rootSchema, String name );
+    void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
 
     Table createTableSchema( CatalogCombinedTable combinedTable );
 
@@ -19,17 +19,17 @@ public interface Store {
 
     void createTable( Context context, CatalogCombinedTable combinedTable );
 
-    void dropTable( CatalogCombinedTable combinedTable );
+    void dropTable( Context context, CatalogCombinedTable combinedTable );
 
-    void addColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
 
-    void dropColumn( CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
 
     boolean prepare( PolyXid xid );
 
     void commit( PolyXid xid );
 
-    void truncate( Transaction transaction, CatalogCombinedTable table );
+    void truncate( Context context, CatalogCombinedTable table );
 
-    void updateColumnType( CatalogColumn catalogColumn );
+    void updateColumnType( Context context, CatalogColumn catalogColumn );
 }

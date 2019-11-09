@@ -604,6 +604,18 @@ public final class Schemas {
         public Object get( String name ) {
             return map.get( name );
         }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
+        }
     }
 
 

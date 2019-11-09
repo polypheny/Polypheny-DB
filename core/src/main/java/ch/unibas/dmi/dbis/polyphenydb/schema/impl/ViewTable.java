@@ -89,18 +89,6 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static ViewTableMacro viewMacro( SchemaPlus schema, final String viewSql, final List<String> schemaPath ) {
-        return viewMacro( schema, viewSql, schemaPath, null, Boolean.TRUE );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static ViewTableMacro viewMacro( SchemaPlus schema, String viewSql, List<String> schemaPath, Boolean modifiable ) {
-        return viewMacro( schema, viewSql, schemaPath, null, modifiable );
-    }
-
-
     /**
      * Table macro that returns a view.
      *

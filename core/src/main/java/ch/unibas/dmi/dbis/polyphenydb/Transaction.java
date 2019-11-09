@@ -31,7 +31,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 
 
 public interface Transaction {
@@ -39,6 +41,8 @@ public interface Transaction {
     PolyXid getXid();
 
     QueryProcessor getQueryProcessor();
+
+    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
 
     Catalog getCatalog();
 
@@ -61,4 +65,8 @@ public interface Transaction {
     Context getPrepareContext();
 
     CatalogSchema getDefaultSchema();
+
+    PolyphenyDbCatalogReader getCatalogReader();
+
+    void resetQueryProcessor();
 }

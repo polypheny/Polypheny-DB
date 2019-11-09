@@ -112,17 +112,6 @@ public class FilterProjectTransposeRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public FilterProjectTransposeRule( Class<? extends Filter> filterClass, RelFactories.FilterFactory filterFactory, Class<? extends Project> projectClass, RelFactories.ProjectFactory projectFactory ) {
-        this( filterClass,
-                filter -> !RexUtil.containsCorrelation( filter.getCondition() ),
-                projectClass, project -> true,
-                filterFactory == null,
-                projectFactory == null,
-                RelBuilder.proto( filterFactory, projectFactory ) );
-    }
-
-
     protected FilterProjectTransposeRule( RelOptRuleOperand operand, boolean copyFilter, boolean copyProject, RelBuilderFactory relBuilderFactory ) {
         super( operand, relBuilderFactory, null );
         this.copyFilter = copyFilter;

@@ -768,7 +768,7 @@ public class SqlPrettyWriter implements SqlWriter {
         if ( frame != null ) {
             ++frame.itemCount;
 
-            // REVIEW jvs 9-June-2006:  This is part of the fix for FRG-149 (extra frame for identifier was leading to extra indentation, causing select list to come out raggedy with identifiers
+            // REVIEW jvs: This is part of the fix for FRG-149 (extra frame for identifier was leading to extra indentation, causing select list to come out raggedy with identifiers
             // deeper than literals); are there other frame types for which extra indent should be suppressed?
             if ( frameType.needsIndent() ) {
                 currentIndent += frame.extraIndent;

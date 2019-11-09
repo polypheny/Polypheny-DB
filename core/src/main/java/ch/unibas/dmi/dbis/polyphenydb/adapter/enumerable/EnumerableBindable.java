@@ -61,8 +61,9 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import com.google.common.collect.ImmutableMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -95,9 +96,10 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
 
     @Override
     public Enumerable<Object[]> bind( DataContext dataContext ) {
-        final ImmutableMap<String, Object> map = ImmutableMap.of();
-        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY );
+        final Map<String, Object> map = new HashMap<>();
+        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY, dataContext );
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
+        dataContext.addAll( map );
         return arrayBindable.bind( dataContext );
     }
 

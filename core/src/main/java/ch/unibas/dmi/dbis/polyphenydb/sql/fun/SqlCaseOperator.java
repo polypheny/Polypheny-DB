@@ -102,7 +102,7 @@ import java.util.List;
  * ELSE 'foe'
  * END</code></pre></blockquote>
  *
- * REVIEW jhyde 2004/3/19 Does <code>Equals</code> handle NULL semantics correctly?
+ * REVIEW jhyde: Does <code>Equals</code> handle NULL semantics correctly?
  *
  * <code>COALESCE(x, y, z)</code> becomes
  *
@@ -123,7 +123,7 @@ import java.util.List;
  * This may make it more difficult to write optimizer rules (because the rules will have to deduce that expressions are equivalent). It also requires that some part of the planning
  * process (probably the generator of the calculator program) does common sub-expression elimination.
  *
- * REVIEW jhyde 2004/3/19. Expanding expressions at parse time has some other drawbacks. It is more difficult to give meaningful validation errors: given <code>COALESCE(DATE '2004-03-18', 3.5)</code>,
+ * REVIEW jhyde: Expanding expressions at parse time has some other drawbacks. It is more difficult to give meaningful validation errors: given <code>COALESCE(DATE '2004-03-18', 3.5)</code>,
  * do we issue a type-checking error against a <code>CASE</code> operator? Second, I'd like to use the {@link SqlNode} object model to generate SQL to send to 3rd-party databases, but there's now no way to
  * represent a call to COALESCE or NULLIF. All in all, it would be better to have operators for COALESCE, NULLIF, and both simple and switched forms of CASE, then translate to simple CASE when building the
  * {@link RexNode} tree.

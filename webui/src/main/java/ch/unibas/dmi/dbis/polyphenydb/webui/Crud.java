@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -65,9 +66,19 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -110,6 +121,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.math.NumberUtils;
 import spark.Request;
 import spark.Response;
@@ -1338,7 +1350,17 @@ public class Crud implements InformationObserver {
             return new Result( e.getMessage() );
         }
 
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().processQuery( result );
+        // Wrap RelNode into a RelRoot
+        final RelDataType rowType = result.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final RelCollation collation =
+                result instanceof Sort
+                        ? ((Sort) result).collation
+                        : RelCollations.EMPTY;
+        RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
+
+        // Prepare
+        PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( root );
 
         List<List<Object>> rows;
         try {
@@ -1542,86 +1564,122 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParser.Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
+        List<List<Object>> rows;
+        Iterator<Object> iterator = null;
         try {
-            signature = transaction.getQueryProcessor().processSqlQuery( sqlSelect, parserConfig );
+            signature = processQuery( transaction, sqlSelect, parserConfig );
+            final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
+            //noinspection unchecked
+            iterator = enumerable.iterator();
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
         } catch ( Throwable t ) {
+            if ( iterator != null ) {
+                try {
+                    ((AutoCloseable) iterator).close();
+                } catch ( Exception e ) {
+                    log.error( "Exception while closing result iterator", e );
+                }
+            }
             throw new QueryExecutionException( t );
         }
 
-        List<List<Object>> rows;
-        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
-        Iterator<Object> iterator = iterable.iterator();
-        rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-
-        CatalogTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
-            try {
-                catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
-            } catch ( UnknownTableException | GenericCatalogException e ) {
-                log.error( "Caught exception", e );
-            }
-        }
-
-        ArrayList<DbColumn> header = new ArrayList<>();
-        for ( ColumnMetaData metaData : signature.columns ) {
-            String columnName = metaData.columnName;
-
-            String filter = "";
-            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                filter = request.filter.get( columnName );
-            }
-
-            SortState sort;
-            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                sort = request.sortState.get( columnName );
-            } else {
-                sort = new SortState();
-            }
-
-            DbColumn dbCol = new DbColumn(
-                    metaData.columnName,
-                    metaData.type.name,
-                    metaData.nullable == ResultSetMetaData.columnNullable,
-                    metaData.displaySize,
-                    sort,
-                    filter );
-
-            // Get column default values
-            if ( catalogTable != null ) {
+        try {
+            CatalogTable catalogTable = null;
+            if ( request.tableId != null ) {
+                String[] t = request.tableId.split( "\\." );
                 try {
-                    if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
-                        if ( catalogColumn.defaultValue != null ) {
-                            dbCol.defaultValue = catalogColumn.defaultValue.value;
-                        }
-                    }
-                } catch ( UnknownColumnException | GenericCatalogException e ) {
+                    catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
                     log.error( "Caught exception", e );
                 }
             }
-            header.add( dbCol );
-        }
 
-        ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( Object o : row ) {
-                if ( o == null ) {
-                    temp[counter] = null;
-                } else {
-                    temp[counter] = o.toString();
+            ArrayList<DbColumn> header = new ArrayList<>();
+            for ( ColumnMetaData metaData : signature.columns ) {
+                String columnName = metaData.columnName;
+
+                String filter = "";
+                if ( request.filter != null && request.filter.containsKey( columnName ) ) {
+                    filter = request.filter.get( columnName );
                 }
-                counter++;
-            }
-            data.add( temp );
-        }
 
-        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+                SortState sort;
+                if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
+                    sort = request.sortState.get( columnName );
+                } else {
+                    sort = new SortState();
+                }
+
+                DbColumn dbCol = new DbColumn(
+                        metaData.columnName,
+                        metaData.type.name,
+                        metaData.nullable == ResultSetMetaData.columnNullable,
+                        metaData.displaySize,
+                        sort,
+                        filter );
+
+                // Get column default values
+                if ( catalogTable != null ) {
+                    try {
+                        if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                            CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
+                            if ( catalogColumn.defaultValue != null ) {
+                                dbCol.defaultValue = catalogColumn.defaultValue.value;
+                            }
+                        }
+                    } catch ( UnknownColumnException | GenericCatalogException e ) {
+                        log.error( "Caught exception", e );
+                    }
+                }
+                header.add( dbCol );
+            }
+
+            ArrayList<String[]> data = new ArrayList<>();
+            for ( List<Object> row : rows ) {
+                String[] temp = new String[row.size()];
+                int counter = 0;
+                for ( Object o : row ) {
+                    if ( o == null ) {
+                        temp[counter] = null;
+                    } else {
+                        temp[counter] = o.toString();
+                    }
+                    counter++;
+                }
+                data.add( temp );
+            }
+
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+        } finally {
+            try {
+                ((AutoCloseable) iterator).close();
+            } catch ( Exception e ) {
+                log.error( "Exception while closing result iterator", e );
+            }
+        }
+    }
+
+
+    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
+        PolyphenyDbSignature signature;
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+
+            // Prepare
+            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
+        }
+        return signature;
     }
 
 
@@ -1631,11 +1689,11 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParser.Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
         try {
-            signature = transaction.getQueryProcessor().processSqlQuery( sqlUpdate, parserConfig );
+            signature = processQuery( transaction, sqlUpdate, parserConfig );
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }
@@ -1643,7 +1701,13 @@ public class Crud implements InformationObserver {
         if ( signature.statementType == StatementType.OTHER_DDL ) {
             return 1;
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            return ((Number) signature.enumerable( transaction.getDataContext() ).iterator().next()).intValue();
+            Object object = signature.enumerable( transaction.getDataContext() ).iterator().next();
+            if ( object != null && object.getClass().isArray() ) {
+                Object[] o = (Object[]) object;
+                return ((Number) o[0]).intValue();
+            } else {
+                return ((Number) object).intValue();
+            }
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );
         }

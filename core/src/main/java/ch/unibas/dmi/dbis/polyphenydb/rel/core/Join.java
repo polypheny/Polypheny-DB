@@ -56,14 +56,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinAddRedundantSemiJoinRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexChecker;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
@@ -96,7 +94,7 @@ public abstract class Join extends BiRel {
     /**
      * Creates a Join.
      *
-     * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet} {@link Bug#upgrade(String) before version 2.0},
+     * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet}
      * because {@link #getVariablesSet()} is preferred over {@link #getVariablesStopped()}. This constructor is not deprecated, for now, because maintaining overloaded constructors in multiple sub-classes would be onerous.
      *
      * @param cluster Cluster
@@ -112,12 +110,6 @@ public abstract class Join extends BiRel {
         this.condition = Objects.requireNonNull( condition );
         this.variablesSet = ImmutableSet.copyOf( variablesSet );
         this.joinType = Objects.requireNonNull( joinType );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    protected Join( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) {
-        this( cluster, traitSet, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType );
     }
 
 
@@ -180,19 +172,9 @@ public abstract class Join extends BiRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        // REVIEW jvs 9-Apr-2006:  Just for now...
+        // REVIEW jvs: Just for now...
         double rowCount = mq.getRowCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
-    }
-
-
-    /**
-     * @deprecated Use {@link RelMdUtil#getJoinRowCount(RelMetadataQuery, Join, RexNode)}.
-     */
-    @Deprecated // to be removed before 2.0
-    public static double estimateJoinedRows( Join joinRel, RexNode condition ) {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return Util.first( RelMdUtil.getJoinRowCount( mq, joinRel, condition ), 1D );
     }
 
 
@@ -242,18 +224,6 @@ public abstract class Join extends BiRel {
      */
     public List<RelDataTypeField> getSystemFieldList() {
         return Collections.emptyList();
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelDataType deriveJoinRowType( RelDataType leftType, RelDataType rightType, JoinRelType joinType, RelDataTypeFactory typeFactory, List<String> fieldNameList, List<RelDataTypeField> systemFieldList ) {
-        return SqlValidatorUtil.deriveJoinRowType( leftType, rightType, joinType, typeFactory, fieldNameList, systemFieldList );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RelDataType createJoinType( RelDataTypeFactory typeFactory, RelDataType leftType, RelDataType rightType, List<String> fieldNameList, List<RelDataTypeField> systemFieldList ) {
-        return SqlValidatorUtil.createJoinType( typeFactory, leftType, rightType, fieldNameList, systemFieldList );
     }
 
 

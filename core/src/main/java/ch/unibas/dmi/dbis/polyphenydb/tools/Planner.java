@@ -114,13 +114,6 @@ public interface Planner extends AutoCloseable {
     RelRoot rel( SqlNode sql ) throws RelConversionException;
 
     /**
-     * @deprecated Use {@link #rel}.
-     */
-    @Deprecated
-    // to removed before 2.0
-    RelNode convert( SqlNode sql ) throws RelConversionException;
-
-    /**
      * Returns the type factory.
      */
     RelDataTypeFactory getTypeFactory();

@@ -79,7 +79,7 @@ public abstract class Intersect extends SetOp {
 
     @Override
     public double estimateRowCount( RelMetadataQuery mq ) {
-        // REVIEW jvs 30-May-2005:  I just pulled this out of a hat.
+        // REVIEW jvs:  I just pulled this out of a hat.
         double dRows = Double.MAX_VALUE;
         for ( RelNode input : inputs ) {
             dRows = Math.min( dRows, mq.getRowCount( input ) );

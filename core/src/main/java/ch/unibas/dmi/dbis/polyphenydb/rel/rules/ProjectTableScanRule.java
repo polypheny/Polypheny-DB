@@ -78,9 +78,6 @@ import java.util.List;
  */
 public abstract class ProjectTableScanRule extends RelOptRule {
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<TableScan> PREDICATE = ProjectTableScanRule::test;
 
     /**
      * Rule that matches Project on TableScan.

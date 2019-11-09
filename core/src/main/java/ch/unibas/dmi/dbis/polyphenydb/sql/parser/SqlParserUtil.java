@@ -76,7 +76,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
 import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -141,33 +140,6 @@ public final class SqlParserUtil {
     }
 
 
-    /**
-     * @deprecated this method is not localized for Farrago standards
-     */
-    @Deprecated // to be removed before 2.0
-    public static java.sql.Date parseDate( String s ) {
-        return java.sql.Date.valueOf( s );
-    }
-
-
-    /**
-     * @deprecated Does not parse SQL:99 milliseconds
-     */
-    @Deprecated // to be removed before 2.0
-    public static java.sql.Time parseTime( String s ) {
-        return java.sql.Time.valueOf( s );
-    }
-
-
-    /**
-     * @deprecated this method is not localized for Farrago standards
-     */
-    @Deprecated // to be removed before 2.0
-    public static java.sql.Timestamp parseTimestamp( String s ) {
-        return java.sql.Timestamp.valueOf( s );
-    }
-
-
     public static SqlDateLiteral parseDateLiteral( String s, SqlParserPos pos ) {
         final String dateStr = parseString( s );
         final Calendar cal = DateTimeUtils.parseDateFormat( dateStr, Format.PER_THREAD.get().date, DateTimeUtils.UTC_ZONE );
@@ -228,9 +200,7 @@ public final class SqlParserUtil {
      * @return a long value that represents millisecond equivalent of the interval value.
      */
     public static long intervalToMillis( SqlIntervalLiteral.IntervalValue interval ) {
-        return intervalToMillis(
-                interval.getIntervalLiteral(),
-                interval.getIntervalQualifier() );
+        return intervalToMillis( interval.getIntervalLiteral(), interval.getIntervalQualifier() );
     }
 
 
@@ -303,37 +273,6 @@ public final class SqlParserUtil {
             throw new NumberFormatException( value );
         }
         return Integer.parseInt( value );
-    }
-
-
-    /**
-     * Parses a Binary string. SQL:99 defines a binary string as a hexstring with EVEN nbr of hex digits.
-     */
-    @Deprecated // to be removed before 2.0
-    public static byte[] parseBinaryString( String s ) {
-        s = s.replaceAll( " ", "" );
-        s = s.replaceAll( "\n", "" );
-        s = s.replaceAll( "\t", "" );
-        s = s.replaceAll( "\r", "" );
-        s = s.replaceAll( "\f", "" );
-        s = s.replaceAll( "'", "" );
-
-        if ( s.length() == 0 ) {
-            return new byte[0];
-        }
-        assert (s.length() & 1) == 0; // must be even nbr of hex digits
-
-        final int lengthToBe = s.length() / 2;
-        s = "ff" + s;
-        BigInteger bigInt = new BigInteger( s, 16 );
-        byte[] ret = new byte[lengthToBe];
-        System.arraycopy(
-                bigInt.toByteArray(),
-                2,
-                ret,
-                0,
-                ret.length );
-        return ret;
     }
 
 
@@ -561,12 +500,6 @@ public final class SqlParserUtil {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static String[] toStringArray( List<String> list ) {
-        return list.toArray( new String[0] );
-    }
-
-
     public static SqlNode[] toNodeArray( List<SqlNode> list ) {
         return list.toArray( new SqlNode[0] );
     }
@@ -574,21 +507,6 @@ public final class SqlParserUtil {
 
     public static SqlNode[] toNodeArray( SqlNodeList list ) {
         return list.toArray();
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static String rightTrim( String s, char c ) {
-        int stop;
-        for ( stop = s.length(); stop > 0; stop-- ) {
-            if ( s.charAt( stop - 1 ) != c ) {
-                break;
-            }
-        }
-        if ( stop > 0 ) {
-            return s.substring( 0, stop );
-        }
-        return "";
     }
 
 

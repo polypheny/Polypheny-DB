@@ -56,8 +56,7 @@ import java.util.Objects;
  *
  * This class is immutable: none of the methods modify any member variables.
  */
-class VolcanoCost implements RelOptCost {
-    //~ Static fields/initializers ---------------------------------------------
+public class VolcanoCost implements RelOptCost {
 
     static final VolcanoCost INFINITY =
             new VolcanoCost( Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ) {

@@ -82,18 +82,6 @@ public class SortProjectTransposeRule extends RelOptRule {
     public static final SortProjectTransposeRule INSTANCE = new SortProjectTransposeRule( Sort.class, LogicalProject.class, RelFactories.LOGICAL_BUILDER, null );
 
 
-    @Deprecated // to be removed before 2.0
-    public SortProjectTransposeRule( Class<? extends Sort> sortClass, Class<? extends Project> projectClass ) {
-        this( sortClass, projectClass, RelFactories.LOGICAL_BUILDER, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public SortProjectTransposeRule( Class<? extends Sort> sortClass, Class<? extends Project> projectClass, String description ) {
-        this( sortClass, projectClass, RelFactories.LOGICAL_BUILDER, description );
-    }
-
-
     /**
      * Creates a SortProjectTransposeRule.
      */
@@ -109,12 +97,6 @@ public class SortProjectTransposeRule extends RelOptRule {
      */
     protected SortProjectTransposeRule( RelOptRuleOperand operand, RelBuilderFactory relBuilderFactory, String description ) {
         super( operand, relBuilderFactory, description );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    protected SortProjectTransposeRule( RelOptRuleOperand operand ) {
-        super( operand );
     }
 
 

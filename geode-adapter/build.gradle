@@ -54,25 +54,22 @@ targetCompatibility = 1.8
 
 dependencies {
     compile project(":core")
-	compile project(":csv-adapter")
+    compile project(":csv-adapter")
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: "1.18.0"
+    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-	compile group: "org.slf4j", name: "slf4j-api", version:"1.7.25"
-	
-    compile group: "org.apache.commons", name: "commons-lang3", version:"3.2"
-    compile group: "org.apache.geode", name: "geode-core", version:"1.6.0"
-    compile group: "com.google.guava", name: "guava", version:"19.0"
+    compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+    compile group: "org.apache.geode", name: "geode-core", version: geode_core_version
+    compile group: "com.google.guava", name: "guava", version: guava_version
 
-	
+
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version:"4.12"
-	
-	testCompile group: "org.slf4j", name: "slf4j-log4j12", version:"1.7.25"
-    testCompile group: "com.fasterxml.jackson.core", name: "jackson-databind", version:"2.9.6"
+    testCompile group: "junit", name: "junit", version: junit_version
+
+    testCompile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
 }
 
 

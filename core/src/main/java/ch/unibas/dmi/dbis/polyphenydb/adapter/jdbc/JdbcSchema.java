@@ -68,10 +68,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -81,7 +77,6 @@ import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
 import lombok.Getter;
-import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
@@ -96,6 +91,7 @@ public class JdbcSchema implements Schema {
     final String database;
     final String schema;
     public final SqlDialect dialect;
+
     @Getter
     private final JdbcConvention convention;
 
@@ -109,7 +105,6 @@ public class JdbcSchema implements Schema {
         this.convention = convention;
         this.database = catalog;
         this.schema = schema;
-
         this.tableMap = tableMap;
     }
 
@@ -138,81 +133,44 @@ public class JdbcSchema implements Schema {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        List<String> columnNames = new LinkedList<>();
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
+            columnNames.add( catalogColumn.name );
         }
-        List<String> columnNames = new LinkedList<>();
-        combinedTable.getColumns().forEach( c -> columnNames.add( c.name ) );
-        JdbcTable table = new JdbcTable( this, database, schema, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
+        JdbcTable table = new JdbcTable( this, database, combinedTable.getSchema().name, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
         tableMap.put( combinedTable.getTable().name, table );
         return table;
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema ) {
-        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema );
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
+        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, physicalNameProvider );
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final SqlDialect dialect = createDialect( dialectFactory, dataSource );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
         return new JdbcSchema( dataSource, dialect, convention, catalog, schema );
     }
 
 
     // For unit testing only
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
-        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, tableMap );
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
+        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, tableMap, physicalNameProvider );
     }
 
 
     // For unit testing only
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final SqlDialect dialect = createDialect( dialectFactory, dataSource );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
         return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
-    }
-
-
-    /**
-     * Creates a JdbcSchema, taking credentials from a map.
-     *
-     * @param parentSchema Parent schema
-     * @param name Name
-     * @param operand Map of property/value pairs
-     * @return A JdbcSchema
-     */
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, Map<String, Object> operand, ImmutableMap<String, JdbcTable> tableMap ) {
-        DataSource dataSource;
-        try {
-            final String dataSourceName = (String) operand.get( "dataSource" );
-            if ( dataSourceName != null ) {
-                dataSource = AvaticaUtils.instantiatePlugin( DataSource.class, dataSourceName );
-            } else {
-                final String jdbcUrl = (String) operand.get( "jdbcUrl" );
-                final String jdbcDriver = (String) operand.get( "jdbcDriver" );
-                final String jdbcUser = (String) operand.get( "jdbcUser" );
-                final String jdbcPassword = (String) operand.get( "jdbcPassword" );
-                dataSource = dataSource( jdbcUrl, jdbcDriver, jdbcUser, jdbcPassword );
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( "Error while reading dataSource", e );
-        }
-        String jdbcCatalog = (String) operand.get( "jdbcCatalog" );
-        String jdbcSchema = (String) operand.get( "jdbcSchema" );
-        String sqlDialectFactory = (String) operand.get( "sqlDialectFactory" );
-
-        if ( sqlDialectFactory == null || sqlDialectFactory.isEmpty() ) {
-            return JdbcSchema.create( parentSchema, name, dataSource, jdbcCatalog, jdbcSchema, tableMap );
-        } else {
-            SqlDialectFactory factory = AvaticaUtils.instantiatePlugin( SqlDialectFactory.class, sqlDialectFactory );
-            return JdbcSchema.create( parentSchema, name, dataSource, factory, jdbcCatalog, jdbcSchema, tableMap );
-        }
     }
 
 
@@ -224,21 +182,9 @@ public class JdbcSchema implements Schema {
     }
 
 
-    /**
-     * Creates a JDBC data source with the given specification.
-     */
-    public static DataSource dataSource( String url, String driverClassName, String username, String password ) {
-        if ( url.startsWith( "jdbc:hsqldb:" ) ) {
-            // Prevent hsqldb from screwing up java.util.logging.
-            System.setProperty( "hsqldb.reconfig_logging", "false" );
-        }
-        return JdbcUtils.DataSourcePool.INSTANCE.get( url, driverClassName, username, password );
-    }
-
-
     @Override
     public boolean isMutable() {
-        return false;
+        return true;
     }
 
 
@@ -389,29 +335,5 @@ public class JdbcSchema implements Schema {
         return ImmutableSet.of();
     }
 
-
-    private static void close( Connection connection, Statement statement, ResultSet resultSet ) {
-        if ( resultSet != null ) {
-            try {
-                resultSet.close();
-            } catch ( SQLException e ) {
-                // ignore
-            }
-        }
-        if ( statement != null ) {
-            try {
-                statement.close();
-            } catch ( SQLException e ) {
-                // ignore
-            }
-        }
-        if ( connection != null ) {
-            try {
-                connection.close();
-            } catch ( SQLException e ) {
-                // ignore
-            }
-        }
-    }
 }
 

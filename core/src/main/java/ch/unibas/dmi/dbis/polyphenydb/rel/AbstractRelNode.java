@@ -50,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptQuery;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
@@ -64,7 +63,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -187,20 +185,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    public boolean isDistinct() {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return Boolean.TRUE.equals( mq.areRowsUnique( this ) );
-    }
-
-
-    @Override
-    public boolean isKey( ImmutableBitSet columns ) {
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        return Boolean.TRUE.equals( mq.areColumnsUnique( this, columns ) );
-    }
-
-
-    @Override
     public int getId() {
         return id;
     }
@@ -210,13 +194,6 @@ public abstract class AbstractRelNode implements RelNode {
     public RelNode getInput( int i ) {
         List<RelNode> inputs = getInputs();
         return inputs.get( i );
-    }
-
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public final RelOptQuery getQuery() {
-        return getCluster().getQuery();
     }
 
 
@@ -248,22 +225,6 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    public boolean isValid( boolean fail ) {
-        return isValid( Litmus.THROW, null );
-    }
-
-
-    /**
-     * @deprecated Use {@link RelMetadataQuery#collations(RelNode)}
-     */
-    @Override
-    @Deprecated // to be removed before 2.0
-    public List<RelCollation> getCollationList() {
-        return ImmutableList.of();
-    }
-
-
-    @Override
     public final RelDataType getRowType() {
         if ( rowType == null ) {
             rowType = deriveRowType();
@@ -288,12 +249,6 @@ public abstract class AbstractRelNode implements RelNode {
     @Override
     public List<RelNode> getInputs() {
         return Collections.emptyList();
-    }
-
-
-    @Override
-    public final double getRows() {
-        return estimateRowCount( RelMetadataQuery.instance() );
     }
 
 
@@ -345,12 +300,6 @@ public abstract class AbstractRelNode implements RelNode {
     @Override
     public RelNode accept( RexShuttle shuttle ) {
         return this;
-    }
-
-
-    @Override
-    public final RelOptCost computeSelfCost( RelOptPlanner planner ) {
-        return computeSelfCost( planner, RelMetadataQuery.instance() );
     }
 
 

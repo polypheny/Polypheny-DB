@@ -54,7 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlAbstractParserImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
@@ -89,7 +89,7 @@ public class SqlAdvisor {
 
     // Flags indicating precision/scale combinations
     private final SqlValidatorWithHints validator;
-    private final Config parserConfig;
+    private final SqlParserConfig parserConfig;
 
     // Cache for getPreferredCasing
     private String prevWord;
@@ -101,24 +101,12 @@ public class SqlAdvisor {
 
 
     /**
-     * Creates a SqlAdvisor with a validator instance
-     *
-     * @param validator Validator
-     * @deprecated use {@link #SqlAdvisor(SqlValidatorWithHints, SqlParser.Config)}
-     */
-    @Deprecated
-    public SqlAdvisor( SqlValidatorWithHints validator ) {
-        this( validator, SqlParser.Config.DEFAULT );
-    }
-
-
-    /**
      * Creates a SqlAdvisor with a validator instance and given parser configuration
      *
      * @param validator Validator
      * @param parserConfig parser config
      */
-    public SqlAdvisor( SqlValidatorWithHints validator, SqlParser.Config parserConfig ) {
+    public SqlAdvisor( SqlValidatorWithHints validator, SqlParserConfig parserConfig ) {
         this.validator = validator;
         this.parserConfig = parserConfig;
     }

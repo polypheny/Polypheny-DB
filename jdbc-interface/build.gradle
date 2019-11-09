@@ -55,26 +55,17 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
 
-    ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2" // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: "2.11.2"   // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: "2.11.2"
-
-    ////// APACHE COMMONS LANG
-    //compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
-
     ////// BYTE UNITS
-    compile group: "com.jakewharton.byteunits", name: "byteunits", version: "0.9.1" // License: Apache 2.0
-
+    compile group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version// License: Apache 2.0
 
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-server", version: "1.16.0-POLYPHENYDB"
+    compile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version
     
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version:"4.12"
+    testCompile group: "junit", name: "junit", version: junit_version
 }
 
 

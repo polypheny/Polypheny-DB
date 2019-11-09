@@ -105,24 +105,6 @@ public final class LogicalJoin extends Join {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone, ImmutableList<RelDataTypeField> systemFieldList ) {
-        this( cluster, traitSet, left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone, systemFieldList );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalJoin( RelOptCluster cluster, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, false, ImmutableList.of() );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalJoin( RelOptCluster cluster, RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone, ImmutableList<RelDataTypeField> systemFieldList ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone, systemFieldList );
-    }
-
-
     /**
      * Creates a LogicalJoin by parsing serialized output.
      */

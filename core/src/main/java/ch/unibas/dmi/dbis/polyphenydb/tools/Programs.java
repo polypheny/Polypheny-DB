@@ -116,7 +116,7 @@ public class Programs {
                     ProjectToCalcRule.INSTANCE,
                     CalcMergeRule.INSTANCE,
 
-                    // REVIEW jvs 9-Apr-2006: Do we still need these two?  Doesn't the combination of CalcMergeRule, FilterToCalcRule, and ProjectToCalcRule have the same effect?
+                    // REVIEW jvs: Do we still need these two?  Doesn't the combination of CalcMergeRule, FilterToCalcRule, and ProjectToCalcRule have the same effect?
                     FilterCalcMergeRule.INSTANCE,
                     ProjectCalcMergeRule.INSTANCE );
 
@@ -298,12 +298,6 @@ public class Programs {
 
     public static Program calc( RelMetadataProvider metadataProvider ) {
         return hep( CALC_RULES, true, metadataProvider );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static Program subquery( RelMetadataProvider metadataProvider ) {
-        return subQuery( metadataProvider );
     }
 
 

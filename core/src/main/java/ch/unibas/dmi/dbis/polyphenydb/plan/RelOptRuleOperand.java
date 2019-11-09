@@ -65,7 +65,7 @@ public class RelOptRuleOperand {
     private RelOptRule rule;
     private final Predicate<RelNode> predicate;
 
-    // REVIEW jvs 29-Aug-2004: some of these are Volcano-specific and should be factored out
+    // REVIEW jvs: some of these are Volcano-specific and should be factored out
     public int[] solveOrder;
     public int ordinalInParent;
     public int ordinalInRule;
@@ -77,28 +77,6 @@ public class RelOptRuleOperand {
      * Whether child operands can be matched in any order.
      */
     public final RelOptRuleOperandChildPolicy childPolicy;
-
-
-    /**
-     * Creates an operand.
-     *
-     * The {@code childOperands} argument is often populated by calling one of the following methods:
-     * {@link RelOptRule#some},
-     * {@link RelOptRule#none()},
-     * {@link RelOptRule#any},
-     * {@link RelOptRule#unordered},
-     * See {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperandChildren} for more details.
-     *
-     * @param clazz Class of relational expression to match (must not be null)
-     * @param trait Trait to match, or null to match any trait
-     * @param predicate Predicate to apply to relational expression
-     * @param children Child operands
-     * @deprecated Use {@link RelOptRule#operand(Class, RelOptRuleOperandChildren)} or one of its overloaded methods.
-     */
-    @Deprecated // to be removed before 2.0; see [POLYPHENYDB-1166]
-    protected <R extends RelNode> RelOptRuleOperand( Class<R> clazz, RelTrait trait, Predicate<? super R> predicate, RelOptRuleOperandChildren children ) {
-        this( clazz, trait, predicate, children.policy, children.operands );
-    }
 
 
     /**
@@ -133,8 +111,6 @@ public class RelOptRuleOperand {
             child.parent = this;
         }
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     /**

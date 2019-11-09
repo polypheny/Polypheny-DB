@@ -82,12 +82,6 @@ public class LogicalValues extends Values {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), rowType, tuples );
-    }
-
-
     /**
      * Creates a LogicalValues by parsing serialized output.
      */

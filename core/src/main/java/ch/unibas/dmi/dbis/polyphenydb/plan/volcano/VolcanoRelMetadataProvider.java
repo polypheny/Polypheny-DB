@@ -84,7 +84,7 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
             final RelSubset subset = (RelSubset) rel;
             final RelMetadataProvider provider = rel.getCluster().getMetadataProvider();
 
-            // REVIEW jvs 29-Mar-2006: I'm not sure what the correct precedence should be here.  Letting the current best plan take the first shot is probably the right thing to do for physical estimates
+            // REVIEW jvs: I'm not sure what the correct precedence should be here.  Letting the current best plan take the first shot is probably the right thing to do for physical estimates
             // such as row count. Dunno about others, and whether we need a way to discriminate.
 
             // First, try current best implementation.  If it knows how to answer this query, treat it as the most reliable.
@@ -101,7 +101,7 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
             // Otherwise, try rels in same logical equivalence class to see if any of them have a good answer.  We use the full logical equivalence class rather than just the subset because
             // many metadata providers only know about logical metadata.
 
-            // Equivalence classes can get tangled up in interesting ways, so avoid an infinite loop.  REVIEW: There's a chance this will cause us to fail on metadata queries which invoke other queries,
+            // Equivalence classes can get tangled up in interesting ways, so avoid an infinite loop. REVIEW: There's a chance this will cause us to fail on metadata queries which invoke other queries,
             // e.g. PercentageOriginalRows -> Selectivity.  If we implement caching at this level, we could probably kill two birds with one stone (use presence of pending cache entry to detect re-entrancy at
             // the correct granularity).
             if ( subset.set.inMetadataQuery ) {

@@ -193,17 +193,6 @@ public class SqlExplain extends SqlCall {
 
 
     /**
-     * Returns whether result is to be in XML format.
-     *
-     * @deprecated Use {@link #getFormat()}
-     */
-    @Deprecated // to be removed before 2.0
-    public boolean isXml() {
-        return getFormat() == SqlExplainFormat.XML;
-    }
-
-
-    /**
      * Returns whether result is to be in JSON format.
      */
     public boolean isJson() {

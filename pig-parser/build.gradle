@@ -62,27 +62,24 @@ targetCompatibility = 1.8
 
 dependencies {
     // Javacc
-    javacc group: 'net.java.dev.javacc', name: 'javacc', version: '4.0'
+    javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version
     
     compile project(':core')
 
-    compile group: 'org.apache.calcite', name: 'calcite-linq4j', version: '1.18.0'
+    compile group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
 
-	compile group: 'org.slf4j', name: 'slf4j-api', version:'1.7.25'
-	
-    compile group: 'com.google.guava', name: 'guava', version:'19.0'
+    compile group: 'com.google.guava', name: 'guava', version: guava_version
 
-	
+
 
     // --- Test Compile ---
     testCompile project(path: ':core', configuration: 'testClasses')
 
-    testCompile group: 'junit', name: 'junit', version:'4.12'
-	
-    testCompile group: 'net.hydromatic', name: 'scott-data-hsqldb', version:'0.1'
-    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version:'1.3'
-    testCompile group: 'org.hsqldb', name: 'hsqldb', version:'2.4.1'
-    testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version:'1.7.25'    
+    testCompile group: 'junit', name: 'junit', version: junit_version
+
+    testCompile group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version
+    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: hamcrest_core_version
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version
 }
 
 

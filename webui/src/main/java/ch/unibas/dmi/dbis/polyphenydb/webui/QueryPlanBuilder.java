@@ -26,29 +26,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortDirection;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import java.util.ArrayList;
-import java.util.List;
 import org.apache.commons.lang.math.NumberUtils;
 
 
@@ -59,10 +47,10 @@ public class QueryPlanBuilder {
     }
 
 
-    public static RelBuilder createRelBuilder( final Transaction transaction ) {
-        final SchemaPlus rootSchema = transaction.getSchema().plus();
+    private static RelBuilder createRelBuilder( final Transaction transaction ) {
+        /*final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -77,8 +65,10 @@ public class QueryPlanBuilder {
                         "",
                         0,
                         0,
-                        null ) ).build();
+                        transaction ) ).build();
         return RelBuilder.create( config );
+                         */
+        return RelBuilder.create( transaction );
     }
 
 
@@ -90,7 +80,7 @@ public class QueryPlanBuilder {
      */
     public static RelNode buildFromTree( final UIRelNode topNode, final Transaction transaction ) {
         RelBuilder b = createRelBuilder( transaction );
-        b = buildStep( b, topNode );
+        buildStep( b, topNode );
         return b.build();
     }
 

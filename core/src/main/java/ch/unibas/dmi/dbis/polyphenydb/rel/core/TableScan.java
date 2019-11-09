@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
@@ -106,13 +105,6 @@ public abstract class TableScan extends AbstractRelNode {
     @Override
     public RelOptTable getTable() {
         return table;
-    }
-
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public List<RelCollation> getCollationList() {
-        return table.getCollationList();
     }
 
 

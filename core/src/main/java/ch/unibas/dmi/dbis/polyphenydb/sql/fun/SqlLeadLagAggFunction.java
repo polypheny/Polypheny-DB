@@ -115,12 +115,6 @@ public class SqlLeadLagAggFunction extends SqlAggFunction {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public SqlLeadLagAggFunction( boolean isLead ) {
-        this( isLead ? SqlKind.LEAD : SqlKind.LAG );
-    }
-
-
     @Override
     public boolean allowsFraming() {
         return false;
