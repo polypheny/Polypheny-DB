@@ -55,7 +55,12 @@ targetCompatibility = 1.8
 dependencies {
     compile group: "com.sparkjava", name: "spark-core", version: spark_core_version
     compile group: "com.google.code.gson", name: "gson", version: gson_version
-    compile group: "com.typesafe", name: "config", version: config_version
+    
+    compile group: "com.typesafe", name: "config", version: typesafe_config_version
+
+    compile group: "org.reflections", name: "reflections", version: reflections_version
+
+    compile group: "com.google.guava", name: "guava", version: guava_version
     
 
     // --- Test Compile ---

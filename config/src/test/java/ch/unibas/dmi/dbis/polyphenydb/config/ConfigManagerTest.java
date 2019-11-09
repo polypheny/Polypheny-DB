@@ -27,7 +27,11 @@ package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
+import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -132,6 +136,146 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    private enum testEnum {FOO, BAR, FOO_BAR}
+
+
+    @Test
+    public void configEnum() {
+        Config c = new ConfigEnum( "enum", testEnum.class, testEnum.FOO );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "enum" ).addObserver( o );
+
+        Assert.assertSame( testEnum.FOO, c.getEnum() );
+
+        c.setEnum( testEnum.BAR );
+
+        Assert.assertSame( testEnum.BAR, c.getEnum() );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
+
+        c.setEnum( testEnum.FOO_BAR );
+        Assert.assertSame( testEnum.FOO_BAR, c.getEnum() );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 2, o.n );
+    }
+
+
+    @Test
+    public void configEnumList() {
+        Config c = new ConfigEnumList( "enumList", testEnum.class, ImmutableList.of( testEnum.BAR ) );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "enumList" ).addObserver( o );
+
+        Assert.assertTrue( c.getEnumList().contains( testEnum.BAR ) );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.FOO ) );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( c.removeEnum( testEnum.BAR ) );
+        Assert.assertFalse( c.removeEnum( testEnum.FOO ) );
+        c.addEnum( testEnum.FOO );
+        c.addEnum( testEnum.FOO_BAR );
+        Assert.assertFalse( c.getEnumList().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumList().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumList().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+        Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 4, o.n );
+    }
+
+
+    private static class TestClass {
+
+        int a;
+    }
+
+
+    private static class FooImplementation extends TestClass {
+
+        int b;
+    }
+
+
+    private static class BarImplementation extends TestClass {
+
+        int c;
+    }
+
+
+    private static class FooBarImplementation extends TestClass {
+
+        int d;
+    }
+
+
+    @Test
+    public void configClazz() {
+        Config c = new ConfigClazz( "clazz", TestClass.class, FooImplementation.class );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "clazz" ).addObserver( o );
+
+        Assert.assertSame( FooImplementation.class, c.getClazz() );
+
+        c.setClazz( BarImplementation.class );
+
+        Assert.assertSame( BarImplementation.class, c.getClazz() );
+        Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 1, o.n );
+
+        String json = c.toJson();
+        Gson gson = new Gson();
+        ConfigClazz z = gson.fromJson( json, ConfigClazz.class );
+        Assert.assertEquals( json, z.toJson() );
+    }
+
+
+    @Test
+    public void configClazzList() {
+        List<Class> l = new ArrayList<>();
+        l.add( FooImplementation.class );
+        l.add( BarImplementation.class );
+        Config c = new ConfigClazzList( "clazzList", TestClass.class, l );
+        cm.registerConfig( c );
+        ConfigObserver o = new ConfigObserver();
+        cm.getConfig( "clazzList" ).addObserver( o );
+
+        Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzList().contains( BarImplementation.class ) );
+        Assert.assertFalse( c.getClazzList().contains( FooBarImplementation.class ) );
+
+        Assert.assertFalse( c.removeClazz( FooBarImplementation.class ) );
+        c.addClazz( FooBarImplementation.class );
+        Assert.assertTrue( c.removeClazz( BarImplementation.class ) );
+
+        Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+        Assert.assertFalse( c.getClazzList().contains( BarImplementation.class ) );
+        Assert.assertTrue( c.getClazzList().contains( FooBarImplementation.class ) );
+
+        Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+        Assert.assertTrue( c.getClazzes().contains( FooBarImplementation.class ) );
+
+        Assert.assertTrue( o.wasNotified() );
+        Assert.assertEquals( 3, o.n );
+
+        String json = c.toJson();
+        Gson gson = new Gson();
+        ConfigClazzList z = gson.fromJson( json, ConfigClazzList.class );
+        Assert.assertEquals( json, z.toJson() );
+    }
+
+
     @Test
     public void configArray() {
         int[] array = { 1, 2, 3, 4, 5 };
@@ -209,6 +353,30 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 152463L );
         cm.registerConfig( c );
         Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 9999999L );
+
+        // Check if it works for Enum values
+        c = new ConfigEnum( "test.junit.enum", testEnum.class, testEnum.FOO_BAR );
+        Assert.assertEquals( c.getEnum(), testEnum.FOO_BAR );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getEnum(), testEnum.FOO );
+
+        // Check if it works for Enum Lists
+        c = new ConfigEnumList( "test.junit.enumList", testEnum.class, ImmutableList.of( testEnum.FOO_BAR ) );
+        Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO_BAR ) );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO, testEnum.BAR ) );
+
+        // Check if it works for Class values
+        c = new ConfigClazz( "test.junit.class", TestClass.class, FooBarImplementation.class );
+        Assert.assertEquals( c.getClazz(), FooBarImplementation.class );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getClazz(), FooImplementation.class );
+
+        // Check if it works for Class Lists
+        c = new ConfigClazzList( "test.junit.classList", TestClass.class, ImmutableList.of( FooBarImplementation.class ) );
+        Assert.assertEquals( c.getClazzList(), ImmutableList.of( FooBarImplementation.class ) );
+        cm.registerConfig( c );
+        Assert.assertEquals( c.getClazzList(), ImmutableList.of( FooImplementation.class, BarImplementation.class ) );
 
         // ----
 

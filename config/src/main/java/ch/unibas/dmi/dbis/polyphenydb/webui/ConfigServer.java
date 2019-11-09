@@ -193,7 +193,7 @@ public class ConfigServer implements ConfigListener {
         try {
             ConfigWebsocket.broadcast( gson.toJson( c ) );
         } catch ( IOException e ) {
-            log.error( "Caught exception", e );
+            log.error( "Caught exception!", e );
         }
     }
 
