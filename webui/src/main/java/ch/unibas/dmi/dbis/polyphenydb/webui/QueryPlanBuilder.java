@@ -77,7 +77,7 @@ public class QueryPlanBuilder {
      */
     public static RelNode buildFromTree( final UIRelNode topNode, final Transaction transaction ) {
         RelBuilder b = createRelBuilder( transaction );
-        b = buildStep( b, topNode );
+        buildStep( b, topNode );
         return b.build();
     }
 

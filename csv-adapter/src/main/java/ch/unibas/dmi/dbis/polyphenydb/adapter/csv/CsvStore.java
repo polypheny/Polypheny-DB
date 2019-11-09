@@ -28,7 +28,7 @@ public class CsvStore implements Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.FILTERABLE );
+        currentSchema = new CsvSchema( csvDir, Flavor.TRANSLATABLE );
     }
 
 

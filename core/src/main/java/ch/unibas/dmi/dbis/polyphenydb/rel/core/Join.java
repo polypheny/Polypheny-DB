@@ -62,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
@@ -95,7 +94,7 @@ public abstract class Join extends BiRel {
     /**
      * Creates a Join.
      *
-     * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet} {@link Bug#upgrade(String) before version 2.0},
+     * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet}
      * because {@link #getVariablesSet()} is preferred over {@link #getVariablesStopped()}. This constructor is not deprecated, for now, because maintaining overloaded constructors in multiple sub-classes would be onerous.
      *
      * @param cluster Cluster
