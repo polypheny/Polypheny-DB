@@ -40,6 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -81,7 +82,7 @@ public class PolyphenyDb {
                 Class<?> clazz = Class.forName( store.adapterClazz );
                 Constructor<?> ctor = clazz.getConstructor();
                 Store instance = (Store) ctor.newInstance();
-                StoreManager.getInstance().register( store.id, store.uniqueName, instance );
+                StoreManager.getInstance().register( store.id, store.uniqueName, instance );;
             } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
                 throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
             }
@@ -160,6 +161,10 @@ public class PolyphenyDb {
 
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
+
+        // Map which should save for all tables the corresponding statistics
+        // TODO: export functionality to separate statisticStore?
+        //new StatisticsStore();
 
         try {
             jdbcInterfaceThread.join();

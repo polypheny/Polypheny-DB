@@ -27,11 +27,13 @@ package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Information about a column of a table for the header of a table in the UI
  */
-public class DbColumn {
+public class DbColumn <T>{
 
     public String name;
 
@@ -51,6 +53,7 @@ public class DbColumn {
     //for statistics
     public Integer max;
     public Integer min;
+    public List<T> uniqueValues;
     private ArrayList<DbColumn> children = new ArrayList<>();
 
 

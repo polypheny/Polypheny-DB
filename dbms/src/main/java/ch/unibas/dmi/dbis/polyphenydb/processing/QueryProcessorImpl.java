@@ -28,7 +28,9 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
@@ -139,7 +141,7 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
     private static InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
 
     private final Transaction transaction;
-
+    private final StatisticsStore store = StatisticsStore.getInstance();
 
     QueryProcessorImpl( Transaction transaction ) {
         this.transaction = transaction;
@@ -196,6 +198,9 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         // Add default values for unset fields
         if ( parsed.getKind() == SqlKind.INSERT ) {
             SqlInsert insert = (SqlInsert) parsed;
+
+
+
             SqlNodeList oldColumnList = insert.getTargetColumnList();
             if ( oldColumnList != null ) {
                 CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
@@ -213,6 +218,21 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                         int position = getPositionInSqlNodeList( oldColumnList, column.name );
                         if ( position >= 0 ) {
                             newValues[i][pos] = call.getOperands()[position];
+
+                            if(column.type == PolySqlType.BIGINT){
+                                System.out.println("insert in in db");
+
+                                // TODO: move to confirmed insert
+                                store.update(
+                                        insert.getTargetTable().toString() + "." + column.name,
+                                        column.name,
+                                        // really hacky TODO: change later
+                                        Integer.parseInt(newValues[i][pos].toString())
+                                );
+
+
+                            }
+
                         } else {
                             // Add value
                             if ( column.defaultValue != null ) {
@@ -253,6 +273,11 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
                 for ( int i = 0; i < newValues.length; i++ ) {
                     SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
                     ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+
+                    store.store.forEach((k,v) -> {
+                        System.out.println(k + " " + v.getId() + " " + v.getMin());
+                        System.out.println(k + " " + v.getId() + " " + v.getMax());
+                    });
                 }
             }
         }
@@ -291,6 +316,8 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
         }
+
+
         stopWatch.start();
         RelNode logicalPlan;
         try {
@@ -308,7 +335,12 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         }
 
         if ( parsed.isA( SqlKind.DML ) ) {
-            return processQuery( logicalPlan, planner, parsed.getKind() );
+            PolyphenyDbSignature processed = processQuery(logicalPlan, planner, parsed.getKind());
+            if(parsed.getKind() == SqlKind.INSERT){
+                System.out.println("is insert");
+                System.out.println();
+            }
+            return processed;
         } else {
             return processQuery( logicalPlan );
         }

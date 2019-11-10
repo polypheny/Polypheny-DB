@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import java.util.HashMap;
 
@@ -9,13 +9,14 @@ public class StatisticsStore {
 
     private static StatisticsStore instance = null;
 
-    private HashMap<String, StatisticColumn> store;
+    // TODO private again
+    public HashMap<String, StatisticColumn> store;
 
     private StatisticsStore(){
         this.store = new HashMap<>();
     }
 
-    public static StatisticsStore StatisticsStore() {
+    public static StatisticsStore getInstance() {
         // To ensure only one instance is created
         if (instance == null) {
             instance = new StatisticsStore();
@@ -24,6 +25,14 @@ public class StatisticsStore {
     }
 
     public void update(String table, String column, int val){
+        if(!this.store.containsKey(table)){
+            this.store.put(table, new StatisticColumn(column, val));
+        }else {
+            this.store.get(table).put(val);
+        }
+    }
+
+    public void update(String table, String column, String val){
         if(!this.store.containsKey(table)){
             this.store.put(table, new StatisticColumn(column, val));
         }else {

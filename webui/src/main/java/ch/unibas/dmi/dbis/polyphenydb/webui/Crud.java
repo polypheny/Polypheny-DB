@@ -67,6 +67,8 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticColumn;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.*;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
@@ -81,15 +83,8 @@ import java.math.BigDecimal;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -111,6 +106,7 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
+    private final StatisticsStore store = StatisticsStore.getInstance();
 
 
     /**
@@ -605,13 +601,19 @@ public class Crud implements InformationObserver {
                     ArrayList<DbColumn> views = new ArrayList<>();
                     for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
                         DbColumn table = new DbColumn( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
-                        table.min = 3;
-                        table.max = 33;
 
                         if ( request.depth > 2 ) {
                             for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                                 DbColumn column = new DbColumn( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
-                                column.min = 3;
+                                if(store.store.containsKey(column.name)){
+                                    StatisticColumn col = store.store.get(column.name);
+                                    // TODO: not safe yet
+                                    if(col.getMax() != null){
+                                        column.min = (int) col.getMin();
+                                        column.max = (int) col.getMax();
+                                    }
+                                    column.uniqueValues = Arrays.asList(col.getUniqueValues().keySet());
+                                }
                                 table.addChild( column );
                             }
                         }
@@ -622,7 +624,7 @@ public class Crud implements InformationObserver {
                         }
                     }
                     DbColumn tree = new DbColumn( combinedSchema.getSchema().name + ".tables" ).addChildren( tables );
-                    tree.max = 333;
+
                     schemaTree.addChild( tree );
                     if ( request.views ) {
                         schemaTree.addChild( new DbColumn( combinedSchema.getSchema().name + ".views" ).addChildren( views ) );
@@ -1545,6 +1547,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature;
         try {
             signature = transaction.getQueryProcessor().processSqlQuery( sqlSelect, parserConfig );
+
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }
