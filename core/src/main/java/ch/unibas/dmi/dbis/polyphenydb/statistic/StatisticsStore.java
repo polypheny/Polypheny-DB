@@ -39,4 +39,8 @@ public class StatisticsStore {
             this.store.get(table).put(val);
         }
     }
+
+    public HashMap<String, StatisticColumn> getStore(){
+        return this.store;
+    }
 }
