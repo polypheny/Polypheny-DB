@@ -132,7 +132,11 @@ public class Result {
 
 
     public Result setInfo( Debug info ) {
-        this.info = info;
+        if( this.info == null ){
+            this.info = info;
+        } else {
+            this.info.update( info );
+        }
         return this;
     }
 

@@ -45,4 +45,14 @@ public class Debug {
         this.generatedQuery = query;
         return this;
     }
+
+    public Debug update ( final Debug debug ) {
+        if( debug.affectedRows != 0 ){
+            this.affectedRows = debug.affectedRows;
+        }
+        if( debug.generatedQuery != null ){
+            this.generatedQuery = debug.generatedQuery;
+        }
+        return this;
+    }
 }
