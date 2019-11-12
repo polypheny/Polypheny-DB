@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
@@ -135,13 +136,23 @@ public class QueryPlanBuilder {
                     case "COUNT":
                         aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
                         break;
-                    /*case "AVG":
-                        aggregation = builder.avg( false, node.as, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
-                        break;*/
+                    case "AVG":
+                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        break;
+                    case "MAX":
+                        aggregation = builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    case "MIN":
+                        aggregation = builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
                     default:
                         throw new IllegalArgumentException( "unknown aggregate type" );
                 }
-                return builder.aggregate( builder.groupKey( node.groupBy ), aggregation );
+                if( node.groupBy == null || node.groupBy.equals( "" ) ) {
+                    return builder.aggregate( builder.groupKey(), aggregation );
+                } else {
+                    return builder.aggregate( builder.groupKey( node.groupBy ), aggregation );
+                }
             case "Sort":
                 ArrayList<RexNode> columns = new ArrayList<>();
                 for( SortState s: node.sortColumns ){
@@ -157,6 +168,8 @@ public class QueryPlanBuilder {
                 return builder.union( node.all, node.inputCount );
             case "Minus":
                 return builder.minus( node.all );
+            case "Intersect":
+                return builder.intersect( node.all, node.inputCount );
             default:
                 throw new IllegalArgumentException( "PlanBuilder node of type '" + node.type + "' is not supported yet." );
         }
