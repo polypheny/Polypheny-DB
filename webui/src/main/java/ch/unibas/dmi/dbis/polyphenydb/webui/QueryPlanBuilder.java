@@ -29,7 +29,6 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
@@ -129,15 +128,15 @@ public class QueryPlanBuilder {
             case "Aggregate":
                 RelBuilder.AggCall aggregation;
                 String[] aggFields = node.field.split( "\\." );
-                switch ( node.aggregation ){
+                switch ( node.aggregation ) {
                     case "SUM":
-                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
                         break;
                     case "COUNT":
-                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
                         break;
                     case "AVG":
-                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ));
+                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
                         break;
                     case "MAX":
                         aggregation = builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
@@ -148,19 +147,19 @@ public class QueryPlanBuilder {
                     default:
                         throw new IllegalArgumentException( "unknown aggregate type" );
                 }
-                if( node.groupBy == null || node.groupBy.equals( "" ) ) {
+                if ( node.groupBy == null || node.groupBy.equals( "" ) ) {
                     return builder.aggregate( builder.groupKey(), aggregation );
                 } else {
                     return builder.aggregate( builder.groupKey( node.groupBy ), aggregation );
                 }
             case "Sort":
                 ArrayList<RexNode> columns = new ArrayList<>();
-                for( SortState s: node.sortColumns ){
+                for ( SortState s : node.sortColumns ) {
                     String[] sortField = s.column.split( "\\." );
-                    if( s.direction == SortDirection.DESC ){
-                        columns.add( builder.desc(builder.field( node.inputCount, sortField[0], sortField[1] )));
+                    if ( s.direction == SortDirection.DESC ) {
+                        columns.add( builder.desc( builder.field( node.inputCount, sortField[0], sortField[1] ) ) );
                     } else {
-                        columns.add( builder.field( node.inputCount, sortField[0], sortField[1] ));
+                        columns.add( builder.field( node.inputCount, sortField[0], sortField[1] ) );
                     }
                 }
                 return builder.sort( columns );
@@ -176,10 +175,12 @@ public class QueryPlanBuilder {
     }
 
 
-    private static ArrayList<RexNode> getFields ( String[] fields, int inputCount, RelBuilder builder ) {
+    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, RelBuilder builder ) {
         ArrayList<RexNode> nodes = new ArrayList<>();
         for ( String f : fields ) {
-            if( f.equals( "" ) ) continue;
+            if ( f.equals( "" ) ) {
+                continue;
+            }
             String[] field = f.split( "\\." );
             nodes.add( builder.field( inputCount, field[0], field[1] ) );
         }

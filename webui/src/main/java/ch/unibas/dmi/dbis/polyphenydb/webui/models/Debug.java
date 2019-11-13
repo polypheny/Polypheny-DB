@@ -46,11 +46,12 @@ public class Debug {
         return this;
     }
 
-    public Debug update ( final Debug debug ) {
-        if( debug.affectedRows != 0 ){
+
+    public Debug update( final Debug debug ) {
+        if ( debug.affectedRows != 0 ) {
             this.affectedRows = debug.affectedRows;
         }
-        if( debug.generatedQuery != null ){
+        if ( debug.generatedQuery != null ) {
             this.generatedQuery = debug.generatedQuery;
         }
         return this;

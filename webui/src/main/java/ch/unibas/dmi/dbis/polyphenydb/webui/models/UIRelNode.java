@@ -30,7 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 
 
 /**
- * Model for a RelNode coming from the Relalg-Builder in the UI
+ * Model for a RelNode coming from the RelAlg-Builder in the UI
  */
 public class UIRelNode {
 

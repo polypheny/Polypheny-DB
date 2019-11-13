@@ -373,7 +373,7 @@ public class Crud implements InformationObserver {
                         colBuilder.append( String.format( " DEFAULT '%s'", col.defaultValue ) );
                         break;
                     default:
-                        // varchar, timestamptz, bool
+                        // varchar, timestamp, boolean
                         colBuilder.append( " DEFAULT " ).append( col.defaultValue );
                 }
             }
@@ -627,7 +627,7 @@ public class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Entry<String, String> entry : request.data.entrySet() ) {
-            String condition = "";
+            String condition;
             if ( entry.getValue() == null ) {
                 condition = String.format( "\"%s\" IS NULL", entry.getKey() );
             } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
@@ -990,9 +990,7 @@ public class Crud implements InformationObserver {
 
             DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
-            resultList.forEach( ( c ) -> {
-                data.add( c.asRow() );
-            } );
+            resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
             transaction.commit();
