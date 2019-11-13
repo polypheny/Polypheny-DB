@@ -44,6 +44,13 @@ public class SortState {
     public boolean sorting;
 
 
+    /**
+     * Column to be sorted
+     * needed for the PlanBuilder
+     */
+    public String column;
+
+
     public SortState() {
         this.direction = SortDirection.DESC;
         this.sorting = false;

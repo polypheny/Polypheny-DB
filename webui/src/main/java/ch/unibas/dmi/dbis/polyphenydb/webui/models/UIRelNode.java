@@ -30,7 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 
 
 /**
- * Model for a RelNode coming from the Relalg-Builder in the UI
+ * Model for a RelNode coming from the RelAlg-Builder in the UI
  */
 public class UIRelNode {
 
@@ -51,7 +51,7 @@ public class UIRelNode {
     public int inputCount;
 
     //tableScan
-    public String table;
+    public String tableName;
 
     //join
     public JoinRelType join;
@@ -61,9 +61,22 @@ public class UIRelNode {
     public String col2;
 
     //filter
+    //(String operator)
     public String field;
     public String filter;
 
     //project
-    public String fields;
+    public String[] fields;
+
+    //aggregate
+    public String groupBy;
+    public String aggregation;
+    public String alias;
+    //(String field)
+
+    //sort
+    public SortState[] sortColumns;
+
+    //union, minus
+    public boolean all;
 }

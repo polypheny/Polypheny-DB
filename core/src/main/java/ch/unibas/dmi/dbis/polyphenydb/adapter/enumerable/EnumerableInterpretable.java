@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
@@ -131,11 +132,11 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
             queryAnalyzer.addPage( informationPageGeneratedCode );
             queryAnalyzer.addGroup( informationGroupGeneratedCode );
-            InformationHtml informationHtml = new InformationHtml(
+            InformationCode informationCode = new InformationCode(
                     "GeneratedCode",
                     informationGroupGeneratedCode.getId(),
                     s );
-            queryAnalyzer.registerInformation( informationHtml );
+            queryAnalyzer.registerInformation( informationCode );
         }
 
         Hook.JAVA_PLAN.run( s );
