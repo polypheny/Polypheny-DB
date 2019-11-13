@@ -1409,9 +1409,6 @@ public class Crud implements InformationObserver {
         // create schema
         if ( schema.isCreate() && !schema.isDrop() ) {
             StringBuilder query = new StringBuilder( "CREATE SCHEMA " );
-            if ( schema.isIfExists() ) {
-                query.append( "IF NOT EXISTS " );
-            }
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
                 query.append( " AUTHORIZATION " ).append( schema.getAuthorization() );
@@ -1433,9 +1430,6 @@ public class Crud implements InformationObserver {
         // drop schema
         else if ( !schema.isCreate() && schema.isDrop() ) {
             StringBuilder query = new StringBuilder( "DROP SCHEMA " );
-            if ( schema.isIfExists() ) {
-                query.append( "IF EXISTS " );
-            }
             query.append( "\"" ).append( schema.getName() ).append( "\"" );
             if ( schema.isCascade() ) {
                 query.append( " CASCADE" );

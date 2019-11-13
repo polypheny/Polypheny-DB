@@ -40,12 +40,10 @@ public class Schema {
 
     // fields for creation
     private boolean create;
-    private boolean ifNotExists;
     private String authorization;
 
     // fields for deletion
     private boolean drop;
-    private boolean ifExists;
     private boolean cascade;
 
 
