@@ -44,17 +44,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import spark.Spark;
 
 
 /**
  * HTTP server for serving the Polypheny-DB UI
  */
+@Slf4j
 public class HttpServer extends QueryInterface {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( HttpServer.class );
     private Gson gson = new Gson();
 
     private final int port;
@@ -90,7 +89,7 @@ public class HttpServer extends QueryInterface {
 
         crudRoutes( new Crud( transactionManager, "pa", "APP" ) );
 
-        LOGGER.info( "HTTP Server started." );
+        log.info( "HTTP Server started." );
     }
 
 
@@ -175,7 +174,7 @@ public class HttpServer extends QueryInterface {
                 }
             }
         } catch ( IOException e ) {
-            LOGGER.error( e.getMessage() );
+            log.error( e.getMessage() );
         }
 
         return stringBuilder.toString();

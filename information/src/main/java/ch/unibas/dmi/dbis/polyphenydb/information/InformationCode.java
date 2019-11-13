@@ -23,19 +23,47 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 /**
- * Ways how a column can be sorted
+ * An Information object containing code that will be rendered in an ace editor in the UI
  */
-public enum SortDirection {
+public class InformationCode extends Information {
+
+    private String code;
+    private String language;
+
     /**
-     * ascending
+     * Constructor
+     * @param code Code that should be rendered in an ace editor in the UI
      */
-    ASC,
+    public InformationCode( final String id, final String group, final String code ) {
+        super( id, group );
+        this.code = code;
+        this.language = "java";
+    }
+
+
     /**
-     * descending
+     * Constructor
+     * @param code Code that should be rendered in an ace editor in the UI
+     * @param language Choose a language for the ace syntax highlighting
      */
-    DESC
+    public InformationCode( final String id, final String group, final String code, final String language ) {
+        super( id, group );
+        this.code = code;
+        this.language = language;
+    }
+
+
+    /**
+     * Update the content of an InformationCode object.
+     *
+     * @param code The code to set for this element
+     */
+    public void updateCode( final String code ) {
+        this.code = code;
+        notifyManager();
+    }
 }

@@ -29,31 +29,29 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @org.eclipse.jetty.websocket.api.annotations.WebSocket
+@Slf4j
 public class WebSocket {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( WebSocket.class );
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 
 
     @OnWebSocketConnect
     public void connected( final Session session ) {
-        LOGGER.debug( "UI connected to websocket" );
+        log.debug( "UI connected to websocket" );
         sessions.add( session );
     }
 
 
     @OnWebSocketClose
     public void closed( final Session session, final int statusCode, final String reason ) {
-        LOGGER.debug( "UI disconnected from websocket" );
+        log.debug( "UI disconnected from websocket" );
         sessions.remove( session );
     }
 

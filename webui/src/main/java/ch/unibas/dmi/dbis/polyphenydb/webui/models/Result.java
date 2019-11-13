@@ -132,7 +132,11 @@ public class Result {
 
 
     public Result setInfo( Debug info ) {
-        this.info = info;
+        if ( this.info == null ) {
+            this.info = info;
+        } else {
+            this.info.update( info );
+        }
         return this;
     }
 
@@ -150,7 +154,7 @@ public class Result {
 
 
     public Result setTables( ArrayList<String> tables ) {
-        this.tables = tables.toArray( new String[tables.size()] );
+        this.tables = tables.toArray( new String[0] );
         return this;
     }
 
