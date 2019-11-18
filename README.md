@@ -18,7 +18,7 @@ _Polypheny-DB_ builds upon the great work of several other projects:
 
 * [Apache Avatica](https://calcite.apache.org/avatica/): A framework for building database drivers
 * [Apache Calcite](https://calcite.apache.org/): A framework for building databases
-* [HSQLDB](http://hsqldb.org/): Relational database written in Java
+* [HSQLDB](http://hsqldb.org/): A relational database written in Java
 * [JavaCC](https://javacc.org/): A parser generator
 * [Java Spark](http://sparkjava.com/): A framework for building web services
 * [Project Lombok](https://projectlombok.org/): A library which provides annotations for tedious tasks
