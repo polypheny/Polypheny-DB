@@ -34,6 +34,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
@@ -164,7 +165,8 @@ public class PolyphenyDb {
 
         // Map which should save for all tables the corresponding statistics
         // TODO: export functionality to separate statisticStore?
-        //new StatisticsStore();
+        StatisticsStore store = StatisticsStore.getInstance();
+        store.setTransactionManager(transactionManager);
 
         try {
             jdbcInterfaceThread.join();
