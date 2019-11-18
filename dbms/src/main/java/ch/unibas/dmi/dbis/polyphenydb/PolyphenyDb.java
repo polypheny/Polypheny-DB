@@ -168,8 +168,13 @@ public class PolyphenyDb {
             GLOBAL_LOGGER.warn( "Interrupted on join()", e );
         }
 
+        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
+        GLOBAL_LOGGER.warn( "                Polypheny-DB successfully started and ready to process your queries!" );
+        GLOBAL_LOGGER.warn( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
+
         try {
-            GLOBAL_LOGGER.info( "Waiting for the Shutdown-Hook to finish ..." );
+            GLOBAL_LOGGER.debug( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
             if ( sh.hasFinished() == false ) {
                 GLOBAL_LOGGER.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
