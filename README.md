@@ -23,11 +23,13 @@ _Polypheny-DB_ builds upon the great work of several other projects:
 * [Java Spark](http://sparkjava.com/): A framework for building web services
 * [Project Lombok](https://projectlombok.org/): A library which provides annotations for tedious tasks
 
+Except for the first two, those projects are used "as is" and integrated as a library. _Apache Avatica_ we [forked](https://github.com/polypheny/Avatica) and made some Polypheny-DB specific adjustments. From _Apache Calcite_ we use parts of the code as foundation for Polypheny-DB.
+
 
 ## Contributing ##
 We highly welcome your contributions to Polypheny-DB. If you would like to contribute, please fork the repository and send us a pull request with your changes. Please consult our [Admin Repository](https://github.com/polypheny/Admin) for guidelines and additional information.
 
-Please note we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project. 
+Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project. 
 
 
 ## Acknowledgements
