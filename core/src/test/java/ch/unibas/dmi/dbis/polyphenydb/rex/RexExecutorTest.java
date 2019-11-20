@@ -54,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
@@ -82,6 +83,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import org.apache.calcite.avatica.util.ByteString;
@@ -390,6 +392,18 @@ public class RexExecutorTest {
                 Assert.fail( "Wrong DataContext access" );
                 return null;
             }
+        }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public Transaction getTransaction() {
+            return null;
         }
     }
 }

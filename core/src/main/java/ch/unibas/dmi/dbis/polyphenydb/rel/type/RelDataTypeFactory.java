@@ -60,11 +60,12 @@ import org.apache.calcite.avatica.util.TimeUnit;
 
 
 /**
- * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types. The factory also provides methods for return type inference for arithmetic in cases where
- * SQL 2003 is implementation defined or impractical.
+ * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types.
+ * The factory also provides methods for return type inference for arithmetic in cases where SQL 2003 is implementation defined or impractical.
  *
  * This interface is an example of the {@link Glossary#ABSTRACT_FACTORY_PATTERN abstract factory pattern}.
- * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
+ * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object.
+ * This reduces memory consumption and comparison cost.
  */
 public interface RelDataTypeFactory {
 
@@ -105,16 +106,6 @@ public interface RelDataTypeFactory {
      * Creates a type that represents a structured collection of fields. Shorthand for <code>createStructType(StructKind.FULLY_QUALIFIED, typeList, fieldNameList)</code>.
      */
     RelDataType createStructType( List<RelDataType> typeList, List<String> fieldNameList );
-
-    /**
-     * Creates a type that represents a structured collection of fields, obtaining the field information via a callback.
-     *
-     * @param fieldInfo callback for field information
-     * @return canonical struct type descriptor
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelDataType createStructType( FieldInfo fieldInfo );
 
     /**
      * Creates a type that represents a structured collection of fieldList, obtaining the field information from a list of (name, type) pairs.

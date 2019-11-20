@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -45,8 +46,10 @@ import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import com.google.common.collect.ImmutableCollection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -92,9 +95,15 @@ public class TransactionImpl implements Transaction {
     @Override
     public QueryProcessor getQueryProcessor() {
         if ( queryProcessor == null ) {
-            queryProcessor = new QueryProcessorImpl( this );
+            queryProcessor = new VolcanoQueryProcessor( this );
         }
         return queryProcessor;
+    }
+
+
+    @Override
+    public SqlProcessor getSqlProcessor( SqlParserConfig parserConfig ) {
+        return new SqlProcessorImpl( this, parserConfig );
     }
 
 
@@ -185,7 +194,7 @@ public class TransactionImpl implements Transaction {
         if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
             return new SlimDataContext();
         }
-        return new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory() );
+        return new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
     }
 
 
@@ -198,6 +207,21 @@ public class TransactionImpl implements Transaction {
     @Override
     public ContextImpl getPrepareContext() {
         return new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+    }
+
+
+    @Override
+    public PolyphenyDbCatalogReader getCatalogReader() {
+        return new PolyphenyDbCatalogReader(
+                PolyphenyDbSchema.from( getSchema().plus() ),
+                PolyphenyDbSchema.from( getSchema().plus() ).path( null ),
+                getTypeFactory() );
+    }
+
+
+    @Override
+    public void resetQueryProcessor() {
+        queryProcessor = null;
     }
 
 }

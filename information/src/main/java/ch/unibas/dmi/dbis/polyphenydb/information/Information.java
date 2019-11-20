@@ -148,10 +148,8 @@ public abstract class Information {
     /**
      * Notify the information manager about changes of this information object.
      */
-    protected void notifyManager() {
-        if (informationManager == null) {
-            log.info( "Requested notification of the information manager but no manager set." );
-        } else {
+    void notifyManager() {
+        if (informationManager != null) {
             informationManager.notify( this );
         }
     }

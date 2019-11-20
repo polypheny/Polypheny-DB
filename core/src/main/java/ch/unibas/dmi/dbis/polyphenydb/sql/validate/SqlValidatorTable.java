@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAccessType;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerContext;
 import java.util.List;
 
 
@@ -75,13 +74,6 @@ public interface SqlValidatorTable extends Wrapper {
     SqlAccessType getAllowedAccess();
 
     boolean supportsModality( SqlModality modality );
-
-    /**
-     * Returns whether the ordinal column has a default value.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean columnHasDefaultValue( RelDataType rowType, int ordinal, InitializerContext initializerContext );
 
 }
 

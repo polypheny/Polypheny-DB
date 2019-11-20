@@ -132,12 +132,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
     @Override
-    public boolean isCaseSensitive() {
-        return nameMatcher.isCaseSensitive();
-    }
-
-
-    @Override
     public SqlNameMatcher nameMatcher() {
         return nameMatcher;
     }

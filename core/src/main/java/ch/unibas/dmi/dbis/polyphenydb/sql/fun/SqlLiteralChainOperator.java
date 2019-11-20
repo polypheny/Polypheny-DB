@@ -129,7 +129,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
 
 
     // Result type is the same as all the args, but its size is the total size.
-    // REVIEW mb 8/8/04: Possibly this can be achieved by combining the strategy useFirstArgType with a new transformer.
+    // REVIEW mb: Possibly this can be achieved by combining the strategy useFirstArgType with a new transformer.
     @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.

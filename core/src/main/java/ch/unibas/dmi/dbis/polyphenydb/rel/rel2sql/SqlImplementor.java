@@ -381,16 +381,11 @@ public abstract class SqlImplementor {
         final String alias2 = SqlValidatorUtil.getAlias( node, -1 );
         final String alias3 = alias2 != null ? alias2 : "t";
         final String alias4 = SqlValidatorUtil.uniquify( alias3, aliasSet, SqlValidatorUtil.EXPR_SUGGESTER );
-        if ( aliases != null
-                && !aliases.isEmpty()
-                && (!dialect.hasImplicitTableAlias()
-                || aliases.size() > 1) ) {
+        if ( aliases != null && !aliases.isEmpty() && (!dialect.hasImplicitTableAlias() || aliases.size() > 1) ) {
             return new Result( node, clauses, alias4, rel.getRowType(), aliases );
         }
         final String alias5;
-        if ( alias2 == null
-                || !alias2.equals( alias4 )
-                || !dialect.hasImplicitTableAlias() ) {
+        if ( alias2 == null || !alias2.equals( alias4 ) || !dialect.hasImplicitTableAlias() ) {
             alias5 = alias4;
         } else {
             alias5 = null;
@@ -812,7 +807,7 @@ public abstract class SqlImplementor {
                 operandList.add( field( arg ) );
             }
             final SqlLiteral qualifier = aggCall.isDistinct() ? SqlSelectKeyword.DISTINCT.symbol( POS ) : null;
-            final SqlNode[] operands = operandList.toArray( new SqlNode[0] );
+            final SqlNode[] operands = operandList.toArray( SqlNode.EMPTY_ARRAY );
             List<SqlNode> orderByList = Expressions.list();
             for ( RelFieldCollation field : aggCall.collation.getFieldCollations() ) {
                 addOrderItem( orderByList, field );

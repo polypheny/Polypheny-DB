@@ -88,12 +88,6 @@ public final class LogicalAggregate extends Aggregate {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalAggregate( RelOptCluster cluster, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), child, indicator, groupSet, groupSets, aggCalls );
-    }
-
-
     /**
      * Creates a LogicalAggregate by parsing serialized output.
      */

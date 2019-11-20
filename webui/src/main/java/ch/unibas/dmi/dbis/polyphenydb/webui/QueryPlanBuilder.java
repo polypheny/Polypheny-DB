@@ -26,26 +26,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortDirection;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import java.util.ArrayList;
-import java.util.List;
 import org.apache.commons.lang.math.NumberUtils;
 
 
@@ -56,10 +47,10 @@ public class QueryPlanBuilder {
     }
 
 
-    public static RelBuilder createRelBuilder( final Transaction transaction ) {
-        final SchemaPlus rootSchema = transaction.getSchema().plus();
+    private static RelBuilder createRelBuilder( final Transaction transaction ) {
+        /*final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -74,8 +65,10 @@ public class QueryPlanBuilder {
                         "",
                         0,
                         0,
-                        null ) ).build();
+                        transaction ) ).build();
         return RelBuilder.create( config );
+                         */
+        return RelBuilder.create( transaction );
     }
 
 
@@ -87,7 +80,7 @@ public class QueryPlanBuilder {
      */
     public static RelNode buildFromTree( final UIRelNode topNode, final Transaction transaction ) {
         RelBuilder b = createRelBuilder( transaction );
-        b = buildStep( b, topNode );
+        buildStep( b, topNode );
         return b.build();
     }
 
@@ -112,7 +105,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "TableScan":
-                return builder.scan( node.table ).as( node.table );
+                return builder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
@@ -129,17 +122,69 @@ public class QueryPlanBuilder {
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ) );
                 }
             case "Project":
-                String[] cols = node.fields.split( "[\\s]*,[\\s]*" );
-                ArrayList<RexNode> fields = new ArrayList<>();
-                for ( String c : cols ) {
-                    String[] projectField = c.split( "\\." );
-                    fields.add( builder.field( node.inputCount, projectField[0], projectField[1] ) );
-                }
+                ArrayList<RexNode> fields = getFields( node.fields, node.inputCount, builder );
                 builder.project( fields );
                 return builder;
+            case "Aggregate":
+                RelBuilder.AggCall aggregation;
+                String[] aggFields = node.field.split( "\\." );
+                switch ( node.aggregation ) {
+                    case "SUM":
+                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    case "COUNT":
+                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    case "AVG":
+                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    case "MAX":
+                        aggregation = builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    case "MIN":
+                        aggregation = builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                        break;
+                    default:
+                        throw new IllegalArgumentException( "unknown aggregate type" );
+                }
+                if ( node.groupBy == null || node.groupBy.equals( "" ) ) {
+                    return builder.aggregate( builder.groupKey(), aggregation );
+                } else {
+                    return builder.aggregate( builder.groupKey( node.groupBy ), aggregation );
+                }
+            case "Sort":
+                ArrayList<RexNode> columns = new ArrayList<>();
+                for ( SortState s : node.sortColumns ) {
+                    String[] sortField = s.column.split( "\\." );
+                    if ( s.direction == SortDirection.DESC ) {
+                        columns.add( builder.desc( builder.field( node.inputCount, sortField[0], sortField[1] ) ) );
+                    } else {
+                        columns.add( builder.field( node.inputCount, sortField[0], sortField[1] ) );
+                    }
+                }
+                return builder.sort( columns );
+            case "Union":
+                return builder.union( node.all, node.inputCount );
+            case "Minus":
+                return builder.minus( node.all );
+            case "Intersect":
+                return builder.intersect( node.all, node.inputCount );
             default:
-                throw new IllegalArgumentException( "Node of type " + node.type + " is not supported yet." );
+                throw new IllegalArgumentException( "PlanBuilder node of type '" + node.type + "' is not supported yet." );
         }
+    }
+
+
+    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, RelBuilder builder ) {
+        ArrayList<RexNode> nodes = new ArrayList<>();
+        for ( String f : fields ) {
+            if ( f.equals( "" ) ) {
+                continue;
+            }
+            String[] field = f.split( "\\." );
+            nodes.add( builder.field( inputCount, field[0], field[1] ) );
+        }
+        return nodes;
     }
 
 

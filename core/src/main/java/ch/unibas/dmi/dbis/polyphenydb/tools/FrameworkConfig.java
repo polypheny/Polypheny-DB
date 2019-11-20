@@ -53,7 +53,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlRexConvertletTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import com.google.common.collect.ImmutableList;
@@ -69,7 +69,7 @@ public interface FrameworkConfig {
     /**
      * The configuration of SQL parser.
      */
-    Config getParserConfig();
+    SqlParserConfig getParserConfig();
 
     /**
      * The configuration of {@link SqlToRelConverter}.

@@ -86,6 +86,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -99,6 +100,7 @@ import org.apache.calcite.linq4j.TransformedEnumerator;
  *
  * Contains the context for interpreting relational expressions. In particular it holds working state while the data flow graph is being assembled.
  */
+@Slf4j
 public class Interpreter extends AbstractEnumerable<Object[]> implements AutoCloseable {
 
     private final Map<RelNode, NodeInfo> nodes;
@@ -163,7 +165,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             try {
                 nodeInfo.node.run();
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
         }
     }

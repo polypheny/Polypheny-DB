@@ -52,7 +52,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 
 
@@ -72,12 +71,6 @@ public class JoinPushExpressionsRule extends RelOptRule {
      */
     public JoinPushExpressionsRule( Class<? extends Join> clazz, RelBuilderFactory relBuilderFactory ) {
         super( operand( clazz, any() ), relBuilderFactory, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public JoinPushExpressionsRule( Class<? extends Join> clazz, RelFactories.ProjectFactory projectFactory ) {
-        this( clazz, RelBuilder.proto( projectFactory ) );
     }
 
 

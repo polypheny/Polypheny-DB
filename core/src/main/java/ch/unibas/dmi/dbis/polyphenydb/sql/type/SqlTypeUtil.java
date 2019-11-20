@@ -615,89 +615,6 @@ public abstract class SqlTypeUtil {
     }
 
 
-    /**
-     * @return true if type has a representation as a Java primitive (ignoring nullability)
-     */
-    @Deprecated // to be removed before 2.0
-    public static boolean isJavaPrimitive( RelDataType type ) {
-        SqlTypeName typeName = type.getSqlTypeName();
-        if ( typeName == null ) {
-            return false;
-        }
-
-        switch ( typeName ) {
-            case BOOLEAN:
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-            case SYMBOL:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-
-    /**
-     * @return class name of the wrapper for the primitive data type.
-     */
-    @Deprecated // to be removed before 2.0
-    public static String getPrimitiveWrapperJavaClassName( RelDataType type ) {
-        if ( type == null ) {
-            return null;
-        }
-        SqlTypeName typeName = type.getSqlTypeName();
-        if ( typeName == null ) {
-            return null;
-        }
-
-        switch ( typeName ) {
-            case BOOLEAN:
-                return "Boolean";
-            default:
-                return getNumericJavaClassName( type );
-        }
-    }
-
-
-    /**
-     * @return class name of the numeric data type.
-     */
-    @Deprecated // to be removed before 2.0
-    public static String getNumericJavaClassName( RelDataType type ) {
-        if ( type == null ) {
-            return null;
-        }
-        SqlTypeName typeName = type.getSqlTypeName();
-        if ( typeName == null ) {
-            return null;
-        }
-
-        switch ( typeName ) {
-            case TINYINT:
-                return "Byte";
-            case SMALLINT:
-                return "Short";
-            case INTEGER:
-                return "Integer";
-            case BIGINT:
-                return "Long";
-            case REAL:
-                return "Float";
-            case DECIMAL:
-            case FLOAT:
-            case DOUBLE:
-                return "Double";
-            default:
-                return null;
-        }
-    }
-
-
     private static boolean isAny( RelDataType t ) {
         return t.getFamily() == SqlTypeFamily.ANY;
     }
@@ -715,9 +632,9 @@ public abstract class SqlTypeUtil {
             return true;
         }
 
-        // TODO jvs 2-Jan-2005:  handle all the other cases like rows, collections, UDT's
+        // TODO jvs: handle all the other cases like rows, collections, UDT's
         if ( fromType.getSqlTypeName() == SqlTypeName.NULL ) {
-            // REVIEW jvs 4-Dec-2008: We allow assignment from NULL to any type, including NOT NULL types, since in the case where no rows are actually processed, the assignment is legal (FRG-365).
+            // REVIEW jvs: We allow assignment from NULL to any type, including NOT NULL types, since in the case where no rows are actually processed, the assignment is legal (FRG-365).
             // However, it would be better if the validator's NULL type inference guaranteed that we had already assigned a real (nullable) type to every NULL literal.
             return true;
         }
@@ -763,7 +680,7 @@ public abstract class SqlTypeUtil {
     /**
      * Compares two types and returns true if fromType can be cast to toType.
      *
-     * REVIEW jvs 17-Dec-2004: the coerce param below shouldn't really be necessary. We're using it as a hack because {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
+     * REVIEW jvs: The coerce param below shouldn't really be necessary. We're using it as a hack because {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
      * Once it is, this param (and the non-coerce rules of {@link SqlTypeAssignmentRules}) should go away.
      *
      * @param toType target of assignment
@@ -839,7 +756,7 @@ public abstract class SqlTypeUtil {
             return false;
         }
 
-        // REVIEW jvs 9-Feb-2009: we don't impose SQL rules for character sets here; instead, we do that in SqlCastFunction.  The reason is that this method is called from at least one place (MedJdbcNameDirectory)
+        // REVIEW jvs: We don't impose SQL rules for character sets here; instead, we do that in SqlCastFunction. The reason is that this method is called from at least one place (MedJdbcNameDirectory)
         // where internally a cast across character repertoires is OK.  Should probably clean that up.
 
         SqlTypeAssignmentRules rules = SqlTypeAssignmentRules.instance( coerce );
@@ -878,7 +795,7 @@ public abstract class SqlTypeUtil {
 
 
     public static boolean needsNullIndicator( RelDataType recordType ) {
-        // NOTE jvs 9-Mar-2005: It would be more storage-efficient to say that no null indicator is required for structured type columns declared as NOT NULL.  However, the uniformity of always having a null
+        // NOTE jvs: It would be more storage-efficient to say that no null indicator is required for structured type columns declared as NOT NULL.  However, the uniformity of always having a null
         // indicator makes things cleaner in many places.
         return recordType.getSqlTypeName() == SqlTypeName.STRUCTURED;
     }
@@ -906,7 +823,7 @@ public abstract class SqlTypeUtil {
             } else if ( field.getType().getComponentType() != null ) {
                 nested = true;
 
-                // TODO jvs 14-Feb-2005:  generalize to any kind of collection type
+                // TODO jvs: generalize to any kind of collection type
                 RelDataType flattenedCollectionType =
                         typeFactory.createMultisetType(
                                 flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
@@ -914,10 +831,7 @@ public abstract class SqlTypeUtil {
                 if ( field.getType() instanceof ArraySqlType ) {
                     flattenedCollectionType =
                             typeFactory.createArrayType(
-                                    flattenRecordType(
-                                            typeFactory,
-                                            field.getType().getComponentType(),
-                                            null ),
+                                    flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
                                     -1 );
                 }
                 field = new RelDataTypeFieldImpl( field.getName(), field.getIndex(), flattenedCollectionType );
@@ -939,7 +853,7 @@ public abstract class SqlTypeUtil {
     public static SqlDataTypeSpec convertTypeToSpec( RelDataType type ) {
         SqlTypeName typeName = type.getSqlTypeName();
 
-        // TODO jvs 28-Dec-2004:  support row types, user-defined types, interval types, multiset types, etc
+        // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
         SqlIdentifier typeIdentifier = new SqlIdentifier( typeName.name(), SqlParserPos.ZERO );
 
@@ -947,12 +861,12 @@ public abstract class SqlTypeUtil {
 
         if ( inCharFamily( type ) ) {
             charSetName = type.getCharset().name();
-            // TODO jvs 28-Dec-2004:  collation
+            // TODO jvs: collation
         }
 
-        // REVIEW jvs 28-Dec-2004: discriminate between precision/scale zero and unspecified?
+        // REVIEW jvs: discriminate between precision/scale zero and unspecified?
 
-        // REVIEW angel 11-Jan-2006: Use neg numbers to indicate unspecified precision/scale
+        // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
 
         if ( typeName.allowsScale() ) {
             return new SqlDataTypeSpec(
@@ -1214,7 +1128,7 @@ public abstract class SqlTypeUtil {
 
 
     protected static RelDataTypeFamily family( RelDataType type ) {
-        // REVIEW jvs 2-June-2005:  This is needed to keep the Saffron type system happy.
+        // REVIEW jvs: This is needed to keep the Saffron type system happy.
         RelDataTypeFamily family = null;
         if ( type.getSqlTypeName() != null ) {
             family = type.getSqlTypeName().getFamily();

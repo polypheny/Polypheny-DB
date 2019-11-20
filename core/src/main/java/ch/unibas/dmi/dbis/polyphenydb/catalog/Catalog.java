@@ -408,12 +408,12 @@ public abstract class Catalog {
      * @param position The ordinal position of the column (starting with 1)
      * @param type The type of the column
      * @param length The length of the field (if applicable, else null)
-     * @param precision The precision of the field (if applicable, else null)
+     * @param scale The number of digits after the decimal point (if applicable, else null)
      * @param nullable Weather the column can contain null values
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer precision, boolean nullable, Collation collation ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column

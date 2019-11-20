@@ -66,8 +66,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlRexConvertletTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
@@ -243,7 +242,7 @@ public class Frameworks {
         private ImmutableList<Program> programs;
         private Context context;
         private ImmutableList<RelTraitDef> traitDefs;
-        private Config parserConfig;
+        private SqlParserConfig parserConfig;
         private SqlToRelConverter.Config sqlToRelConverterConfig;
         private SchemaPlus defaultSchema;
         private RexExecutor executor;
@@ -260,7 +259,7 @@ public class Frameworks {
             convertletTable = StandardConvertletTable.INSTANCE;
             operatorTable = SqlStdOperatorTable.instance();
             programs = ImmutableList.of();
-            parserConfig = SqlParser.Config.DEFAULT;
+            parserConfig = SqlParserConfig.DEFAULT;
             sqlToRelConverterConfig = SqlToRelConverter.Config.DEFAULT;
             typeSystem = RelDataTypeSystem.DEFAULT;
         }
@@ -343,7 +342,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder parserConfig( SqlParser.Config parserConfig ) {
+        public ConfigBuilder parserConfig( SqlParserConfig parserConfig ) {
             this.parserConfig = Objects.requireNonNull( parserConfig );
             return this;
         }
@@ -418,7 +417,7 @@ public class Frameworks {
         private final SqlOperatorTable operatorTable;
         private final ImmutableList<Program> programs;
         private final ImmutableList<RelTraitDef> traitDefs;
-        private final SqlParser.Config parserConfig;
+        private final SqlParserConfig parserConfig;
         private final SqlToRelConverter.Config sqlToRelConverterConfig;
         private final SchemaPlus defaultSchema;
         private final RelOptCostFactory costFactory;
@@ -434,7 +433,7 @@ public class Frameworks {
                 SqlOperatorTable operatorTable,
                 ImmutableList<Program> programs,
                 ImmutableList<RelTraitDef> traitDefs,
-                SqlParser.Config parserConfig,
+                SqlParserConfig parserConfig,
                 SqlToRelConverter.Config sqlToRelConverterConfig,
                 SchemaPlus defaultSchema,
                 RelOptCostFactory costFactory,
@@ -459,7 +458,7 @@ public class Frameworks {
 
 
         @Override
-        public SqlParser.Config getParserConfig() {
+        public SqlParserConfig getParserConfig() {
             return parserConfig;
         }
 

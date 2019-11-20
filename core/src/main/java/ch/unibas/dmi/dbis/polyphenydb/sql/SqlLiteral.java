@@ -352,16 +352,6 @@ public class SqlLiteral extends SqlNode {
     /**
      * Returns the value as a symbol.
      */
-    @Deprecated // to be removed before 2.0
-    public <E extends Enum<E>> E symbolValue_() {
-        //noinspection unchecked
-        return (E) value;
-    }
-
-
-    /**
-     * Returns the value as a symbol.
-     */
     public <E extends Enum<E>> E symbolValue( Class<E> class_ ) {
         return class_.cast( value );
     }
@@ -684,12 +674,6 @@ public class SqlLiteral extends SqlNode {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public String getStringValue() {
-        return ((NlsString) value).getValue();
-    }
-
-
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         switch ( typeName ) {
@@ -972,18 +956,5 @@ public class SqlLiteral extends SqlNode {
         return new SqlCharStringLiteral( ns, getParserPosition() );
     }
 
-
-    /**
-     * A value must implement this interface if it is to be embedded as a SqlLiteral of type SYMBOL. If the class is an {@link Enum} it trivially implements this interface.
-     *
-     * The {@link #toString()} method should return how the symbol should be unparsed, which is sometimes not the same as the enumerated value's name (e.g. "UNBOUNDED PRECEDING" versus "UnboundedPreceeding").
-     */
-    @Deprecated // to be removed before 2.0
-    public interface SqlSymbol {
-
-        String name();
-
-        int ordinal();
-    }
 }
 

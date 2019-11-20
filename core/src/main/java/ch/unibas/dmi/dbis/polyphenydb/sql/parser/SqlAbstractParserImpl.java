@@ -341,12 +341,6 @@ public abstract class SqlAbstractParserImpl {
          * Accept only CURSOR constructors, parenthesized queries, or non-query expressions in this context.
          */
         ACCEPT_CURSOR;
-
-        @Deprecated // to be removed before 2.0
-        public static final ExprContext ACCEPT_SUBQUERY = ACCEPT_SUB_QUERY;
-
-        @Deprecated // to be removed before 2.0
-        public static final ExprContext ACCEPT_NONQUERY = ACCEPT_NON_QUERY;
     }
 
 

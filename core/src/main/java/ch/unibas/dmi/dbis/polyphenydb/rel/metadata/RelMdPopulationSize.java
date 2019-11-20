@@ -157,7 +157,7 @@ public class RelMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
             population *= subRowCount;
         }
 
-        // REVIEW zfong 6/22/06 - Broadbase did not have the call to numDistinctVals.  This is needed; otherwise, population can be larger than the number of rows in the RelNode.
+        // REVIEW zfong: Broadbase did not have the call to numDistinctVals.  This is needed; otherwise, population can be larger than the number of rows in the RelNode.
         return RelMdUtil.numDistinctVals( population, mq.getRowCount( rel ) );
     }
 
@@ -170,7 +170,7 @@ public class RelMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
     public Double getPopulationSize( RelNode rel, RelMetadataQuery mq, ImmutableBitSet groupKey ) {
         // if the keys are unique, return the row count; otherwise, we have no further information on which to return any legitimate value
 
-        // REVIEW zfong 4/11/06 - Broadbase code returns the product of each unique key, which would result in the population being larger than the total rows in the relnode
+        // REVIEW zfong: Broadbase code returns the product of each unique key, which would result in the population being larger than the total rows in the relnode
         boolean uniq = RelMdUtil.areColumnsDefinitelyUnique( mq, rel, groupKey );
         if ( uniq ) {
             return mq.getRowCount( rel );

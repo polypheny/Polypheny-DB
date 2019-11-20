@@ -50,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptNode;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptQuery;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
@@ -61,7 +60,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
 import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
 import java.util.List;
 import java.util.Set;
@@ -123,31 +121,12 @@ public interface RelNode extends RelOptNode, Cloneable {
     String getCorrelVariable();
 
     /**
-     * Returns whether the same value will not come out twice. Default value is <code>false</code>, derived classes should override.
-     *
-     * @return Whether the same value will not come out twice
-     * @deprecated Use {@link RelMetadataQuery#areRowsUnique(RelNode)}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean isDistinct();
-
-    /**
      * Returns the <code>i</code><sup>th</sup> input relational expression.
      *
      * @param i Ordinal of input
      * @return <code>i</code><sup>th</sup> input
      */
     RelNode getInput( int i );
-
-    /**
-     * Returns the sub-query this relational expression belongs to.
-     *
-     * @return Sub-query
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelOptQuery getQuery();
 
     /**
      * Returns the type of the rows returned by this relational expression.
@@ -180,13 +159,6 @@ public interface RelNode extends RelOptNode, Cloneable {
      * @return Estimate of the number of rows this relational expression will return
      */
     double estimateRowCount( RelMetadataQuery mq );
-
-    /**
-     * @deprecated Call {@link RelMetadataQuery#getRowCount(RelNode)}; if you wish to override the default row count formula, override the {@link #estimateRowCount(RelMetadataQuery)} method.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    double getRows();
 
     /**
      * Returns the names of variables that are set in this relational expression but also used and therefore not available to parents of this relational expression.
@@ -244,13 +216,6 @@ public interface RelNode extends RelOptNode, Cloneable {
      * @return Cost of this plan (not including children)
      */
     RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq );
-
-    /**
-     * @deprecated Call {@link RelMetadataQuery#getNonCumulativeCost(RelNode)}; if you wish to override the default cost formula, override the {@link #computeSelfCost(RelOptPlanner, RelMetadataQuery)} method.
-     */
-    @Deprecated
-    // to be removed before 2.0
-    RelOptCost computeSelfCost( RelOptPlanner planner );
 
     /**
      * Returns a metadata interface.
@@ -330,20 +295,6 @@ public interface RelNode extends RelOptNode, Cloneable {
      */
     boolean isValid( Litmus litmus, Context context );
 
-    @Deprecated
-        // to be removed before 2.0
-    boolean isValid( boolean fail );
-
-    /**
-     * Returns a description of the physical ordering (or orderings) of this relational expression. Never null.
-     *
-     * @return Description of the physical ordering (or orderings) of this relational expression. Never null
-     * @deprecated Use {@link RelMetadataQuery#distribution(RelNode)}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    List<RelCollation> getCollationList();
-
     /**
      * Creates a copy of this relational expression, perhaps changing traits and inputs.
      *
@@ -364,19 +315,6 @@ public interface RelNode extends RelOptNode, Cloneable {
      * @param planner Planner to be used to register additional relational expressions
      */
     void register( RelOptPlanner planner );
-
-    /**
-     * Returns whether the result of this relational expression is uniquely identified by this columns with the given ordinals.
-     *
-     * For example, if this relational expression is a LogicalTableScan to T(A, B, C, D) whose key is (A, B), then isKey([0, 1]) yields true, and isKey([0]) and isKey([0, 2]) yields false.
-     *
-     * @param columns Ordinals of key columns
-     * @return Whether the given columns are a key or a superset of a key
-     * @deprecated Use {@link RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet)}
-     */
-    @Deprecated
-    // to be removed before 2.0
-    boolean isKey( ImmutableBitSet columns );
 
     /**
      * Accepts a visit from a shuttle.

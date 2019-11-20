@@ -500,7 +500,15 @@ public class RexProgramBuilder {
      * @param simplify Whether to simplify expressions
      * @return A program builder
      */
-    public static RexProgramBuilder create( RexBuilder rexBuilder, final RelDataType inputRowType, final List<RexNode> exprList, final List<? extends RexNode> projectList, final RexNode condition, final RelDataType outputRowType, boolean normalize, RexSimplify simplify ) {
+    public static RexProgramBuilder create(
+            RexBuilder rexBuilder,
+            final RelDataType inputRowType,
+            final List<RexNode> exprList,
+            final List<? extends RexNode> projectList,
+            final RexNode condition,
+            final RelDataType outputRowType,
+            boolean normalize,
+            RexSimplify simplify ) {
         return new RexProgramBuilder( rexBuilder, inputRowType, exprList, projectList, condition, outputRowType, normalize, simplify );
     }
 
@@ -536,16 +544,18 @@ public class RexProgramBuilder {
      * @param updateRefs Whether to update references that changes as a result of rewrites made by the shuttle
      * @return A program builder
      */
-    public static RexProgramBuilder create( RexBuilder rexBuilder, final RelDataType inputRowType, final List<RexNode> exprList, final List<RexLocalRef> projectRefList, final RexLocalRef conditionRef, final RelDataType outputRowType, final RexShuttle shuttle, final boolean updateRefs ) {
+    public static RexProgramBuilder create(
+            RexBuilder rexBuilder,
+            final RelDataType inputRowType,
+            final List<RexNode> exprList,
+            final List<RexLocalRef> projectRefList,
+            final RexLocalRef conditionRef,
+            final RelDataType outputRowType,
+            final RexShuttle shuttle,
+            final boolean updateRefs ) {
         final RexProgramBuilder progBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         progBuilder.add( exprList, projectRefList, conditionRef, outputRowType, shuttle, updateRefs );
         return progBuilder;
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static RexProgram normalize( RexBuilder rexBuilder, RexProgram program ) {
-        return program.normalize( rexBuilder, null );
     }
 
 
@@ -564,7 +574,7 @@ public class RexProgramBuilder {
         final RexShuttle registerInputShuttle = new RegisterInputShuttle( false );
 
         // For each common expression, first apply the user's shuttle, then register the result.
-        // REVIEW jpham 28-Apr-2006: if the user shuttle rewrites an input expression, then input references may change
+        // REVIEW jpham: if the user shuttle rewrites an input expression, then input references may change
         List<RexLocalRef> newRefs = new ArrayList<>( exprList.size() );
         RexShuttle refShuttle = new UpdateRefShuttle( newRefs );
         int i = 0;

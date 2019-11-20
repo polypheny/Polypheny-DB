@@ -83,7 +83,7 @@ public class RelOptCluster {
      *
      * For use only from {@link #create} and {@link RelOptQuery}.
      */
-    RelOptCluster( RelOptPlanner planner, RelDataTypeFactory typeFactory, RexBuilder rexBuilder, AtomicInteger nextCorrel, Map<String, RelNode> mapCorrelToRel ) {
+    private RelOptCluster( RelOptPlanner planner, RelDataTypeFactory typeFactory, RexBuilder rexBuilder, AtomicInteger nextCorrel, Map<String, RelNode> mapCorrelToRel ) {
         this.nextCorrel = nextCorrel;
         this.mapCorrelToRel = mapCorrelToRel;
         this.planner = Objects.requireNonNull( planner );
@@ -103,12 +103,6 @@ public class RelOptCluster {
      */
     public static RelOptCluster create( RelOptPlanner planner, RexBuilder rexBuilder ) {
         return new RelOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, new AtomicInteger( 0 ), new HashMap<>() );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RelOptQuery getQuery() {
-        return new RelOptQuery( planner, nextCorrel, mapCorrelToRel );
     }
 
 

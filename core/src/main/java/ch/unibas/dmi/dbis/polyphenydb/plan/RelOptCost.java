@@ -52,7 +52,6 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
  * extend this interface with additional cost metrics such as memory usage.
  */
 public interface RelOptCost {
-    //~ Methods ----------------------------------------------------------------
 
     /**
      * @return number of rows processed; this should not be confused with the row count produced by a relational expression ({@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode#estimateRowCount})
@@ -74,7 +73,7 @@ public interface RelOptCost {
      */
     boolean isInfinite();
 
-    // REVIEW jvs 3-Apr-2006:  we should standardize this to Comparator/equals/hashCode
+    // REVIEW jvs: We should standardize this to Comparator/equals/hashCode
 
     /**
      * Compares this to another cost.

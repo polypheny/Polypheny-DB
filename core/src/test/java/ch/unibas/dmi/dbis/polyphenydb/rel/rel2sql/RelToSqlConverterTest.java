@@ -40,6 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionMergeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
@@ -62,8 +63,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.MysqlSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
 import ch.unibas.dmi.dbis.polyphenydb.test.Matchers;
@@ -112,7 +112,7 @@ public class RelToSqlConverterTest {
     }
 
 
-    private static Planner getPlanner( List<RelTraitDef> traitDefs, Config parserConfig, SchemaPlus schema, SqlToRelConverter.Config sqlToRelConf, Program... programs ) {
+    private static Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, SchemaPlus schema, SqlToRelConverter.Config sqlToRelConf, Program... programs ) {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( false );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -164,7 +164,7 @@ public class RelToSqlConverterTest {
         // Creates a config based on the "scott" schema.
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "scott", new ReflectiveSchema( new ScottSchema() ) );
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -197,7 +197,7 @@ public class RelToSqlConverterTest {
      * Converts a relational expression to SQL in a given dialect.
      */
     private static String toSql( RelNode root, SqlDialect dialect ) {
-        final RelToSqlConverter converter = new RelToSqlConverter( dialect );
+        final RelToSqlConverter converter = new PlainRelToSqlConverter( dialect );
         final SqlNode sqlNode = converter.visitChild( 0, root ).asStatement();
         return sqlNode.toSqlString( dialect ).getSql();
     }
@@ -3432,7 +3432,7 @@ public class RelToSqlConverterTest {
 
 
         String exec() {
-            final Planner planner = getPlanner( null, Config.DEFAULT, schema, config );
+            final Planner planner = getPlanner( null, SqlParserConfig.DEFAULT, schema, config );
             try {
                 SqlNode parse = planner.parse( sql );
                 SqlNode validate = planner.validate( parse );

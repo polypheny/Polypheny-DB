@@ -80,10 +80,6 @@ import com.google.common.collect.ImmutableList;
  */
 public abstract class FilterTableScanRule extends RelOptRule {
 
-    @SuppressWarnings("Guava")
-    @Deprecated // to be removed before 2.0
-    public static final com.google.common.base.Predicate<TableScan> PREDICATE = FilterTableScanRule::test;
-
     /**
      * Rule that matches Filter on TableScan.
      */
@@ -121,12 +117,6 @@ public abstract class FilterTableScanRule extends RelOptRule {
                     apply( call, filter, scan );
                 }
             };
-
-
-    @Deprecated // to be removed before 2.0
-    protected FilterTableScanRule( RelOptRuleOperand operand, String description ) {
-        this( operand, RelFactories.LOGICAL_BUILDER, description );
-    }
 
 
     /**

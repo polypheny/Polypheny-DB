@@ -54,7 +54,8 @@ import org.apache.calcite.avatica.util.Quoting;
 
 
 /**
- * Interface for reading connection properties within Polypheny-DB code. There is a method for every property. At some point there will be similar config classes for system and statement properties.
+ * Interface for reading connection properties within Polypheny-DB code. There is a method for every property.
+ * At some point there will be similar config classes for system and statement properties.
  */
 public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
 

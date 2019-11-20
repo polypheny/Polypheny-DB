@@ -82,21 +82,6 @@ public class AggregateCall {
      *
      * @param aggFunction Aggregate function
      * @param distinct Whether distinct
-     * @param argList List of ordinals of arguments
-     * @param type Result type
-     * @param name Name (may be null)
-     */
-    @Deprecated // to be removed before 2.0
-    public AggregateCall( SqlAggFunction aggFunction, boolean distinct, List<Integer> argList, RelDataType type, String name ) {
-        this( aggFunction, distinct, false, argList, -1, RelCollations.EMPTY, type, name );
-    }
-
-
-    /**
-     * Creates an AggregateCall.
-     *
-     * @param aggFunction Aggregate function
-     * @param distinct Whether distinct
      * @param approximate Whether approximate
      * @param argList List of ordinals of arguments
      * @param filterArg Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
@@ -116,24 +101,6 @@ public class AggregateCall {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, List<Integer> argList, int groupCount, RelNode input, RelDataType type, String name ) {
-        return create( aggFunction, distinct, false, argList, -1, RelCollations.EMPTY, groupCount, input, type, name );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, List<Integer> argList, int filterArg, int groupCount, RelNode input, RelDataType type, String name ) {
-        return create( aggFunction, distinct, false, argList, filterArg, RelCollations.EMPTY, groupCount, input, type, name );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, boolean approximate, List<Integer> argList, int filterArg, int groupCount, RelNode input, RelDataType type, String name ) {
-        return create( aggFunction, distinct, approximate, argList, filterArg, RelCollations.EMPTY, groupCount, input, type, name );
-    }
-
-
     /**
      * Creates an AggregateCall, inferring its type if {@code type} is null.
      */
@@ -146,18 +113,6 @@ public class AggregateCall {
             type = aggFunction.inferReturnType( callBinding );
         }
         return create( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, List<Integer> argList, int filterArg, RelDataType type, String name ) {
-        return create( aggFunction, distinct, false, argList, filterArg, RelCollations.EMPTY, type, name );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, boolean approximate, List<Integer> argList, int filterArg, RelDataType type, String name ) {
-        return create( aggFunction, distinct, approximate, argList, filterArg, RelCollations.EMPTY, type, name );
     }
 
 
@@ -334,20 +289,6 @@ public class AggregateCall {
      */
     public AggregateCall copy( List<Integer> args, int filterArg, RelCollation collation ) {
         return new AggregateCall( aggFunction, distinct, approximate, args, filterArg, collation, type, name );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateCall copy( List<Integer> args, int filterArg ) {
-        // ignoring collation is error-prone
-        return copy( args, filterArg, collation );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public AggregateCall copy( List<Integer> args ) {
-        // ignoring filterArg and collation is error-prone
-        return copy( args, filterArg, collation );
     }
 
 

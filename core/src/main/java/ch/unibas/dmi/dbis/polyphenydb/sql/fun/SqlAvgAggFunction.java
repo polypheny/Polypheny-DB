@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
@@ -85,34 +84,5 @@ public class SqlAvgAggFunction extends SqlAggFunction {
         Preconditions.checkArgument( SqlKind.AVG_AGG_FUNCTIONS.contains( kind ), "unsupported sql kind" );
     }
 
-
-    @Deprecated // to be removed before 2.0
-    public SqlAvgAggFunction( RelDataType type, Subtype subtype ) {
-        this( SqlKind.valueOf( subtype.name() ) );
-    }
-
-
-    /**
-     * Returns the specific function, e.g. AVG or STDDEV_POP.
-     *
-     * @return Subtype
-     */
-    @Deprecated // to be removed before 2.0
-    public Subtype getSubtype() {
-        return Subtype.valueOf( kind.name() );
-    }
-
-
-    /**
-     * Sub-type of aggregate function.
-     */
-    @Deprecated // to be removed before 2.0
-    public enum Subtype {
-        AVG,
-        STDDEV_POP,
-        STDDEV_SAMP,
-        VAR_POP,
-        VAR_SAMP
-    }
 }
 

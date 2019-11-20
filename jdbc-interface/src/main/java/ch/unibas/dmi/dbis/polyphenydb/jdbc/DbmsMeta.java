@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -64,12 +65,21 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.Config;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -80,6 +90,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,6 +101,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -142,8 +156,25 @@ public class DbmsMeta implements ProtobufMeta {
     DbmsMeta( TransactionManager transactionManager, Authenticator authenticator ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-    }
 
+        // ------ Information Manager -----------
+        final InformationPage informationPage = new InformationPage( "jdbc", "JDBC Interface" );
+        final InformationGroup informationGroupConnection = new InformationGroup( "Connections", informationPage.getId() );
+
+        InformationManager im = InformationManager.getInstance();
+        im.addPage( informationPage );
+        im.addGroup( informationGroupConnection );
+
+        InformationTable connectionNumberTable = new InformationTable(
+                "connectionNumberTable",
+                informationGroupConnection.getId(),
+                Arrays.asList( "Attribute", "Value" ) );
+        im.registerInformation( connectionNumberTable );
+
+        ConnectionNumberInfo connectionPoolSizeInfo = new ConnectionNumberInfo( connectionNumberTable );
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.scheduleAtFixedRate( connectionPoolSizeInfo, 0, 5, TimeUnit.SECONDS );
+    }
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
         Object propertyValue;
@@ -908,10 +939,24 @@ public class DbmsMeta implements ProtobufMeta {
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        Config parserConfig = configConfigBuilder.build();
+        SqlParserConfig parserConfig = configConfigBuilder.build();
 
-        // Execute
-        PolyphenyDbSignature signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().processSqlQuery( sql, parserConfig );
+        Transaction transaction = connection.getCurrentOrCreateNewTransaction();
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        PolyphenyDbSignature signature;
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+
+            // Prepare
+            signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot );
+        }
 
         // Build response
         List<MetaResultSet> resultSets;
@@ -1011,6 +1056,13 @@ public class DbmsMeta implements ProtobufMeta {
         boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
         @SuppressWarnings("unchecked")
         List<Object> rows1 = (List<Object>) rows;
+        if ( done ) {
+            try {
+                ((AutoCloseable) iterator).close();
+            } catch ( Exception e ) {
+                log.error( "Exception while closing result iterator", e );
+            }
+        }
         return new Meta.Frame( offset, done, rows1 );
     }
 
@@ -1100,6 +1152,13 @@ public class DbmsMeta implements ProtobufMeta {
 
         final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
         if ( toClose != null ) {
+            if ( toClose.getOpenResultSet() != null && toClose.getOpenResultSet() instanceof AutoCloseable ) {
+                try {
+                    ((AutoCloseable) toClose.getOpenResultSet()).close();
+                } catch ( Exception e ) {
+                    log.error( "Exception while closing result iterator", e );
+                }
+            }
             toClose.unset();
         }
     }
@@ -1213,7 +1272,8 @@ public class DbmsMeta implements ProtobufMeta {
 
         for ( final String key : OPEN_STATEMENTS.keySet() ) {
             if ( key.startsWith( ch.id ) ) {
-                OPEN_STATEMENTS.remove( key ).unset();
+                PolyphenyDbStatementHandle statementHandle = OPEN_STATEMENTS.remove( key );
+                statementHandle.unset();
             }
         }
 
@@ -1335,5 +1395,25 @@ public class DbmsMeta implements ProtobufMeta {
             throw new RuntimeException( e );
         }
     }
+
+
+    private static class ConnectionNumberInfo implements Runnable {
+
+        private final InformationTable table;
+
+
+        ConnectionNumberInfo( InformationTable table ) {
+            this.table = table;
+        }
+
+
+        @Override
+        public void run() {
+            table.reset();
+            table.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
+            table.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
+        }
+    }
+
 
 }

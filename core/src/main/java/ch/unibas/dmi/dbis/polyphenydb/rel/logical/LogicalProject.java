@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
@@ -60,7 +59,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import java.util.List;
 
 
@@ -83,20 +81,6 @@ public final class LogicalProject extends Project {
     public LogicalProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert traitSet.containsIfApplicable( Convention.NONE );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, int flags ) {
-        this( cluster, traitSet, input, projects, rowType );
-        Util.discard( flags );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public LogicalProject( RelOptCluster cluster, RelNode input, List<RexNode> projects, List<String> fieldNames, int flags ) {
-        this( cluster, cluster.traitSetOf( RelCollations.EMPTY ), input, projects, RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, null ) );
-        Util.discard( flags );
     }
 
 

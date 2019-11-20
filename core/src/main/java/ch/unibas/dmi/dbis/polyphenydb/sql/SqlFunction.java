@@ -269,7 +269,7 @@ public class SqlFunction extends SqlOperator {
                 throw validator.handleUnresolvedFunction( call, this, argTypes, argNames );
             }
 
-            // REVIEW jvs 25-Mar-2005:  This is, in a sense, expanding identifiers, but we ignore shouldExpandIdentifiers() because otherwise later validation code will choke on the unresolved function.
+            // REVIEW jvs: This is, in a sense, expanding identifiers, but we ignore shouldExpandIdentifiers() because otherwise later validation code will choke on the unresolved function.
             ((SqlBasicCall) call).setOperator( function );
             return function.validateOperands( validator, operandScope, call );
         } finally {

@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
@@ -91,12 +90,6 @@ public class JoinToCorrelateRule extends RelOptRule {
      */
     public JoinToCorrelateRule( RelBuilderFactory relBuilderFactory ) {
         super( operand( LogicalJoin.class, any() ), relBuilderFactory, null );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    protected JoinToCorrelateRule( RelFactories.FilterFactory filterFactory ) {
-        this( RelBuilder.proto( Contexts.of( filterFactory ) ) );
     }
 
 

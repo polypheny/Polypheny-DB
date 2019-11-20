@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
@@ -130,7 +129,7 @@ public class RexProgram {
         assert isValid( Litmus.THROW, null );
     }
 
-    // REVIEW jvs 16-Oct-2006:  The description below is confusing.  I think it means "none of the entries are null, there may be none, and there is no further reduction
+    // REVIEW jvs: The description below is confusing. I think it means "none of the entries are null, there may be none, and there is no further reduction
     // into smaller common sub-expressions possible"?
 
 
@@ -753,15 +752,6 @@ public class RexProgram {
                         true,
                         simplify );
         return builder.getProgram( false );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RexProgram normalize( RexBuilder rexBuilder, boolean simplify ) {
-        final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
-        return normalize( rexBuilder, simplify
-                ? new RexSimplify( rexBuilder, predicates, RexUtil.EXECUTOR )
-                : null );
     }
 
 

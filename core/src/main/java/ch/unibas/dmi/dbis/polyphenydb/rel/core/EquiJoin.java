@@ -73,12 +73,6 @@ public abstract class EquiJoin extends Join {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public EquiJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType, Set<String> variablesStopped ) {
-        this( cluster, traits, left, right, condition, leftKeys, rightKeys, CorrelationId.setOf( variablesStopped ), joinType );
-    }
-
-
     public ImmutableIntList getLeftKeys() {
         return leftKeys;
     }

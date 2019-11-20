@@ -66,7 +66,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
         List<RexNode> clonedOperands = visitList( over.operands, update );
         RexWindow window = visitWindow( over.getWindow() );
         if ( update[0] || (window != over.getWindow()) ) {
-            // REVIEW jvs 8-Mar-2005:  This doesn't take into account the fact that a rewrite may have changed the result type.
+            // REVIEW jvs: This doesn't take into account the fact that a rewrite may have changed the result type.
             // To do that, we would need to take a RexBuilder and watch out for special operators like CAST and NEW where the type is embedded in the original call.
             return new RexOver(
                     over.getType(),
@@ -130,7 +130,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
         boolean[] update = { false };
         List<RexNode> clonedOperands = visitList( call.operands, update );
         if ( update[0] ) {
-            // REVIEW jvs 8-Mar-2005:  This doesn't take into account the fact that a rewrite may have changed the result type.
+            // REVIEW jvs:  This doesn't take into account the fact that a rewrite may have changed the result type.
             // To do that, we would need to take a RexBuilder and watch out for special operators like CAST and NEW where the type is embedded in the original call.
             return call.clone( call.getType(), clonedOperands );
         } else {

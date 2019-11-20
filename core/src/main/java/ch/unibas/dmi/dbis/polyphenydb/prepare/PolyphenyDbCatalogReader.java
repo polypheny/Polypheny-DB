@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.schema.AggregateFunction;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
 import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
@@ -248,18 +247,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public RelDataTypeField field( RelDataType rowType, String alias ) {
-        return nameMatcher.field( rowType, alias );
-    }
-
-
-    @Override
-    public boolean matches( String string, String name ) {
-        return nameMatcher.matches( string, name );
-    }
-
-
-    @Override
     public RelDataType createTypeFromProjection( final RelDataType type, final List<String> columnNameList ) {
         return SqlValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
     }
@@ -386,12 +373,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     @Override
     public void registerRules( RelOptPlanner planner ) throws Exception {
-    }
-
-
-    @Override
-    public boolean isCaseSensitive() {
-        return nameMatcher.isCaseSensitive();
     }
 
 

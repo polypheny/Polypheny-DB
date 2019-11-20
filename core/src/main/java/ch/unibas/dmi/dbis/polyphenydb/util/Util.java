@@ -935,18 +935,18 @@ public class Util {
             throw new AssertionError( "tz.toString not of expected format: " + tzString );
         }
         int j = 0;
-        int startMode = Integer.valueOf( matcher.group( ++j ) );
-        int startMonth = Integer.valueOf( matcher.group( ++j ) );
-        int startDay = Integer.valueOf( matcher.group( ++j ) );
-        int startDayOfWeek = Integer.valueOf( matcher.group( ++j ) );
-        int startTime = Integer.valueOf( matcher.group( ++j ) );
-        int startTimeMode = Integer.valueOf( matcher.group( ++j ) );
-        int endMode = Integer.valueOf( matcher.group( ++j ) );
-        int endMonth = Integer.valueOf( matcher.group( ++j ) );
-        int endDay = Integer.valueOf( matcher.group( ++j ) );
-        int endDayOfWeek = Integer.valueOf( matcher.group( ++j ) );
-        int endTime = Integer.valueOf( matcher.group( ++j ) );
-        int endTimeMode = Integer.valueOf( matcher.group( ++j ) );
+        int startMode = Integer.parseInt( matcher.group( ++j ) );
+        int startMonth = Integer.parseInt( matcher.group( ++j ) );
+        int startDay = Integer.parseInt( matcher.group( ++j ) );
+        int startDayOfWeek = Integer.parseInt( matcher.group( ++j ) );
+        int startTime = Integer.parseInt( matcher.group( ++j ) );
+        int startTimeMode = Integer.parseInt( matcher.group( ++j ) );
+        int endMode = Integer.parseInt( matcher.group( ++j ) );
+        int endMonth = Integer.parseInt( matcher.group( ++j ) );
+        int endDay = Integer.parseInt( matcher.group( ++j ) );
+        int endDayOfWeek = Integer.parseInt( matcher.group( ++j ) );
+        int endTime = Integer.parseInt( matcher.group( ++j ) );
+        int endTimeMode = Integer.parseInt( matcher.group( ++j ) );
         appendPosixDaylightTransition(
                 tz,
                 buf,
@@ -1746,6 +1746,7 @@ public class Util {
         final ImmutableList.Builder<String> builder = ImmutableList.builder();
         final StringBuilder b = new StringBuilder();
         int i = 0;
+        //noinspection ConditionalBreakInInfiniteLoop
         for ( ; ; ) {
             char c = s.charAt( i );
             if ( c != '"' ) {

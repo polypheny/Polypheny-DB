@@ -104,13 +104,6 @@ public abstract class Project extends SingleRel {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected Project( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, int flags ) {
-        this( cluster, traitSet, input, projects, rowType );
-        Util.discard( flags );
-    }
-
-
     /**
      * Creates a Project by parsing serialized output.
      */
@@ -120,8 +113,7 @@ public abstract class Project extends SingleRel {
 
 
     @Override
-    public final RelNode copy( RelTraitSet traitSet,
-            List<RelNode> inputs ) {
+    public final RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return copy( traitSet, sole( inputs ), exps, rowType );
     }
 
@@ -137,19 +129,6 @@ public abstract class Project extends SingleRel {
      * @see #copy(RelTraitSet, List)
      */
     public abstract Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType );
-
-
-    @Deprecated // to be removed before 2.0
-    public Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType, int flags ) {
-        Util.discard( flags );
-        return copy( traitSet, input, projects, rowType );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public boolean isBoxed() {
-        return true;
-    }
 
 
     @Override
@@ -185,12 +164,6 @@ public abstract class Project extends SingleRel {
      */
     public final List<Pair<RexNode, String>> getNamedProjects() {
         return Pair.zip( getProjects(), getRowType().getFieldNames() );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public int getFlags() {
-        return 1;
     }
 
 
@@ -366,16 +339,5 @@ public abstract class Project extends SingleRel {
         return true;
     }
 
-
-    /**
-     * No longer used.
-     */
-    @Deprecated // to be removed before 2.0
-    public static class Flags {
-
-        public static final int ANON_FIELDS = 2;
-        public static final int BOXED = 1;
-        public static final int NONE = 0;
-    }
 }
 

@@ -589,7 +589,7 @@ public class RelMdUtil {
      * Returns an estimate of the number of rows returned by a {@link Minus}.
      */
     public static double getMinusRowCount( RelMetadataQuery mq, Minus minus ) {
-        // REVIEW jvs 30-May-2005:  I just pulled this out of a hat.
+        // REVIEW jvs:  I just pulled this out of a hat.
         final List<RelNode> inputs = minus.getInputs();
         double dRows = mq.getRowCount( inputs.get( 0 ) );
         for ( int i = 1; i < inputs.size(); i++ ) {
@@ -620,7 +620,7 @@ public class RelMdUtil {
         }
         double product = left * right;
 
-        // TODO:  correlation factor
+        // TODO: correlation factor
         return product * mq.getSelectivity( join, condition );
     }
 
@@ -629,7 +629,7 @@ public class RelMdUtil {
      * Returns an estimate of the number of rows returned by a {@link SemiJoin}.
      */
     public static Double getSemiJoinRowCount( RelMetadataQuery mq, RelNode left, RelNode right, JoinRelType joinType, RexNode condition ) {
-        // TODO:  correlation factor
+        // TODO: correlation factor
         final Double leftCount = mq.getRowCount( left );
         if ( leftCount == null ) {
             return null;

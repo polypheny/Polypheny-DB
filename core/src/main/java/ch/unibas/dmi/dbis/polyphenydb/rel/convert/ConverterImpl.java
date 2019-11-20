@@ -88,12 +88,6 @@ public abstract class ConverterImpl extends SingleRel implements Converter {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected Error cannotImplement() {
-        return new AssertionError( getClass() + " cannot convert from " + inTraits + " traits" );
-    }
-
-
     @Override
     public RelTraitSet getInputTraits() {
         return inTraits;

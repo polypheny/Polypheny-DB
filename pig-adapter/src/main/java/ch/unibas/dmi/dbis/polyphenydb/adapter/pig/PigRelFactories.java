@@ -45,11 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -61,9 +56,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-
 import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 import java.util.Set;
 
@@ -139,12 +132,6 @@ public class PigRelFactories {
             return new PigJoin( left.getCluster(), left.getTraitSet(), left, right, condition, joinType );
         }
 
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public RelNode createJoin( RelNode left, RelNode right, RexNode condition, JoinRelType joinType, Set<String> variablesStopped, boolean semiJoinDone ) {
-            return new PigJoin( left.getCluster(), left.getTraitSet(), left, right, condition, joinType );
-        }
     }
 }
 

@@ -251,7 +251,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE );
 
-    private static final List<RelOptRule> DEFAULT_RULES =
+    public static final List<RelOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     TableScanRule.INSTANCE,
                     COMMUTE
@@ -274,7 +274,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
 
-    private static final List<RelOptRule> CONSTANT_REDUCTION_RULES =
+    public static final List<RelOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRule.PROJECT_INSTANCE,
                     ReduceExpressionsRule.FILTER_INSTANCE,
@@ -1046,7 +1046,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         private SqlValidator sqlValidator;
 
 
-        PolyphenyDbPreparingStmt( PolyphenyDbPrepareImpl prepare, Context context, CatalogReader catalogReader, RelDataTypeFactory typeFactory, PolyphenyDbSchema schema, Prefer prefer, RelOptPlanner planner, Convention resultConvention, SqlRexConvertletTable convertletTable ) {
+        PolyphenyDbPreparingStmt(
+                PolyphenyDbPrepareImpl prepare,
+                Context context,
+                CatalogReader catalogReader,
+                RelDataTypeFactory typeFactory,
+                PolyphenyDbSchema schema,
+                Prefer prefer,
+                RelOptPlanner planner,
+                Convention resultConvention,
+                SqlRexConvertletTable convertletTable ) {
             super( context, catalogReader, resultConvention );
             this.prepare = prepare;
             this.schema = schema;
@@ -1202,7 +1211,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     CatalogReader.THREAD_LOCAL.set( catalogReader );
                     final SqlConformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", conformance );
-                    bindable = EnumerableInterpretable.toBindable( internalParameters, context.spark(), enumerable, prefer );
+                    bindable = EnumerableInterpretable.toBindable( internalParameters, context.spark(), enumerable, prefer, null );
                 } finally {
                     CatalogReader.THREAD_LOCAL.remove();
                 }

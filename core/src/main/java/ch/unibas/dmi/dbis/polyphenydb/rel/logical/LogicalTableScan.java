@@ -90,12 +90,6 @@ public final class LogicalTableScan extends TableScan {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public LogicalTableScan( RelOptCluster cluster, RelOptTable table ) {
-        this( cluster, cluster.traitSetOf( Convention.NONE ), table );
-    }
-
-
     /**
      * Creates a LogicalTableScan by parsing serialized output.
      */

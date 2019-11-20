@@ -600,20 +600,6 @@ public class LoptMultiJoin {
 
 
     /**
-     * Sets a bitmap indicating all child RelNodes in a join tree
-     *
-     * @param joinTree join tree to be examined
-     * @param childFactors bitmap to be set
-     */
-    @Deprecated // to be removed before 2.0
-    public void getChildFactors( LoptJoinTree joinTree, ImmutableBitSet.Builder childFactors ) {
-        for ( int child : joinTree.getTreeOrder() ) {
-            childFactors.set( child );
-        }
-    }
-
-
-    /**
      * Retrieves the fields corresponding to a join between a left and right tree
      *
      * @param left left hand side of the join

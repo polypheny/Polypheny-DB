@@ -115,24 +115,6 @@ public abstract class FilterJoinRule extends RelOptRule {
     }
 
 
-    /**
-     * Creates a FilterJoinRule with an explicit root operand and factories.
-     */
-    @Deprecated // to be removed before 2.0
-    protected FilterJoinRule( RelOptRuleOperand operand, String id, boolean smart, RelFactories.FilterFactory filterFactory, RelFactories.ProjectFactory projectFactory ) {
-        this( operand, id, smart, RelBuilder.proto( filterFactory, projectFactory ), TRUE_PREDICATE );
-    }
-
-
-    /**
-     * Creates a FilterProjectTransposeRule with an explicit root operand and factories.
-     */
-    @Deprecated // to be removed before 2.0
-    protected FilterJoinRule( RelOptRuleOperand operand, String id, boolean smart, RelFactories.FilterFactory filterFactory, RelFactories.ProjectFactory projectFactory, Predicate predicate ) {
-        this( operand, id, smart, RelBuilder.proto( filterFactory, projectFactory ), predicate );
-    }
-
-
     protected void perform( RelOptRuleCall call, Filter filter, Join join ) {
         final List<RexNode> joinFilters = RelOptUtil.conjunctions( join.getCondition() );
         final List<RexNode> origJoinFilters = ImmutableList.copyOf( joinFilters );
@@ -289,12 +271,6 @@ public abstract class FilterJoinRule extends RelOptRule {
         }
 
 
-        @Deprecated // to be removed before 2.0
-        public JoinConditionPushRule( RelFactories.FilterFactory filterFactory, RelFactories.ProjectFactory projectFactory, Predicate predicate ) {
-            this( RelBuilder.proto( filterFactory, projectFactory ), predicate );
-        }
-
-
         @Override
         public void onMatch( RelOptRuleCall call ) {
             Join join = call.rel( 0 );
@@ -315,12 +291,6 @@ public abstract class FilterJoinRule extends RelOptRule {
                     smart,
                     relBuilderFactory,
                     predicate );
-        }
-
-
-        @Deprecated // to be removed before 2.0
-        public FilterIntoJoinRule( boolean smart, RelFactories.FilterFactory filterFactory, RelFactories.ProjectFactory projectFactory, Predicate predicate ) {
-            this( smart, RelBuilder.proto( filterFactory, projectFactory ), predicate );
         }
 
 

@@ -76,12 +76,6 @@ public class ProjectSortTransposeRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    protected ProjectSortTransposeRule( RelOptRuleOperand operand ) {
-        this( operand, RelFactories.LOGICAL_BUILDER, null );
-    }
-
-
     /**
      * Creates a ProjectSortTransposeRule with an operand.
      */

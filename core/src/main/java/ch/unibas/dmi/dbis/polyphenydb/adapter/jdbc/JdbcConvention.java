@@ -73,17 +73,19 @@ public class JdbcConvention extends Convention.Impl {
 
     public final SqlDialect dialect;
     public final Expression expression;
+    public final JdbcPhysicalNameProvider physicalNameProvider;
 
 
-    public JdbcConvention( SqlDialect dialect, Expression expression, String name ) {
+    public JdbcConvention( SqlDialect dialect, Expression expression, String name, JdbcPhysicalNameProvider physicalNameProvider ) {
         super( "JDBC." + name, JdbcRel.class );
         this.dialect = dialect;
         this.expression = expression;
+        this.physicalNameProvider = physicalNameProvider;
     }
 
 
-    public static JdbcConvention of( SqlDialect dialect, Expression expression, String name ) {
-        return new JdbcConvention( dialect, expression, name );
+    public static JdbcConvention of( SqlDialect dialect, Expression expression, String name, JdbcPhysicalNameProvider physicalNameProvider ) {
+        return new JdbcConvention( dialect, expression, name, physicalNameProvider );
     }
 
 

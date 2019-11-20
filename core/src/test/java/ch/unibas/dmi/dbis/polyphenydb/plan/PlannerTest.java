@@ -102,6 +102,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
@@ -282,11 +283,11 @@ public class PlannerTest {
 
 
     private Planner getPlanner( List<RelTraitDef> traitDefs, Program... programs ) {
-        return getPlanner( traitDefs, SqlParser.Config.DEFAULT, programs );
+        return getPlanner( traitDefs, SqlParserConfig.DEFAULT, programs );
     }
 
 
-    private Planner getPlanner( List<RelTraitDef> traitDefs, SqlParser.Config parserConfig, Program... programs ) {
+    private Planner getPlanner( List<RelTraitDef> traitDefs, SqlParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ) );
@@ -715,7 +716,7 @@ public class PlannerTest {
     public void testPlanTransformWithDiffRuleSetAndConvention() throws Exception {
         Program program0 = Programs.ofRules( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
 
-        JdbcConvention out = new JdbcConvention( null, null, "myjdbc" );
+        JdbcConvention out = new JdbcConvention( null, null, "myjdbc", null );
         Program program1 = Programs.ofRules( new MockJdbcProjectRule( out ), new MockJdbcTableRule( out ) );
 
         Planner planner = getPlanner( null, program0, program1 );
@@ -1025,7 +1026,7 @@ public class PlannerTest {
         final SchemaPlus schema = Frameworks.createRootSchema( false ).add( "foodmart", new ReflectiveSchema( new FoodmartSchema() ) );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParser.Config.DEFAULT )
+                .parserConfig( SqlParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -1220,7 +1221,7 @@ public class PlannerTest {
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelCollationTraitDef.INSTANCE );
-        final SqlParser.Config parserConfig = SqlParser.configBuilder().setLex( Lex.MYSQL ).build();
+        final SqlParserConfig parserConfig = SqlParser.configBuilder().setLex( Lex.MYSQL ).build();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )

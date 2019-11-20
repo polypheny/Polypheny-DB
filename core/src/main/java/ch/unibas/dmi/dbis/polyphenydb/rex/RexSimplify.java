@@ -128,32 +128,6 @@ public class RexSimplify {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public RexSimplify( RexBuilder rexBuilder, boolean unknownAsFalse, RexExecutor executor ) {
-        this( rexBuilder, RelOptPredicateList.EMPTY, RexUnknownAs.falseIf( unknownAsFalse ), true, false, executor );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RexSimplify( RexBuilder rexBuilder, RelOptPredicateList predicates, boolean unknownAsFalse, RexExecutor executor ) {
-        this( rexBuilder, predicates, RexUnknownAs.falseIf( unknownAsFalse ), true, false, executor );
-    }
-
-
-    /**
-     * Returns a RexSimplify the same as this but with a specified {@link #defaultUnknownAs} value.
-     *
-     * @deprecated Use methods with a {@link RexUnknownAs} argument, such as {@link #simplify(RexNode, RexUnknownAs)}.
-     */
-    @Deprecated // to be removed before 2.0
-    public RexSimplify withUnknownAsFalse( boolean unknownAsFalse ) {
-        final RexUnknownAs defaultUnknownAs = RexUnknownAs.falseIf( unknownAsFalse );
-        return defaultUnknownAs == this.defaultUnknownAs
-                ? this
-                : new RexSimplify( rexBuilder, predicates, defaultUnknownAs, predicateElimination, paranoid, executor );
-    }
-
-
     /**
      * Returns a RexSimplify the same as this but with a specified {@link #predicates} value.
      */
@@ -1046,12 +1020,6 @@ public class RexSimplify {
             }
         }
         return RexUtil.composeDisjunction( rexBuilder, terms );
-    }
-
-
-    @Deprecated // to be removed before 2.0
-    public RexNode simplifyAnd( RexCall e ) {
-        return simplifyAnd( e, defaultUnknownAs );
     }
 
 

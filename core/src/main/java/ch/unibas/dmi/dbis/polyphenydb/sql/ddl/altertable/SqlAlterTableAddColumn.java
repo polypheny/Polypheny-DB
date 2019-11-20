@@ -154,8 +154,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     catalogTable.getTable().id,
                     position,
                     PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() ),
-                    type.getScale() == -1 ? null : type.getScale(),
                     type.getPrecision() == -1 ? null : type.getPrecision(),
+                    type.getScale() == -1 ? null : type.getScale(),
                     nullable,
                     Collation.CASE_INSENSITIVE
             );
@@ -176,7 +176,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
         // Add column on underlying data stores
         for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
-            StoreManager.getInstance().getStore( dp.storeId ).addColumn( catalogTable, addedColumn );
+            StoreManager.getInstance().getStore( dp.storeId ).addColumn( context, catalogTable, addedColumn );
         }
     }
 

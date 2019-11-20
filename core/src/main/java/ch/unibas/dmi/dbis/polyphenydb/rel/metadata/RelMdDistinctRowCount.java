@@ -93,7 +93,7 @@ public class RelMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
      * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getDistinctRowCount(RelNode, ImmutableBitSet, RexNode)
      */
     public Double getDistinctRowCount( RelNode rel, RelMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
-        // REVIEW zfong 4/19/06 - Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
+        // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = RelMdUtil.areColumnsDefinitelyUnique( mq, rel, groupKey );
         if ( uniq ) {
             return NumberUtil.multiply( mq.getRowCount( rel ), mq.getSelectivity( rel, predicate ) );
@@ -146,7 +146,7 @@ public class RelMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                 return 1D;
             }
         }
-        // REVIEW zfong 4/18/06 - In the Broadbase code, duplicates are not removed from the two filter lists.  However, the code below is doing so.
+        // REVIEW zfong: In the Broadbase code, duplicates are not removed from the two filter lists.  However, the code below is doing so.
         RexNode unionPreds = RelMdUtil.unionPreds( rel.getCluster().getRexBuilder(), predicate, rel.getCondition() );
 
         return mq.getDistinctRowCount( rel.getInput(), groupKey, unionPreds );

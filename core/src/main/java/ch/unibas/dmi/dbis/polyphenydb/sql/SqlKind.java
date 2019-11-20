@@ -842,12 +842,6 @@ public enum SqlKind {
     GROUPING,
 
     /**
-     * @deprecated Use {@link #GROUPING}.
-     */
-    @Deprecated // to be removed before 2.0
-            GROUPING_ID,
-
-    /**
      * The {@code GROUP_ID()} function.
      */
     GROUP_ID,

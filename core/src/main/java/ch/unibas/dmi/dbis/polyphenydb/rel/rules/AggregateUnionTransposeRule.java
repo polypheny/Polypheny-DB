@@ -103,12 +103,6 @@ public class AggregateUnionTransposeRule extends RelOptRule {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public AggregateUnionTransposeRule( Class<? extends Aggregate> aggregateClass, RelFactories.AggregateFactory aggregateFactory, Class<? extends Union> unionClass, RelFactories.SetOpFactory setOpFactory ) {
-        this( aggregateClass, unionClass, RelBuilder.proto( aggregateFactory, setOpFactory ) );
-    }
-
-
     @Override
     public void onMatch( RelOptRuleCall call ) {
         Aggregate aggRel = call.rel( 0 );

@@ -111,11 +111,9 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
             corrRef = (ParameterExpression) corrBlock.append( getCorrelVariable(), Expressions.unbox( corrArg ) );
         }
 
-        implementor.registerCorrelVariable( getCorrelVariable(), corrRef,
-                corrBlock, leftResult.physType );
+        implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType );
 
-        final Result rightResult =
-                implementor.visitChild( this, 1, (EnumerableRel) right, pref );
+        final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
 
         implementor.clearCorrelVariable( getCorrelVariable() );
 
@@ -129,11 +127,14 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
 
         Expression selector =
                 EnumUtils.joinSelector(
-                        joinType, physType,
+                        joinType,
+                        physType,
                         ImmutableList.of( leftResult.physType, rightResult.physType ) );
 
         builder.append(
-                Expressions.call( leftExpression, BuiltInMethod.CORRELATE_JOIN.method,
+                Expressions.call(
+                        leftExpression,
+                        BuiltInMethod.CORRELATE_JOIN.method,
                         Expressions.constant( joinType.toLinq4j() ),
                         Expressions.lambda( corrBlock.toBlock(), corrArg ),
                         selector ) );

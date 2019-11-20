@@ -174,37 +174,6 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
 
     @Override
-    @SuppressWarnings("deprecation")
-    public RelDataType createStructType( final RelDataTypeFactory.FieldInfo fieldInfo ) {
-        return canonize( StructKind.FULLY_QUALIFIED,
-                new AbstractList<String>() {
-                    @Override
-                    public String get( int index ) {
-                        return fieldInfo.getFieldName( index );
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldInfo.getFieldCount();
-                    }
-                },
-                new AbstractList<RelDataType>() {
-                    @Override
-                    public RelDataType get( int index ) {
-                        return fieldInfo.getFieldType( index );
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldInfo.getFieldCount();
-                    }
-                } );
-    }
-
-
-    @Override
     public final RelDataType createStructType( final List<? extends Map.Entry<String, RelDataType>> fieldList ) {
         return canonize( StructKind.FULLY_QUALIFIED,
                 new AbstractList<String>() {
@@ -263,7 +232,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         // recursively compute column-wise least restrictive
         final Builder builder = builder();
         for ( int j = 0; j < fieldCount; ++j ) {
-            // REVIEW jvs 22-Jan-2004:  Always use the field name from the first type?
+            // REVIEW jvs: Always use the field name from the first type?
             final int k = j;
             builder.add(
                     type0.getFieldList().get( j ).getName(),
@@ -307,7 +276,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
     // recursively copy a record type
     private RelDataType copyRecordType( final RelRecordType type, final boolean ignoreNullable, final boolean nullable ) {
-        // REVIEW: angel 18-Aug-2005 dtbug336
+        // REVIEW: angel dtbug336
         // Shouldn't null refer to the nullability of the record type not the individual field types?
         // For flattening and outer joins, it is desirable to change the nullability of the individual fields.
 
@@ -352,7 +321,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         if ( type.isNullable() == nullable ) {
             newType = type;
         } else if ( type instanceof RelRecordType ) {
-            // REVIEW: angel 18-Aug-2005 dtbug 336 workaround
+            // REVIEW: angel dtbug 336 workaround
             // Changed to ignore nullable parameter if nullable is false since copyRecordType implementation is doubtful
             if ( nullable ) {
                 // Do a deep copy, setting all fields of the record type to be nullable regardless of initial nullability
@@ -575,7 +544,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         return new FieldInfoBuilder( this );
     }
 
-    // TODO jvs 13-Dec-2004:  move to OJTypeFactoryImpl?
+    // TODO jvs: move to OJTypeFactoryImpl?
 
 
     /**
