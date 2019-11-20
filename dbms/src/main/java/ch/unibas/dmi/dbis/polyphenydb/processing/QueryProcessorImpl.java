@@ -30,6 +30,8 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
+import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc;
@@ -337,8 +339,16 @@ public class QueryProcessorImpl implements QueryProcessor, ViewExpander {
         if ( parsed.isA( SqlKind.DML ) ) {
             PolyphenyDbSignature processed = processQuery(logicalPlan, planner, parsed.getKind());
             if(parsed.getKind() == SqlKind.INSERT){
-                System.out.println("is insert");
-                System.out.println();
+
+                String table = ((SqlInsert)parsed).getTargetTable().toString();
+
+                ((SqlInsert) parsed).getTargetColumnList().forEach(t -> {
+                    System.out.println(table + " " + t.toString());
+                });
+
+                ((SqlBasicCall)((SqlInsert) parsed).getSource()).getOperandList().forEach(o -> {
+                    System.out.println(o);
+                });
             }
             return processed;
         } else {

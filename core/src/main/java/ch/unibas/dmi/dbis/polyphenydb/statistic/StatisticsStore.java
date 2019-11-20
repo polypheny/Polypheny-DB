@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Stores all available statistics  and updates them dynamically
@@ -27,7 +28,7 @@ public class StatisticsStore {
     private String databaseName = "APP";
     private String userName = "pa";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Crud.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsStore.class );
 
     private StatisticsStore(){
         this.store = new HashMap<>();
@@ -51,6 +52,20 @@ public class StatisticsStore {
         }else {
             this.store.get(table).put(val);
         }
+    }
+
+    public void updateAll(String table, String column, stringList vals) {
+        vals.forEach(val -> {
+            // still not sure if generic or not
+            update(table, column, val);
+        });
+    }
+
+    public void updateAll(String table, String column, numericalList vals) {
+        vals.forEach(val -> {
+            // still not sure if generic or not
+            update(table, column, val);
+        });
     }
 
     public void update(String table, String column, String val){
@@ -99,4 +114,9 @@ public class StatisticsStore {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
+
+    interface numericalList extends List<Integer>{}
+
+    interface stringList extends List<String>{};
+
 }
