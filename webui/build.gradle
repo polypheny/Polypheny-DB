@@ -67,6 +67,8 @@ dependencies {
 
     compile group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
 
+    compile group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version
+
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
