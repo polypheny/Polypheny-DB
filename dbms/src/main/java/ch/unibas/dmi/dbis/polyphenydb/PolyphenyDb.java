@@ -79,9 +79,9 @@ public class PolyphenyDb {
         for ( CatalogStore store : stores ) {
             try {
                 Class<?> clazz = Class.forName( store.adapterClazz );
-                Constructor<?> ctor = clazz.getConstructor();
-                Store instance = (Store) ctor.newInstance();
-                StoreManager.getInstance().register( store.id, store.uniqueName, instance );
+                Constructor<?> ctor = clazz.getConstructor( int.class, String.class );
+                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName );
+                StoreManager.getInstance().register( instance );
             } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
                 throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
             }

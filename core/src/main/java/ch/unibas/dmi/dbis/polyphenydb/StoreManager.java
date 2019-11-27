@@ -23,9 +23,9 @@ public class StoreManager {
     }
 
 
-    public void register( int storeId, final String uniqueName, final Store instance ) {
-        storesByName.put( uniqueName, instance );
-        storesById.put( storeId, instance );
+    public void register( final Store instance ) {
+        storesByName.put( instance.getUniqueName(), instance );
+        storesById.put( instance.getStoreId(), instance );
     }
 
 
