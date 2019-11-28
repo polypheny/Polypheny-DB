@@ -205,14 +205,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             if ( this.columnList == null ) {
                 // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+                throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
             }
 
             int storeId = context.getDefaultStore();
             if ( this.store != null ) {
                 Store storeInstance = StoreManager.getInstance().getStore( this.store.getSimple() );
                 if ( storeInstance == null ) {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
+                    throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
                 }
                 storeId = storeInstance.getStoreId();
             }

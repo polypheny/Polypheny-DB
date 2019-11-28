@@ -6381,6 +6381,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PERCENT_RANK: "PERCENT_RANK" >
 |   < PERIOD: "PERIOD" >
 |   < PERMUTE: "PERMUTE" >
+|   < PLACEMENT: "PLACEMENT" >
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >
