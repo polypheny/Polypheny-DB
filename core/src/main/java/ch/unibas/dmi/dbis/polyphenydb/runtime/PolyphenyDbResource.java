@@ -872,5 +872,8 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("While executing SQL [{0}] on JDBC sub-schema")
     ExInst<RuntimeException> exceptionWhilePerformingQueryOnJdbcSubSchema( String sql );
+
+    @BaseMessage("There is no data store with this name: ''{0}''")
+    ExInst<PolyphenyDbException> unknownStoreName( String store );
 }
 

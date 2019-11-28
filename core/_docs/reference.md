@@ -869,6 +869,7 @@ STATEMENT,
 **STATIC**,
 **STDDEV_POP**,
 **STDDEV_SAMP**,
+STORE,
 **STORED**,
 **STREAM**,
 STRUCTURE,
@@ -2191,6 +2192,7 @@ createTableStatement:
       CREATE TABLE [ IF NOT EXISTS ] name
       [ '(' tableElement [, tableElement ]* ')' ]
       [ AS query ]
+      [ ON STORE store]
 
 createTypeStatement:
       CREATE [ OR REPLACE ] TYPE name AS

@@ -43,6 +43,7 @@ data: {
             "JAR"
             "FILE"
             "ARCHIVE"
+            "STORE"
         ]
 
         # List of keywords from "keywords" section that are not reserved.
@@ -309,6 +310,7 @@ data: {
             "SQL_TSI_YEAR"
             "SQL_VARBINARY"
             "SQL_VARCHAR"
+            "STORE"
             "STATE"
             "STATEMENT"
             "STRUCTURE"
