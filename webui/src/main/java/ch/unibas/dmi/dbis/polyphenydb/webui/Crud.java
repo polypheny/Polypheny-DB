@@ -28,6 +28,8 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -37,6 +39,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -98,6 +101,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -1207,6 +1211,64 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    /**
+     * Get placements of a table
+     */
+    Result getPlacements( final Request req, final Response res ) {
+        Index index = this.gson.fromJson( req.body(), Index.class );
+        Transaction transaction = getTransaction();
+        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
+        Result result;
+        try {
+            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( Long.parseLong( tableId ) );
+            List<CatalogDataPlacement> placements = combinedTable.getPlacements();
+
+            DbColumn[] header = { new DbColumn( "store_id" ), new DbColumn( "store_uniquename" ) };
+
+            ArrayList<String[]> data = new ArrayList<>();
+            for ( CatalogDataPlacement placement : placements ) {
+                String[] arr = new String[2];
+                arr[0] = "" + placement.storeId;
+                arr[1] = placement.storeUniqueName;
+                data.add( arr );
+            }
+
+            result = new Result( header, data.toArray( new String[0][2] ) );
+            transaction.commit();
+        } catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
+            log.error( "Caught exception while getting placements", e );
+            result = new Result( e.getMessage() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Get current stores
+     */
+    Result getStores( final Request req, final Response res ) {
+        Result result;
+        DbColumn[] header = { new DbColumn( "id" ), new DbColumn( "name" ), new DbColumn( "adapter" ) };
+
+        ArrayList<String[]> data = new ArrayList<>();
+        ImmutableMap<String, Store> storeManager = StoreManager.getInstance().getStores();
+        for ( Store store : storeManager.values() ) {
+            String[] arr = new String[3];
+            arr[0] = "" + store.getStoreId();
+            arr[1] = store.getUniqueName();
+            arr[2] = store.getAdapterName();
+            data.add( arr );
+        }
+
+        return new Result( header, data.toArray( new String[0][2] ) );
     }
 
 
