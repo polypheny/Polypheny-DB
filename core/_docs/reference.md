@@ -103,6 +103,8 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP FOREIGN KEY foreignKeyName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) [ USING indexType ]
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT storeUniqueName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT storeUniqueName
 
 explain:
       EXPLAIN PLAN
