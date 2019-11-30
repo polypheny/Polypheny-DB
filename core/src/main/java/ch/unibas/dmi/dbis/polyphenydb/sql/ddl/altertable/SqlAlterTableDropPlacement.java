@@ -31,7 +31,9 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
@@ -80,13 +82,21 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogCombinedTable combinedTable = getCatalogCombinedTable( context, transaction, table );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
-            transaction.getCatalog().deleteDataPlacement( storeInstance.getStoreId(), catalogTable.id );
+            // Check whether this placement exists
+            for ( CatalogDataPlacement p : combinedTable.getPlacements()) {
+                if (p.storeId == storeInstance.getStoreId()) {
+                    // Delete placement
+                    transaction.getCatalog().deleteDataPlacement( storeInstance.getStoreId(), combinedTable.getTable().id );
+                    return;
+                }
+            }
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( storeName.getSimple(), combinedTable.getTable().name ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
