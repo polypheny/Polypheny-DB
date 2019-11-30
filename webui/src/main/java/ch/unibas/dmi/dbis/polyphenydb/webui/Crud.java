@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -1256,9 +1257,7 @@ public class Crud implements InformationObserver {
      * Get current stores
      */
     Result getStores( final Request req, final Response res ) {
-        Result result;
         DbColumn[] header = { new DbColumn( "id" ), new DbColumn( "name" ), new DbColumn( "adapter" ) };
-
         ArrayList<String[]> data = new ArrayList<>();
         ImmutableMap<String, Store> storeManager = StoreManager.getInstance().getStores();
         for ( Store store : storeManager.values() ) {
@@ -1268,7 +1267,23 @@ public class Crud implements InformationObserver {
             arr[2] = store.getAdapterName();
             data.add( arr );
         }
+        return new Result( header, data.toArray( new String[0][2] ) );
+    }
 
+
+    /**
+     * Get available adapters
+     */
+    Result getAdapters( final Request req, final Response res ) {
+        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "description" ) };
+        ArrayList<String[]> data = new ArrayList<>();
+        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
+        for ( AdapterInformation adapter : adapters ) {
+            String[] arr = new String[2];
+            arr[0] = adapter.name;
+            arr[1] = adapter.description;
+            data.add( arr );
+        }
         return new Result( header, data.toArray( new String[0][2] ) );
     }
 

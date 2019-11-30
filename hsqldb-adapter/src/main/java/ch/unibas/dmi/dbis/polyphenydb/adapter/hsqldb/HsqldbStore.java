@@ -38,6 +38,11 @@ import org.apache.commons.dbcp2.BasicDataSource;
 @Slf4j
 public class HsqldbStore extends Store {
 
+    @SuppressWarnings("WeakerAccess")
+    public static final String ADAPTER_NAME = "HSQLDB";
+    @SuppressWarnings("WeakerAccess")
+    public static final String DESCRIPTION = "Java-based relational database system.";
+
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
@@ -240,7 +245,7 @@ public class HsqldbStore extends Store {
 
     @Override
     public String getAdapterName() {
-        return "HSQLDB";
+        return ADAPTER_NAME;
     }
 
 
