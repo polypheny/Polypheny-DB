@@ -1218,12 +1218,13 @@ public class Crud implements InformationObserver {
      * Get placements of a table
      */
     Result getPlacements( final Request req, final Response res ) {
-        Index index = this.gson.fromJson( req.body(), Index.class );
+        String schemaName = ""; // TODO
+        String tableName = ""; // TODO
         Transaction transaction = getTransaction();
-        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
         Result result;
         try {
-            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( Long.parseLong( tableId ) );
+            CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
+            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
             List<CatalogDataPlacement> placements = combinedTable.getPlacements();
 
             DbColumn[] header = { new DbColumn( "store_id" ), new DbColumn( "store_uniquename" ) };
