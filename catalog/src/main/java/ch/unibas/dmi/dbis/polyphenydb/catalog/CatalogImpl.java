@@ -544,15 +544,16 @@ public class CatalogImpl extends Catalog {
      *
      * @param storeId The store on which the table should be placed on
      * @param tableId The id of the table to be placed
+     * @param placementType The type of placement
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void addDataPlacement( int storeId, long tableId ) throws GenericCatalogException {
+    public void addDataPlacement( int storeId, long tableId, PlacementType placementType ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            Statements.addDataPlacement( transactionHandler, store.id, table.id );
+            Statements.addDataPlacement( transactionHandler, store.id, table.id, placementType );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }

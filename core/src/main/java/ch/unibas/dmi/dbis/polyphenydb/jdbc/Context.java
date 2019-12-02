@@ -32,7 +32,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import java.util.List;
 
 
@@ -67,11 +66,6 @@ public interface Context {
      * The object is being analyzed is typically a view. If it is already being analyzed further up the stack, the view definition can be deduced to be cyclic.
      */
     List<String> getObjectPath();
-
-    /**
-     * Gets a runner; it can execute a relational expression.
-     */
-    RelRunner getRelRunner();
 
 
     Transaction getTransaction();

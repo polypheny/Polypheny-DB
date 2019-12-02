@@ -82,7 +82,6 @@ import org.junit.Test;
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
 public class SqlParserTest {
-    //~ Static fields/initializers ---------------------------------------------
 
     /**
      * List of reserved keywords.
@@ -571,15 +570,9 @@ public class SqlParserTest {
     private Casing quotedCasing = Casing.UNCHANGED;
     private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
 
-    //~ Constructors -----------------------------------------------------------
-
 
     public SqlParserTest() {
     }
-
-    //~ Methods ----------------------------------------------------------------
-
-    // Helper functions -------------------------------------------------------
 
 
     protected Tester getTester() {
@@ -7282,8 +7275,6 @@ public class SqlParserTest {
         assertEquals( node2.toString(), node1.toString() );
     }
 
-    //~ Inner Interfaces -------------------------------------------------------
-
 
     /**
      * Callback to control how test actions are performed.
@@ -7300,8 +7291,6 @@ public class SqlParserTest {
 
         void checkNode( String sql, Matcher<SqlNode> matcher );
     }
-
-    //~ Inner Classes ----------------------------------------------------------
 
 
     /**
