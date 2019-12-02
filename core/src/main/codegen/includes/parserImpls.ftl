@@ -232,6 +232,18 @@ SqlAlterTable SqlAlterTable(Span s) :
                 return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
             }
         |
+            <ADD> <PLACEMENT>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableAddPlacement(s.end(this), table, store);
+            }
+        |
+            <DROP> <PLACEMENT>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropPlacement(s.end(this), table, store);
+            }
+        |
             <ADD>
             (
                 <UNIQUE> { unique = true; }
@@ -268,18 +280,6 @@ SqlAlterTable SqlAlterTable(Span s) :
             statement = AlterTableModifyColumn(s, table, column)
             {
                 return statement;
-            }
-        |
-            <ADD> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableAddPlacement(s.end(this), table, store);
-            }
-        |
-            <DROP> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropPlacement(s.end(this), table, store);
             }
     )
 }
