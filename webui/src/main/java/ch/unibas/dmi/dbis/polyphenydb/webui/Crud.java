@@ -1229,13 +1229,14 @@ public class Crud implements InformationObserver {
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
             List<CatalogDataPlacement> placements = combinedTable.getPlacements();
 
-            DbColumn[] header = { new DbColumn( "store_id" ), new DbColumn( "store_uniquename" ) };
+            DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Type" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
             for ( CatalogDataPlacement placement : placements ) {
-                String[] arr = new String[2];
-                arr[0] = "" + placement.storeId;
-                arr[1] = placement.storeUniqueName;
+                String[] arr = new String[3];
+                arr[0] = placement.storeUniqueName;
+                arr[1] = StoreManager.getInstance().getStore( placement.storeId ).getAdapterName();
+                arr[2] = placement.placementType.name();
                 data.add( arr );
             }
 

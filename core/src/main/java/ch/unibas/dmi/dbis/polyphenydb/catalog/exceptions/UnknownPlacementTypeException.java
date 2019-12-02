@@ -23,43 +23,17 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
-import java.io.Serializable;
-import lombok.NonNull;
+public class UnknownPlacementTypeException extends CatalogException {
 
-
-public class CatalogDataPlacement implements CatalogEntity {
-
-    private static final long serialVersionUID = 4754069156177607149L;
-
-    public final long tableId;
-    public final String tableName;
-    public final int storeId;
-    public final String storeUniqueName;
-    public final PlacementType placementType;
-
-
-    public CatalogDataPlacement(
-            final long tableId,
-            @NonNull final String tableName,
-            final int storeId,
-            @NonNull final String storeUniqueName,
-            final PlacementType placementType ) {
-        this.tableId = tableId;
-        this.tableName = tableName;
-        this.storeId = storeId;
-        this.storeUniqueName = storeUniqueName;
-        this.placementType = placementType;
+    public UnknownPlacementTypeException( String name ) {
+        super( "There is no Foreign Key Option with name: " + name );
     }
 
 
-    // Used for creating ResultSets
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{ tableName, storeUniqueName, placementType.name() };
+    public UnknownPlacementTypeException( int id ) {
+        super( "There is no Foreign Key Option with id: " + id );
     }
-
 }

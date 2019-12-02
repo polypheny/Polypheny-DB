@@ -31,11 +31,10 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
@@ -96,7 +95,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 }
             }
             // Create placement
-            transaction.getCatalog().addDataPlacement( storeInstance.getStoreId(), combinedTable.getTable().id );
+            transaction.getCatalog().addDataPlacement( storeInstance.getStoreId(), combinedTable.getTable().id, PlacementType.MANUAL );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

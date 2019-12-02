@@ -52,6 +52,7 @@ import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.NameGenerator;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
@@ -224,7 +225,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     TableType.TABLE,
                     null );
 
-            transaction.getCatalog().addDataPlacement( storeId, tableId );
+            transaction.getCatalog().addDataPlacement( storeId, tableId, PlacementType.AUTOMATIC );
 
             List<SqlNode> columnList = this.columnList.getList();
             int position = 1;
