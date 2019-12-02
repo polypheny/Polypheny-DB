@@ -32,7 +32,6 @@ import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -88,6 +87,10 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
+            // Check if there are at least to placements
+            if ( combinedTable.getPlacements().size() < 2 ) {
+                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+            }
             // Check whether this placement exists
             for ( CatalogDataPlacement p : combinedTable.getPlacements()) {
                 if (p.storeId == storeInstance.getStoreId()) {

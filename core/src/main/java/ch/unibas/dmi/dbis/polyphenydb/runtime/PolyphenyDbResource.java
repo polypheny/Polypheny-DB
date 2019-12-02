@@ -881,5 +881,8 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("There is no placement of table ''{0}'' on store ''{1}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
+
+    @BaseMessage("There needs to be at least one placement per table")
+    ExInst<PolyphenyDbException> onlyOnePlacementLeft();
 }
 
