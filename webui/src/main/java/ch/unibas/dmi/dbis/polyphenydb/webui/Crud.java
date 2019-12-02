@@ -1219,8 +1219,9 @@ public class Crud implements InformationObserver {
      * Get placements of a table
      */
     Result getPlacements( final Request req, final Response res ) {
-        String schemaName = ""; // TODO
-        String tableName = ""; // TODO
+        Index index = gson.fromJson( req.body(), Index.class );
+        String schemaName = index.getSchema();
+        String tableName = index.getTable();
         Transaction transaction = getTransaction();
         Result result;
         try {
