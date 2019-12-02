@@ -103,6 +103,8 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP FOREIGN KEY foreignKeyName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) [ USING indexType ]
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT storeUniqueName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT storeUniqueName
 
 explain:
       EXPLAIN PLAN
@@ -704,6 +706,7 @@ PATH,
 **PERCENT_RANK**,
 **PERIOD**,
 **PERMUTE**,
+PLACEMENT,
 PLACING,
 PLAN,
 PLI,
@@ -869,6 +872,7 @@ STATEMENT,
 **STATIC**,
 **STDDEV_POP**,
 **STDDEV_SAMP**,
+STORE,
 **STORED**,
 **STREAM**,
 STRUCTURE,
@@ -2191,6 +2195,7 @@ createTableStatement:
       CREATE TABLE [ IF NOT EXISTS ] name
       [ '(' tableElement [, tableElement ]* ')' ]
       [ AS query ]
+      [ ON STORE store]
 
 createTypeStatement:
       CREATE [ OR REPLACE ] TYPE name AS

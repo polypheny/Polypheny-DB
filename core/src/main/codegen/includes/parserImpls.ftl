@@ -82,6 +82,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier refColumn;
     final SqlIdentifier refTable;
     final SqlIdentifier constraintName;
+    final SqlIdentifier store;
     final SqlIdentifier indexName;
     final SqlIdentifier indexType;
     final String onUpdate;
@@ -229,6 +230,18 @@ SqlAlterTable SqlAlterTable(Span s) :
             constraintName = SimpleIdentifier()
             {
                 return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
+            }
+        |
+            <ADD> <PLACEMENT>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableAddPlacement(s.end(this), table, store);
+            }
+        |
+            <DROP> <PLACEMENT>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableDropPlacement(s.end(this), table, store);
             }
         |
             <ADD>

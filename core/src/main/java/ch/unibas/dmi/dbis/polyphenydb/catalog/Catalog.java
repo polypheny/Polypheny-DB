@@ -53,6 +53,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOption
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownPlacementTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -333,9 +334,10 @@ public abstract class Catalog {
      *
      * @param storeId The store on which the table should be placed on
      * @param tableId The id of the table to be placed
+     * @param placementType The type of placement
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void addDataPlacement( int storeId, long tableId ) throws GenericCatalogException;
+    public abstract void addDataPlacement( int storeId, long tableId, PlacementType placementType ) throws GenericCatalogException;
 
     /**
      * Deletes a data placement
@@ -937,6 +939,43 @@ public abstract class Catalog {
         }
     }
 
+
+    public enum PlacementType {
+        MANUAL( 1 ),
+        AUTOMATIC( 2 );
+
+        private final int id;
+
+
+        PlacementType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static PlacementType getById( int id ) throws UnknownPlacementTypeException {
+            for ( PlacementType e : values() ) {
+                if ( e.id == id ) {
+                    return e;
+                }
+            }
+            throw new UnknownPlacementTypeException( id );
+        }
+
+
+        public static PlacementType parse( @NonNull String str ) throws UnknownPlacementTypeException {
+            if ( str.equalsIgnoreCase( "MANUAL" ) ) {
+                return PlacementType.MANUAL;
+            } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
+                return PlacementType.AUTOMATIC;
+            }
+            throw new UnknownPlacementTypeException( str );
+        }
+    }
 
 
     public static class Pattern {

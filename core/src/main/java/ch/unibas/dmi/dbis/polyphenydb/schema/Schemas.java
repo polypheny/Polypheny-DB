@@ -62,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema.FunctionEntry;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.google.common.base.Preconditions;
@@ -439,12 +438,6 @@ public final class Schemas {
             @Override
             public DataContext getDataContext() {
                 return dataContext;
-            }
-
-
-            @Override
-            public RelRunner getRelRunner() {
-                throw new UnsupportedOperationException();
             }
 
 

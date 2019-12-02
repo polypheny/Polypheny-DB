@@ -96,6 +96,13 @@ public class DdlParserTest extends SqlParserTest {
 
 
     @Test
+    public void testCreateTableOnStore() {
+        sql( "create table x (i int not null, j varchar(5) null) on store hsqldb1" )
+                .ok( "CREATE TABLE `X` (`I` INTEGER NOT NULL, `J` VARCHAR(5)) ON STORE `HSQLDB1`" );
+    }
+
+
+    @Test
     public void testCreateTableAsSelect() {
         final String expected = "CREATE TABLE `X` AS\n"
                 + "SELECT *\n"

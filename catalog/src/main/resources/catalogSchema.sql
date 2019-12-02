@@ -138,6 +138,7 @@ CREATE TABLE "store" (
 CREATE TABLE "data_placement" (
     "store" INTEGER NOT NULL REFERENCES "store" ("id"),
     "table" BIGINT  NOT NULL REFERENCES "table" ("id"),
+    "type" INTEGER NOT NULL,
     PRIMARY KEY ("store", "table")
 );
 
@@ -383,7 +384,7 @@ ALTER TABLE "store"
 --
 -- data placement
 --
-INSERT INTO "data_placement" ( "store", "table" )
-VALUES ( 1, 0 ),
-       ( 1, 1 );
+INSERT INTO "data_placement" ( "store", "table", "type" )
+VALUES ( 1, 0, 1 ),
+       ( 1, 1, 1 );
 

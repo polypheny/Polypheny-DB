@@ -48,9 +48,11 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.NameGenerator;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
@@ -115,6 +117,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
     private final SqlNode query;
+    private final SqlIdentifier store;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -122,11 +125,12 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
+    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
+        this.store = store; // ON STORE [store name]; may be null
     }
 
 
@@ -156,6 +160,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             writer.keyword( "AS" );
             writer.newlineAndIndent();
             query.unparse( writer, 0, 0 );
+        }
+        if ( store != null ) {
+            writer.keyword( "ON STORE" );
+            store.unparse( writer, 0, 0 );
         }
     }
 
@@ -198,7 +206,16 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             if ( this.columnList == null ) {
                 // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+                throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+            }
+
+            int storeId = context.getDefaultStore();
+            if ( this.store != null ) {
+                Store storeInstance = StoreManager.getInstance().getStore( this.store.getSimple() );
+                if ( storeInstance == null ) {
+                    throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
+                }
+                storeId = storeInstance.getStoreId();
             }
 
             long tableId = transaction.getCatalog().addTable(
@@ -208,7 +225,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     TableType.TABLE,
                     null );
 
-            transaction.getCatalog().addDataPlacement( context.getDefaultStore(), tableId );
+            transaction.getCatalog().addDataPlacement( storeId, tableId, PlacementType.AUTOMATIC );
 
             List<SqlNode> columnList = this.columnList.getList();
             int position = 1;
@@ -269,7 +286,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
-            StoreManager.getInstance().getStore( context.getDefaultStore() ).createTable( context, combinedTable );
+            StoreManager.getInstance().getStore( storeId ).createTable( context, combinedTable );
         } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }

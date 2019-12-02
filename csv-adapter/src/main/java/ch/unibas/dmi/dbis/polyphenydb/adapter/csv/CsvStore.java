@@ -16,13 +16,19 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-public class CsvStore implements Store {
+public class CsvStore extends Store {
+
+    @SuppressWarnings("WeakerAccess")
+    public static final String ADAPTER_NAME = "CSV";
+    @SuppressWarnings("WeakerAccess")
+    public static final String DESCRIPTION = "An adapter for querying CSV files.";
 
     private static File csvDir = new File( "testTestCsv" );
     private CsvSchema currentSchema;
 
 
-    public CsvStore() {
+    public CsvStore( final int storeId, final String uniqueName ) {
+        super( storeId, uniqueName );
     }
 
 
@@ -90,5 +96,11 @@ public class CsvStore implements Store {
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         throw new RuntimeException( "CSV adapter does not support updating column types!" );
+    }
+
+
+    @Override
+    public String getAdapterName() {
+        return ADAPTER_NAME;
     }
 }

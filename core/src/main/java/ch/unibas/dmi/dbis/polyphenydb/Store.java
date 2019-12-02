@@ -7,29 +7,44 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import lombok.Getter;
 
 
-public interface Store {
+public abstract class Store {
 
-    void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
+    @Getter
+    private final int storeId;
+    @Getter
+    private final String uniqueName;
 
-    Table createTableSchema( CatalogCombinedTable combinedTable );
 
-    Schema getCurrentSchema();
+    public Store( final int storeId, final String uniqueName ) {
+        this.storeId = storeId;
+        this.uniqueName = uniqueName;
+    }
 
-    void createTable( Context context, CatalogCombinedTable combinedTable );
 
-    void dropTable( Context context, CatalogCombinedTable combinedTable );
+    public abstract void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
 
-    void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    public abstract Table createTableSchema( CatalogCombinedTable combinedTable );
 
-    void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    public abstract Schema getCurrentSchema();
 
-    boolean prepare( PolyXid xid );
+    public abstract void createTable( Context context, CatalogCombinedTable combinedTable );
 
-    void commit( PolyXid xid );
+    public abstract void dropTable( Context context, CatalogCombinedTable combinedTable );
 
-    void truncate( Context context, CatalogCombinedTable table );
+    public abstract void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
 
-    void updateColumnType( Context context, CatalogColumn catalogColumn );
+    public abstract void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+
+    public abstract boolean prepare( PolyXid xid );
+
+    public abstract void commit( PolyXid xid );
+
+    public abstract void truncate( Context context, CatalogCombinedTable table );
+
+    public abstract void updateColumnType( Context context, CatalogColumn catalogColumn );
+
+    public abstract String getAdapterName();
 }

@@ -36,17 +36,23 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 
 @Slf4j
-public class HsqldbStore implements Store {
+public class HsqldbStore extends Store {
+
+    @SuppressWarnings("WeakerAccess")
+    public static final String ADAPTER_NAME = "HSQLDB";
+    @SuppressWarnings("WeakerAccess")
+    public static final String DESCRIPTION = "Java-based relational database system.";
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
 
 
-    public HsqldbStore() {
+    public HsqldbStore( final int storeId, final String uniqueName ) {
+        super( storeId, uniqueName );
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        dataSource.setUrl( "jdbc:hsqldb:mem:testdb" );
+        dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
         dataSource.setUsername( "sa" );
         dataSource.setPassword( "" );
 
@@ -57,7 +63,7 @@ public class HsqldbStore implements Store {
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
         // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( "hsqldb", "HSQLDB" );
+        final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
         final InformationGroup informationGroupConnectionPool = new InformationGroup( "JDBC Connection Pool", informationPage.getId() );
 
         InformationManager im = InformationManager.getInstance();
@@ -234,6 +240,12 @@ public class HsqldbStore implements Store {
             builder.append( ")" );
         }
         executeUpdate( builder );
+    }
+
+
+    @Override
+    public String getAdapterName() {
+        return ADAPTER_NAME;
     }
 
 
