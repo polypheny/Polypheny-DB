@@ -51,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.OrderedAggregateLambdaF
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.SourceSorter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Context;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Scalar;
@@ -166,7 +165,7 @@ public enum BuiltInMethod {
     REFLECTIVE_SCHEMA_GET_TARGET( ReflectiveSchema.class, "getTarget" ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getRootSchema" ),
-    JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
+    //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
     RESULT_SET_ENUMERABLE_SET_TIMEOUT( ResultSetEnumerable.class, "setTimeout", DataContext.class ),

@@ -191,7 +191,8 @@ public class RelOptUtilTest {
 
         RexInputRef leftKeyInputRef = RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexInputRef rightKeyInputRef = RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
-        RexNode joinCond = REL_BUILDER.call( SqlStdOperatorTable.OR,
+        RexNode joinCond = REL_BUILDER.call(
+                SqlStdOperatorTable.OR,
                 REL_BUILDER.call( SqlStdOperatorTable.EQUALS, leftKeyInputRef, rightKeyInputRef ),
                 REL_BUILDER.call( SqlStdOperatorTable.AND, REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, leftKeyInputRef ), REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, rightKeyInputRef ) ) );
 

@@ -373,7 +373,7 @@ ALTER TABLE "column"
 -- store
 --
 INSERT INTO "store" ( "id", "unique_name", "adapter" )
-VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb.HsqldbStore' ),
+VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore' ),
        ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore' );
 
 ALTER TABLE "store"
@@ -385,6 +385,6 @@ ALTER TABLE "store"
 -- data placement
 --
 INSERT INTO "data_placement" ( "store", "table", "type" )
-VALUES ( 1, 0, 1 ),
-       ( 1, 1, 1 );
+VALUES ( 1, 0, 2 ),
+       ( 1, 1, 2 );
 

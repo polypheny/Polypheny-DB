@@ -55,7 +55,7 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
     compile project(":csv-adapter")
-    compile project(":hsqldb-adapter")
+    compile project(":jdbc-adapter")
     compile project(":catalog")
     compile project(":webui")
     compile project(":jdbc-interface")

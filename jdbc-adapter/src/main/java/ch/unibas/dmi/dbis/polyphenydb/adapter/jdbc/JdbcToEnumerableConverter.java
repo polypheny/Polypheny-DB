@@ -99,6 +99,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
+    public static final String JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME = "getDataSource";
+
+
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
@@ -189,7 +192,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
                             Expressions.call(
                                     Schemas.unwrap( jdbcConvention.expression, JdbcSchema.class ),
-                                    BuiltInMethod.JDBC_SCHEMA_DATA_SOURCE.method ),
+                                    JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME ),
                             sql_,
                             rowBuilderFactory_,
                             preparedStatementConsumer_ ) );
@@ -200,7 +203,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
                             Expressions.call(
                                     Schemas.unwrap( jdbcConvention.expression, JdbcSchema.class ),
-                                    BuiltInMethod.JDBC_SCHEMA_DATA_SOURCE.method ),
+                                    JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME ),
                             sql_,
                             rowBuilderFactory_ ) );
         }
