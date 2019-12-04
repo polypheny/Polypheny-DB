@@ -83,7 +83,6 @@ import org.junit.Test;
  * Unit test for handling of traits by {@link VolcanoPlanner}.
  */
 public class VolcanoPlannerTraitTest {
-    //~ Static fields/initializers ---------------------------------------------
 
     /**
      * Private calling convention representing a generic "physical" calling convention.
@@ -115,13 +114,9 @@ public class VolcanoPlannerTraitTest {
      */
     private static int altTraitOrdinal = 0;
 
-    //~ Constructors -----------------------------------------------------------
-
 
     public VolcanoPlannerTraitTest() {
     }
-
-    //~ Methods ----------------------------------------------------------------
 
 
     @Ignore
@@ -232,8 +227,6 @@ public class VolcanoPlannerTraitTest {
         child = child.getInputs().get( 0 );
         assertTrue( child instanceof PhysLeafRel );
     }
-
-    //~ Inner Classes ----------------------------------------------------------
 
 
     /**

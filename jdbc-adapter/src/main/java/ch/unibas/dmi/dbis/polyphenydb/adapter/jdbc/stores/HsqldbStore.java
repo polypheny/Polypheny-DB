@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb.adapter.hsqldb;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
