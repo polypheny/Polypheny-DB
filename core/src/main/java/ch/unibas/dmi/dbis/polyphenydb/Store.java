@@ -63,6 +63,7 @@ public abstract class Store {
         public final String name;
         public final boolean canBeNull;
         public final boolean required;
+        public final boolean modifiable;
     }
 
 
@@ -71,8 +72,8 @@ public abstract class Store {
         public final Integer defaultValue;
 
 
-        public AdapterSettingInteger( String name, boolean canBeNull, boolean required, Integer defaultValue ) {
-            super( name, canBeNull, required );
+        public AdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
+            super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
     }
@@ -83,8 +84,8 @@ public abstract class Store {
         public final String defaultValue;
 
 
-        public AdapterSettingString( String name, boolean canBeNull, boolean required, String defaultValue ) {
-            super( name, canBeNull, required );
+        public AdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
+            super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
     }
@@ -95,8 +96,8 @@ public abstract class Store {
         public final boolean defaultValue;
 
 
-        public AdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean defaultValue ) {
-            super( name, canBeNull, required );
+        public AdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
+            super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
     }
@@ -107,8 +108,8 @@ public abstract class Store {
         public final List<String> options;
 
 
-        public AdapterSettingList( String name, boolean canBeNull, boolean required, List<String> options ) {
-            super( name, canBeNull, required );
+        public AdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
+            super( name, canBeNull, required, modifiable );
             this.options = options;
         }
     }

@@ -27,7 +27,7 @@ public class CsvStore extends Store {
     public static final String DESCRIPTION = "An adapter for querying CSV files.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "directory", false, true, "testTestCsv" )
+            new AdapterSettingString( "directory", false, true, true, "testTestCsv" )
     );
 
     private final File csvDir;

@@ -46,7 +46,7 @@ public class HsqldbStore extends Store {
     public static final String DESCRIPTION = "Java-based relational database system.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, ImmutableList.of( "Memory", "File" ) )
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) )
     );
 
     private final BasicDataSource dataSource;
@@ -103,7 +103,7 @@ public class HsqldbStore extends Store {
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between mutliple transactions
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
     }
 
 
