@@ -131,6 +131,7 @@ CREATE TABLE "store" (
     "id"          INTEGER IDENTITY NOT NULL,
     "unique_name" VARCHAR(100)     NOT NULL,
     "adapter"     VARCHAR(100)     NOT NULL,
+    "config"      VARCHAR(5000)    NOT NULL,
     PRIMARY KEY ("id")
 );
 
@@ -372,9 +373,9 @@ ALTER TABLE "column"
 --
 -- store
 --
-INSERT INTO "store" ( "id", "unique_name", "adapter" )
-VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore' ),
-       ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore' );
+INSERT INTO "store" ( "id", "unique_name", "adapter", "config" )
+VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory"}' ),
+       ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore', '{"directory": "testTestCsv"}' );
 
 ALTER TABLE "store"
     ALTER COLUMN "id"

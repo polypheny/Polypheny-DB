@@ -25,9 +25,12 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.HostInformation;
 import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
@@ -38,12 +41,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @Slf4j
@@ -73,18 +71,14 @@ public class PolyphenyDb {
     }
 
 
-    public void runPolyphenyDb() throws GenericCatalogException, InstantiationException {
+    public void runPolyphenyDb() throws GenericCatalogException {
 
-        List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores();
-        for ( CatalogStore store : stores ) {
-            try {
-                Class<?> clazz = Class.forName( store.adapterClazz );
-                Constructor<?> ctor = clazz.getConstructor( int.class, String.class );
-                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName );
-                StoreManager.getInstance().register( instance );
-            } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
-            }
+        Catalog catalog;
+        try {
+            catalog = CatalogManagerImpl.getInstance().getCatalog( transactionManager.startTransaction( "pa", "APP", false ).getXid() );
+            StoreManager.getInstance().restoreStores( catalog );
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException e ) {
+            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
         class ShutdownHelper implements Runnable {

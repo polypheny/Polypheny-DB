@@ -66,6 +66,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import com.google.gson.Gson;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -1084,18 +1085,21 @@ final class Statements {
 
 
     private static List<CatalogStore> storeFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String sql = "SELECT \"id\", \"unique_name\", \"adapter\" FROM \"store\"";
+        String sql = "SELECT \"id\", \"unique_name\", \"adapter\", \"config\" FROM \"store\"";
         if ( filter.length() > 0 ) {
             sql += " WHERE " + filter;
         }
         sql += ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogStore> list = new LinkedList<>();
+            Gson gson = new Gson();
             while ( rs.next() ) {
+                @SuppressWarnings("unchecked") Map<String, String> configMap = gson.fromJson( rs.getString( 4 ), Map.class );
                 list.add( new CatalogStore(
                         getInt( rs, 1 ),
                         rs.getString( 2 ),
-                        rs.getString( 3 )
+                        rs.getString( 3 ),
+                        configMap
                 ) );
             }
             return list;
@@ -1121,6 +1125,16 @@ final class Statements {
             throw new UnknownStoreException( id );
         }
         return list.get( 0 );
+    }
+
+
+    static long addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> config ) throws GenericCatalogException {
+        Gson gson = new Gson();
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "unique_name", quoteString( unique_name ) );
+        data.put( "adapter", quoteString( adapter ) );
+        data.put( "config", gson.toJson( config ) );
+        return insertHandler( transactionHandler, "store", data );
     }
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------

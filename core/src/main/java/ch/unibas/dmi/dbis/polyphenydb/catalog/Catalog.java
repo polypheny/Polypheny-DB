@@ -36,6 +36,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogPrimaryKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
@@ -61,6 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeExcepti
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -656,6 +658,25 @@ public abstract class Catalog {
      * @throws UnknownUserException If there is no user with the specified name
      */
     public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
+
+
+    /**
+     * Get list of all stores
+     *
+     * @return List of stores
+     */
+    public abstract List<CatalogStore> getStores() throws GenericCatalogException;
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param uniqueName The unique name of the store
+     * @param adapter The class name of the adapter
+     * @param config The configuration of the store
+     * @return The id of the newly added store
+     */
+    public abstract long addStore( String uniqueName, String adapter, Map<String, String> config ) throws GenericCatalogException;
 
 
     /*

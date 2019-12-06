@@ -11,7 +11,10 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -22,13 +25,18 @@ public class CsvStore extends Store {
     public static final String ADAPTER_NAME = "CSV";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "An adapter for querying CSV files.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
+            new AdapterSettingString( "directory", false, true, "testTestCsv" )
+    );
 
-    private static File csvDir = new File( "testTestCsv" );
+    private final File csvDir;
     private CsvSchema currentSchema;
 
 
-    public CsvStore( final int storeId, final String uniqueName ) {
-        super( storeId, uniqueName );
+    public CsvStore( final int storeId, final String uniqueName, final Map<String, String> config ) {
+        super( storeId, uniqueName, config );
+        csvDir = new File( config.get( "directory" ) );
     }
 
 
@@ -102,5 +110,11 @@ public class CsvStore extends Store {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
+    }
+
+
+    @Override
+    public List<AdapterSetting> getAdapterSettings() {
+        return SETTINGS;
     }
 }

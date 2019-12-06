@@ -22,12 +22,14 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,17 +44,25 @@ public class HsqldbStore extends Store {
     public static final String ADAPTER_NAME = "HSQLDB";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "Java-based relational database system.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
+            new AdapterSettingList( "type", false, true, ImmutableList.of( "Memory", "File" ) )
+    );
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
 
 
-    public HsqldbStore( final int storeId, final String uniqueName ) {
-        super( storeId, uniqueName );
+    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> config ) {
+        super( storeId, uniqueName, config );
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
+        if ( config.get( "type" ).equals( "Memory" ) ) {
+            dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
+        } else {
+            dataSource.setUrl( "jdbc:hsqldb:file:" + uniqueName );
+        }
         dataSource.setUsername( "sa" );
         dataSource.setPassword( "" );
 
@@ -62,7 +72,7 @@ public class HsqldbStore extends Store {
         this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
-        // ------ Information Manager -----------
+        // ----------- Information Manager -----------
         final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
         final InformationGroup informationGroupConnectionPool = new InformationGroup( "JDBC Connection Pool", informationPage.getId() );
 
@@ -246,6 +256,12 @@ public class HsqldbStore extends Store {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
+    }
+
+
+    @Override
+    public List<AdapterSetting> getAdapterSettings() {
+        return SETTINGS;
     }
 
 

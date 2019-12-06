@@ -64,6 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -1279,6 +1280,42 @@ public class CatalogImpl extends Catalog {
             throw new GenericCatalogException( e );
         }
     }
+
+
+    /**
+     * Get list of all stores
+     *
+     * @return List of stores
+     */
+    @Override
+    public List<CatalogStore> getStores() throws GenericCatalogException {
+        try {
+            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
+            return Statements.getStores( transactionHandler );
+        } catch ( CatalogConnectionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get the user with the specified name
+     *
+     * @param uniqueName The unique name of the store
+     * @param adapter The class name of the adapter
+     * @param config The configuration of the store
+     * @return The id of the newly added store
+     */
+    @Override
+    public long addStore( String uniqueName, String adapter, Map<String, String> config ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.addStore( transactionHandler, uniqueName, adapter, config );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
 
 
     @Override

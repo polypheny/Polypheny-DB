@@ -27,23 +27,26 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
 import java.io.Serializable;
+import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 
 public class CatalogStore implements CatalogEntity {
 
-    private static final long serialVersionUID = 4754069156177607149L;
+    private static final long serialVersionUID = -5837600302561930044L;
 
     public final int id;
     public final String uniqueName;
     public final String adapterClazz;
+    public final Map<String, String> config;
 
 
-    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz ) {
+    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> config ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterClazz = adapterClazz;
+        this.config = config;
     }
 
 
