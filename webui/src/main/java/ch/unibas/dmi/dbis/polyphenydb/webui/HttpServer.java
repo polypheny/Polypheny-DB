@@ -156,6 +156,11 @@ public class HttpServer extends QueryInterface {
         get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
 
         get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
+
+        post( "/exportTable", crud::exportTable, gson::toJson );
+
+        get( "/getStores", crud::getStores, gson::toJson );
+
     }
 
 
@@ -183,6 +188,8 @@ public class HttpServer extends QueryInterface {
         post( "/deleteUser", hub::deleteUser, gson::toJson );
 
         post( "/createUser", hub::createUser, gson::toJson );
+
+        post( "/importDataset", hub::importDataset, gson::toJson );
 
     }
 

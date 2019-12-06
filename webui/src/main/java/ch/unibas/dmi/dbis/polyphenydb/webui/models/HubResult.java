@@ -26,7 +26,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui.models;
 
 
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+
+@Accessors(chain = true)
 public class HubResult {
+
+    @Setter
     String message;
     String[][] data;
     String[] header;
@@ -37,7 +44,10 @@ public class HubResult {
     String user;
     String secret;
 
-    public HubResult ( final String error ) {
+    public HubResult( final String error ) {
         this.message = error;
+    }
+
+    public HubResult() {
     }
 }

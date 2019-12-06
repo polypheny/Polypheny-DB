@@ -29,8 +29,17 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.HubResult;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.HubRequest;
 import com.google.gson.Gson;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.URL;
+import java.util.UUID;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -84,12 +93,12 @@ class Hub {
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf( request.userId ))
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "secret", request.secret )
                 .build();
         Request req2 = new Request.Builder().url( this.url ).post( formBody ).build();
 
-        try ( Response response = httpClient.newCall(req2).execute() ) {
+        try ( Response response = httpClient.newCall( req2 ).execute() ) {
             return gson.fromJson( response.body().string(), Integer.class );
         } catch ( IOException | NullPointerException e ) {
             log.error( "checkLogin error", e );
@@ -98,12 +107,12 @@ class Hub {
     }
 
 
-    HubResult getUsers ( final spark.Request req, final spark.Response res ) {
+    HubResult getUsers( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf( request.userId ))
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "secret", request.secret )
                 .build();
 
@@ -111,7 +120,7 @@ class Hub {
     }
 
 
-    HubResult changePassword ( final spark.Request req, final spark.Response res ) {
+    HubResult changePassword( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
 
         RequestBody formBody = new FormBody.Builder()
@@ -127,7 +136,7 @@ class Hub {
     }
 
 
-    HubResult deleteUser ( final spark.Request req, final spark.Response res ) {
+    HubResult deleteUser( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
 
         RequestBody formBody = new FormBody.Builder()
@@ -141,16 +150,16 @@ class Hub {
     }
 
 
-    HubResult createUser ( final spark.Request req, final spark.Response res ) {
+    HubResult createUser( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
                 .add( "userId", Integer.toString( request.userId ) )
                 .add( "secret", request.secret )
-                .add( "userName",  request.name )
-                .add( "admin",  String.valueOf( request.admin ) )
-                .add( "email",  request.email )
+                .add( "userName", request.name )
+                .add( "admin", String.valueOf( request.admin ) )
+                .add( "email", request.email )
                 .build();
 
         return forward( formBody, "Could not change password" );
@@ -162,7 +171,7 @@ class Hub {
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf( request.userId ))
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "secret", request.secret )
                 .build();
 
@@ -175,9 +184,9 @@ class Hub {
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf( request.userId ))
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "name", request.name )
-                .add( "public", String.valueOf(request.pub) )
+                .add( "public", String.valueOf( request.pub ) )
                 .build();
 
         return forward( formBody, "Could not edit dataset" );
@@ -189,10 +198,10 @@ class Hub {
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf(request.userId ) )
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "secret", request.secret )
                 .add( "name", request.name )
-                .add( "pub", String.valueOf(request.pub) )
+                .add( "pub", String.valueOf( request.pub ) )
                 .add( "dataset", request.dataset )
                 .build();
 
@@ -205,26 +214,49 @@ class Hub {
 
         RequestBody formBody = new FormBody.Builder()
                 .add( "action", request.action )
-                .add( "userId", String.valueOf(request.userId ) )
+                .add( "userId", String.valueOf( request.userId ) )
                 .add( "secret", request.secret )
-                .add( "datasetId", String.valueOf(request.datasetId) )
+                .add( "datasetId", String.valueOf( request.datasetId ) )
                 .build();
 
         return forward( formBody, "Could not edit dataset" );
     }
 
 
-    private HubResult forward ( final RequestBody request, final String errorMessage ) {
+    HubResult importDataset( final spark.Request req, final spark.Response res ) {
+        HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
+
+        //create folder if not existent
+        //from https://stackoverflow.com/questions/3634853/how-to-create-a-directory-in-java/3634879#answer-3634906
+        new File( "hub" ).mkdirs();
+        //see: https://www.baeldung.com/java-download-file
+        String filename = String.format( "hub/%s-import.zip", UUID.randomUUID().toString() );
+        try ( BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
+                FileOutputStream fileOutputStream = new FileOutputStream( filename ) ) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
+                fileOutputStream.write( dataBuffer, 0, bytesRead );
+            }
+        } catch ( IOException e ) {
+            // handle exception
+            log.error( "Could not write file", e );
+        }
+
+        return new HubResult().setMessage( String.format( "Imported dataset into %s(%s)", request.schema, request.store ) );
+    }
+
+
+    private HubResult forward( final RequestBody request, final String errorMessage ) {
         Request req2 = new Request.Builder().url( this.url ).post( request ).build();
 
-        try ( Response response = httpClient.newCall(req2).execute() ) {
+        try ( Response response = httpClient.newCall( req2 ).execute() ) {
             String body = response.body().string();
             // log.info( body );
             return gson.fromJson( body, HubResult.class );
-        } catch( ConnectException e ){
+        } catch ( ConnectException e ) {
             return new HubResult( "Could not connect to the Polypheny-DB Hub server" );
-        }
-        catch ( IOException | NullPointerException e ) {
+        } catch ( IOException | NullPointerException e ) {
             log.error( errorMessage, e );
             return new HubResult( errorMessage );
         }

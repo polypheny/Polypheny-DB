@@ -47,6 +47,16 @@ public class HubRequest {
     public String dataset;
     public int datasetId;
 
+    //downloadDataset
+    public String schema;
+    public String store;
+    public String url;
+
+    //export dataset
+    //schema
+    public String table;
+    public String hubLink;
+
     //delete user
     public int deleteUser;
 

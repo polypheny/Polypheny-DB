@@ -99,17 +99,30 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.HubRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -118,9 +131,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -130,6 +146,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.math.NumberUtils;
 import spark.Request;
 import spark.Response;
+import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -1623,6 +1640,104 @@ public class Crud implements InformationObserver {
         String id = req.body();
         InformationManager.close( id );
         return "";
+    }
+
+
+    Result exportTable( final Request req, final Response res ) {
+        HubRequest request = gson.fromJson( req.body(), HubRequest.class );
+        Transaction transaction = getTransaction( false );
+
+        String randomFileName = UUID.randomUUID().toString();
+        final Charset charset = StandardCharsets.UTF_8;
+        String tableFileName = String.format( "hub/%s-table.csv", randomFileName );
+        String catalogFileName = String.format( "hub/%s-catalog.json", randomFileName );
+        String zipFileName = String.format( "hub/%s-table.zip", randomFileName );
+        try (
+                OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFileName ), charset );
+                FileOutputStream tableStream = new FileOutputStream( tableFileName );
+                FileOutputStream zipStream = new FileOutputStream( zipFileName );
+        ) {
+            log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
+            CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, request.schema, request.table );
+            CatalogCombinedTable catalogCombinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
+
+            //create folder if not existent yet
+            new File( "hub" ).mkdirs();
+            catalogWriter.write( this.gson.toJson( catalogCombinedTable ) );
+            catalogWriter.close();
+
+            String query = String.format( "SELECT * FROM %s.%s", request.schema, request.table );
+            //todo use iterator instead of Result
+            Result tableData = executeSqlSelect( transaction, new UIRequest(), query );
+
+            for ( String[] row : tableData.getData() ) {
+                int cols = row.length;
+                for ( int i = 0; i < cols; i++ ) {
+                    if ( row[i].contains( "\n" ) ) {
+                        String line = String.format( "\"%s\"", row[i] );
+                        tableStream.write( line.getBytes( charset ) );
+                    } else {
+                        tableStream.write( row[i].getBytes( charset ) );
+                    }
+                    if ( i != cols - 1 ) {
+                        tableStream.write( ",".getBytes( charset ) );
+                    } else {
+                        tableStream.write( "\n".getBytes( charset ) );
+                    }
+                }
+            }
+            tableStream.close();
+            //from https://www.baeldung.com/java-compress-and-uncompress
+            List<String> srcFiles = Arrays.asList( catalogFileName, tableFileName );
+            ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset );
+            for ( String srcFile : srcFiles ) {
+                File fileToZip = new File( srcFile );
+                FileInputStream fis = new FileInputStream( fileToZip );
+                ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
+                zipOut.putNextEntry( zipEntry );
+
+                byte[] bytes = new byte[1024];
+                int length;
+                while ( (length = fis.read( bytes )) >= 0 ) {
+                    zipOut.write( bytes, 0, length );
+                }
+                fis.close();
+            }
+            zipOut.close();
+            zipStream.close();
+
+            //delete temp files
+            new File( catalogFileName ).delete();
+            new File( tableFileName ).delete();
+
+            //send file to php backend using Unirest
+            HttpResponse jsonResponse = Unirest.post( request.hubLink )
+                    .field( "action", "uploadDataset" )
+                    .field( "userId", String.valueOf( request.userId ) )
+                    .field( "secret", request.secret )
+                    .field( "name", request.name )
+                    .field( "pub", String.valueOf( request.pub ) )
+                    .field( "dataset", new File( zipFileName ) )
+                    .asString();
+
+            // Get result
+            StringWriter writer = new StringWriter();
+            IOUtils.copy( jsonResponse.getRawBody(), writer );
+            String resultString = writer.toString();
+            log.info( String.format( "Exported %s.%s", request.schema, request.table ) );
+            new File( zipFileName ).delete();
+            try {
+                return gson.fromJson( resultString, Result.class );
+            } catch ( JsonSyntaxException e ) {
+                return new Result( resultString );
+            }
+        } catch ( IOException e ) {
+            log.error( "Failed to write temporary file", e );
+            return new Result( "Failed to write temporary file" );
+        } catch ( Exception e ) {
+            log.error( "Error while exporting table", e );
+            return new Result( "Error while exporting table" );
+        }
     }
 
     // -----------------------------------------------------------------------
