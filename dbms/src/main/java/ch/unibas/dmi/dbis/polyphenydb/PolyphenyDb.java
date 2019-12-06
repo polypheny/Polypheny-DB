@@ -47,8 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PolyphenyDb {
 
-    public static final Logger GLOBAL_LOGGER = LoggerFactory.getLogger( "Polypheny-DB" );
-
     private PUID shutdownHookId;
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
@@ -159,24 +157,24 @@ public class PolyphenyDb {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
         } catch ( InterruptedException e ) {
-            GLOBAL_LOGGER.warn( "Interrupted on join()", e );
+            log.warn( "Interrupted on join()", e );
         }
 
-        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
-        GLOBAL_LOGGER.warn( "                Polypheny-DB successfully started and ready to process your queries!" );
-        GLOBAL_LOGGER.warn( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
+        log.info( "****************************************************************************************************" );
+        log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
+        log.info( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "****************************************************************************************************" );
 
         try {
-            GLOBAL_LOGGER.debug( "Waiting for the Shutdown-Hook to finish ..." );
+            log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
             if ( sh.hasFinished() == false ) {
-                GLOBAL_LOGGER.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
+                log.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
             } else {
-                GLOBAL_LOGGER.info( "Waiting for the Shutdown-Hook to finish ... done." );
+                log.info( "Waiting for the Shutdown-Hook to finish ... done." );
             }
         } catch ( InterruptedException e ) {
-            GLOBAL_LOGGER.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
+            log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
     }
 }
