@@ -68,7 +68,7 @@ public abstract class Store {
                     if ( !s.canBeNull && newValue == null ) {
                         throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
                     }
-                    if ( newValue.equals( settings.get( s.name ) ) ) {
+                    if ( !newValue.equals( settings.get( s.name ) ) ) {
                         applySetting(s, newValue);
                         settings.put( s.name, newValue );
                     } else {

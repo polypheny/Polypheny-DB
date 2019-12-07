@@ -578,6 +578,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Get data placements on a store
+     *
+     * @param storeId The id of the store
+     * @return List of data placements on this store
+     */
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByStore( int storeId ) throws GenericCatalogException {
         try {
