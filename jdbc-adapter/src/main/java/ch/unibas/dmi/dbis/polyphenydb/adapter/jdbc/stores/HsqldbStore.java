@@ -21,8 +21,9 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -45,8 +46,9 @@ public class HsqldbStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "Java-based relational database system.";
     @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) )
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
+            new AdapterSettingString( "path", false, true, false, "." + File.separator )
     );
 
     private final BasicDataSource dataSource;
@@ -54,14 +56,15 @@ public class HsqldbStore extends Store {
     private SqlDialect dialect;
 
 
-    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> config ) {
-        super( storeId, uniqueName, config );
+    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings );
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        if ( config.get( "type" ).equals( "Memory" ) ) {
+        if ( settings.get( "type" ).equals( "Memory" ) ) {
             dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
         } else {
-            dataSource.setUrl( "jdbc:hsqldb:file:" + uniqueName );
+            String path = settings.get( "path" );
+            dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName );
         }
         dataSource.setUsername( "sa" );
         dataSource.setPassword( "" );
@@ -70,7 +73,7 @@ public class HsqldbStore extends Store {
         dataSource.setDefaultAutoCommit( true );
 
         this.dataSource = dataSource;
-        dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
+        dialect = HsqldbSqlDialect.DEFAULT;
 
         // ----------- Information Manager -----------
         final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
@@ -260,8 +263,30 @@ public class HsqldbStore extends Store {
 
 
     @Override
-    public List<AdapterSetting> getAdapterSettings() {
-        return SETTINGS;
+    public List<AdapterSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void updateSettings( Map<String, String> newSettings ) {
+        for ( AdapterSetting s : AVAILABLE_SETTINGS ) {
+            if ( newSettings.containsKey( s.name ) ) {
+                if ( s.modifiable ) {
+                    String newValue = newSettings.get( s.name );
+                    if ( !s.canBeNull && newValue == null ) {
+                        throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
+                    }
+                    if ( newValue.equals( settings.get( s.name ) ) ) {
+                        // There is no modifiable setting for this store
+                    } else {
+                        // Same value, do nothing
+                    }
+                } else {
+                    throw new RuntimeException( "Setting \"" + s.name + "\" is not modifiable!" );
+                }
+            }
+        }
     }
 
 

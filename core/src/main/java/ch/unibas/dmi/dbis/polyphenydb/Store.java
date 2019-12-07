@@ -20,13 +20,13 @@ public abstract class Store {
     @Getter
     private final String uniqueName;
 
-    private final Map<String, String> config;
+    protected final Map<String, String> settings;
 
 
-    public Store( final int storeId, final String uniqueName, final Map<String, String> config ) {
+    public Store( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
-        this.config = config;
+        this.settings = settings;
     }
 
 
@@ -54,7 +54,14 @@ public abstract class Store {
 
     public abstract String getAdapterName();
 
-    public abstract List<AdapterSetting> getAdapterSettings();
+    public abstract List<AdapterSetting> getAvailableSettings();
+
+    public abstract void updateSettings( Map<String, String> newSettings );
+
+
+    public Map<String, String> getCurrentSettings() {
+        return settings;
+    }
 
 
     @AllArgsConstructor

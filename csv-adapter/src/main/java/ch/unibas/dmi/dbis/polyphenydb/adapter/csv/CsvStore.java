@@ -26,17 +26,17 @@ public class CsvStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "An adapter for querying CSV files.";
     @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> SETTINGS = ImmutableList.of(
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "directory", false, true, true, "testTestCsv" )
     );
 
-    private final File csvDir;
+    private File csvDir;
     private CsvSchema currentSchema;
 
 
-    public CsvStore( final int storeId, final String uniqueName, final Map<String, String> config ) {
-        super( storeId, uniqueName, config );
-        csvDir = new File( config.get( "directory" ) );
+    public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings );
+        csvDir = new File( settings.get( "directory" ) );
     }
 
 
@@ -114,7 +114,38 @@ public class CsvStore extends Store {
 
 
     @Override
-    public List<AdapterSetting> getAdapterSettings() {
-        return SETTINGS;
+    public List<AdapterSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void updateSettings( Map<String, String> newSettings ) {
+        for ( AdapterSetting s : AVAILABLE_SETTINGS ) {
+            if ( newSettings.containsKey( s.name ) ) {
+                if ( s.modifiable ) {
+                    String newValue = newSettings.get( s.name );
+                    if ( !s.canBeNull && newValue == null ) {
+                        throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
+                    }
+                    if ( newValue.equals( settings.get( s.name ) ) ) {
+                        //noinspection SwitchStatementWithTooFewBranches
+                        switch ( s.name ) {
+                            case "directory":
+                                csvDir = new File( newValue );
+                                break;
+
+                            default:
+                                throw new RuntimeException( "Missing entry for setting \"" + s.name + "\"!" );
+                        }
+                        settings.put( s.name, newValue );
+                    } else {
+                        // Same value, do nothing
+                    }
+                } else {
+                    throw new RuntimeException( "Setting \"" + s.name + "\" is not modifiable!" );
+                }
+            }
+        }
     }
 }

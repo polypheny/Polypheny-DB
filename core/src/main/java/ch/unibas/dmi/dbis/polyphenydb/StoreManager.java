@@ -58,8 +58,8 @@ public class StoreManager {
             //noinspection unchecked
             for ( Class<Store> clazz : classes ) {
                 String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get(null);
-                String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get(null);
-                List<AdapterSetting> settings = (List<AdapterSetting>) clazz.getDeclaredField( "SETTINGS" ).get( null );
+                String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
+                List<AdapterSetting> settings = (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null );
                 result.add( new AdapterInformation( name, description, clazz, settings ) );
             }
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
