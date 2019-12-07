@@ -31,6 +31,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -349,6 +350,13 @@ public abstract class Catalog {
      */
     public abstract void deleteDataPlacement( int storeId, long tableId ) throws GenericCatalogException;
 
+    /**
+     * Get data placements by store
+     *
+     * @param storeId The id of the store
+     * @return List of data placements on this store
+     */
+    public abstract List<CatalogDataPlacement> getDataPlacementsByStore( int storeId ) throws GenericCatalogException;
 
     /**
      * Get all columns of the specified table.
@@ -357,7 +365,6 @@ public abstract class Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException;
-
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -390,7 +397,6 @@ public abstract class Catalog {
      */
     public abstract CatalogColumn getColumn( long tableId, String columnName ) throws GenericCatalogException, UnknownColumnException;
 
-
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
      *
@@ -402,7 +408,6 @@ public abstract class Catalog {
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws GenericCatalogException, UnknownColumnException;
-
 
     /**
      * Adds a column.
@@ -669,6 +674,14 @@ public abstract class Catalog {
 
 
     /**
+     * Get a store by its unique name
+     *
+     * @return List of stores
+     */
+    public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException;
+
+
+    /**
      * Add a store
      *
      * @param uniqueName The unique name of the store
@@ -676,7 +689,15 @@ public abstract class Catalog {
      * @param settings The configuration of the store
      * @return The id of the newly added store
      */
-    public abstract long addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;
+    public abstract int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;
+
+
+    /**
+     * Delete a store
+     *
+     * @param storeId The id of the store to delete
+     */
+    public abstract void deleteStore( int storeId ) throws GenericCatalogException;
 
 
     /*

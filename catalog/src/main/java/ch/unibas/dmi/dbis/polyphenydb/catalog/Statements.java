@@ -1128,13 +1128,39 @@ final class Statements {
     }
 
 
-    static long addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> settings ) throws GenericCatalogException {
+    // Get Store by store name
+    static CatalogStore getStore( XATransactionHandler transactionHandler, String uniqueName ) throws GenericCatalogException, UnknownStoreException {
+        String filter = " \"unique_name\" = " + uniqueName;
+        List<CatalogStore> list = storeFilter( transactionHandler, filter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownStoreException( uniqueName );
+        }
+        return list.get( 0 );
+    }
+
+
+    static int addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> settings ) throws GenericCatalogException {
         Gson gson = new Gson();
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "unique_name", quoteString( unique_name ) );
         data.put( "adapter", quoteString( adapter ) );
         data.put( "settings", gson.toJson( settings ) );
-        return insertHandler( transactionHandler, "store", data );
+        return Math.toIntExact(insertHandler( transactionHandler, "store", data ));
+    }
+
+
+    static void deleteStore( XATransactionHandler transactionHandler, long storeId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "store" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + storeId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1166,6 +1192,12 @@ final class Statements {
 
     static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND t.\"id\" = " + tableId;
+        return dataPlacementFilter( transactionHandler, filter );
+    }
+
+
+    static List<CatalogDataPlacement> getDataPlacementsByStore( XATransactionHandler transactionHandler, int storeId ) throws GenericCatalogException {
+        String filter = " AND st.\"id\" = " + storeId;
         return dataPlacementFilter( transactionHandler, filter );
     }
 

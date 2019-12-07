@@ -58,6 +58,7 @@ public abstract class Store {
 
     public abstract void updateSettings( Map<String, String> newSettings );
 
+    public abstract void shutdown();
 
     public Map<String, String> getCurrentSettings() {
         return settings;

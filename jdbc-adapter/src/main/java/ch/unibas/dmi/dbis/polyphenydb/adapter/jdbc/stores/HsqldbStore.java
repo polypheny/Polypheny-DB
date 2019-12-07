@@ -290,6 +290,17 @@ public class HsqldbStore extends Store {
     }
 
 
+    @Override
+    public void shutdown() {
+        try {
+            dataSource.getConnection().createStatement().execute( "SHUTDOWN" );
+            dataSource.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down " + getUniqueName(), e );
+        }
+    }
+
+
     private String getTypeString( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:

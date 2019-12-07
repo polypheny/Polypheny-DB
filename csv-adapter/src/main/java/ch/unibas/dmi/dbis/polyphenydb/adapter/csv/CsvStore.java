@@ -13,6 +13,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -148,4 +149,11 @@ public class CsvStore extends Store {
             }
         }
     }
+
+
+    @Override
+    public void shutdown() {
+        // Nothing to do
+    }
+
 }
