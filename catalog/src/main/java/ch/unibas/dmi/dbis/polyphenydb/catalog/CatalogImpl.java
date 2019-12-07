@@ -1299,18 +1299,18 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get the user with the specified name
+     * Add a store
      *
      * @param uniqueName The unique name of the store
      * @param adapter The class name of the adapter
-     * @param config The configuration of the store
+     * @param settings The configuration of the store
      * @return The id of the newly added store
      */
     @Override
-    public long addStore( String uniqueName, String adapter, Map<String, String> config ) throws GenericCatalogException {
+    public long addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.addStore( transactionHandler, uniqueName, adapter, config );
+            return Statements.addStore( transactionHandler, uniqueName, adapter, settings );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }

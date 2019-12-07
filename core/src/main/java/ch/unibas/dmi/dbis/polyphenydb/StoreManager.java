@@ -78,7 +78,7 @@ public class StoreManager {
             for ( CatalogStore store : stores ) {
                 Class<?> clazz = Class.forName( store.adapterClazz );
                 Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName, store.config );
+                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName, store.settings );
                 storesByName.put( instance.getUniqueName(), instance );
                 storesById.put( instance.getStoreId(), instance );
 
@@ -89,14 +89,14 @@ public class StoreManager {
     }
 
 
-    public Store addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> config ) {
+    public Store addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
         // TODO check if uniqueName is unique
         Store instance;
         try {
             Class<?> clazz = Class.forName( clazzName );
             Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-            long storeId = catalog.addStore( uniqueName, clazzName, config );
-            instance = (Store) ctor.newInstance( storeId, uniqueName, config );
+            long storeId = catalog.addStore( uniqueName, clazzName, settings );
+            instance = (Store) ctor.newInstance( storeId, uniqueName, settings );
             storesByName.put( instance.getUniqueName(), instance );
             storesById.put( instance.getStoreId(), instance );
         } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException | GenericCatalogException e ) {

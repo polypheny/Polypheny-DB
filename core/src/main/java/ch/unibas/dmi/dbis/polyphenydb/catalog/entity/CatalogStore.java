@@ -39,14 +39,14 @@ public class CatalogStore implements CatalogEntity {
     public final int id;
     public final String uniqueName;
     public final String adapterClazz;
-    public final Map<String, String> config;
+    public final Map<String, String> settings;
 
 
-    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> config ) {
+    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterClazz = adapterClazz;
-        this.config = config;
+        this.settings = settings;
     }
 
 

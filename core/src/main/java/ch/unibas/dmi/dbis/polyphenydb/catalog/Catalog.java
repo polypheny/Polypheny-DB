@@ -669,14 +669,14 @@ public abstract class Catalog {
 
 
     /**
-     * Get the user with the specified name
+     * Add a store
      *
      * @param uniqueName The unique name of the store
      * @param adapter The class name of the adapter
-     * @param config The configuration of the store
+     * @param settings The configuration of the store
      * @return The id of the newly added store
      */
-    public abstract long addStore( String uniqueName, String adapter, Map<String, String> config ) throws GenericCatalogException;
+    public abstract long addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;
 
 
     /*

@@ -1085,7 +1085,7 @@ final class Statements {
 
 
     private static List<CatalogStore> storeFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String sql = "SELECT \"id\", \"unique_name\", \"adapter\", \"config\" FROM \"store\"";
+        String sql = "SELECT \"id\", \"unique_name\", \"adapter\", \"settings\" FROM \"store\"";
         if ( filter.length() > 0 ) {
             sql += " WHERE " + filter;
         }
@@ -1128,12 +1128,12 @@ final class Statements {
     }
 
 
-    static long addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> config ) throws GenericCatalogException {
+    static long addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> settings ) throws GenericCatalogException {
         Gson gson = new Gson();
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "unique_name", quoteString( unique_name ) );
         data.put( "adapter", quoteString( adapter ) );
-        data.put( "config", gson.toJson( config ) );
+        data.put( "settings", gson.toJson( settings ) );
         return insertHandler( transactionHandler, "store", data );
     }
 
