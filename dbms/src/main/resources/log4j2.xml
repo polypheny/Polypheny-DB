@@ -39,7 +39,7 @@
         <logger name="org" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>  -->
-        <logger name="ch" level="DEBUG">
+        <logger name="ch" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>
         <!-- <logger name="ch.unibas.dmi.dbis.polyphenydb.jdbc" level="TRACE">

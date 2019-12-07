@@ -21,7 +21,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.Connection;
@@ -73,7 +73,7 @@ public class HsqldbStore extends Store {
         dataSource.setDefaultAutoCommit( true );
 
         this.dataSource = dataSource;
-        dialect = HsqldbSqlDialect.DEFAULT;
+        dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
         // ----------- Information Manager -----------
         final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
