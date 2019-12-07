@@ -22,12 +22,15 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
+import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,17 +45,27 @@ public class HsqldbStore extends Store {
     public static final String ADAPTER_NAME = "HSQLDB";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "Java-based relational database system.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
+            new AdapterSettingString( "path", false, true, false, "." + File.separator )
+    );
 
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
 
 
-    public HsqldbStore( final int storeId, final String uniqueName ) {
-        super( storeId, uniqueName );
+    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings );
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
+        if ( settings.get( "type" ).equals( "Memory" ) ) {
+            dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
+        } else {
+            String path = settings.get( "path" );
+            dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName );
+        }
         dataSource.setUsername( "sa" );
         dataSource.setPassword( "" );
 
@@ -62,7 +75,7 @@ public class HsqldbStore extends Store {
         this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
-        // ------ Information Manager -----------
+        // ----------- Information Manager -----------
         final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
         final InformationGroup informationGroupConnectionPool = new InformationGroup( "JDBC Connection Pool", informationPage.getId() );
 
@@ -93,7 +106,7 @@ public class HsqldbStore extends Store {
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between mutliple transactions
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
     }
 
 
@@ -246,6 +259,29 @@ public class HsqldbStore extends Store {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
+    }
+
+
+    @Override
+    public List<AdapterSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void applySetting( AdapterSetting setting, String newValue ) {
+        // There is no modifiable setting for this store
+    }
+
+
+    @Override
+    public void shutdown() {
+        try {
+            dataSource.getConnection().createStatement().execute( "SHUTDOWN" );
+            dataSource.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down " + getUniqueName(), e );
+        }
     }
 
 

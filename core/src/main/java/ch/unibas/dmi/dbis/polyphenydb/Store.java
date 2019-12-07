@@ -7,6 +7,9 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import java.util.List;
+import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 
@@ -17,10 +20,13 @@ public abstract class Store {
     @Getter
     private final String uniqueName;
 
+    protected final Map<String, String> settings;
 
-    public Store( final int storeId, final String uniqueName ) {
+
+    public Store( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
+        this.settings = settings;
     }
 
 
@@ -47,4 +53,94 @@ public abstract class Store {
     public abstract void updateColumnType( Context context, CatalogColumn catalogColumn );
 
     public abstract String getAdapterName();
+
+    public abstract List<AdapterSetting> getAvailableSettings();
+
+    public abstract void shutdown();
+
+    protected abstract void applySetting( AdapterSetting s, String newValue );
+
+    public void updateSettings( Map<String, String> newSettings ) {
+        for ( AdapterSetting s : getAvailableSettings() ) {
+            if ( newSettings.containsKey( s.name ) ) {
+                if ( s.modifiable ) {
+                    String newValue = newSettings.get( s.name );
+                    if ( !s.canBeNull && newValue == null ) {
+                        throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
+                    }
+                    if ( !newValue.equals( settings.get( s.name ) ) ) {
+                        applySetting(s, newValue);
+                        settings.put( s.name, newValue );
+                    } else {
+                        // Same value, do nothing
+                    }
+                } else {
+                    throw new RuntimeException( "Setting \"" + s.name + "\" is not modifiable!" );
+                }
+            }
+        }
+    }
+
+    public Map<String, String> getCurrentSettings() {
+        return settings;
+    }
+
+
+    @AllArgsConstructor
+    public static abstract class AdapterSetting {
+
+        public final String name;
+        public final boolean canBeNull;
+        public final boolean required;
+        public final boolean modifiable;
+    }
+
+
+    public static class AdapterSettingInteger extends AdapterSetting {
+
+        public final Integer defaultValue;
+
+
+        public AdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
+            super( name, canBeNull, required, modifiable );
+            this.defaultValue = defaultValue;
+        }
+    }
+
+
+    public static class AdapterSettingString extends AdapterSetting {
+
+        public final String defaultValue;
+
+
+        public AdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
+            super( name, canBeNull, required, modifiable );
+            this.defaultValue = defaultValue;
+        }
+    }
+
+
+    public static class AdapterSettingBoolean extends AdapterSetting {
+
+        public final boolean defaultValue;
+
+
+        public AdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
+            super( name, canBeNull, required, modifiable );
+            this.defaultValue = defaultValue;
+        }
+    }
+
+
+    public static class AdapterSettingList extends AdapterSetting {
+
+        public final List<String> options;
+
+
+        public AdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
+            super( name, canBeNull, required, modifiable );
+            this.options = options;
+        }
+    }
+
 }

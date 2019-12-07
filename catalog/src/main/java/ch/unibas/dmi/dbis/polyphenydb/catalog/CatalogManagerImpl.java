@@ -27,13 +27,11 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogConnectionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -92,20 +90,6 @@ public class CatalogManagerImpl extends CatalogManager {
             val transactionHandler = LocalTransactionHandler.getTransactionHandler();
             return Statements.getUser( transactionHandler, username );
         } catch ( CatalogConnectionException | GenericCatalogException e ) {
-            throw new GenericCatalogException( e );
-        }
-    }
-
-    /**
-     * Get list of all stores
-     *
-     * @return List of stores
-     */
-    public List<CatalogStore> getStores() throws GenericCatalogException {
-        try {
-            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
-            return Statements.getStores( transactionHandler );
-        } catch ( CatalogConnectionException e ) {
             throw new GenericCatalogException( e );
         }
     }

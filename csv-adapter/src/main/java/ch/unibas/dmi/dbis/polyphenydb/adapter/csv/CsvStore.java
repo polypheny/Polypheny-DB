@@ -11,7 +11,11 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -22,13 +26,18 @@ public class CsvStore extends Store {
     public static final String ADAPTER_NAME = "CSV";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "An adapter for querying CSV files.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingString( "directory", false, true, true, "testTestCsv" )
+    );
 
-    private static File csvDir = new File( "testTestCsv" );
+    private File csvDir;
     private CsvSchema currentSchema;
 
 
-    public CsvStore( final int storeId, final String uniqueName ) {
-        super( storeId, uniqueName );
+    public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings );
+        csvDir = new File( settings.get( "directory" ) );
     }
 
 
@@ -103,4 +112,31 @@ public class CsvStore extends Store {
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
+
+
+    @Override
+    public List<AdapterSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void applySetting( AdapterSetting setting, String newValue ) {
+        //noinspection SwitchStatementWithTooFewBranches
+        switch ( setting.name ) {
+            case "directory":
+                csvDir = new File( newValue );
+                break;
+
+            default:
+                throw new RuntimeException( "Missing entry for setting \"" + setting.name + "\"!" );
+        }
+    }
+
+
+    @Override
+    public void shutdown() {
+        // Nothing to do
+    }
+
 }
