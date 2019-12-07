@@ -269,24 +269,8 @@ public class HsqldbStore extends Store {
 
 
     @Override
-    public void updateSettings( Map<String, String> newSettings ) {
-        for ( AdapterSetting s : AVAILABLE_SETTINGS ) {
-            if ( newSettings.containsKey( s.name ) ) {
-                if ( s.modifiable ) {
-                    String newValue = newSettings.get( s.name );
-                    if ( !s.canBeNull && newValue == null ) {
-                        throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
-                    }
-                    if ( newValue.equals( settings.get( s.name ) ) ) {
-                        // There is no modifiable setting for this store
-                    } else {
-                        // Same value, do nothing
-                    }
-                } else {
-                    throw new RuntimeException( "Setting \"" + s.name + "\" is not modifiable!" );
-                }
-            }
-        }
+    public void applySetting( AdapterSetting setting, String newValue ) {
+        // There is no modifiable setting for this store
     }
 
 
