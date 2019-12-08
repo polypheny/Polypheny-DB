@@ -48,12 +48,14 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,20 +76,26 @@ public class PostgresqlStore extends Store {
 
     public static final String DESCRIPTION = "The World's Most Advanced Open Source Relational Database";
 
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingString( "host", false, true, false, "localhost" ),
+            new AdapterSettingInteger( "port", false, true, false, 5432 ),
+            new AdapterSettingString( "username",  false, true, false, "postgres"),
+            new AdapterSettingString( "password",  false, true, false, "")
+    );
+
     private final BasicDataSource dataSource;
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
 
-    public PostgresqlStore( int storeId, String uniqueName ) {
-        super( storeId, uniqueName );
+    public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings );
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.postgresql.Driver" );
-        // TODO(jan): Implement proper access methods.
-        //  So far this requires a running PostgreSQL instance on
-        //  localhost:5432 , with user:pgjdbc, password:pgjdbc, db:pgjdbc
-        dataSource.setUrl( "jdbc:postgresql:" + uniqueName );
-        dataSource.setUsername( "pgjdbc" );
-        dataSource.setPassword( "pgjdbc" );
+        // TODO(jan): Improve initial connection handling
+        dataSource.setUrl( "jdbc:postgresql://" + settings.get( "host" ) + ":"
+                + settings.get( "port" ) + "/" + uniqueName );
+        dataSource.setUsername( settings.get( "username" ) );
+        dataSource.setPassword( settings.get( "password" ) );
 
         // TODO: Change when implementing transaction support
         dataSource.setDefaultAutoCommit( true );
@@ -286,6 +294,29 @@ public class PostgresqlStore extends Store {
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
+
+
+    @Override
+    public List<AdapterSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void shutdown() {
+        try {
+            dataSource.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down " + getUniqueName(), e );
+        }
+    }
+
+
+    @Override
+    protected void applySetting( AdapterSetting s, String newValue ) {
+        // There is no modifiable setting for this store
+    }
+
 
     // TODO(jan): Is this required for the PostgreSQL JDBC driver?
     private String getTypeString( PolySqlType polySqlType ) {
