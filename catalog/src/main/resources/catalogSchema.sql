@@ -131,6 +131,7 @@ CREATE TABLE "store" (
     "id"          INTEGER IDENTITY NOT NULL,
     "unique_name" VARCHAR(100)     NOT NULL,
     "adapter"     VARCHAR(100)     NOT NULL,
+    "settings"    VARCHAR(5000)    NOT NULL,
     PRIMARY KEY ("id")
 );
 
@@ -356,13 +357,13 @@ ALTER TABLE "table"
 -- column
 --
 INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "scale", "nullable", "collation" )
-VALUES ( 0, 0, 'deptno', 1, 3, 11, NULL, FALSE, NULL ),
+VALUES ( 0, 0, 'deptno', 1, 3, NULL, NULL, FALSE, NULL ),
        ( 1, 0, 'name', 2, 9, 20, NULL, FALSE, 2 ),
-       ( 2, 1, 'empid', 1, 3, 11, NULL, FALSE, NULL ),
-       ( 3, 1, 'deptno', 2, 3, 11, NULL, FALSE, NULL ),
+       ( 2, 1, 'empid', 1, 3, NULL, NULL, FALSE, NULL ),
+       ( 3, 1, 'deptno', 2, 3, NULL, NULL, FALSE, NULL ),
        ( 4, 1, 'name', 3, 9, 20, NULL, FALSE, 2 ),
-       ( 5, 1, 'salary', 4, 3, 11, NULL, FALSE, NULL ),
-       ( 6, 1, 'commission', 5, 3, 11, NULL, FALSE, NULL );
+       ( 5, 1, 'salary', 4, 3, NULL, NULL, FALSE, NULL ),
+       ( 6, 1, 'commission', 5, 3, NULL, NULL, FALSE, NULL );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
@@ -372,9 +373,9 @@ ALTER TABLE "column"
 --
 -- store
 --
-INSERT INTO "store" ( "id", "unique_name", "adapter" )
-VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore' ),
-       ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore' );
+INSERT INTO "store" ( "id", "unique_name", "adapter", "settings" )
+VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": ""}' ),
+       ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore', '{"directory": "testTestCsv"}' );
 
 ALTER TABLE "store"
     ALTER COLUMN "id"
