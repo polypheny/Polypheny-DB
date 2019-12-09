@@ -70,7 +70,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 //   - Add to 'catalogSchema.sql' in a way that does not require a running Postgres instance.
 
 @Slf4j
-public class PostgresqlStore extends Store {
+public class PostgresqlStore extends AbstractJdbcStore {
 
     public static final String ADAPTER_NAME = "PGJDBC";
 
@@ -79,6 +79,7 @@ public class PostgresqlStore extends Store {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
+            new AdapterSettingString( "database",  false, true, false, "postgres"),
             new AdapterSettingString( "username",  false, true, false, "postgres"),
             new AdapterSettingString( "password",  false, true, false, "")
     );
@@ -93,7 +94,11 @@ public class PostgresqlStore extends Store {
         dataSource.setDriverClassName( "org.postgresql.Driver" );
         // TODO(jan): Improve initial connection handling
         dataSource.setUrl( "jdbc:postgresql://" + settings.get( "host" ) + ":"
-                + settings.get( "port" ) + "/" + uniqueName );
+                + settings.get( "port" ) + "/" + settings.get( "database" ) );
+        if ( log.isInfoEnabled() ) {
+            log.info( "Postgres Connection URL: {}",
+                    "jdbc:postgresql://" + settings.get( "host" ) + ":" + settings.get( "port" ) + "/" + settings.get( "database" ) );
+        }
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
 
@@ -103,32 +108,8 @@ public class PostgresqlStore extends Store {
         this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
-        // TODO(jan): Figure out how to properly use the InformationManager
-        // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( uniqueName, uniqueName );
-        final InformationGroup informationGroupConnectionPool = new InformationGroup( "PGJDBC Connection Pool", informationPage.getId() );
-
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPage );
-        im.addGroup( informationGroupConnectionPool );
-
-        InformationGraph connectionPoolSizeGraph = new InformationGraph(
-                "connectionPoolSizeGraph",
-                informationGroupConnectionPool.getId(),
-                GraphType.DOUGHNUT,
-                new String[]{ "Active", "Available", "Idle" }
-        );
-        im.registerInformation( connectionPoolSizeGraph );
-
-        InformationTable connectionPoolSizeTable = new InformationTable(
-                "connectionPoolSizeTable",
-                informationGroupConnectionPool.getId(),
-                Arrays.asList( "Attribute", "Value" ) );
-        im.registerInformation( connectionPoolSizeTable );
-
-        ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable );
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( connectionPoolSizeInfo, 0, 5, TimeUnit.SECONDS );
+        // Register the JDBC Pool Size as information in the information manager
+        registerJdbcPoolSizeInformation( uniqueName, dataSource );
     }
 
 
@@ -379,32 +360,4 @@ public class PostgresqlStore extends Store {
         }
     }
 
-    private class ConnectionPoolSizeInfo implements Runnable {
-
-        private final InformationGraph graph;
-        private final InformationTable table;
-
-        ConnectionPoolSizeInfo( InformationGraph graph, InformationTable table ) {
-            this.graph = graph;
-            this.table = table;
-        }
-
-        @Override
-        public void run() {
-            int idle = dataSource.getNumIdle();
-            int active = dataSource.getNumActive();
-            int max = dataSource.getMaxTotal();
-            int available = max - idle - active;
-
-            graph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( "pgjdbc-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            table.reset();
-            table.addRow( "Active", "" + active );
-            table.addRow( "Idle", "" + idle );
-            table.addRow( "Max", "" + max );
-        }
-    }
 }
