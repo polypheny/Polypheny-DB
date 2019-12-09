@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,10 +59,13 @@ public class StoreManager {
         try {
             //noinspection unchecked
             for ( Class<Store> clazz : classes ) {
-                String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get(null);
-                String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
-                List<AdapterSetting> settings = (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null );
-                result.add( new AdapterInformation( name, description, clazz, settings ) );
+                // Exclude abstract classes
+                if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
+                    String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get( null );
+                    String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
+                    List<AdapterSetting> settings = (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null );
+                    result.add( new AdapterInformation( name, description, clazz, settings ) );
+                }
             }
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
             e.printStackTrace();
