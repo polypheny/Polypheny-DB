@@ -54,11 +54,11 @@ targetCompatibility = 1.8
 
 dependencies {
 
-    api group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
 
     api group: "com.google.code.gson", name: "gson", version: gson_version
 
-    api group: "org.apache.commons", name: "commons-text", version: commons_text_version
+    implementation group: "org.apache.commons", name: "commons-text", version: commons_text_version
     
 
     // --- Test Compile ---
