@@ -55,7 +55,7 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+//    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
     implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
     implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version

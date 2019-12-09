@@ -56,7 +56,7 @@ dependencies {
     implementation project(":core")
     implementation project(":csv-adapter")
 
-    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+//    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation (group: "org.apache.geode", name: "geode-core", version: geode_core_version ){ exclude(group: "org.apache.logging.log4j") }

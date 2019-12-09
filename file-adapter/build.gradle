@@ -56,7 +56,7 @@ dependencies {
     implementation project(":core")
     implementation project(":csv-adapter")
 
-    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+//    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
     implementation group: "com.google.guava", name: "guava", version: guava_version
     implementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
