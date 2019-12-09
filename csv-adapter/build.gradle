@@ -57,11 +57,11 @@ dependencies {
 
 //    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
-    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    implementation group: "com.google.guava", name: "guava", version: guava_version
+//    implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+//    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+//    implementation group: "com.google.guava", name: "guava", version: guava_version
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
-    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+//    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation group: "commons-io", name: "commons-io", version: commons_io_version
 
 

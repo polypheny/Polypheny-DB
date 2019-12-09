@@ -58,7 +58,7 @@ dependencies {
 
 //    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    implementation group: "com.google.guava", name: "guava", version: guava_version
+//    implementation group: "com.google.guava", name: "guava", version: guava_version
     implementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
     implementation group: "com.joestelmach", name: "natty", version: natty_version
     implementation group: "org.jsoup", name: "jsoup", version: jsoup_version

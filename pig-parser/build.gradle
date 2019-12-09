@@ -68,7 +68,7 @@ dependencies {
 
 //    implementation group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
 
-    implementation group: 'com.google.guava', name: 'guava', version: guava_version
+//    implementation group: 'com.google.guava', name: 'guava', version: guava_version
 
 
 

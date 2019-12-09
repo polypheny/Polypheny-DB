@@ -70,16 +70,16 @@ dependencies {
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
     
-    implementation group: "com.google.guava", name: "guava", version: guava_version
+    api group: "com.google.guava", name: "guava", version: guava_version
     api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
     implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version
-    implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
     api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
-    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    implementation group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
+    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
     api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
     implementation group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version
     implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }
