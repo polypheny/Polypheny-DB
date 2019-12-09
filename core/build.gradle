@@ -124,7 +124,9 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
-            srcDirs = ["src/test/resources"]
+            // We need the main resources for the tests as well.
+            // TODO(jan): Investigate further why this is required
+            srcDirs = ["src/test/resources", "src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
