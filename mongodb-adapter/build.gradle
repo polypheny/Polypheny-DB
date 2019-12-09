@@ -53,13 +53,13 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    api project(":core")
+    implementation project(":core")
 
-    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
-    api group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
+    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    implementation group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
 
-    api group: "com.google.guava", name: "guava", version: guava_version
-    api group: "org.mongodb", name: "mongo-java-driver", version: mongo_java_driver_version
+    implementation group: "com.google.guava", name: "guava", version: guava_version
+    implementation group: "org.mongodb", name: "mongo-java-driver", version: mongo_java_driver_version
 
 
 

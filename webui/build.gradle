@@ -59,13 +59,13 @@ configurations {
 
 
 dependencies {
-    api project(":core")
+    implementation project(":core")
 
     uiFiles group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-ui", version: polyphenydb_ui_version
 
-    api group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
 
-    api group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
+    implementation group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
 
 
     // --- Test Compile ---

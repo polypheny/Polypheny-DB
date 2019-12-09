@@ -53,15 +53,15 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    api project(":core")
-    api project(":csv-adapter")
+    implementation project(":core")
+    implementation project(":csv-adapter")
 
-    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    api group: "com.google.guava", name: "guava", version: guava_version
-    api group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
-    api group: "com.joestelmach", name: "natty", version: natty_version
-    api group: "org.jsoup", name: "jsoup", version: jsoup_version
+    implementation group: "com.google.guava", name: "guava", version: guava_version
+    implementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    implementation group: "com.joestelmach", name: "natty", version: natty_version
+    implementation group: "org.jsoup", name: "jsoup", version: jsoup_version
 
 
     // --- Test Compile ---

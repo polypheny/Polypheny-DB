@@ -64,11 +64,11 @@ dependencies {
     // Javacc
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version
 
-    api project(':core')
+    implementation project(':core')
 
-    api group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
+    implementation group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
 
-    api group: 'com.google.guava', name: 'guava', version: guava_version
+    implementation group: 'com.google.guava', name: 'guava', version: guava_version
 
 
 

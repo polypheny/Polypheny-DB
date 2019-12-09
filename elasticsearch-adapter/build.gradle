@@ -52,18 +52,18 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    api project(":core")
+    implementation project(":core")
 
-    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    implementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
-    api group: "com.google.guava", name: "guava", version: guava_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
-    api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
-    api group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version
-    api group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version
-    api group: "org.apache.httpcomponents", name: "httpclient", version: httpclient_version
+    implementation group: "com.google.guava", name: "guava", version: guava_version
+    implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    implementation group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
+    implementation group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version
+    implementation group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version
+    implementation group: "org.apache.httpcomponents", name: "httpclient", version: httpclient_version
 
 
     // --- Test Compile ---

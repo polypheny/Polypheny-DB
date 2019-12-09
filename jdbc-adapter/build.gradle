@@ -53,9 +53,9 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    api project(":core")
+    implementation project(":core")
 
-    api group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
+    implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
 
 
     // --- Test Compile ---
