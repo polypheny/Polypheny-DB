@@ -159,15 +159,14 @@ public class DbmsMeta implements ProtobufMeta {
 
         // ------ Information Manager -----------
         final InformationPage informationPage = new InformationPage( "jdbc", "JDBC Interface" );
-        final InformationGroup informationGroupConnection = new InformationGroup( "Connections", informationPage.getId() );
+        final InformationGroup informationGroupConnection = new InformationGroup( informationPage, "Connections" );
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
         im.addGroup( informationGroupConnection );
 
         InformationTable connectionNumberTable = new InformationTable(
-                "connectionNumberTable",
-                informationGroupConnection.getId(),
+                informationGroupConnection,
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( connectionNumberTable );
 

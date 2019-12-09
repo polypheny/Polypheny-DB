@@ -58,10 +58,10 @@ public class HostInformation {
 
         //
         // Operating System
-        InformationGroup osGroup = new InformationGroup( "Operating System", page.getId() ).setOrder( 1 );
+        InformationGroup osGroup = new InformationGroup( page, "Operating System" ).setOrder( 1 );
         im.addGroup( osGroup );
 
-        InformationTable osInformation = new InformationTable( "os", osGroup.getId(), Arrays.asList( "Attribute", "Value" ) );
+        InformationTable osInformation = new InformationTable( osGroup, Arrays.asList( "Attribute", "Value" ) );
         osInformation.addRow( "Family", os.getFamily() );
         osInformation.addRow( "Manufacturer", os.getManufacturer() );
         osInformation.addRow( "Version", os.getVersion().toString() );
@@ -69,10 +69,10 @@ public class HostInformation {
 
         //
         // Hardware
-        InformationGroup hardwareGroup = new InformationGroup( "Hardware", page.getId() ).setOrder( 2 );
+        InformationGroup hardwareGroup = new InformationGroup( page, "Hardware" ).setOrder( 2 );
         im.addGroup( hardwareGroup );
 
-        InformationTable hardwareInformation = new InformationTable( "hw", hardwareGroup.getId(), Arrays.asList( "Attribute", "Value" ) );
+        InformationTable hardwareInformation = new InformationTable( hardwareGroup, Arrays.asList( "Attribute", "Value" ) );
         hardwareInformation.addRow( "CPU Count", "" + hal.getProcessor().getPhysicalPackageCount() );
         if ( hal.getProcessor().getPhysicalPackageCount() > 1 ) {
             for ( int i = 0; i < hal.getProcessor().getPhysicalPackageCount(); i++ ) {
@@ -90,10 +90,10 @@ public class HostInformation {
 
         //
         // Disks
-        InformationGroup storageGroup = new InformationGroup( "Storage", page.getId() );
+        InformationGroup storageGroup = new InformationGroup( page, "Storage" );
         im.addGroup( storageGroup );
 
-        InformationTable storageInformation = new InformationTable( "disks", storageGroup.getId(), Arrays.asList( "Name", "Model", "Size" ) );
+        InformationTable storageInformation = new InformationTable( storageGroup, Arrays.asList( "Name", "Model", "Size" ) );
         for ( int i = 0; i < hal.getDiskStores().length; i++ ) {
             storageInformation.addRow( hal.getDiskStores()[i].getName(), hal.getDiskStores()[i].getModel(), humanReadableByteCount( hal.getDiskStores()[i].getSize(), false ) );
         }
@@ -101,10 +101,10 @@ public class HostInformation {
 
         //
         // Network
-        InformationGroup networkGroup = new InformationGroup( "Network Interfaces", page.getId() );
+        InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" );
         im.addGroup( networkGroup );
 
-        InformationTable networkInformation = new InformationTable( "nics", networkGroup.getId(), Arrays.asList( "Name", "IPv4" ) );
+        InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
         for ( int i = 0; i < hal.getNetworkIFs().length; i++ ) {
             networkInformation.addRow( hal.getNetworkIFs()[i].getDisplayName(), String.join( ".", hal.getNetworkIFs()[i].getIPv4addr() ) );
         }
@@ -135,10 +135,10 @@ public class HostInformation {
 
         //
         // Processes
-        InformationGroup processesGroup = new InformationGroup( "Processes", page.getId() );
+        InformationGroup processesGroup = new InformationGroup( page.getId(), "Processes" );
         im.addGroup( processesGroup );
 
-        InformationGraph graph = new InformationGraph( "proc-graph", processesGroup.getId(), GraphType.POLARAREA, new String[]{} );
+        InformationGraph graph = new InformationGraph( processesGroup, GraphType.POLARAREA, new String[]{} );
         im.registerInformation( graph );
 
         Timer t2 = new Timer();

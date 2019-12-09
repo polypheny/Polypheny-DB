@@ -95,7 +95,7 @@ import org.apache.commons.lang3.time.StopWatch;
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     private static InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
-    private static InformationGroup informationGroupLogical = new InformationGroup( "informationGroupLogicalQueryPlan", informationPageLogical.getId() );
+    private static InformationGroup informationGroupLogical = new InformationGroup( informationPageLogical, "Logical Query Plan" );
 
     private final Transaction transaction;
     private final SqlParserConfig parserConfig;
@@ -200,8 +200,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             queryAnalyzer.addPage( informationPageLogical );
             queryAnalyzer.addGroup( informationGroupLogical );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    "LogicalQueryPlan",
-                    informationGroupLogical.getId(),
+                    informationGroupLogical,
                     RelOptUtil.dumpPlan( "", logicalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }

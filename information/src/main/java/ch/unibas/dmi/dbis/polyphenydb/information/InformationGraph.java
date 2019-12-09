@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import java.util.UUID;
+
+
 /**
  * An information object that contains data for a graph that will be displayed in the UI.
  */
@@ -39,13 +42,37 @@ public class InformationGraph extends Information {
     /**
      * Constructor
      *
-     * @param id unique id of the Information object
-     * @param group id of the group to which this InformationGraph object belongs
+     * @param group The group this InformationGraph object belongs to
      * @param labels labels that are displayed on the x-axis
      * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String id, final String group, GraphType type, final String[] labels, final GraphData... data ) {
-        super( id, group );
+    public InformationGraph( final InformationGroup group, GraphType type, final String[] labels, final GraphData... data ) {
+        this( group.getId(), type, labels, data );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param groupId The id of the group to which this InformationGraph object belongs
+     * @param labels labels that are displayed on the x-axis
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     */
+    public InformationGraph( final String groupId, GraphType type, final String[] labels, final GraphData... data ) {
+        this( UUID.randomUUID().toString(), groupId, type, labels, data );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id unique id of the Information object
+     * @param groupId id of the group to which this InformationGraph object belongs
+     * @param labels labels that are displayed on the x-axis
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     */
+    public InformationGraph( final String id, final String groupId, GraphType type, final String[] labels, final GraphData... data ) {
+        super( id, groupId );
 
         this.data = data;
 
