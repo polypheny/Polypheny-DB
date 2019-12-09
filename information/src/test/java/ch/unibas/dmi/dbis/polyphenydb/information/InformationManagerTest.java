@@ -36,17 +36,18 @@ public class InformationManagerTest {
 
     private InformationManager im;
 
+    private static InformationPage p = new InformationPage( "page1", "Page 1" );
+    private static InformationGroup g = new InformationGroup( p, "Group 1.1" );
+
 
     static {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage p = new InformationPage( "page1", "Page 1" );
-        InformationGroup g = new InformationGroup( "group1.1", "page1" );
         im.addPage( p );
         im.addGroup( g );
 
-        Information i1 = new InformationProgress( "i.progress", "group1.1", "progval", 30 );
-        Information i2 = new InformationHtml( "i.html", "group1.1", "<b>bold</b>" );
+        Information i1 = new InformationProgress( g, "progval", 30 );
+        Information i2 = new InformationHtml( g, "<b>bold</b>" );
 
         im.registerInformation( i1, i2 );
     }
@@ -83,8 +84,8 @@ public class InformationManagerTest {
         String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
         Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
         Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
-        GraphData[] graphData = { new GraphData<Integer>( "data1", graphData1 ), new GraphData<Integer>( "data2", graphData2 ) };
-        Information i1 = new InformationGraph( "i.graph", "group1.1", GraphType.PIE, labels, graphData );
+        GraphData[] graphData = { new GraphData<>( "data1", graphData1 ), new GraphData<>( "data2", graphData2 ) };
+        Information i1 = new InformationGraph( g, GraphType.PIE, labels, graphData );
     }
 
 
@@ -93,21 +94,21 @@ public class InformationManagerTest {
         String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
         Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
         Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
-        GraphData[] graphData = { new GraphData<Integer>( "data1", graphData1 ), new GraphData<Integer>( "data2", graphData2 ) };
-        InformationGraph i1 = new InformationGraph( "i.graph", "group1.1", GraphType.LINE, labels, graphData );
+        GraphData[] graphData = { new GraphData<>( "data1", graphData1 ), new GraphData<>( "data2", graphData2 ) };
+        InformationGraph i1 = new InformationGraph( g, GraphType.LINE, labels, graphData );
         i1.updateType( GraphType.RADAR );
     }
 
 
     @Test
     public void implicit() {
-        im.addQueryPlan( "plan", "query-plan" );
-        Assert.assertTrue( im.getPage( "plan" ).isImplicit() );
-        Assert.assertNull( im.getPage( "plan" ).getDescription() );
-        InformationPage p1 = new InformationPage( "plan", "title", "description" );
+        im.addQueryPlan( "queryPlan", "query-plan" );
+        Assert.assertTrue( im.getPage( "queryPlan" ).isImplicit() );
+        Assert.assertNull( im.getPage( "queryPlan" ).getDescription() );
+        InformationPage p1 = new InformationPage( "queryPlan", "title", "description" );
         im.addPage( p1 );
-        Assert.assertFalse( im.getPage( "plan" ).isImplicit() );
-        Assert.assertEquals( "description", im.getPage( "plan" ).getDescription() );
+        Assert.assertFalse( im.getPage( "queryPlan" ).isImplicit() );
+        Assert.assertEquals( "description", im.getPage( "queryPlan" ).getDescription() );
     }
 
 

@@ -48,7 +48,7 @@ public abstract class Information {
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
      */
-    private final String informationGroup;
+    private final String groupId;
 
     /**
      * The information object with lowest uiOrder are rendered first, then those with higher number, then those where uiOrder is null.
@@ -68,11 +68,11 @@ public abstract class Information {
      * Constructor
      *
      * @param id Unique id for this Information object
-     * @param group The id of the InformationGroup to which this information belongs
+     * @param groupId The id of the InformationGroup to which this information belongs
      */
-    Information( final String id, final String group ) {
+    Information( final String id, final String groupId ) {
         this.id = id;
-        this.informationGroup = group;
+        this.groupId = groupId;
         this.type = this.getClass().getSimpleName();
     }
 
@@ -93,7 +93,7 @@ public abstract class Information {
      * @return Id of the group this information object belongs to
      */
     public String getGroup() {
-        return informationGroup;
+        return groupId;
     }
 
 

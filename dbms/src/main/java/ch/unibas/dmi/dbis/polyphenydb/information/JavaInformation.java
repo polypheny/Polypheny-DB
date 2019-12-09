@@ -44,32 +44,29 @@ public class JavaInformation {
         im.addPage( page );
 
         // JVM Info
-        InformationGroup groupJvm = new InformationGroup( "JVM Detail", page.getId() ).setOrder( 1 );
+        InformationGroup groupJvm = new InformationGroup( page, "JVM Detail" ).setOrder( 1 );
         im.addGroup( groupJvm );
 
         InformationTable javaInfoJvm = new InformationTable(
-                "javaJvmInfo",
-                groupJvm.getId(),
+                groupJvm,
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( javaInfoJvm );
         javaInfoJvm.addRow( "JVM Name", System.getProperty( "java.vm.name" ) );
         javaInfoJvm.addRow( "Runtime Version", System.getProperty( "java.runtime.version" ) );
 
         // Heap info
-        InformationGroup groupHeap = new InformationGroup( "Java Heap Size", page.getId() ).setOrder( 2 );
+        InformationGroup groupHeap = new InformationGroup( page, "Java Heap Size" ).setOrder( 2 );
         im.addGroup( groupHeap );
 
         InformationGraph heapInfoGraph = new InformationGraph(
-                "javaHeapInfoGraph",
-                groupHeap.getId(),
+                groupHeap,
                 GraphType.DOUGHNUT,
                 new String[]{ "Current", "Maximum", "Free" }
         );
         im.registerInformation( heapInfoGraph );
 
         InformationTable heapInfoTable = new InformationTable(
-                "javaHeapInfoTable",
-                groupHeap.getId(),
+                groupHeap,
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( heapInfoTable );
 
