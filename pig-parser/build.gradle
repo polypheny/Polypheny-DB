@@ -25,7 +25,7 @@ buildscript {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
+//        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
@@ -39,10 +39,10 @@ repositories {
 }
 
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'idea'
 apply plugin: "io.freefair.lombok"
-apply plugin: "com.github.johnrengelman.shadow"
+//apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
@@ -63,12 +63,12 @@ targetCompatibility = 1.8
 dependencies {
     // Javacc
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version
-    
-    compile project(':core')
 
-    compile group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
+    api project(':core')
 
-    compile group: 'com.google.guava', name: 'guava', version: guava_version
+    api group: 'org.apache.calcite', name: 'calcite-linq4j', version: calcite_linq4j_version
+
+    api group: 'com.google.guava', name: 'guava', version: guava_version
 
 
 
@@ -166,13 +166,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier 'javadoc'
     from javadoc.destinationDir
 }
-shadowJar {
-    classifier = ""
-}
-assemble.dependsOn shadowJar
+//shadowJar {
+//    classifier = ""
+//}
+//assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
-    archives shadowJar // fat jar which additionally contains all dependencies
+//    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }

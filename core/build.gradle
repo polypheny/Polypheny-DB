@@ -27,7 +27,7 @@ buildscript {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
+//        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
     ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
@@ -42,10 +42,10 @@ repositories {
 }
 
 
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
-apply plugin: "com.github.johnrengelman.shadow"
+//apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
@@ -63,32 +63,32 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile project(":config")
-    compile project(":information")
+    api project(":config")
+    api project(":information")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version
 
-    compile group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
+    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
     
-    compile group: "com.google.guava", name: "guava", version: guava_version
-    compile group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version
-    compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
-    compile group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
+    api group: "com.google.guava", name: "guava", version: guava_version
+    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+    api group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
-    compile group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version
-    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
-    compile group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
-    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    compile group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
-    compile group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
-    compile group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version
-    compile(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }
-    compile group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version
-    compile group: "org.codehaus.janino", name: "janino", version: janino_version
-    compile group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version
+    api group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version
+    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
+    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
+    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
+    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
+    api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
+    api group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version
+    api(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }
+    api group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version
+    api group: "org.codehaus.janino", name: "janino", version: janino_version
+    api group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
+    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
+    api group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
     
 
     // --- Test Compile ---
@@ -214,13 +214,13 @@ task testJar (type: Jar) {
     from sourceSets.test.output
     classifier = "test"
 }
-shadowJar {
-    classifier = ""
-}
-assemble.dependsOn shadowJar
+//shadowJar {
+//    classifier = ""
+//}
+//assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
-    archives shadowJar // fat jar which additionally contains all dependencies
+//    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
     testClasses testJar // jar file containing the test classes
