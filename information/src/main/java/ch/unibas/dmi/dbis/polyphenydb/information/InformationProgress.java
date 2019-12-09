@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import java.util.UUID;
+
+
 /**
  * An Information object that will displayed as a progress bar in the UI
  */
@@ -41,13 +44,37 @@ public class InformationProgress extends Information {
     /**
      * Constructor
      *
-     * @param id Id of this Information object
-     * @param group Group to which this Information object belongs to
+     * @param group The group this information object belongs to
      * @param label Label that will be displayed near the progress bar
      * @param value Value of the progress bar
      */
-    public InformationProgress( final String id, final String group, final String label, final int value ) {
-        super( id, group );
+    public InformationProgress( final InformationGroup group, final String label, final int value ) {
+        this( group.getId(), label, value );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param groupId The id of the group this information object belongs to
+     * @param label Label that will be displayed near the progress bar
+     * @param value Value of the progress bar
+     */
+    public InformationProgress( final String groupId, final String label, final int value ) {
+        this( UUID.randomUUID().toString(), groupId, label, value );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id Id of this Information object
+     * @param groupId Group to which this information object belongs to
+     * @param label Label that will be displayed near the progress bar
+     * @param value Value of the progress bar
+     */
+    public InformationProgress( final String id, final String groupId, final String label, final int value ) {
+        super( id, groupId );
         this.label = label;
         this.value = value;
     }

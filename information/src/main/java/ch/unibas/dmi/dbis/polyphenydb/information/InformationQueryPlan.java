@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import java.util.UUID;
+
+
 /**
  * An information object containing a query plan. This class is mainly used for the debugger in the UI.
  */
@@ -33,10 +36,31 @@ public class InformationQueryPlan extends Information {
 
     private String queryPlan;
 
+
     /**
      * Constructor
      *
-     * @param id Unique id for this Information object
+     * @param group The InformationGroup to which this information belongs
+     */
+    public InformationQueryPlan( final InformationGroup group, final String queryPlan ) {
+        this( group.getId(), queryPlan );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param groupId The id of the InformationGroup to which this information belongs
+     */
+    public InformationQueryPlan( final String groupId, final String queryPlan ) {
+        this( UUID.randomUUID().toString(), groupId, queryPlan );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id Unique id for this information object
      * @param group The id of the InformationGroup to which this information belongs
      */
     public InformationQueryPlan( final String id, final String group, final String queryPlan ) {

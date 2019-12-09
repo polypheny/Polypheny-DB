@@ -26,6 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import java.util.UUID;
+
+
 /**
  * An Information object containing a link to a subpage of the UI.
  */
@@ -38,13 +41,37 @@ public class InformationLink extends Information {
     /**
      * Constructor
      *
-     * @param id Id of this Information object
-     * @param group Id of the group this object belongs to
+     * @param group The group this object belongs to
      * @param label Name of the link
      * @param routerLink Link to a subpage of the UI
      */
-    public InformationLink( final String id, final String group, final String label, final String... routerLink ) {
-        super( id, group );
+    public InformationLink( final InformationGroup group, final String label, final String... routerLink ) {
+        this( group.getId(), label, routerLink );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param groupId Id of the group this object belongs to
+     * @param label Name of the link
+     * @param routerLink Link to a subpage of the UI
+     */
+    public InformationLink( final String groupId, final String label, final String... routerLink ) {
+        this( UUID.randomUUID().toString(), groupId, label, routerLink );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id Id of this Information object
+     * @param groupId Id of the group this object belongs to
+     * @param label Name of the link
+     * @param routerLink Link to a subpage of the UI
+     */
+    public InformationLink( final String id, final String groupId, final String label, final String... routerLink ) {
+        super( id, groupId );
         this.label = label;
         this.routerLink = routerLink;
     }

@@ -25,9 +25,12 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.HostInformation;
 import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
@@ -38,18 +41,11 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @Slf4j
 public class PolyphenyDb {
-
-    public static final Logger GLOBAL_LOGGER = LoggerFactory.getLogger( "Polypheny-DB" );
 
     private PUID shutdownHookId;
 
@@ -73,18 +69,14 @@ public class PolyphenyDb {
     }
 
 
-    public void runPolyphenyDb() throws GenericCatalogException, InstantiationException {
+    public void runPolyphenyDb() throws GenericCatalogException {
 
-        List<CatalogStore> stores = CatalogManagerImpl.getInstance().getStores();
-        for ( CatalogStore store : stores ) {
-            try {
-                Class<?> clazz = Class.forName( store.adapterClazz );
-                Constructor<?> ctor = clazz.getConstructor( int.class, String.class );
-                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName );
-                StoreManager.getInstance().register( instance );
-            } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
-            }
+        Catalog catalog;
+        try {
+            catalog = CatalogManagerImpl.getInstance().getCatalog( transactionManager.startTransaction( "pa", "APP", false ).getXid() );
+            StoreManager.getInstance().restoreStores( catalog );
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException e ) {
+            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
         class ShutdownHelper implements Runnable {
@@ -165,24 +157,24 @@ public class PolyphenyDb {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
         } catch ( InterruptedException e ) {
-            GLOBAL_LOGGER.warn( "Interrupted on join()", e );
+            log.warn( "Interrupted on join()", e );
         }
 
-        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
-        GLOBAL_LOGGER.warn( "                Polypheny-DB successfully started and ready to process your queries!" );
-        GLOBAL_LOGGER.warn( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        GLOBAL_LOGGER.warn( "****************************************************************************************************" );
+        log.info( "****************************************************************************************************" );
+        log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
+        log.info( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "****************************************************************************************************" );
 
         try {
-            GLOBAL_LOGGER.debug( "Waiting for the Shutdown-Hook to finish ..." );
+            log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
             if ( sh.hasFinished() == false ) {
-                GLOBAL_LOGGER.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
+                log.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
             } else {
-                GLOBAL_LOGGER.info( "Waiting for the Shutdown-Hook to finish ... done." );
+                log.info( "Waiting for the Shutdown-Hook to finish ... done." );
             }
         } catch ( InterruptedException e ) {
-            GLOBAL_LOGGER.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
+            log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
     }
 }

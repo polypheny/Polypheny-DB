@@ -69,11 +69,11 @@ public class RelOptPlanReaderTest {
 
         // in ch.unibas.dmi.dbis.polyphenydb.rel package
         assertThat( relJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
-        assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( (Class) LogicalProject.class ) );
+        assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
 
         // in ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules outer class
         assertThat( relJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
-        assertThat( relJson.typeNameToClass( "JdbcProject" ), equalTo( (Class) JdbcRules.JdbcProject.class ) );
+        assertThat( relJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
 
         try {
             Class clazz = relJson.typeNameToClass( "NonExistentRel" );
@@ -90,7 +90,7 @@ public class RelOptPlanReaderTest {
 
         // In this class; no special treatment. Note: '$MyRel' not '.MyRel'.
         assertThat( relJson.classToTypeName( MyRel.class ), is( "ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest$MyRel" ) );
-        assertThat( relJson.typeNameToClass( MyRel.class.getName() ), equalTo( (Class) MyRel.class ) );
+        assertThat( relJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
 
         // Using canonical name (with '$'), not found
         try {

@@ -27,6 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -46,6 +47,12 @@ public class InformationGroup {
      * The id of the page this group belongs to.
      */
     private final String pageId;
+
+
+    /**
+     * The name of this group
+     */
+    private String name; // title
 
 
     /**
@@ -78,9 +85,32 @@ public class InformationGroup {
      * @param id Id of this group
      * @param pageId Id of the page this group belongs to
      */
-    public InformationGroup( final String id, final String pageId ) {
+    public InformationGroup( final String id, final String pageId, final String name ) {
         this.id = id;
         this.pageId = pageId;
+        this.name = name;
+    }
+
+
+    /**
+     * Constructor which generates a unique id.
+     *
+     * @param pageId Id of the page this group belongs to
+     */
+    public InformationGroup( final String pageId, final String name ) {
+        this.id = UUID.randomUUID().toString();
+        this.pageId = pageId;
+        this.name = name;
+    }
+
+
+    /**
+     * Constructor which generates a unique id.
+     *
+     * @param page The page this group belongs to
+     */
+    public InformationGroup( final InformationPage page, final String name ) {
+        this( page.getId(), name );
     }
 
 
@@ -149,6 +179,7 @@ public class InformationGroup {
 
     /**
      * Setter for the implicit field.
+     *
      * @param implicit true if the group was created implicitly
      */
     public InformationGroup setImplicit( final boolean implicit ) {

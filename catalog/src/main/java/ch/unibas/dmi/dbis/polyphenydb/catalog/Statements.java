@@ -66,6 +66,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownStoreException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import com.google.gson.Gson;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -1084,18 +1085,21 @@ final class Statements {
 
 
     private static List<CatalogStore> storeFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String sql = "SELECT \"id\", \"unique_name\", \"adapter\" FROM \"store\"";
+        String sql = "SELECT \"id\", \"unique_name\", \"adapter\", \"settings\" FROM \"store\"";
         if ( filter.length() > 0 ) {
             sql += " WHERE " + filter;
         }
         sql += ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogStore> list = new LinkedList<>();
+            Gson gson = new Gson();
             while ( rs.next() ) {
+                @SuppressWarnings("unchecked") Map<String, String> configMap = gson.fromJson( rs.getString( 4 ), Map.class );
                 list.add( new CatalogStore(
                         getInt( rs, 1 ),
                         rs.getString( 2 ),
-                        rs.getString( 3 )
+                        rs.getString( 3 ),
+                        configMap
                 ) );
             }
             return list;
@@ -1121,6 +1125,42 @@ final class Statements {
             throw new UnknownStoreException( id );
         }
         return list.get( 0 );
+    }
+
+
+    // Get Store by store name
+    static CatalogStore getStore( XATransactionHandler transactionHandler, String uniqueName ) throws GenericCatalogException, UnknownStoreException {
+        String filter = " \"unique_name\" = " + uniqueName;
+        List<CatalogStore> list = storeFilter( transactionHandler, filter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownStoreException( uniqueName );
+        }
+        return list.get( 0 );
+    }
+
+
+    static int addStore( XATransactionHandler transactionHandler, String unique_name, String adapter, Map<String, String> settings ) throws GenericCatalogException {
+        Gson gson = new Gson();
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "unique_name", quoteString( unique_name ) );
+        data.put( "adapter", quoteString( adapter ) );
+        data.put( "settings", gson.toJson( settings ) );
+        return Math.toIntExact(insertHandler( transactionHandler, "store", data ));
+    }
+
+
+    static void deleteStore( XATransactionHandler transactionHandler, long storeId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "store" ) + " WHERE " + quoteIdentifier( "id" ) + " = " + storeId;
+        try {
+            int rowsEffected = transactionHandler.executeUpdate( sql );
+            if ( rowsEffected != 1 ) {
+                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
+            }
+        } catch ( SQLException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1152,6 +1192,12 @@ final class Statements {
 
     static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND t.\"id\" = " + tableId;
+        return dataPlacementFilter( transactionHandler, filter );
+    }
+
+
+    static List<CatalogDataPlacement> getDataPlacementsByStore( XATransactionHandler transactionHandler, int storeId ) throws GenericCatalogException {
+        String filter = " AND st.\"id\" = " + storeId;
         return dataPlacementFilter( transactionHandler, filter );
     }
 

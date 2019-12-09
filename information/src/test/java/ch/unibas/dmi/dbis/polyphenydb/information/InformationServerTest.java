@@ -64,7 +64,7 @@ public class InformationServerTest {
         InformationPage p = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
         im.addPage( p );
 
-        InformationGroup g1 = new InformationGroup( "System", "p1" ).setOrder( 1 );
+        InformationGroup g1 = new InformationGroup( p, "System" ).setOrder( 1 );
         im.addGroup( g1 );
 
         String family = os.getFamily();
@@ -77,7 +77,7 @@ public class InformationServerTest {
                 + "</ul>" );
         im.registerInformation( i1 );
 
-        InformationGroup g2 = new InformationGroup( "cpu", "p1" ).setOrder( 2 );
+        InformationGroup g2 = new InformationGroup( p, "cpu" ).setOrder( 2 );
         im.addGroup( g2 );
 
         int cpuLoad = (int) Math.round( hal.getProcessor().getSystemCpuLoad() * 100 );
@@ -93,7 +93,7 @@ public class InformationServerTest {
             }
         }, 5000, 5000 );
 
-        InformationGroup g3 = new InformationGroup( "processes", "p1" );
+        InformationGroup g3 = new InformationGroup( p.getId(), "processes" );
         im.addGroup( g3 );
 
         List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
@@ -151,7 +151,7 @@ public class InformationServerTest {
             randomData2[i] = r.nextInt( 100 );
             randomData3[i] = r.nextInt( 100 );
         }
-        InformationGroup randomGroup = new InformationGroup( "random data", "p1" ).setOrder( 4 );
+        InformationGroup randomGroup = new InformationGroup( p, "random data" ).setOrder( 4 );
         im.addGroup( randomGroup );
         String[] randomLabels = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
         GraphData randomGraphData1 = new GraphData<Integer>( "x", randomData1 );

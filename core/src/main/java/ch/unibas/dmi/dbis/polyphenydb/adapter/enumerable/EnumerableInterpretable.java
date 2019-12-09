@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
@@ -96,7 +95,7 @@ import org.codehaus.commons.compiler.ICompilerFactory;
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
     private static InformationPage informationPageGeneratedCode = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
-    private static InformationGroup informationGroupGeneratedCode = new InformationGroup( "informationGroupGeneratedCode", informationPageGeneratedCode.getId() );
+    private static InformationGroup informationGroupGeneratedCode = new InformationGroup( informationPageGeneratedCode, "Generated Code" );
 
     protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
@@ -133,8 +132,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             queryAnalyzer.addPage( informationPageGeneratedCode );
             queryAnalyzer.addGroup( informationGroupGeneratedCode );
             InformationCode informationCode = new InformationCode(
-                    "GeneratedCode",
-                    informationGroupGeneratedCode.getId(),
+                    informationGroupGeneratedCode,
                     s );
             queryAnalyzer.registerInformation( informationCode );
         }
