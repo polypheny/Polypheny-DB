@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import org.apache.commons.text.StringEscapeUtils;
 
 
@@ -40,9 +41,35 @@ public class InformationTable extends InformationHtml {
 
     /**
      * Constructor
+     *
+     * @param group The information group this element belongs to
+     * @param labels The labels
      */
-    public InformationTable( String id, String group, List<String> labels ) {
-        super( id, group, "" );
+    public InformationTable( InformationGroup group, List<String> labels ) {
+        this( group.getId(), labels );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param groupId The id of the information group this element belongs to
+     * @param labels The labels
+     */
+    public InformationTable( String groupId, List<String> labels ) {
+        this( UUID.randomUUID().toString(), groupId, labels );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id The unique id for this information element
+     * @param groupId The id of the information group this element belongs to
+     * @param labels The labels
+     */
+    public InformationTable( String id, String groupId, List<String> labels ) {
+        super( id, groupId, "" );
         this.labels = labels;
         updateHtml( generateHtml() );
     }

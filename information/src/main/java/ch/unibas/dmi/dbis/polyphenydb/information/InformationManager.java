@@ -103,16 +103,30 @@ public class InformationManager {
      * @param page Page to add
      */
     public void addPage( final InformationPage page ) {
-        if( this.pages.containsKey( page.getId() )){
+        if ( this.pages.containsKey( page.getId() ) ) {
             InformationPage existing = this.pages.get( page.getId() );
-            if( !existing.isImplicit() ){
+            if ( !existing.isImplicit() ) {
                 throw new InformationRuntimeException( "You are trying to add an InformationPage twice to the InformationManager." );
-            } else{
+            } else {
                 existing.overrideWith( page );
             }
         } else {
             this.pages.put( page.getId(), page );
             this.notifyPageList();
+        }
+    }
+
+
+    /**
+     * Deregister a information page.
+     *
+     * @param page Page tp remove
+     */
+    public void removePage( final InformationPage page ) {
+        if ( this.pages.containsKey( page.getId() ) ) {
+            this.pages.remove( page.getId() );
+        } else {
+            log.warn( "Trying to remove a information page which is not registered in this information manager." );
         }
     }
 
@@ -127,7 +141,7 @@ public class InformationManager {
             if( this.groups.containsKey( g.getId() )){
                 InformationGroup existing = this.groups.get( g.getId() );
                 if( !existing.isImplicit() ){
-                    throw new InformationRuntimeException( "You are trying to add an InformationGroup twice to the InformationManager" );
+                    throw new InformationRuntimeException( "You are trying to add an InformationGroup twice to the InformationManager." );
                 } else {
                     existing.overrideWith( g );
                 }
@@ -139,12 +153,28 @@ public class InformationManager {
 
 
     /**
+     * Deregister one or multiple information groups.
+     *
+     * @param groups Groups to remove
+     */
+    public void removeGroup( final InformationGroup... groups ) {
+        for ( InformationGroup g : groups ) {
+            if ( this.groups.containsKey( g.getId() ) ) {
+                this.groups.remove( g.getId() );
+            } else {
+                log.warn( "Trying to remove a information group which is not registered in this information manager." );
+            }
+        }
+    }
+
+
+    /**
      * Add a QueryPlan to the Information Manager and create the needed page and group implicitly.
      */
-    public void addQueryPlan ( final String id, final String queryPlan ) {
-        InformationPage page = new InformationPage( id );
-        InformationGroup group = new InformationGroup( id, id ).setImplicit( true );
-        InformationQueryPlan plan = new InformationQueryPlan( id, id, queryPlan );
+    public void addQueryPlan( final String title, final String queryPlan ) {
+        InformationPage page = new InformationPage( title );
+        InformationGroup group = new InformationGroup( page, title ).setImplicit( true );
+        InformationQueryPlan plan = new InformationQueryPlan( group, queryPlan );
 
         this.addPage( page );
         this.addGroup( group );

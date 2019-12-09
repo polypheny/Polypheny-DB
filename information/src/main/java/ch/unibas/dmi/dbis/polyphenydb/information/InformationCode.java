@@ -26,32 +26,64 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
+import java.util.UUID;
+
+
 /**
  * An Information object containing code that will be rendered in an ace editor in the UI
  */
 public class InformationCode extends Information {
 
+    @SuppressWarnings("unused")
     private String code;
+    @SuppressWarnings("unused")
     private String language;
+
 
     /**
      * Constructor
+     *
+     * @param groupId The group this information element belongs to
      * @param code Code that should be rendered in an ace editor in the UI
      */
-    public InformationCode( final String id, final String group, final String code ) {
-        super( id, group );
-        this.code = code;
-        this.language = "java";
+    public InformationCode( final String groupId, final String code ) {
+        this( UUID.randomUUID().toString(), groupId, code, "java" );
     }
 
 
     /**
      * Constructor
+     *
+     * @param group The group this information element belongs to
      * @param code Code that should be rendered in an ace editor in the UI
-     * @param language Choose a language for the ace syntax highlighting
      */
-    public InformationCode( final String id, final String group, final String code, final String language ) {
-        super( id, group );
+    public InformationCode( final InformationGroup group, final String code ) {
+        this( UUID.randomUUID().toString(), group.getId(), code, "java" );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param group The group this information element belongs to
+     * @param code Code that should be rendered in an ace editor in the UI
+     * @param language The language for the ace syntax highlighting
+     */
+    public InformationCode( final InformationGroup group, final String code, final String language ) {
+        this( UUID.randomUUID().toString(), group.getId(), code, language );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id The id of this information element
+     * @param groupId The group this information element belongs to
+     * @param code Code that should be rendered in an ace editor in the UI
+     * @param language The language for the ace syntax highlighting
+     */
+    public InformationCode( final String id, final String groupId, final String code, final String language ) {
+        super( id, groupId );
         this.code = code;
         this.language = language;
     }
@@ -66,4 +98,5 @@ public class InformationCode extends Information {
         this.code = code;
         notifyManager();
     }
+
 }
