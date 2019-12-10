@@ -51,6 +51,9 @@ public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
 
+    public ConcurrentHashMap<PolyXid, Transaction> getTransactions(){
+        return transactions;
+    }
 
     @Override
     public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
