@@ -83,6 +83,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Adapter;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -105,6 +106,11 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
@@ -113,7 +119,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -1275,35 +1280,93 @@ public class Crud implements InformationObserver {
     /**
      * Get current stores
      */
-    Result getStores( final Request req, final Response res ) {
-        DbColumn[] header = { new DbColumn( "id" ), new DbColumn( "name" ), new DbColumn( "adapter" ) };
-        ArrayList<String[]> data = new ArrayList<>();
-        ImmutableMap<String, Store> storeManager = StoreManager.getInstance().getStores();
-        for ( Store store : storeManager.values() ) {
-            String[] arr = new String[3];
-            arr[0] = "" + store.getStoreId();
-            arr[1] = store.getUniqueName();
-            arr[2] = store.getAdapterName();
-            data.add( arr );
-        }
-        return new Result( header, data.toArray( new String[0][2] ) );
+    String getStores( final Request req, final Response res ) {
+        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
+        JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
+            JsonObject jsonStore = new JsonObject();
+            jsonStore.addProperty( "storeId", src.getStoreId() );
+            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
+            jsonStore.add( "settings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.addProperty( "adapterName", src.getAdapterName() );
+            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            return jsonStore;
+        };
+        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
+        Store[] out = stores.values().toArray( new Store[0] );
+        return storeGson.toJson( out, Store[].class );
+    }
+
+
+    /**
+     * Update the settings of a stoe
+     */
+    Store updateStoreSettings( final Request req, final Response res ) {
+        //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
+        JsonDeserializer<Store> storeDeserializer = ( json, typeOfT, context ) -> {
+            JsonObject jsonObject = json.getAsJsonObject();
+            String type = jsonObject.get( "type" ).getAsString();
+            try {
+                return context.deserialize( jsonObject, Class.forName( type ) );
+            } catch ( ClassNotFoundException cnfe ) {
+                throw new JsonParseException( "Unknown element type: " + type, cnfe );
+            }
+        };
+        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeDeserializer ).create();
+        Store store = storeGson.fromJson( req.body(), Store.class );
+        StoreManager.getInstance().getStore( store.getStoreId() ).updateSettings( store.getCurrentSettings() );
+        return store;
     }
 
 
     /**
      * Get available adapters
      */
-    Result getAdapters( final Request req, final Response res ) {
-        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "description" ) };
-        ArrayList<String[]> data = new ArrayList<>();
+    String getAdapters( final Request req, final Response res ) {
+        JsonSerializer<AdapterInformation> adapterSerializer = ( src, typeOfSrc, context ) -> {
+            JsonObject jsonStore = new JsonObject();
+            jsonStore.addProperty( "name", src.name );
+            jsonStore.addProperty( "description", src.description );
+            jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+            jsonStore.add( "settings", context.serialize( src.settings ) );
+            return jsonStore;
+        };
+        Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
+
         List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
-        for ( AdapterInformation adapter : adapters ) {
-            String[] arr = new String[2];
-            arr[0] = adapter.name;
-            arr[1] = adapter.description;
-            data.add( arr );
+        AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
+        return adapterGson.toJson( out, AdapterInformation[].class );
+    }
+
+
+    /**
+     * Deploy a new store
+     */
+    boolean addStore( final Request req, final Response res ) {
+        String body = req.body();
+        Adapter a = this.gson.fromJson( body, Adapter.class );
+        try {
+            StoreManager.getInstance().addStore( getTransaction().getCatalog(), a.clazzName, UUID.randomUUID().toString(), a.settings );
+        } catch ( Exception e ) {
+            log.error( "Could not deploy store", e );
+            return false;
         }
-        return new Result( header, data.toArray( new String[0][2] ) );
+        return true;
+    }
+
+
+    /**
+     * Remove an existing store
+     */
+    boolean removeStore( final Request req, final Response res ) {
+        String storeId = req.body();
+        try {
+            StoreManager.getInstance().removeStore( getTransaction().getCatalog(), storeId );
+        } catch ( Exception e ) {
+            log.error( "Could not remove store " + req.body(), e );
+            return false;
+        }
+        return true;
     }
 
 

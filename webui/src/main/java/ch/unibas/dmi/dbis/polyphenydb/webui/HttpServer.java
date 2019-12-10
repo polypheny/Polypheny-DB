@@ -159,7 +159,15 @@ public class HttpServer extends QueryInterface {
 
         post( "/exportTable", crud::exportTable, gson::toJson );
 
-        get( "/getStores", crud::getStores, gson::toJson );
+        get( "/getStores", crud::getStores );
+
+        post( "/removeStore", crud::removeStore, gson::toJson );
+
+        post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );
+
+        get( "/getAdapters", crud::getAdapters );
+
+        post( "/addStore", crud::addStore, gson::toJson );
 
     }
 
