@@ -75,6 +75,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringEscapeUtils;
 
 
 /**
@@ -1146,7 +1147,7 @@ final class Statements {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "unique_name", quoteString( unique_name ) );
         data.put( "adapter", quoteString( adapter ) );
-        data.put( "settings", gson.toJson( settings ) );
+        data.put( "settings", quoteString( StringEscapeUtils.escapeSql( gson.toJson( settings ) ) ) );
         return Math.toIntExact(insertHandler( transactionHandler, "store", data ));
     }
 
