@@ -6381,6 +6381,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PERCENT_RANK: "PERCENT_RANK" >
 |   < PERIOD: "PERIOD" >
 |   < PERMUTE: "PERMUTE" >
+|   < PLACEMENT: "PLACEMENT" >
 |   < PLACING: "PLACING" >
 |   < PLAN: "PLAN" >
 |   < PLI: "PLI" >
@@ -6547,6 +6548,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STATIC: "STATIC" >
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
+|   < STORE: "STORE" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >

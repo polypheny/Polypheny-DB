@@ -261,14 +261,15 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     SqlNodeList tableElementList = null;
     SqlNode query = null;
+    SqlIdentifier store = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <ON> <STORE> store = SimpleIdentifier() ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
-        tableElementList, query);
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store);
     }
 }
 

@@ -872,5 +872,17 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("While executing SQL [{0}] on JDBC sub-schema")
     ExInst<RuntimeException> exceptionWhilePerformingQueryOnJdbcSubSchema( String sql );
+
+    @BaseMessage("There is no data store with this name: ''{0}''")
+    ExInst<PolyphenyDbException> unknownStoreName( String store );
+
+    @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
+    ExInst<PolyphenyDbException> placementAlreadyExists( String storeName, String tableName );
+
+    @BaseMessage("There is no placement of table ''{0}'' on store ''{1}''")
+    ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
+
+    @BaseMessage("There needs to be at least one placement per table")
+    ExInst<PolyphenyDbException> onlyOnePlacementLeft();
 }
 

@@ -59,7 +59,7 @@ dependencies {
     compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
 
     compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
-    compile group: "org.apache.geode", name: "geode-core", version: geode_core_version
+    compile (group: "org.apache.geode", name: "geode-core", version: geode_core_version ){ exclude(group: "org.apache.logging.log4j") }
     compile group: "com.google.guava", name: "guava", version: guava_version
 
 

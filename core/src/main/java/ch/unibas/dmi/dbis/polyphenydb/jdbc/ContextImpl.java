@@ -33,7 +33,6 @@ import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelRunner;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
@@ -86,12 +85,6 @@ public class ContextImpl implements Context {
     @Override
     public PolyphenyDbConnectionConfig config() {
         return new PolyphenyDbConnectionConfigImpl( new Properties() );
-    }
-
-
-    @Override
-    public RelRunner getRelRunner() {
-        return null;
     }
 
 

@@ -55,7 +55,7 @@ targetCompatibility = 1.8
 dependencies {
     compile project(":core")
     compile project(":csv-adapter")
-    compile project(":hsqldb-adapter")
+    compile project(":jdbc-adapter")
     compile project(":catalog")
     compile project(":webui")
     compile project(":jdbc-interface")
@@ -63,7 +63,7 @@ dependencies {
     ////// Logging
     compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
     compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    compile group: "org.slf4j", name: "slf4j-log4j12", version: slf4j_log4j12_version
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version
 
     ////// CLI PARSING
     compile group: "com.github.rvesse", name: "airline", version: airline_version

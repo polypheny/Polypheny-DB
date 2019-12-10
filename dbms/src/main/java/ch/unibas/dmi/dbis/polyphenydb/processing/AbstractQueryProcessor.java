@@ -95,7 +95,7 @@ import org.apache.commons.lang3.time.StopWatch;
 public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     private static InformationPage informationPagePhysical = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
-    private static InformationGroup informationGroupPhysical = new InformationGroup( "informationGroupPhysicalQueryPlan", informationPagePhysical.getId() );
+    private static InformationGroup informationGroupPhysical = new InformationGroup( informationPagePhysical, "Physical Query Plan" );
 
     private final Transaction transaction;
     private final RexBuilder rexBuilder;
@@ -158,8 +158,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             queryAnalyzer.addPage( informationPagePhysical );
             queryAnalyzer.addGroup( informationGroupPhysical );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    "PhysicalQueryPlan",
-                    informationGroupPhysical.getId(),
+                    informationGroupPhysical,
                     RelOptUtil.dumpPlan( "", optimalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }

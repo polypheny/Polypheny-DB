@@ -28,6 +28,9 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
+import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -37,6 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -101,6 +105,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -591,16 +596,16 @@ public class Crud implements InformationObserver {
 
         if ( queryAnalyzer != null ) {
             InformationPage p1 = new InformationPage( "p1", "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( "Execution time", "p1" );
+            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
             InformationHtml html;
             if ( executionTime < 1e4 ) {
-                html = new InformationHtml( "exec_time", "Execution time", String.format( "Execution time: %d nanoseconds", executionTime ) );
+                html = new InformationHtml( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
-                html = new InformationHtml( "exec_time", "Execution time", String.format( "Execution time: %s", durationText ) );
+                html = new InformationHtml( g1, String.format( "Execution time: %s", durationText ) );
             }
             queryAnalyzer.addPage( p1 );
             queryAnalyzer.addGroup( g1 );
@@ -1218,6 +1223,81 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    /**
+     * Get placements of a table
+     */
+    Result getPlacements( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
+        String schemaName = index.getSchema();
+        String tableName = index.getTable();
+        Transaction transaction = getTransaction();
+        Result result;
+        try {
+            CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
+            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
+            List<CatalogDataPlacement> placements = combinedTable.getPlacements();
+
+            DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Type" ) };
+
+            ArrayList<String[]> data = new ArrayList<>();
+            for ( CatalogDataPlacement placement : placements ) {
+                String[] arr = new String[3];
+                arr[0] = placement.storeUniqueName;
+                arr[1] = StoreManager.getInstance().getStore( placement.storeId ).getAdapterName();
+                arr[2] = placement.placementType.name();
+                data.add( arr );
+            }
+
+            result = new Result( header, data.toArray( new String[0][2] ) );
+            transaction.commit();
+        } catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
+            log.error( "Caught exception while getting placements", e );
+            result = new Result( e.getMessage() );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Get current stores
+     */
+    Result getStores( final Request req, final Response res ) {
+        DbColumn[] header = { new DbColumn( "id" ), new DbColumn( "name" ), new DbColumn( "adapter" ) };
+        ArrayList<String[]> data = new ArrayList<>();
+        ImmutableMap<String, Store> storeManager = StoreManager.getInstance().getStores();
+        for ( Store store : storeManager.values() ) {
+            String[] arr = new String[3];
+            arr[0] = "" + store.getStoreId();
+            arr[1] = store.getUniqueName();
+            arr[2] = store.getAdapterName();
+            data.add( arr );
+        }
+        return new Result( header, data.toArray( new String[0][2] ) );
+    }
+
+
+    /**
+     * Get available adapters
+     */
+    Result getAdapters( final Request req, final Response res ) {
+        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "description" ) };
+        ArrayList<String[]> data = new ArrayList<>();
+        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
+        for ( AdapterInformation adapter : adapters ) {
+            String[] arr = new String[2];
+            arr[0] = adapter.name;
+            arr[1] = adapter.description;
+            data.add( arr );
+        }
+        return new Result( header, data.toArray( new String[0][2] ) );
     }
 
 

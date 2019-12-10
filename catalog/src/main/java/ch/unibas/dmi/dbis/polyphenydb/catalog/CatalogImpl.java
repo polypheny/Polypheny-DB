@@ -64,6 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -544,15 +545,16 @@ public class CatalogImpl extends Catalog {
      *
      * @param storeId The store on which the table should be placed on
      * @param tableId The id of the table to be placed
+     * @param placementType The type of placement
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void addDataPlacement( int storeId, long tableId ) throws GenericCatalogException {
+    public void addDataPlacement( int storeId, long tableId, PlacementType placementType ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            Statements.addDataPlacement( transactionHandler, store.id, table.id );
+            Statements.addDataPlacement( transactionHandler, store.id, table.id, placementType );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
@@ -570,6 +572,23 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteDataPlacement( transactionHandler, storeId, tableId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get data placements on a store
+     *
+     * @param storeId The id of the store
+     * @return List of data placements on this store
+     */
+    @Override
+    public List<CatalogDataPlacement> getDataPlacementsByStore( int storeId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getDataPlacementsByStore( transactionHandler, storeId );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1275,6 +1294,73 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
             return Statements.getUser( transactionHandler, userName );
         } catch ( GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get list of all stores
+     *
+     * @return List of stores
+     */
+    @Override
+    public List<CatalogStore> getStores() throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getStores( transactionHandler );
+        } catch ( GenericCatalogException | CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Get a store by its unique name
+     *
+     * @return List of stores
+     */
+    @Override
+    public CatalogStore getStore( String uniqueName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getStore( transactionHandler, uniqueName );
+        } catch ( GenericCatalogException | UnknownStoreException | CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Add a store
+     *
+     * @param uniqueName The unique name of the store
+     * @param adapter The class name of the adapter
+     * @param settings The configuration of the store
+     * @return The id of the newly added store
+     */
+    @Override
+    public int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.addStore( transactionHandler, uniqueName, adapter, settings );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Delete a store
+     *
+     * @param storeId The id of the store to delete
+     */
+    @Override
+    public void deleteStore( int storeId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.deleteStore( transactionHandler, storeId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
     }

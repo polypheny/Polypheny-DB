@@ -26,9 +26,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import java.io.Serializable;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 
 public class CatalogDataPlacement implements CatalogEntity {
@@ -39,27 +39,27 @@ public class CatalogDataPlacement implements CatalogEntity {
     public final String tableName;
     public final int storeId;
     public final String storeUniqueName;
+    public final PlacementType placementType;
 
 
-    public CatalogDataPlacement( final long tableId, @NonNull final String tableName, final int storeId, @NonNull final String storeUniqueName ) {
+    public CatalogDataPlacement(
+            final long tableId,
+            @NonNull final String tableName,
+            final int storeId,
+            @NonNull final String storeUniqueName,
+            final PlacementType placementType ) {
         this.tableId = tableId;
         this.tableName = tableName;
         this.storeId = storeId;
         this.storeUniqueName = storeUniqueName;
+        this.placementType = placementType;
     }
 
 
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ tableName, storeUniqueName };
+        return new Serializable[]{ tableName, storeUniqueName, placementType.name() };
     }
 
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogUser {
-
-        public final String table;
-        public final String store;
-    }
 }
