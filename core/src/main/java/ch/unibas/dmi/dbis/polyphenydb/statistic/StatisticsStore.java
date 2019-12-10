@@ -32,6 +32,7 @@ public class StatisticsStore {
 
     private StatisticsStore(){
         this.store = new HashMap<>();
+        this.mockContent();
     }
 
     public static StatisticsStore getInstance() {
@@ -40,6 +41,17 @@ public class StatisticsStore {
             instance = new StatisticsStore();
         }
         return instance;
+    }
+
+    private void mockContent(){
+        this.update("public.depts", "deptno", 3);
+        this.update("public.depts", "deptno", 10);
+
+        this.update("public.depts", "name", "tester1");
+        this.update("public.depts", "name", "tester10");
+        this.update("public.depts", "name", "tester100");
+
+        this.update("public.emps", "name", "tester10");
     }
 
     public void setTransactionManager(TransactionManager transactionManager) {
