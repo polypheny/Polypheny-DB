@@ -44,14 +44,14 @@ public class StatisticsStore {
     }
 
     private void mockContent(){
-        this.update("public.depts", "public.depts.deptno", 3);
-        this.update("public.depts", "public.depts.deptno", 10);
+        this.update("public.depts", "deptno", 3);
+        this.update("public.depts", "deptno", 10);
 
-        this.update("public.depts", "public.depts.name", "tester1");
-        this.update("public.depts", "public.depts.name", "tester10");
-        this.update("public.depts", "public.depts.name", "tester100");
+        this.update("public.depts", "name", "tester1");
+        this.update("public.depts", "name", "tester10");
+        this.update("public.depts", "name", "tester100");
 
-        this.update("public.emps", "public.emps.name", "tester10");
+        this.update("public.emps", "name", "tester10");
     }
 
     public void setTransactionManager(TransactionManager transactionManager) {

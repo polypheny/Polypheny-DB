@@ -141,8 +141,6 @@ public class TransactionImpl implements Transaction {
                 okToCommit &= store.prepare( xid );
             }
 
-            System.out.println( transactionManager.getTransactions() );
-
             if ( okToCommit ) {
                 // Commit changes
                 if ( catalog != null ) {
