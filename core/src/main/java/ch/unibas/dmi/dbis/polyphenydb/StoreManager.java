@@ -38,6 +38,7 @@ public class StoreManager {
 
 
     public Store getStore( String uniqueName ) {
+        uniqueName = uniqueName.toLowerCase();
         return storesByName.get( uniqueName );
     }
 
@@ -94,6 +95,7 @@ public class StoreManager {
 
 
     public Store addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
+        uniqueName = uniqueName.toLowerCase();
         if (storesByName.containsKey( uniqueName )) {
             throw new RuntimeException( "There is already a store with this unique name" );
         }
@@ -113,6 +115,7 @@ public class StoreManager {
 
 
     public void removeStore( Catalog catalog, String uniqueName ) {
+        uniqueName = uniqueName.toLowerCase();
         if (!storesByName.containsKey( uniqueName )) {
             throw new RuntimeException( "Unknown store: " + uniqueName );
         }
