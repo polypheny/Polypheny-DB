@@ -299,7 +299,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    // TODO(jan): Is this required for the PostgreSQL JDBC driver?
     private String getTypeString( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:
