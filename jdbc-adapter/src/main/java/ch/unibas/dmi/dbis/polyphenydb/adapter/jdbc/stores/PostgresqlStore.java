@@ -28,38 +28,24 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 
@@ -88,24 +74,36 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private JdbcSchema currentJdbcSchema;
     private SqlDialect dialect;
 
+    // Connection information
+    private String dbHostname;
+    private int dbPort;
+    private String dbName;
+    private String dbUsername;
+    private String dbPassword;
+
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings );
-        BasicDataSource dataSource = new BasicDataSource();
+
+        // Parse settings
+        this.dbHostname = settings.get( "host" );
+        this.dbPort = Integer.parseInt( settings.get( "port" ) );
+        this.dbName = settings.get( "database" );
+        this.dbUsername = settings.get( "username" );
+        this.dbPassword = settings.get( "password" );
+
+        this.dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.postgresql.Driver" );
-        // TODO(jan): Improve initial connection handling
-        dataSource.setUrl( "jdbc:postgresql://" + settings.get( "host" ) + ":"
-                + settings.get( "port" ) + "/" + settings.get( "database" ) );
+        dataSource.setUrl( getConnectionUrl() );
         if ( log.isInfoEnabled() ) {
-            log.info( "Postgres Connection URL: {}",
-                    "jdbc:postgresql://" + settings.get( "host" ) + ":" + settings.get( "port" ) + "/" + settings.get( "database" ) );
+            log.info( "Postgres Connection URL: {}", getConnectionUrl() );
         }
-        dataSource.setUsername( settings.get( "username" ) );
-        dataSource.setPassword( settings.get( "password" ) );
+        dataSource.setUsername( this.dbUsername );
+        dataSource.setPassword( this.dbPassword );
 
         // TODO: Change when implementing transaction support
         dataSource.setDefaultAutoCommit( true );
 
-        this.dataSource = dataSource;
+//        this.dataSource = dataSource;
         dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
 
         // Register the JDBC Pool Size as information in the information manager
@@ -295,7 +293,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     protected void applySetting( AdapterSetting s, String newValue ) {
-        // There is no modifiable setting for this store
+        // This is in preparation of an AdapterSetting rework...
+        // first we disconnect from the postgres instance
+        /*try {
+            dataSource.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down " + getUniqueName(), e );
+        }*/
+        // Now we can reconnect.
     }
 
 
@@ -357,6 +362,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 }
             }
         }
+    }
+
+    private String getConnectionUrl() {
+        return String.format( "jdbc:postgresql://%s:%d/%s", this.dbHostname, this.dbPort, this.dbName );
     }
 
 }
