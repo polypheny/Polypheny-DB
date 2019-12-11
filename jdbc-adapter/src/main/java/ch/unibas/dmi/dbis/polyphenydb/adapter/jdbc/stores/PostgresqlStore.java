@@ -72,7 +72,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 @Slf4j
 public class PostgresqlStore extends AbstractJdbcStore {
 
-    public static final String ADAPTER_NAME = "PGJDBC";
+    public static final String ADAPTER_NAME = "PostgreSQL";
 
     public static final String DESCRIPTION = "The World's Most Advanced Open Source Relational Database";
 
