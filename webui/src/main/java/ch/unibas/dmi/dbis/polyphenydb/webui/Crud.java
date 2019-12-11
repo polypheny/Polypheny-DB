@@ -1355,10 +1355,20 @@ public class Crud implements InformationObserver {
     boolean addStore( final Request req, final Response res ) {
         String body = req.body();
         Adapter a = this.gson.fromJson( body, Adapter.class );
+        Transaction trx = null;
         try {
-            StoreManager.getInstance().addStore( getTransaction().getCatalog(), a.clazzName, a.uniqueName, a.settings );
-        } catch ( Exception e ) {
+            trx = getTransaction();
+            StoreManager.getInstance().addStore( trx.getCatalog(), a.clazzName, a.uniqueName, a.settings );
+            trx.commit();
+        } catch ( Exception | TransactionException e ) {
             log.error( "Could not deploy store", e );
+            try {
+                if ( trx != null ) {
+                    trx.rollback();
+                }
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
             return false;
         }
         return true;
@@ -1370,10 +1380,20 @@ public class Crud implements InformationObserver {
      */
     boolean removeStore( final Request req, final Response res ) {
         String uniqueName = req.body();
+        Transaction trx = null;
         try {
-            StoreManager.getInstance().removeStore( getTransaction().getCatalog(), uniqueName );
-        } catch ( Exception e ) {
+            trx = getTransaction();
+            StoreManager.getInstance().removeStore( trx.getCatalog(), uniqueName );
+            trx.commit();
+        } catch ( Exception | TransactionException e ) {
             log.error( "Could not remove store " + req.body(), e );
+            try {
+                if ( trx != null ) {
+                    trx.rollback();
+                }
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
             return false;
         }
         return true;

@@ -86,7 +86,6 @@ public class StoreManager {
                 Store instance = (Store) ctor.newInstance( store.id, store.uniqueName, store.settings );
                 storesByName.put( instance.getUniqueName(), instance );
                 storesById.put( instance.getStoreId(), instance );
-
             }
         } catch ( GenericCatalogException | NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
