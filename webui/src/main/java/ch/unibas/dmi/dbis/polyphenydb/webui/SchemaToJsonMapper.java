@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 
 
@@ -147,7 +148,8 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonTable {
+    @Getter
+    static class JsonTable {
 
         public final String tableName;
         public final List<JsonColumn> columns;
@@ -156,7 +158,7 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonColumn {
+    static class JsonColumn {
 
         public final String columnName;
         public final String type;

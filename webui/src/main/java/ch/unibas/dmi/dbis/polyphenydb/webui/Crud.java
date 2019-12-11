@@ -84,11 +84,14 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SchemaToJsonMapper.JsonColumn;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SchemaToJsonMapper.JsonTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Adapter;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.HubResult;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
@@ -115,15 +118,24 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -142,6 +154,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -1736,6 +1749,117 @@ public class Crud implements InformationObserver {
     }
 
 
+    /**
+     * Import a dataset from Polypheny-Hub into Polypheny-DB
+     */
+    HubResult importDataset( final spark.Request req, final spark.Response res ) {
+        HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
+        String error = null;
+
+        //create folder if not existent
+        //from https://stackoverflow.com/questions/3634853/how-to-create-a-directory-in-java/3634879#answer-3634906
+        new File( "hub" ).mkdirs();
+        //see: https://www.baeldung.com/java-download-file
+        String zipFilename = UUID.randomUUID().toString() + "-import";
+        String zipFullFilename = String.format( "hub/%s.zip", zipFilename );
+        try ( BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
+                FileOutputStream fos = new FileOutputStream( zipFullFilename ) ) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
+                fos.write( dataBuffer, 0, bytesRead );
+            }
+            fos.close();
+
+            //extract zip, see https://www.baeldung.com/java-compress-and-uncompress
+            new File( "hub/" + zipFilename ).mkdirs();
+            dataBuffer = new byte[1024];
+            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFullFilename));
+            ZipEntry zipEntry = zis.getNextEntry();
+            String jsonFileName = "";
+            String csvFileName = "";
+            while (zipEntry != null) {
+                if( zipEntry.getName().endsWith( ".csv" )) {
+                    csvFileName = zipEntry.getName();
+                } else if( zipEntry.getName().endsWith( ".json" )) {
+                    jsonFileName = zipEntry.getName();
+                }
+                File newFile = new File( "hub/" + zipFilename, zipEntry.getName() );
+                FileOutputStream fosEntry = new FileOutputStream(newFile);
+                int len;
+                while ((len = zis.read(dataBuffer)) > 0) {
+                    fosEntry.write(dataBuffer, 0, len);
+                }
+                fosEntry.close();
+                zipEntry = zis.getNextEntry();
+            }
+            zis.closeEntry();
+            zis.close();
+
+            //delete .zip after unzipping
+            new File( zipFullFilename ).delete();
+            //create table from .json file
+            String json = new String( Files.readAllBytes( Paths.get("hub/" + zipFilename + "/" + jsonFileName)), StandardCharsets.UTF_8);
+            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, false, false, request.schema, request.store );
+            //executeSqlUpdate( getTransaction(), createTable );
+            //import data from .csv file
+            JsonTable table = gson.fromJson( json, JsonTable.class );
+            StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
+            for( JsonColumn col : table.getColumns() ){
+                columnJoiner.add( "\"" + col.columnName + "\"" );
+            }
+            StringJoiner valueJoiner = new StringJoiner( ",", "VAlUES", "" );
+            StringJoiner rowJoiner;
+
+            //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
+            Reader reader = new BufferedReader( new FileReader( "hub/" + zipFilename + "/" + csvFileName ) );
+            CSVReader csvReader = new CSVReader( reader );
+            String nextRecord[];
+            while(( nextRecord = csvReader.readNext() ) != null ){
+                rowJoiner = new StringJoiner( ",", "(", ")" );
+                for( int i = 0; i < table.getColumns().size(); i++ ){
+                    if( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                        rowJoiner.add( "'" + nextRecord[i] + "'" );
+                    }else{
+                        rowJoiner.add( nextRecord[i] );
+                    }
+                }
+                valueJoiner.add( rowJoiner.toString() );
+            }
+            csvReader.close();
+            reader.close();
+
+            String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columnJoiner.toString(), valueJoiner.toString() );
+
+            Transaction transaction = getTransaction();
+            executeSqlUpdate( transaction, createTable );
+            executeSqlUpdate( transaction, insertQuery );
+            transaction.commit();
+
+        } catch ( IOException | TransactionException  e ) {
+            log.error( "Could not import dataset", e );
+            error = "Could not import dataset" + e.getMessage();
+        } catch ( QueryExecutionException e ) {
+            log.error( "Could not create table from imported json file", e );
+            error = "Could not create table from imported json file" + e.getMessage();
+        } catch( CsvValidationException e ){
+            log.error( "Could not export csv file", e );
+            error = "Could not export csv file" + e.getMessage();
+        } finally {
+            this.deleteDirectory( new File( "hub/" + zipFilename ) );
+        }
+
+        if( error != null ){
+            return new HubResult( error );
+        }else {
+            return new HubResult().setMessage( String.format( "Imported dataset into %s(%s)", request.schema, request.store ) );
+        }
+    }
+
+
+    /**
+     * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
+     */
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
         Transaction transaction = getTransaction( false );
@@ -1756,7 +1880,8 @@ public class Crud implements InformationObserver {
 
             //create folder if not existent yet
             new File( "hub" ).mkdirs();
-            catalogWriter.write( this.gson.toJson( catalogCombinedTable ) );
+            //catalogWriter.write( this.gson.toJson( catalogCombinedTable ) );
+            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, false, false ) );
             catalogWriter.close();
 
             String query = String.format( "SELECT * FROM %s.%s", request.schema, request.table );
@@ -2093,6 +2218,21 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception", e );
         }
         return dataTypes;
+    }
+
+
+    /**
+     * Helper function to delete a directory
+     * from https://www.baeldung.com/java-delete-directory
+     */
+    boolean deleteDirectory( final File directoryToBeDeleted ) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        return directoryToBeDeleted.delete();
     }
 
 

@@ -29,13 +29,8 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.HubResult;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.HubRequest;
 import com.google.gson.Gson;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.URL;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -216,30 +211,6 @@ class Hub {
                 .build();
 
         return forward( formBody, "Could not edit dataset" );
-    }
-
-
-    HubResult importDataset( final spark.Request req, final spark.Response res ) {
-        HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
-
-        //create folder if not existent
-        //from https://stackoverflow.com/questions/3634853/how-to-create-a-directory-in-java/3634879#answer-3634906
-        new File( "hub" ).mkdirs();
-        //see: https://www.baeldung.com/java-download-file
-        String filename = String.format( "hub/%s-import.zip", UUID.randomUUID().toString() );
-        try ( BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
-                FileOutputStream fileOutputStream = new FileOutputStream( filename ) ) {
-            byte[] dataBuffer = new byte[1024];
-            int bytesRead;
-            while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
-                fileOutputStream.write( dataBuffer, 0, bytesRead );
-            }
-        } catch ( IOException e ) {
-            // handle exception
-            log.error( "Could not write file", e );
-        }
-
-        return new HubResult().setMessage( String.format( "Imported dataset into %s(%s)", request.schema, request.store ) );
     }
 
 

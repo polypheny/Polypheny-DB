@@ -45,7 +45,7 @@ public class HubResult {
     String secret;
 
     public HubResult( final String error ) {
-        this.message = error;
+        this.error = error;
     }
 
     public HubResult() {
