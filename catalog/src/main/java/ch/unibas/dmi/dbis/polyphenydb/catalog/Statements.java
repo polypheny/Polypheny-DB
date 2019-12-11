@@ -1131,7 +1131,7 @@ final class Statements {
 
     // Get Store by store name
     static CatalogStore getStore( XATransactionHandler transactionHandler, String uniqueName ) throws GenericCatalogException, UnknownStoreException {
-        String filter = " \"unique_name\" = " + uniqueName;
+        String filter = " \"unique_name\" = " + quoteString( uniqueName );
         List<CatalogStore> list = storeFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );

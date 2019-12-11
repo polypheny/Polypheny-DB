@@ -122,12 +122,16 @@ public class StoreManager {
 
             // Check if the store has any placements
             List<CatalogDataPlacement> placements = catalog.getDataPlacementsByStore( catalogStore.id );
-            if (placements.size() != 0) {
+            if ( placements.size() != 0 ) {
                 throw new RuntimeException( "There is still data placed on this store" );
             }
 
             // Shutdown store
             storesByName.get( uniqueName ).shutdown();
+
+            // remove store from maps
+            storesById.remove( catalogStore.id );
+            storesByName.remove( uniqueName );
 
             // delete store from catalog
             catalog.deleteStore( catalogStore.id );
