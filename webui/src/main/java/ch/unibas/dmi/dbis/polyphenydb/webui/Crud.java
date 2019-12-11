@@ -29,6 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Store.AdapterSetting;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -1283,10 +1284,19 @@ public class Crud implements InformationObserver {
     String getStores( final Request req, final Response res ) {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
+            List<AdapterSetting> currentSettings = new ArrayList<>();
+            for( AdapterSetting s : src.getAvailableSettings() ){
+                for( String current : src.getCurrentSettings().keySet() ){
+                    if( s.name.equals( current )){
+                        currentSettings.add( s );
+                    }
+                }
+            }
+
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "storeId", src.getStoreId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "settings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.add( "settings", context.serialize( currentSettings ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
             return jsonStore;
@@ -1346,7 +1356,7 @@ public class Crud implements InformationObserver {
         String body = req.body();
         Adapter a = this.gson.fromJson( body, Adapter.class );
         try {
-            StoreManager.getInstance().addStore( getTransaction().getCatalog(), a.clazzName, UUID.randomUUID().toString(), a.settings );
+            StoreManager.getInstance().addStore( getTransaction().getCatalog(), a.clazzName, a.uniqueName, a.settings );
         } catch ( Exception e ) {
             log.error( "Could not deploy store", e );
             return false;
@@ -1359,9 +1369,9 @@ public class Crud implements InformationObserver {
      * Remove an existing store
      */
     boolean removeStore( final Request req, final Response res ) {
-        String storeId = req.body();
+        String uniqueName = req.body();
         try {
-            StoreManager.getInstance().removeStore( getTransaction().getCatalog(), storeId );
+            StoreManager.getInstance().removeStore( getTransaction().getCatalog(), uniqueName );
         } catch ( Exception e ) {
             log.error( "Could not remove store " + req.body(), e );
             return false;

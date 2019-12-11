@@ -31,6 +31,7 @@ import java.util.Map;
 
 public class Adapter {
 
+    public String uniqueName;
     public String clazzName;
     public Map<String, String> settings;
 
