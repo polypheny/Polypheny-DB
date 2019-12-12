@@ -53,7 +53,6 @@ import org.apache.commons.dbcp2.BasicDataSource;
 //   - Implement better logging.
 //   - Check all the functions whether they are properly adjusted to Postgres.
 //   - Link to Postgres documentation.
-//   - Add to 'catalogSchema.sql' in a way that does not require a running Postgres instance.
 
 @Slf4j
 public class PostgresqlStore extends AbstractJdbcStore {
