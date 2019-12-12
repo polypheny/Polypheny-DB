@@ -136,8 +136,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         if (log.isDebugEnabled()) {
-            log.debug( "PostgreSQL createTable: Qualified names: {}, physicalTableName: {}",
-                    qualifiedNames, physicalTableName);
+            log.debug( "PostgreSQL createTable: Qualified names: {}, physicalTableName: {}", qualifiedNames, physicalTableName);
         }
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
