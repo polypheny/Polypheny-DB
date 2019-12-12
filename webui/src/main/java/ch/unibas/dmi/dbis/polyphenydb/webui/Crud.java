@@ -191,6 +191,7 @@ public class Crud implements InformationObserver {
         cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny-DB UI", "Settings for the user interface." ) );
         cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
         cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
+        cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
     }
 
 
@@ -1799,41 +1800,52 @@ public class Crud implements InformationObserver {
             //delete .zip after unzipping
             new File( zipFullFilename ).delete();
             //create table from .json file
-            String json = new String( Files.readAllBytes( Paths.get("hub/" + zipFilename + "/" + jsonFileName)), StandardCharsets.UTF_8);
+            String json = new String( Files.readAllBytes( Paths.get( "hub/" + zipFilename + "/" + jsonFileName ) ), StandardCharsets.UTF_8 );
             String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, false, false, request.schema, request.store );
-            //executeSqlUpdate( getTransaction(), createTable );
+            Transaction transaction = getTransaction();
+            executeSqlUpdate( transaction, createTable );
+
             //import data from .csv file
             JsonTable table = gson.fromJson( json, JsonTable.class );
             StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
-            for( JsonColumn col : table.getColumns() ){
+            for ( JsonColumn col : table.getColumns() ) {
                 columnJoiner.add( "\"" + col.columnName + "\"" );
             }
+            String columns = columnJoiner.toString();
             StringJoiner valueJoiner = new StringJoiner( ",", "VAlUES", "" );
             StringJoiner rowJoiner;
 
             //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
+
+            final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
+            int csvCounter = 0;
             Reader reader = new BufferedReader( new FileReader( "hub/" + zipFilename + "/" + csvFileName ) );
             CSVReader csvReader = new CSVReader( reader );
-            String nextRecord[];
-            while(( nextRecord = csvReader.readNext() ) != null ){
+            String[] nextRecord;
+            while ( (nextRecord = csvReader.readNext()) != null ) {
                 rowJoiner = new StringJoiner( ",", "(", ")" );
-                for( int i = 0; i < table.getColumns().size(); i++ ){
-                    if( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                for ( int i = 0; i < table.getColumns().size(); i++ ) {
+                    if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
                         rowJoiner.add( "'" + nextRecord[i] + "'" );
-                    }else{
+                    } else {
                         rowJoiner.add( nextRecord[i] );
                     }
                 }
                 valueJoiner.add( rowJoiner.toString() );
+                csvCounter++;
+                if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
+                    executeSqlUpdate( transaction, insertQuery );
+                    valueJoiner = new StringJoiner( ",", "VAlUES", "" );
+                }
+            }
+            if ( csvCounter % BATCH_SIZE != 0 ) {
+                String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
+                executeSqlUpdate( transaction, insertQuery );
             }
             csvReader.close();
             reader.close();
 
-            String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columnJoiner.toString(), valueJoiner.toString() );
-
-            Transaction transaction = getTransaction();
-            executeSqlUpdate( transaction, createTable );
-            executeSqlUpdate( transaction, insertQuery );
             transaction.commit();
 
         } catch ( IOException | TransactionException  e ) {
