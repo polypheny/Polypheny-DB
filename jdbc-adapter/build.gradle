@@ -57,6 +57,10 @@ dependencies {
 
     compile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
 
+    // https://mvnrepository.com/artifact/org.postgresql/postgresql
+    compile group: 'org.postgresql', name: 'postgresql', version: postgresql_version
+
+
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
