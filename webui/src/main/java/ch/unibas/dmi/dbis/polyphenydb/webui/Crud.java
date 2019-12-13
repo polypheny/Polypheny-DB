@@ -1782,6 +1782,10 @@ public class Crud implements InformationObserver {
             String jsonFileName = "";
             String csvFileName = "";
             final File extractedFolder = new File( tempDir, "import" );
+            if ( !extractedFolder.mkdirs() ) {
+                log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
+                return new HubResult( "Unable to create folder for extracting files" );
+            }
             try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
                 ZipEntry zipEntry = zis.getNextEntry();
                 while ( zipEntry != null ) {
@@ -1814,7 +1818,7 @@ public class Crud implements InformationObserver {
                 columnJoiner.add( "\"" + col.columnName + "\"" );
             }
             String columns = columnJoiner.toString();
-            StringJoiner valueJoiner = new StringJoiner( ",", "VAlUES", "" );
+            StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
             StringJoiner rowJoiner;
 
             //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
