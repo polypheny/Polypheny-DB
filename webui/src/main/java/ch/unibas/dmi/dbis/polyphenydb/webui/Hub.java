@@ -49,10 +49,12 @@ class Hub {
     private final OkHttpClient httpClient = new OkHttpClient();
     private String url;
 
+
     Hub() {
-        // todo use configManager
-        this.url = "http://localhost:8888/Sites/unibas/polypheny/data-stores/rest.php";
+        // TODO: Send with every request from the UI
+        this.url = "http://polyphenydb.dmi.unibas.ch/rest.php";
     }
+
 
     HubResult login( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
@@ -66,6 +68,7 @@ class Hub {
 
         return forward( formBody, "Login failed." );
     }
+
 
     HubResult logout( final spark.Request req, final spark.Response res ) {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );

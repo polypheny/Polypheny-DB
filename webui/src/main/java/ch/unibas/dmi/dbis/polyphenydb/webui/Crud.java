@@ -1299,9 +1299,9 @@ public class Crud implements InformationObserver {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> currentSettings = new ArrayList<>();
-            for( AdapterSetting s : src.getAvailableSettings() ){
-                for( String current : src.getCurrentSettings().keySet() ){
-                    if( s.name.equals( current )){
+            for ( AdapterSetting s : src.getAvailableSettings() ) {
+                for ( String current : src.getCurrentSettings().keySet() ) {
+                    if ( s.name.equals( current ) ) {
                         currentSettings.add( s );
                     }
                 }
@@ -1757,55 +1757,57 @@ public class Crud implements InformationObserver {
         HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
         String error = null;
 
-        //create folder if not existent
-        //from https://stackoverflow.com/questions/3634853/how-to-create-a-directory-in-java/3634879#answer-3634906
-        new File( "hub" ).mkdirs();
-        //see: https://www.baeldung.com/java-download-file
-        String zipFilename = UUID.randomUUID().toString() + "-import";
-        String zipFullFilename = String.format( "hub/%s.zip", zipFilename );
-        try ( BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
-                FileOutputStream fos = new FileOutputStream( zipFullFilename ) ) {
+        String randomFileName = UUID.randomUUID().toString();
+        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
+        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
+        if ( !tempDir.mkdirs() ) { // create folder
+            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
+            return new HubResult( "Unable to create temp folder" );
+        }
+
+        // see: https://www.baeldung.com/java-download-file
+        final File zipFile = new File( tempDir, "import.zip" );
+        try (
+                BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
+                FileOutputStream fos = new FileOutputStream( zipFile )
+        ) {
             byte[] dataBuffer = new byte[1024];
             int bytesRead;
             while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
                 fos.write( dataBuffer, 0, bytesRead );
             }
-            fos.close();
 
-            //extract zip, see https://www.baeldung.com/java-compress-and-uncompress
-            new File( "hub/" + zipFilename ).mkdirs();
+            // extract zip, see https://www.baeldung.com/java-compress-and-uncompress
             dataBuffer = new byte[1024];
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFullFilename));
-            ZipEntry zipEntry = zis.getNextEntry();
             String jsonFileName = "";
             String csvFileName = "";
-            while (zipEntry != null) {
-                if( zipEntry.getName().endsWith( ".csv" )) {
-                    csvFileName = zipEntry.getName();
-                } else if( zipEntry.getName().endsWith( ".json" )) {
-                    jsonFileName = zipEntry.getName();
+            final File extractedFolder = new File( tempDir, "import" );
+            try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                while ( zipEntry != null ) {
+                    if ( zipEntry.getName().endsWith( ".csv" ) ) {
+                        csvFileName = zipEntry.getName();
+                    } else if ( zipEntry.getName().endsWith( ".json" ) ) {
+                        jsonFileName = zipEntry.getName();
+                    }
+                    File newFile = new File( extractedFolder, zipEntry.getName() );
+                    try ( FileOutputStream fosEntry = new FileOutputStream( newFile ) ) {
+                        int len;
+                        while ( (len = zis.read( dataBuffer )) > 0 ) {
+                            fosEntry.write( dataBuffer, 0, len );
+                        }
+                    }
+                    zipEntry = zis.getNextEntry();
                 }
-                File newFile = new File( "hub/" + zipFilename, zipEntry.getName() );
-                FileOutputStream fosEntry = new FileOutputStream(newFile);
-                int len;
-                while ((len = zis.read(dataBuffer)) > 0) {
-                    fosEntry.write(dataBuffer, 0, len);
-                }
-                fosEntry.close();
-                zipEntry = zis.getNextEntry();
             }
-            zis.closeEntry();
-            zis.close();
 
-            //delete .zip after unzipping
-            new File( zipFullFilename ).delete();
-            //create table from .json file
-            String json = new String( Files.readAllBytes( Paths.get( "hub/" + zipFilename + "/" + jsonFileName ) ), StandardCharsets.UTF_8 );
+            // create table from .json file
+            String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
             String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, false, false, request.schema, request.store );
             Transaction transaction = getTransaction();
             executeSqlUpdate( transaction, createTable );
 
-            //import data from .csv file
+            // import data from .csv file
             JsonTable table = gson.fromJson( json, JsonTable.class );
             StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
             for ( JsonColumn col : table.getColumns() ) {
@@ -1819,51 +1821,55 @@ public class Crud implements InformationObserver {
 
             final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
             int csvCounter = 0;
-            Reader reader = new BufferedReader( new FileReader( "hub/" + zipFilename + "/" + csvFileName ) );
-            CSVReader csvReader = new CSVReader( reader );
-            String[] nextRecord;
-            while ( (nextRecord = csvReader.readNext()) != null ) {
-                rowJoiner = new StringJoiner( ",", "(", ")" );
-                for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                    if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
-                        rowJoiner.add( "'" + nextRecord[i] + "'" );
-                    } else {
-                        rowJoiner.add( nextRecord[i] );
+            try (
+                    Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
+                    CSVReader csvReader = new CSVReader( reader );
+            ) {
+                String[] nextRecord;
+                while ( (nextRecord = csvReader.readNext()) != null ) {
+                    rowJoiner = new StringJoiner( ",", "(", ")" );
+                    for ( int i = 0; i < table.getColumns().size(); i++ ) {
+                        if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                            rowJoiner.add( "'" + nextRecord[i] + "'" );
+                        } else {
+                            rowJoiner.add( nextRecord[i] );
+                        }
+                    }
+                    valueJoiner.add( rowJoiner.toString() );
+                    csvCounter++;
+                    if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                        String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
+                        executeSqlUpdate( transaction, insertQuery );
+                        valueJoiner = new StringJoiner( ",", "VALUES", "" );
                     }
                 }
-                valueJoiner.add( rowJoiner.toString() );
-                csvCounter++;
-                if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                if ( csvCounter % BATCH_SIZE != 0 ) {
                     String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
                     executeSqlUpdate( transaction, insertQuery );
-                    valueJoiner = new StringJoiner( ",", "VAlUES", "" );
                 }
             }
-            if ( csvCounter % BATCH_SIZE != 0 ) {
-                String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
-                executeSqlUpdate( transaction, insertQuery );
-            }
-            csvReader.close();
-            reader.close();
 
             transaction.commit();
 
-        } catch ( IOException | TransactionException  e ) {
+        } catch ( IOException | TransactionException e ) {
             log.error( "Could not import dataset", e );
             error = "Could not import dataset" + e.getMessage();
         } catch ( QueryExecutionException e ) {
             log.error( "Could not create table from imported json file", e );
             error = "Could not create table from imported json file" + e.getMessage();
-        } catch( CsvValidationException e ){
+        } catch ( CsvValidationException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
         } finally {
-            this.deleteDirectory( new File( "hub/" + zipFilename ) );
+            // delete temp folder
+            if ( !deleteDirectory( tempDir ) ) {
+                log.error( "Unable to delete temp folder: " + tempDir.getAbsolutePath() );
+            }
         }
 
-        if( error != null ){
+        if ( error != null ) {
             return new HubResult( error );
-        }else {
+        } else {
             return new HubResult().setMessage( String.format( "Imported dataset into %s(%s)", request.schema, request.store ) );
         }
     }
@@ -1878,26 +1884,30 @@ public class Crud implements InformationObserver {
 
         String randomFileName = UUID.randomUUID().toString();
         final Charset charset = StandardCharsets.UTF_8;
-        String tableFileName = String.format( "hub/%s-table.csv", randomFileName );
-        String catalogFileName = String.format( "hub/%s-catalog.json", randomFileName );
-        String zipFileName = String.format( "hub/%s-table.zip", randomFileName );
+        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
+        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
+        if ( !tempDir.mkdirs() ) { // create folder
+            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
+            return new Result( "Unable to create temp folder" );
+        }
+        File tableFile = new File( tempDir, "table.csv" );
+        File catalogFile = new File( tempDir, "catalog.json" );
+        File zipFile = new File( tempDir, "table.zip" );
         try (
-                OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFileName ), charset );
-                FileOutputStream tableStream = new FileOutputStream( tableFileName );
-                FileOutputStream zipStream = new FileOutputStream( zipFileName );
+                OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
+                FileOutputStream tableStream = new FileOutputStream( tableFile );
+                FileOutputStream zipStream = new FileOutputStream( zipFile );
         ) {
             log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
             CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, request.schema, request.table );
             CatalogCombinedTable catalogCombinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
 
-            //create folder if not existent yet
-            new File( "hub" ).mkdirs();
-            //catalogWriter.write( this.gson.toJson( catalogCombinedTable ) );
+            // TODO: Ask user whether primary key and default values should be exported
             catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, false, false ) );
-            catalogWriter.close();
+            catalogWriter.flush();
 
             String query = String.format( "SELECT * FROM %s.%s", request.schema, request.table );
-            //todo use iterator instead of Result
+            // TODO use iterator instead of Result
             Result tableData = executeSqlSelect( transaction, new UIRequest(), query );
 
             for ( String[] row : tableData.getData() ) {
@@ -1916,29 +1926,25 @@ public class Crud implements InformationObserver {
                     }
                 }
             }
-            tableStream.close();
+            tableStream.flush();
+
             //from https://www.baeldung.com/java-compress-and-uncompress
-            List<String> srcFiles = Arrays.asList( catalogFileName, tableFileName );
-            ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset );
-            for ( String srcFile : srcFiles ) {
-                File fileToZip = new File( srcFile );
-                FileInputStream fis = new FileInputStream( fileToZip );
-                ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
-                zipOut.putNextEntry( zipEntry );
+            List<File> srcFiles = Arrays.asList( catalogFile, tableFile );
+            try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
+                for ( File fileToZip : srcFiles ) {
+                    try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
+                        ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
+                        zipOut.putNextEntry( zipEntry );
 
-                byte[] bytes = new byte[1024];
-                int length;
-                while ( (length = fis.read( bytes )) >= 0 ) {
-                    zipOut.write( bytes, 0, length );
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ( (length = fis.read( bytes )) >= 0 ) {
+                            zipOut.write( bytes, 0, length );
+                        }
+                    }
                 }
-                fis.close();
+                zipOut.finish();
             }
-            zipOut.close();
-            zipStream.close();
-
-            //delete temp files
-            new File( catalogFileName ).delete();
-            new File( tableFileName ).delete();
 
             //send file to php backend using Unirest
             HttpResponse jsonResponse = Unirest.post( request.hubLink )
@@ -1947,7 +1953,7 @@ public class Crud implements InformationObserver {
                     .field( "secret", request.secret )
                     .field( "name", request.name )
                     .field( "pub", String.valueOf( request.pub ) )
-                    .field( "dataset", new File( zipFileName ) )
+                    .field( "dataset", zipFile )
                     .asString();
 
             // Get result
@@ -1955,7 +1961,7 @@ public class Crud implements InformationObserver {
             IOUtils.copy( jsonResponse.getRawBody(), writer );
             String resultString = writer.toString();
             log.info( String.format( "Exported %s.%s", request.schema, request.table ) );
-            new File( zipFileName ).delete();
+
             try {
                 return gson.fromJson( resultString, Result.class );
             } catch ( JsonSyntaxException e ) {
@@ -1967,6 +1973,11 @@ public class Crud implements InformationObserver {
         } catch ( Exception e ) {
             log.error( "Error while exporting table", e );
             return new Result( "Error while exporting table" );
+        } finally {
+            // delete temp folder
+            if ( !deleteDirectory( tempDir ) ) {
+                log.error( "Unable to delete temp folder: " + tempDir.getAbsolutePath() );
+            }
         }
     }
 
@@ -2239,9 +2250,9 @@ public class Crud implements InformationObserver {
      */
     boolean deleteDirectory( final File directoryToBeDeleted ) {
         File[] allContents = directoryToBeDeleted.listFiles();
-        if (allContents != null) {
-            for (File file : allContents) {
-                deleteDirectory(file);
+        if ( allContents != null ) {
+            for ( File file : allContents ) {
+                deleteDirectory( file );
             }
         }
         return directoryToBeDeleted.delete();
