@@ -188,7 +188,7 @@ public class Crud implements InformationObserver {
         this.userName = userName;
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny-DB UI", "Settings for the user interface." ) );
+        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny UI", "Settings for the user interface." ) );
         cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
         cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
         cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
