@@ -1805,9 +1805,11 @@ public class Crud implements InformationObserver {
                 }
             }
 
-            //delete .zip after unzipping
-            zipFile.delete();
-            //create table from .json file
+            // delete .zip after unzipping
+            if ( !zipFile.delete() ) {
+                log.error( "Unable to delete zip file: " + zipFile.getAbsolutePath() );
+            }
+            // create table from .json file
             String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
             String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, request.store );
             Transaction transaction = getTransaction();
@@ -1908,11 +1910,8 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, request.schema, request.table );
             CatalogCombinedTable catalogCombinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
 
-            //create folder if not existent yet
-            new File( "hub" ).mkdirs();
-            //catalogWriter.write( this.gson.toJson( catalogCombinedTable ) );
             catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, request.createPks, request.defaultValues ) );
-            catalogWriter.close();
+            catalogWriter.flush();
 
             String query = String.format( "SELECT * FROM %s.%s", request.schema, request.table );
             // TODO use iterator instead of Result
