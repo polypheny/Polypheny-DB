@@ -1806,7 +1806,7 @@ public class Crud implements InformationObserver {
             }
 
             //delete .zip after unzipping
-            new File( zipFullFilename ).delete();
+            zipFile.delete();
             //create table from .json file
             String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
             String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, request.store );
