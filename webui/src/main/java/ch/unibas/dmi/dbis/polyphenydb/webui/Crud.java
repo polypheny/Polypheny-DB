@@ -471,7 +471,7 @@ public class Crud implements InformationObserver {
             if ( value == null ) {
                 value = "NULL";
             } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
-                value = "'" + value + "'";
+                value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
             }
             values.add( value );
         }
@@ -676,7 +676,7 @@ public class Crud implements InformationObserver {
             } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
-                condition = String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() );
+                condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
             }
             joiner.add( condition );
         }
@@ -720,7 +720,7 @@ public class Crud implements InformationObserver {
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
-                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql(entry.getValue()) ) );
             }
         }
         builder.append( setStatements.toString() );
