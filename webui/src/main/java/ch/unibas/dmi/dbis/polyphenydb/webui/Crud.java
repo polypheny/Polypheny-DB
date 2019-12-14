@@ -162,6 +162,7 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import spark.Request;
 import spark.Response;
@@ -1838,7 +1839,7 @@ public class Crud implements InformationObserver {
                     rowJoiner = new StringJoiner( ",", "(", ")" );
                     for ( int i = 0; i < table.getColumns().size(); i++ ) {
                         if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
-                            rowJoiner.add( "'" + nextRecord[i] + "'" );
+                            rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
                         } else {
                             rowJoiner.add( nextRecord[i] );
                         }
