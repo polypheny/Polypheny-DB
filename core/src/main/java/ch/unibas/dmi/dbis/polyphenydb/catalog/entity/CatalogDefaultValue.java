@@ -45,7 +45,11 @@ public class CatalogDefaultValue {
     public final String functionName;
 
 
-    public CatalogDefaultValue( final long columnId, @NonNull final PolySqlType type, final String value, final String functionName ) {
+    public CatalogDefaultValue(
+            final long columnId,
+            @NonNull final PolySqlType type,
+            final String value,
+            final String functionName ) {
         this.columnId = columnId;
         this.type = type;
         this.value = value;
