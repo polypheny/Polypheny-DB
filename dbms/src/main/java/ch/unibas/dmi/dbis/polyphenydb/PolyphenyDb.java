@@ -25,6 +25,8 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import static org.reflections.Reflections.log;
+
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -40,6 +42,7 @@ import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SqlQueryInterface;
 import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 
@@ -146,12 +149,17 @@ public class PolyphenyDb {
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        // prolly overkill just for testing
+        final SqlQueryInterface sqlQuery = new SqlQueryInterface( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
 
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
+
+        Thread sqlQueryThread = new Thread( sqlQuery );
+        sqlQueryThread.start();
 
         try {
             jdbcInterfaceThread.join();
