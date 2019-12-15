@@ -161,9 +161,11 @@ public class PolyphenyDb {
         Thread sqlQueryThread = new Thread( sqlQuery );
         sqlQueryThread.start();
 
+
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
+            sqlQueryThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
@@ -172,6 +174,8 @@ public class PolyphenyDb {
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
         log.info( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
+
+        sqlQuery.getStatisticData();
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );

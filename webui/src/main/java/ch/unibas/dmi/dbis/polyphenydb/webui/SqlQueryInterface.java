@@ -26,15 +26,21 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
-
 
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 
-
+@Slf4j
 public class SqlQueryInterface extends QueryInterface {
 
+    StatisticQueries statisticQueries;
 
+
+    /**
+     * Interface to enable "services" to push transactions to the transactionManager
+     * TODO: decide if way to go without server
+     */
     public SqlQueryInterface( TransactionManager transactionManager, Authenticator authenticator ) {
         super( transactionManager, authenticator );
     }
@@ -42,6 +48,18 @@ public class SqlQueryInterface extends QueryInterface {
 
     @Override
     public void run() {
-        log.info( "sql query interface started." );
+        this.statisticQueries = new StatisticQueries( this.transactionManager, "pa", "APP");
+
+        System.out.println( Arrays.toString( this.statisticQueries.getMinMaxValue( "public.depts.deptno", "public.depts" ) ) );
+
+        log.info( "SQL query interface started." );
+    }
+
+
+    /**
+     * all-in-one method to handle statistic reset
+     */
+    public void getStatisticData() {
+        System.out.println( Arrays.toString( this.statisticQueries.getMinMaxValue( "public.depts.deptno", "public.depts" ) ) );
     }
 }
