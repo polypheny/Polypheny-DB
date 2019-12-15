@@ -16,8 +16,6 @@ buildscript {
     dependencies {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
-        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
@@ -31,10 +29,9 @@ repositories {
 }
 
 
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
-apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
@@ -53,16 +50,9 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    compile project(":core")
+    implementation project(":core")
 
-    compile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
-
-    compile group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
-    compile group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
-    compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    compile group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
-    compile group: "com.google.guava", name: "guava", version: guava_version
-    compile group: "joda-time", name: "joda-time", version: joda_time_version
+    implementation group: "joda-time", name: "joda-time", version: joda_time_version
 
 
     // --- Test Compile ---
@@ -142,13 +132,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }
-shadowJar {
-    classifier = ""
-}
-assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
-    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }

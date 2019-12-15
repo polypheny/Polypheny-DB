@@ -25,6 +25,8 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
+import static org.reflections.Reflections.log;
+
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -41,6 +43,7 @@ import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SqlQueryInterface;
 import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 
@@ -147,6 +150,8 @@ public class PolyphenyDb {
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        // prolly overkill just for testing
+        final SqlQueryInterface sqlQuery = new SqlQueryInterface( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -154,17 +159,19 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
-        // Map which should save for all tables the corresponding statistics
-        // TODO: export functionality to separate statisticStore?
-        StatisticsStore store = StatisticsStore.getInstance();
-        store.setTransactionManager(transactionManager);
+        Thread sqlQueryThread = new Thread( sqlQuery );
+        sqlQueryThread.start();
 
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
+            sqlQueryThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+
+        StatisticsStore store = StatisticsStore.getInstance();
+        store.setTransactionManager(transactionManager);
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
