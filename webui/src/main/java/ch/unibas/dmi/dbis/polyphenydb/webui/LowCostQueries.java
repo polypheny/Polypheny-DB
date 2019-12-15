@@ -32,8 +32,11 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.webui.Crud.QueryExecutionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.StatColumn;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.StatResult;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +45,9 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 
+
 @Slf4j
-public class StatisticQueries implements InformationObserver {
+public class LowCostQueries implements InformationObserver {
 
     private final TransactionManager transactionManager;
     private final String databaseName;
@@ -51,10 +55,10 @@ public class StatisticQueries implements InformationObserver {
 
 
     /**
-     *  StatisticQueries handles all the needed specialized queries
-     *  Idea is to expose a selected list of sql operations with a small list of results to don't impact performance
+     * LowCostQueries can be used to retrieve short answered queries
+     * Idea is to expose a selected list of sql operations with a small list of results to don't impact performance
      */
-    StatisticQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
+    LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
@@ -78,37 +82,53 @@ public class StatisticQueries implements InformationObserver {
 
     }
 
+    /*
     public String[] getMinMaxValue( String column, String table ) {
         String query = "SELECT MIN(" + column + "),MAX(" + column + ") FROM " + table;
-        return executeSqlSelect( query ).get( 0 );
-    }
+        return executeSqlSelect( query );
+    }*/
 
 
     /**
      * Debug method TODO: remove this
      */
-    public ArrayList<String[]> selectValue( String column, String table ) {
-        String query = "SELECT " + column + " FROM " + table;
-        return executeSqlSelect( query );
+    public StatColumn selectValue( String column, String table ) {
+        String query = "SELECT MIN(" + column + ") FROM " + table + " LIMIT 10;";
+        return executeSqlSelect( query ).getColumns()[0];
     }
 
-    private ArrayList<String[]> executeSqlSelect( String query ) {
+
+    /**
+     * Handles the request for one columns stats
+     *
+     * @param query the select query
+     * @return result of the query
+     */
+    public StatColumn selectOneStat( String query ) {
+
+        return this.executeSqlSelect( query ).getColumns()[0];
+    }
+
+
+    /**
+     * Handles the request which retrieves the stats for multiple columns
+     */
+    private StatResult selectMultipleStats( String query ) {
+        return this.executeSqlSelect( query );
+    }
+
+
+    private StatResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
-        long executionTime = 0;
-        long temp = 0;
-        ArrayList<String[]> result = new ArrayList<>();
+        StatResult result = new StatResult( new StatColumn[]{} );
 
         try {
-            temp = System.nanoTime();
             result = executeSqlSelect( transaction, query );
-            executionTime += System.nanoTime() - temp;
-            // results.add( result );
             transaction.commit();
             transaction = getTransaction();
 
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            executionTime += System.nanoTime() - temp;
             // result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
 
             try {
@@ -128,6 +148,7 @@ public class StatisticQueries implements InformationObserver {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
+
 
     private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
         PolyphenyDbSignature signature;
@@ -153,7 +174,7 @@ public class StatisticQueries implements InformationObserver {
     // -----------------------------------------------------------------------
 
 
-    private ArrayList<String[]> executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
+    private StatResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -184,10 +205,12 @@ public class StatisticQueries implements InformationObserver {
         try {
             CatalogTable catalogTable = null;
 
-
             ArrayList<DbColumn> header = new ArrayList<>();
+            ArrayList<String> type = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
                 String columnName = metaData.columnName;
+
+                type.add( metaData.type.name );
 
                 DbColumn dbCol = new DbColumn(
                         metaData.columnName,
@@ -195,22 +218,7 @@ public class StatisticQueries implements InformationObserver {
                         metaData.nullable == ResultSetMetaData.columnNullable,
                         metaData.displaySize,
                         new SortState(),
-                        "");
-
-                // Get column default values
-                if ( catalogTable != null ) {
-                    try {
-                        if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                            CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
-                            if ( catalogColumn.defaultValue != null ) {
-                                dbCol.defaultValue = catalogColumn.defaultValue.value;
-                            }
-                        }
-                    } catch ( UnknownColumnException | GenericCatalogException e ) {
-                        log.error( "Caught exception", e );
-                    }
-                }
-                header.add( dbCol );
+                        "" );
             }
 
             ArrayList<String[]> data = new ArrayList<>();
@@ -227,8 +235,13 @@ public class StatisticQueries implements InformationObserver {
                 }
                 data.add( temp );
             }
+            data.forEach( e -> {
+                System.out.println( Arrays.toString( e ) );
+            } );
+            type.forEach( System.out::println );
+
             // TODO: own result object?
-            return data;
+            return new StatResult( type, data.toArray( new String[0][] ) );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
@@ -237,6 +250,7 @@ public class StatisticQueries implements InformationObserver {
             }
         }
     }
+
 
     /**
      * Get the number of rows that should be displayed in one page in the data view

@@ -24,17 +24,23 @@
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
+
+
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import java.util.Arrays;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 
+
 @Slf4j
 public class SqlQueryInterface extends QueryInterface {
 
-    StatisticQueries statisticQueries;
+    @Getter
+    LowCostQueries lowCostQueries;
 
 
     /**
@@ -48,18 +54,12 @@ public class SqlQueryInterface extends QueryInterface {
 
     @Override
     public void run() {
-        this.statisticQueries = new StatisticQueries( this.transactionManager, "pa", "APP");
+        this.lowCostQueries = new LowCostQueries( this.transactionManager, "pa", "APP" );
 
-        System.out.println( Arrays.toString( this.statisticQueries.getMinMaxValue( "public.depts.deptno", "public.depts" ) ) );
+        System.out.println( Arrays.toString( this.lowCostQueries.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " )
+                .getData() ) );
 
         log.info( "SQL query interface started." );
     }
 
-
-    /**
-     * all-in-one method to handle statistic reset
-     */
-    public void getStatisticData() {
-        System.out.println( Arrays.toString( this.statisticQueries.getMinMaxValue( "public.depts.deptno", "public.depts" ) ) );
-    }
 }

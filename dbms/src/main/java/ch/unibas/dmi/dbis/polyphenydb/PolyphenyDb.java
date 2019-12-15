@@ -175,8 +175,6 @@ public class PolyphenyDb {
         log.info( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
 
-        sqlQuery.getStatisticData();
-
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
