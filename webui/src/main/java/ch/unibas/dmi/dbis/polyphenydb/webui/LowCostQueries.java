@@ -82,21 +82,6 @@ public class LowCostQueries implements InformationObserver {
 
     }
 
-    /*
-    public String[] getMinMaxValue( String column, String table ) {
-        String query = "SELECT MIN(" + column + "),MAX(" + column + ") FROM " + table;
-        return executeSqlSelect( query );
-    }*/
-
-
-    /**
-     * Debug method TODO: remove this
-     */
-    public StatColumn selectValue( String column, String table ) {
-        String query = "SELECT MIN(" + column + ") FROM " + table + " LIMIT 10;";
-        return executeSqlSelect( query ).getColumns()[0];
-    }
-
 
     /**
      * Handles the request for one columns stats
@@ -129,7 +114,6 @@ public class LowCostQueries implements InformationObserver {
 
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            // result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
 
             try {
                 transaction.rollback();
@@ -147,26 +131,6 @@ public class LowCostQueries implements InformationObserver {
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
-    }
-
-
-    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
-        PolyphenyDbSignature signature;
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
-
-        SqlNode parsed = sqlProcessor.parse( sql );
-
-        if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( parsed );
-        } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
-
-            // Prepare
-            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
-        }
-        return signature;
     }
 
     // -----------------------------------------------------------------------
@@ -249,6 +213,26 @@ public class LowCostQueries implements InformationObserver {
                 log.error( "Exception while closing result iterator", e );
             }
         }
+    }
+
+
+    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
+        PolyphenyDbSignature signature;
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+
+            // Prepare
+            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
+        }
+        return signature;
     }
 
 
