@@ -25,8 +25,6 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import static org.reflections.Reflections.log;
-
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -131,7 +129,7 @@ public class PolyphenyDb {
         }
 
         final ShutdownHelper sh = new ShutdownHelper();
-       // shutdownHookId = addShutdownHook( "Component Terminator", sh );
+        // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
         final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
@@ -171,7 +169,7 @@ public class PolyphenyDb {
         }
 
         StatisticsStore store = StatisticsStore.getInstance();
-        store.setTransactionManager(transactionManager);
+        // store.setSqlQueryInterface( sqlQuery );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

@@ -1,16 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.*;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -27,6 +18,7 @@ public class StatisticsStore {
 
     private String databaseName = "APP";
     private String userName = "pa";
+    // private SqlQueryInterface sqlQuery;
 
 
     private StatisticsStore() {
@@ -99,6 +91,29 @@ public class StatisticsStore {
 
     }
 
+
+    public void reevaluteColumn() {
+
+    }
+
+
+    public void reevaluteStat() {
+
+    }
+
+    /*
+    public String[] getMinValues() {
+        return this.sqlQuery.getLowCostQueries().selectOneStat(
+                "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) "
+        ).getData();
+    }
+
+
+    public void setSqlQueryInterface( SqlQueryInterface sqlQuery ) {
+        this.sqlQuery = sqlQuery;
+        System.out.println( "got values" );
+        System.out.println( Arrays.toString( getMinValues() ) );
+    }*/
 
     public HashMap<String, StatisticColumn> getStore() {
         return this.store;
