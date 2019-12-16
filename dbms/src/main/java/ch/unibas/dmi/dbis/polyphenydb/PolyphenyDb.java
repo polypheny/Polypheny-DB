@@ -36,12 +36,14 @@ import ch.unibas.dmi.dbis.polyphenydb.information.HostInformation;
 import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
+import ch.unibas.dmi.dbis.polyphenydb.processing.LowCostQueries;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import ch.unibas.dmi.dbis.polyphenydb.processing.SqlQueryInterface;
 import java.io.Serializable;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -148,7 +150,7 @@ public class PolyphenyDb {
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         // prolly overkill just for testing
-        final SqlQueryInterface sqlQuery = new SqlQueryInterface( transactionManager, authenticator );
+        final LowCostQueries lowCostQueries = new LowCostQueries( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -156,14 +158,12 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
-        Thread sqlQueryThread = new Thread( sqlQuery );
-        sqlQueryThread.start();
-
+        System.out.println( Arrays.toString( lowCostQueries.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " )
+                .getData() ) );
 
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
-            sqlQueryThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }

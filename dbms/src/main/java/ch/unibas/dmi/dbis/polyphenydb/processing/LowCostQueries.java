@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
@@ -55,7 +56,7 @@ public class LowCostQueries implements InformationObserver {
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results to don't impact performance
      */
-    LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
@@ -65,6 +66,11 @@ public class LowCostQueries implements InformationObserver {
         cm.registerWebUiPage( new WebUiPage( "statistics", "Polypheny-DB Statistics", "Settings for the user interface." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticView", "statistics" ).withTitle( "Statistics View" ) );
         cm.registerConfig( new ConfigInteger( "statisticSize", "Number of rows per page in the data view", 10 ).withUi( "statisticView" ) );
+    }
+
+
+    public LowCostQueries( TransactionManager transactionManager, Authenticator authenticator ) {
+        this(transactionManager, "pa", "APP");
     }
 
 
