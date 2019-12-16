@@ -23,12 +23,11 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

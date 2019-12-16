@@ -25,8 +25,6 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import static org.reflections.Reflections.log;
-
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
@@ -42,7 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
-import ch.unibas.dmi.dbis.polyphenydb.webui.SqlQueryInterface;
+import ch.unibas.dmi.dbis.polyphenydb.processing.SqlQueryInterface;
 import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 

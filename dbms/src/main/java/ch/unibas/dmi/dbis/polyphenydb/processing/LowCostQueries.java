@@ -1,14 +1,12 @@
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
@@ -29,7 +27,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.webui.Crud.QueryExecutionException;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.StatColumn;
@@ -241,5 +238,24 @@ public class LowCostQueries implements InformationObserver {
      */
     private int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
+    }
+
+
+    static class QueryExecutionException extends Exception {
+
+        QueryExecutionException( String message ) {
+            super( message );
+        }
+
+
+        QueryExecutionException( String message, Exception e ) {
+            super( message, e );
+        }
+
+
+        QueryExecutionException( Throwable t ) {
+            super( t );
+        }
+
     }
 }
