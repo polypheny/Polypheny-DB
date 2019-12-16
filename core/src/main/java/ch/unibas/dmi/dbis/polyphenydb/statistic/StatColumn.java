@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import java.util.HashMap;

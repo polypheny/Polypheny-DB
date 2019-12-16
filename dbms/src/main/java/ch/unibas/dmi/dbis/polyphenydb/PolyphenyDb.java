@@ -37,12 +37,12 @@ import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.LowCostQueries;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
 import java.io.Serializable;
-import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 
 

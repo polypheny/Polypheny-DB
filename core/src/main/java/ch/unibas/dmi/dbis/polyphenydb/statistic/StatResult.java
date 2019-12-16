@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import java.util.ArrayList;
@@ -12,6 +12,8 @@ public class StatResult {
 
     @Getter
     private StatColumn[] columns;
+    @Getter
+    private String[] columnNames;
 
 
     public StatResult( StatColumn[] columns ) {

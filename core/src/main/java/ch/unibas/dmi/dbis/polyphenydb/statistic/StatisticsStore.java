@@ -1,8 +1,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.LowCostQueries;
-import ch.unibas.dmi.dbis.polyphenydb.StatColumn;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +18,7 @@ public class StatisticsStore {
 
     private String databaseName = "APP";
     private String userName = "pa";
-    // private SqlQueryInterface sqlQuery;
+    private LowCostQueries sqlQueryInterface;
 
 
     private StatisticsStore() {
@@ -35,6 +33,11 @@ public class StatisticsStore {
             instance = new StatisticsStore();
         }
         return instance;
+    }
+
+
+    public HashMap<String, StatisticColumn> getStore() {
+        return this.store;
     }
 
 
@@ -94,38 +97,33 @@ public class StatisticsStore {
     }
 
 
-    public void reevaluteColumn() {
+    private void reevaluteTable( String tableName ) {
 
     }
 
 
-    public void reevaluteStat() {
+    private void reevaluteColumn( String columnName ) {
 
     }
 
-    /*
-    public String[] getMinValues() {
-        return this.sqlQuery.getLowCostQueries().selectOneStat(
-                "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) "
-        ).getData();
-    }
 
-
-    public void setSqlQueryInterface( SqlQueryInterface sqlQuery ) {
-        this.sqlQuery = sqlQuery;
-        System.out.println( "got values" );
-        System.out.println( Arrays.toString( getMinValues() ) );
-    }*/
-
-    public HashMap<String, StatisticColumn> getStore() {
-        return this.store;
+    /**
+     * Method to get a generic Aggregate Stat with its occurrences
+     *
+     * @return a StatResult which contains the values and their occurences
+     */
+    private StatResult getAggregateColumn( String column, String table, String aggregate ) {
+        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + aggregate + "(" + column + "), COUNT(" + column + ") FROM " + table + " GROUP BY " + column + "ORDER BY MIN(" + column + ") " );
     }
 
 
     public void setSqlQueryInterface( LowCostQueries lowCostQueries ) {
-         StatColumn res = lowCostQueries.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " );
-        System.out.println( Arrays.toString( res.getData() ));
+        this.sqlQueryInterface = lowCostQueries;
+        StatColumn res = this.sqlQueryInterface.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " );
+
+        System.out.println( Arrays.toString( res.getData() ) );
         System.out.println( res.getType() );
+
     }
 
 
@@ -137,8 +135,5 @@ public class StatisticsStore {
     interface stringList extends List<String> {
 
     }
-
-
-    ;
 
 }

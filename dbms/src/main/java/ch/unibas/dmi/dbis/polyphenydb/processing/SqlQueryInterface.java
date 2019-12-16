@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
-import ch.unibas.dmi.dbis.polyphenydb.LowCostQueries;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.LowCostQueries;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import java.util.Arrays;
 import lombok.Getter;

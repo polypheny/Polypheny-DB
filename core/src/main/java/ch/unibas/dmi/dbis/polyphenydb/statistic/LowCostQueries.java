@@ -1,7 +1,11 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
+import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
+import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -34,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
@@ -51,7 +56,7 @@ public class LowCostQueries implements InformationObserver {
 
     /**
      * LowCostQueries can be used to retrieve short answered queries
-     * Idea is to expose a selected list of sql operations with a small list of results to don't impact performance
+     * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
     public LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
@@ -91,16 +96,23 @@ public class LowCostQueries implements InformationObserver {
      */
     public StatColumn selectOneStat( String query ) {
         ArrayList<ArrayList<String>> db = getSchemaTree();
-        db.forEach( el -> {
-            el.forEach( System.out::println );
-        } );
+        db.get( 0 ).forEach( System.out::println );
 
         return this.executeSqlSelect( query ).getColumns()[0];
     }
 
 
     /**
+     * Handles the request which retrieves the stats for multiple columns
+     */
+    public StatResult selectMultipleStats( String query ) {
+        return this.executeSqlSelect( query );
+    }
+
+
+    /**
      * Method to get all schemas, tables, and their columns in a database
+     * TODO: separate so you can get all or specific database or table
      */
     private ArrayList<ArrayList<String>> getSchemaTree() {
 
@@ -113,12 +125,16 @@ public class LowCostQueries implements InformationObserver {
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             ArrayList<String> schemaTree = new ArrayList<>();
             for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
-                schemaTree.add( combinedSchema.getSchema().name );
+                // schema
+                // schemaTree.add( combinedSchema.getSchema().name );
 
                 ArrayList<String> tables = new ArrayList<>();
-                ArrayList<String> table = new ArrayList<>();
+
                 for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                    table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
+                    // table
+                    //table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
+
+                    ArrayList<String> table = new ArrayList<>();
 
                     for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                         table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
@@ -147,11 +163,50 @@ public class LowCostQueries implements InformationObserver {
     }
 
 
+    private ArrayList<String> getColumns( String schemaTable ) {
+        String[] split = schemaTable.split( "." );
+        if ( split.length != 2 ) {
+            return new ArrayList<String>();
+        }
+        return getColumns( split[0], split[1] );
+    }
+
+
     /**
-     * Handles the request which retrieves the stats for multiple columns
+     * Get all columns of a specific table
+     *
+     * @param schemaName the name of the schema
+     * @param tableName the name of the table
+     * @return all columns
      */
-    private StatResult selectMultipleStats( String query ) {
-        return this.executeSqlSelect( query );
+    private ArrayList<String> getColumns( String schemaName, String tableName ) {
+        Transaction transaction = getTransaction();
+
+        try {
+            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+
+            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
+                if ( schema.getSchema().name.equals( schemaName ) ) {
+                    for ( CatalogCombinedTable table : schema.getTables() ) {
+                        if ( table.getTable().name.equals( tableName ) ) {
+                            return (ArrayList<String>) table.getColumns().stream().map( c -> c.name ).collect( Collectors.toList() );
+                        }
+                    }
+                }
+            }
+            transaction.commit();
+
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+            log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+        return new ArrayList<String>();
+
     }
 
 
