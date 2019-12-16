@@ -1,16 +1,17 @@
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
@@ -29,12 +30,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.webui.Crud.QueryExecutionException;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.StatColumn;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.StatResult;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -58,7 +53,7 @@ public class LowCostQueries implements InformationObserver {
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results to don't impact performance
      */
-    LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
@@ -68,6 +63,11 @@ public class LowCostQueries implements InformationObserver {
         cm.registerWebUiPage( new WebUiPage( "statistics", "Polypheny-DB Statistics", "Settings for the user interface." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticView", "statistics" ).withTitle( "Statistics View" ) );
         cm.registerConfig( new ConfigInteger( "statisticSize", "Number of rows per page in the data view", 10 ).withUi( "statisticView" ) );
+    }
+
+
+    public LowCostQueries( TransactionManager transactionManager, Authenticator authenticator ) {
+        this( transactionManager, "pa", "APP" );
     }
 
 
@@ -90,8 +90,60 @@ public class LowCostQueries implements InformationObserver {
      * @return result of the query
      */
     public StatColumn selectOneStat( String query ) {
+        ArrayList<ArrayList<String>> db = getSchemaTree();
+        db.forEach( el -> {
+            el.forEach( System.out::println );
+        } );
 
         return this.executeSqlSelect( query ).getColumns()[0];
+    }
+
+
+    /**
+     * Method to get all schemas, tables, and their columns in a database
+     */
+    private ArrayList<ArrayList<String>> getSchemaTree() {
+
+        ArrayList<ArrayList<String>> result = new ArrayList<>();
+
+        Transaction transaction = getTransaction();
+        try {
+
+            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+            ArrayList<String> schemaTree = new ArrayList<>();
+            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+                schemaTree.add( combinedSchema.getSchema().name );
+
+                ArrayList<String> tables = new ArrayList<>();
+                ArrayList<String> table = new ArrayList<>();
+                for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                    table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
+
+                    for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+                        table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
+                    }
+
+                    if ( combinedTable.getTable().tableType.equals( "TABLE" ) ) {
+                        tables.addAll( table );
+                    }
+                }
+
+                schemaTree.addAll( tables );
+
+                result.add( schemaTree );
+            }
+            transaction.commit();
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+            log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+
+        return result;
     }
 
 
@@ -169,20 +221,20 @@ public class LowCostQueries implements InformationObserver {
         try {
             CatalogTable catalogTable = null;
 
-            ArrayList<DbColumn> header = new ArrayList<>();
+            //ArrayList<DbColumn> header = new ArrayList<>();
             ArrayList<String> type = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
                 String columnName = metaData.columnName;
 
                 type.add( metaData.type.name );
 
-                DbColumn dbCol = new DbColumn(
+                /*DbColumn dbCol = new DbColumn(
                         metaData.columnName,
                         metaData.type.name,
                         metaData.nullable == ResultSetMetaData.columnNullable,
                         metaData.displaySize,
                         new SortState(),
-                        "" );
+                        "" );*/
             }
 
             ArrayList<String[]> data = new ArrayList<>();
@@ -241,5 +293,24 @@ public class LowCostQueries implements InformationObserver {
      */
     private int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
+    }
+
+
+    static class QueryExecutionException extends Exception {
+
+        QueryExecutionException( String message ) {
+            super( message );
+        }
+
+
+        QueryExecutionException( String message, Exception e ) {
+            super( message, e );
+        }
+
+
+        QueryExecutionException( Throwable t ) {
+            super( t );
+        }
+
     }
 }

@@ -1,8 +1,7 @@
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package ch.unibas.dmi.dbis.polyphenydb;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import lombok.Getter;
 
 

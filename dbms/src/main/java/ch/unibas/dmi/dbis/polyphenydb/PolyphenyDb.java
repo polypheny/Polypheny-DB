@@ -41,8 +41,8 @@ import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
-import ch.unibas.dmi.dbis.polyphenydb.webui.SqlQueryInterface;
 import java.io.Serializable;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -149,7 +149,7 @@ public class PolyphenyDb {
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         // prolly overkill just for testing
-        final SqlQueryInterface sqlQuery = new SqlQueryInterface( transactionManager, authenticator );
+        final LowCostQueries lowCostQueries = new LowCostQueries( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -157,19 +157,18 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
-        Thread sqlQueryThread = new Thread( sqlQuery );
-        sqlQueryThread.start();
+
+
 
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
-            sqlQueryThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
 
         StatisticsStore store = StatisticsStore.getInstance();
-        // store.setSqlQueryInterface( sqlQuery );
+        store.setSqlQueryInterface( lowCostQueries );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

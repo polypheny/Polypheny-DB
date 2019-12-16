@@ -1,6 +1,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.LowCostQueries;
+import ch.unibas.dmi.dbis.polyphenydb.StatColumn;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -117,6 +119,13 @@ public class StatisticsStore {
 
     public HashMap<String, StatisticColumn> getStore() {
         return this.store;
+    }
+
+
+    public void setSqlQueryInterface( LowCostQueries lowCostQueries ) {
+         StatColumn res = lowCostQueries.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " );
+        System.out.println( Arrays.toString( res.getData() ));
+        System.out.println( res.getType() );
     }
 
 
