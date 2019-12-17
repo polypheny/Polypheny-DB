@@ -63,6 +63,10 @@ public abstract class Store {
 
     public abstract void shutdown();
 
+    /**
+     * Informs a store that its settings have changed.
+     * @param updatedSettings List of setting names that have changed.
+     */
     protected abstract void reloadSettings(List<String> updatedSettings);
 
     protected List<String> applySettings( Map<String, String> newSettings ) {
