@@ -7,8 +7,11 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -26,6 +29,8 @@ public abstract class Store {
     public Store( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
+        // Make sure the settings are actually valid
+        this.validateSettings( settings, true );
         this.settings = settings;
     }
 
@@ -58,28 +63,45 @@ public abstract class Store {
 
     public abstract void shutdown();
 
-    protected abstract void applySetting( AdapterSetting s, String newValue );
+    protected abstract void reloadSettings(List<String> updatedSettings);
 
-    public void updateSettings( Map<String, String> newSettings ) {
+    protected List<String> applySettings( Map<String, String> newSettings ) {
+        List<String> updatedSettings = new ArrayList<>();
+        for ( Entry<String, String> newSetting: newSettings.entrySet() ) {
+            if ( ! Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() )) {
+                this.settings.put( newSetting.getKey(), newSetting.getValue() );
+                updatedSettings.add( newSetting.getKey() );
+            }
+        }
+
+        return updatedSettings;
+    }
+
+
+    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
         for ( AdapterSetting s : getAvailableSettings() ) {
             if ( newSettings.containsKey( s.name ) ) {
-                if ( s.modifiable ) {
+                if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
-                    if ( !s.canBeNull && newValue == null ) {
-                        throw new RuntimeException( "Setting \"" + s.name + "\" is not allowed to be null!" );
-                    }
-                    if ( !newValue.equals( settings.get( s.name ) ) ) {
-                        applySetting(s, newValue);
-                        settings.put( s.name, newValue );
-                    } else {
-                        // Same value, do nothing
+                    if ( ! s.canBeNull && newValue == null ) {
+                        throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    throw new RuntimeException( "Setting \"" + s.name + "\" is not modifiable!" );
+                    throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
+            } else if ( s.required ) {
+                throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
     }
+
+
+    public void updateSettings( Map<String, String> newSettings ) {
+        this.validateSettings( newSettings, false );
+        List<String> updatedSettings = this.applySettings( newSettings );
+        this.reloadSettings(updatedSettings);
+    }
+
 
     public Map<String, String> getCurrentSettings() {
         return settings;

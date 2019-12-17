@@ -233,11 +233,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     }
 
 
-    @Override
-    public void applySetting( AdapterSetting setting, String newValue ) {
-        // There is no modifiable setting for this store
-    }
-
 
     @Override
     public void shutdown() {
@@ -248,6 +243,12 @@ public class HsqldbStore extends AbstractJdbcStore {
         } catch ( SQLException e ) {
             log.warn( "Exception while shutting down " + getUniqueName(), e );
         }
+    }
+
+
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // There is no modifiable setting for this store
     }
 
 

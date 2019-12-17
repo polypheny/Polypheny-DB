@@ -121,22 +121,16 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void applySetting( AdapterSetting setting, String newValue ) {
-        //noinspection SwitchStatementWithTooFewBranches
-        switch ( setting.name ) {
-            case "directory":
-                csvDir = new File( newValue );
-                break;
-
-            default:
-                throw new RuntimeException( "Missing entry for setting \"" + setting.name + "\"!" );
-        }
+    public void shutdown() {
+        // Nothing to do
     }
 
 
     @Override
-    public void shutdown() {
-        // Nothing to do
+    protected void reloadSettings( List<String> updatedSettings ) {
+        if (updatedSettings.contains( "directory" )) {
+            csvDir = new File( this.settings.get( "directory" ) );
+        }
     }
 
 }

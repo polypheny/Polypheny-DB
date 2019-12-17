@@ -290,15 +290,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    protected void applySetting( AdapterSetting s, String newValue ) {
-        // This is in preparation of an AdapterSetting rework...
-        // first we disconnect from the postgres instance
-        /*try {
-            dataSource.close();
-        } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down " + getUniqueName(), e );
-        }*/
-        // Now we can reconnect.
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // TODO: Implement disconnect and reconnect to PostgreSQL instance.
     }
 
 
