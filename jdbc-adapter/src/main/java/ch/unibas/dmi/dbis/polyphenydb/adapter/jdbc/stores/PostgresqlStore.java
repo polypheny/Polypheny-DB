@@ -282,6 +282,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void shutdown() {
         try {
+            removeInformationPage();
             dataSource.close();
         } catch ( SQLException e ) {
             log.warn( "Exception while shutting down " + getUniqueName(), e );
