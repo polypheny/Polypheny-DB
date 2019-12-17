@@ -1,12 +1,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import java.util.HashMap;
+import java.util.Observable;
+
 
 /**
  * Stores the available statistic data of a specific column
  * Responsible to validate if data should be changed
  */
-public class StatisticColumn<T extends Comparable<T>> {
+public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private final int MAX_MOST_USED_WORDS = 5;
     private final String id;
 

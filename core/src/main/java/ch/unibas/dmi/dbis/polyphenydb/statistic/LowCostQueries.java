@@ -114,7 +114,7 @@ public class LowCostQueries implements InformationObserver {
      * Method to get all schemas, tables, and their columns in a database
      * TODO: separate so you can get all or specific database or table
      */
-    private ArrayList<ArrayList<String>> getSchemaTree() {
+    public ArrayList<ArrayList<String>> getSchemaTree() {
 
         ArrayList<ArrayList<String>> result = new ArrayList<>();
 
@@ -163,6 +163,40 @@ public class LowCostQueries implements InformationObserver {
     }
 
 
+    /**
+     * Gets all columns in the database
+     *
+     * @return all the columns
+     */
+    public ArrayList<String> getAllColumns() {
+        Transaction transaction = getTransaction();
+
+        ArrayList<String> columns = new ArrayList<>();
+
+        try {
+            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+
+            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
+                for ( CatalogCombinedTable table : schema.getTables() ) {
+                    //TODO: solve, better solution to distinguish between schema, table, column
+                    columns.addAll( table.getColumns().stream().map( c -> schema.getSchema().name + "." + table.getTable().name + "." + c.name ).collect( Collectors.toList() ) );
+                }
+            }
+            transaction.commit();
+
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+            log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+        return columns;
+    }
+
+
     private ArrayList<String> getColumns( String schemaTable ) {
         String[] split = schemaTable.split( "." );
         if ( split.length != 2 ) {
@@ -182,6 +216,8 @@ public class LowCostQueries implements InformationObserver {
     private ArrayList<String> getColumns( String schemaName, String tableName ) {
         Transaction transaction = getTransaction();
 
+        ArrayList<String> columns = new ArrayList<>();
+
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
@@ -190,7 +226,7 @@ public class LowCostQueries implements InformationObserver {
                 if ( schema.getSchema().name.equals( schemaName ) ) {
                     for ( CatalogCombinedTable table : schema.getTables() ) {
                         if ( table.getTable().name.equals( tableName ) ) {
-                            return (ArrayList<String>) table.getColumns().stream().map( c -> c.name ).collect( Collectors.toList() );
+                            columns.addAll( table.getColumns().stream().map( c -> c.name ).collect( Collectors.toList() ) );
                         }
                     }
                 }
@@ -205,7 +241,7 @@ public class LowCostQueries implements InformationObserver {
                 log.error( "Caught exception while rollback", e );
             }
         }
-        return new ArrayList<String>();
+        return columns;
 
     }
 
