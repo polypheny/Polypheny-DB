@@ -57,7 +57,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintExcept
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownConstraintTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownForeignKeyOptionException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownPlacementTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
@@ -1272,6 +1274,8 @@ final class Statements {
         List<CatalogForeignKey> list = new LinkedList<>();
         try ( ResultSet rs = transactionHandler.executeSelect( keySql ) ) {
             while ( rs.next() ) {
+                Integer updateRule = getIntOrNull( rs, 16 );
+                Integer deleteRule = getIntOrNull( rs, 17 );
                 list.add( new CatalogForeignKey(
                         getLong( rs, 1 ),
                         rs.getString( 2 ),
@@ -1288,11 +1292,11 @@ final class Statements {
                         rs.getString( 13 ),
                         getLong( rs, 14 ),
                         rs.getString( 15 ),
-                        getIntOrNull( rs, 16 ),
-                        getIntOrNull( rs, 17 )
+                        updateRule == null ? null : ForeignKeyOption.getById( updateRule ),
+                        deleteRule == null ? null : ForeignKeyOption.getById( deleteRule )
                 ) );
             }
-        } catch ( SQLException e ) {
+        } catch ( SQLException | UnknownForeignKeyOptionException e ) {
             throw new GenericCatalogException( e );
         }
         for ( CatalogForeignKey catalogKey : list ) {
@@ -1336,12 +1340,12 @@ final class Statements {
                         getLong( rs, 1 ),
                         rs.getString( 2 ),
                         rs.getBoolean( 3 ),
-                        getInt( rs, 4 ),
+                        IndexType.getById( getInt( rs, 4 ) ),
                         getIntOrNull( rs, 5 ),
                         getLong( rs, 6 )
                 ) );
             }
-        } catch ( SQLException e ) {
+        } catch ( SQLException | UnknownIndexTypeException e ) {
             throw new GenericCatalogException( e );
         }
         return list;

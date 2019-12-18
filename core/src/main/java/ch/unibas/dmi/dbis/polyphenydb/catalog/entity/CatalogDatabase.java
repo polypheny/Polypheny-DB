@@ -48,7 +48,13 @@ public final class CatalogDatabase implements CatalogEntity {
     public final String defaultSchemaName; // can be null
 
 
-    public CatalogDatabase( final long id, @NonNull final String name, final int ownerId, @NonNull final String ownerName, final Long defaultSchemaId, final String defaultSchemaName ) {
+    public CatalogDatabase(
+            final long id,
+            @NonNull final String name,
+            final int ownerId,
+            @NonNull final String ownerName,
+            final Long defaultSchemaId,
+            final String defaultSchemaName ) {
         this.id = id;
         this.name = name;
         this.ownerId = ownerId;
@@ -67,9 +73,7 @@ public final class CatalogDatabase implements CatalogEntity {
 
     @RequiredArgsConstructor
     public static class PrimitiveCatalogDatabase {
-
         public final String tableCat;
-
         public final String owner;
         public final String defaultSchema;
     }

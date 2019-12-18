@@ -26,7 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -49,7 +49,7 @@ public final class CatalogTable implements CatalogEntity {
     public final String databaseName;
     public final int ownerId;
     public final String ownerName;
-    public final String tableType;
+    public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
 
@@ -63,7 +63,7 @@ public final class CatalogTable implements CatalogEntity {
             @NonNull final String databaseName,
             final int ownerId,
             @NonNull final String ownerName,
-            @NonNull final Catalog.TableType type,
+            @NonNull final TableType type,
             final String definition,
             final Long primaryKey ) {
         this.id = id;
@@ -74,7 +74,7 @@ public final class CatalogTable implements CatalogEntity {
         this.databaseName = databaseName;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
-        this.tableType = type.name();
+        this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
     }
@@ -87,7 +87,7 @@ public final class CatalogTable implements CatalogEntity {
                 databaseName,
                 schemaName,
                 name,
-                tableType,
+                tableType.name(),
                 "",
                 null,
                 null,

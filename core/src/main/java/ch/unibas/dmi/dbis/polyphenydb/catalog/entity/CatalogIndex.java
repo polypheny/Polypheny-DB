@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.IndexType;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +44,7 @@ public final class CatalogIndex {
     public final long id;
     public final String name;
     public final boolean unique;
-    public final int type;
+    public final IndexType type;
     public final Integer location;
 
     public CatalogKey key;
@@ -54,7 +55,7 @@ public final class CatalogIndex {
             final long id,
             @NonNull final String name,
             final boolean unique,
-            final int type,
+            final IndexType type,
             final Integer location,
             final long keyId ) {
         this.id = id;
@@ -104,7 +105,7 @@ public final class CatalogIndex {
                     null,
                     null,
                     location,
-                    type };
+                    type.getId() };
         }
 
 
@@ -129,6 +130,5 @@ public final class CatalogIndex {
         }
 
     }
-
 
 }
