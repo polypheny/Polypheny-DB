@@ -414,9 +414,8 @@ public class DbmsMeta implements ProtobufMeta {
         if ( log.isTraceEnabled() ) {
             log.trace( "getTableTypes( ConnectionHandle {} )", ch );
         }
-        final TableType[] tableTypes = TableType.values();
         final List<Object> objects = new LinkedList<>();
-        for ( TableType tt : tableTypes ) {
+        for ( TableType tt : TableType.values() ) {
             objects.add( tt.getParameterArray() );
         }
         Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
