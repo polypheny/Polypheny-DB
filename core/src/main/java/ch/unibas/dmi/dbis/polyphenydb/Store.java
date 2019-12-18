@@ -65,14 +65,16 @@ public abstract class Store {
 
     /**
      * Informs a store that its settings have changed.
+     *
      * @param updatedSettings List of setting names that have changed.
      */
-    protected abstract void reloadSettings(List<String> updatedSettings);
+    protected abstract void reloadSettings( List<String> updatedSettings );
+
 
     protected List<String> applySettings( Map<String, String> newSettings ) {
         List<String> updatedSettings = new ArrayList<>();
-        for ( Entry<String, String> newSetting: newSettings.entrySet() ) {
-            if ( ! Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() )) {
+        for ( Entry<String, String> newSetting : newSettings.entrySet() ) {
+            if ( !Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() ) ) {
                 this.settings.put( newSetting.getKey(), newSetting.getValue() );
                 updatedSettings.add( newSetting.getKey() );
             }
@@ -103,7 +105,7 @@ public abstract class Store {
     public void updateSettings( Map<String, String> newSettings ) {
         this.validateSettings( newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
-        this.reloadSettings(updatedSettings);
+        this.reloadSettings( updatedSettings );
     }
 
 

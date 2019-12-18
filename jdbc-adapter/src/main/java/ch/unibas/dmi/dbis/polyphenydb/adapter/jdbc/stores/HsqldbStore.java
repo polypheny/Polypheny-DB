@@ -233,7 +233,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     public void shutdown() {
         try {

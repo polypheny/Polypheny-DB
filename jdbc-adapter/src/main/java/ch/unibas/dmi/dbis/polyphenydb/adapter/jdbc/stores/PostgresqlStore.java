@@ -54,6 +54,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 //   - Check all the functions whether they are properly adjusted to Postgres.
 //   - Link to Postgres documentation.
 
+
 @Slf4j
 public class PostgresqlStore extends AbstractJdbcStore {
 
@@ -64,9 +65,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database",  false, true, false, "postgres"),
-            new AdapterSettingString( "username",  false, true, false, "postgres"),
-            new AdapterSettingString( "password",  false, true, false, "")
+            new AdapterSettingString( "database", false, true, false, "postgres" ),
+            new AdapterSettingString( "username", false, true, false, "postgres" ),
+            new AdapterSettingString( "password", false, true, false, "" )
     );
 
     private final BasicDataSource dataSource;
@@ -79,6 +80,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private String dbName;
     private String dbUsername;
     private String dbPassword;
+
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings );
@@ -135,8 +137,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        if (log.isDebugEnabled()) {
-            log.debug( "PostgreSQL createTable: Qualified names: {}, physicalTableName: {}", qualifiedNames, physicalTableName);
+        if ( log.isDebugEnabled() ) {
+            log.debug( "PostgreSQL createTable: Qualified names: {}, physicalTableName: {}", qualifiedNames, physicalTableName );
         }
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
@@ -326,8 +328,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
         throw new RuntimeException( "Unknown type: " + polySqlType.name() );
     }
 
+
     private void executeUpdate( StringBuilder builder ) {
-        if (log.isDebugEnabled()) {
+        if ( log.isDebugEnabled() ) {
             log.debug( "PostgreSQL JDBC executing query: {}", builder.toString() );
         }
         Statement statement = null;
@@ -355,6 +358,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
         }
     }
+
 
     private String getConnectionUrl() {
         return String.format( "jdbc:postgresql://%s:%d/%s", this.dbHostname, this.dbPort, this.dbName );
