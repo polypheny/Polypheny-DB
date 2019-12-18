@@ -1768,6 +1768,7 @@ public class Crud implements InformationObserver {
 
         // see: https://www.baeldung.com/java-download-file
         final File zipFile = new File( tempDir, "import.zip" );
+        Transaction transaction = null;
         try (
                 BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
                 FileOutputStream fos = new FileOutputStream( zipFile )
@@ -1818,7 +1819,7 @@ public class Crud implements InformationObserver {
             // create table from .json file
             String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
             String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
-            Transaction transaction = getTransaction();
+            transaction = getTransaction();
             executeSqlUpdate( transaction, createTable );
 
             // import data from .csv file
@@ -1868,12 +1869,33 @@ public class Crud implements InformationObserver {
         } catch ( IOException | TransactionException e ) {
             log.error( "Could not import dataset", e );
             error = "Could not import dataset" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
         } catch ( QueryExecutionException e ) {
             log.error( "Could not create table from imported json file", e );
             error = "Could not create table from imported json file" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
         } catch ( CsvValidationException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
@@ -1884,7 +1906,7 @@ public class Crud implements InformationObserver {
         if ( error != null ) {
             return new HubResult( error );
         } else {
-            return new HubResult().setMessage( String.format( "Imported dataset into %s(%s)", request.schema, request.store ) );
+            return new HubResult().setMessage( String.format( "Imported dataset into table %s on store %s", request.schema, request.store ) );
         }
     }
 
