@@ -124,7 +124,7 @@ public class StatisticsStore implements Observer {
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.setMin( Integer.parseInt( min.getColumns()[0].getData()[0] ) );
         statisticColumn.setMax( Integer.parseInt( max.getColumns()[0].getData()[0] ) );
-        this.store.put( column.getFullName(), new StatisticColumn( column.getFullName() ) );
+        this.store.put( column.getFullName(), statisticColumn );
     }
 
 
