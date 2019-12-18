@@ -1,102 +1,88 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Observable;
+import java.util.SortedMap;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Stores the available statistic data of a specific column
  * Responsible to validate if data should be changed
  */
+@Slf4j
 public class StatisticColumn<T extends Comparable<T>> extends Observable {
+
     private final int MAX_MOST_USED_WORDS = 5;
     private final String id;
 
+    @Setter
+    private SortedMap<T, Integer> minCache;
+    @Setter
     private T min;
-    private int minAmount;
 
+    @Setter
+    private SortedMap<T, Integer> maxCache;
+    @Setter
     private T max;
-    private int maxAmount;
+
     private HashMap<T, Integer> uniqueValues = new HashMap<>();
     private boolean isFull;
 
-    public StatisticColumn(String id, T val) {
-        this.id = id;
-        put(val);
+
+    public StatisticColumn( String id, T val ) {
+        this( id );
+        put( val );
     }
+
+
+    public StatisticColumn( String id ) {
+        this.id = id;
+    }
+
 
     /**
      * check for potential "recordable data"
      */
-    public void put(T val){
-        updateMinMax(val);
+    public void put( T val ) {
+        updateMinMax( val );
 
-        if(!isFull) addUnique(val);
+        if ( !isFull ) {
+            addUnique( val );
+        }
     }
 
-    private void addUnique(T val){
-        if(uniqueValues.containsKey(val)){
-            uniqueValues.put(val, uniqueValues.get(val) + 1);
-        }else if(!isFull && uniqueValues.size() < MAX_MOST_USED_WORDS) {
-            uniqueValues.put(val, 1);
-            if(uniqueValues.size() > MAX_MOST_USED_WORDS){
+
+    public void putAll( List<T> vals ) {
+        vals.forEach( this::put );
+    }
+
+
+    private void addUnique( T val ) {
+        if ( uniqueValues.containsKey( val ) ) {
+            uniqueValues.put( val, uniqueValues.get( val ) + 1 );
+        } else if ( !isFull && uniqueValues.size() < MAX_MOST_USED_WORDS ) {
+            uniqueValues.put( val, 1 );
+            if ( uniqueValues.size() > MAX_MOST_USED_WORDS ) {
                 isFull = true;
             }
-        }else {
+        } else {
             return;
         }
         //log.info(" updated addUnique " + val.toString());
     }
 
-    private void updateMinMax(T val){
+
+    private void updateMinMax( T val ) {
         // just for safety, might delete later...
-        if(val instanceof String) {
-            return;
-        }
-
-        if(this.minAmount == 0){
-            this.min = val;
-            this.minAmount = 1;
-            this.max = val;
-            this.maxAmount = 1;
+        if ( val instanceof String ) {
             return;
         }
 
 
-        int diffMin = val.compareTo(this.min);
-        int diffMax = val.compareTo(this.max);
-
-
-        if(diffMin == 0){
-            minAmount++;
-        }else if(diffMin < 0){
-            this.min = val;
-            this.minAmount = 1;
-        }
-
-        if(diffMax == 0){
-            maxAmount++;
-        }else if(diffMax > 0){
-            this.max = val;
-            this.maxAmount = 1;
-        }
-
-        // log.info(" updated min or max " + val.toString());
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public T getMin() {
-        return min;
-    }
-
-    public T getMax() {
-        return max;
-    }
-
-    public HashMap<T, Integer> getUniqueValues() {
-        return uniqueValues;
-    }
 }

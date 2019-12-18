@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import lombok.extern.slf4j.Slf4j;
+import org.pentaho.aggdes.model.Aggregate;
 
 
 /**
@@ -97,9 +98,14 @@ public class StatisticsStore implements Observer {
     public void reevaluateStore() {
         this.store.clear();
 
-        for ( String column : this.sqlQueryInterface.getAllColumns() ) {
-            // TODO: cant min and max for varchar
-            this.reevaluteColumn( column );
+        for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
+            System.out.println( column.getFullName() );
+            if ( column.getType().isNumericalType() ) {
+                this.reevaluateNumericalColumn( column );
+            } else if ( column.getType().isCharType() ) {
+                this.reevaluateAlphabeticalColumn( column );
+            }
+
 
         }
 
@@ -111,34 +117,50 @@ public class StatisticsStore implements Observer {
     }
 
 
-    private void reevaluteColumn( String columnName ) {
-        String[] splits = columnName.split( "\\." );
-        System.out.println( columnName );
-        StatResult min = this.getAggregateColumn( columnName, splits[0] + "." + splits[1], "MIN" );
-        StatResult max = this.getAggregateColumn( columnName, splits[0] + "." + splits[1], "MAX" );
+    private void reevaluateNumericalColumn( QueryColumn column ) {
+        StatResult min = this.getAggregateColumn( column, "MIN" );
+        StatResult max = this.getAggregateColumn( column, "MAX" );
+        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( column.getFullName() );
+        // TODO: rewrite -> change StatisticColumn to use cache
+        statisticColumn.setMin( Integer.parseInt( min.getColumns()[0].getData()[0] ) );
+        statisticColumn.setMax( Integer.parseInt( max.getColumns()[0].getData()[0] ) );
+        this.store.put( column.getFullName(), new StatisticColumn( column.getFullName() ) );
+    }
 
-        Arrays.asList( min.getColumns()[0].getData() ).forEach( System.out::println );
-        System.out.println( "max" );
-        Arrays.asList( max.getColumns()[0].getData() ).forEach( System.out::println );
+
+    private void reevaluateAlphabeticalColumn( QueryColumn column ) {
+        StatResult unique = this.getUniqueValues( column );
+
+        StatisticColumn<String> statisticColumn = new StatisticColumn<>( column.getFullName() );
+        // TODO: rewrite -> change StatisticColumn to use cache
+        statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
+
     }
 
 
     /**
      * Method to get a generic Aggregate Stat with its occurrences
+     * TODO: more like min and max atm
      *
      * @return a StatResult which contains the values and their occurences
      */
-    private StatResult getAggregateColumn( String column, String table, String aggregate ) {
-        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + aggregate + "(" + column + "), COUNT(" + column + ") FROM " + table + " GROUP BY " + column + " ORDER BY " + aggregate + "(" + column + ") " );
+    private StatResult getAggregateColumn( QueryColumn column, String aggregate ) {
+        String order = "ASC";
+        if ( aggregate.equals( "MAX" ) ) {
+            order = "DESC";
+        }
+        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + column.getFullName() + ", count(" + column.getFullName() + ") FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " ORDER BY " + column.getFullName() + " " + order );
+    }
+
+
+    private StatResult getUniqueValues( QueryColumn column ) {
+        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + column.getFullName() + ", count(" + column.getFullName() + ") FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " ORDER BY " + column.getFullName() );
     }
 
 
     public void setSqlQueryInterface( LowCostQueries lowCostQueries ) {
         this.sqlQueryInterface = lowCostQueries;
-        //StatColumn res = this.sqlQueryInterface.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " );
 
-        /*System.out.println( Arrays.toString( res.getData() ) );
-        System.out.println( res.getType() );*/
         this.reevaluateStore();
 
     }

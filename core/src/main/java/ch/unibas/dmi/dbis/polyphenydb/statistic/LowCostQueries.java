@@ -2,10 +2,12 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -94,7 +96,7 @@ public class LowCostQueries implements InformationObserver {
      * @param query the select query
      * @return result of the query
      */
-    public StatColumn selectOneStat( String query ) {
+    public StatQueryColumn selectOneStat( String query ) {
         ArrayList<ArrayList<String>> db = getSchemaTree();
         db.get( 0 ).forEach( System.out::println );
 
@@ -168,10 +170,10 @@ public class LowCostQueries implements InformationObserver {
      *
      * @return all the columns
      */
-    public ArrayList<String> getAllColumns() {
+    public ArrayList<QueryColumn> getAllColumns() {
         Transaction transaction = getTransaction();
 
-        ArrayList<String> columns = new ArrayList<>();
+        ArrayList<QueryColumn> columns = new ArrayList<>();
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -180,7 +182,7 @@ public class LowCostQueries implements InformationObserver {
             for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
                 for ( CatalogCombinedTable table : schema.getTables() ) {
                     //TODO: solve, better solution to distinguish between schema, table, column
-                    columns.addAll( table.getColumns().stream().map( c -> schema.getSchema().name + "." + table.getTable().name + "." + c.name ).collect( Collectors.toList() ) );
+                    columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
                 }
             }
             transaction.commit();
@@ -248,7 +250,7 @@ public class LowCostQueries implements InformationObserver {
 
     private StatResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
-        StatResult result = new StatResult( new StatColumn[]{} );
+        StatResult result = new StatResult( new StatQueryColumn[]{} );
 
         try {
             result = executeSqlSelect( transaction, query );
@@ -313,11 +315,15 @@ public class LowCostQueries implements InformationObserver {
             CatalogTable catalogTable = null;
 
             //ArrayList<DbColumn> header = new ArrayList<>();
-            ArrayList<String> type = new ArrayList<>();
+            ArrayList<PolySqlType> types = new ArrayList<>();
+            ArrayList<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
                 String columnName = metaData.columnName;
 
-                type.add( metaData.type.name );
+                types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
+                System.out.println( metaData.columnName );
+                // TODO: reevaluate
+                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName);
 
                 /*DbColumn dbCol = new DbColumn(
                         metaData.columnName,
@@ -345,10 +351,10 @@ public class LowCostQueries implements InformationObserver {
             data.forEach( e -> {
                 System.out.println( Arrays.toString( e ) );
             } );
-            type.forEach( System.out::println );
+            types.forEach( System.out::println );
 
             // TODO: own result object?
-            return new StatResult( type, data.toArray( new String[0][] ) );
+            return new StatResult( names, types, data.toArray( new String[0][] ) );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();

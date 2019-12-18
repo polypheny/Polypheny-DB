@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import lombok.Getter;
 
 
@@ -8,7 +9,7 @@ import lombok.Getter;
  * Contains stat data for a column
  * TODO: "combine" with Result model through interface...
  */
-public class StatColumn extends AbstractColumn{
+public class StatQueryColumn extends QueryColumn {
 
 
     /**
@@ -23,12 +24,15 @@ public class StatColumn extends AbstractColumn{
      * @param type db type of the column
      * @param data map consisting of different values to a given stat
      */
-    public StatColumn( String schemaTableName, final String type, final String[] data ) {
+    public StatQueryColumn( String schemaTableName, final PolySqlType type, final String[] data ) {
         super(schemaTableName, type);
+        this.data = data;
     }
 
-    public StatColumn( String schema, String table, String name, final String type, final String[] data){
+    public StatQueryColumn( String schema, String table, String name, final PolySqlType type, final String[] data){
         super(schema, table, name, type );
+        this.data = data;
     }
+
 
 }

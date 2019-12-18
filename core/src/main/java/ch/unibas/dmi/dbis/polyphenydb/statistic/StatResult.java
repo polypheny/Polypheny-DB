@@ -1,6 +1,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import java.util.ArrayList;
 import lombok.Getter;
 
@@ -11,12 +13,12 @@ import lombok.Getter;
 public class StatResult {
 
     @Getter
-    private StatColumn[] columns;
+    private StatQueryColumn[] columns;
     @Getter
     private String[] columnNames;
 
 
-    public StatResult( StatColumn[] columns ) {
+    public StatResult( StatQueryColumn[] columns ) {
         this.columns = columns;
     }
 
@@ -26,14 +28,14 @@ public class StatResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatResult( ArrayList<String> type, String[][] data ) {
+    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
 
-        this.columns = new StatColumn[data[0].length];
+        this.columns = new StatQueryColumn[data[0].length];
 
         String[][] rotated = rotate2dArray( data );
 
         for ( int i = 0; i < rotated.length; i++ ) {
-            this.columns[i] = new StatColumn( type.get( i ), rotated[i] );
+            this.columns[i] = new StatQueryColumn( names.get( i ), type.get( i ), rotated[i] );
         }
 
     }

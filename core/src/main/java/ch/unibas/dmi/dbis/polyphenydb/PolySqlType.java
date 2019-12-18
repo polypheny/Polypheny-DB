@@ -191,6 +191,11 @@ public enum PolySqlType {
         return this == VARCHAR || this == TEXT;
     }
 
+    public boolean isNumericalType() {
+        //TODO: reevaluate
+        return  this == INTEGER || this == BIGINT || this == REAL || this == DOUBLE || this == DECIMAL;
+    }
+
 
 
     PolySqlType( final int javaSqlTypesConstant, final int typeCode, final Class... parameterTypes ) {
