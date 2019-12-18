@@ -1810,9 +1810,14 @@ public class Crud implements InformationObserver {
             if ( !zipFile.delete() ) {
                 log.error( "Unable to delete zip file: " + zipFile.getAbsolutePath() );
             }
+            // table name
+            String tableName = null;
+            if ( request.tableName != null && request.tableName.trim().length() > 0 ) {
+                tableName = request.tableName.trim();
+            }
             // create table from .json file
             String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
-            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, request.store );
+            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
             Transaction transaction = getTransaction();
             executeSqlUpdate( transaction, createTable );
 

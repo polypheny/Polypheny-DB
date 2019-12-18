@@ -81,7 +81,13 @@ public class SchemaToJsonMapper {
     }
 
 
-    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String storeName ) {
+    public static String getTableNameFromJson( @NonNull String json ) {
+        JsonTable table = gson.fromJson( json, JsonTable.class );
+        return table.tableName;
+    }
+
+
+    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String tableName, String storeName ) {
         JsonTable table = gson.fromJson( json, JsonTable.class );
         SqlWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT, true, null );
         writer.keyword( "CREATE TABLE" );
@@ -90,7 +96,11 @@ public class SchemaToJsonMapper {
         SqlWriter.Frame identifierFrame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
         writer.identifier( schemaName );
         writer.sep( ".", true );
-        writer.identifier( table.tableName );
+        if ( tableName != null ) {
+            writer.identifier( tableName );
+        } else {
+            writer.identifier( table.tableName );
+        }
         writer.endList( identifierFrame );
 
         // Print column list

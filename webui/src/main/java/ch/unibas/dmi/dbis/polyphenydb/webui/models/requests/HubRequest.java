@@ -48,6 +48,7 @@ public class HubRequest {
     public int datasetId;
     public boolean createPks;
     public boolean defaultValues;
+    public String tableName;
 
     //downloadDataset
     public String schema;
