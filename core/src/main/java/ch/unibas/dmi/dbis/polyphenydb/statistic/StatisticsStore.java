@@ -1,14 +1,27 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Timer;
+import java.util.TimerTask;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pentaho.aggdes.model.Aggregate;
+import oshi.SystemInfo;
+import oshi.hardware.HardwareAbstractionLayer;
+import oshi.software.os.OSProcess;
+import oshi.software.os.OperatingSystem;
+import oshi.software.os.OperatingSystem.ProcessSort;
 
 
 /**
@@ -29,7 +42,8 @@ public class StatisticsStore implements Observer {
 
     private StatisticsStore() {
         this.columns = new HashMap<>();
-        this.mockContent();
+        //this.mockContent();
+        displayInformation();
     }
 
 
@@ -166,6 +180,50 @@ public class StatisticsStore implements Observer {
     public void update( Observable o, Object arg ) {
         log.debug( arg.toString() );
     }
+
+    public void displayInformation() {
+        InformationManager im = InformationManager.getInstance();
+
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+
+        // TODO: only testwise replace with actual changing data later
+        InformationPage page = new InformationPage( "statistics", "Statistics" );
+        im.addPage( page );
+
+        InformationGroup explainGroup = new InformationGroup( page, "Statistics per Column" );
+        im.addGroup( explainGroup );
+
+        InformationTable explainInformation = new InformationTable( explainGroup, Arrays.asList( "Type", "Explanation") );
+        explainInformation.addRow( "Min", "Minimal Value" );
+        explainInformation.addRow( "Max", "Maximal Value" );
+        explainInformation.addRow( "UniqueValue", "Unique Values" );
+
+
+        /*
+        Timer t2 = new Timer();
+        t2.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+
+                ArrayList<String> procNames = new ArrayList<>();
+                ArrayList<Double> procPerc = new ArrayList<>();
+                for ( int i = 0; i < procs.size() && i < 5; i++ ) {
+                    OSProcess proc = procs.get( i );
+                    double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();
+                    String name = proc.getName();
+                    procNames.add( name );
+                    procPerc.add( Math.round( cpuPerc * 10.0 ) / 10.0 );
+
+                }
+
+                GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
+                graph.updateGraph( procNames.toArray( new String[0] ), data2 );
+            }
+        }, 0, 5000 );*/
+    }
+
 
 
     interface numericalList extends List<Integer> {
