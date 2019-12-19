@@ -38,6 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +56,8 @@ import spark.Spark;
 public class HttpServer extends QueryInterface {
 
     private Gson gson = new Gson();
+
+    private Gson gsonExpose = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
     private final int port;
 
@@ -110,7 +113,7 @@ public class HttpServer extends QueryInterface {
 
         post( "/anyQuery", crud::anyQuery, gson::toJson );
 
-        post( "/allStatistics", crud::getStatistics, gson::toJson);
+        post( "/allStatistics", crud::getStatistics, gsonExpose::toJson);
 
         post( "/getColumns", crud::getColumns, gson::toJson );
 

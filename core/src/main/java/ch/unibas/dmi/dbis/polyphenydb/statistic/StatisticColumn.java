@@ -1,12 +1,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.statistic.model.LimitedOccurrenceMap;
+import com.google.gson.annotations.Expose;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
-import java.util.TreeMap;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -24,7 +26,16 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private LimitedOccurrenceMap<T> minCache = new LimitedOccurrenceMap<T>( CACHE_SIZE );
     private LimitedOccurrenceMap<T> maxCache = new LimitedOccurrenceMap<T>( Comparator.reverseOrder(), CACHE_SIZE );
 
+    @Expose
+    private T min;
+    @Expose
+    private T max;
+
+    @Expose
+    private float count;
+    @Expose
     private HashMap<T, Integer> uniqueValues = new HashMap<>();
+    @Expose
     private boolean isFull;
 
 
@@ -66,6 +77,8 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
      */
     public void setMin( Map<T, Integer> map ) {
         this.minCache.setAll( map );
+        //TODO: handle streamlined
+        resetMin();
     }
 
 
@@ -74,6 +87,8 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
      */
     public void setMax( Map<T, Integer> map ) {
         this.maxCache.setAll( map );
+        //TODO: handle streamlined
+        resetMax();
     }
 
 
@@ -101,79 +116,18 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
         }
         this.maxCache.put( val );
         this.minCache.put( val );
+
+        resetMin();
+        resetMax();
     }
 
+    private void resetMin() {
+        min = this.minCache.firstKey();
+    }
 
-    /**
-     * Special implementation of a TreeMap to only allow a regulated size of entries
-     */
-    @Slf4j
-    static
-    class LimitedOccurrenceMap<K> {
+    private void resetMax() {
 
-        private int maxSize;
-
-        private TreeMap<K, Integer> map;
-
-
-        LimitedOccurrenceMap( int maxSize ) {
-            this.map = new TreeMap<>();
-            this.maxSize = maxSize;
-        }
-
-
-        LimitedOccurrenceMap( Comparator<? super K> comparator, int maxSize ) {
-            this.map = new TreeMap<>( comparator );
-            this.maxSize = maxSize;
-        }
-
-
-        public void put( K key ) {
-            if ( map.containsKey( key ) ) {
-                map.replace( key, map.get( key ) );
-            } else {
-                map.put( key, 1 );
-            }
-            if ( map.size() > maxSize ) {
-                map.remove( map.firstKey() );
-            }
-        }
-
-
-        public void putAll( List<K> keys ) {
-            keys.forEach( k -> {
-                if ( map.containsKey( k ) ) {
-                    map.replace( k, map.get( k ) );
-                } else {
-                    map.put( k, 1 );
-                }
-            } );
-
-            while ( map.size() > maxSize ) {
-                map.remove( map.lastKey() );
-            }
-
-        }
-
-
-        K firstKey() {
-            return this.map.firstKey();
-        }
-
-
-        public void setAll( Map<K, Integer> map ) {
-            this.map.clear();
-
-            map.forEach( ( k, v ) -> {
-                this.map.put( k, v );
-            } );
-
-            while ( this.map.size() > maxSize ) {
-                map.remove( this.map.lastKey() );
-            }
-
-        }
-
+        max = this.maxCache.firstKey();
     }
 
 }

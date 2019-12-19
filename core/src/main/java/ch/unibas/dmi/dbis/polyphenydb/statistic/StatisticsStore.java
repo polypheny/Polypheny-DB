@@ -1,27 +1,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Timer;
-import java.util.TimerTask;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.pentaho.aggdes.model.Aggregate;
-import oshi.SystemInfo;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.software.os.OSProcess;
-import oshi.software.os.OperatingSystem;
-import oshi.software.os.OperatingSystem.ProcessSort;
 
 
 /**
@@ -181,11 +171,12 @@ public class StatisticsStore implements Observer {
         log.debug( arg.toString() );
     }
 
+
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        SystemInfo si = new SystemInfo();
-        OperatingSystem os = si.getOperatingSystem();
+        //SystemInfo si = new SystemInfo();
+        //OperatingSystem os = si.getOperatingSystem();
 
         // TODO: only testwise replace with actual changing data later
         InformationPage page = new InformationPage( "statistics", "Statistics" );
@@ -194,10 +185,12 @@ public class StatisticsStore implements Observer {
         InformationGroup explainGroup = new InformationGroup( page, "Statistics per Column" );
         im.addGroup( explainGroup );
 
-        InformationTable explainInformation = new InformationTable( explainGroup, Arrays.asList( "Type", "Explanation") );
+        InformationTable explainInformation = new InformationTable( explainGroup, Arrays.asList( "Type", "Explanation" ) );
         explainInformation.addRow( "Min", "Minimal Value" );
         explainInformation.addRow( "Max", "Maximal Value" );
         explainInformation.addRow( "UniqueValue", "Unique Values" );
+
+        im.registerInformation( explainInformation );
 
 
         /*
@@ -223,7 +216,6 @@ public class StatisticsStore implements Observer {
             }
         }, 0, 5000 );*/
     }
-
 
 
     interface numericalList extends List<Integer> {
