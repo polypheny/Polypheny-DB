@@ -42,24 +42,13 @@ public final class CatalogUser implements CatalogEntity {
     public final int id;
     public final String name;
     public final String password;
-    //private final PUID userId;
 
 
     public CatalogUser( final int id, final String name, final String password ) {
         this.id = id;
         this.name = name;
         this.password = password;
-        //this.userId = new PUID( 0L, userId );
     }
-
-
-    /*
-    public CatalogUser( final String name, final String password ) {
-        this.name = name;
-        this.password = password;
-        //this.userId = userId;
-    }
-*/
 
 
     // Used for creating ResultSets

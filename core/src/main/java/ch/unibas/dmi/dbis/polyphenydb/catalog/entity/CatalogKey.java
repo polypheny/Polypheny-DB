@@ -81,5 +81,4 @@ public class CatalogKey {
         this( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null );
     }
 
-
 }

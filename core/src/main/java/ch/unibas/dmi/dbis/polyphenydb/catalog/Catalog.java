@@ -92,7 +92,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogDatabase> getDatabases( Pattern pattern ) throws GenericCatalogException;
 
-
     /**
      * Returns the database with the given name.
      *
@@ -102,7 +101,6 @@ public abstract class Catalog {
      */
     public abstract CatalogDatabase getDatabase( String databaseName ) throws GenericCatalogException, UnknownDatabaseException;
 
-
     /**
      * Returns the database with the given name.
      *
@@ -111,7 +109,6 @@ public abstract class Catalog {
      * @throws UnknownDatabaseException If there is no database with this name.
      */
     public abstract CatalogDatabase getDatabase( long databaseId ) throws GenericCatalogException, UnknownDatabaseException;
-
 
     /**
      * Get all schemas which fit to the specified filter pattern.
@@ -123,7 +120,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException;
 
-
     /**
      * Get all schemas of the specified database which fit to the specified filter pattern.
      * <code>getSchemas(xid, databaseName, null)</code> returns all schemas of the database.
@@ -133,7 +129,6 @@ public abstract class Catalog {
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException;
-
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -145,7 +140,6 @@ public abstract class Catalog {
      */
     public abstract CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException, UnknownCollationException, UnknownDatabaseException, UnknownSchemaTypeException;
 
-
     /**
      * Returns the schema with the given name in the specified database.
      *
@@ -155,7 +149,6 @@ public abstract class Catalog {
      * @throws UnknownSchemaException If there is no schema with this name in the specified database.
      */
     public abstract CatalogSchema getSchema( long databaseId, String schemaName ) throws GenericCatalogException, UnknownSchemaException;
-
 
     /**
      * Adds a schema in a specified database
@@ -205,7 +198,6 @@ public abstract class Catalog {
      */
     public abstract void deleteSchema( long schemaId ) throws GenericCatalogException;
 
-
     /**
      * Get all tables of the specified schema which fit to the specified filters.
      * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
@@ -215,7 +207,6 @@ public abstract class Catalog {
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) throws GenericCatalogException;
-
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -228,7 +219,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException;
 
-
     /**
      * Returns the table with the given name in the specified database and schema.
      *
@@ -239,7 +229,6 @@ public abstract class Catalog {
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     public abstract CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException;
-
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
@@ -252,7 +241,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException;
 
-
     /**
      * Returns the table with the given name in the specified schema.
      *
@@ -262,7 +250,6 @@ public abstract class Catalog {
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     public abstract CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException, GenericCatalogException;
-
 
     /**
      * Returns the table with the given name in the specified database and schema.
@@ -274,7 +261,6 @@ public abstract class Catalog {
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
      */
     public abstract CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException;
-
 
     /**
      * Adds a table to a specified schema.
@@ -483,7 +469,6 @@ public abstract class Catalog {
      */
     public abstract void deleteColumn( long columnId ) throws GenericCatalogException;
 
-
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
@@ -500,7 +485,6 @@ public abstract class Catalog {
      */
     public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
 
-
     /**
      * Returns a specified primary key
      *
@@ -508,7 +492,6 @@ public abstract class Catalog {
      * @return The primary key
      */
     public abstract CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException;
-
 
     /**
      * Adds a primary key
@@ -518,7 +501,6 @@ public abstract class Catalog {
      */
     public abstract void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException;
 
-
     /**
      * Returns all (imported) foreign keys of a specified table
      *
@@ -526,7 +508,6 @@ public abstract class Catalog {
      * @return List of foreign keys
      */
     public abstract List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException;
-
 
     /**
      * Returns all foreign keys that reference the specified table (exported keys).
@@ -536,7 +517,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogForeignKey> getExportedKeys( long tableId ) throws GenericCatalogException;
 
-
     /**
      * Get all constraints of the specified table
      *
@@ -544,7 +524,6 @@ public abstract class Catalog {
      * @return List of constraints
      */
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
-
 
     /**
      * Returns the constraint with the specified name in the specified table.
@@ -555,7 +534,6 @@ public abstract class Catalog {
      */
     public abstract CatalogConstraint getConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownConstraintException;
 
-
     /**
      * Return the foreign key with the specified name from the specified table
      *
@@ -564,7 +542,6 @@ public abstract class Catalog {
      * @return The foreign key
      */
     public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException;
-
 
     /**
      * Adds a unique foreign key constraint.
@@ -578,7 +555,6 @@ public abstract class Catalog {
      * @param onDelete The option for deletes
      */
     public abstract void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException;
-
 
     /**
      * Adds a unique constraint.
@@ -598,7 +574,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) throws GenericCatalogException;
 
-
     /**
      * Returns the index with the specified name in the specified table
      *
@@ -607,7 +582,6 @@ public abstract class Catalog {
      * @return The Index
      */
     public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
-
 
     /**
      * Adds an index over the specified columns
@@ -621,14 +595,12 @@ public abstract class Catalog {
      */
     public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException;
 
-
     /**
      * Delete the specified index
      *
      * @param indexId The id of the index to drop
      */
     public abstract void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException;
-
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.
@@ -637,14 +609,12 @@ public abstract class Catalog {
      */
     public abstract void deletePrimaryKey( long tableId ) throws GenericCatalogException;
 
-
     /**
      * Delete the specified foreign key (does not delete the referenced key).
      *
      * @param foreignKeyId The id of the foreign key to delete
      */
     public abstract void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException;
-
 
     /**
      * Delete the specified constraint.
@@ -653,7 +623,6 @@ public abstract class Catalog {
      * @param constraintId The id of the constraint to delete
      */
     public abstract void deleteConstraint( long constraintId ) throws GenericCatalogException;
-
 
     /**
      * Get the user with the specified name
@@ -664,7 +633,6 @@ public abstract class Catalog {
      */
     public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
 
-
     /**
      * Get list of all stores
      *
@@ -672,14 +640,12 @@ public abstract class Catalog {
      */
     public abstract List<CatalogStore> getStores() throws GenericCatalogException;
 
-
     /**
      * Get a store by its unique name
      *
      * @return List of stores
      */
     public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException;
-
 
     /**
      * Add a store
@@ -690,7 +656,6 @@ public abstract class Catalog {
      * @return The id of the newly added store
      */
     public abstract int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;
-
 
     /**
      * Delete a store
@@ -707,12 +672,9 @@ public abstract class Catalog {
 
     public abstract CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
 
-
     public abstract CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
 
-
     public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
-
 
     public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
@@ -737,8 +699,9 @@ public abstract class Catalog {
 
 
     public enum TableType {
-        TABLE( 1 );
-        // VIEW, STREAM, ...
+        TABLE( 1 ),
+        VIEW( 2 );
+        // STREAM, ...
 
         private final int id;
 

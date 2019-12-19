@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,8 +49,8 @@ public final class CatalogForeignKey extends CatalogKey {
     public final String referencedKeySchemaName;
     public final long referencedKeyTableId;
     public final String referencedKeyTableName;
-    public final Integer updateRule;
-    public final Integer deleteRule;
+    public final ForeignKeyOption updateRule;
+    public final ForeignKeyOption deleteRule;
     public List<Long> referencedKeyColumnIds;
     public List<String> referencedKeyColumnNames;
 
@@ -70,8 +71,8 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String referencedKeySchemaName,
             final long referencedKeyDatabaseId,
             @NonNull final String referencedKeyDatabaseName,
-            final Integer updateRule,
-            final Integer deleteRule ) {
+            final ForeignKeyOption updateRule,
+            final ForeignKeyOption deleteRule ) {
         super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
@@ -121,8 +122,8 @@ public final class CatalogForeignKey extends CatalogKey {
                     tableName,
                     foreignKeyColumnName,
                     keySeq,
-                    updateRule,
-                    deleteRule,
+                    updateRule.getId(),
+                    deleteRule.getId(),
                     name,
                     null,
                     null };

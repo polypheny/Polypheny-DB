@@ -140,7 +140,7 @@ public class JdbcSchema implements Schema {
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
             columnNames.add( catalogColumn.name );
         }
-        JdbcTable table = new JdbcTable( this, database, combinedTable.getSchema().name, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
+        JdbcTable table = new JdbcTable( this, database, combinedTable.getSchema().name, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType.name() ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
         tableMap.put( combinedTable.getTable().name, table );
         return table;
     }

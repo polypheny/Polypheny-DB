@@ -38,6 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
@@ -53,7 +54,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownIndexTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -201,9 +201,9 @@ public class Crud implements InformationObserver {
         // determine if it is a view or a table
         try {
             CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, t[0], t[1] );
-            if ( catalogTable.tableType.equalsIgnoreCase( "TABLE" ) ) {
+            if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogTable.tableType.equalsIgnoreCase( "VIEW" ) ) {
+            } else if ( catalogTable.tableType == TableType.VIEW ) {
                 result.setType( ResultType.VIEW );
             } else {
                 throw new RuntimeException( "Unknown table type: " + catalogTable.tableType );
@@ -254,9 +254,9 @@ public class Crud implements InformationObserver {
                                 table.addChild( new SidebarElement( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name, catalogColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( combinedTable.getTable().tableType.equals( "TABLE" ) ) {
+                        if ( combinedTable.getTable().tableType == TableType.TABLE ) {
                             tables.add( table );
-                        } else if ( request.views && combinedTable.getTable().tableType.equals( "VIEW" ) ) {
+                        } else if ( request.views && combinedTable.getTable().tableType == TableType.VIEW ) {
                             views.add( table );
                         }
                     }
@@ -1149,13 +1149,13 @@ public class Crud implements InformationObserver {
                 String[] arr = new String[3];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.columnNames );
-                arr[2] = Catalog.IndexType.getById( catalogIndex.type ).toString();
+                arr[2] = catalogIndex.type.name();
                 data.add( arr );
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
             transaction.commit();
-        } catch ( UnknownTableException | GenericCatalogException | TransactionException | UnknownIndexTypeException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e.getMessage() );
             try {
@@ -1315,7 +1315,7 @@ public class Crud implements InformationObserver {
         try {
             List<CatalogTable> catalogTables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
             for ( CatalogTable catalogTable : catalogTables ) {
-                if ( catalogTable.tableType.equalsIgnoreCase( "TABLE" ) ) {
+                if ( catalogTable.tableType == TableType.TABLE ) {
                     // get foreign keys
                     List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( catalogTable.id );
                     for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
