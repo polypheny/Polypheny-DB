@@ -6,9 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
-import java.util.SortedMap;
 import java.util.TreeMap;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -24,12 +22,7 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private final String id;
 
     private LimitedOccurrenceMap<T> minCache = new LimitedOccurrenceMap<T>( CACHE_SIZE );
-    @Setter
-    private T min;
-
     private LimitedOccurrenceMap<T> maxCache = new LimitedOccurrenceMap<T>( Comparator.reverseOrder(), CACHE_SIZE );
-    @Setter
-    private T max;
 
     private HashMap<T, Integer> uniqueValues = new HashMap<>();
     private boolean isFull;
@@ -58,6 +51,32 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     }
 
 
+    public T max() {
+        return this.maxCache.firstKey();
+    }
+
+
+    public T min() {
+        return this.minCache.firstKey();
+    }
+
+
+    /**
+     * reinitialize minCache
+     */
+    public void setMin( Map<T, Integer> map ) {
+        this.minCache.setAll( map );
+    }
+
+
+    /**
+     * reinitialize maxCache
+     */
+    public void setMax( Map<T, Integer> map ) {
+        this.maxCache.setAll( map );
+    }
+
+
     public void putAll( List<T> vals ) {
         vals.forEach( this::put );
     }
@@ -71,10 +90,7 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
             if ( uniqueValues.size() > MAX_MOST_USED_WORDS ) {
                 isFull = true;
             }
-        } else {
-            return;
         }
-        //log.info(" updated addUnique " + val.toString());
     }
 
 
@@ -91,9 +107,12 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     /**
      * Special implementation of a TreeMap to only allow a regulated size of entries
      */
+    @Slf4j
+    static
     class LimitedOccurrenceMap<K> {
 
         private int maxSize;
+
         private TreeMap<K, Integer> map;
 
 
@@ -130,11 +149,29 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
                 }
             } );
 
-            if ( map.size() > maxSize ) {
-                while(map.size() > maxSize){
-                    map.remove( map.lastKey() );
-                }
+            while ( map.size() > maxSize ) {
+                map.remove( map.lastKey() );
             }
+
+        }
+
+
+        K firstKey() {
+            return this.map.firstKey();
+        }
+
+
+        public void setAll( Map<K, Integer> map ) {
+            this.map.clear();
+
+            map.forEach( ( k, v ) -> {
+                this.map.put( k, v );
+            } );
+
+            while ( this.map.size() > maxSize ) {
+                map.remove( this.map.lastKey() );
+            }
+
         }
 
     }

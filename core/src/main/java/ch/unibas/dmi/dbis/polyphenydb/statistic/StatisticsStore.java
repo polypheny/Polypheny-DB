@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pentaho.aggdes.model.Aggregate;
 
@@ -18,8 +19,8 @@ public class StatisticsStore implements Observer {
 
     private static StatisticsStore instance = null;
 
-    // TODO private again
-    public HashMap<String, StatisticColumn> store;
+    @Getter
+    public HashMap<String, StatisticColumn> columns;
 
     private String databaseName = "APP";
     private String userName = "pa";
@@ -27,7 +28,7 @@ public class StatisticsStore implements Observer {
 
 
     private StatisticsStore() {
-        this.store = new HashMap<>();
+        this.columns = new HashMap<>();
         this.mockContent();
     }
 
@@ -38,11 +39,6 @@ public class StatisticsStore implements Observer {
             instance = new StatisticsStore();
         }
         return instance;
-    }
-
-
-    public HashMap<String, StatisticColumn> getStore() {
-        return this.store;
     }
 
 
@@ -59,10 +55,10 @@ public class StatisticsStore implements Observer {
 
 
     public void update( String table, String column, int val ) {
-        if ( !this.store.containsKey( table ) ) {
-            this.store.put( table, new StatisticColumn( column, val ) );
+        if ( !this.columns.containsKey( table ) ) {
+            this.columns.put( table, new StatisticColumn( column, val ) );
         } else {
-            this.store.get( table ).put( val );
+            this.columns.get( table ).put( val );
         }
     }
 
@@ -84,10 +80,10 @@ public class StatisticsStore implements Observer {
 
 
     public void update( String table, String column, String val ) {
-        if ( !this.store.containsKey( table ) ) {
-            this.store.put( table, new StatisticColumn( column, val ) );
+        if ( !this.columns.containsKey( table ) ) {
+            this.columns.put( table, new StatisticColumn( column, val ) );
         } else {
-            this.store.get( table ).put( val );
+            this.columns.get( table ).put( val );
         }
     }
 
@@ -96,7 +92,7 @@ public class StatisticsStore implements Observer {
      * Reset all statistics and reevaluate them
      */
     public void reevaluateStore() {
-        this.store.clear();
+        this.columns.clear();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             System.out.println( column.getFullName() );
@@ -122,9 +118,9 @@ public class StatisticsStore implements Observer {
         StatResult max = this.getAggregateColumn( column, "MAX" );
         StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( column.getFullName() );
         // TODO: rewrite -> change StatisticColumn to use cache
-        statisticColumn.setMin( Integer.parseInt( min.getColumns()[0].getData()[0] ) );
-        statisticColumn.setMax( Integer.parseInt( max.getColumns()[0].getData()[0] ) );
-        this.store.put( column.getFullName(), statisticColumn );
+        statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
+        statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
+        this.columns.put( column.getFullName(), statisticColumn );
     }
 
 
@@ -134,7 +130,7 @@ public class StatisticsStore implements Observer {
         StatisticColumn<String> statisticColumn = new StatisticColumn<>( column.getFullName() );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
-        this.store.put( column.getFullName(), statisticColumn );
+        this.columns.put( column.getFullName(), statisticColumn );
     }
 
 

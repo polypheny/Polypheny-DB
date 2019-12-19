@@ -622,7 +622,7 @@ public class Crud implements InformationObserver {
      * @return
      */
     HashMap<String, StatisticColumn> getStatistics(final Request req, final Response res ) {
-        return store.getStore();
+        return store.getColumns();
     }
 
 
