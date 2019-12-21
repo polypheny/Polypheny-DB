@@ -3,8 +3,8 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.ArrayBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
-import sun.misc.Queue;
 
 
 /**
@@ -14,21 +14,25 @@ import sun.misc.Queue;
 @Slf4j
 public class ObservableQueue extends Observable implements Observer, Runnable {
 
-    private final Queue<StatUpdate> queue;
+    private final ArrayBlockingQueue<StatUpdate> queue;
 
 
     ObservableQueue() {
-        this.queue = new Queue<StatUpdate>();
+        this.queue = new ArrayBlockingQueue<StatUpdate>();
     }
 
 
     public void enqueue( StatUpdate update ) {
-        this.queue.enqueue( update );
+        try {
+            this.queue.put( update );
+        } catch ( InterruptedException e ) {
+            e.printStackTrace();
+        }
     }
 
     public StatUpdate dequeue(){
         try {
-            return this.queue.dequeue();
+            return this.queue.take();
         } catch ( InterruptedException e ) {
             log.warn( "tried to deque an empty queue" );
         }
