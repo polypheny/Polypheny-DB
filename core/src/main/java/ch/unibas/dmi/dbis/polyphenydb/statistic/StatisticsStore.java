@@ -1,10 +1,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -21,12 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 public class StatisticsStore implements Observer {
 
     private static StatisticsStore instance = null;
+    private ObservableQueue observableQueue = new ObservableQueue();
 
     @Getter
     public HashMap<String, StatisticColumn> columns;
 
-    private String databaseName = "APP";
-    private String userName = "pa";
     private LowCostQueries sqlQueryInterface;
 
 
@@ -34,6 +36,8 @@ public class StatisticsStore implements Observer {
         this.columns = new HashMap<>();
         //this.mockContent();
         displayInformation();
+
+        observableQueue.run();
     }
 
 
@@ -57,7 +61,7 @@ public class StatisticsStore implements Observer {
         this.update( "public.emps", "name", "tester10" );
     }
 
-
+    //TODO: Rename
     public void update( String table, String column, int val ) {
         if ( !this.columns.containsKey( table ) ) {
             this.columns.put( table, new StatisticColumn( column, val ) );
@@ -66,7 +70,7 @@ public class StatisticsStore implements Observer {
         }
     }
 
-
+    //TODO: Rename
     public void updateAll( String table, String column, stringList vals ) {
         vals.forEach( val -> {
             // still not sure if generic or not
@@ -84,10 +88,11 @@ public class StatisticsStore implements Observer {
 
 
     public void update( String table, String column, String val ) {
-        if ( !this.columns.containsKey( table ) ) {
-            this.columns.put( table, new StatisticColumn( column, val ) );
+        // TODO: switch back to {table = [columns], table = [columns]}
+        if ( !this.columns.containsKey( column ) ) {
+            this.columns.put( column, new StatisticColumn( column, val ) );
         } else {
-            this.columns.get( table ).put( val );
+            this.columns.get( column ).put( val );
         }
     }
 
@@ -215,6 +220,28 @@ public class StatisticsStore implements Observer {
                 graph.updateGraph( procNames.toArray( new String[0] ), data2 );
             }
         }, 0, 5000 );*/
+    }
+
+
+    /**
+     * Transaction hands it changes so they can be added.
+     *
+     * @param stats all changes for this store
+     */
+    public void apply( ArrayList<TransactionStat> stats ) {
+        log.error( "applying" );
+        stats.forEach( s -> {
+            log.error(s.getColumnName());
+            TransactionStatType type = s.getType();
+                // TODO: better prefiltering
+            if ( type == TransactionStatType.INSERT ) {
+                update( s.getTableName(), s.getColumnName(), s.getData()  );
+            } else if ( type == TransactionStatType.DELETE ) {
+                // TODO: implement
+            } else {
+                // TODO: implement
+            }
+        } );
     }
 
 

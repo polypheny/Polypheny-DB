@@ -69,4 +69,6 @@ public interface Transaction {
     PolyphenyDbCatalogReader getCatalogReader();
 
     void resetQueryProcessor();
+
+    void addStat(TransactionStat stat);
 }

@@ -34,6 +34,8 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
@@ -228,7 +230,7 @@ public class Crud implements InformationObserver {
 
     ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
-        System.out.println(req.body());
+        System.out.println( req.body() );
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         if ( request.depth < 1 ) {
@@ -289,7 +291,7 @@ public class Crud implements InformationObserver {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Transaction transaction = getTransaction();
 
-        System.out.println(req.body());
+        System.out.println( req.body() );
         Result result;
         try {
             List<CatalogTable> tables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
@@ -438,6 +440,13 @@ public class Crud implements InformationObserver {
             }
             values.add( value );
         }
+
+        String tableName = t[0] + "." + t[1];
+        request.data.forEach( ( k, v ) -> log.error( tableName + "+" + k + "+" + v ) );
+        request.data.forEach( ( k, v ) -> {
+            transaction.addStat( new TransactionStat( t[0], t[1], k, v , TransactionStatType.INSERT ) );
+        } );
+
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
 
@@ -620,9 +629,8 @@ public class Crud implements InformationObserver {
     /**
      * Return all available statistics to the client
      * TODO: potentially change all to specific statistics
-     * @return
      */
-    HashMap<String, StatisticColumn> getStatistics(final Request req, final Response res ) {
+    HashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
         return store.getColumns();
     }
 
@@ -1756,6 +1764,9 @@ public class Crud implements InformationObserver {
 
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
+            log.error( signature.sql );
+            signature.columns.forEach( c -> log.error( c.columnName ) );
+            signature.parameters.forEach( p -> log.error( p.className ) );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );

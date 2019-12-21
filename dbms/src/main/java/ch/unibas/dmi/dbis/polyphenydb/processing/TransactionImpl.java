@@ -35,6 +35,7 @@ import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
@@ -50,7 +51,9 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import com.google.common.collect.ImmutableCollection;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,6 +83,8 @@ public class TransactionImpl implements Transaction {
 
     @Getter
     private final boolean analyze;
+
+    private final ArrayList<TransactionStat> stats = new ArrayList<>();
 
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
@@ -149,6 +154,9 @@ public class TransactionImpl implements Transaction {
                 for ( Store store : stores ) {
                     store.commit( xid );
                 }
+
+                StatisticsStore.getInstance().apply(stats);
+
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
@@ -222,6 +230,12 @@ public class TransactionImpl implements Transaction {
     @Override
     public void resetQueryProcessor() {
         queryProcessor = null;
+    }
+
+
+    @Override
+    public void addStat( TransactionStat stat ) {
+        this.stats.add( stat );
     }
 
 }
