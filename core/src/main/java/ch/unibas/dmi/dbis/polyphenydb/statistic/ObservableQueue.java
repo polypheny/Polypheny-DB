@@ -15,10 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ObservableQueue extends Observable implements Observer, Runnable {
 
     private final ArrayBlockingQueue<StatUpdate> queue;
+    private final int CAPACITY = 20;
 
 
     ObservableQueue() {
-        this.queue = new ArrayBlockingQueue<StatUpdate>();
+        this.queue = new ArrayBlockingQueue<StatUpdate>(CAPACITY);
     }
 
 
