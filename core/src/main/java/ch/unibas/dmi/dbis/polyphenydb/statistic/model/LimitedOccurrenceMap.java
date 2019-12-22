@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic.model;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,9 +21,18 @@ class LimitedOccurrenceMap<K> {
     private TreeMap<K, Integer> map;
 
 
+    public LimitedOccurrenceMap() {
+        this(5);
+    }
+
     public LimitedOccurrenceMap( int maxSize ) {
         this.map = new TreeMap<>();
         this.maxSize = maxSize;
+    }
+
+    public LimitedOccurrenceMap( Comparator<? super K> comparator ) {
+        this.map = new TreeMap<>( comparator );
+        this.maxSize = 5;
     }
 
 
@@ -72,7 +82,7 @@ class LimitedOccurrenceMap<K> {
             this.map.put( k, v );
         } );
 
-        while ( this.map.size() > maxSize ) {
+        while ( this.map.size() >= maxSize ) {
             map.remove( this.map.lastKey() );
         }
 
@@ -101,6 +111,10 @@ class LimitedOccurrenceMap<K> {
 
     public boolean isEmpty() {
         return map.size() == 0;
+    }
+
+    public Set<K> keySet(){
+        return map.keySet();
     }
 
 }

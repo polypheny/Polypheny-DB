@@ -252,7 +252,7 @@ public class LowCostQueries implements InformationObserver {
     /**
      * Method to get the type of a specific column
      */
-    public PolySqlType getColumnType( String table, String column ) {
+    public PolySqlType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
         // TODO: fix possible nullpointer
         PolySqlType type = null;
@@ -261,11 +261,20 @@ public class LowCostQueries implements InformationObserver {
         log.error( column );
 
         try {
-            StatResult result = executeSqlSelect( "SELECT " + column + " FROM " + table + " LIMIT 1");
-            type = result.getColumns()[0].getType();
+            // TODO: check if issue only on this branch
+            /*StatResult result = executeSqlSelect( "SELECT " + column + " FROM " + table + " LIMIT 1");
+            type = result.getColumns()[0].getType();*/
+
+            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+            type = combinedDatabase
+                    .getSchemas().stream().filter( s -> s.getSchema().name.equals( schema ) ).findAny().orElse( null )
+                    .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findAny().orElse( null )
+                    .getColumns().stream().filter( c-> c.name.equals( column )).findAny().orElse( null ).type;
+
             transaction.commit();
 
-        } catch ( TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();

@@ -86,7 +86,6 @@ import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
@@ -119,7 +118,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -631,6 +629,7 @@ public class Crud implements InformationObserver {
      * TODO: potentially change all to specific statistics
      */
     HashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
+        log.error( Integer.toString( store.getColumns().size()) );
         return store.getColumns();
     }
 
@@ -1764,9 +1763,6 @@ public class Crud implements InformationObserver {
 
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
-            log.error( signature.sql );
-            signature.columns.forEach( c -> log.error( c.columnName ) );
-            signature.parameters.forEach( p -> log.error( p.className ) );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );

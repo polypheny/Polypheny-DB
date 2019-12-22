@@ -66,13 +66,14 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
      * @param column column name in form [schema].[table].[column]
      */
     private void add( String schema, String table, String column, T val ) {
-        if ( !this.columns.containsKey( table ) ) {
-            //PolySqlType type = this.sqlQueryInterface.getColumnType( table, column );
+        if ( !this.columns.containsKey( column ) ) {
+            //PolySqlType type = this.sqlQueryInterface.getColumnType( schema, table, column );
+            //log.error(type.toString());
             // TODO: find a solution without race
             PolySqlType type = PolySqlType.INTEGER;
-            this.columns.put( table, new StatisticColumn( observableQueue, schema, table, column, type, val ) );
+            this.columns.put( column, new AlphabeticStatisticColumn( observableQueue, schema, table, column, type, val ) );
         } else {
-            this.columns.get( table ).put( val );
+            this.columns.get( column ).put( val );
         }
     }
 
@@ -80,9 +81,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private void add( String schema, String table, String column, PolySqlType type, T val ) {
         // TODO: switch back to {table = [columns], table = [columns]}
         if ( !this.columns.containsKey( column ) ) {
-            this.columns.put( column, new StatisticColumn( observableQueue, schema, table, column, type, val ) );
+            this.columns.put( column, new AlphabeticStatisticColumn( observableQueue, schema, table, column, type, val ) );
         } else {
-            this.columns.get( table ).put( val );
+            this.columns.get( column ).put( val );
         }
     }
 
@@ -96,7 +97,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
 
     public void remove( String schema, String table, String column, T val ) {
-        this.columns.get( table ).remove( val );
+        this.columns.get( column ).remove( val );
     }
 
 
@@ -126,20 +127,26 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
 
     private void reevaluateNumericalColumn( QueryColumn column ) {
+        log.error( "reval numerical" );
+        log.error( column.getFullName() );
         StatResult min = this.getAggregateColumn( column, "MIN" );
         StatResult max = this.getAggregateColumn( column, "MAX" );
-        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
+        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
         statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
+        log.error( "hai" );
         this.columns.put( column.getFullName(), statisticColumn );
+        log.error("addded here " + column.getFullName());
     }
 
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
+        log.error( "reval alpha" );
+        log.error( column.getFullName() );
         StatResult unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new StatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
+        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
         this.columns.put( column.getFullName(), statisticColumn );
@@ -190,10 +197,10 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
         InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
         im.addGroup( contentGroup );
 
-        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "needs Update" ) );
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Updated" ) );
 
         columns.forEach( ( k, v ) -> {
-            statisticsInformation.addRow( k, v.getType().toString(), Boolean.toString( v.isNeedsUpdate() ) );
+            statisticsInformation.addRow( k, v.getType().toString(), Boolean.toString( v.isUpdated() ) );
         } );
 
         im.registerInformation( statisticsInformation );
@@ -204,15 +211,46 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
             public void run() {
                 statisticsInformation.reset();
                 columns.forEach( ( k, v ) -> {
-                    if ( v.isNeedsUpdate() ) {
-                        statisticsInformation.addRow( k, v.getType().toString(), "✔" );
+                    if ( v.isUpdated() ) {
+                        statisticsInformation.addRow( k, v.getType().name(), "✔" );
                     } else {
-                        statisticsInformation.addRow( k, v.getType().toString(), "❌" );
+                        statisticsInformation.addRow( k, v.getType().name(), "❌" );
                     }
 
                 } );
             }
-        }, 0, 5000 );
+        }, 5000, 5000 );
+
+        InformationGroup alphabeticalGroup = new InformationGroup( page, "Alphabetical Statistics" );
+        im.addGroup( alphabeticalGroup );
+
+        InformationGroup numericalGroup = new InformationGroup( page, "Numerical Statistics" );
+        im.addGroup( numericalGroup );
+
+        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
+
+        InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
+
+        im.registerInformation( numericalInformation );
+        im.registerInformation( alphabeticalInformation );
+
+        Timer t3 = new Timer();
+        t3.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                numericalInformation.reset();
+                alphabeticalInformation.reset();
+                columns.forEach( ( k, v ) -> {
+                    if ( v instanceof NumericalStatisticColumn ) {
+                        numericalInformation.addRow( k, ((NumericalStatisticColumn) v).min().toString(), ((NumericalStatisticColumn) v).max().toString() );
+                    } else {
+                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v ).getUniqueValues().keySet().toString());
+                    }
+
+                } );
+            }
+        }, 5000, 5000 );
+
     }
 
 
@@ -222,9 +260,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
      * @param stats all changes for this store
      */
     public void apply( ArrayList<TransactionStat> stats ) {
-        log.error( "applying" );
+
         stats.forEach( s -> {
-            log.error( s.getColumnName() );
             TransactionStatType type = s.getTransactionType();
             // TODO: better prefiltering
             if ( type == TransactionStatType.INSERT ) {
