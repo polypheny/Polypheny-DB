@@ -78,4 +78,29 @@ class LimitedOccurrenceMap<K> {
 
     }
 
+
+    /**
+     * Method changes the occurrence counter of a given value by a specified amount if it exists
+     *
+     * @param key the value which gets changed
+     */
+    public void remove( K key ) {
+        if ( this.map.containsKey( key ) ) {
+            if ( this.map.get( key ) - 1 == 0 ) {
+                this.map.remove( key );
+            } else {
+                this.map.replace( key, this.map.get( key ) - 1 );
+            }
+        }
+    }
+
+    public int size(){
+        return this.map.size();
+    }
+
+
+    public boolean isEmpty() {
+        return map.size() == 0;
+    }
+
 }

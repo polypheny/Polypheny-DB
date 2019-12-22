@@ -60,6 +60,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
     /**
      * adds data for a column to the store
+     *
      * @param schema schema name
      * @param table table name in form [schema].[table]
      * @param column column name in form [schema].[table].[column]
@@ -69,7 +70,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
             //PolySqlType type = this.sqlQueryInterface.getColumnType( table, column );
             // TODO: find a solution without race
             PolySqlType type = PolySqlType.INTEGER;
-            this.columns.put( table, new StatisticColumn( schema, table, column, type, val ) );
+            this.columns.put( table, new StatisticColumn( observableQueue, schema, table, column, type, val ) );
         } else {
             this.columns.get( table ).put( val );
         }
@@ -79,7 +80,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private void add( String schema, String table, String column, PolySqlType type, T val ) {
         // TODO: switch back to {table = [columns], table = [columns]}
         if ( !this.columns.containsKey( column ) ) {
-            this.columns.put( column, new StatisticColumn( schema, table, column, type, val ) );
+            this.columns.put( column, new StatisticColumn( observableQueue, schema, table, column, type, val ) );
         } else {
             this.columns.get( table ).put( val );
         }
@@ -91,6 +92,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
             // still not sure if generic or not
             add( schema, table, column, type, val );
         } );
+    }
+
+
+    public void remove( String schema, String table, String column, T val ) {
+        this.columns.get( table ).remove( val );
     }
 
 
@@ -122,7 +128,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private void reevaluateNumericalColumn( QueryColumn column ) {
         StatResult min = this.getAggregateColumn( column, "MIN" );
         StatResult max = this.getAggregateColumn( column, "MAX" );
-        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ) );
+        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
         statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
@@ -133,7 +139,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatResult unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new StatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ) );
+        StatisticColumn<String> statisticColumn = new StatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
         this.columns.put( column.getFullName(), statisticColumn );
@@ -177,22 +183,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        //SystemInfo si = new SystemInfo();
-        //OperatingSystem os = si.getOperatingSystem();
-
         // TODO: only testwise replace with actual changing data later
         InformationPage page = new InformationPage( "statistics", "Statistics" );
         im.addPage( page );
-
-        InformationGroup explainGroup = new InformationGroup( page, "Statistics per Column" );
-        im.addGroup( explainGroup );
-
-        InformationTable explainInformation = new InformationTable( explainGroup, Arrays.asList( "Type", "Explanation" ) );
-        explainInformation.addRow( "Min", "Minimal Value" );
-        explainInformation.addRow( "Max", "Maximal Value" );
-        explainInformation.addRow( "UniqueValue", "Unique Values" );
-
-        im.registerInformation( explainInformation );
 
         InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
         im.addGroup( contentGroup );
@@ -238,7 +231,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
                 add( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
             } else if ( type == TransactionStatType.DELETE ) {
                 // TODO: implement
-            } else {
+            } else if ( type == TransactionStatType.UPDATE ) {
                 // TODO: implement
             }
         } );

@@ -5,10 +5,10 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.model.LimitedOccurrenceMap;
 import com.google.gson.annotations.Expose;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
+import java.util.Observer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,8 +26,8 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private final String table;
     private final String column;
 
-    private LimitedOccurrenceMap<T> minCache = new LimitedOccurrenceMap<T>( CACHE_SIZE );
-    private LimitedOccurrenceMap<T> maxCache = new LimitedOccurrenceMap<T>( Comparator.reverseOrder(), CACHE_SIZE );
+    private LimitedOccurrenceMap<T> minCache = new LimitedOccurrenceMap<>( CACHE_SIZE );
+    private LimitedOccurrenceMap<T> maxCache = new LimitedOccurrenceMap<>( Comparator.reverseOrder(), CACHE_SIZE );
 
     @Getter
     //TODO: add
@@ -45,7 +45,7 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private int count;
     @Expose
     @Getter
-    private HashMap<T, Integer> uniqueValues = new HashMap<>();
+    private LimitedOccurrenceMap<T> uniqueValues = new LimitedOccurrenceMap<>( Comparator.reverseOrder(), CACHE_SIZE );
     @Expose
     private boolean isFull;
 
@@ -53,27 +53,28 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
     private boolean needsUpdate;
 
 
-    private StatisticColumn( String schema, String table, String column, T val ) {
-        this( schema, table, column );
+    private StatisticColumn( Observer observer, String schema, String table, String column, T val ) {
+        this( observer, schema, table, column );
         put( val );
     }
 
 
-    public StatisticColumn( String schema, String table, String column, PolySqlType type, T val ) {
-        this( schema, table, column, val );
+    public StatisticColumn( Observer observer, String schema, String table, String column, PolySqlType type, T val ) {
+        this( observer, schema, table, column, val );
         this.type = type;
     }
 
 
-    public StatisticColumn( String schema, String table, String column ) {
+    public StatisticColumn( Observer observer, String schema, String table, String column ) {
         this.schema = schema;
         this.table = table;
         this.column = column;
+        this.addObserver( observer );
     }
 
 
-    public StatisticColumn( String[] splitColumn ) {
-        this(splitColumn[0], splitColumn[1], splitColumn[2]);
+    public StatisticColumn( Observer observer, String[] splitColumn ) {
+        this( observer, splitColumn[0], splitColumn[1], splitColumn[2] );
     }
 
 
@@ -125,14 +126,7 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
 
 
     private void addUnique( T val ) {
-        if ( uniqueValues.containsKey( val ) ) {
-            uniqueValues.put( val, uniqueValues.get( val ) + 1 );
-        } else if ( !isFull && uniqueValues.size() < MAX_MOST_USED_WORDS ) {
-            uniqueValues.put( val, 1 );
-            if ( uniqueValues.size() > MAX_MOST_USED_WORDS ) {
-                isFull = true;
-            }
-        }
+        this.uniqueValues.put( val );
     }
 
 
@@ -155,7 +149,6 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
 
 
     private void resetMax() {
-
         max = this.maxCache.firstKey();
     }
 
@@ -172,4 +165,21 @@ public class StatisticColumn<T extends Comparable<T>> extends Observable {
 
     }
 
+
+    /**
+     * Remove should check if value occurs in list and decrease its occurence by 1
+     * If it occurs 0 times after, it gets removed
+     *
+     * @param val the value which is removed
+     */
+    public void remove( T val ) {
+        this.minCache.remove( val );
+        this.maxCache.remove( val );
+        this.uniqueValues.remove( val );
+
+        if(this.minCache.isEmpty() || this.maxCache.isEmpty() || this.uniqueValues.isEmpty() ) {
+
+        }
+
+    }
 }
