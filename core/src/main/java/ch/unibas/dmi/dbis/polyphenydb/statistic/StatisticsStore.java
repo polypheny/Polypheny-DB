@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
@@ -13,15 +14,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Timer;
+import java.util.TimerTask;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Stores all available statistics  and updates them dynamically
+ * Stores all available statistics and updates them dynamically
  */
 @Slf4j
-public class StatisticsStore implements Observer {
+public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
     private static StatisticsStore instance = null;
     private ObservableQueue observableQueue = new ObservableQueue();
@@ -34,7 +37,6 @@ public class StatisticsStore implements Observer {
 
     private StatisticsStore() {
         this.columns = new HashMap<>();
-        //this.mockContent();
         displayInformation();
 
         observableQueue.run();
@@ -50,50 +52,45 @@ public class StatisticsStore implements Observer {
     }
 
 
-    private void mockContent() {
-        this.update( "public.depts", "deptno", 3 );
-        this.update( "public.depts", "deptno", 10 );
-
-        this.update( "public.depts", "name", "tester1" );
-        this.update( "public.depts", "name", "tester10" );
-        this.update( "public.depts", "name", "tester100" );
-
-        this.update( "public.emps", "name", "tester10" );
+    private void add( String schemaTableColumn, T val ) {
+        String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
+        add( splits[0], splits[1], splits[2], val );
     }
 
-    //TODO: Rename
-    public void update( String table, String column, int val ) {
+
+    /**
+     * adds data for a column to the store
+     * @param schema schema name
+     * @param table table name in form [schema].[table]
+     * @param column column name in form [schema].[table].[column]
+     */
+    private void add( String schema, String table, String column, T val ) {
         if ( !this.columns.containsKey( table ) ) {
-            this.columns.put( table, new StatisticColumn( column, val ) );
+            //PolySqlType type = this.sqlQueryInterface.getColumnType( table, column );
+            // TODO: find a solution without race
+            PolySqlType type = PolySqlType.INTEGER;
+            this.columns.put( table, new StatisticColumn( schema, table, column, type, val ) );
         } else {
             this.columns.get( table ).put( val );
         }
     }
 
-    //TODO: Rename
-    public void updateAll( String table, String column, stringList vals ) {
-        vals.forEach( val -> {
-            // still not sure if generic or not
-            update( table, column, val );
-        } );
-    }
 
-
-    public void updateAll( String table, String column, numericalList vals ) {
-        vals.forEach( val -> {
-            // still not sure if generic or not
-            update( table, column, val );
-        } );
-    }
-
-
-    public void update( String table, String column, String val ) {
+    private void add( String schema, String table, String column, PolySqlType type, T val ) {
         // TODO: switch back to {table = [columns], table = [columns]}
         if ( !this.columns.containsKey( column ) ) {
-            this.columns.put( column, new StatisticColumn( column, val ) );
+            this.columns.put( column, new StatisticColumn( schema, table, column, type, val ) );
         } else {
-            this.columns.get( column ).put( val );
+            this.columns.get( table ).put( val );
         }
+    }
+
+
+    public void addAll( String schema, String table, String column, PolySqlType type, List<T> vals ) {
+        vals.forEach( val -> {
+            // still not sure if generic or not
+            add( schema, table, column, type, val );
+        } );
     }
 
 
@@ -125,7 +122,7 @@ public class StatisticsStore implements Observer {
     private void reevaluateNumericalColumn( QueryColumn column ) {
         StatResult min = this.getAggregateColumn( column, "MIN" );
         StatResult max = this.getAggregateColumn( column, "MAX" );
-        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( column.getFullName() );
+        StatisticColumn<Integer> statisticColumn = new StatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
         statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
@@ -136,7 +133,7 @@ public class StatisticsStore implements Observer {
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatResult unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new StatisticColumn<>( column.getFullName() );
+        StatisticColumn<String> statisticColumn = new StatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ) );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
         this.columns.put( column.getFullName(), statisticColumn );
@@ -197,29 +194,32 @@ public class StatisticsStore implements Observer {
 
         im.registerInformation( explainInformation );
 
+        InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
+        im.addGroup( contentGroup );
 
-        /*
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "needs Update" ) );
+
+        columns.forEach( ( k, v ) -> {
+            statisticsInformation.addRow( k, v.getType().toString(), Boolean.toString( v.isNeedsUpdate() ) );
+        } );
+
+        im.registerInformation( statisticsInformation );
+
         Timer t2 = new Timer();
         t2.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
-                List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+                statisticsInformation.reset();
+                columns.forEach( ( k, v ) -> {
+                    if ( v.isNeedsUpdate() ) {
+                        statisticsInformation.addRow( k, v.getType().toString(), "✔" );
+                    } else {
+                        statisticsInformation.addRow( k, v.getType().toString(), "❌" );
+                    }
 
-                ArrayList<String> procNames = new ArrayList<>();
-                ArrayList<Double> procPerc = new ArrayList<>();
-                for ( int i = 0; i < procs.size() && i < 5; i++ ) {
-                    OSProcess proc = procs.get( i );
-                    double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();
-                    String name = proc.getName();
-                    procNames.add( name );
-                    procPerc.add( Math.round( cpuPerc * 10.0 ) / 10.0 );
-
-                }
-
-                GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
-                graph.updateGraph( procNames.toArray( new String[0] ), data2 );
+                } );
             }
-        }, 0, 5000 );*/
+        }, 0, 5000 );
     }
 
 
@@ -231,27 +231,17 @@ public class StatisticsStore implements Observer {
     public void apply( ArrayList<TransactionStat> stats ) {
         log.error( "applying" );
         stats.forEach( s -> {
-            log.error(s.getColumnName());
-            TransactionStatType type = s.getType();
-                // TODO: better prefiltering
+            log.error( s.getColumnName() );
+            TransactionStatType type = s.getTransactionType();
+            // TODO: better prefiltering
             if ( type == TransactionStatType.INSERT ) {
-                update( s.getTableName(), s.getColumnName(), s.getData()  );
+                add( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
             } else if ( type == TransactionStatType.DELETE ) {
                 // TODO: implement
             } else {
                 // TODO: implement
             }
         } );
-    }
-
-
-    interface numericalList extends List<Integer> {
-
-    }
-
-
-    interface stringList extends List<String> {
-
     }
 
 }

@@ -15,14 +15,18 @@ class TransactionStat {
     String table;
     @Getter
     String column;
+    @Getter
+    String data;
+    @Getter
+    TransactionStatType transactionType;
 
 
-    public TransactionStat( String schema, String table, String column, String data, TransactionStatType type ) {
+    public TransactionStat( String schema, String table, String column, String data, TransactionStatType transactionType ) {
         this.schema = schema;
         this.table = table;
         this.column = column;
         this.data = data;
-        this.type = type;
+        this.transactionType = transactionType;
     }
 
 
@@ -35,9 +39,4 @@ class TransactionStat {
         return getTableName() + "." + column;
     }
 
-
-    @Getter
-    String data;
-    @Getter
-    TransactionStatType type;
 }

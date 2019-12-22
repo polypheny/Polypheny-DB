@@ -444,7 +444,7 @@ public class Crud implements InformationObserver {
         String tableName = t[0] + "." + t[1];
         request.data.forEach( ( k, v ) -> log.error( tableName + "+" + k + "+" + v ) );
         request.data.forEach( ( k, v ) -> {
-            transaction.addStat( new TransactionStat( t[0], t[1], k, v , TransactionStatType.INSERT ) );
+            transaction.addStat( new TransactionStat( t[0], t[1], k, v , TransactionStatType.INSERT) );
         } );
 
         query.append( cols.toString() );

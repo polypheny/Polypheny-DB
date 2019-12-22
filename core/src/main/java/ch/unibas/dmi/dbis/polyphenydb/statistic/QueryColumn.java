@@ -43,12 +43,32 @@ class QueryColumn {
      * @return full name [schema].[table].[column]
      */
     public String getFullName() {
-        return getFullTableName() + "." + name;
+        return getFullName( schema, table, name );
     }
 
 
     public String getFullTableName() {
+        return getFullTableName( schema, table );
+    }
+
+
+    /**
+     * FullTableName Builder
+     * TODO: Move to different location
+     * @return fullTableName
+     */
+    public static String getFullTableName( String schema, String table ) {
         return schema + "." + table;
+    }
+
+
+    public static String getFullName( String schema, String table, String column ) {
+        return getFullTableName( schema, table ) + "." + column;
+    }
+
+
+    public static String[] getSplitColumn( String schemaTableColumn ) {
+        return schemaTableColumn.split( "\\." );
     }
 
 

@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
@@ -97,8 +98,8 @@ public class LowCostQueries implements InformationObserver {
      * @return result of the query
      */
     public StatQueryColumn selectOneStat( String query ) {
-        ArrayList<ArrayList<String>> db = getSchemaTree();
-        db.get( 0 ).forEach( System.out::println );
+        /*ArrayList<ArrayList<String>> db = getSchemaTree();
+        db.get( 0 ).forEach( System.out::println );*/
 
         return this.executeSqlSelect( query ).getColumns()[0];
     }
@@ -248,6 +249,35 @@ public class LowCostQueries implements InformationObserver {
     }
 
 
+    /**
+     * Method to get the type of a specific column
+     */
+    public PolySqlType getColumnType( String table, String column ) {
+        Transaction transaction = getTransaction();
+        // TODO: fix possible nullpointer
+        PolySqlType type = null;
+
+        log.error(table);
+        log.error( column );
+
+        try {
+            StatResult result = executeSqlSelect( "SELECT " + column + " FROM " + table + " LIMIT 1");
+            type = result.getColumns()[0].getType();
+            transaction.commit();
+
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+        return type;
+
+    }
+
+
     private StatResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
         StatResult result = new StatResult( new StatQueryColumn[]{} );
@@ -391,6 +421,7 @@ public class LowCostQueries implements InformationObserver {
     private int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
     }
+
 
 
     static class QueryExecutionException extends Exception {
