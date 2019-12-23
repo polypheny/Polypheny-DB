@@ -35,13 +35,14 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 
@@ -82,8 +83,7 @@ public abstract class AbstractJdbcStore extends Store {
         informationElements.add( connectionPoolSizeTable );
 
         ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable, dataSource );
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( connectionPoolSizeInfo, 0, 5, TimeUnit.SECONDS );
+        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update " + uniqueName + " JDBC conncetion pool size information", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
     }
 
 
@@ -97,7 +97,7 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    private static class ConnectionPoolSizeInfo implements Runnable {
+    private static class ConnectionPoolSizeInfo implements BackgroundTask {
 
         private final InformationGraph graph;
         private final InformationTable table;
@@ -112,7 +112,7 @@ public abstract class AbstractJdbcStore extends Store {
 
 
         @Override
-        public void run() {
+        public void backgroundTask() {
             int idle = dataSource.getNumIdle();
             int active = dataSource.getNumActive();
             int max = dataSource.getMaxTotal();
