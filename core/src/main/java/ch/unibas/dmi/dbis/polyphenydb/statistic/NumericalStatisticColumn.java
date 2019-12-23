@@ -76,8 +76,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Observabl
     }
 
 
-    public NumericalStatisticColumn( Observer observer, String[] splitColumn ) {
+    public NumericalStatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
         this( observer, splitColumn[0], splitColumn[1], splitColumn[2] );
+        this.type = type;
     }
 
 

@@ -67,10 +67,10 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
      */
     private void add( String schema, String table, String column, T val ) {
         if ( !this.columns.containsKey( column ) ) {
-            //PolySqlType type = this.sqlQueryInterface.getColumnType( schema, table, column );
+            PolySqlType type = this.sqlQueryInterface.getColumnType( column );
             //log.error(type.toString());
             // TODO: find a solution without race
-            PolySqlType type = PolySqlType.INTEGER;
+            // type = getColumnType
             this.columns.put( column, new AlphabeticStatisticColumn( observableQueue, schema, table, column, type, val ) );
         } else {
             this.columns.get( column ).put( val );
@@ -131,22 +131,19 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
         log.error( column.getFullName() );
         StatResult min = this.getAggregateColumn( column, "MIN" );
         StatResult max = this.getAggregateColumn( column, "MAX" );
-        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
+        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
         statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
-        log.error( "hai" );
         this.columns.put( column.getFullName(), statisticColumn );
-        log.error("addded here " + column.getFullName());
     }
 
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
-        log.error( "reval alpha" );
         log.error( column.getFullName() );
         StatResult unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ) );
+        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType()  );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
         this.columns.put( column.getFullName(), statisticColumn );

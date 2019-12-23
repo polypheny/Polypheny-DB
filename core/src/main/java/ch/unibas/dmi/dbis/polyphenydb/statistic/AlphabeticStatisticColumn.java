@@ -67,8 +67,9 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>, S> extends Obser
     }
 
 
-    public AlphabeticStatisticColumn( Observer observer, String[] splitColumn ) {
+    public AlphabeticStatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
         this( observer, splitColumn[0], splitColumn[1], splitColumn[2] );
+        this.type = type;
     }
 
 

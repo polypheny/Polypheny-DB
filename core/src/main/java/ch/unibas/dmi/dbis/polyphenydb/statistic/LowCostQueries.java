@@ -249,6 +249,13 @@ public class LowCostQueries implements InformationObserver {
     }
 
 
+    public PolySqlType getColumnType( String schemaTableColumn ) {
+        // TODO:
+        String[] splits = schemaTableColumn.split( "\\." );
+        return getColumnType( splits[0], splits[1], splits[2] );
+    }
+
+
     /**
      * Method to get the type of a specific column
      */
@@ -257,20 +264,13 @@ public class LowCostQueries implements InformationObserver {
         // TODO: fix possible nullpointer
         PolySqlType type = null;
 
-        log.error(table);
-        log.error( column );
-
         try {
-            // TODO: check if issue only on this branch
-            /*StatResult result = executeSqlSelect( "SELECT " + column + " FROM " + table + " LIMIT 1");
-            type = result.getColumns()[0].getType();*/
-
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             type = combinedDatabase
-                    .getSchemas().stream().filter( s -> s.getSchema().name.equals( schema ) ).findAny().orElse( null )
-                    .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findAny().orElse( null )
-                    .getColumns().stream().filter( c-> c.name.equals( column )).findAny().orElse( null ).type;
+                    .getSchemas().stream().filter( s -> s.getSchema().name.equals( schema ) ).findFirst().get()
+                    .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findFirst().get()
+                    .getColumns().stream().filter( c -> c.name.equals( column ) ).findFirst().get().type;
 
             transaction.commit();
 
@@ -362,7 +362,7 @@ public class LowCostQueries implements InformationObserver {
                 types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
                 System.out.println( metaData.columnName );
                 // TODO: reevaluate
-                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName);
+                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
 
                 /*DbColumn dbCol = new DbColumn(
                         metaData.columnName,
@@ -430,7 +430,6 @@ public class LowCostQueries implements InformationObserver {
     private int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
     }
-
 
 
     static class QueryExecutionException extends Exception {
