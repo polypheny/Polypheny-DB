@@ -28,10 +28,11 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import java.util.Arrays;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 public class JavaInformation {
@@ -71,13 +72,11 @@ public class JavaInformation {
         im.registerInformation( heapInfoTable );
 
         JavaHeapInfo heapInfoRunnable = new JavaHeapInfo( heapInfoGraph, heapInfoTable );
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( heapInfoRunnable, 0, 1, TimeUnit.MINUTES );
-
+        BackgroundTaskManager.INSTANCE.registerTask( heapInfoRunnable, "Update Java runtime information", TaskPriority.LOW, TaskSchedulingType.EVERY_MINUTE );
     }
 
 
-    static class JavaHeapInfo implements Runnable {
+    static class JavaHeapInfo implements BackgroundTask {
 
         private final InformationGraph graph;
         private final InformationTable table;
@@ -90,7 +89,7 @@ public class JavaInformation {
 
 
         @Override
-        public void run() {
+        public void backgroundTask() {
             // from: https://stackoverflow.com/questions/2015463/how-to-view-the-current-heap-size-that-an-application-is-using
             // Get current size of heap in bytes
             long current = Runtime.getRuntime().totalMemory();
