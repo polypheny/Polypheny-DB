@@ -157,6 +157,18 @@ public class CassandraSchema extends AbstractSchema {
         this.name = name;
     }
 
+    public CassandraSchema( Session session, String keyspace, SchemaPlus parentSchema, String name ) {
+        super();
+        this.session = session;
+        this.keyspace = keyspace;
+        this.parentSchema = parentSchema;
+        this.name = name;
+    }
+
+    public static CassandraSchema create( SchemaPlus parentSchema, String name, Session session, String keyspace ) {
+        return new CassandraSchema( session, keyspace, parentSchema, name );
+    }
+
 
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
         List<ColumnMetadata> columns;
