@@ -139,7 +139,8 @@ public class CassandraStore extends Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhyiscalTableName( qualifiedNames ).names.get( 0 );
+//        String physicalTableName = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhyiscalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = combinedTable.getTable().name;
         builder.append( "CREATE TABLE " ).append( physicalTableName ).append( " ( " );
         boolean first = true;
         for ( CatalogColumn column : combinedTable.getColumns() ) {

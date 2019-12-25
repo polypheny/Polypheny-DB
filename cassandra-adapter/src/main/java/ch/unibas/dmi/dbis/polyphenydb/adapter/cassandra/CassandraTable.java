@@ -84,21 +84,21 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     RelProtoDataType protoRowType;
     Pair<List<String>, List<String>> keyFields;
     List<RelFieldCollation> clusteringOrder;
-    private final CassandraSchema schema;
+    private final CassandraSchema cassandraSchema;
     private final String columnFamily;
     private final boolean view;
 
 
-    public CassandraTable( CassandraSchema schema, String columnFamily, boolean view ) {
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, boolean view ) {
         super( Object[].class );
-        this.schema = schema;
+        this.cassandraSchema = cassandraSchema;
         this.columnFamily = columnFamily;
         this.view = view;
     }
 
 
-    public CassandraTable( CassandraSchema schema, String columnFamily ) {
-        this( schema, columnFamily, false );
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily ) {
+        this( cassandraSchema, columnFamily, false );
     }
 
 
@@ -110,7 +110,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
-            protoRowType = schema.getRelDataType( columnFamily, view );
+            protoRowType = cassandraSchema.getRelDataType( columnFamily, view );
         }
         return protoRowType.apply( typeFactory );
     }
@@ -118,7 +118,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public Pair<List<String>, List<String>> getKeyFields() {
         if ( keyFields == null ) {
-            keyFields = schema.getKeyFields( columnFamily, view );
+            keyFields = cassandraSchema.getKeyFields( columnFamily, view );
         }
         return keyFields;
     }
@@ -126,7 +126,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public List<RelFieldCollation> getClusteringOrder() {
         if ( clusteringOrder == null ) {
-            clusteringOrder = schema.getClusteringOrder( columnFamily, view );
+            clusteringOrder = cassandraSchema.getClusteringOrder( columnFamily, view );
         }
         return clusteringOrder;
     }
@@ -266,7 +266,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      *
      * @param <T> element type
      */
-    public static class CassandraQueryable<T> extends AbstractTableQueryable<T> {
+    public class CassandraQueryable<T> extends AbstractTableQueryable<T> {
 
         public CassandraQueryable( QueryProvider queryProvider, SchemaPlus schema, CassandraTable table, String tableName ) {
             super( queryProvider, schema, table, tableName );
@@ -304,7 +304,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
                 List<String> order,
                 Integer offset,
                 Integer fetch ) {
-            return getTable().query( getSession(), fields, selectFields, predicates, order, offset, fetch );
+            return getTable().query( cassandraSchema.getSession(), fields, selectFields, predicates, order, offset, fetch );
         }
     }
 }

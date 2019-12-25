@@ -72,14 +72,18 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
 
 /**
  * Schema mapped onto a Cassandra column family
  */
+@Slf4j
 public class CassandraSchema extends AbstractSchema {
 
+    @Getter
     final Session session;
     final String keyspace;
     private final SchemaPlus parentSchema;
@@ -171,6 +175,8 @@ public class CassandraSchema extends AbstractSchema {
 
 
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
+        log.info( "getRelDataType: {}", columnFamily );
+//        String physicalTableName =
         List<ColumnMetadata> columns;
         if ( view ) {
             columns = getKeyspace().getMaterializedView( "\"" + columnFamily + "\"" ).getColumns();
