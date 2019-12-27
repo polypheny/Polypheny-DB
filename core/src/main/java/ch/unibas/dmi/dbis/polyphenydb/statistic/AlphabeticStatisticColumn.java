@@ -123,4 +123,16 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>, S> extends Obser
     public void removeAll( List<T> vals ) {
         vals.forEach( this::remove );
     }
+
+
+    @Override
+    public void deleteValue( T val ) {
+        uniqueValues.remove( val );
+    }
+
+
+    @Override
+    public void updateValue( T oldVal, T newVal ) {
+        uniqueValues.update(oldVal, newVal);
+    }
 }

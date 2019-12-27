@@ -16,6 +16,7 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,15 +67,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
      * @param column column name in form [schema].[table].[column]
      */
     private void add( String schema, String table, String column, T val ) {
-        if ( !this.columns.containsKey( column ) ) {
-            PolySqlType type = this.sqlQueryInterface.getColumnType( column );
-            //log.error(type.toString());
-            // TODO: find a solution without race
-            // type = getColumnType
-            this.columns.put( column, new AlphabeticStatisticColumn( observableQueue, schema, table, column, type, val ) );
-        } else {
-            this.columns.get( column ).put( val );
-        }
+        PolySqlType type = this.sqlQueryInterface.getColumnType( column );
+        add( schema, table, column, type, val );
     }
 
 
@@ -97,7 +91,16 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
 
     public void remove( String schema, String table, String column, T val ) {
-        this.columns.get( column ).remove( val );
+        if ( this.columns.containsKey( column ) ) {
+            this.columns.get( column ).remove( val );
+        }
+    }
+
+
+    public void update( String schema, String table, String column, T oldValue, T newValue ) {
+        if ( this.columns.containsKey( column ) ) {
+            this.columns.get( column ).updateValue( oldValue, newValue );
+        }
     }
 
 
@@ -143,7 +146,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
         log.error( column.getFullName() );
         StatResult unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType()  );
+        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         // TODO: rewrite -> change StatisticColumn to use cache
         statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
         this.columns.put( column.getFullName(), statisticColumn );
@@ -241,7 +244,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
                     if ( v instanceof NumericalStatisticColumn ) {
                         numericalInformation.addRow( k, ((NumericalStatisticColumn) v).min().toString(), ((NumericalStatisticColumn) v).max().toString() );
                     } else {
-                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v ).getUniqueValues().keySet().toString());
+                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v).getUniqueValues().keySet().toString() );
                     }
 
                 } );

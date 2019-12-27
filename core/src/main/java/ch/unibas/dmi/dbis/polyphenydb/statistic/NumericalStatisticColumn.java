@@ -180,4 +180,5 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Observabl
     public void removeAll( List<T> vals) {
         vals.forEach( this::remove );
     }
+
 }

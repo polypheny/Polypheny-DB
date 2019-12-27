@@ -1,6 +1,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.statistic.model;
 
 
+import com.google.gson.annotations.Expose;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public
 class LimitedOccurrenceMap<K> {
 
     private int maxSize;
-
+    @Expose
     private TreeMap<K, Integer> map;
 
 
@@ -90,7 +91,7 @@ class LimitedOccurrenceMap<K> {
 
 
     /**
-     * Method changes the occurrence counter of a given value by a specified amount if it exists
+     * Method changes the occurrence counter of a given value by one
      *
      * @param key the value which gets changed
      */
@@ -117,4 +118,16 @@ class LimitedOccurrenceMap<K> {
         return map.keySet();
     }
 
+
+    public boolean contains( K val ) {
+        return map.containsKey( val );
+    }
+
+
+    public void update( K oldVal, K newVal ) {
+        if(map.containsKey( oldVal )){
+            remove( oldVal );
+            put( newVal );
+        }
+    }
 }

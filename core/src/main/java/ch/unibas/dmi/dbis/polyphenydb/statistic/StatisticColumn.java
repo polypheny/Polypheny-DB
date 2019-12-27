@@ -26,7 +26,12 @@ public interface StatisticColumn<T> {
 
     void removeAll( List<T> vals );
 
+    void deleteValue( T val );
+
+    void updateValue( T oldVal, T newVal );
+
     PolySqlType getType();
 
     boolean isUpdated();
+
 }
