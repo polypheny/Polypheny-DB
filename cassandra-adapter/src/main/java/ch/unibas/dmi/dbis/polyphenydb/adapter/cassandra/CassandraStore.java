@@ -38,14 +38,19 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+
 
 
 @Slf4j
@@ -92,15 +97,15 @@ public class CassandraStore extends Store {
             contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
             if ( this.dbUsername != null && this.dbPassword != null ) {
                 cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
-//                cluster = cluster.addContactPointsWithPorts( contactPoints ).withCredentials( this.dbUsername, this.dbPassword ).build();
             } else {
                 cluster.addContactPoints( contactPoints );
-//                cluster = cluster.addContactPointsWithPorts( contactPoints ).build();
             }
-//            cluster.withKeyspace( this.dbKeyspace );
             CqlSession mySession;
             mySession = cluster.build();
             try {
+                CreateKeyspace createKs = SchemaBuilder.createKeyspace( this.dbKeyspace ).ifNotExists().withSimpleStrategy( 1 );
+                mySession.execute( createKs.build(  ) );
+//                SimpleStatement.builder( "USE " + this.dbKeyspace );
                 mySession.execute( "USE " + this.dbKeyspace );
 //                mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
 //                mySession = cluster.connect( this.dbKeyspace );
@@ -142,43 +147,25 @@ public class CassandraStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogCombinedTable combinedTable ) {
-        // TODO: Implement proper quoting
-//        log.warn( "createTable is not implemented yet." );
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-//        String physicalTableName = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhyiscalTableName( qualifiedNames ).names.get( 0 );
         String physicalTableName = combinedTable.getTable().name;
-        builder.append( "CREATE TABLE " ).append( physicalTableName ).append( " ( " );
-        boolean first = true;
-        for ( CatalogColumn column : combinedTable.getColumns() ) {
-            if ( !first ) {
-                builder.append( ", " );
-            }
-            builder.append( column.name ).append( " " );
-            builder.append( getTypeString( column.type ) );
-            if ( column.length != null ) {
-                builder.append( "(" ).append( column.length );
-                if ( column.scale != null ) {
-                    builder.append( "," ).append( column.scale );
-                }
-                builder.append( ")" );
-            }
-            if ( first ) {
-                builder.append( " PRIMARY KEY " );
-            }
-            first = false;
-        }
-        builder.append( ")" );
-        executeUpdate( builder );
+        List<CatalogColumn> columns = combinedTable.getColumns();
+        CatalogColumn column = columns.remove( 0 );
+        CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
+                .withPartitionKey( column.name, getDataType( column.type ) );
+
+        columns.forEach( c -> {
+            createTable.withColumn( c.name, getDataType( c.type ) );
+        } );
+
+        this.session.execute( createTable.build(  ) );
     }
 
 
     @Override
     public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
-        // TODO: Implement
-        log.warn( "dropTable is not implemented yet." );
+        String physicalTableName = combinedTable.getTable().name;
+        SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build(  );
+        this.session.execute( dropTable );
     }
 
 
@@ -253,6 +240,37 @@ public class CassandraStore extends Store {
     protected void reloadSettings( List<String> updatedSettings ) {
         // TODO: Implement
         log.warn( "reloadSettings is not implemented yet." );
+    }
+
+
+    private DataType getDataType( PolySqlType polySqlType ) {
+        switch ( polySqlType ) {
+            case BOOLEAN:
+                return DataTypes.BOOLEAN;
+            case VARBINARY:
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
+            case INTEGER:
+                return DataTypes.INET;
+            case BIGINT:
+                return DataTypes.BIGINT;
+            case REAL:
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
+            case DOUBLE:
+                return DataTypes.DOUBLE;
+            case DECIMAL:
+                return DataTypes.DECIMAL;
+            case VARCHAR:
+                return DataTypes.TEXT;
+            case TEXT:
+                return DataTypes.TEXT;
+            case DATE:
+                return DataTypes.DATE;
+            case TIME:
+                return DataTypes.TIME;
+            case TIMESTAMP:
+                return DataTypes.TIMESTAMP;
+        }
+        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
     }
 
 
