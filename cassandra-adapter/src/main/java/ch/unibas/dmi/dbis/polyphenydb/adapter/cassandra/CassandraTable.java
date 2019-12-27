@@ -62,8 +62,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
@@ -132,7 +132,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
-    public Enumerable<Object> query( final Session session ) {
+    public Enumerable<Object> query( final CqlSession session ) {
         return query( session, ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), 0, -1 );
     }
 
@@ -146,7 +146,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      * @return Enumerator of results
      */
     public Enumerable<Object> query(
-            final Session session,
+            final CqlSession session,
             List<Map.Entry<String, Class>> fields,
             final List<Map.Entry<String, String>> selectFields,
             List<String> predicates,
@@ -286,7 +286,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         }
 
 
-        private Session getSession() {
+        private CqlSession getSession() {
             return schema.unwrap( CassandraSchema.class ).session;
         }
 

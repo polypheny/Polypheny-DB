@@ -36,10 +36,10 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -72,7 +72,7 @@ public class CassandraStore extends Store {
     private String dbPassword;
 
 
-    private final Session session;
+    private final CqlSession session;
     private CassandraSchema currentSchema;
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
@@ -86,22 +86,31 @@ public class CassandraStore extends Store {
         this.dbPassword = settings.get( "password" );
 
         try {
-            Cluster cluster;
+            CqlSessionBuilder cluster = CqlSession.builder();
+            cluster.withLocalDatacenter( "datacenter1" );
             List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
             contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
             if ( this.dbUsername != null && this.dbPassword != null ) {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).withCredentials( this.dbUsername, this.dbPassword ).build();
+                cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
+//                cluster = cluster.addContactPointsWithPorts( contactPoints ).withCredentials( this.dbUsername, this.dbPassword ).build();
             } else {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).build();
+                cluster.addContactPoints( contactPoints );
+//                cluster = cluster.addContactPointsWithPorts( contactPoints ).build();
             }
-            Session mySession;
+//            cluster.withKeyspace( this.dbKeyspace );
+            CqlSession mySession;
+            mySession = cluster.build();
             try {
-                mySession = cluster.connect( this.dbKeyspace );
+                mySession.execute( "USE " + this.dbKeyspace );
+//                mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
+//                mySession = cluster.connect( this.dbKeyspace );
             } catch ( Exception e ) {
-                Session tempSession = cluster.newSession();
-                tempSession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
-                tempSession.close();
-                mySession = cluster.connect( this.dbKeyspace );
+                log.warn( "Unable to use keyspace {}.", this.dbKeyspace, e );
+//                CqlSession tempSession = cluster.build();
+                mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
+                mySession.execute( "USE KEYSPACE " + this.dbKeyspace );
+//                tempSession.close();
+//                mySession = cluster.build();
             }
             this.session = mySession;
         } catch ( Exception e ) {

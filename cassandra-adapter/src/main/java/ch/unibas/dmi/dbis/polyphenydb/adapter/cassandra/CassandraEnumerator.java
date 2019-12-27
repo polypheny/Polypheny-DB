@@ -51,9 +51,10 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
@@ -71,7 +72,7 @@ class CassandraEnumerator implements Enumerator<Object> {
     /**
      * Creates a CassandraEnumerator.
      *
-     * @param results Cassandra result set ({@link com.datastax.driver.core.ResultSet})
+     * @param results Cassandra result set ({@link com.datastax.oss.driver.api.core.cql.ResultSet})
      * @param protoRowType The type of resulting rows
      */
     CassandraEnumerator( ResultSet results, RelProtoDataType protoRowType ) {
@@ -111,19 +112,19 @@ class CassandraEnumerator implements Enumerator<Object> {
      * @param typeName Type of the field in this row
      */
     private Object currentRowField( int index, SqlTypeName typeName ) {
-        DataType type = current.getColumnDefinitions().getType( index );
-        if ( type == DataType.ascii() || type == DataType.text() || type == DataType.varchar() ) {
+        DataType type = current.getColumnDefinitions().get( index ).getType();
+        if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
             return current.getString( index );
-        } else if ( type == DataType.cint() || type == DataType.varint() ) {
+        } else if ( type == DataTypes.INT || type == DataTypes.VARINT ) {
             return current.getInt( index );
-        } else if ( type == DataType.bigint() ) {
+        } else if ( type == DataTypes.BIGINT ) {
             return current.getLong( index );
-        } else if ( type == DataType.cdouble() ) {
+        } else if ( type == DataTypes.DOUBLE ) {
             return current.getDouble( index );
-        } else if ( type == DataType.cfloat() ) {
+        } else if ( type == DataTypes.FLOAT ) {
             return current.getFloat( index );
-        } else if ( type == DataType.uuid() || type == DataType.timeuuid() ) {
-            return current.getUUID( index ).toString();
+        } else if ( type == DataTypes.UUID || type == DataTypes.TIMEUUID ) {
+            return current.getUuid( index ).toString();
         } else {
             return null;
         }
