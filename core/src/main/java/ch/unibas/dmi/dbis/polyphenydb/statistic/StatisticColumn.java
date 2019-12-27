@@ -2,36 +2,62 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import java.util.List;
+import com.google.gson.annotations.Expose;
+import java.util.Observable;
+import java.util.Observer;
+import lombok.Getter;
 
 
 /**
  * Stores the available statistic data of a specific column
- * Responsible to validate if data should be changed
+ * If is responsible to ask for a update if it falls out of "sync"
  */
 
-public interface StatisticColumn<T> {
+public abstract class StatisticColumn<T extends Comparable<T>> extends Observable {
+
+    @Getter
+    private final String schema;
+    @Getter
+    private final String table;
+    @Getter
+    private final String column;
+    @Getter
+    private final PolySqlType type;
+
+    @Expose
+    @Getter
+    public int count;
+
+    @Getter
+    private int listBufferSize = 5;
 
 
-    /**
-     * insert possible valuable information into the column
-     */
-    void put( T val );
+    @Getter
+    private boolean updated = true;
 
-    void putAll( List<T> vals );
 
-    String toString();
+    public StatisticColumn( Observer observer, String schema, String table, String column, PolySqlType type ) {
+        this.schema = schema;
+        this.table = table;
+        this.column = column;
+        this.addObserver( observer );
+        this.type = type;
+    }
 
-    void remove( T val );
 
-    void removeAll( List<T> vals );
+    public StatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
+        this( observer, splitColumn[0], splitColumn[1], splitColumn[2], type );
+    }
 
-    void deleteValue( T val );
 
-    void updateValue( T oldVal, T newVal );
+    private void requestUpdate() {
+        setChanged();
+        notifyObservers( column );
+    }
 
-    PolySqlType getType();
 
-    boolean isUpdated();
+    public abstract void insert( T val );
 
+
+    public abstract String toString();
 }

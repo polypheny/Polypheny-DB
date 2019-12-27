@@ -628,7 +628,7 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      * TODO: potentially change all to specific statistics
      */
-    HashMap<String, StatisticColumn> getStatistics() {
+    HashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
         return store.getColumns();
     }
 

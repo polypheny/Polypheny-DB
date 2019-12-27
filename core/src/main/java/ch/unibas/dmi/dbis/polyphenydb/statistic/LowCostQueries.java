@@ -363,14 +363,6 @@ public class LowCostQueries implements InformationObserver {
                 System.out.println( metaData.columnName );
                 // TODO: reevaluate
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
-
-                /*DbColumn dbCol = new DbColumn(
-                        metaData.columnName,
-                        metaData.type.name,
-                        metaData.nullable == ResultSetMetaData.columnNullable,
-                        metaData.displaySize,
-                        new SortState(),
-                        "" );*/
             }
 
             ArrayList<String[]> data = new ArrayList<>();
@@ -387,11 +379,6 @@ public class LowCostQueries implements InformationObserver {
                 }
                 data.add( temp );
             }
-            data.forEach( e -> {
-                System.out.println( Arrays.toString( e ) );
-            } );
-            types.forEach( System.out::println );
-
             // TODO: own result object?
             return new StatResult( names, types, data.toArray( new String[0][] ) );
         } finally {

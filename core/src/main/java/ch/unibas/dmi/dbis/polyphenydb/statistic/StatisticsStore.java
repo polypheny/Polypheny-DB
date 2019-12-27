@@ -16,7 +16,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,9 +52,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     }
 
 
-    private void add( String schemaTableColumn, T val ) {
+    private void insert( String schemaTableColumn, T val ) {
         String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
-        add( splits[0], splits[1], splits[2], val );
+        insert( splits[0], splits[1], splits[2], val );
     }
 
 
@@ -66,41 +65,34 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
      * @param table table name in form [schema].[table]
      * @param column column name in form [schema].[table].[column]
      */
-    private void add( String schema, String table, String column, T val ) {
+    private void insert( String schema, String table, String column, T val ) {
         PolySqlType type = this.sqlQueryInterface.getColumnType( column );
-        add( schema, table, column, type, val );
+        insert( schema, table, column, type, val );
     }
 
 
-    private void add( String schema, String table, String column, PolySqlType type, T val ) {
+    private void insert( String schema, String table, String column, PolySqlType type, T val ) {
         // TODO: switch back to {table = [columns], table = [columns]}
         if ( !this.columns.containsKey( column ) ) {
-            this.columns.put( column, new AlphabeticStatisticColumn( observableQueue, schema, table, column, type, val ) );
-        } else {
-            this.columns.get( column ).put( val );
+            addColumn( column, type );
+        }
+        columns.get( column ).insert( val );
+    }
+
+
+    private void addColumn( String column, PolySqlType type ) {
+        if ( type.isNumericalType() ) {
+            this.columns.put( column, new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column ), type ) );
+        } else if ( type.isCharType() ) {
+            this.columns.put( column, new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column ), type ) );
         }
     }
 
 
     public void addAll( String schema, String table, String column, PolySqlType type, List<T> vals ) {
         vals.forEach( val -> {
-            // still not sure if generic or not
-            add( schema, table, column, type, val );
+            insert( schema, table, column, type, val );
         } );
-    }
-
-
-    public void remove( String schema, String table, String column, T val ) {
-        if ( this.columns.containsKey( column ) ) {
-            this.columns.get( column ).remove( val );
-        }
-    }
-
-
-    public void update( String schema, String table, String column, T oldValue, T newValue ) {
-        if ( this.columns.containsKey( column ) ) {
-            this.columns.get( column ).updateValue( oldValue, newValue );
-        }
     }
 
 
@@ -118,58 +110,50 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
                 this.reevaluateAlphabeticalColumn( column );
             }
 
-
         }
-
-    }
-
-
-    private void reevaluteTable( String tableName ) {
 
     }
 
 
     private void reevaluateNumericalColumn( QueryColumn column ) {
-        log.error( "reval numerical" );
-        log.error( column.getFullName() );
-        StatResult min = this.getAggregateColumn( column, "MIN" );
-        StatResult max = this.getAggregateColumn( column, "MAX" );
+        StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
+        StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
+        StatQueryColumn unique = this.getUniqueValues( column );
         NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        // TODO: rewrite -> change StatisticColumn to use cache
-        statisticColumn.setMin( StatResult.toOccurrenceMap( min ) );
-        statisticColumn.setMax( StatResult.toOccurrenceMap( max ) );
+        statisticColumn.setMin( Integer.parseInt( min.getData()[0] ) );
+        statisticColumn.setMax( Integer.parseInt( max.getData()[0] ) );
+        statisticColumn.setUnique( Arrays.asList( unique.getData() ) );
+
         this.columns.put( column.getFullName(), statisticColumn );
     }
 
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
-        log.error( column.getFullName() );
-        StatResult unique = this.getUniqueValues( column );
+        StatQueryColumn unique = this.getUniqueValues( column );
 
-        StatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        // TODO: rewrite -> change StatisticColumn to use cache
-        statisticColumn.putAll( Arrays.asList( unique.getColumns()[0].getData() ) );
+        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+
         this.columns.put( column.getFullName(), statisticColumn );
     }
 
 
     /**
-     * Method to get a generic Aggregate Stat with its occurrences
-     * TODO: more like min and max atm
+     * Method to get a generic Aggregate Stat
      *
-     * @return a StatResult which contains the values and their occurences
+     * @return a StatQueryColumn which contains the requested value
      */
-    private StatResult getAggregateColumn( QueryColumn column, String aggregate ) {
-        String order = "ASC";
-        if ( aggregate.equals( "MAX" ) ) {
-            order = "DESC";
-        }
-        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + column.getFullName() + ", count(" + column.getFullName() + ") FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " ORDER BY " + column.getFullName() + " " + order );
+    private StatQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
+        return getAggregateColumn( column.getFullName(), column.getFullTableName(), aggregate );
+    }
+
+    private StatQueryColumn getAggregateColumn( String column, String table, String aggregate ) {
+        return this.sqlQueryInterface.selectOneStat( "SELECT " + aggregate + " (" + column + ") FROM " + table + " " );
     }
 
 
-    private StatResult getUniqueValues( QueryColumn column ) {
-        return this.sqlQueryInterface.selectMultipleStats( "SELECT " + column.getFullName() + ", count(" + column.getFullName() + ") FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " ORDER BY " + column.getFullName() );
+    private StatQueryColumn getUniqueValues( QueryColumn column ) {
+        return this.sqlQueryInterface.selectOneStat( "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " " );
     }
 
 
@@ -242,9 +226,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
                 alphabeticalInformation.reset();
                 columns.forEach( ( k, v ) -> {
                     if ( v instanceof NumericalStatisticColumn ) {
-                        numericalInformation.addRow( k, ((NumericalStatisticColumn) v).min().toString(), ((NumericalStatisticColumn) v).max().toString() );
+                        numericalInformation.addRow( k, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
                     } else {
-                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v).getUniqueValues().keySet().toString() );
+                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v).getUniqueValues().toString() );
                     }
 
                 } );
@@ -265,7 +249,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
             TransactionStatType type = s.getTransactionType();
             // TODO: better prefiltering
             if ( type == TransactionStatType.INSERT ) {
-                add( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
+                insert( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
             } else if ( type == TransactionStatType.DELETE ) {
                 // TODO: implement
             } else if ( type == TransactionStatType.UPDATE ) {
