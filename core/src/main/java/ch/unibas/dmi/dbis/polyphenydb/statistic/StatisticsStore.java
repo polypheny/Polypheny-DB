@@ -10,36 +10,34 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Stores all available statistics and updates them dynamically
+ * Stores all available statistics and updates INSERTs dynamically
+ * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> implements Observer {
+public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private static StatisticsStore instance = null;
-    private ObservableQueue observableQueue = new ObservableQueue();
 
     @Getter
-    public HashMap<String, StatisticColumn> columns;
+    public ConcurrentHashMap<String, StatisticColumn> columns;
 
+    private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
     private LowCostQueries sqlQueryInterface;
 
 
     private StatisticsStore() {
-        this.columns = new HashMap<>();
+        this.columns = new ConcurrentHashMap<>();
         displayInformation();
 
-        observableQueue.run();
     }
 
 
@@ -82,9 +80,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
     private void addColumn( String column, PolySqlType type ) {
         if ( type.isNumericalType() ) {
-            this.columns.put( column, new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column ), type ) );
+            this.columns.put( column, new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column ), type ) );
         } else if ( type.isCharType() ) {
-            this.columns.put( column, new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column ), type ) );
+            this.columns.put( column, new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column ), type ) );
         }
     }
 
@@ -119,7 +117,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
         StatQueryColumn unique = this.getUniqueValues( column );
-        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setMin( Integer.parseInt( min.getData()[0] ) );
         statisticColumn.setMax( Integer.parseInt( max.getData()[0] ) );
         statisticColumn.setUnique( Arrays.asList( unique.getData() ) );
@@ -131,7 +129,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatQueryColumn unique = this.getUniqueValues( column );
 
-        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( observableQueue, QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
@@ -146,6 +144,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
     private StatQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
         return getAggregateColumn( column.getFullName(), column.getFullTableName(), aggregate );
     }
+
 
     private StatQueryColumn getAggregateColumn( String column, String table, String aggregate ) {
         return this.sqlQueryInterface.selectOneStat( "SELECT " + aggregate + " (" + column + ") FROM " + table + " " );
@@ -162,12 +161,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
 
         this.reevaluateStore();
 
-    }
-
-
-    @Override
-    public void update( Observable o, Object arg ) {
-        log.debug( arg.toString() );
     }
 
 
@@ -225,8 +218,13 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
                 numericalInformation.reset();
                 alphabeticalInformation.reset();
                 columns.forEach( ( k, v ) -> {
-                    if ( v instanceof NumericalStatisticColumn ) {
-                        numericalInformation.addRow( k, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                    if ( v instanceof NumericalStatisticColumn) {
+                        if (((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ){
+                            numericalInformation.addRow( k, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                        }else {
+                            numericalInformation.addRow( k, "❌", "❌");
+                        }
+
                     } else {
                         alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v).getUniqueValues().toString() );
                     }
@@ -250,12 +248,27 @@ public class StatisticsStore<T extends Comparable<T>> implements Observer {
             // TODO: better prefiltering
             if ( type == TransactionStatType.INSERT ) {
                 insert( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
-            } else if ( type == TransactionStatType.DELETE ) {
-                // TODO: implement
-            } else if ( type == TransactionStatType.UPDATE ) {
-                // TODO: implement
+            } else if ( type == TransactionStatType.DELETE || type == TransactionStatType.UPDATE ) {
+                // TODO: wait to be evalutated
+
+                if ( columns.containsKey( s.getColumnName() ) ) {
+                    columns.get( s.getColumnName() ).setUpdated( false );
+                    columnsToUpdate.put( s.getColumnName(), columns.get( s.getColumnName() ).getType() );
+                } else {
+                    columnsToUpdate.put( s.getColumnName(), sqlQueryInterface.getColumnType( s.getColumnName() ) );
+                }
+
             }
         } );
     }
 
+
+    @Override
+    public void run() {
+        columnsToUpdate.forEach( ( column, type ) -> {
+            columns.remove( column );
+            addColumn( column, type );
+        } );
+        columnsToUpdate.clear();
+    }
 }

@@ -30,6 +30,14 @@ class TransactionStat {
     }
 
 
+    public TransactionStat( String schema, String table, String column, TransactionStatType transactionType ) {
+        this.schema = schema;
+        this.table = table;
+        this.column = column;
+        this.transactionType = transactionType;
+    }
+
+
     public String getTableName() {
         return schema + "." + table;
     }

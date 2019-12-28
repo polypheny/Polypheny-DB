@@ -115,6 +115,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -628,7 +629,7 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      * TODO: potentially change all to specific statistics
      */
-    HashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
+    ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
         return store.getColumns();
     }
 
@@ -649,6 +650,7 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition;
             if ( entry.getValue() == null ) {
@@ -658,14 +660,18 @@ public class Crud implements InformationObserver {
             } else {
                 condition = String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() );
             }
+            column = entry.getKey();
             joiner.add( condition );
         }
         builder.append( joiner.toString() );
+
+
 
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
+                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.DELETE) );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -694,6 +700,7 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         builder.append( "UPDATE " ).append( tableId ).append( " SET " );
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
+        String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
@@ -702,6 +709,7 @@ public class Crud implements InformationObserver {
             } else {
                 setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
             }
+            column = entry.getKey();
         }
         builder.append( setStatements.toString() );
 
@@ -715,6 +723,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
+                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.UPDATE ) );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {

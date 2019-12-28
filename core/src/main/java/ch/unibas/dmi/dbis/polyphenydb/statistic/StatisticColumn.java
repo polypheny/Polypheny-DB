@@ -3,9 +3,8 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import com.google.gson.annotations.Expose;
-import java.util.Observable;
-import java.util.Observer;
 import lombok.Getter;
+import lombok.Setter;
 
 
 /**
@@ -13,7 +12,7 @@ import lombok.Getter;
  * If is responsible to ask for a update if it falls out of "sync"
  */
 
-public abstract class StatisticColumn<T extends Comparable<T>> extends Observable {
+public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Getter
     private final String schema;
@@ -33,26 +32,20 @@ public abstract class StatisticColumn<T extends Comparable<T>> extends Observabl
 
 
     @Getter
+    @Setter
     private boolean updated = true;
 
 
-    public StatisticColumn( Observer observer, String schema, String table, String column, PolySqlType type ) {
+    public StatisticColumn( String schema, String table, String column, PolySqlType type ) {
         this.schema = schema;
         this.table = table;
         this.column = column;
-        this.addObserver( observer );
         this.type = type;
     }
 
 
-    public StatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
-        this( observer, splitColumn[0], splitColumn[1], splitColumn[2], type );
-    }
-
-
-    private void requestUpdate() {
-        setChanged();
-        notifyObservers( column );
+    public StatisticColumn( String[] splitColumn, PolySqlType type ) {
+        this( splitColumn[0], splitColumn[1], splitColumn[2], type );
     }
 
 

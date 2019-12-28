@@ -24,13 +24,13 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     private List<T> uniqueValues = new ArrayList<>();
 
 
-    public AlphabeticStatisticColumn( Observer observer, String schema, String table, String column, PolySqlType type ) {
-        super( observer, schema, table, column, type );
+    public AlphabeticStatisticColumn( String schema, String table, String column, PolySqlType type ) {
+        super( schema, table, column, type );
     }
 
 
-    public AlphabeticStatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
-        super( observer, splitColumn[0], splitColumn[1], splitColumn[2], type );
+    public AlphabeticStatisticColumn( String[] splitColumn, PolySqlType type ) {
+        super( splitColumn[0], splitColumn[1], splitColumn[2], type );
     }
 
 

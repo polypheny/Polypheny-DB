@@ -34,13 +34,13 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private T max;
 
 
-    public NumericalStatisticColumn( Observer observer, String schema, String table, String column, PolySqlType type ) {
-        super( observer, schema, table, column, type );
+    public NumericalStatisticColumn( String schema, String table, String column, PolySqlType type ) {
+        super( schema, table, column, type );
     }
 
 
-    public NumericalStatisticColumn( Observer observer, String[] splitColumn, PolySqlType type ) {
-        super( observer, splitColumn, type );
+    public NumericalStatisticColumn( String[] splitColumn, PolySqlType type ) {
+        super( splitColumn, type );
     }
 
 
@@ -51,10 +51,12 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
                 uniqueValues.add( val );
             }
         }
-        if(val.compareTo( min ) < 0) {
+        if( min == null){
+            min = val;
+            max = val;
+        }else if(val.compareTo( min ) < 0) {
             this.min = val;
-        }
-        if(val.compareTo( max ) > 0) {
+        }else if(val.compareTo( max ) > 0) {
             this.max = val;
         }
     }

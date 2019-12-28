@@ -351,16 +351,11 @@ public class LowCostQueries implements InformationObserver {
         }
 
         try {
-            CatalogTable catalogTable = null;
-
-            //ArrayList<DbColumn> header = new ArrayList<>();
             ArrayList<PolySqlType> types = new ArrayList<>();
             ArrayList<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
-                String columnName = metaData.columnName;
 
                 types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
-                System.out.println( metaData.columnName );
                 // TODO: reevaluate
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
