@@ -80,6 +80,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -101,9 +105,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -171,8 +172,7 @@ public class DbmsMeta implements ProtobufMeta {
         im.registerInformation( connectionNumberTable );
 
         ConnectionNumberInfo connectionPoolSizeInfo = new ConnectionNumberInfo( connectionNumberTable );
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( connectionPoolSizeInfo, 0, 5, TimeUnit.SECONDS );
+        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update JDBC Interface connection pool size", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
     }
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -1395,7 +1395,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private static class ConnectionNumberInfo implements Runnable {
+    private static class ConnectionNumberInfo implements BackgroundTask {
 
         private final InformationTable table;
 
@@ -1406,7 +1406,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
         @Override
-        public void run() {
+        public void backgroundTask() {
             table.reset();
             table.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
             table.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
