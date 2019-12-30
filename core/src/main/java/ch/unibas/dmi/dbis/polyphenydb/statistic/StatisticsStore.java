@@ -117,10 +117,10 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
         StatQueryColumn unique = this.getUniqueValues( column );
-        NumericalStatisticColumn<Integer> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        statisticColumn.setMin( Integer.parseInt( min.getData()[0] ) );
-        statisticColumn.setMax( Integer.parseInt( max.getData()[0] ) );
-        statisticColumn.setUnique( Arrays.asList( unique.getData() ) );
+        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        statisticColumn.setMin( min.getData()[0] );
+        statisticColumn.setMax( max.getData()[0] );
+        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
