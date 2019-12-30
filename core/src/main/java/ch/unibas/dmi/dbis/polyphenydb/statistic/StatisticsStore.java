@@ -8,6 +8,10 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> implements Runnable {
+public class StatisticsStore<T extends Comparable<T>> {
 
     private static StatisticsStore instance = null;
 
@@ -37,6 +41,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     private StatisticsStore() {
         this.columns = new ConcurrentHashMap<>();
         displayInformation();
+
+        BackgroundTaskManager.INSTANCE.registerTask( new StatisticsStoreWorker(), "Updated unsynced Statistic Columns.", TaskPriority.LOW, TaskSchedulingType.EVERY_TEN_SECONDS );
 
     }
 
@@ -218,11 +224,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                 numericalInformation.reset();
                 alphabeticalInformation.reset();
                 columns.forEach( ( k, v ) -> {
-                    if ( v instanceof NumericalStatisticColumn) {
-                        if (((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ){
+                    if ( v instanceof NumericalStatisticColumn ) {
+                        if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
                             numericalInformation.addRow( k, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
-                        }else {
-                            numericalInformation.addRow( k, "❌", "❌");
+                        } else {
+                            numericalInformation.addRow( k, "❌", "❌" );
                         }
 
                     } else {
@@ -263,12 +269,26 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
-    @Override
-    public void run() {
+    // TODO: change to incremental method
+    public void sync() {
         columnsToUpdate.forEach( ( column, type ) -> {
             columns.remove( column );
             addColumn( column, type );
         } );
         columnsToUpdate.clear();
+    }
+
+
+    private static class StatisticsStoreWorker implements BackgroundTask {
+
+        StatisticsStoreWorker() {
+
+        }
+
+
+        @Override
+        public void backgroundTask() {
+            StatisticsStore.getInstance().sync();
+        }
     }
 }
