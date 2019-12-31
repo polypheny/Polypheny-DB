@@ -1,8 +1,14 @@
+import ca.coglinc.gradle.plugins.javacc.*
 
 group "ch.unibas.dmi.dbis.polyphenydb"
 
 
 version = versionMajor + "." + versionMinor + versionQualifier
+
+
+configurations {
+    javacc
+}
 
 
 buildscript {
@@ -14,9 +20,14 @@ buildscript {
         }
     }
     dependencies {
+        // JavaCC (https://github.com/johnmartel/javaccPlugin)
+        classpath group: "ca.coglinc2.javacc", name: "ca.coglinc2.javacc.gradle.plugin", version: "3.0.0"
+        // Fmpp
+        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: "0.9.16"
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
     }
+    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 
@@ -52,6 +63,8 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version
+
     implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version
     implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version
     implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version
@@ -71,7 +84,7 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java"]
+            srcDirs = ["src/main/java","build/generated-sources"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -89,6 +102,37 @@ sourceSets {
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
+}
+
+
+/**
+ * Compile Pipline
+ */
+/*task generateFmppSources {
+    inputs.dir("src/main/codegen/templates")
+    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
+    doLast {
+        ant.fmpp(configuration: "src/main/codegen/config.fmpp",
+                sourceRoot: "src/main/codegen/templates",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp")
+    }
+}*/
+task generateParser (type: CompileJavaccTask) {
+//    dependsOn("generateFmppSources")
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false", lookahead: "2"]
+    inputDirectory = file(project.projectDir.absolutePath + "/src/main/codegen")
+//    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/ch/unibas/dmi/dbis/polyphenydb/cql/parser/impl")
+}
+//task generateJdbcVersionProperties(type: Copy) {
+//    from "src/main/resources/version"
+//    into project.buildDir.absolutePath + "/classes"
+//    expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
+//}
+compileJava {
+    dependsOn("generateParser")
+//    dependsOn("generateParser", "generateJdbcVersionProperties")
 }
 
 

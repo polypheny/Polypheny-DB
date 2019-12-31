@@ -1,0 +1,594 @@
+/*
+ * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
+ * The changes are released under the MIT license.
+ *
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+// This parser is brought to you by: https://www.youtube.com/watch?v=buQBFFTp0b4
+//                              and: https://www.youtube.com/watch?v=7eDkFlVSwnk
+
+options {
+  STATIC = false;
+  IGNORE_CASE = true;
+  UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(CqlParserImpl)
+
+package ch.unibas.dmi.dbis.polyphenydb.cql.parser.impl;
+
+import ch.unibas.dmi.dbis.polyphenydb.cql.CqlNode;
+import ch.unibas.dmi.dbis.polyphenydb.cql.CqlStatement;
+import ch.unibas.dmi.dbis.polyphenydb.cql.ddl.CqlAlter;
+import ch.unibas.dmi.dbis.polyphenydb.cql.ddl.CqlCreate;
+import ch.unibas.dmi.dbis.polyphenydb.cql.ddl.CqlDrop;
+import ch.unibas.dmi.dbis.polyphenydb.cql.parser.CqlAbstractParserImpl;
+import ch.unibas.dmi.dbis.polyphenydb.cql.parser.Span;
+import ch.unibas.dmi.dbis.polyphenydb.cql.parser.CqlParserPos;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class CqlParserImpl extends CqlAbstractParserImpl {
+
+}
+PARSER_END(CqlParserImpl)
+
+JAVACODE protected CqlParserPos getPos()
+{
+    return new CqlParserPos(
+        token.beginLine,
+        token.beginColumn,
+        token.endLine,
+        token.endColumn);
+}
+
+/** Starts a span at the current position. */
+JAVACODE Span span()
+{
+    return Span.of(getPos());
+}
+
+
+/**
+* Parses an CQL statement.
+*/
+CqlNode CqlStatement() :
+{
+    CqlNode statement;
+}
+{
+    (
+        statement = CqlAlter()
+    |   statement = CqlCreate()
+    |   statement = CqlDrop()
+    )
+    {
+        return statement;
+    }
+}
+
+JAVACODE
+CqlAlter CqlAlterSchema(Span s) {
+    return null;
+}
+
+/*JAVACODE
+CqlAlter CqlAlterTable() {
+    return null;
+}
+
+JAVACODE
+CqlAlter CqlAlterKeyspace() {
+    return null;
+}
+
+JAVACODE
+CqlAlter CqlAlterView() {
+    return null;
+}*/
+
+
+CqlAlter CqlAlter() :
+{
+    final Span s;
+    final CqlAlter alter;
+}
+{
+    <ALTER> { s = span(); }
+    (
+        alter = CqlAlterSchema(s)
+/*    |   alter = CqlAlterTable(s)
+    |   alter = CqlAlterKeyspace(s)
+    |   alter = CqlAlterView(s)*/
+    )
+    {
+        return alter;
+    }
+}
+
+JAVACODE
+CqlCreate CqlCreateSchema(Span s, boolean orReplace) {
+    return null;
+}
+/*JAVACODE
+CqlCreate CqlCreateTable() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateKeyspace() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateIndex() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateView() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateFunction() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateAggregate() {
+    return null;
+}
+JAVACODE
+CqlCreate CqlCreateTrigger() {
+    return null;
+}*/
+
+CqlCreate CqlCreate() :
+{
+    final Span s;
+    boolean replace = false;
+    final CqlCreate create;
+}
+{
+    <CREATE> { s = span(); }
+    [
+        <OR> <REPLACE> {
+            replace = true;
+        }
+    ]
+    (
+        create = CqlCreateSchema(s, replace)
+    /*|   create = CqlCreateTable(s, replace)
+    |   create = CqlCreateKeyspace(s, replace)
+    |   create = CqlCreateIndex(s, replace)
+    |   create = CqlCreateView(s, replace)
+    |   create = CqlCreateFunction(s, replace)
+    |   create = CqlCreateAggregate(s, replace)
+    |   create = CqlCreateTrigger(s, replace)*/
+    )
+    {
+        return create;
+    }
+}
+
+JAVACODE
+CqlDrop CqlDropSchema(Span s) {
+    return null;
+}
+
+
+CqlDrop CqlDrop() :
+{
+    final Span s;
+    final CqlDrop drop;
+}
+{
+    <DROP> { s = span(); }
+    (
+        drop = CqlDropSchema(s)
+    /*|   drop = CqlDropTable(s)
+    |   drop = CqlDropKeyspace(s)
+    |   drop = CqlDropIndex(s)
+    |   drop = CqlDropView(s)
+    |   drop = CqlDropFunction(s)
+    |   drop = CqlDropAggregate(s)
+    |   drop = CqlDropTrigger(s)*/
+    )
+    {
+        return drop;
+    }
+}
+
+
+/* KEYWORDS */
+
+<DEFAULT, DQID> TOKEN : {
+    < ADD: "ADD" >
+|   < AGGREGATE: "AGGREGATE" >
+|   < ALL: "ALL" >
+|   < ALLOW: "ALLOW" >
+|   < ALTER: "ALTER" >
+|   < AND: "AND" >
+|   < APPLY: "APPLY" >
+|   < AS: "AS" >
+|   < ASC: "ASC" >
+|   < ASCII: "ASCII" >
+|   < AUTHORIZE: "AUTHORIZE" >
+|   < BATCH: "BATCH" >
+|   < BEGIN: "BEGIN" >
+|   < BIGINT: "BIGINT" >
+|   < BLOB: "BLOB" >
+|   < BOOLEAN: "BOOLEAN" >
+|   < BY: "BY" >
+|   < CALLED: "CALLED" >
+|   < CLUSTERING: "CLUSTERING" >
+|   < COLUMNFAMILY: "COLUMNFAMILY" >
+|   < COMPACT: "COMPACT" >
+|   < CONTAINS: "CONTAINS" >
+|   < COUNT: "COUNT" >
+|   < COUNTER: "COUNTER" >
+|   < CREATE: "CREATE" >
+|   < CUSTOM: "CUSTOM" >
+|   < DATE: "DATE" >
+|   < DECIMAL: "DECIMAL" >
+|   < DELETE: "DELETE" >
+|   < DESC: "DESC" >
+|   < DESCRIBE: "DESCRIBE" >
+|   < DISTINCT: "DISTINCT" >
+|   < DOUBLE: "DOUBLE" >
+|   < DROP: "DROP" >
+|   < ENTRIES: "ENTRIES" >
+|   < EXECUTE: "EXECUTE" >
+|   < EXISTS: "EXISTS" >
+|   < FILTERING: "FILTERING" >
+|   < FINALFUNC: "FINALFUNC" >
+|   < FLOAT: "FLOAT" >
+|   < FROM: "FROM" >
+|   < FROZEN: "FROZEN" >
+|   < FULL: "FULL" >
+|   < FUNCTION: "FUNCTION" >
+|   < FUNCTIONS: "FUNCTIONS" >
+|   < GRANT: "GRANT" >
+|   < IF: "IF" >
+|   < IN: "IN" >
+|   < INDEX: "INDEX" >
+|   < INET: "INET" >
+|   < INFINITY: "INFINITY" >
+|   < INITCOND: "INITCOND" >
+|   < INPUT: "INPUT" >
+|   < INSERT: "INSERT" >
+|   < INT: "INT" >
+|   < INTO: "INTO" >
+|   < JSON: "JSON" >
+|   < KEY: "KEY" >
+|   < KEYS: "KEYS" >
+|   < KEYSPACE: "KEYSPACE" >
+|   < KEYSPACES: "KEYSPACES" >
+|   < LANGUAGE: "LANGUAGE" >
+|   < LIMIT: "LIMIT" >
+|   < LIST: "LIST" >
+|   < LOGIN: "LOGIN" >
+|   < MAP: "MAP" >
+|   < MODIFY: "MODIFY" >
+|   < NAN: "NAN" >
+|   < NOLOGIN: "NOLOGIN" >
+|   < NORECURSIVE: "NORECURSIVE" >
+|   < NOSUPERUSER: "NOSUPERUSER" >
+|   < NOT: "NOT" >
+|   < NULL: "NULL" >
+|   < OF: "OF" >
+|   < ON: "ON" >
+|   < OPTIONS: "OPTIONS" >
+|   < OR: "OR" >
+|   < ORDER: "ORDER" >
+|   < PASSWORD: "PASSWORD" >
+|   < PERMISSION: "PERMISSION" >
+|   < PERMISSIONS: "PERMISSIONS" >
+|   < PRIMARY: "PRIMARY" >
+|   < RENAME: "RENAME" >
+|   < REPLACE: "REPLACE" >
+|   < RETURNS: "RETURNS" >
+|   < REVOKE: "REVOKE" >
+|   < ROLE: "ROLE" >
+|   < ROLES: "ROLES" >
+|   < SCHEMA: "SCHEMA" >
+|   < SELECT: "SELECT" >
+|   < SET: "SET" >
+|   < SFUNC: "SFUNC" >
+|   < SMALLINT: "SMALLINT" >
+|   < STATIC: "STATIC" >
+|   < STORAGE: "STORAGE" >
+|   < STYPE: "STYPE" >
+|   < SUPERUSER: "SUPERUSER" >
+|   < TABLE: "TABLE" >
+|   < TEXT: "TEXT" >
+|   < TIME: "TIME" >
+|   < TIMESTAMP: "TIMESTAMP" >
+|   < TIMEUUID: "TIMEUUID" >
+|   < TINYINT: "TINYINT" >
+|   < TO: "TO" >
+|   < LEX_TOKEN: "TOKEN" >
+|   < TRIGGER: "TRIGGER" >
+|   < TRUNCATE: "TRUNCATE" >
+|   < TTL: "TTL" >
+|   < TUPLE: "TUPLE" >
+|   < TYPE: "TYPE" >
+|   < UNLOGGED: "UNLOGGED" >
+|   < UPDATE: "UPDATE" >
+|   < USE: "USE" >
+|   < USER: "USER" >
+|   < USERS: "USERS" >
+|   < USING: "USING" >
+|   < UUID: "UUID" >
+|   < VALUES: "VALUES" >
+|   < VARCHAR: "VARCHAR" >
+|   < VARINT: "VARINT" >
+|   < WHERE: "WHERE" >
+|   < WITH: "WITH" >
+|   < WRITETIME: "WRITETIME" >
+}
+
+String NonReservedKeyWord() :
+{
+}
+{
+    (
+        <AGGREGATE>
+    |   <ALL>
+    |   <AS>
+    |   <ASCII>
+    |   <BIGINT>
+    |   <BLOB>
+    |   <BOOLEAN>
+    |   <CALLED>
+    |   <CLUSTERING>
+    |   <COMPACT>
+    |   <CONTAINS>
+    |   <COUNT>
+    |   <COUNTER>
+    |   <CUSTOM>
+    |   <DATE>
+    |   <DECIMAL>
+    |   <DISTINCT>
+    |   <DOUBLE>
+    |   <EXISTS>
+    |   <FILTERING>
+    |   <FINALFUNC>
+    |   <FLOAT>
+    |   <FROZEN>
+    |   <FUNCTION>
+    |   <FUNCTIONS>
+    |   <INET>
+    |   <INITCOND>
+    |   <INPUT>
+    |   <INT>
+    |   <JSON>
+    |   <KEY>
+    |   <KEYS>
+    |   <KEYSPACES>
+    |   <LANGUAGE>
+    |   <LIST>
+    |   <LOGIN>
+    |   <MAP>
+    |   <NOLOGIN>
+    |   <NOSUPERUSER>
+    |   <OPTIONS>
+    |   <PASSWORD>
+    |   <PERMISSION>
+    |   <PERMISSIONS>
+    |   <RETURNS>
+    |   <ROLE>
+    |   <ROLES>
+    |   <SFUNC>
+    |   <SMALLINT>
+    |   <STATIC>
+    |   <STORAGE>
+    |   <STYPE>
+    |   <SUPERUSER>
+    |   <TEXT>
+    |   <TIME>
+    |   <TIMESTAMP>
+    |   <TIMEUUID>
+    |   <TINYINT>
+    |   <TRIGGER>
+    |   <TTL>
+    |   <TUPLE>
+    |   <TYPE>
+    |   <USER>
+    |   <USERS>
+    |   <UUID>
+    |   <VALUES>
+    |   <VARCHAR>
+    |   <VARINT>
+    |   <WRITETIME>
+    )
+    {
+    return "";
+    }
+}
+
+/* Constants/Literals/Whatever you want to call them */
+<DEFAULT> TOKEN :
+{
+    < INTEGER_LITERAL: ["-"](["0"-"9"])+ >
+|   < #DECIMAL_FLOAT_LITERAL: ["-"](["0"-"9"])+ ["."] (["0"-"9"])* >
+|   < #EXPONENT: ["e", "E"] (["+", "-"])? (["0"-"9"])+ >
+|   < FLOAT_LITERAL:
+        ( <NAN> | <INFINITY> | (<DECIMAL_FLOAT_LITERAL> (<EXPONENT>)?)) >
+|   < BOOLEAN_LITERAL: "TRUE" | "FALSE" >
+|   < #HEXDIGIT: ["0"-"9", "a"-"f", "A"-"F"] >
+|   < #QUAD_HEXDIGIT: <HEXDIGIT><HEXDIGIT><HEXDIGIT><HEXDIGIT> >
+|   < UUID_LITERAL: <QUAD_HEXDIGIT><QUAD_HEXDIGIT> "-" <QUAD_HEXDIGIT> "-" <QUAD_HEXDIGIT> "-" <QUAD_HEXDIGIT> "-" <QUAD_HEXDIGIT><QUAD_HEXDIGIT><QUAD_HEXDIGIT>>
+|   < BLOB_LITERAL: "0" (["x", "X"])? (<HEXDIGIT>)+ >
+|   < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+//|   < DOLLAR_QUOTED_STRING: <DOLLAR><DOLLAR>  <DOLLAR><DOLLAR> >
+// FIXME js: '$$' quoted strings are currently not supported.
+}
+
+/* SEPARATORS */
+
+<DEFAULT, DQID, BTID> TOKEN :
+{
+    < LPAREN: "(">
+|   < RPAREN: ")">
+//|   < LBRACE_D: "{" (" ")* ["d","D"] >
+//|   < LBRACE_T: "{" (" ")* ["t","T"] >
+//|   < LBRACE_TS: "{" (" ")* ["t","T"] ["s","S"] >
+//|   < LBRACE_FN: "{" (" ")* ["f","F"] ["n","N"] >
+|   < LBRACE: "{" >
+|   < RBRACE: "}" >
+|   < LBRACKET: "[" >
+|   < RBRACKET: "]" >
+|   < SEMICOLON: ";" >
+|   < DOT: "." >
+|   < COMMA: "," >
+}
+
+/* OPERATORS */
+
+<DEFAULT, DQID, BTID> TOKEN :
+{
+    < EQ: "=" >
+|   < GT: ">" >
+|   < LT: "<" >
+|   < HOOK: "?" >
+|   < COLON: ":" >
+|   < LE: "<=" >
+|   < GE: ">=" >
+|   < NE: "<>" >
+|   < NE2: "!=" >
+|   < PLUS: "+" >
+|   < MINUS: "-" >
+|   < STAR: "*" >
+|   < SLASH: "/" >
+|   < PERCENT_REMAINDER: "%" >
+|   < CONCAT: "||" >
+|   < NAMED_ARGUMENT_ASSIGNMENT: "=>" >
+|   < DOUBLE_PERIOD: ".." >
+|   < QUOTE: "'" >
+|   < DOUBLE_QUOTE: "\"" >
+|   < VERTICAL_BAR: "|" >
+|   < CARET: "^" >
+|   < DOLLAR: "$" >
+}
+
+
+/*****************************************
+ * Lexical Descriptions                  *
+ *****************************************/
+
+TOKEN_MGR_DECLS : {
+    List<Integer> lexicalStateStack = new ArrayList<Integer>();
+
+    void pushState() {
+      lexicalStateStack.add(curLexState);
+    }
+
+    void popState() {
+      SwitchTo(lexicalStateStack.remove(lexicalStateStack.size() - 1));
+    }
+
+}
+
+
+<DEFAULT, DQID, BTID> SKIP :
+{
+    " "
+|   "\t"
+|   "\n"
+|   "\r"
+|   "\f"
+}
+
+/* COMMENTS */
+
+<DEFAULT, DQID, BTID> MORE :
+{
+    <"/**" ~["/"]> { pushState(); } : IN_FORMAL_COMMENT
+}
+
+<DEFAULT, DQID, BTID> MORE :
+{
+    "/*" { pushState(); } : IN_MULTI_LINE_COMMENT
+}
+
+<DEFAULT, DQID, BTID> SKIP :
+{
+    <SINGLE_LINE_COMMENT: ("//"|"--")(~["\n","\r"])* ("\n"|"\r"|"\r\n")? >
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+    <FORMAL_COMMENT: "*/" > { popState(); }
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+    <MULTI_LINE_COMMENT: "*/" > { popState(); }
+}
+
+<IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+    < ~[] >
+}
+
+/* IDENTIFIERS */
+
+<DQID> TOKEN :
+{
+    < QUOTED_IDENTIFIER:
+    "\""
+    (
+        (~["\"","\n","\r"])
+    |
+        ("\"\"")
+    )+
+    "\""
+    >
+}
+
+<DEFAULT, DQID> TOKEN :
+{
+    < IDENTIFIER: (<UNQUOTED_IDENTIFIER>|<QUOTED_IDENTIFIER>) >
+|   < UNQUOTED_IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|"_")* >
+|   < #LETTER: ["a"-"z", "A"-"Z"] >
+|   < #DIGIT: ["0"-"9"] >
+}
