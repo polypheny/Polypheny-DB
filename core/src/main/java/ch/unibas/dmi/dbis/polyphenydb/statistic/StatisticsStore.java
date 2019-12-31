@@ -47,7 +47,7 @@ public class StatisticsStore<T extends Comparable<T>> {
     }
 
 
-    public static StatisticsStore getInstance() {
+    public static synchronized StatisticsStore getInstance() {
         // To ensure only one instance is created
         if ( instance == null ) {
             instance = new StatisticsStore();
@@ -108,14 +108,19 @@ public class StatisticsStore<T extends Comparable<T>> {
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             System.out.println( column.getFullName() );
-            if ( column.getType().isNumericalType() ) {
-                this.reevaluateNumericalColumn( column );
-            } else if ( column.getType().isCharType() ) {
-                this.reevaluateAlphabeticalColumn( column );
-            }
+            reevaluateColumn( column );
 
         }
 
+    }
+
+
+    private void reevaluateColumn( QueryColumn column ) {
+        if ( column.getType().isNumericalType() ) {
+            this.reevaluateNumericalColumn( column );
+        } else if ( column.getType().isCharType() ) {
+            this.reevaluateAlphabeticalColumn( column );
+        }
     }
 
 
@@ -263,7 +268,6 @@ public class StatisticsStore<T extends Comparable<T>> {
                 } else {
                     columnsToUpdate.put( s.getColumnName(), sqlQueryInterface.getColumnType( s.getColumnName() ) );
                 }
-
             }
         } );
     }
@@ -273,7 +277,7 @@ public class StatisticsStore<T extends Comparable<T>> {
     public void sync() {
         columnsToUpdate.forEach( ( column, type ) -> {
             columns.remove( column );
-            addColumn( column, type );
+            reevaluateColumn( new QueryColumn( column, type ));
         } );
         columnsToUpdate.clear();
     }

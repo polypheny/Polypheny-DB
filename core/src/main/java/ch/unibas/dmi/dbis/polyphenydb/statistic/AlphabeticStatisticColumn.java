@@ -23,6 +23,9 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     @Setter
     private List<T> uniqueValues = new ArrayList<>();
 
+    @Expose
+    private boolean isFull = false;
+
 
     public AlphabeticStatisticColumn( String schema, String table, String column, PolySqlType type ) {
         super( schema, table, column, type );
@@ -36,10 +39,12 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
     @Override
     public void insert( T val ) {
-        if ( !uniqueValues.contains( val ) ) {
-            if ( uniqueValues.size() < getListBufferSize() ) {
+        if ( uniqueValues.size() < getListBufferSize() ) {
+            if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
             }
+        } else {
+            isFull = true;
         }
     }
 
