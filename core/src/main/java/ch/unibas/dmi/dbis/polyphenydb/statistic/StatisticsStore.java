@@ -115,7 +115,13 @@ public class StatisticsStore<T extends Comparable<T>> {
     }
 
 
+    /**
+     * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
+     */
     private void reevaluateColumn( QueryColumn column ) {
+        if ( !this.sqlQueryInterface.hasData( column.getFullTableName(), column.getFullName() ) ) {
+            return;
+        }
         if ( column.getType().isNumericalType() ) {
             this.reevaluateNumericalColumn( column );
         } else if ( column.getType().isCharType() ) {
@@ -277,17 +283,13 @@ public class StatisticsStore<T extends Comparable<T>> {
     public void sync() {
         columnsToUpdate.forEach( ( column, type ) -> {
             columns.remove( column );
-            reevaluateColumn( new QueryColumn( column, type ));
+            reevaluateColumn( new QueryColumn( column, type ) );
         } );
         columnsToUpdate.clear();
     }
 
 
     private static class StatisticsStoreWorker implements BackgroundTask {
-
-        StatisticsStoreWorker() {
-
-        }
 
 
         @Override

@@ -414,6 +414,11 @@ public class LowCostQueries implements InformationObserver {
     }
 
 
+    public boolean hasData( String table, String column ) {
+        return executeSqlSelect( "SELECT " + column + " FROM " + table + " " ).getColumns().length > 0;
+    }
+
+
     static class QueryExecutionException extends Exception {
 
         QueryExecutionException( String message ) {
