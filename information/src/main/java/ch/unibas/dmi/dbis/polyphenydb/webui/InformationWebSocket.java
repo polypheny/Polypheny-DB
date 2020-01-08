@@ -60,7 +60,7 @@ public class InformationWebSocket {
 
     @OnWebSocketMessage
     public void configWebSocket( final Session session, final String message ) throws IOException {
-        log.debug( "Received: " + message ); // Log message
+        log.debug( "Received: {}", message ); // Log message
         session.getRemote().sendString( message ); // and send it back
     }
 
@@ -69,7 +69,7 @@ public class InformationWebSocket {
      * Send changed Information Object as Json via the WebSocket to the GUI.
      */
     public static synchronized void broadcast( final String msg ) throws IOException {
-        log.trace( "broadcasting:\n" + msg );
+        log.trace( "broadcasting:\n{}", msg );
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }

@@ -404,7 +404,7 @@ public class Crud implements InformationObserver {
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
-                log.error( "Could not rollback CREATE TABLE statement: " + ex.getMessage(), ex );
+                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
             }
         }
         return result;
@@ -1368,7 +1368,7 @@ public class Crud implements InformationObserver {
             }
             transaction.commit();
         } catch ( GenericCatalogException | UnknownTableException | TransactionException | UnknownKeyException e ) {
-            log.error( "Could not fetch foreign keys of the schema " + request.schema, e );
+            log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {

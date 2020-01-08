@@ -197,7 +197,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         final String oqlQuery = queryBuilder.toString();
 
         Hook.QUERY_PLAN.run( oqlQuery );
-        log.info( "OQL: " + oqlQuery );
+        log.info( "OQL: {}", oqlQuery );
 
         return new AbstractEnumerable<Object>() {
             @Override

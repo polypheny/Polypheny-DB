@@ -308,7 +308,7 @@ public class ConcurrentTestCommandScript
     static int runAppProcess( ProcessBuilder pb, Logger logger, Reader appInput, Writer appOutput ) throws IOException, InterruptedException {
         pb.redirectErrorStream( true );
         if ( logger != null ) {
-            logger.info( "start process: " + pb.command() );
+            logger.info( "start process: {}", pb.command() );
         }
         Process p = pb.start();
 
@@ -336,7 +336,7 @@ public class ConcurrentTestCommandScript
 
         int status = p.exitValue();
         if ( logger != null ) {
-            logger.info( "exit status=" + status + " from " + pb.command() );
+            logger.info( "exit status={} from {}", status, pb.command() );
         }
         return status;
     }

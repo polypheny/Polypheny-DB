@@ -140,7 +140,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 }
             }
         }
-        log.debug( "Unsupported function in jethro: " + operator + " with params " + paramTypes );
+        log.debug( "Unsupported function in jethro: {} with params {}", operator, paramTypes );
         return false;
     }
 
