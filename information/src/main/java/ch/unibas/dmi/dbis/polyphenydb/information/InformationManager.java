@@ -28,9 +28,13 @@ package ch.unibas.dmi.dbis.polyphenydb.information;
 
 import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -62,6 +66,24 @@ public class InformationManager {
     private InformationManager(final String instanceId) {
         // private constructor to ensure singleton is applied by calling get instance
         this.instanceId = instanceId;
+
+        // Add the information page about the information manager itself
+        if ( instanceId.equals( MAIN_MANAGER_IDENTIFIER ) ) {
+            InformationPage page = new InformationPage( "InformationManager", "Information Manager", "Information about the information manager itself." );
+            this.addPage( page );
+            // Running instances
+            InformationGroup runningInstancesGroup = new InformationGroup( page, "Instances" );
+            this.addGroup( runningInstancesGroup );
+            InformationTable runningInstancesTable = new InformationTable(
+                    runningInstancesGroup,
+                    Arrays.asList( "ID", "Pages", "Groups", "Elements", "Observers" ) );
+            this.registerInformation( runningInstancesTable );
+            ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+            exec.scheduleAtFixedRate( () -> {
+                runningInstancesTable.reset();
+                instances.forEach( ( k, v ) -> runningInstancesTable.addRow( k.substring( 0, Math.min( k.length(), 8 ) ), v.pages.size(), v.groups.size(), v.pages.size(), v.observers.size() ) );
+            }, 0, 30, TimeUnit.SECONDS );
+        }
     }
 
 

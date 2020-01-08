@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.information;
 
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -81,9 +80,16 @@ public class InformationTable extends InformationHtml {
     }
 
 
-    public void addRow( String... row ) {
-        rows.add( Arrays.asList( row ) );
-        updateHtml( generateHtml() );
+    public void addRow( Object... row ) {
+        List<String> list = new LinkedList<>();
+        for ( Object o : row ) {
+            if ( o != null ) {
+                list.add( o.toString() );
+            } else {
+                list.add( "NULL" );
+            }
+        }
+        addRow( list );
     }
 
 
