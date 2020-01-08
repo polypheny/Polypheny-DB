@@ -64,6 +64,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
@@ -412,6 +413,15 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, Clause.ORDER_BY );
+        if ( stack.size() != 1 && builder.select.getSelectList() == null ) {
+            // Generates explicit column names instead of start(*) for
+            // non-root order by to avoid ambiguity.
+            final List<SqlNode> selectList = Expressions.list();
+            for ( RelDataTypeField field : e.getRowType().getFieldList() ) {
+                addSelect( selectList, builder.context.field( field.getIndex() ), e.getRowType() );
+            }
+            builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
+        }
         List<SqlNode> orderByList = Expressions.list();
         for ( RelFieldCollation field : e.getCollation().getFieldCollations() ) {
             builder.addOrderItem( orderByList, field );
