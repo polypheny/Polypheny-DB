@@ -962,7 +962,16 @@ public class DbmsMeta implements ProtobufMeta {
             MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
             resultSets = ImmutableList.of( resultSet );
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next()).intValue() );
+            Object o = signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next();
+            int num;
+            if ( o == null ) {
+                throw new NullPointerException();
+            } else if ( o.getClass().isArray() ) {
+                num = ((Number) ((Object[]) o)[0]).intValue();
+            } else {
+                num = ((Number) o).intValue();
+            }
+            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, num );
             resultSets = ImmutableList.of( metaResultSet );
         } else {
             statement.setSignature( signature );

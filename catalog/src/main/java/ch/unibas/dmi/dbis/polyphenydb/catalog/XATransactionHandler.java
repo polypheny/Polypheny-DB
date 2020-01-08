@@ -124,7 +124,7 @@ class XATransactionHandler extends TransactionHandler {
 
 
     private void close() {
-        log.info( "Closing a transaction handler for the catalog. Size of freeInstances before closing: " + freeInstances.size() );
+        log.debug( "Closing a transaction handler for the catalog. Size of freeInstances before closing: {}", freeInstances.size() );
         try {
             if ( openStatements != null ) {
                 for ( Statement openStatement : openStatements ) {
@@ -137,7 +137,7 @@ class XATransactionHandler extends TransactionHandler {
             openStatements = null;
             activeInstances.remove( xid );
             freeInstances.add( this );
-            log.info( "Size of freeInstances after closing: " + freeInstances.size() );
+            log.debug( "Size of freeInstances after closing: {}", freeInstances.size() );
         }
     }
 
@@ -166,7 +166,7 @@ class XATransactionHandler extends TransactionHandler {
     private static XATransactionHandler getFreeTransactionHandler() throws CatalogConnectionException {
         XATransactionHandler handler = freeInstances.poll();
         if ( handler == null ) {
-            log.debug( "Creating a new transaction handler for the catalog. Current freeInstances-Size: " + freeInstances.size() );
+            log.debug( "Creating a new transaction handler for the catalog. Current freeInstances-Size: {}", freeInstances.size() );
             handler = new XATransactionHandler();
         }
         return handler;

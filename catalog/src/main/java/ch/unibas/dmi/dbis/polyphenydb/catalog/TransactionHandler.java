@@ -52,19 +52,19 @@ abstract class TransactionHandler {
 
 
     int executeUpdate( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: {}", sql );
         return statement.executeUpdate( sql );
     }
 
 
     ResultSet executeSelect( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: {}", sql );
         return createStatement().executeQuery( sql );
     }
 
 
     void execute( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: " + sql );
+        log.trace( "Executing query on catalog database: {}", sql );
         statement.execute( sql );
     }
 

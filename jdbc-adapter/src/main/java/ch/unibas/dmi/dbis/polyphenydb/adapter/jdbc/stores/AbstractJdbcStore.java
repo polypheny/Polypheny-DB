@@ -124,9 +124,9 @@ public abstract class AbstractJdbcStore extends Store {
             );
 
             table.reset();
-            table.addRow( "Active", "" + active );
-            table.addRow( "Idle", "" + idle );
-            table.addRow( "Max", "" + max );
+            table.addRow( "Active", active );
+            table.addRow( "Idle", idle );
+            table.addRow( "Max", max );
         }
     }
 
