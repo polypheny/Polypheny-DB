@@ -56,8 +56,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -95,22 +98,22 @@ public class CassandraSort extends Sort implements CassandraRel {
         implementor.visitChild( 0, getInput() );
 
         List<RelFieldCollation> sortCollations = collation.getFieldCollations();
-        List<String> fieldOrder = new ArrayList<>();
+        Map<String, ClusteringOrder> fieldOrder = new LinkedHashMap<>();
         if ( !sortCollations.isEmpty() ) {
             // Construct a series of order clauses from the desired collation
             final List<RelDataTypeField> fields = getRowType().getFieldList();
             for ( RelFieldCollation fieldCollation : sortCollations ) {
                 final String name =
                         fields.get( fieldCollation.getFieldIndex() ).getName();
-                final String direction;
+                final ClusteringOrder direction;
                 switch ( fieldCollation.getDirection() ) {
                     case DESCENDING:
-                        direction = "DESC";
+                        direction = ClusteringOrder.DESC;
                         break;
                     default:
-                        direction = "ASC";
+                        direction = ClusteringOrder.ASC;
                 }
-                fieldOrder.add( name + " " + direction );
+                fieldOrder.put( name, direction );
             }
 
             implementor.addOrder( fieldOrder );

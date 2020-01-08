@@ -63,6 +63,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,14 +122,14 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                                             }
                                         } ),
                                 Pair.class ) );
-        List<Map.Entry<String, String>> selectList = new ArrayList<>();
-        for ( Map.Entry<String, String> entry : Pair.zip( cassandraImplementor.selectFields.keySet(), cassandraImplementor.selectFields.values() ) ) {
-            selectList.add( entry );
+        List<Map.Entry<String, ClusteringOrder>> orderList = new ArrayList<>();
+        for ( Map.Entry<String, ClusteringOrder> entry : Pair.zip( cassandraImplementor.order.keySet(), cassandraImplementor.order.values() ) ) {
+            orderList.add( entry );
         }
-        final Expression selectFields = list.append( "selectFields", constantArrayList( selectList, Pair.class ) );
+        final Expression selectFields = list.append( "selectFields", constantArrayList( cassandraImplementor.selectFields, Pair.class ) );
         final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraTable.CassandraQueryable.class ) );
         final Expression predicates = list.append( "predicates", constantArrayList( cassandraImplementor.whereClause, String.class ) );
-        final Expression order = list.append( "order", constantArrayList( cassandraImplementor.order, String.class ) );
+        final Expression order = list.append( "order", constantArrayList( orderList, Pair.class ) );
         final Expression offset = list.append( "offset", Expressions.constant( cassandraImplementor.offset ) );
         final Expression fetch = list.append( "fetch", Expressions.constant( cassandraImplementor.fetch ) );
         Expression enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_QUERYABLE_QUERY.method, fields, selectFields, predicates, order, offset, fetch ) );

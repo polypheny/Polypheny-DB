@@ -56,6 +56,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,13 +91,14 @@ public class CassandraProject extends Project implements CassandraRel {
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraFieldNames( getInput().getRowType() ) );
-        final Map<String, String> fields = new LinkedHashMap<>();
+        final List<Selector> fields = new ArrayList<>();
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
             final String name = pair.right;
             final String originalName = pair.left.accept( translator );
-            fields.put( originalName, name );
+            fields.add( Selector.column( originalName ).as( name ) );
         }
-        implementor.add( fields, null );
+        implementor.addSelectColumns( fields );
+//        implementor.add( fields, null );
     }
 }
 

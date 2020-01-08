@@ -61,8 +61,13 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -81,7 +86,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
     private final List<String> clusteringKeys;
     private final List<RelFieldCollation> implicitFieldCollations;
     private RelCollation implicitCollation;
-    private String match;
+    private List<Relation> match;
 
 
     public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
@@ -117,7 +122,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
     @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        implementor.add( null, Collections.singletonList( match ) );
+        implementor.addWhereRelations( this.match );
     }
 
 
@@ -203,7 +208,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          * @param condition Condition to translate
          * @return CQL predicate string
          */
-        private String translateMatch( RexNode condition ) {
+        private List<Relation> translateMatch( RexNode condition ) {
             // CQL does not support disjunctions
             List<RexNode> disjunctions = RelOptUtil.disjunctions( condition );
             if ( disjunctions.size() == 1 ) {
@@ -232,32 +237,32 @@ public class CassandraFilter extends Filter implements CassandraRel {
          * @param condition A conjunctive predicate
          * @return CQL string for the predicate
          */
-        private String translateAnd( RexNode condition ) {
-            List<String> predicates = new ArrayList<>();
+        private List<Relation> translateAnd( RexNode condition ) {
+            List<Relation> predicates = new ArrayList<>();
             for ( RexNode node : RelOptUtil.conjunctions( condition ) ) {
                 predicates.add( translateMatch2( node ) );
             }
 
-            return Util.toString( predicates, "", " AND ", "" );
+            return predicates;
         }
 
 
         /**
          * Translate a binary relation.
          */
-        private String translateMatch2( RexNode node ) {
+        private Relation translateMatch2( RexNode node ) {
             // We currently only use equality, but inequalities on clustering keys should be possible in the future
             switch ( node.getKind() ) {
                 case EQUALS:
-                    return translateBinary( "=", "=", (RexCall) node );
+                    return translateBinary( SqlKind.EQUALS, SqlKind.EQUALS, (RexCall) node );
                 case LESS_THAN:
-                    return translateBinary( "<", ">", (RexCall) node );
+                    return translateBinary( SqlKind.LESS_THAN, SqlKind.GREATER_THAN, (RexCall) node );
                 case LESS_THAN_OR_EQUAL:
-                    return translateBinary( "<=", ">=", (RexCall) node );
+                    return translateBinary( SqlKind.LESS_THAN_OR_EQUAL, SqlKind.GREATER_THAN_OR_EQUAL, (RexCall) node );
                 case GREATER_THAN:
-                    return translateBinary( ">", "<", (RexCall) node );
+                    return translateBinary( SqlKind.GREATER_THAN, SqlKind.LESS_THAN, (RexCall) node );
                 case GREATER_THAN_OR_EQUAL:
-                    return translateBinary( ">=", "<=", (RexCall) node );
+                    return translateBinary( SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, (RexCall) node );
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }
@@ -267,10 +272,10 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
-        private String translateBinary( String op, String rop, RexCall call ) {
+        private Relation translateBinary( SqlKind op, SqlKind rop, RexCall call ) {
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
-            String expression = translateBinary2( op, left, right );
+            Relation expression = translateBinary2( op, left, right );
             if ( expression != null ) {
                 return expression;
             }
@@ -285,7 +290,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Translates a call to a binary operator. Returns null on failure.
          */
-        private String translateBinary2( String op, RexNode left, RexNode right ) {
+        private Relation translateBinary2( SqlKind op, RexNode left, RexNode right ) {
             switch ( right.getKind() ) {
                 case LITERAL:
                     break;
@@ -310,7 +315,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
         /**
          * Combines a field name, operator, and literal to produce a predicate string.
          */
-        private String translateOp2( String op, String name, RexLiteral right ) {
+        private Relation translateOp2( SqlKind op, String name, RexLiteral right ) {
             // In case this is a key, record that it is now restricted
             if ( op.equals( "=" ) ) {
                 partitionKeys.remove( name );
@@ -327,7 +332,23 @@ public class CassandraFilter extends Filter implements CassandraRel {
                     valueString = "'" + valueString + "'";
                 }
             }
-            return name + " " + op + " " + valueString;
+
+            ColumnRelationBuilder<Relation> rel = Relation.column( name );
+            Term term = QueryBuilder.literal( valueString );
+            switch ( op ) {
+                case EQUALS:
+                    return rel.isEqualTo( term );
+                case LESS_THAN:
+                    return rel.isLessThan( term );
+                case LESS_THAN_OR_EQUAL:
+                    return rel.isLessThanOrEqualTo( term );
+                case GREATER_THAN:
+                    return rel.isGreaterThan( term );
+                case GREATER_THAN_OR_EQUAL:
+                    return rel.isLessThanOrEqualTo( term );
+                default:
+                    throw new AssertionError( "cannot translate op " + op + " name " + name + " valuestring " + valueString );
+            }
         }
     }
 }

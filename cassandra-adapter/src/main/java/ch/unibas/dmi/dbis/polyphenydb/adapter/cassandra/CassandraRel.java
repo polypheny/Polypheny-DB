@@ -48,6 +48,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,34 +76,43 @@ public interface CassandraRel extends RelNode {
      */
     class Implementor {
 
-        final Map<String, String> selectFields = new LinkedHashMap<>();
-        final List<String> whereClause = new ArrayList<>();
+        final List<Selector> selectFields = new ArrayList<>();
+        final List<Relation> whereClause = new ArrayList<>();
         int offset = 0;
         int fetch = -1;
-        final List<String> order = new ArrayList<>();
+        final Map<String, ClusteringOrder> order = new LinkedHashMap<>();
+
+        final List<Assignment> setAssignments = new ArrayList<>();
 
         RelOptTable table;
         CassandraTable cassandraTable;
 
 
-        /**
+        public void addWhereRelations(List<Relation> relations) {
+            if ( relations != null ) {
+                whereClause.addAll( relations );
+            }
+        }
+
+        public void addSelectColumns( List<Selector> selectFields ) {
+            this.selectFields.addAll( selectFields );
+        }
+
+        /*
          * Adds newly projected fields and restricted predicates.
          *
          * @param fields New fields to be projected from a query
          * @param predicates New predicates to be applied to the query
          */
-        public void add( Map<String, String> fields, List<String> predicates ) {
-            if ( fields != null ) {
-                selectFields.putAll( fields );
-            }
-            if ( predicates != null ) {
-                whereClause.addAll( predicates );
-            }
+
+
+        public void addAssignment(Assignment assignment) {
+
         }
 
 
-        public void addOrder( List<String> newOrder ) {
-            order.addAll( newOrder );
+        public void addOrder( Map<String, ClusteringOrder> newOrder ) {
+            order.putAll( newOrder );
         }
 
 
