@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
@@ -52,26 +53,22 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
+import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
-import org.apache.calcite.avatica.util.TimeUnitRange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.TreeRangeSet;
-
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.chrono.ISOChronology;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-import javax.annotation.Nullable;
 
 
 /**
@@ -126,7 +123,7 @@ public class DruidDateTimeUtils {
             return new Interval( start, end, ISOChronology.getInstanceUTC() );
         } );
         if ( LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "Converted time ranges " + ranges + " to interval " + intervals );
+            LOGGER.debug( "Converted time ranges {} to interval {}", ranges, intervals );
         }
         return intervals;
     }

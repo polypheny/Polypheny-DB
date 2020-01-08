@@ -100,7 +100,7 @@ public class SimpleJdbcExample {
                         .append( "=" )
                         .append( resultSet.getObject( i ) );
             }
-            log.info( "Entry: " + buf.toString() );
+            log.info( "Entry: {}", buf.toString() );
 
             buf.setLength( 0 );
         }

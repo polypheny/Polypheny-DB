@@ -94,9 +94,6 @@ import org.codehaus.commons.compiler.ICompilerFactory;
  */
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
-    private static InformationPage informationPageGeneratedCode = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
-    private static InformationGroup informationGroupGeneratedCode = new InformationGroup( informationPageGeneratedCode, "Generated Code" );
-
     protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
@@ -129,10 +126,12 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
         if ( dataContext != null && dataContext.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
-            queryAnalyzer.addPage( informationPageGeneratedCode );
-            queryAnalyzer.addGroup( informationGroupGeneratedCode );
+            InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            InformationGroup group = new InformationGroup( page, "Generated Code" );
+            queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
+            queryAnalyzer.addGroup( group );
             InformationCode informationCode = new InformationCode(
-                    informationGroupGeneratedCode,
+                    group,
                     s );
             queryAnalyzer.registerInformation( informationCode );
         }

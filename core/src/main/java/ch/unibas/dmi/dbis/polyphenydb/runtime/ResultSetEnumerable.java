@@ -347,7 +347,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } catch ( SQLFeatureNotSupportedException e ) {
             if ( !timeoutSetFailed && log.isDebugEnabled() ) {
                 // We don't really want to print this again and again if enumerable is used multiple times
-                log.debug( "Failed to set query timeout " + secondsLeft + " seconds", e );
+                log.debug( "Failed to set query timeout {} seconds", secondsLeft, e );
                 timeoutSetFailed = true;
             }
         }
