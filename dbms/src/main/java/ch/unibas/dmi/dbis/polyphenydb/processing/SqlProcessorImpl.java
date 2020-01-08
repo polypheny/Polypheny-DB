@@ -94,9 +94,6 @@ import org.apache.commons.lang3.time.StopWatch;
 @Slf4j
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
-    private static InformationPage informationPageLogical = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
-    private static InformationGroup informationGroupLogical = new InformationGroup( informationPageLogical, "Logical Query Plan" );
-
     private final Transaction transaction;
     private final SqlParserConfig parserConfig;
     private PolyphenyDbSqlValidator validator;
@@ -197,11 +194,13 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            queryAnalyzer.addPage( informationPageLogical );
-            queryAnalyzer.addGroup( informationGroupLogical );
+            InformationPage page = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    informationGroupLogical,
-                    RelOptUtil.dumpPlan( "", logicalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                    group,
+                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 

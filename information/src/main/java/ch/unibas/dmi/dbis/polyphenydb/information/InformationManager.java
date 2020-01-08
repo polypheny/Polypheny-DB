@@ -93,7 +93,8 @@ public class InformationManager {
         if ( id.equals( MAIN_MANAGER_IDENTIFIER ) ) {
             throw new RuntimeException( "It is not allowed to close the main Information Manager" );
         }
-        instances.remove( id );
+        InformationManager im = instances.remove( id );
+        im.observers.forEach( im.observers::remove );
     }
 
 
@@ -165,20 +166,6 @@ public class InformationManager {
                 log.warn( "Trying to remove a information group which is not registered in this information manager." );
             }
         }
-    }
-
-
-    /**
-     * Add a QueryPlan to the Information Manager and create the needed page and group implicitly.
-     */
-    public void addQueryPlan( final String title, final String queryPlan ) {
-        InformationPage page = new InformationPage( title );
-        InformationGroup group = new InformationGroup( page, title ).setImplicit( true );
-        InformationQueryPlan plan = new InformationQueryPlan( group, queryPlan );
-
-        this.addPage( page );
-        this.addGroup( group );
-        this.informationMap.put( plan.getId(), plan );
     }
 
 
@@ -285,5 +272,6 @@ public class InformationManager {
             observer.observePageList( instanceId, this.pages.values().toArray( new InformationPage[0] ) );
         }
     }
+
 
 }
