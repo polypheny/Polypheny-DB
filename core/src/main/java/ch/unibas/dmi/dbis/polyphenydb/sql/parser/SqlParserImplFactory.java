@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
 import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
 import java.io.Reader;
 
@@ -53,7 +52,7 @@ import java.io.Reader;
 /**
  * Factory for {@link SqlAbstractParserImpl} objects.
  *
- * A parser factory allows you to include a custom parser in {@link Planner} created through {@link Frameworks}.
+ * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
  */
 public interface SqlParserImplFactory {
 

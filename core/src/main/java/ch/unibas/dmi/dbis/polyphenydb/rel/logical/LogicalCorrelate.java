@@ -45,10 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
@@ -83,7 +83,7 @@ public final class LogicalCorrelate extends Correlate {
      */
     public LogicalCorrelate( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
         super( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
-        assert !PolyphenyDbPrepareImpl.DEBUG || isValid( Litmus.THROW, null );
+        assert !RuntimeConfig.DEBUG.getBoolean() || isValid( Litmus.THROW, null );
     }
 
 

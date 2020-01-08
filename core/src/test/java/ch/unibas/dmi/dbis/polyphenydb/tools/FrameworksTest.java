@@ -38,6 +38,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
@@ -50,7 +51,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.AbstractConverter;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -342,7 +342,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build();
-        executeQuery( config, " UPDATE MYTABLE set id=7 where id=1", PolyphenyDbPrepareImpl.DEBUG );
+        executeQuery( config, " UPDATE MYTABLE set id=7 where id=1", RuntimeConfig.DEBUG.getBoolean() );
     }
 
 

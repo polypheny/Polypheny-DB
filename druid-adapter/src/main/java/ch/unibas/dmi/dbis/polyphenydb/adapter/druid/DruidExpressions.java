@@ -45,8 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
@@ -56,12 +54,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Chars;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

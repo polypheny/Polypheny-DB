@@ -195,10 +195,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
  */
 public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
-    public static final boolean DEBUG = Util.getBooleanProperty( "polyphenydb.debug" );
-
-    public static final boolean COMMUTE = Util.getBooleanProperty( "polyphenydb.enable.join.commute" );
-
     /**
      * Whether to enable the collation trait. Some extra optimizations are possible if enabled, but queries should work either way. At some point
      * this will become a preference, or we will run multiple phases: first disabled, then enabled.
@@ -254,7 +250,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public static final List<RelOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     TableScanRule.INSTANCE,
-                    COMMUTE
+                    RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
                     FilterTableScanRule.INSTANCE,

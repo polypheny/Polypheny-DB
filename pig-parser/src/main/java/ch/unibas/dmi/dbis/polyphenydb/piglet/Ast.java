@@ -45,18 +45,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.piglet;
 
 
-import org.apache.calcite.avatica.util.Spacer;
-import org.apache.calcite.linq4j.Ord;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.ImmutableList;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import org.apache.calcite.avatica.util.Spacer;
+import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -45,10 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-
 import java.util.HashMap;
 import java.util.Map;
 

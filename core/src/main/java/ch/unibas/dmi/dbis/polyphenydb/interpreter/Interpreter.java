@@ -46,11 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.interpreter;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
@@ -483,7 +483,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 if ( rel == null ) {
                     break;
                 }
-                if ( PolyphenyDbPrepareImpl.DEBUG ) {
+                if ( RuntimeConfig.DEBUG.getBoolean() ) {
                     System.out.println( "Interpreter: rewrite " + p + " to " + rel );
                 }
                 p = rel;

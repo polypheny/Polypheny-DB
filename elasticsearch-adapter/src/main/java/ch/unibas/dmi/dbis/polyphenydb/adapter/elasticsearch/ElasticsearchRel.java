@@ -46,13 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

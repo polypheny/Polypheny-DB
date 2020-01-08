@@ -101,6 +101,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
+    protected static final boolean ENABLE_STREAM = true;
 
 
     protected AbstractQueryProcessor( Transaction transaction ) {

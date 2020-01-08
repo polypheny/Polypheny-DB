@@ -49,6 +49,7 @@ import static org.junit.Assert.assertEquals;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbServerStatement;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
@@ -66,7 +67,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.AbstractConverter.ExpandConversionRule;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
@@ -126,7 +126,7 @@ public class TraitPropagationTest {
     @Test
     public void testOne() throws Exception {
         RelNode planned = run( new PropAction(), RULES );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES ) );
         }
         final RelMetadataQuery mq = RelMetadataQuery.instance();

@@ -50,8 +50,8 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
@@ -153,7 +153,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
         final ClassDeclaration classDeclaration = Expressions.classDecl( Modifier.PUBLIC, "Buzz", null, ImmutableList.of( Scalar.class ), declarations );
         String s = Expressions.toString( declarations, "\n", false );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, s );
         }
         try {
@@ -175,7 +175,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         cbe.setClassName( expr.name );
         cbe.setImplementedInterfaces( new Class[]{ Scalar.class } );
         cbe.setParentClassLoader( JaninoRexCompiler.class.getClassLoader() );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );
         }

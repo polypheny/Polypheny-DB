@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

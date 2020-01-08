@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.tools;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
 import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.NoneToBindableConverterRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -57,7 +58,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepMatchOrder;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
@@ -150,7 +150,7 @@ public class Programs {
                     SemiJoinRule.PROJECT,
                     SemiJoinRule.JOIN,
                     TableScanRule.INSTANCE,
-                    PolyphenyDbPrepareImpl.COMMUTE
+                    RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
                     FilterTableScanRule.INSTANCE,

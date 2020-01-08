@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
 import com.google.common.collect.ImmutableSet;
-
 import java.util.Set;
 
 

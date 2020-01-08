@@ -53,13 +53,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-
-import org.apache.pig.scripting.Pig;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.pig.scripting.Pig;
 
 
 /**

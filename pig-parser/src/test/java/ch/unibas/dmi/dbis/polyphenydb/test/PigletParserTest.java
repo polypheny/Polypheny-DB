@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.piglet.parser.ParseException;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
