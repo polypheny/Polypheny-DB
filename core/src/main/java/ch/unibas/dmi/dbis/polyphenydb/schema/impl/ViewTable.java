@@ -111,7 +111,7 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
 
 
     /**
-     * Returns the the schema path of the view.
+     * Returns the schema path of the view.
      */
     public List<String> getSchemaPath() {
         return schemaPath;
@@ -119,7 +119,7 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
 
 
     /**
-     * Returns the the path of the view.
+     * Returns the path of the view.
      */
     public List<String> getViewPath() {
         return viewPath;
