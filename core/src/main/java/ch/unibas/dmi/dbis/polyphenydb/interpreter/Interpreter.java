@@ -182,11 +182,11 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     private class FooCompiler implements ScalarCompiler {
 
         @Override
-        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
+        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
             final RexNode node = nodes.get( 0 );
             if ( node instanceof RexCall ) {
                 final RexCall call = (RexCall) node;
-                final Scalar argScalar = compile( call.getOperands(), inputRowType );
+                final Scalar argScalar = compile( call.getOperands(), inputRowType, dataContext );
                 return new Scalar() {
                     final Object[] args = new Object[call.getOperands().size()];
 
@@ -550,7 +550,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             if ( inputRowType == null ) {
                 inputRowType = interpreter.dataContext.getTypeFactory().builder().build();
             }
-            return scalarCompiler.compile( nodes, inputRowType );
+            return scalarCompiler.compile( nodes, inputRowType, interpreter.dataContext );
         }
 
 
@@ -657,7 +657,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
      */
     interface ScalarCompiler {
 
-        Scalar compile( List<RexNode> nodes, RelDataType inputRowType );
+        Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext );
     }
 }
 

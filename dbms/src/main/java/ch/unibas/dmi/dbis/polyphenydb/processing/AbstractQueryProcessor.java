@@ -40,7 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
@@ -97,7 +97,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     private final Transaction transaction;
     private final RexBuilder rexBuilder;
 
-    protected static final boolean ENABLE_BINDABLE = true;
+    protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
     protected static final boolean CONSTANT_REDUCTION = false;
@@ -125,7 +125,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         // Structured type flattening, view expansion, and plugging in physical storage.
         //logicalRoot = logicalRoot.withRel( flattenTypes( logicalRoot.rel, true ) );
 
-        RelRoot optimalRoot = optimize( logicalRoot );
+        final Convention resultConvention =
+                ENABLE_BINDABLE
+                        ? BindableConvention.INSTANCE
+                        : EnumerableConvention.INSTANCE;
+
+        RelRoot optimalRoot = optimize( logicalRoot, resultConvention );
 
         final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), logicalRoot.validatedRowType );
 
@@ -134,7 +139,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
         //}
 
-        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType );
+        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention );
 
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
@@ -145,7 +150,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType ) {
+    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention ) {
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         if ( log.isTraceEnabled() ) {
@@ -197,7 +202,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             resultClazz = (Class) ((Typed) preparedResult).getElementType();
         }
         final CursorFactory cursorFactory =
-                optimalRoot.rel.getConvention() == BindableConvention.INSTANCE
+                resultConvention == BindableConvention.INSTANCE
                         ? CursorFactory.ARRAY
                         : CursorFactory.deduce( columns, resultClazz );
         //noinspection unchecked
@@ -218,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private RelRoot optimize( RelRoot logicalRoot ) {
+    private RelRoot optimize( RelRoot logicalRoot, Convention resultConvention ) {
         RelNode logicalPlan = logicalRoot.rel;
         final RelDataType rowType = logicalPlan.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -229,12 +234,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         RelRoot root = new RelRoot( logicalPlan, logicalPlan.getRowType(), logicalRoot.kind, fields, collation );
 
         final RelTraitSet desiredTraits = root.rel.getTraitSet()
-                .replace( BindableConvention.INSTANCE )
+                .replace( resultConvention )
                 .replace( root.collation )
                 .simplify();
 
         final Program program = Programs.standard();
         final RelNode rootRel4 = program.run( getPlanner(), root.rel, desiredTraits );
+
+        //final RelNode relNode = getPlanner().changeTraits( root.rel, desiredTraits );
+        //getPlanner().setRoot(relNode);
+        //final RelNode rootRel4 = getPlanner().findBestExp();
 
         return root.withRel( rootRel4 );
     }
@@ -269,7 +278,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );
 
-                bindable = EnumerableInterpretable.toBindable( internalParameters, transaction.getPrepareContext().spark(), enumerable, prefer, null );
+                bindable = EnumerableInterpretable.toBindable( internalParameters, transaction.getPrepareContext().spark(), enumerable, prefer, transaction );
             } finally {
                 CatalogReader.THREAD_LOCAL.remove();
             }

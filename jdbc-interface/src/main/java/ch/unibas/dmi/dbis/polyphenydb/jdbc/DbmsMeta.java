@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
@@ -137,6 +136,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     public static final int UNLIMITED_COUNT = -2;
 
+    public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
+
     private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
@@ -191,7 +192,13 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+    private MetaResultSet createMetaResultSet(
+            final ConnectionHandle ch,
+            final StatementHandle statementHandle,
+            Map<String, Object> internalParameters,
+            List<ColumnMetaData> columns,
+            CursorFactory cursorFactory,
+            final Frame firstFrame ) {
         final PolyphenyDbSignature<Object> signature =
                 new PolyphenyDbSignature<Object>(
                         "",
@@ -981,7 +988,9 @@ public class DbmsMeta implements ProtobufMeta {
                         h.id,
                         false,
                         signature,
-                        maxRowsInFirstFrame > 0 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE // Send first frame to together with the response to save a fetch call
+                        maxRowsInFirstFrame > 0 && SEND_FIRST_FRAME_WITH_RESPONSE
+                                ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( MissingResultsException e ) {
                 throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );

@@ -63,6 +63,7 @@ import ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreters;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
@@ -191,7 +192,8 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**
- * This class is public so that projects that create their own JDBC driver and server can fine-tune preferences. However, this class and its methods are subject to change without notice.
+ * This class is public so that projects that create their own JDBC driver and server can fine-tune preferences.
+ * However, this class and its methods are subject to change without notice.
  */
 public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
@@ -309,11 +311,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader =
-                new PolyphenyDbCatalogReader(
-                        context.getRootSchema(),
-                        context.getDefaultSchemaPath(),
-                        typeFactory );
+        PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader(
+                context.getRootSchema(),
+                context.getDefaultSchemaPath(),
+                typeFactory );
         SqlParser parser = createParser( sql );
         SqlNode sqlNode;
         try {
@@ -344,7 +345,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             configBuilder.withConvertTableAccess( false );
         }
 
-        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt( this, context, catalogReader, typeFactory, context.getRootSchema(), null, planner, resultConvention, createConvertletTable() );
+        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
+                this,
+                context,
+                catalogReader,
+                typeFactory,
+                context.getRootSchema(),
+                null,
+                planner,
+                resultConvention,
+                createConvertletTable() );
         final SqlToRelConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, configBuilder.build() );
 
         final RelRoot root = converter.convertQuery( sqlNode1, false, true );
@@ -383,7 +393,18 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             if ( fail ) {
                 throw validator.newValidationError( sqlNode, Static.RESOURCE.modifiableViewMustBeBasedOnSingleTable() );
             }
-            return new AnalyzeViewResult( this, validator, sql, sqlNode, validator.getValidatedNodeType( sqlNode ), root, null, null, null, null, false );
+            return new AnalyzeViewResult(
+                    this,
+                    validator,
+                    sql,
+                    sqlNode,
+                    validator.getValidatedNodeType( sqlNode ),
+                    root,
+                    null,
+                    null,
+                    null,
+                    null,
+                    false );
         }
         final RelOptTable targetRelTable = scan.getTable();
         final RelDataType targetRowType = targetRelTable.getRowType();
@@ -402,9 +423,22 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     int index = rexInputRef.getIndex();
                     if ( projectMap.get( index ) != null ) {
                         if ( fail ) {
-                            throw validator.newValidationError( sqlNode, Static.RESOURCE.moreThanOneMappedColumn( targetRowType.getFieldList().get( index ).getName(), Util.last( tablePath ) ) );
+                            throw validator.newValidationError(
+                                    sqlNode,
+                                    Static.RESOURCE.moreThanOneMappedColumn( targetRowType.getFieldList().get( index ).getName(), Util.last( tablePath ) ) );
                         }
-                        return new AnalyzeViewResult( this, validator, sql, sqlNode, validator.getValidatedNodeType( sqlNode ), root, null, null, null, null, false );
+                        return new AnalyzeViewResult(
+                                this,
+                                validator,
+                                sql,
+                                sqlNode,
+                                validator.getValidatedNodeType( sqlNode ),
+                                root,
+                                null,
+                                null,
+                                null,
+                                null,
+                                false );
                     }
                     projectMap.put( index, rexBuilder.makeInputRef( viewRel, node.i ) );
                     columnMapping.add( index );
@@ -740,7 +774,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 enableBindable
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
-        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt( this, context, catalogReader, typeFactory, context.getRootSchema(), prefer, planner, resultConvention, createConvertletTable() );
+        final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
+                this,
+                context,
+                catalogReader,
+                typeFactory,
+                context.getRootSchema(),
+                prefer,
+                planner,
+                resultConvention,
+                createConvertletTable() );
 
         final RelDataType x;
         final PreparedResult preparedResult;

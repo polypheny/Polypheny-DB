@@ -414,8 +414,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, Clause.ORDER_BY );
         if ( stack.size() != 1 && builder.select.getSelectList() == null ) {
-            // Generates explicit column names instead of start(*) for
-            // non-root order by to avoid ambiguity.
+            // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
             for ( RelDataTypeField field : e.getRowType().getFieldList() ) {
                 addSelect( selectList, builder.context.field( field.getIndex() ), e.getRowType() );

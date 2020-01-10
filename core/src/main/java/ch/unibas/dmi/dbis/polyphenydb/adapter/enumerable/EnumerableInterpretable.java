@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
@@ -107,14 +108,19 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
-        final Bindable bindable = toBindable( implementor.internalParameters, implementor.spark, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY, implementor.dataContext );
+        final Bindable bindable = toBindable(
+                implementor.internalParameters,
+                implementor.spark,
+                (EnumerableRel) getInput(),
+                EnumerableRel.Prefer.ARRAY,
+                implementor.dataContext.getTransaction() );
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, DataContext dataContext ) {
+    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Transaction transaction ) {
         EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
@@ -124,15 +130,13 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             Util.debugCode( System.out, s );
         }
 
-        if ( dataContext != null && dataContext.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
             InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
             InformationGroup group = new InformationGroup( page, "Generated Code" );
             queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
             queryAnalyzer.addGroup( group );
-            InformationCode informationCode = new InformationCode(
-                    group,
-                    s );
+            InformationCode informationCode = new InformationCode( group, s );
             queryAnalyzer.registerInformation( informationCode );
         }
 

@@ -45,12 +45,17 @@
 package ch.unibas.dmi.dbis.polyphenydb.interpreter;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
@@ -96,7 +101,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
 
     @Override
-    public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
+    public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         for ( RexNode node : nodes ) {
             programBuilder.addProject( node, null );
@@ -127,14 +132,14 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
                             Expressions.assign(
                                     Expressions.arrayIndex( outputValues_, Expressions.constant( i ) ), list.get( i ) ) ) );
         }
-        return baz( context_, outputValues_, builder.toBlock() );
+        return baz( context_, outputValues_, builder.toBlock(), dataContext );
     }
 
 
     /**
      * Given a method that implements {@link Scalar#execute(Context, Object[])}, adds a bridge method that implements {@link Scalar#execute(Context)}, and compiles.
      */
-    static Scalar baz( ParameterExpression context_, ParameterExpression outputValues_, BlockStatement block ) {
+    static Scalar baz( ParameterExpression context_, ParameterExpression outputValues_, BlockStatement block, DataContext dataContext ) {
         final List<MemberDeclaration> declarations = new ArrayList<>();
 
         // public void execute(Context, Object[] outputValues)
@@ -155,6 +160,15 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         String s = Expressions.toString( declarations, "\n", false );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, s );
+        }
+        if ( dataContext != null && dataContext.getTransaction() != null && dataContext.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
+            InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            InformationGroup group = new InformationGroup( page, "Generated Code" );
+            queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
+            queryAnalyzer.addGroup( group );
+            InformationCode informationCode = new InformationCode( group, s );
+            queryAnalyzer.registerInformation( informationCode );
         }
         try {
             return getScalar( classDeclaration, s );

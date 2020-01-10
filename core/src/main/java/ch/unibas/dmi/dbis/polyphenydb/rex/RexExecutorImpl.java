@@ -50,6 +50,10 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -126,6 +130,15 @@ public class RexExecutorImpl implements RexExecutor {
         String code = Expressions.toString( methodDecl );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, code );
+        }
+        if ( dataContext != null && dataContext.getTransaction() != null && dataContext.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
+            InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            InformationGroup group = new InformationGroup( page, "Generated Code" );
+            queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
+            queryAnalyzer.addGroup( group );
+            InformationCode informationCode = new InformationCode( group, code );
+            queryAnalyzer.registerInformation( informationCode );
         }
         return code;
     }
