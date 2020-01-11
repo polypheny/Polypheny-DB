@@ -45,6 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -56,7 +59,9 @@ import org.apache.calcite.linq4j.tree.Types;
  */
 public enum CassandraMethod {
 
-    CASSANDRA_QUERYABLE_QUERY( CassandraTable.CassandraQueryable.class, "query", List.class, List.class, List.class, List.class, Integer.class, Integer.class );
+    CASSANDRA_QUERYABLE_QUERY( CassandraTable.CassandraQueryable.class, "query", List.class, List.class, List.class, List.class, Integer.class, Integer.class ),
+    CASSANDRA_SIMPLE_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, SimpleStatement.class ),
+    CASSANDRA_BATCH_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, BatchStatement.class );
 
     public final Method method;
 

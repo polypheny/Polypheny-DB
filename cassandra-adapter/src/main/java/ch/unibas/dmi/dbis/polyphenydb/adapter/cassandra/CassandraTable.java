@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
+import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
@@ -53,6 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
+import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
@@ -171,7 +173,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
             final Integer offset,
             final Integer fetch ) {
         // Build the type of the resulting row based on the provided fields
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        /*final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         final RelDataType rowType = getRowType( typeFactory );
 
@@ -179,11 +181,11 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
             SqlTypeName typeName = rowType.getField( fieldName, true, false ).getType().getSqlTypeName();
             fieldInfo.add( fieldName, typeFactory.createSqlType( typeName ) ).nullable( true );
             return null;
-        };
+        };*/
 
         SelectFrom selectFrom = QueryBuilder.selectFrom( columnFamily );
 
-        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+//        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
 
         Select select;
         // Construct the list of fields to project
@@ -215,7 +217,9 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         final SimpleStatement statement = select.build();
 
-        return new AbstractEnumerable<Object>() {
+        return new CassandraEnumerable( session, statement, offset );
+
+        /*return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
                 final ResultSet results = session.execute( statement );
@@ -227,7 +231,32 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
                 }
                 return enumerator;
             }
+        };*/
+    }
+
+    public Enumerable<Object> insert() {
+        /*final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final RelDataType rowType = getRowType( typeFactory );
+
+        Function1<String, Void> addField = fieldName -> {
+            SqlTypeName typeName = rowType.getField( fieldName, true, false ).getType().getSqlTypeName();
+            fieldInfo.add( fieldName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            return null;
         };
+
+        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );*/
+
+
+        return null;
+    }
+
+    CqlSession getSession() {
+        return cassandraSchema.getSession();
+    }
+
+    String getColumnFamily() {
+        return this.columnFamily;
     }
 
 
@@ -252,7 +281,10 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        return null;
+//        return new CassandraTableModify( cluster,  )
+        CassandraRel.CONVENTION.register( cluster.getPlanner() );
+        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+//        return new CassandraTableModify( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened, this, this.columnFamily );
     }
 
 

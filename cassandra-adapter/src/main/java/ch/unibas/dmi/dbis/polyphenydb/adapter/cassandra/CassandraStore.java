@@ -250,7 +250,7 @@ public class CassandraStore extends Store {
             case VARBINARY:
                 throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
             case INTEGER:
-                return DataTypes.INET;
+                return DataTypes.INT;
             case BIGINT:
                 return DataTypes.BIGINT;
             case REAL:

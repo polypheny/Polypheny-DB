@@ -46,8 +46,13 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -69,7 +74,15 @@ public interface CassandraRel extends RelNode {
     /**
      * Calling convention for relational operations that occur in Cassandra.
      */
-    Convention CONVENTION = new Convention.Impl( "CASSANDRA", CassandraRel.class );
+    Convention CONVENTION = new Convention.Impl( "CASSANDRA", CassandraRel.class ) {
+        @Override
+        public void register( RelOptPlanner planner ) {
+            for ( RelOptRule rule : CassandraRules.RULES ) {
+                planner.addRule( rule );
+            }
+            planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
+        }
+    };
 
 
     /**
@@ -77,7 +90,10 @@ public interface CassandraRel extends RelNode {
      */
     class Implementor {
 
-        Type type = null;
+        SimpleStatement simpleStatement = null;
+        BatchStatement batchStatement = null;
+
+        Type type = Type.SELECT;
 
         final List<Selector> selectFields = new ArrayList<>();
         final List<Relation> whereClause = new ArrayList<>();
@@ -86,6 +102,7 @@ public interface CassandraRel extends RelNode {
         final Map<String, ClusteringOrder> order = new LinkedHashMap<>();
 
         final List<Map<String, Term>> insertValues = new ArrayList<>();
+        boolean ifNotExists = false;
 
         final List<Assignment> setAssignments = new ArrayList<>();
 

@@ -51,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.DataType;
@@ -66,21 +67,22 @@ import org.apache.calcite.linq4j.Enumerator;
 class CassandraEnumerator implements Enumerator<Object> {
 
     private final Iterator<Row> iterator;
-    private final List<RelDataTypeField> fieldTypes;
+//    private final List<RelDataTypeField> fieldTypes;
+    private final ColumnDefinitions columnDefinitions;
     private Row current;
 
     /**
      * Creates a CassandraEnumerator.
      *
      * @param results Cassandra result set ({@link com.datastax.oss.driver.api.core.cql.ResultSet})
-     * @param protoRowType The type of resulting rows
      */
-    CassandraEnumerator( ResultSet results, RelProtoDataType protoRowType ) {
+    CassandraEnumerator( ResultSet results ) {
         this.iterator = results.iterator();
         this.current = null;
+        this.columnDefinitions = results.getColumnDefinitions();
 
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        this.fieldTypes = protoRowType.apply( typeFactory ).getFieldList();
+//        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+//        this.fieldTypes = protoRowType.apply( typeFactory ).getFieldList();
     }
 
 
@@ -91,14 +93,14 @@ class CassandraEnumerator implements Enumerator<Object> {
      */
     @Override
     public Object current() {
-        if ( fieldTypes.size() == 1 ) {
+        if ( columnDefinitions.size() == 1 ) {
             // If we just have one field, produce it directly
-            return currentRowField( 0, fieldTypes.get( 0 ).getType().getSqlTypeName() );
+            return currentRowField( 0 );
         } else {
             // Build an array with all fields in this row
-            Object[] row = new Object[fieldTypes.size()];
-            for ( int i = 0; i < fieldTypes.size(); i++ ) {
-                row[i] = currentRowField( i, fieldTypes.get( i ).getType().getSqlTypeName() );
+            Object[] row = new Object[columnDefinitions.size()];
+            for ( int i = 0; i < columnDefinitions.size(); i++ ) {
+                row[i] = currentRowField( i );
             }
             return row;
         }
@@ -109,10 +111,9 @@ class CassandraEnumerator implements Enumerator<Object> {
      * Get a field for the current row from the underlying object.
      *
      * @param index Index of the field within the Row object
-     * @param typeName Type of the field in this row
      */
-    private Object currentRowField( int index, SqlTypeName typeName ) {
-        DataType type = current.getColumnDefinitions().get( index ).getType();
+    private Object currentRowField( int index ) {
+        DataType type = this.columnDefinitions.get( index ).getType();
         if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
             return current.getString( index );
         } else if ( type == DataTypes.INT || type == DataTypes.VARINT ) {

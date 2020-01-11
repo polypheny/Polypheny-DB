@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
@@ -69,6 +70,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -78,6 +80,7 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 /**
  * Relational expression representing a scan of a table in a Cassandra data source.
  */
+@Slf4j
 public class CassandraToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
     protected CassandraToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
@@ -105,38 +108,54 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
         cassandraImplementor.visitChild( 0, getInput() );
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
-        final Expression fields =
-                list.append( "fields",
-                        constantArrayList(
-                                Pair.zip( CassandraRules.cassandraFieldNames( rowType ),
-                                        new AbstractList<Class>() {
-                                            @Override
-                                            public Class get( int index ) {
-                                                return physType.fieldClass( index );
-                                            }
+        Expression enumerable;
+        if ( cassandraImplementor.type == Type.SELECT ) {
+            final Expression fields =
+                    list.append( "fields",
+                            constantArrayList(
+                                    Pair.zip( CassandraRules.cassandraFieldNames( rowType ),
+                                            new AbstractList<Class>() {
+                                                @Override
+                                                public Class get( int index ) {
+                                                    return physType.fieldClass( index );
+                                                }
 
 
-                                            @Override
-                                            public int size() {
-                                                return rowType.getFieldCount();
-                                            }
-                                        } ),
-                                Pair.class ) );
-        List<Map.Entry<String, ClusteringOrder>> orderList = new ArrayList<>();
-        for ( Map.Entry<String, ClusteringOrder> entry : Pair.zip( cassandraImplementor.order.keySet(), cassandraImplementor.order.values() ) ) {
-            orderList.add( entry );
+                                                @Override
+                                                public int size() {
+                                                    return rowType.getFieldCount();
+                                                }
+                                            } ),
+                                    Pair.class ) );
+            List<Map.Entry<String, ClusteringOrder>> orderList = new ArrayList<>();
+            for ( Map.Entry<String, ClusteringOrder> entry : Pair.zip( cassandraImplementor.order.keySet(), cassandraImplementor.order.values() ) ) {
+                orderList.add( entry );
+            }
+            final Expression selectFields = list.append( "selectFields", constantArrayList( cassandraImplementor.selectFields, Pair.class ) );
+            final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraTable.CassandraQueryable.class ) );
+            final Expression predicates = list.append( "predicates", constantArrayList( cassandraImplementor.whereClause, String.class ) );
+            final Expression order = list.append( "order", constantArrayList( orderList, Pair.class ) );
+            final Expression offset = list.append( "offset", Expressions.constant( cassandraImplementor.offset ) );
+            final Expression fetch = list.append( "fetch", Expressions.constant( cassandraImplementor.fetch ) );
+            enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_QUERYABLE_QUERY.method, fields, selectFields, predicates, order, offset, fetch ) );
+            if ( RuntimeConfig.DEBUG.getBoolean() ) {
+                System.out.println( "Cassandra: " + predicates );
+            }
+            Hook.QUERY_PLAN.run( predicates );
+        } else {
+            log.info( "Attempting to turn non select cql into enumerable." );
+            if ( cassandraImplementor.simpleStatement != null ) {
+                final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraEnumerable.class ) );
+                final Expression simpleStatement = list.append( "statement", Expressions.constant( cassandraImplementor.simpleStatement ) );
+                final Expression cqlSession = list.append( "session", Expressions.constant( cassandraImplementor.cassandraTable.getSession() ) );
+                enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_SIMPLE_ENUMERABLE.method, cqlSession, simpleStatement ) );
+            } else {
+                final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraEnumerable.class ) );
+                final Expression batchStatement = list.append( "statement", Expressions.constant( cassandraImplementor.batchStatement ) );
+                final Expression cqlSession = list.append( "session", Expressions.constant( cassandraImplementor.cassandraTable.getSession() ) );
+                enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_BATCH_ENUMERABLE.method, cqlSession, batchStatement ) );
+            }
         }
-        final Expression selectFields = list.append( "selectFields", constantArrayList( cassandraImplementor.selectFields, Pair.class ) );
-        final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraTable.CassandraQueryable.class ) );
-        final Expression predicates = list.append( "predicates", constantArrayList( cassandraImplementor.whereClause, String.class ) );
-        final Expression order = list.append( "order", constantArrayList( orderList, Pair.class ) );
-        final Expression offset = list.append( "offset", Expressions.constant( cassandraImplementor.offset ) );
-        final Expression fetch = list.append( "fetch", Expressions.constant( cassandraImplementor.fetch ) );
-        Expression enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_QUERYABLE_QUERY.method, fields, selectFields, predicates, order, offset, fetch ) );
-        if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            System.out.println( "Cassandra: " + predicates );
-        }
-        Hook.QUERY_PLAN.run( predicates );
         list.add( Expressions.return_( null, enumerable ) );
         return implementor.result( physType, list.toBlock() );
     }
