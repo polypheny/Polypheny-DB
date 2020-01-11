@@ -183,51 +183,14 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         SelectFrom selectFrom = QueryBuilder.selectFrom( columnFamily );
 
-//        if ( selectFields.isEmpty() )
-
-        /*if ( selectFields.isEmpty() ) {
-            for ( Map.Entry<String, Class> field : fields ) {
-                addField.apply( field.getKey() );
-            }
-        } else {
-            for ( Selector field : selectFields ) {
-                // FIXME js: what even ist this?
-                addField.apply( field.getKey() );
-            }
-        }*/
-
         final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
 
         Select select;
         // Construct the list of fields to project
-        final String selectString;
         if ( selectFields.isEmpty() ) {
             select = selectFrom.all();
         } else {
             select = selectFrom.selectors( selectFields );
-            /*selectString = Util.toString( () -> {
-                final Iterator<Map.Entry<String, String>> selectIterator = selectFields.iterator();
-
-                return new Iterator<String>() {
-                    @Override
-                    public boolean hasNext() {
-                        return selectIterator.hasNext();
-                    }
-
-
-                    @Override
-                    public String next() {
-                        Map.Entry<String, String> entry = selectIterator.next();
-                        return entry.getKey() + " AS " + entry.getValue();
-                    }
-
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }, "", ", ", "" );*/
         }
 
         select = select.where( predicates );
@@ -249,12 +212,6 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         select = select.allowFiltering();
 
-        // Combine all predicates conjunctively
-        /*String whereClause = "";
-        if ( !predicates.isEmpty() ) {
-            whereClause = " WHERE ";
-            whereClause += Util.toString( predicates, "", " AND ", "" );
-        }*/
 
         final SimpleStatement statement = select.build();
 

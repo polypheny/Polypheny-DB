@@ -51,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -76,11 +77,15 @@ public interface CassandraRel extends RelNode {
      */
     class Implementor {
 
+        Type type = null;
+
         final List<Selector> selectFields = new ArrayList<>();
         final List<Relation> whereClause = new ArrayList<>();
         int offset = 0;
         int fetch = -1;
         final Map<String, ClusteringOrder> order = new LinkedHashMap<>();
+
+        final List<Map<String, Term>> insertValues = new ArrayList<>();
 
         final List<Assignment> setAssignments = new ArrayList<>();
 
@@ -88,10 +93,22 @@ public interface CassandraRel extends RelNode {
         CassandraTable cassandraTable;
 
 
+        enum Type {
+            SELECT,
+            INSERT,
+            UPDATE,
+            DELETE
+        }
+
+
         public void addWhereRelations(List<Relation> relations) {
             if ( relations != null ) {
                 whereClause.addAll( relations );
             }
+        }
+
+        public void addInsertValues( List<Map<String, Term>> additionalValues ) {
+            this.insertValues.addAll( additionalValues );
         }
 
         public void addSelectColumns( List<Selector> selectFields ) {
