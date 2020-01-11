@@ -47,10 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 import static ch.unibas.dmi.dbis.polyphenydb.runtime.HttpUtils.post;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row.RowBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -132,7 +132,7 @@ class DruidConnectionImpl implements DruidConnection {
     public void request( QueryType queryType, String data, Sink sink, List<String> fieldNames, List<ColumnMetaData.Rep> fieldTypes, Page page ) {
         final String url = this.url + "/druid/v2/?pretty";
         final Map<String, String> requestHeaders = ImmutableMap.of( "Content-Type", "application/json" );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( data );
         }
         try ( InputStream in0 = post( url, data, requestHeaders, 10000, 1800000 ); InputStream in = traceResponse( in0 ) ) {
@@ -150,7 +150,7 @@ class DruidConnectionImpl implements DruidConnection {
         final JsonFactory factory = new JsonFactory();
         final RowBuilder rowBuilder = Row.newBuilder( fieldNames.size() );
 
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             try {
                 final byte[] bytes = AvaticaUtils.readFullyToBytes( in );
                 System.out.println( "Response: " + new String( bytes, StandardCharsets.UTF_8 ) );
@@ -556,7 +556,7 @@ class DruidConnectionImpl implements DruidConnection {
         final String url = this.url + "/druid/v2/?pretty";
         final Map<String, String> requestHeaders = ImmutableMap.of( "Content-Type", "application/json" );
         final String data = DruidQuery.metadataQuery( dataSourceName, intervals );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( "Druid: " + data );
         }
         try ( InputStream in0 = post( url, data, requestHeaders, 10000, 1800000 ); InputStream in = traceResponse( in0 ) ) {
@@ -610,7 +610,7 @@ class DruidConnectionImpl implements DruidConnection {
         final Map<String, String> requestHeaders = ImmutableMap.of( "Content-Type", "application/json" );
         final String data = null;
         final String url = coordinatorUrl + "/druid/coordinator/v1/metadata/datasources";
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( "Druid: table names" + data + "; " + url );
         }
         try ( InputStream in0 = post( url, data, requestHeaders, 10000, 1800000 );
@@ -626,7 +626,7 @@ class DruidConnectionImpl implements DruidConnection {
 
 
     private InputStream traceResponse( InputStream in ) {
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             try {
                 final byte[] bytes = AvaticaUtils.readFullyToBytes( in );
                 in.close();

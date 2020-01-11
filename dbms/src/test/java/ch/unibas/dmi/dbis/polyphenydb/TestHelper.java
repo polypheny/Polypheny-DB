@@ -116,7 +116,7 @@ public class TestHelper {
 
         public JdbcConnection() throws SQLException {
             try {
-                Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.Driver" );
+                Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny-DB Driver not found", e );
             }

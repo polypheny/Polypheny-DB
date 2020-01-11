@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -56,7 +55,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

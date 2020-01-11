@@ -143,7 +143,17 @@ public enum RuntimeConfig {
             "Walks over a tree of relational expressions, replacing each RelNode with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
             true,
             ConfigType.BOOLEAN,
-            "planningGroup" );
+            "planningGroup" ),
+
+    DEBUG( "runtime/debug",
+            "Print debugging output.",
+            false,
+            ConfigType.BOOLEAN ),
+
+    JOIN_COMMUTE( "runtime/joinCommute",
+            "Commute joins in planner.",
+            false,
+            ConfigType.BOOLEAN );
 
 
     private final String key;

@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -59,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-
 import java.util.ArrayList;
 import java.util.List;
 

@@ -45,6 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import ch.unibas.dmi.dbis.polyphenydb.piglet.Ast;
 import ch.unibas.dmi.dbis.polyphenydb.piglet.Ast.Program;
 import ch.unibas.dmi.dbis.polyphenydb.piglet.Handler;
@@ -53,18 +56,13 @@ import ch.unibas.dmi.dbis.polyphenydb.piglet.parser.PigletParser;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.Ordering;
-
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**

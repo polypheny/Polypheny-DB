@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.piglet;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -59,9 +58,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import com.google.common.collect.ImmutableList;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -47,9 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-
 import java.util.ArrayList;
 import java.util.List;
 

@@ -46,22 +46,15 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-
-import org.apache.geode.cache.GemFireCache;
-import org.apache.geode.cache.Region;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils.createClientCache;
+import org.apache.geode.cache.GemFireCache;
+import org.apache.geode.cache.Region;
 
 
 /**

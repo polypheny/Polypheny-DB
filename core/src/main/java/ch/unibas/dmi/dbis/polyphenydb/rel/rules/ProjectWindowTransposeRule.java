@@ -104,7 +104,7 @@ public class ProjectWindowTransposeRule extends RelOptRule {
         // (Note that the constants used in LogicalWindow are not considered here)
         final ImmutableBitSet beReferred = findReference( project, window );
 
-        // If all the the window input columns are referred, it is impossible to trim anyone of them out
+        // If all the window input columns are referred, it is impossible to trim anyone of them out
         if ( beReferred.cardinality() == windowInputColumn ) {
             return;
         }

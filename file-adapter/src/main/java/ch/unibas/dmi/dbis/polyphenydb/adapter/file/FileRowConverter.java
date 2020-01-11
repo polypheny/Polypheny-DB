@@ -46,16 +46,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
-
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -67,6 +61,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 
 /**

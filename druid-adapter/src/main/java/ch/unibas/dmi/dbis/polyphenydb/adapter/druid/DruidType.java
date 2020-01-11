@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 
 
 /**

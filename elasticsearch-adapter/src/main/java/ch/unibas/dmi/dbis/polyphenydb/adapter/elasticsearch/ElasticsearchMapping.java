@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
-
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Locale;

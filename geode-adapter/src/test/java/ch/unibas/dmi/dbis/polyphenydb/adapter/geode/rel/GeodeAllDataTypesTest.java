@@ -45,24 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import org.apache.geode.cache.Cache;
-import org.apache.geode.cache.Region;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

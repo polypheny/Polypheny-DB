@@ -45,29 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.regex.PatternSyntaxException;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

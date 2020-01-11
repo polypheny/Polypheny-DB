@@ -739,7 +739,7 @@ public abstract class SqlUtil {
     /**
      * Creates the type of an {@link ch.unibas.dmi.dbis.polyphenydb.util.NlsString}.
      *
-     * The type inherits the The NlsString's {@link Charset} and {@link SqlCollation}, if they are set, otherwise it gets the system defaults.
+     * The type inherits the NlsString's {@link Charset} and {@link SqlCollation}, if they are set, otherwise it gets the system defaults.
      *
      * @param typeFactory Type factory
      * @param str String

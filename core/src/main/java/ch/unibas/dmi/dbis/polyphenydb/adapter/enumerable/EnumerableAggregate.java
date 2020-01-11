@@ -48,10 +48,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl.AggAddContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl.AggResultContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -222,7 +222,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
             final List<Expression> decls = new ArrayList<>( state.size() );
             for ( int i = 0; i < state.size(); i++ ) {
                 String aggName = "a" + agg.aggIdx;
-                if ( PolyphenyDbPrepareImpl.DEBUG ) {
+                if ( RuntimeConfig.DEBUG.getBoolean() ) {
                     aggName = Util.toJavaId( agg.call.getAggregation().getName(), 0 ).substring( "ID$0$".length() ) + aggName;
                 }
                 Type type = state.get( i );

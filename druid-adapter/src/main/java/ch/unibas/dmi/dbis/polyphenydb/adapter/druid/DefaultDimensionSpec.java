@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
 import java.util.Objects;
 

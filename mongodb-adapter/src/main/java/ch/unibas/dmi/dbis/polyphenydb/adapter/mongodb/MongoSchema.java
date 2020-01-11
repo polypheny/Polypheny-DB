@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.MongoClient;
@@ -55,7 +54,6 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

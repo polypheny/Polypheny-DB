@@ -46,12 +46,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import org.apache.calcite.linq4j.tree.Primitive;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-
 import com.google.common.collect.ImmutableMap;
-
 import java.util.Map;
+import org.apache.calcite.linq4j.tree.Primitive;
 
 
 /**

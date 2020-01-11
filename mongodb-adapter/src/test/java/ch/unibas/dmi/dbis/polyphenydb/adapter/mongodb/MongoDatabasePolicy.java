@@ -46,14 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.test.MongoAssertions;
-
 import com.github.fakemongo.Fongo;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
-
-import org.junit.rules.ExternalResource;
-
 import java.util.Objects;
+import org.junit.rules.ExternalResource;
 
 
 /**

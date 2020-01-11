@@ -45,13 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import org.apache.calcite.linq4j.tree.Types;
-
 import com.google.common.collect.ImmutableMap;
-
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

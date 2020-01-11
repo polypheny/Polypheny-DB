@@ -50,11 +50,11 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableFilter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableJoin;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableProject;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.interpreter.JaninoRexCompiler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.AbstractConverter;
 import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
@@ -483,7 +483,7 @@ public class JaninoRelMetadataProvider implements RelMetadataProvider {
 
         final String s = "public final class " + className + " implements " + def.handlerClass.getCanonicalName() + " {\n" + classBody + "\n" + "}";
 
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             compiler.setDebuggingInformation( true, true, true );
             System.out.println( s );
