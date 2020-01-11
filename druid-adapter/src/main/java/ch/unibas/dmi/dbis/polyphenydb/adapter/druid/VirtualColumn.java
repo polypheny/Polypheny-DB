@@ -46,12 +46,9 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Objects;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeFieldIf;
 
 
 /**

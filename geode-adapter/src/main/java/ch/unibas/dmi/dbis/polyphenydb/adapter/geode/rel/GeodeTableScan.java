@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
@@ -56,7 +53,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-
 import java.util.List;
 
 

@@ -81,7 +81,7 @@ dependencies {
     //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
     //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
-    testCompile group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
+    testCompile group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version
 }
 
 

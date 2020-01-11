@@ -62,8 +62,6 @@ dependencies {
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
 
-    implementation group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
-
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")

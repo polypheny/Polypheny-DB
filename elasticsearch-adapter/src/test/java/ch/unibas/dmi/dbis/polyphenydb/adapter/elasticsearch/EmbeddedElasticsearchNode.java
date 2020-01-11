@@ -47,7 +47,10 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
-
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Objects;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.client.Client;
@@ -59,11 +62,6 @@ import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.painless.PainlessPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
 
 
 /**

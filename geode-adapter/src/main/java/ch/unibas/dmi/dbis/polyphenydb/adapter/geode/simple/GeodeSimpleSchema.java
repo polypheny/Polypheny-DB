@@ -46,19 +46,12 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
-
-import com.google.common.collect.ImmutableMap;
-
-import java.util.Map;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils.autodetectRelTypeFromRegion;
 
 
 /**

@@ -48,7 +48,7 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil.andNot;
 import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil.removeAll;
 
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
@@ -136,7 +136,7 @@ import org.slf4j.Logger;
  */
 public class SubstitutionVisitor {
 
-    private static final boolean DEBUG = PolyphenyDbPrepareImpl.DEBUG;
+    private static final boolean DEBUG = RuntimeConfig.DEBUG.getBoolean();
 
     private static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 

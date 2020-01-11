@@ -45,18 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -68,10 +61,13 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-
 import java.util.AbstractList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 
 
 /**

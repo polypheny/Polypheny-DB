@@ -26,7 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 

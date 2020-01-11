@@ -48,9 +48,9 @@ package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
 import static ch.unibas.dmi.dbis.polyphenydb.rel.rules.LoptMultiJoin.Edge;
 import static ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
@@ -94,7 +94,7 @@ public class MultiJoinOptimizeBushyRule extends RelOptRule {
 
     public static final MultiJoinOptimizeBushyRule INSTANCE = new MultiJoinOptimizeBushyRule( RelFactories.LOGICAL_BUILDER );
 
-    private final PrintWriter pw = PolyphenyDbPrepareImpl.DEBUG
+    private final PrintWriter pw = RuntimeConfig.DEBUG.getBoolean()
             ? Util.printWriter( System.out )
             : null;
 

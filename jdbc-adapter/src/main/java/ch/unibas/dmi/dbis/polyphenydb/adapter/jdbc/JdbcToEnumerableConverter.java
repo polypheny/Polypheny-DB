@@ -52,12 +52,12 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
@@ -128,7 +128,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
         SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.physicalNameProvider );
         String sql = sqlString.getSql();
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( "[" + sql + "]" );
         }
         Hook.QUERY_PLAN.run( sql );

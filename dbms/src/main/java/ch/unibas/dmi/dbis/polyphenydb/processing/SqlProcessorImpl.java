@@ -46,7 +46,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationQueryPlan;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;

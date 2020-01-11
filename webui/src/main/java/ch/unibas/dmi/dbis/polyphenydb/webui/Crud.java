@@ -69,7 +69,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;

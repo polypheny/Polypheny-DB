@@ -45,13 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Primitive;
-
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Primitive;
 
 
 /**

@@ -46,11 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.interpreter;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
@@ -182,11 +182,11 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     private class FooCompiler implements ScalarCompiler {
 
         @Override
-        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
+        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
             final RexNode node = nodes.get( 0 );
             if ( node instanceof RexCall ) {
                 final RexCall call = (RexCall) node;
-                final Scalar argScalar = compile( call.getOperands(), inputRowType );
+                final Scalar argScalar = compile( call.getOperands(), inputRowType, dataContext );
                 return new Scalar() {
                     final Object[] args = new Object[call.getOperands().size()];
 
@@ -483,7 +483,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 if ( rel == null ) {
                     break;
                 }
-                if ( PolyphenyDbPrepareImpl.DEBUG ) {
+                if ( RuntimeConfig.DEBUG.getBoolean() ) {
                     System.out.println( "Interpreter: rewrite " + p + " to " + rel );
                 }
                 p = rel;
@@ -550,7 +550,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             if ( inputRowType == null ) {
                 inputRowType = interpreter.dataContext.getTypeFactory().builder().build();
             }
-            return scalarCompiler.compile( nodes, inputRowType );
+            return scalarCompiler.compile( nodes, inputRowType, interpreter.dataContext );
         }
 
 
@@ -657,7 +657,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
      */
     interface ScalarCompiler {
 
-        Scalar compile( List<RexNode> nodes, RelDataType inputRowType );
+        Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext );
     }
 }
 

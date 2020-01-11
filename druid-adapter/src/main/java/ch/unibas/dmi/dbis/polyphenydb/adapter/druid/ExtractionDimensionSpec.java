@@ -45,14 +45,13 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeField;
+import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeFieldIf;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.IOException;
 import java.util.Objects;
 import javax.annotation.Nullable;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeField;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeFieldIf;
 
 
 /**

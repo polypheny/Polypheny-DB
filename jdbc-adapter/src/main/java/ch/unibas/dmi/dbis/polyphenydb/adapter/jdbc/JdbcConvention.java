@@ -62,7 +62,7 @@ import org.apache.calcite.linq4j.tree.Expression;
  * This is the only convention, thus far, that is not a singleton. Each instance contains a JDBC schema (and therefore a data source). If Polypheny-DB is working with two different databases, it would even make sense to convert
  * from "JDBC#A" convention to "JDBC#B", even though we don't do it currently. (That would involve asking database B to open a database link to database A.)
  *
- * As a result, converter rules from and two this convention need to be instantiated, at the start of planning, for each JDBC database in play.
+ * As a result, converter rules from and to this convention need to be instantiated, at the start of planning, for each JDBC database in play.
  */
 public class JdbcConvention extends Convention.Impl {
 

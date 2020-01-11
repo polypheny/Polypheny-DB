@@ -45,9 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -60,10 +57,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-
 import java.util.ArrayList;
 import java.util.List;
 

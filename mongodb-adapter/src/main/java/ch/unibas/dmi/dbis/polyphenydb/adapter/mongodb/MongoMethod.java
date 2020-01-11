@@ -45,12 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
-import org.apache.calcite.linq4j.tree.Types;
-
 import com.google.common.collect.ImmutableMap;
-
 import java.lang.reflect.Method;
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

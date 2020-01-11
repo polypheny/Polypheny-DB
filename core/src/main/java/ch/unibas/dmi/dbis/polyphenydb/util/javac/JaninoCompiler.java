@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.util.javac;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -102,7 +102,7 @@ public class JaninoCompiler implements JavaCompiler {
                         args.destdir == null
                                 ? null
                                 : new File( args.destdir ) );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             classLoader.setDebuggingInfo( true, true, true );
         }

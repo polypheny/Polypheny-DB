@@ -45,10 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind.INPUT_REF;
+import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind.LITERAL;
+
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -59,14 +58,9 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-
 import com.google.common.base.Preconditions;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind.INPUT_REF;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind.LITERAL;
 
 
 /**

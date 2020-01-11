@@ -532,7 +532,14 @@ public abstract class Prepare {
         protected final List<RelCollation> collations;
 
 
-        public PreparedResultImpl( RelDataType rowType, RelDataType parameterRowType, List<List<String>> fieldOrigins, List<RelCollation> collations, RelNode rootRel, LogicalTableModify.Operation tableModOp, boolean isDml ) {
+        public PreparedResultImpl(
+                RelDataType rowType,
+                RelDataType parameterRowType,
+                List<List<String>> fieldOrigins,
+                List<RelCollation> collations,
+                RelNode rootRel,
+                LogicalTableModify.Operation tableModOp,
+                boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );
             this.fieldOrigins = Objects.requireNonNull( fieldOrigins );
