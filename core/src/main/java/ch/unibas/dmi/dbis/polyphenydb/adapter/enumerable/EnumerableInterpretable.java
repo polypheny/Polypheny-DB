@@ -130,7 +130,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             Util.debugCode( System.out, s );
         }
 
-        if ( transaction.isAnalyze() ) {
+        if ( transaction != null && transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
             InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
             InformationGroup group = new InformationGroup( page, "Generated Code" );
