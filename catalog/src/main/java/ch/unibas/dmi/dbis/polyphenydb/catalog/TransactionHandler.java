@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +84,7 @@ abstract class TransactionHandler {
 
     private Statement createStatement() throws SQLException {
         if ( openStatements == null ) {
-            openStatements = new LinkedList<>();
+            openStatements = Collections.synchronizedList( new LinkedList<>() );
         }
         Statement statement = connection.createStatement();
         openStatements.add( statement );
