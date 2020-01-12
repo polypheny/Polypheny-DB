@@ -1941,7 +1941,7 @@ public class Crud implements InformationObserver {
             catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, request.createPks, request.defaultValues ) );
             catalogWriter.flush();
 
-            String query = String.format( "SELECT * FROM %s.%s", request.schema, request.table );
+            String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
             // TODO use iterator instead of Result
             Result tableData = executeSqlSelect( transaction, new UIRequest(), query );
 
