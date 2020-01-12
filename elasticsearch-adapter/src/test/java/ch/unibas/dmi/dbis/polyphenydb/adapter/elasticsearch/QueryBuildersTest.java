@@ -45,11 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.math.BigDecimal;
@@ -59,8 +58,7 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 
 /**

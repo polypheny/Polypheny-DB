@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import lombok.extern.slf4j.Slf4j;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
@@ -73,7 +73,7 @@ public class PolyphenyDbException extends RuntimeException {
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
         log.trace( "PolyphenyDbException", this );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.error( toString() );
         }
     }
@@ -89,7 +89,7 @@ public class PolyphenyDbException extends RuntimeException {
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
         log.trace( "PolyphenyDbException", this );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.error( toString() );
         }
     }

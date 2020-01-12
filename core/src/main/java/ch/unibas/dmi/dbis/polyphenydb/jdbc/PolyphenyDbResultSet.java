@@ -45,7 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayEnumeratorCursor;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ObjectEnumeratorCursor;
 import com.google.common.collect.ImmutableList;
@@ -59,6 +58,7 @@ import org.apache.calcite.avatica.AvaticaResultSetMetaData;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -93,7 +93,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
                         signature.internalParameters,
                         signature.rowType,
                         columnMetaDataList,
-                        Meta.CursorFactory.ARRAY,
+                        CursorFactory.deduce( columnMetaDataList, null ),
                         signature.rootSchema,
                         ImmutableList.of(),
                         -1,

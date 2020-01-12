@@ -45,7 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
 import ch.unibas.dmi.dbis.polyphenydb.util.PolyphenyDbValidatorException;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +75,7 @@ public class SqlValidatorException extends Exception implements PolyphenyDbValid
 
         // TODO: see note in PolyphenyDbException constructor
         log.trace( "SqlValidatorException", this );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.error( toString() );
         }
     }

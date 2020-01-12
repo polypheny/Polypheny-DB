@@ -116,7 +116,7 @@ public class RelationalJdbcExample {
             for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
                 buf.append( i > 1 ? "; " : "" ).append( metaData.getColumnLabel( i ) ).append( "=" ).append( resultSet.getObject( i ) );
             }
-            log.info( "Result entry: " + buf.toString() );
+            log.info( "Result entry: {}", buf.toString() );
             buf.setLength( 0 );
         }
         resultSet.close();

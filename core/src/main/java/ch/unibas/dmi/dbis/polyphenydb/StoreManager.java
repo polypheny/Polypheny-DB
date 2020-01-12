@@ -69,7 +69,7 @@ public class StoreManager {
                 }
             }
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            e.printStackTrace();
+            throw new RuntimeException( "Something went wrong while retrieving list of available adapters.", e );
         }
         return result;
     }

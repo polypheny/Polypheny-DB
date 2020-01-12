@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-
 import javax.annotation.Nullable;
 
 

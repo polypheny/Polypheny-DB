@@ -105,7 +105,7 @@ public class GeodeUtils {
      */
     public static synchronized ClientCache createClientCache( String locatorHost, int locatorPort, String autoSerializerPackagePath, boolean readSerialized ) {
         if ( locatorPort != currentLocatorPort || !StringUtils.equalsIgnoreCase( currentLocatorHost, locatorHost ) ) {
-            log.info( "Close existing ClientCache [" + currentLocatorHost + ":" + currentLocatorPort + "] for new Locator connection at: [" + locatorHost + ":" + locatorPort + "]" );
+            log.info( "Close existing ClientCache [{}:{}] for new Locator connection at: [{}:{}]", currentLocatorHost, currentLocatorPort, locatorHost, locatorPort );
             currentLocatorHost = locatorHost;
             currentLocatorPort = locatorPort;
             closeClientCache();

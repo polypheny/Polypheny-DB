@@ -49,11 +49,11 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl.WinAggAddContextIm
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl.WinAggResetContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl.WinAggResultContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -743,7 +743,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                         }
                     };
             String aggName = "a" + agg.aggIdx;
-            if ( PolyphenyDbPrepareImpl.DEBUG ) {
+            if ( RuntimeConfig.DEBUG.getBoolean() ) {
                 aggName = Util.toJavaId( agg.call.getAggregation().getName(), 0 ).substring( "ID$0$".length() ) + aggName;
             }
             List<Type> state = agg.implementor.getStateType( agg.context );

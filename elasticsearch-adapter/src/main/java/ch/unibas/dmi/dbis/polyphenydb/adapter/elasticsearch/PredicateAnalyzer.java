@@ -45,24 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
+import static java.lang.String.format;
+
 import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.QueryBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
@@ -76,10 +64,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
 import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
@@ -88,14 +74,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.boolQuery;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.existsQuery;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.rangeQuery;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.regexpQuery;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.termQuery;
-
-import static java.lang.String.format;
 
 
 /**

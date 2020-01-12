@@ -45,28 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ViewTableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.geode.cache.Cache;
-import org.apache.geode.cache.Region;
-import org.apache.geode.cache.query.Query;
-import org.apache.geode.cache.query.QueryService;
-import org.apache.geode.cache.query.SelectResults;
-import org.apache.geode.cache.query.internal.StructImpl;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

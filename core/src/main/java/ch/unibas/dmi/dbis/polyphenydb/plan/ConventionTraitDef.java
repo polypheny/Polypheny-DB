@@ -63,7 +63,7 @@ import java.util.List;
 
 
 /**
- * Definition of the the convention trait.
+ * Definition of the convention trait.
  * A new set of conversion information is created for each planner that registers at least one {@link ConverterRule} instance.
  *
  * Conversion data is held in a {@link LoadingCache} with weak keys so that the JVM's garbage collector may reclaim the conversion data after the planner itself has been

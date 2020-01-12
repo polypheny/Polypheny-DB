@@ -62,11 +62,10 @@ dependencies {
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
 
-    implementation group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-jdbc-driver", version: polyphenydb_jdbc_driver_version
 
     compile group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version
 
-    compile group: 'com.mashape.unirest', name: 'unirest-java', version: '1.3.1'
+    compile group: 'com.mashape.unirest', name: 'unirest-java', version: unirest_version
 
     compile group: 'com.opencsv', name: 'opencsv', version: '5.0'
 

@@ -46,7 +46,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 
 

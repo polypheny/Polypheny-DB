@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
@@ -80,6 +79,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -101,9 +104,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -135,6 +135,8 @@ public class DbmsMeta implements ProtobufMeta {
      * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
      */
     public static final int UNLIMITED_COUNT = -2;
+
+    public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
 
     private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
@@ -171,8 +173,7 @@ public class DbmsMeta implements ProtobufMeta {
         im.registerInformation( connectionNumberTable );
 
         ConnectionNumberInfo connectionPoolSizeInfo = new ConnectionNumberInfo( connectionNumberTable );
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( connectionPoolSizeInfo, 0, 5, TimeUnit.SECONDS );
+        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update JDBC Interface connection pool size", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
     }
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -191,7 +192,13 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+    private MetaResultSet createMetaResultSet(
+            final ConnectionHandle ch,
+            final StatementHandle statementHandle,
+            Map<String, Object> internalParameters,
+            List<ColumnMetaData> columns,
+            CursorFactory cursorFactory,
+            final Frame firstFrame ) {
         final PolyphenyDbSignature<Object> signature =
                 new PolyphenyDbSignature<Object>(
                         "",
@@ -962,7 +969,16 @@ public class DbmsMeta implements ProtobufMeta {
             MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
             resultSets = ImmutableList.of( resultSet );
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next()).intValue() );
+            Object o = signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next();
+            int num;
+            if ( o == null ) {
+                throw new NullPointerException();
+            } else if ( o.getClass().isArray() ) {
+                num = ((Number) ((Object[]) o)[0]).intValue();
+            } else {
+                num = ((Number) o).intValue();
+            }
+            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, num );
             resultSets = ImmutableList.of( metaResultSet );
         } else {
             statement.setSignature( signature );
@@ -972,7 +988,11 @@ public class DbmsMeta implements ProtobufMeta {
                         h.id,
                         false,
                         signature,
-                        maxRowsInFirstFrame > 0 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE // Send first frame to together with the response to save a fetch call
+                        // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
+                        // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
+                        maxRowsInFirstFrame > 0 && SEND_FIRST_FRAME_WITH_RESPONSE
+                                ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( MissingResultsException e ) {
                 throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
@@ -1395,7 +1415,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private static class ConnectionNumberInfo implements Runnable {
+    private static class ConnectionNumberInfo implements BackgroundTask {
 
         private final InformationTable table;
 
@@ -1406,7 +1426,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
         @Override
-        public void run() {
+        public void backgroundTask() {
             table.reset();
             table.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
             table.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );

@@ -99,17 +99,4 @@ public class InformationManagerTest {
         i1.updateType( GraphType.RADAR );
     }
 
-
-    @Test
-    public void implicit() {
-        im.addQueryPlan( "queryPlan", "query-plan" );
-        Assert.assertTrue( im.getPage( "queryPlan" ).isImplicit() );
-        Assert.assertNull( im.getPage( "queryPlan" ).getDescription() );
-        InformationPage p1 = new InformationPage( "queryPlan", "title", "description" );
-        im.addPage( p1 );
-        Assert.assertFalse( im.getPage( "queryPlan" ).isImplicit() );
-        Assert.assertEquals( "description", im.getPage( "queryPlan" ).getDescription() );
-    }
-
-
 }

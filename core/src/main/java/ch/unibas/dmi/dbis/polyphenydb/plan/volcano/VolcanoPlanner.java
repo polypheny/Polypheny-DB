@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.AbstractRelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
@@ -61,7 +62,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.Converter;
@@ -808,7 +808,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( JoinCommuteRule.INSTANCE );
         addRule( SemiJoinRule.PROJECT );
         addRule( SemiJoinRule.JOIN );
-        if ( PolyphenyDbPrepareImpl.COMMUTE ) {
+        if ( RuntimeConfig.JOIN_COMMUTE.getBoolean() ) {
             addRule( JoinAssociateRule.INSTANCE );
         }
         addRule( AggregateRemoveRule.INSTANCE );
