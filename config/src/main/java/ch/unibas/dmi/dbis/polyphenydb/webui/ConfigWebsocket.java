@@ -58,13 +58,13 @@ public class ConfigWebsocket {
 
     @OnWebSocketMessage
     public void configWebSocket( final Session session, final String message ) throws IOException {
-        log.trace( "Got: " + message );
+        log.trace( "Got: {}", message );
         session.getRemote().sendString( message ); // and send it back
     }
 
 
     public static void broadcast( final String msg ) throws IOException {
-        log.trace( "broadcasting:\n" + msg );
+        log.trace( "broadcasting:\n{}", msg );
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }

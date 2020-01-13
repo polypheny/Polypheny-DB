@@ -45,10 +45,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFieldImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelRecordType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaRecordType;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
@@ -56,15 +52,13 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFieldImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelRecordType;
-
-import org.apache.geode.pdx.PdxInstance;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.geode.pdx.PdxInstance;
 
 
 /**

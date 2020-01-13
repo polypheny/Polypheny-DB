@@ -45,10 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.test;
 
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
+
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-
 import com.google.common.collect.Ordering;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -56,10 +58,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 
 /**

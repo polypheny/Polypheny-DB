@@ -595,7 +595,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
         Double bestCardinality = null;
         int[][] factorWeights = multiJoin.getFactorWeights();
         for ( int factor : BitSets.toIter( factorsToAdd ) ) {
-            // If the factor corresponds to a dimension table whose join we can remove, make sure the the corresponding fact table is in the current join tree.
+            // If the factor corresponds to a dimension table whose join we can remove, make sure the corresponding fact table is in the current join tree.
             Integer factIdx = multiJoin.getJoinRemovalFactor( factor );
             if ( factIdx != null ) {
                 if ( !factorsAdded.get( factIdx ) ) {

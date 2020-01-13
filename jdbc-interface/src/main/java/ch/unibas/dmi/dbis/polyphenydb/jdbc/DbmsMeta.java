@@ -69,7 +69,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
@@ -137,6 +136,8 @@ public class DbmsMeta implements ProtobufMeta {
      */
     public static final int UNLIMITED_COUNT = -2;
 
+    public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
+
     private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
@@ -191,7 +192,13 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Map<String, Object> internalParameters, List<ColumnMetaData> columns, CursorFactory cursorFactory, final Frame firstFrame ) {
+    private MetaResultSet createMetaResultSet(
+            final ConnectionHandle ch,
+            final StatementHandle statementHandle,
+            Map<String, Object> internalParameters,
+            List<ColumnMetaData> columns,
+            CursorFactory cursorFactory,
+            final Frame firstFrame ) {
         final PolyphenyDbSignature<Object> signature =
                 new PolyphenyDbSignature<Object>(
                         "",
@@ -962,7 +969,16 @@ public class DbmsMeta implements ProtobufMeta {
             MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
             resultSets = ImmutableList.of( resultSet );
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, ((Number) signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next()).intValue() );
+            Object o = signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator().next();
+            int num;
+            if ( o == null ) {
+                throw new NullPointerException();
+            } else if ( o.getClass().isArray() ) {
+                num = ((Number) ((Object[]) o)[0]).intValue();
+            } else {
+                num = ((Number) o).intValue();
+            }
+            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, num );
             resultSets = ImmutableList.of( metaResultSet );
         } else {
             statement.setSignature( signature );
@@ -972,7 +988,11 @@ public class DbmsMeta implements ProtobufMeta {
                         h.id,
                         false,
                         signature,
-                        maxRowsInFirstFrame > 0 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) ) : Frame.MORE // Send first frame to together with the response to save a fetch call
+                        // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
+                        // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
+                        maxRowsInFirstFrame > 0 && SEND_FIRST_FRAME_WITH_RESPONSE
+                                ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( MissingResultsException e ) {
                 throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );

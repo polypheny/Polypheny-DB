@@ -44,6 +44,10 @@
         </logger>
         <!-- <logger name="ch.unibas.dmi.dbis.polyphenydb.jdbc" level="TRACE">
         </logger> -->
+        <!--<logger name="ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner" level="DEBUG">
+        </logger> -->
+        <!-- <logger name="ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner" level="TRACE">
+        </logger> -->
         <Root level="error"/>
     </Loggers>
 </Configuration>

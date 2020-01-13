@@ -47,17 +47,12 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -66,6 +61,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
 
 
 /**

@@ -46,6 +46,8 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
@@ -61,7 +63,6 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
@@ -94,9 +95,6 @@ import org.codehaus.commons.compiler.ICompilerFactory;
  */
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
-    private static InformationPage informationPageGeneratedCode = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
-    private static InformationGroup informationGroupGeneratedCode = new InformationGroup( informationPageGeneratedCode, "Generated Code" );
-
     protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
@@ -110,30 +108,35 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
-        final Bindable bindable = toBindable( implementor.internalParameters, implementor.spark, (EnumerableRel) getInput(), EnumerableRel.Prefer.ARRAY, implementor.dataContext );
+        final Bindable bindable = toBindable(
+                implementor.internalParameters,
+                implementor.spark,
+                (EnumerableRel) getInput(),
+                EnumerableRel.Prefer.ARRAY,
+                implementor.dataContext.getTransaction() );
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, DataContext dataContext ) {
+    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Transaction transaction ) {
         EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, s );
         }
 
-        if ( dataContext != null && dataContext.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
-            queryAnalyzer.addPage( informationPageGeneratedCode );
-            queryAnalyzer.addGroup( informationGroupGeneratedCode );
-            InformationCode informationCode = new InformationCode(
-                    informationGroupGeneratedCode,
-                    s );
+        if ( transaction != null && transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            InformationGroup group = new InformationGroup( page, "Generated Code" );
+            queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
+            queryAnalyzer.addGroup( group );
+            InformationCode informationCode = new InformationCode( group, s );
             queryAnalyzer.registerInformation( informationCode );
         }
 
@@ -172,7 +175,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                         ? new Class[]{ Bindable.class, Typed.class }
                         : new Class[]{ ArrayBindable.class } );
         cbe.setParentClassLoader( EnumerableInterpretable.class.getClassLoader() );
-        if ( PolyphenyDbPrepareImpl.DEBUG ) {
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );
         }

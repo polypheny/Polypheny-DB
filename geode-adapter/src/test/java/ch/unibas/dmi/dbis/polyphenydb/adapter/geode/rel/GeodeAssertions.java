@@ -45,10 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.junit.Assert.assertEquals;
 
 
 /**

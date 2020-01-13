@@ -45,11 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-
-import org.apache.pig.data.DataType;
-
 import static ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName.VARCHAR;
+
+import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.apache.pig.data.DataType;
 
 
 /**

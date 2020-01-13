@@ -142,7 +142,7 @@ public class ConfigServer implements ConfigListener {
                     default:
                         allValid = false;
                         feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
-                        log.error( "Config with type " + c.getConfigType() + " is not supported yet." );
+                        log.error( "Config with type {} is not supported yet.", c.getConfigType() );
                 }
                 //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }

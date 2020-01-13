@@ -45,17 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Arrays;
-import org.apache.geode.cache.Cache;
-import org.apache.geode.cache.Region;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

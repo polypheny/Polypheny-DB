@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
 import java.util.Iterator;
 
 

@@ -275,7 +275,7 @@ public class DbmsService implements Service {
     @Override
     public void setRpcMetadata( RpcMetadataResponse metadata ) {
         if ( log.isTraceEnabled() ) {
-            log.trace( "setRpcMetadata( RpcMetadataResponse " + metadata + " )" );
+            log.trace( "setRpcMetadata( RpcMetadataResponse {} )", metadata );
         }
         this.rpcMetaData = metadata;
         delegate.setRpcMetadata( metadata );

@@ -250,7 +250,7 @@ public class ConcurrentTestCommandScript
     private static final char[] SPACES = fill( new char[BUF_SIZE], ' ' );
     private static final char[] DASHES = fill( new char[BUF_SIZE], '-' );
 
-    // Special "thread ids" for setup & cleanup sections; actually setup & cleanup SQL is executed by the main thread, and neither are in the the thread map.
+    // Special "thread ids" for setup & cleanup sections; actually setup & cleanup SQL is executed by the main thread, and neither are in the thread map.
     private static final Integer SETUP_THREAD_ID = -1;
     private static final Integer CLEANUP_THREAD_ID = -2;
 
@@ -308,7 +308,7 @@ public class ConcurrentTestCommandScript
     static int runAppProcess( ProcessBuilder pb, Logger logger, Reader appInput, Writer appOutput ) throws IOException, InterruptedException {
         pb.redirectErrorStream( true );
         if ( logger != null ) {
-            logger.info( "start process: " + pb.command() );
+            logger.info( "start process: {}", pb.command() );
         }
         Process p = pb.start();
 
@@ -336,7 +336,7 @@ public class ConcurrentTestCommandScript
 
         int status = p.exitValue();
         if ( logger != null ) {
-            logger.info( "exit status=" + status + " from " + pb.command() );
+            logger.info( "exit status={} from {}", status, pb.command() );
         }
         return status;
     }
@@ -1597,7 +1597,7 @@ public class ConcurrentTestCommandScript
             ProcessBuilder pb = new ProcessBuilder( argv );
             pb.directory( scriptDirectory );
             try {
-                // direct stdout & stderr to the the threadWriter
+                // direct stdout & stderr to the threadWriter
                 int status = runAppProcess( pb, null, null, getThreadWriter( threadId ) );
                 if ( status != 0 ) {
                     storeMessage( threadId, "command " + command + ": exited with status " + status );

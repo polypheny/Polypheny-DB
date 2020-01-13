@@ -45,26 +45,21 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.CyclicDefinitionException;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.InvocationTargetException;
@@ -73,12 +68,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-import org.apache.calcite.avatica.AvaticaParameter;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
@@ -338,60 +327,6 @@ public interface PolyphenyDbPrepare {
             this.columnMapping = columnMapping;
             this.modifiable = modifiable;
             Preconditions.checkArgument( modifiable == (table != null) );
-        }
-    }
-
-
-    /**
-     * The result of preparing a query. It gives the Avatica driver framework the information it needs to create a prepared statement, or to execute a statement directly, without an explicit prepare step.
-     *
-     * @param <T> element type
-     */
-    class PolyphenyDbSignature<T> extends Meta.Signature {
-
-        @JsonIgnore
-        public final RelDataType rowType;
-        @JsonIgnore
-        public final PolyphenyDbSchema rootSchema;
-        @JsonIgnore
-        private final List<RelCollation> collationList;
-        private final long maxRowCount;
-        private final Bindable<T> bindable;
-
-
-        public PolyphenyDbSignature(
-                String sql,
-                List<AvaticaParameter> parameterList,
-                Map<String, Object> internalParameters,
-                RelDataType rowType,
-                List<ColumnMetaData> columns,
-                Meta.CursorFactory cursorFactory,
-                PolyphenyDbSchema rootSchema,
-                List<RelCollation> collationList,
-                long maxRowCount,
-                Bindable<T> bindable,
-                Meta.StatementType statementType ) {
-            super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
-            this.rowType = rowType;
-            this.rootSchema = rootSchema;
-            this.collationList = collationList;
-            this.maxRowCount = maxRowCount;
-            this.bindable = bindable;
-        }
-
-
-        public Enumerable<T> enumerable( DataContext dataContext ) {
-            Enumerable<T> enumerable = bindable.bind( dataContext );
-            if ( maxRowCount >= 0 ) {
-                // Apply limit. In JDBC 0 means "no limit". But for us, -1 means "no limit", and 0 is a valid limit.
-                enumerable = EnumerableDefaults.take( enumerable, maxRowCount );
-            }
-            return enumerable;
-        }
-
-
-        public List<RelCollation> getCollationList() {
-            return collationList;
         }
     }
 

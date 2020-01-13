@@ -240,7 +240,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.getConnection().createStatement().execute( "SHUTDOWN" );
             dataSource.close();
         } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down " + getUniqueName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
     }
 

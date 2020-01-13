@@ -45,11 +45,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.rel.core;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
@@ -91,7 +91,7 @@ public abstract class Filter extends SingleRel {
         assert RexUtil.isFlat( condition ) : condition;
         this.condition = condition;
         // Too expensive for everyday use:
-        assert !PolyphenyDbPrepareImpl.DEBUG || isValid( Litmus.THROW, null );
+        assert !RuntimeConfig.DEBUG.getBoolean() || isValid( Litmus.THROW, null );
     }
 
 
