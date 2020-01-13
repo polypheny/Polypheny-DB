@@ -133,21 +133,21 @@ public class StatisticsStore<T extends Comparable<T>> {
     private void reevaluateNumericalColumn( QueryColumn column ) {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
-        StatQueryColumn unique = this.getUniqueValues( column );
+        // TODO FIX StatQueryColumn unique = this.getUniqueValues( column );
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setMin( min.getData()[0] );
         statisticColumn.setMax( max.getData()[0] );
-        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        // TODO FIX statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
 
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
-        StatQueryColumn unique = this.getUniqueValues( column );
+        // TODO FIX StatQueryColumn unique = this.getUniqueValues( column );
 
         AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        // TODO FIX statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }

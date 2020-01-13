@@ -7,7 +7,6 @@ import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
@@ -27,10 +26,9 @@ import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.PolyphenyDbSignature;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
@@ -38,7 +36,6 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -380,7 +377,8 @@ public class LowCostQueries implements InformationObserver {
             try {
                 ((AutoCloseable) iterator).close();
             } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator", e );
+                log.error( "Exception while closing result iterator2", e );
+                log.error(sqlSelect);
             }
         }
     }
