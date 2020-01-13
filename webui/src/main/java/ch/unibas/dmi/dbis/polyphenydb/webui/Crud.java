@@ -80,9 +80,12 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
+import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
@@ -434,6 +437,12 @@ public class Crud implements InformationObserver {
                 value = "NULL";
             } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
                 value = "'" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.DATE ) {
+                value = "DATE '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIME ) {
+                value = "TIME '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIMESTAMP ) {
+                value = "TIMESTAMP '" + value + "'";
             }
             values.add( value );
         }
@@ -1717,7 +1726,19 @@ public class Crud implements InformationObserver {
                     if ( o == null ) {
                         temp[counter] = null;
                     } else {
-                        temp[counter] = o.toString();
+                        switch ( header.get( counter ).dataType ) {
+                            case "TIMESTAMP":
+                                temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                                break;
+                            case "DATE":
+                                temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
+                                break;
+                            case "TIME":
+                                temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
+                                break;
+                            default:
+                                temp[counter] = o.toString();
+                        }
                     }
                     counter++;
                 }
