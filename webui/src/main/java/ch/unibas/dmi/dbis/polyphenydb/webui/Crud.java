@@ -437,6 +437,12 @@ public class Crud implements InformationObserver {
                 value = "NULL";
             } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
                 value = "'" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.DATE ) {
+                value = "DATE '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIME ) {
+                value = "TIME '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIMESTAMP ) {
+                value = "TIMESTAMP '" + value + "'";
             }
             values.add( value );
         }
