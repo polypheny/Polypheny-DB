@@ -303,7 +303,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception while fetching tables", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -335,7 +335,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping or truncating a table", e );
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -403,7 +403,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while creating a table", e );
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -455,7 +455,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while inserting a row", e );
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -557,7 +557,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -579,7 +579,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -594,7 +594,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            results.add( new Result( e.getMessage() ) );
+            results.add( new Result( e ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -665,7 +665,7 @@ public class Crud implements InformationObserver {
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while deleting a row", e );
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -714,7 +714,7 @@ public class Crud implements InformationObserver {
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a row", e );
-            result = new Result( e.getMessage() ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -761,7 +761,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException | TransactionException e ) {
             log.error( "Caught exception while getting a column", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -853,12 +853,12 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a column", e );
-            result = new Result( e.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
+            result = new Result( e ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             try {
                 transaction.rollback();
             } catch ( TransactionException e2 ) {
                 log.error( "Caught exception during rollback", e2 );
-                result = new Result( e2.toString() ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
+                result = new Result( e2 ).setInfo( new Debug().setAffectedRows( 0 ).setGeneratedQuery( sBuilder.toString() ) );
             }
         }
 
@@ -910,7 +910,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( affectedRows ).setGeneratedQuery( query ) );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Caught exception while adding a column", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -939,7 +939,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( affectedRows ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping a column", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1010,7 +1010,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException | TransactionException e ) {
             log.error( "Caught exception while fetching constraints", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1044,7 +1044,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( rows ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping a constraint", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1078,7 +1078,7 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
             } catch ( QueryExecutionException | TransactionException e ) {
                 log.error( "Caught exception while adding a primary key", e );
-                result = new Result( e.getMessage() );
+                result = new Result( e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -1115,7 +1115,7 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
             } catch ( QueryExecutionException | TransactionException e ) {
                 log.error( "Caught exception while adding a unique constraint", e );
-                result = new Result( e.getMessage() );
+                result = new Result( e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -1155,7 +1155,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( UnknownTableException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception while fetching indexes", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1182,7 +1182,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setGeneratedQuery( query ).setAffectedRows( a ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping an index", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1213,7 +1213,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( a ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while creating an index", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1253,7 +1253,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
             log.error( "Caught exception while getting placements", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1410,7 +1410,7 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( 1 ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while adding a foreign key", e );
-            result = new Result( e.getMessage() );
+            result = new Result( e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -1428,13 +1428,14 @@ public class Crud implements InformationObserver {
         UIRelNode topNode = gson.fromJson( req.body(), UIRelNode.class );
 
         Transaction transaction = getTransaction( true );
+        transaction.resetQueryProcessor();
 
         RelNode result;
         try {
             result = QueryPlanBuilder.buildFromTree( topNode, transaction );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
-            return new Result( e.getMessage() );
+            return new Result( e );
         }
 
         // Wrap RelNode into a RelRoot
@@ -1456,7 +1457,7 @@ public class Crud implements InformationObserver {
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
-            return new Result( e.getMessage() );
+            return new Result( e );
         }
 
         ArrayList<String[]> data = new ArrayList<>();
@@ -1511,7 +1512,7 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                return new Result( e.getMessage() );
+                return new Result( e );
             }
         }
         // drop schema
@@ -1532,7 +1533,7 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                return new Result( e.getMessage() );
+                return new Result( e );
             }
         } else {
             return new Result( "Neither the field 'create' nor the field 'drop' was set." );
