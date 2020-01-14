@@ -1943,7 +1943,7 @@ public class Crud implements InformationObserver {
 
             String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
             // TODO use iterator instead of Result
-            Result tableData = executeSqlSelect( transaction, new UIRequest(), query );
+            Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
 
             for ( String[] row : tableData.getData() ) {
                 int cols = row.length;
@@ -2021,7 +2021,15 @@ public class Crud implements InformationObserver {
     // -----------------------------------------------------------------------
 
 
+    /**
+     * Execute a select statement with default limit
+     */
     private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+        return executeSqlSelect( transaction, request, sqlSelect, false );
+    }
+
+
+    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -2037,7 +2045,12 @@ public class Crud implements InformationObserver {
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+            if( noLimit ){
+                rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
+            } else {
+                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+            }
+
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
