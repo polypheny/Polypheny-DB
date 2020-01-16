@@ -81,6 +81,9 @@ public class TransactionImpl implements Transaction {
     @Getter
     private final boolean analyze;
 
+    private DataContext dataContext = null;
+    private ContextImpl prepareContext = null;
+
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
         this.xid = xid;
@@ -181,20 +184,23 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public DataContext getDataContext() {
-        Map<String, Object> map = new LinkedHashMap<>();
-        // Avoid overflow
-        int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
-        if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
-            map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
-        }
+        if ( dataContext == null ) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            // Avoid overflow
+            int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
+            if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
+                map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
+            }
 
-        final AtomicBoolean cancelFlag;
-        cancelFlag = getCancelFlag();
-        map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
-        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
-            return new SlimDataContext();
+            final AtomicBoolean cancelFlag;
+            cancelFlag = getCancelFlag();
+            map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
+            if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
+                return new SlimDataContext();
+            }
+            dataContext = new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
         }
-        return new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
+        return dataContext;
     }
 
 
@@ -206,7 +212,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public ContextImpl getPrepareContext() {
-        return new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+        if ( prepareContext == null ) {
+            prepareContext = new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+        }
+        return prepareContext;
     }
 
 
@@ -219,9 +228,14 @@ public class TransactionImpl implements Transaction {
     }
 
 
+    /*
+     * This should be called in the query interfaces for every new query before we start with processing it.
+     */
     @Override
     public void resetQueryProcessor() {
         queryProcessor = null;
+        dataContext = null;
+        prepareContext = null;
     }
 
 }
