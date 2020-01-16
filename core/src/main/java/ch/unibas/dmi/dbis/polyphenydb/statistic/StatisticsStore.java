@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> {
+public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private static StatisticsStore instance = null;
 
@@ -133,21 +133,21 @@ public class StatisticsStore<T extends Comparable<T>> {
     private void reevaluateNumericalColumn( QueryColumn column ) {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
-        // TODO FIX StatQueryColumn unique = this.getUniqueValues( column );
+        StatQueryColumn unique = this.getUniqueValues( column );
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setMin( min.getData()[0] );
         statisticColumn.setMax( max.getData()[0] );
-        // TODO FIX statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
 
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
-        // TODO FIX StatQueryColumn unique = this.getUniqueValues( column );
+        StatQueryColumn unique = this.getUniqueValues( column );
 
         AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        // TODO FIX statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
@@ -169,7 +169,8 @@ public class StatisticsStore<T extends Comparable<T>> {
 
 
     private StatQueryColumn getUniqueValues( QueryColumn column ) {
-        return this.sqlQueryInterface.selectOneStat( "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " " );
+        //TODO ASK needs limit, else throws error when casting to autoclose
+        return this.sqlQueryInterface.selectOneStat( "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " LIMIT 3" );
     }
 
 
@@ -286,6 +287,12 @@ public class StatisticsStore<T extends Comparable<T>> {
             reevaluateColumn( new QueryColumn( column, type ) );
         } );
         columnsToUpdate.clear();
+    }
+
+
+    @Override
+    public void run() {
+
     }
 
 
