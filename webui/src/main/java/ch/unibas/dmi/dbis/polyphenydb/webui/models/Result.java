@@ -102,6 +102,20 @@ public class Result {
     }
 
 
+    /**
+     * Build a Result object containing the error message of a failed query
+     *
+     * @param e exception
+     */
+    public Result( Throwable e ) {
+        if ( e.getMessage() != null ) {
+            this.error = e.getMessage();
+        } else {
+            this.error = e.getClass().getSimpleName();
+        }
+    }
+
+
     public Result( Debug info ) {
         this.info = info;
     }
