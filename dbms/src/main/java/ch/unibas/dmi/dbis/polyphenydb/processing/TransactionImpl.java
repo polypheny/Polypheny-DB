@@ -168,8 +168,11 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void rollback() throws TransactionException {
-
-        // TODO: rollback changes to the stores
+        ImmutableCollection<Store> stores = StoreManager.getInstance().getStores().values();
+        //  rollback changes to the stores
+        for ( Store store : stores ) {
+            store.rollback( xid );
+        }
 
         // Rollback changes to the catalog
         try {

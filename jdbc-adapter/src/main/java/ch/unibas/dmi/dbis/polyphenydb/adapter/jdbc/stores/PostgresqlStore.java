@@ -27,22 +27,15 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
 import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -70,51 +63,25 @@ public class PostgresqlStore extends AbstractJdbcStore {
             new AdapterSettingString( "password", false, true, false, "" )
     );
 
-    private final BasicDataSource dataSource;
-    private JdbcSchema currentJdbcSchema;
-    private SqlDialect dialect;
-
-    // Connection information
-    private String dbHostname;
-    private int dbPort;
-    private String dbName;
-    private String dbUsername;
-    private String dbPassword;
-
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings );
-
-        // Parse settings
-        this.dbHostname = settings.get( "host" );
-        this.dbPort = Integer.parseInt( settings.get( "port" ) );
-        this.dbName = settings.get( "database" );
-        this.dbUsername = settings.get( "username" );
-        this.dbPassword = settings.get( "password" );
-
-        this.dataSource = new BasicDataSource();
-        dataSource.setDriverClassName( "org.postgresql.Driver" );
-        dataSource.setUrl( getConnectionUrl() );
-        if ( log.isInfoEnabled() ) {
-            log.info( "Postgres Connection URL: {}", getConnectionUrl() );
-        }
-        dataSource.setUsername( this.dbUsername );
-        dataSource.setPassword( this.dbPassword );
-
-        // TODO: Change when implementing transaction support
-        dataSource.setDefaultAutoCommit( true );
-
-//        this.dataSource = dataSource;
-        dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
-
-        // Register the JDBC Pool Size as information in the information manager
-        registerJdbcPoolSizeInformation( uniqueName, dataSource );
+        super( storeId, uniqueName, settings, createDataSource( settings ), PostgresqlSqlDialect.DEFAULT );
     }
 
 
-    @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between mutliple transactions
+    public static BasicDataSource createDataSource( final Map<String, String> settings ) {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName( "org.postgresql.Driver" );
+
+        final String connectionUrl = getConnectionUrl( settings.get( "host" ), Integer.parseInt( settings.get( "port" ) ), settings.get( "database" ) );
+        dataSource.setUrl( connectionUrl );
+        if ( log.isInfoEnabled() ) {
+            log.info( "Postgres Connection URL: {}", connectionUrl );
+        }
+        dataSource.setUsername( settings.get( "username" ) );
+        dataSource.setPassword( settings.get( "password" ) );
+        dataSource.setDefaultAutoCommit( false );
+        return dataSource;
     }
 
 
@@ -159,7 +126,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
         }
         builder.append( " )" );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -171,7 +138,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -203,7 +170,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
             builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -216,22 +183,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
-        executeUpdate( builder );
-    }
-
-
-    @Override
-    public boolean prepare( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
-        return true;
-    }
-
-
-    @Override
-    public void commit( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
+        executeUpdate( builder, context );
     }
 
 
@@ -243,7 +195,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -265,7 +217,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
             builder.append( ")" );
         }
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -285,7 +237,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public void shutdown() {
         try {
             removeInformationPage();
-            dataSource.close();
+            connectionFactory.close();
         } catch ( SQLException e ) {
             log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
@@ -329,39 +281,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    private void executeUpdate( StringBuilder builder ) {
-        if ( log.isDebugEnabled() ) {
-            log.debug( "PostgreSQL JDBC executing query: {}", builder.toString() );
-        }
-        Statement statement = null;
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
-            statement = connection.createStatement();
-            statement.executeUpdate( builder.toString() );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        } finally {
-            if ( statement != null ) {
-                try {
-                    statement.close();
-                } catch ( SQLException e ) {
-                    log.info( "Exception while closing statement!", e );
-                }
-            }
-            if ( connection != null ) {
-                try {
-                    connection.close();
-                } catch ( SQLException e ) {
-                    log.info( "Exception while closing connection!", e );
-                }
-            }
-        }
-    }
-
-
-    private String getConnectionUrl() {
-        return String.format( "jdbc:postgresql://%s:%d/%s", this.dbHostname, this.dbPort, this.dbName );
+    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
+        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 }

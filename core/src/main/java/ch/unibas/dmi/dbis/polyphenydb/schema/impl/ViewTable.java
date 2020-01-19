@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
@@ -63,7 +64,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.List;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 
 
@@ -139,8 +139,8 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return queryProvider.createQuery( getExpression( schema, tableName, Queryable.class ), elementType );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return dataContext.getQueryProvider().createQuery( getExpression( schema, tableName, Queryable.class ), elementType );
     }
 
 

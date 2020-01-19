@@ -191,8 +191,7 @@ public class Crud implements InformationObserver {
 
         try {
             result = executeSqlSelect( transaction, request, query.toString() );
-            transaction.commit();
-        } catch ( TransactionException | QueryExecutionException e ) {
+        } catch ( QueryExecutionException e ) {
             //result = new Result( e.getMessage() );
             log.error( "Caught exception while fetching a table", e );
             result = new Result( "Could not fetch table " + request.tableId );
@@ -227,6 +226,11 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception while determining page size", e );
         }
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while committing transaction", e );
+        }
         return result;
     }
 

@@ -45,6 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -60,7 +64,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -73,10 +76,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
 import lombok.Getter;
+import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
@@ -87,7 +90,7 @@ import org.apache.calcite.linq4j.tree.Expression;
  */
 public class JdbcSchema implements Schema {
 
-    final DataSource dataSource;
+    final ConnectionFactory connectionFactory;
     final String database;
     final String schema;
     public final SqlDialect dialect;
@@ -98,10 +101,10 @@ public class JdbcSchema implements Schema {
     private final Map<String, JdbcTable> tableMap;
 
 
-    private JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
+    private JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
         super();
-        this.dataSource = Objects.requireNonNull( dataSource );
-        this.dialect = Objects.requireNonNull( dialect );
+        this.connectionFactory = connectionFactory;
+        this.dialect = dialect;
         this.convention = convention;
         this.database = catalog;
         this.schema = schema;
@@ -112,16 +115,16 @@ public class JdbcSchema implements Schema {
     /**
      * Creates a JDBC schema.
      *
-     * @param dataSource Data source
+     * @param connectionFactory Connection Factory
      * @param dialect SQL dialect
      * @param convention Calling convention
      * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( DataSource dataSource, SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
+    public JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
         super();
-        this.dataSource = Objects.requireNonNull( dataSource );
-        this.dialect = Objects.requireNonNull( dialect );
+        this.connectionFactory = connectionFactory;
+        this.dialect = dialect;
         this.convention = convention;
         this.database = database;
         this.schema = schema;
@@ -146,31 +149,10 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
-        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, physicalNameProvider );
-    }
-
-
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, ConnectionFactory connectionFactory, SqlDialect dialect, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
-        final SqlDialect dialect = createDialect( dialectFactory, dataSource );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema );
-    }
-
-
-    // For unit testing only
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
-        return create( parentSchema, name, dataSource, SqlDialectFactoryImpl.INSTANCE, catalog, schema, tableMap, physicalNameProvider );
-    }
-
-
-    // For unit testing only
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, DataSource dataSource, SqlDialectFactory dialectFactory, String catalog, String schema, ImmutableMap<String, JdbcTable> tableMap, JdbcPhysicalNameProvider physicalNameProvider ) {
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
-        final SqlDialect dialect = createDialect( dialectFactory, dataSource );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
-        return new JdbcSchema( dataSource, dialect, convention, catalog, schema, tableMap );
+        return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema );
     }
 
 
@@ -190,13 +172,17 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( dataSource, dialect, convention, database, schema, tableMap );
+        return new JdbcSchema( connectionFactory, dialect, convention, database, schema, tableMap );
     }
 
 
-    // Used by generated code.
-    public DataSource getDataSource() {
-        return dataSource;
+    // Used by generated code (see class JdbcToEnumerableConverter).
+    public ConnectionHandler getConnectionHandler( DataContext dataContext ) {
+        try {
+            return connectionFactory.getOrCreateConnectionHandler( dataContext.getTransaction().getXid() );
+        } catch ( ConnectionHandlerException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 

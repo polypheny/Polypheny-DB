@@ -1,24 +1,21 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PUID;
+import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialectFactoryImpl;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,39 +36,25 @@ public class HsqldbStore extends AbstractJdbcStore {
             new AdapterSettingString( "path", false, true, false, "." + File.separator )
     );
 
-    private final BasicDataSource dataSource;
-    private JdbcSchema currentJdbcSchema;
-    private SqlDialect dialect;
-
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings );
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        if ( settings.get( "type" ).equals( "Memory" ) ) {
-            dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName );
-        } else {
-            String path = settings.get( "path" );
-            dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName );
-        }
-        dataSource.setUsername( "sa" );
-        dataSource.setPassword( "" );
-
-        // TODO: Change when implementing transaction support
-        dataSource.setDefaultAutoCommit( true );
-
-        this.dataSource = dataSource;
-        dialect = JdbcSchema.createDialect( SqlDialectFactoryImpl.INSTANCE, dataSource );
-
-        // Register the JDBC Pool Size as information in the information manager
-        registerJdbcPoolSizeInformation( uniqueName, dataSource );
+        super( storeId, uniqueName, settings, createDataSource( uniqueName, settings ), HsqldbSqlDialect.DEFAULT );
     }
 
 
-    @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, dataSource, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
+    public static BasicDataSource createDataSource( final String uniqueName, final Map<String, String> settings ) {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
+        if ( settings.get( "type" ).equals( "Memory" ) ) {
+            dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + ";hsqldb.tx=mvcc" );
+        } else {
+            String path = settings.get( "path" );
+            dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + ";hsqldb.tx=mvcc" );
+        }
+        dataSource.setUsername( "sa" );
+        dataSource.setPassword( "" );
+        dataSource.setDefaultAutoCommit( false );
+        return dataSource;
     }
 
 
@@ -114,7 +97,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
         }
         builder.append( " )" );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -126,7 +109,7 @@ public class HsqldbStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -157,7 +140,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
             builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -170,22 +153,7 @@ public class HsqldbStore extends AbstractJdbcStore {
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
-        executeUpdate( builder );
-    }
-
-
-    @Override
-    public boolean prepare( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
-        return true;
-    }
-
-
-    @Override
-    public void commit( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
+        executeUpdate( builder, context );
     }
 
 
@@ -197,7 +165,7 @@ public class HsqldbStore extends AbstractJdbcStore {
         qualifiedNames.add( combinedTable.getTable().name );
         String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
         builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -217,7 +185,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             }
             builder.append( ")" );
         }
-        executeUpdate( builder );
+        executeUpdate( builder, context );
     }
 
 
@@ -237,9 +205,10 @@ public class HsqldbStore extends AbstractJdbcStore {
     public void shutdown() {
         try {
             removeInformationPage();
-            dataSource.getConnection().createStatement().execute( "SHUTDOWN" );
-            dataSource.close();
-        } catch ( SQLException e ) {
+            // TODO MV: Find better solution then generating random XID
+            connectionFactory.getOrCreateConnectionHandler( PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) ) ).execute( "SHUTDOWN" );
+            connectionFactory.close();
+        } catch ( SQLException | ConnectionHandlerException e ) {
             log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
     }
@@ -279,34 +248,6 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "TIMESTAMP";
         }
         throw new RuntimeException( "Unknown type: " + polySqlType.name() );
-    }
-
-
-    private void executeUpdate( StringBuilder builder ) {
-        Statement statement = null;
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
-            statement = connection.createStatement();
-            statement.executeUpdate( builder.toString() );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        } finally {
-            if ( statement != null ) {
-                try {
-                    statement.close();
-                } catch ( SQLException e ) {
-                    log.info( "Exception while closing statement!", e );
-                }
-            }
-            if ( connection != null ) {
-                try {
-                    connection.close();
-                } catch ( SQLException e ) {
-                    log.info( "Exception while closing connection!", e );
-                }
-            }
-        }
     }
 
 }

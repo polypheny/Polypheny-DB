@@ -26,7 +26,15 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.TransactionalConnectionFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.XaConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
@@ -35,26 +43,52 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import javax.sql.XADataSource;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 
+@Slf4j
 public abstract class AbstractJdbcStore extends Store {
 
     private InformationPage informationPage;
     private InformationGroup informationGroupConnectionPool;
     private List<Information> informationElements;
 
+    protected SqlDialect dialect;
+    protected JdbcSchema currentJdbcSchema;
 
-    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings ) {
+    protected ConnectionFactory connectionFactory;
+
+
+    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings, BasicDataSource dataSource, SqlDialect dialect ) {
         super( storeId, uniqueName, settings );
+        this.connectionFactory = new TransactionalConnectionFactory( dataSource );
+        this.dialect = dialect;
+        // Register the JDBC Pool Size as information in the information manager
+        registerJdbcPoolSizeInformation( uniqueName, dataSource );
+    }
+
+
+    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings, XADataSource dataSource, SqlDialect dialect ) {
+        super( storeId, uniqueName, settings );
+        this.connectionFactory = new XaConnectionFactory( dataSource );
+        this.dialect = dialect;
+        // TODO MV: Register the JDBC Pool Size as information in the information manager
+        //registerJdbcPoolSizeInformation( uniqueName, dataSource. );
     }
 
 
@@ -84,6 +118,52 @@ public abstract class AbstractJdbcStore extends Store {
 
         ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable, dataSource );
         BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update " + uniqueName + " JDBC conncetion pool size information", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
+    }
+
+
+    @Override
+    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+        //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) ); // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
+    }
+
+
+    protected void executeUpdate( StringBuilder builder, Context context ) {
+        try {
+            connectionFactory.getOrCreateConnectionHandler( context.getTransaction().getXid() ).executeUpdate( builder.toString() );
+        } catch ( SQLException | ConnectionHandlerException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Override
+    public boolean prepare( PolyXid xid ) {
+        // TODO: implement
+        log.warn( "prepare() is not implemented yet (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        return true;
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void commit( PolyXid xid ) {
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            connectionFactory.getConnectionHandler( xid ).commit();
+        } else {
+            log.warn( "There is no connection to commit (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        }
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void rollback( PolyXid xid ) {
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            connectionFactory.getConnectionHandler( xid ).rollback();
+        } else {
+            log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        }
     }
 
 

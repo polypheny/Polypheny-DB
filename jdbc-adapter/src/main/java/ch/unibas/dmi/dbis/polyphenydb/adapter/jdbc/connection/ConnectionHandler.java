@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2020 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +23,9 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,45 +38,45 @@ import lombok.extern.slf4j.Slf4j;
  * Represents a transaction and provides methods to interact with the database system.
  */
 @Slf4j
-abstract class TransactionHandler {
+public abstract class ConnectionHandler {
 
-    Connection connection;
-    Statement statement;
+    protected Connection connection;
+    protected Statement statement;
 
     /**
      * List of all statements which have to be closed to free resources
      */
-    ConcurrentLinkedQueue<Statement> openStatements;
+    protected ConcurrentLinkedQueue<Statement> openStatements;
 
 
-    int executeUpdate( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: {}", sql );
+    public int executeUpdate( final String sql ) throws SQLException {
+        log.trace( "Executing query on database: {}", sql );
         return statement.executeUpdate( sql );
     }
 
 
-    ResultSet executeSelect( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: {}", sql );
+    public ResultSet executeQuery( final String sql ) throws SQLException {
+        log.trace( "Executing query on database: {}", sql );
         return createStatement().executeQuery( sql );
     }
 
 
-    void execute( final String sql ) throws SQLException {
-        log.trace( "Executing query on catalog database: {}", sql );
+    public void execute( final String sql ) throws SQLException {
+        log.trace( "Executing query on database: {}", sql );
         statement.execute( sql );
     }
 
 
-    ResultSet getGeneratedKeys() throws SQLException {
-        return statement.executeQuery( "CALL IDENTITY();" );
+    public Statement getStatement() throws SQLException {
+        return createStatement();
     }
 
 
-    abstract boolean prepare() throws CatalogTransactionException;
+    public abstract boolean prepare() throws ConnectionHandlerException;
 
-    abstract void commit() throws CatalogTransactionException;
+    public abstract void commit() throws ConnectionHandlerException;
 
-    abstract void rollback() throws CatalogTransactionException;
+    public abstract void rollback() throws ConnectionHandlerException;
 
 
     private Statement createStatement() throws SQLException {
