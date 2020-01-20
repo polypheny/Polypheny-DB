@@ -48,7 +48,7 @@ public class CsvStore extends Store {
 
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return currentSchema.createCsvTable( combinedTable );
+        return currentSchema.createCsvTable( combinedTable, this );
     }
 
 

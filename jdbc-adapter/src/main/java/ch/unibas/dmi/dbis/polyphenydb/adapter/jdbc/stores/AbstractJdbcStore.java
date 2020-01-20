@@ -120,7 +120,7 @@ public abstract class AbstractJdbcStore extends Store {
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
         // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ) );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ), this );
     }
 
 
@@ -252,6 +252,7 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void executeUpdate( StringBuilder builder, Context context ) {
         try {
+            context.getTransaction().registerInvolvedStore( this );
             connectionFactory.getOrCreateConnectionHandler( context.getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new RuntimeException( e );
@@ -259,11 +260,15 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
+    @SneakyThrows
     @Override
     public boolean prepare( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "prepare() is not implemented yet (Uniquename: {}, XID: {})!", getUniqueName(), xid );
-        return true;
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            return connectionFactory.getConnectionHandler( xid ).prepare();
+        } else {
+            log.warn( "There is no connection to prepare (Uniquename: {}, XID: {})! Returning true.", getUniqueName(), xid );
+            return true;
+        }
     }
 
 

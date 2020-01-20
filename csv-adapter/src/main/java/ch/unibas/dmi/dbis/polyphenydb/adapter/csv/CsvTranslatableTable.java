@@ -72,8 +72,8 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
-        super( source, protoRowType, fieldTypes );
+    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
+        super( source, protoRowType, fieldTypes, csvStore );
     }
 
 
@@ -88,6 +88,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
      * Called from generated code.
      */
     public Enumerable<Object> project( final DataContext root, final int[] fields ) {
+        root.getTransaction().registerInvolvedStore( csvStore );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object>() {
             @Override

@@ -68,12 +68,12 @@ public class TransactionManagerImpl implements TransactionManager {
         im.addGroup( runningTransactionsGroup );
         InformationTable runningTransactionsTable = new InformationTable(
                 runningTransactionsGroup,
-                Arrays.asList( "ID", "Analyze" ) );
+                Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
         im.registerInformation( runningTransactionsTable );
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     runningTransactionsTable.reset();
-                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze() ) );
+                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().toString() ) );
                 },
                 "Update transaction overview",
                 TaskPriority.LOW,

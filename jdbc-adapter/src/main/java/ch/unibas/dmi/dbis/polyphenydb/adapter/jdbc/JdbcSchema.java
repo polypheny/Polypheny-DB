@@ -49,6 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.AbstractJdbcStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -100,8 +101,10 @@ public class JdbcSchema implements Schema {
 
     private final Map<String, JdbcTable> tableMap;
 
+    private final AbstractJdbcStore jdbcStore;
 
-    private JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap ) {
+
+    private JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap, AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -109,6 +112,7 @@ public class JdbcSchema implements Schema {
         this.database = catalog;
         this.schema = schema;
         this.tableMap = tableMap;
+        this.jdbcStore = jdbcStore;
     }
 
 
@@ -121,7 +125,7 @@ public class JdbcSchema implements Schema {
      * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String database, String schema ) {
+    public JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String database, String schema, AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -129,6 +133,7 @@ public class JdbcSchema implements Schema {
         this.database = database;
         this.schema = schema;
         this.tableMap = new HashMap<>();
+        this.jdbcStore = jdbcStore;
     }
 
 
@@ -138,7 +143,7 @@ public class JdbcSchema implements Schema {
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> columnNames = new LinkedList<>();
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
+            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
             columnNames.add( catalogColumn.name );
@@ -149,10 +154,10 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, ConnectionFactory connectionFactory, SqlDialect dialect, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider ) {
+    public static JdbcSchema create( SchemaPlus parentSchema, String name, ConnectionFactory connectionFactory, SqlDialect dialect, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider, AbstractJdbcStore jdbcStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
-        return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema );
+        return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema, jdbcStore );
     }
 
 
@@ -172,13 +177,14 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( connectionFactory, dialect, convention, database, schema, tableMap );
+        return new JdbcSchema( connectionFactory, dialect, convention, database, schema, tableMap, jdbcStore );
     }
 
 
     // Used by generated code (see class JdbcToEnumerableConverter).
     public ConnectionHandler getConnectionHandler( DataContext dataContext ) {
         try {
+            dataContext.getTransaction().registerInvolvedStore( jdbcStore );
             return connectionFactory.getOrCreateConnectionHandler( dataContext.getTransaction().getXid() );
         } catch ( ConnectionHandlerException e ) {
             throw new RuntimeException( e );
