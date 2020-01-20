@@ -150,8 +150,10 @@ public class TransactionImpl implements Transaction {
             if ( catalog != null ) {
                 okToCommit &= catalog.prepare();
             }
-            for ( Store store : involvedStores ) {
-                okToCommit &= store.prepare( xid );
+            if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
+                for ( Store store : involvedStores ) {
+                    okToCommit &= store.prepare( xid );
+                }
             }
 
             if ( okToCommit ) {

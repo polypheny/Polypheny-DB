@@ -79,11 +79,11 @@ public abstract class AbstractJdbcStore extends Store {
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
-        registerJdbcPoolSizeInformation( uniqueName, connectionFactory );
+        registerJdbcPoolSizeInformation( uniqueName );
     }
 
 
-    protected void registerJdbcPoolSizeInformation( String uniqueName, ConnectionFactory connectionFactory ) {
+    protected void registerJdbcPoolSizeInformation( String uniqueName ) {
         informationPage = new InformationPage( uniqueName, uniqueName );
         informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
 

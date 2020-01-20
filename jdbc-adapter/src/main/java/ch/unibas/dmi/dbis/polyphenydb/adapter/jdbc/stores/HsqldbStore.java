@@ -9,6 +9,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.TransactionalConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
@@ -42,18 +43,24 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings ) {
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
-        if ( settings.get( "type" ).equals( "Memory" ) ) {
-            dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + ";hsqldb.tx=mvcc" );
+        if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
+            // TODO MV: implement
+            throw new RuntimeException( "TWO PC Mode is not implemented" );
         } else {
-            String path = settings.get( "path" );
-            dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + ";hsqldb.tx=mvcc" );
+            BasicDataSource dataSource = new BasicDataSource();
+            dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
+            if ( settings.get( "type" ).equals( "Memory" ) ) {
+                dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + ";hsqldb.tx=mvcc" );
+            } else {
+                String path = settings.get( "path" );
+                dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + ";hsqldb.tx=mvcc" );
+            }
+            dataSource.setUsername( "sa" );
+            dataSource.setPassword( "" );
+            dataSource.setDefaultAutoCommit( false );
+            return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
         }
-        dataSource.setUsername( "sa" );
-        dataSource.setPassword( "" );
-        dataSource.setDefaultAutoCommit( false );
-        return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
+
     }
 
 
