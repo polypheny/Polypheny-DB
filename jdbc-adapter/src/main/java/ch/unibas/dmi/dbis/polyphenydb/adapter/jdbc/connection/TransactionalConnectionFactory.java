@@ -39,7 +39,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 
 /**
- * Implementation of the TransactionalConnectionFactory for non-distributed transactions.
+ * Implementation of the ConnectionFactory for non-distributed transactions.
  */
 @Slf4j
 public class TransactionalConnectionFactory implements ConnectionFactory {
@@ -47,11 +47,13 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     protected final Map<Xid, TransactionalConnectionHandler> activeInstances;
     protected final Queue<TransactionalConnectionHandler> freeInstances;
 
+    private final int maxConnections;
     private final BasicDataSource dataSource;
 
 
-    public TransactionalConnectionFactory( BasicDataSource dataSource ) {
+    public TransactionalConnectionFactory( BasicDataSource dataSource, int maxConnections ) {
         super();
+        this.maxConnections = maxConnections;
         this.dataSource = dataSource;
         this.activeInstances = new ConcurrentHashMap<>();
         this.freeInstances = new ConcurrentLinkedQueue<>();
@@ -91,14 +93,45 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     private TransactionalConnectionHandler getFreeTransactionHandler() throws ConnectionHandlerException {
         TransactionalConnectionHandler handler = freeInstances.poll();
         if ( handler == null ) {
-            log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
-            try {
-                handler = new TransactionalConnectionHandler( dataSource.getConnection() );
-            } catch ( SQLException e ) {
-                throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
+            if ( getNumActive() + getNumIdle() < maxConnections ) {
+                log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
+                try {
+                    handler = new TransactionalConnectionHandler( dataSource.getConnection() );
+                } catch ( SQLException e ) {
+                    throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
+                }
+            } else {
+                log.warn( "No free connection handler and max number of handlers reach. Wait for a free instances." );
+                // Wait for a free instance
+                while ( handler == null ) {
+                    try {
+                        Thread.sleep( 10 );
+                    } catch ( InterruptedException e ) {
+                        // Ignore
+                    }
+                    handler = freeInstances.poll();
+                }
             }
         }
         return handler;
+    }
+
+
+    @Override
+    public int getMaxTotal() {
+        return maxConnections;
+    }
+
+
+    @Override
+    public int getNumActive() {
+        return activeInstances.size();
+    }
+
+
+    @Override
+    public int getNumIdle() {
+        return freeInstances.size();
     }
 
 

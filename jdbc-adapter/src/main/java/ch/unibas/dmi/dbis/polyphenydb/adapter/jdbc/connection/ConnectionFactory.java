@@ -40,4 +40,10 @@ public interface ConnectionFactory {
     ConnectionHandler getConnectionHandler( Xid xid );
 
     void close() throws SQLException;
+
+    int getMaxTotal();
+
+    int getNumActive();
+
+    int getNumIdle();
 }

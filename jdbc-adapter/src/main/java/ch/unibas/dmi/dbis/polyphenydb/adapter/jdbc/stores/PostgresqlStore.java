@@ -27,16 +27,14 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.TransactionalConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -60,16 +58,17 @@ public class PostgresqlStore extends AbstractJdbcStore {
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
             new AdapterSettingString( "database", false, true, false, "postgres" ),
             new AdapterSettingString( "username", false, true, false, "postgres" ),
-            new AdapterSettingString( "password", false, true, false, "" )
+            new AdapterSettingString( "password", false, true, false, "" ),
+            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
     );
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createDataSource( settings ), PostgresqlSqlDialect.DEFAULT );
+        super( storeId, uniqueName, settings, createConnectionFactory( settings ), PostgresqlSqlDialect.DEFAULT );
     }
 
 
-    public static BasicDataSource createDataSource( final Map<String, String> settings ) {
+    public static ConnectionFactory createConnectionFactory( final Map<String, String> settings ) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.postgresql.Driver" );
 
@@ -81,7 +80,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
-        return dataSource;
+        return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
     }
 
 
@@ -94,130 +93,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public Schema getCurrentSchema() {
         return currentJdbcSchema;
-    }
-
-
-    @Override
-    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        if ( log.isDebugEnabled() ) {
-            log.debug( "PostgreSQL createTable: Qualified names: {}, physicalTableName: {}", qualifiedNames, physicalTableName );
-        }
-        builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
-        boolean first = true;
-        for ( CatalogColumn column : combinedTable.getColumns() ) {
-            if ( !first ) {
-                builder.append( ", " );
-            }
-            first = false;
-            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
-            builder.append( getTypeString( column.type ) );
-            if ( column.length != null ) {
-                builder.append( "(" ).append( column.length );
-                if ( column.scale != null ) {
-                    builder.append( "," ).append( column.scale );
-                }
-                builder.append( ")" );
-            }
-
-        }
-        builder.append( " )" );
-        executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        // Based on: https://www.postgresql.org/docs/current/sql-altertable.html
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchema().name );
-        qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
-        builder.append( catalogColumn.type.name() );
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" );
-            builder.append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
-            }
-            builder.append( ")" );
-        }
-        if ( catalogColumn.nullable ) {
-            builder.append( " NULL" );
-        } else {
-            builder.append( " NOT NULL" );
-        }
-        if ( catalogColumn.position <= catalogTable.getColumns().size() ) {
-            String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
-            builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
-        }
-        executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchema().name );
-        qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
-        executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public void truncate( Context context, CatalogCombinedTable combinedTable ) {
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-        StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogColumn.schemaName );
-        qualifiedNames.add( catalogColumn.tableName );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
-        builder.append( " TYPE " ).append( catalogColumn.type );
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" );
-            builder.append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
-            }
-            builder.append( ")" );
-        }
-        executeUpdate( builder, context );
     }
 
 
@@ -250,7 +125,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    private String getTypeString( PolySqlType polySqlType ) {
+    @Override
+    protected String getTypeString( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:
                 return "BOOLEAN";

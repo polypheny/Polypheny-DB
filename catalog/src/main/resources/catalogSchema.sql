@@ -374,7 +374,7 @@ ALTER TABLE "column"
 -- store
 --
 INSERT INTO "store" ( "id", "unique_name", "adapter", "settings" )
-VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": ""}' ),
+VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": "","maxConnections": "25"}' ),
        ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore', '{"directory": "testTestCsv"}' );
 
 ALTER TABLE "store"

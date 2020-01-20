@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Implementation of the XaConnectionFactory for distributed transactions.
+ * Implementation of the ConnectionFactory for distributed transactions.
  */
 @Slf4j
 public class XaConnectionFactory implements ConnectionFactory {
@@ -49,14 +49,16 @@ public class XaConnectionFactory implements ConnectionFactory {
     protected final Map<Xid, XaConnectionHandler> activeInstances;
     protected final Queue<XaConnectionHandler> freeInstances;
 
+    private final int maxConnections;
     private final XADataSource dataSource;
 
 
-    public XaConnectionFactory( XADataSource dataSource ) {
+    public XaConnectionFactory( XADataSource dataSource, int maxConnections ) {
         super();
+        this.maxConnections = maxConnections;
         this.dataSource = dataSource;
-        activeInstances = new ConcurrentHashMap<>();
-        freeInstances = new ConcurrentLinkedQueue<>();
+        this.activeInstances = new ConcurrentHashMap<>();
+        this.freeInstances = new ConcurrentLinkedQueue<>();
     }
 
 
@@ -93,14 +95,45 @@ public class XaConnectionFactory implements ConnectionFactory {
     private XaConnectionHandler getFreeTransactionHandler() throws ConnectionHandlerException {
         XaConnectionHandler handler = freeInstances.poll();
         if ( handler == null ) {
-            log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
-            try {
-                handler = new XaConnectionHandler( dataSource.getXAConnection() );
-            } catch ( SQLException e ) {
-                throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
+            if ( getNumActive() + getNumIdle() < maxConnections ) {
+                log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
+                try {
+                    handler = new XaConnectionHandler( dataSource.getXAConnection() );
+                } catch ( SQLException e ) {
+                    throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
+                }
+            } else {
+                log.warn( "No free connection handler and max number of handlers reach. Wait for a free instances." );
+                // Wait for a free instance
+                while ( handler == null ) {
+                    try {
+                        Thread.sleep( 10 );
+                    } catch ( InterruptedException e ) {
+                        // Ignore
+                    }
+                    handler = freeInstances.poll();
+                }
             }
         }
         return handler;
+    }
+
+
+    @Override
+    public int getMaxTotal() {
+        return maxConnections;
+    }
+
+
+    @Override
+    public int getNumActive() {
+        return activeInstances.size();
+    }
+
+
+    @Override
+    public int getNumIdle() {
+        return freeInstances.size();
     }
 
 
