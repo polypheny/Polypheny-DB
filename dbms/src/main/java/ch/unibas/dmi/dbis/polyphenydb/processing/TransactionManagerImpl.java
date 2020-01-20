@@ -32,6 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -53,6 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedul
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 public class TransactionManagerImpl implements TransactionManager {
@@ -73,7 +75,7 @@ public class TransactionManagerImpl implements TransactionManager {
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     runningTransactionsTable.reset();
-                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().toString() ) );
+                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
                 },
                 "Update transaction overview",
                 TaskPriority.LOW,
