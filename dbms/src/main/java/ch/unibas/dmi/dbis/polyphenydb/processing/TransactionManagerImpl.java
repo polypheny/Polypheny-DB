@@ -44,12 +44,41 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+
+
+    public TransactionManagerImpl() {
+        InformationManager im = InformationManager.getInstance();
+        InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        im.addPage( page );
+        InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
+        im.addGroup( runningTransactionsGroup );
+        InformationTable runningTransactionsTable = new InformationTable(
+                runningTransactionsGroup,
+                Arrays.asList( "ID", "Analyze" ) );
+        im.registerInformation( runningTransactionsTable );
+        BackgroundTaskManager.INSTANCE.registerTask(
+                () -> {
+                    runningTransactionsTable.reset();
+                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze() ) );
+                },
+                "Update transaction overview",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_FIVE_SECONDS );
+    }
 
 
     @Override
@@ -70,6 +99,11 @@ public class TransactionManagerImpl implements TransactionManager {
         Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
 
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
     }
@@ -87,4 +121,6 @@ public class TransactionManagerImpl implements TransactionManager {
     private static PolyXid generateNewTransactionId( final NodeId nodeId, final UserId userId, final ConnectionId connectionId ) {
         return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
     }
+
+
 }
