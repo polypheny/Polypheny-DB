@@ -72,7 +72,7 @@ public class TestHelper {
         thread.start();
 
         // TODO MV: Waiting is not a good solution. It would be better to recognize if the system is ready.
-        // Wait 25 seconds
+        // Wait 30 seconds
         try {
             TimeUnit.SECONDS.sleep( 30 );
         } catch ( InterruptedException e ) {
