@@ -26,10 +26,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Query;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -41,6 +43,7 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
     final CqlSession session;
     final SimpleStatement simpleStatement;
     final BatchStatement batchStatement;
+    final String stringStatement;
     final Integer offset;
 //    final RelProtoDataType resultRowType;
 
@@ -53,6 +56,7 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         this.session = session;
         this.simpleStatement = null;
         this.batchStatement = batchStatement;
+        this.stringStatement = null;
         this.offset = 0;
     }
 
@@ -66,12 +70,27 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         this.session = session;
         this.simpleStatement = statement;
         this.batchStatement = null;
+        this.stringStatement = null;
         this.offset = offset;
 //        this.resultRowType = resultRowType;
     }
 
     public static CassandraEnumerable of( CqlSession session, SimpleStatement statement ) {
         log.warn( "Creating simple enumerable with: {}", statement.getQuery() );
+        return new CassandraEnumerable( session, statement );
+    }
+
+    public CassandraEnumerable( CqlSession session, String statement ) {
+        this.session = session;
+        this.simpleStatement = null;
+        this.batchStatement = null;
+        this.stringStatement = statement;
+        this.offset = 0;
+
+    }
+
+    public static CassandraEnumerable of( CqlSession session, String statement ) {
+        log.warn( "Creating string enumerable with: {}", statement );
         return new CassandraEnumerable( session, statement );
     }
 
@@ -82,8 +101,12 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         final ResultSet results;
         if ( this.simpleStatement != null ) {
             results = session.execute( simpleStatement );
-        } else {
+        } else if (this.batchStatement != null ) {
             results = session.execute( batchStatement );
+        } else if ( this.stringStatement != null ) {
+            results = session.execute( this.stringStatement );
+        } else {
+            throw new AssertionError("unable to run enumerator..." );
         }
         // Skip results until we get to the right offset
         int skip = 0;

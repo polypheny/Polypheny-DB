@@ -53,6 +53,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -75,13 +76,13 @@ public interface CassandraRel extends RelNode {
      * Calling convention for relational operations that occur in Cassandra.
      */
     Convention CONVENTION = new Convention.Impl( "CASSANDRA", CassandraRel.class ) {
-        @Override
-        public void register( RelOptPlanner planner ) {
-            for ( RelOptRule rule : CassandraRules.RULES ) {
-                planner.addRule( rule );
-            }
-            planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-        }
+//        @Override
+//        public void register( RelOptPlanner planner ) {
+//            for ( RelOptRule rule : CassandraRules.RULES ) {
+//                planner.addRule( rule );
+//            }
+//            planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
+//        }
     };
 
 
@@ -90,10 +91,19 @@ public interface CassandraRel extends RelNode {
      */
     class Implementor {
 
+        public static void printhelper(String input) {
+            System.out.println( input );
+        }
+
         SimpleStatement simpleStatement = null;
         BatchStatement batchStatement = null;
+        List<SimpleStatement> statements = new ArrayList<>(  );
 
-        Type type = Type.SELECT;
+        public void addState( List<SimpleStatement> s ) {
+            this.statements.addAll( s );
+        }
+
+        Type type = null;
 
         final List<Selector> selectFields = new ArrayList<>();
         final List<Relation> whereClause = new ArrayList<>();

@@ -71,8 +71,9 @@ public class CassandraSort extends Sort implements CassandraRel {
     public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation ) {
         super( cluster, traitSet, child, collation, null, null );
 
-        assert getConvention() == CONVENTION;
-        assert getConvention() == child.getConvention();
+        // TODO JS: Check this
+//        assert getConvention() == CONVENTION;
+//        assert getConvention() == child.getConvention();
     }
 
 

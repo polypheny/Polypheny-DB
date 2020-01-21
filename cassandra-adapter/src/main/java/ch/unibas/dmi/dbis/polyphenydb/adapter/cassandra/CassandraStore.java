@@ -153,9 +153,12 @@ public class CassandraStore extends Store {
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
                 .withPartitionKey( column.name, getDataType( column.type ) );
 
-        columns.forEach( c -> {
-            createTable.withColumn( c.name, getDataType( c.type ) );
-        } );
+        for ( CatalogColumn c : columns ) {
+            createTable = createTable.withColumn( c.name, getDataType( c.type ) );
+        }
+//        columns.forEach( c -> {
+//            createTable = createTable.withColumn( c.name, getDataType( c.type ) );
+//        } );
 
         this.session.execute( createTable.build(  ) );
     }

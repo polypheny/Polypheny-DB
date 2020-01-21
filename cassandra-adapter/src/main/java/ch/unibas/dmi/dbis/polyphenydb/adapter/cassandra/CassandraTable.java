@@ -269,7 +269,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
-        return new CassandraTableScan( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), relOptTable, this, null );
+        return new CassandraTableScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), relOptTable, this, null );
     }
 
 
@@ -282,7 +282,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
 //        return new CassandraTableModify( cluster,  )
-        CassandraRel.CONVENTION.register( cluster.getPlanner() );
+        cassandraSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
 //        return new CassandraTableModify( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened, this, this.columnFamily );
     }
@@ -332,6 +332,11 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
                 Integer offset,
                 Integer fetch ) {
             return getTable().query( cassandraSchema.getSession(), fields, selectFields, predicates, order, offset, fetch );
+        }
+
+        public Enumerable<Object> insert(
+                String query ) {
+            return CassandraEnumerable.of( getSession(), query );
         }
     }
 }

@@ -99,17 +99,19 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
         Translator translator = new Translator( getRowType(), partitionKeys, clusteringKeys, implicitFieldCollations );
         this.match = translator.translateMatch( condition );
-        this.singlePartition = translator.isSinglePartition();
-        this.implicitCollation = translator.getImplicitCollation();
+        // Testing if this is really needed...
+//        this.singlePartition = translator.isSinglePartition();
+//        this.implicitCollation = translator.getImplicitCollation();
 
-        assert getConvention() == CONVENTION;
-        assert getConvention() == child.getConvention();
+        // TODO JS: Check this
+//        assert getConvention() == CONVENTION;
+//        assert getConvention() == child.getConvention();
     }
 
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
 
@@ -153,19 +155,19 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
         private final RelDataType rowType;
         private final List<String> fieldNames;
-        private final Set<String> partitionKeys;
-        private final List<String> clusteringKeys;
-        private int restrictedClusteringKeys;
-        private final List<RelFieldCollation> implicitFieldCollations;
+//        private final Set<String> partitionKeys;
+//        private final List<String> clusteringKeys;
+//        private int restrictedClusteringKeys;
+//        private final List<RelFieldCollation> implicitFieldCollations;
 
 
         Translator( RelDataType rowType, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
             this.rowType = rowType;
             this.fieldNames = CassandraRules.cassandraFieldNames( rowType );
-            this.partitionKeys = new HashSet<>( partitionKeys );
-            this.clusteringKeys = clusteringKeys;
-            this.restrictedClusteringKeys = 0;
-            this.implicitFieldCollations = implicitFieldCollations;
+//            this.partitionKeys = new HashSet<>( partitionKeys );
+//            this.clusteringKeys = clusteringKeys;
+//            this.restrictedClusteringKeys = 0;
+//            this.implicitFieldCollations = implicitFieldCollations;
         }
 
 
@@ -174,9 +176,9 @@ public class CassandraFilter extends Filter implements CassandraRel {
          *
          * @return True if the matches translated so far have resulted in a single partition
          */
-        public boolean isSinglePartition() {
+        /*public boolean isSinglePartition() {
             return partitionKeys.isEmpty();
-        }
+        }*/
 
 
         /**
@@ -184,7 +186,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          *
          * @return The collation of the filtered results
          */
-        public RelCollation getImplicitCollation() {
+        /*public RelCollation getImplicitCollation() {
             // No collation applies if we aren't restricted to a single partition
             if ( !isSinglePartition() ) {
                 return RelCollations.EMPTY;
@@ -199,7 +201,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
             }
 
             return RelCollations.of( fieldCollations );
-        }
+        }*/
 
 
         /**
@@ -225,9 +227,11 @@ public class CassandraFilter extends Filter implements CassandraRel {
          * @param literal Literal to translate
          * @return String representation of the literal
          */
-        private static String literalValue( RexLiteral literal ) {
-            Object value = literal.getValue2();
-            return String.valueOf( value );
+        private static Object literalValue( RexLiteral literal ) {
+            Object value = CassandraValues.literalValue( literal );
+            return value;
+//            Object value = literal.getValue2();
+//            return String.valueOf( value );
         }
 
 
@@ -317,12 +321,12 @@ public class CassandraFilter extends Filter implements CassandraRel {
          */
         private Relation translateOp2( SqlKind op, String name, RexLiteral right ) {
             // In case this is a key, record that it is now restricted
-            if ( op.equals( "=" ) ) {
+            /*if ( op.equals( "=" ) ) {
                 partitionKeys.remove( name );
                 if ( clusteringKeys.contains( name ) ) {
                     restrictedClusteringKeys++;
                 }
-            }
+            }*/
 
             Object value = literalValue( right );
             String valueString = value.toString();
@@ -334,7 +338,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
             }
 
             ColumnRelationBuilder<Relation> rel = Relation.column( name );
-            Term term = QueryBuilder.literal( valueString );
+            Term term = QueryBuilder.literal( value );
             switch ( op ) {
                 case EQUALS:
                     return rel.isEqualTo( term );

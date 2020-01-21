@@ -54,6 +54,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -70,8 +71,9 @@ public class CassandraProject extends Project implements CassandraRel {
 
     public CassandraProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
-        assert getConvention() == CassandraRel.CONVENTION;
-        assert getConvention() == input.getConvention();
+        // TODO JS: Check this
+//        assert getConvention() == CassandraRel.CONVENTION;
+//        assert getConvention() == input.getConvention();
     }
 
 
@@ -83,7 +85,8 @@ public class CassandraProject extends Project implements CassandraRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
+//        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
 
@@ -93,9 +96,11 @@ public class CassandraProject extends Project implements CassandraRel {
         final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraFieldNames( getInput().getRowType() ) );
         final List<Selector> fields = new ArrayList<>();
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
-            final String name = pair.right;
-            final String originalName = pair.left.accept( translator );
-            fields.add( Selector.column( originalName ).as( name ) );
+            if ( pair.left instanceof RexInputRef ) {
+                final String name = pair.right;
+                final String originalName = pair.left.accept( translator );
+                fields.add( Selector.column( originalName ).as( name ) );
+            }
         }
         implementor.addSelectColumns( fields );
 //        implementor.add( fields, null );

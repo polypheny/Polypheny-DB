@@ -45,12 +45,14 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
@@ -76,6 +78,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.slf4j.Logger;
 
 
@@ -85,11 +88,19 @@ import org.slf4j.Logger;
 @Slf4j
 public class CassandraSchema extends AbstractSchema {
 
-    @Getter
+//    @Getter
     final CqlSession session;
     final String keyspace;
     private final SchemaPlus parentSchema;
     final String name;
+
+    public CqlSession getSession() {
+        log.info( "GetSession call" );
+        return this.session;
+    }
+
+    @Getter
+    private final CassandraConvention convention;
 
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
@@ -164,16 +175,19 @@ public class CassandraSchema extends AbstractSchema {
         this.name = name;*/
     }
 
-    public CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name ) {
+    public CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention ) {
         super();
         this.session = session;
         this.keyspace = keyspace;
         this.parentSchema = parentSchema;
         this.name = name;
+        this.convention = convention;
     }
 
     public static CassandraSchema create( SchemaPlus parentSchema, String name, CqlSession session, String keyspace ) {
-        return new CassandraSchema( session, keyspace, parentSchema, name );
+        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
+        final CassandraConvention convention = new CassandraConvention( name, expression );
+        return new CassandraSchema( session, keyspace, parentSchema, name, convention );
     }
 
 

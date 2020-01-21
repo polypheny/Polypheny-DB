@@ -62,19 +62,28 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 
 
 /**
@@ -106,10 +115,11 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
         final BlockBuilder list = new BlockBuilder();
         final CassandraRel.Implementor cassandraImplementor = new CassandraRel.Implementor();
         cassandraImplementor.visitChild( 0, getInput() );
+        final CassandraConvention convention = (CassandraConvention) getInput().getConvention();
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
         Expression enumerable;
-        if ( cassandraImplementor.type == Type.SELECT ) {
+        if ( cassandraImplementor.type == Type.SELECT && false ) {
             final Expression fields =
                     list.append( "fields",
                             constantArrayList(
@@ -142,21 +152,74 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 System.out.println( "Cassandra: " + predicates );
             }
             Hook.QUERY_PLAN.run( predicates );
+            list.add( Expressions.return_( null, enumerable ) );
         } else {
             log.info( "Attempting to turn non select cql into enumerable." );
-            if ( cassandraImplementor.simpleStatement != null ) {
-                final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraEnumerable.class ) );
-                final Expression simpleStatement = list.append( "statement", Expressions.constant( cassandraImplementor.simpleStatement ) );
-                final Expression cqlSession = list.append( "session", Expressions.constant( cassandraImplementor.cassandraTable.getSession() ) );
-                enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_SIMPLE_ENUMERABLE.method, cqlSession, simpleStatement ) );
+            if ( cassandraImplementor.simpleStatement != null || true ) {
+
+//                final Expression system_ = list.append( "system", Expressions.constant( System.class ) );
+//                final Field systemOut_ = list.append( "out", Types.lookupField(System.class, "out") );
+//                final Expression systemOut_ = list.append( "systemout", Expressions.field( system_, "out" ) );
+//                final Expression systemOut_ = list.append( "systemout", Expressions.field( Expressions.constant( System.class ), "out" ) );
+//                final Method println_ = Types.lookupMethod( PrintStream.class, "println", String.class);
+                final Method println_ = Types.lookupMethod( CassandraRel.Implementor.class, "printhelper", String.class);
+                final Expression systemOutStatement = list.append( "systemOutStatement", Expressions.constant( "Here we go!" ) );
+//                list.append( Expressions.call( systemOut_, println_, systemOutStatement ) );
+                list.append( Expressions.call( println_, systemOutStatement ) );
+//                final ParameterExpression cqlSession_ = Expressions.parameter( Modifier.FINAL, CqlSession.class, list.newName( "cqlSession" ) );
+//                final ParameterExpression cassandraTable_ = Expressions.parameter( Modifier.FINAL, CassandraTable.class, list.newName( "cassandraTable" ) );
+                final Expression simpleStatement;
+                if ( cassandraImplementor.simpleStatement != null ) {
+                    simpleStatement = list.append( "statement", Expressions.constant( cassandraImplementor.simpleStatement.getQuery() ) );
+                } else { // if ( cassandraImplementor.batchStatement != null ) {
+                    StringJoiner joiner = new StringJoiner( ";", "BEGIN BATCH ", " APPLY BATCH;" );
+                    for ( SimpleStatement s :
+                            cassandraImplementor.statements ) {
+                        joiner.add( s.getQuery() );
+                    }
+                    simpleStatement = list.append( "statement", Expressions.constant( joiner.toString() ) );
+                }
+//                final Expression expression = Schemas.subSchemaExpression( , cassandraImplementor.cassandraTable.getColumnFamily(), CassandraSchema.class );
+                final ParameterExpression e_ = Expressions.parameter( Exception.class, list.newName( "e" ) );
+//                BlockBuilder builder = new BlockBuilder();
+                final Expression cqlSession_ = list.append( "cqlSession",
+                        Expressions.call(
+                                Schemas.unwrap( convention.expression, CassandraSchema.class ),
+                                "getSession" ) );
+                list.append( "temp11", Expressions.call( println_, Expressions.constant( "Fetched cqlSession" ) ) );
+                list.append( "temp12", Expressions.call( println_, Expressions.call( cqlSession_, Types.lookupMethod( CqlSession.class, "getName" ) ) ) );
+                /*enumerable = builder.append(
+                        "enumerable",
+                        Expressions.call(
+                                CassandraMethod.CASSANDRA_STRING_ENUMERABLE.method,
+                                cqlSession_,
+                                simpleStatement
+                        ) );*/
+                enumerable = list.append(
+                        "enumerable",
+                        Expressions.call(
+                                CassandraMethod.CASSANDRA_STRING_ENUMERABLE.method,
+                                cqlSession_,
+                                simpleStatement
+                        ) );
+                list.add( Expressions.return_( null, enumerable ) );
+                /*final Expression getSession_ = list.append( "getSession",
+                        Expressions.block(
+                                Expressions.tryCatch(
+                                        builder.toBlock()
+                                        , Expressions.catch_( e_, Expressions.throw_( Expressions.new_( RuntimeException.class, e_ ) ) ) ) ) );
+                list.append( "temp1", Expressions.call( println_, Expressions.constant( "Okay, let's see...." ) ) );
+                list.append( "temp2", Expressions.call( println_, Expressions.call( cqlSession_, Types.lookupMethod( CqlSession.class, "getName" ) ) ) );*/
             } else {
                 final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraEnumerable.class ) );
                 final Expression batchStatement = list.append( "statement", Expressions.constant( cassandraImplementor.batchStatement ) );
                 final Expression cqlSession = list.append( "session", Expressions.constant( cassandraImplementor.cassandraTable.getSession() ) );
                 enumerable = list.append( "enumerable", Expressions.call( table, CassandraMethod.CASSANDRA_BATCH_ENUMERABLE.method, cqlSession, batchStatement ) );
+                list.add( Expressions.return_( null, enumerable ) );
+
             }
         }
-        list.add( Expressions.return_( null, enumerable ) );
+//        list.add( Expressions.return_( null, enumerable ) );
         return implementor.result( physType, list.toBlock() );
     }
 

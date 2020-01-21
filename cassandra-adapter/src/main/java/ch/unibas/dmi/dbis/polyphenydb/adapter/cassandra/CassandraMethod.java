@@ -61,7 +61,9 @@ public enum CassandraMethod {
 
     CASSANDRA_QUERYABLE_QUERY( CassandraTable.CassandraQueryable.class, "query", List.class, List.class, List.class, List.class, Integer.class, Integer.class ),
     CASSANDRA_SIMPLE_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, SimpleStatement.class ),
-    CASSANDRA_BATCH_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, BatchStatement.class );
+    CASSANDRA_BATCH_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, BatchStatement.class ),
+    CASSANDRA_STRING_ENUMERABLE(CassandraEnumerable.class, "of", CqlSession.class, String.class );
+//    CASSANDRA_STRING_ENUMERABLE(CassandraTable.CassandraQueryable.class, "insert", String.class );
 
     public final Method method;
 

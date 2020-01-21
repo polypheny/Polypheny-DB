@@ -29,14 +29,19 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter.Translator;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
+import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
@@ -45,6 +50,10 @@ import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
+import com.datastax.oss.driver.api.querybuilder.update.Assignment;
+import com.datastax.oss.driver.api.querybuilder.update.UpdateStart;
+import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -74,32 +83,47 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    protected CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened, CassandraTable cassandraTable, final String columnFamily ) {
+    protected CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
-        this.cassandraTable = cassandraTable;
-        this.columnFamily = columnFamily;
+        this.cassandraTable = table.unwrap( CassandraTable.class );
+        this.columnFamily = this.cassandraTable.getColumnFamily();
     }
 
 
     @Override
+    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+//        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+    }
+
+
+    @Override
+    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        return new CassandraTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), AbstractRelNode.sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+    }
+
+    @Override
     public void register( RelOptPlanner planner ) {
-        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-        for ( RelOptRule rule : CassandraRules.RULES ) {
-            planner.addRule( rule );
-        }
+        getConvention().register( planner );
+//        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
+//        for ( RelOptRule rule : CassandraRules.RULES ) {
+//            planner.addRule( rule );
+//        }
     }
 
     @Override
     public void implement( Implementor implementor ) {
-        log.info( "CTM: Implementing." );
-        implementor.visitChild( 0, getInput() );
+        log.debug( "CTM: Implementing." );
+//        implementor.visitChild( 0, getInput() );
         implementor.cassandraTable = cassandraTable;
         implementor.table = table;
 
         switch ( this.getOperation() ) {
             case INSERT:
-                log.info( "CTM: Insert detected." );
+                log.debug( "CTM: Insert detected." );
                 implementor.type = Type.INSERT;
+                implementor.visitChild( 0, getInput() );
+
                 if ( implementor.insertValues.size() == 1 ) {
                     log.info( "CTM: Simple Insert detected." );
                     InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
@@ -108,19 +132,49 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                     implementor.simpleStatement = insert.build();
                 } else {
                     // TODO JS: I don't like this solution, but for now it'll do!
-                    log.info( "CTM: Batch Insert detected." );
-                    BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
+                    log.debug( "CTM: Batch Insert detected." );
+//                    BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
+                    List<SimpleStatement> statements = new ArrayList<>(  );
 
                     for ( Map<String, Term> insertValue: implementor.insertValues ) {
                         InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
 
-                        builder.addStatement( insertInto.values( insertValue ).build() );
+                        statements.add( insertInto.values( insertValue ).build() );
+//                        builder.addStatement( insertInto.values( insertValue ).build() );
                     }
 
-                    implementor.batchStatement = builder.build();
+                    implementor.addState( statements );
+//                    implementor.batchStatement = builder.build();
                 }
                 break;
             case UPDATE:
+                log.debug( "CTM: Update detected." );
+                implementor.type = Type.UPDATE;
+                implementor.visitChild( 0, getInput() );
+
+//                updateStart.set
+
+
+                List<Assignment> setAssignments = new ArrayList<>();
+                for(Pair<String, RexNode> entry :Pair.zip(this.getUpdateColumnList(), this.getSourceExpressionList())) {
+                    if ( ! ( entry.right instanceof RexLiteral ) ) {
+                        throw new RuntimeException( "Non literal values are not yet supported." );
+                    }
+                    setAssignments.add( Assignment.setColumn( entry.left, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );
+                }
+
+
+                SimpleStatement updateStart = QueryBuilder.update( this.columnFamily )
+                        .set( setAssignments )
+                        .where( implementor.whereClause )
+                        .build()
+                        ;
+
+                implementor.simpleStatement = updateStart;
+//                UpdateWithAssignments update = updateStart.set( setAssignments );
+//                update.where( implementor.whereClause );
+
+
                 break;
             case DELETE:
                 break;

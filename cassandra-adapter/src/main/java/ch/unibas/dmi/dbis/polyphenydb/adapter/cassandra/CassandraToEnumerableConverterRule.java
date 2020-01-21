@@ -59,7 +59,7 @@ import java.util.function.Predicate;
  */
 public class CassandraToEnumerableConverterRule extends ConverterRule {
 
-    public static final ConverterRule INSTANCE = new CassandraToEnumerableConverterRule( RelFactories.LOGICAL_BUILDER );
+//    public static final ConverterRule INSTANCE = new CassandraToEnumerableConverterRule( RelFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -67,14 +67,14 @@ public class CassandraToEnumerableConverterRule extends ConverterRule {
      *
      * @param relBuilderFactory Builder for relational expressions
      */
-    public CassandraToEnumerableConverterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, CassandraRel.CONVENTION, EnumerableConvention.INSTANCE, relBuilderFactory, "CassandraToEnumerableConverterRule" );
+    public CassandraToEnumerableConverterRule( CassandraConvention in, RelBuilderFactory relBuilderFactory ) {
+        super( RelNode.class, (Predicate<RelNode>) r -> true, in, EnumerableConvention.INSTANCE, relBuilderFactory, "CassandraToEnumerableConverterRule" );
     }
 
 
     @Override
     public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutConvention() );
+        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
         return new CassandraToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
     }
 }

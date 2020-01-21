@@ -93,7 +93,9 @@ class CassandraEnumerator implements Enumerator<Object> {
      */
     @Override
     public Object current() {
-        if ( columnDefinitions.size() == 1 ) {
+        if ( columnDefinitions.size() == 0 ) {
+            return 0;
+        } else if ( columnDefinitions.size() == 1 ) {
             // If we just have one field, produce it directly
             return currentRowField( 0 );
         } else {

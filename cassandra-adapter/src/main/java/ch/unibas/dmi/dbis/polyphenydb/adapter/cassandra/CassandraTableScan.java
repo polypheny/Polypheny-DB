@@ -45,15 +45,25 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -80,14 +90,15 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
         this.projectRowType = projectRowType;
 
         assert cassandraTable != null;
-        assert getConvention() == CONVENTION;
+        // TODO JS: Check this
+//        assert getConvention() == CONVENTION;
     }
 
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert inputs.isEmpty();
-        return this;
+        return new CassandraTableScan( getCluster(), traitSet, this.table, this.cassandraTable, this.projectRowType );
     }
 
 
@@ -99,17 +110,70 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-        for ( RelOptRule rule : CassandraRules.RULES ) {
-            planner.addRule( rule );
-        }
+        // TODO JS: Double check
+//        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
+        getConvention().register( planner );
+//        for ( RelOptRule rule : getConvention() ) {
+//            planner.addRule( rule );
+//        }
+    }
+
+
+    @Override
+    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
+
+
+
         implementor.cassandraTable = cassandraTable;
         implementor.table = table;
+
+        if ( implementor.type != null ) {
+            return;
+        }
+
+        implementor.type = Type.SELECT;
+
+        SelectFrom selectFrom = QueryBuilder.selectFrom( implementor.cassandraTable.getColumnFamily() );
+
+//        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+
+        Select select;
+        // Construct the list of fields to project
+        if ( implementor.selectFields.isEmpty() ) {
+            select = selectFrom.all();
+        } else {
+            select = selectFrom.selectors( implementor.selectFields );
+        }
+
+        select = select.where( implementor.whereClause );
+
+        // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
+        Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ClusteringOrder> entry: implementor.order.entrySet() ) {
+            orderMap.put( entry.getKey(), entry.getValue() );
+        }
+
+        select = select.orderBy( orderMap );
+        int limit = implementor.offset;
+        if ( implementor.fetch >= 0 ) {
+            limit += implementor.fetch;
+        }
+        if ( limit > 0 ) {
+            select = select.limit( limit );
+        }
+
+        select = select.allowFiltering();
+
+
+        final SimpleStatement statement = select.build();
+
+        implementor.simpleStatement = statement;
     }
 }
 
