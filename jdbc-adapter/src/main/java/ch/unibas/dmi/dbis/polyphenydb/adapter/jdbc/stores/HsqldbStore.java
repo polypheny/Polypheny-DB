@@ -36,7 +36,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             new AdapterSettingString( "path", false, true, false, "." + File.separator ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
             new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
-            new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_commited", "serializable" ) )
+            new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_committed", "serializable" ) )
     );
 
 
