@@ -16,6 +16,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,9 @@ public class HsqldbStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
             new AdapterSettingString( "path", false, true, false, "." + File.separator ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
+            new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
+            new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
+            new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_commited", "serializable" ) )
     );
 
 
@@ -49,11 +52,12 @@ public class HsqldbStore extends AbstractJdbcStore {
         } else {
             BasicDataSource dataSource = new BasicDataSource();
             dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
+            String trxSettings = ";hsqldb.tx=" + settings.get( "trxControlMode" ) + ";hsqldb.tx_level=" + settings.get( "trxIsolationLevel" );
             if ( settings.get( "type" ).equals( "Memory" ) ) {
-                dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + ";hsqldb.tx=mvcc" );
+                dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + trxSettings );
             } else {
                 String path = settings.get( "path" );
-                dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + ";hsqldb.tx=mvcc" );
+                dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + trxSettings );
             }
             dataSource.setUsername( "sa" );
             dataSource.setPassword( "" );
