@@ -81,7 +81,7 @@ public class InformationManager {
             ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
             exec.scheduleAtFixedRate( () -> {
                 runningInstancesTable.reset();
-                instances.forEach( ( k, v ) -> runningInstancesTable.addRow( k.substring( 0, Math.min( k.length(), 8 ) ), v.pages.size(), v.groups.size(), v.pages.size(), v.observers.size() ) );
+                instances.forEach( ( k, v ) -> runningInstancesTable.addRow( k.substring( 0, Math.min( k.length(), 8 ) ), v.pages.size(), v.groups.size(), v.informationMap.size(), v.observers.size() ) );
             }, 0, 30, TimeUnit.SECONDS );
         }
     }

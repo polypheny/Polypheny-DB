@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
@@ -65,7 +66,6 @@ import java.util.Map;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 
 
@@ -123,8 +123,8 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
             @Override
             public Enumerator<T> enumerator() {
                 try {

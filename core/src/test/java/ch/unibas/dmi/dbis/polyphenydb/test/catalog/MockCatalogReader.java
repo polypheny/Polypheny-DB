@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
@@ -103,7 +104,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -365,8 +365,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public <E> Queryable<E>
-            asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 return null;
             }
 

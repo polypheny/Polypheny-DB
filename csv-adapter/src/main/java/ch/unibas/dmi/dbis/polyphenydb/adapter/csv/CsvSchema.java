@@ -89,7 +89,7 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogCombinedTable combinedTable ) {
+    public Table createCsvTable( CatalogCombinedTable combinedTable, CsvStore csvStore ) {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -102,7 +102,7 @@ public class CsvSchema extends AbstractSchema {
         }
 
         Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
-        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes );
+        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
         tableMap.put( combinedTable.getTable().name, table );
         return table;
     }
@@ -113,17 +113,18 @@ public class CsvSchema extends AbstractSchema {
         return new HashMap<>( tableMap );
     }
 
+
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
+    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, protoRowType, fieldTypes );
+                return new CsvTranslatableTable( source, protoRowType, fieldTypes, csvStore );
             case SCANNABLE:
-                return new CsvScannableTable( source, protoRowType, fieldTypes );
+                return new CsvScannableTable( source, protoRowType, fieldTypes, csvStore );
             case FILTERABLE:
-                return new CsvFilterableTable( source, protoRowType, fieldTypes );
+                return new CsvFilterableTable( source, protoRowType, fieldTypes, csvStore );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }
