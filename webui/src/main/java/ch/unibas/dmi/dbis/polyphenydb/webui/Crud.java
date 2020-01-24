@@ -1828,12 +1828,18 @@ public class Crud implements InformationObserver {
             }
             // create table from .json file
             String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
-            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
+            JsonTable table = gson.fromJson( json, JsonTable.class );
             transaction = getTransaction();
+            List<CatalogTable> tablesInSchema = transaction.getCatalog().getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+            int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( table.tableName ) ).count();
+            if ( tableAlreadyExists > 0 ) {
+                return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, table.tableName ) );
+            }
+
+            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
             executeSqlUpdate( transaction, createTable );
 
             // import data from .csv file
-            JsonTable table = gson.fromJson( json, JsonTable.class );
             StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
             for ( JsonColumn col : table.getColumns() ) {
                 columnJoiner.add( "\"" + col.columnName + "\"" );
@@ -1896,7 +1902,7 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while rolling back transaction", e );
                 }
             }
-        } catch ( CsvValidationException e ) {
+        } catch ( CsvValidationException | GenericCatalogException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
             if ( transaction != null ) {
