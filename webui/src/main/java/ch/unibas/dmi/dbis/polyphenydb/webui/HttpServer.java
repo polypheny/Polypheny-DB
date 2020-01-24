@@ -88,7 +88,6 @@ public class HttpServer extends QueryInterface {
         } );
 
         crudRoutes( new Crud( transactionManager, "pa", "APP" ) );
-        hubRoutes( new Hub() );
 
         log.info( "HTTP Server started." );
     }
@@ -170,34 +169,6 @@ public class HttpServer extends QueryInterface {
         get( "/getAdapters", crud::getAdapters );
 
         post( "/addStore", crud::addStore, gson::toJson );
-
-    }
-
-
-    private void hubRoutes ( Hub hub ) {
-
-        post( "/login", hub::login, gson::toJson );
-
-        post( "/logout", hub::logout, gson::toJson );
-
-        post( "/checkLogin", hub::checkLogin, gson::toJson );
-
-        post( "/getDatasets", hub::getDatasets, gson::toJson );
-
-        post( "/editDataset", hub::editDataset, gson::toJson );
-
-        post( "/uploadDataset", hub::uploadDataset, gson::toJson );
-        //post( "/uploadDataset", "multipart/form-data", hub::uploadDataset, gson::toJson );
-
-        post( "/deleteDataset", hub::deleteDataset, gson::toJson );
-
-        post( "/getUsers", hub::getUsers, gson::toJson );
-
-        post( "/changePassword", hub::changePassword, gson::toJson );
-
-        post( "/deleteUser", hub::deleteUser, gson::toJson );
-
-        post( "/createUser", hub::createUser, gson::toJson );
 
     }
 
