@@ -2,6 +2,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,10 +26,11 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose
     @Getter
+    @Setter
     public int count;
 
     @Getter
-    private int listBufferSize = 5;
+    private int listBufferSize = ConfigManager.getInstance().getConfig( "StatisticsPerColumn" ).getInt();
 
 
     @Getter

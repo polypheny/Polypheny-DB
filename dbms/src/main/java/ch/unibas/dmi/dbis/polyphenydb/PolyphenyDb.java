@@ -37,7 +37,7 @@ import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.LowCostQueries;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatQueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
@@ -149,7 +149,7 @@ public class PolyphenyDb {
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         // prolly overkill just for testing
-        final LowCostQueries lowCostQueries = new LowCostQueries( transactionManager, authenticator );
+        final StatQueryProcessor statQueryProcessor = new StatQueryProcessor( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -168,7 +168,7 @@ public class PolyphenyDb {
         }
 
         StatisticsStore store = StatisticsStore.getInstance();
-        store.setSqlQueryInterface( lowCostQueries );
+        store.setSqlQueryInterface( statQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

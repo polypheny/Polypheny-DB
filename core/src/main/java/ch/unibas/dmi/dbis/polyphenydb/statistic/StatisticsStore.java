@@ -2,8 +2,13 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
@@ -35,12 +40,17 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     public ConcurrentHashMap<String, StatisticColumn> columns;
 
     private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
-    private LowCostQueries sqlQueryInterface;
+    private StatQueryProcessor sqlQueryInterface;
+
+    private boolean storeOutOfSync = false;
 
 
     private StatisticsStore() {
         this.columns = new ConcurrentHashMap<>();
         displayInformation();
+
+        ConfigManager cm = ConfigManager.getInstance();
+        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticView" ) );
 
         BackgroundTaskManager.INSTANCE.registerTask( new StatisticsStoreWorker(), "Updated unsynced Statistic Columns.", TaskPriority.LOW, TaskSchedulingType.EVERY_TEN_SECONDS );
 
@@ -134,10 +144,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
         StatQueryColumn unique = this.getUniqueValues( column );
+        Integer count = this.getCount( column );
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setMin( min.getData()[0] );
         statisticColumn.setMax( max.getData()[0] );
         statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        statisticColumn.setCount( count );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
@@ -145,9 +157,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private void reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatQueryColumn unique = this.getUniqueValues( column );
+        Integer count = this.getCount( column );
 
         AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        statisticColumn.setCount( count );
 
         this.columns.put( column.getFullName(), statisticColumn );
     }
@@ -164,18 +178,30 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
 
     private StatQueryColumn getAggregateColumn( String column, String table, String aggregate ) {
-        return this.sqlQueryInterface.selectOneStat( "SELECT " + aggregate + " (" + column + ") FROM " + table + " " );
+        String query = "SELECT " + aggregate + " (" + column + ") FROM " + table + getStatQueryLimit();
+        return this.sqlQueryInterface.selectOneStat( query );
     }
 
 
     private StatQueryColumn getUniqueValues( QueryColumn column ) {
         //TODO ASK needs limit, else throws error when casting to autoclose
-        return this.sqlQueryInterface.selectOneStat( "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " group BY " + column.getFullName() + " LIMIT 3" );
+        String query = "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " GROUP BY " + column.getFullName() + getStatQueryLimit();
+        return this.sqlQueryInterface.selectOneStat( query );
+    }
+
+    private Integer getCount( QueryColumn column ) {
+        String query = "SELECT COUNT(" + column.getFullName() + ") FROM " + column.getFullTableName();
+        return Integer.parseInt( this.sqlQueryInterface.selectOneStat( query ).getData()[0] );
     }
 
 
-    public void setSqlQueryInterface( LowCostQueries lowCostQueries ) {
-        this.sqlQueryInterface = lowCostQueries;
+    private String getStatQueryLimit() {
+        return " LIMIT " + ConfigManager.getInstance().getConfig( "StatisticsPerColumn" ).getInt();
+    }
+
+
+    public void setSqlQueryInterface( StatQueryProcessor statQueryProcessor ) {
+        this.sqlQueryInterface = statQueryProcessor;
 
         this.reevaluateStore();
 
@@ -192,10 +218,10 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
         im.addGroup( contentGroup );
 
-        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Updated" ) );
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count", "Updated" ) );
 
         columns.forEach( ( k, v ) -> {
-            statisticsInformation.addRow( k, v.getType().toString(), Boolean.toString( v.isUpdated() ) );
+            statisticsInformation.addRow( k, v.getType().toString(), v.getCount(), Boolean.toString( v.isUpdated() ) );
         } );
 
         im.registerInformation( statisticsInformation );
@@ -207,9 +233,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                 statisticsInformation.reset();
                 columns.forEach( ( k, v ) -> {
                     if ( v.isUpdated() ) {
-                        statisticsInformation.addRow( k, v.getType().name(), "✔" );
+                        statisticsInformation.addRow( k, v.getType().name(), v.getCount(), "✔" );
                     } else {
-                        statisticsInformation.addRow( k, v.getType().name(), "❌" );
+                        statisticsInformation.addRow( k, v.getType().name(), v.getCount(), "❌" );
                     }
 
                 } );
@@ -280,12 +306,22 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
-    // TODO: change to incremental method
+    /**
+     * Checks if store is in sync or reevalutates
+     * else Method goes through all columns for update
+     */
     public void sync() {
-        columnsToUpdate.forEach( ( column, type ) -> {
-            columns.remove( column );
-            reevaluateColumn( new QueryColumn( column, type ) );
-        } );
+
+        if(storeOutOfSync){
+            reevaluateStore();
+            storeOutOfSync = false;
+        }else {
+            columnsToUpdate.forEach( ( column, type ) -> {
+                columns.remove( column );
+                reevaluateColumn( new QueryColumn( column, type ) );
+            } );
+        }
+
         columnsToUpdate.clear();
     }
 

@@ -9,12 +9,10 @@ import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
@@ -36,10 +34,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -49,7 +47,7 @@ import org.apache.calcite.linq4j.Enumerable;
 
 
 @Slf4j
-public class LowCostQueries implements InformationObserver {
+public class StatQueryProcessor{
 
     private final TransactionManager transactionManager;
     private final String databaseName;
@@ -60,33 +58,15 @@ public class LowCostQueries implements InformationObserver {
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public LowCostQueries( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public StatQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-
-        ConfigManager cm = ConfigManager.getInstance();
-        // TODO: recycle config for webpages to limit values for the statistic queries
-        cm.registerWebUiPage( new WebUiPage( "statistics", "Polypheny-DB Statistics", "Settings for the user interface." ) );
-        cm.registerWebUiGroup( new WebUiGroup( "statisticView", "statistics" ).withTitle( "Statistics View" ) );
-        cm.registerConfig( new ConfigInteger( "statisticSize", "Number of rows per page in the data view", 10 ).withUi( "statisticView" ) );
     }
 
 
-    public LowCostQueries( TransactionManager transactionManager, Authenticator authenticator ) {
+    public StatQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
         this( transactionManager, "pa", "APP" );
-    }
-
-
-    @Override
-    public void observeInfos( Information info ) {
-
-    }
-
-
-    @Override
-    public void observePageList( String debugId, InformationPage[] pages ) {
-
     }
 
 
@@ -97,9 +77,6 @@ public class LowCostQueries implements InformationObserver {
      * @return result of the query
      */
     public StatQueryColumn selectOneStat( String query ) {
-        /*ArrayList<ArrayList<String>> db = getSchemaTree();
-        db.get( 0 ).forEach( System.out::println );*/
-
         return this.executeSqlSelect( query ).getColumns()[0];
     }
 
@@ -109,6 +86,18 @@ public class LowCostQueries implements InformationObserver {
      */
     public StatResult selectMultipleStats( String query ) {
         return this.executeSqlSelect( query );
+    }
+
+
+    /**
+     * Method checks is limit is the same as buffer for statistics
+     * adds/matches is to the value in the configManager
+     * @param query the query to check
+     * @return the "sanitized" query
+     */
+    private String queryLimitCheck( String query ) {
+        Pattern pattern = Pattern.compile( "^.*(?=(limit))" );
+        return pattern.matcher( query ) + " LIMIT " + ConfigManager.getInstance().getConfig( "StatisticSize" ) + ";";
     }
 
 
@@ -405,7 +394,7 @@ public class LowCostQueries implements InformationObserver {
 
 
     /**
-     * Get the number of rows that should be displayed in one page in the data view
+     * Get the page
      */
     private int getPageSize() {
         return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
@@ -418,16 +407,6 @@ public class LowCostQueries implements InformationObserver {
 
 
     static class QueryExecutionException extends Exception {
-
-        QueryExecutionException( String message ) {
-            super( message );
-        }
-
-
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
-        }
-
 
         QueryExecutionException( Throwable t ) {
             super( t );

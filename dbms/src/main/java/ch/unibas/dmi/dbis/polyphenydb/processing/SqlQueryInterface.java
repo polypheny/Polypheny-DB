@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.LowCostQueries;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatQueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import java.util.Arrays;
 import lombok.Getter;
@@ -40,7 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 public class SqlQueryInterface extends QueryInterface {
 
     @Getter
-    LowCostQueries lowCostQueries;
+    StatQueryProcessor statQueryProcessor;
 
 
     /**
@@ -54,12 +54,7 @@ public class SqlQueryInterface extends QueryInterface {
 
     @Override
     public void run() {
-        this.lowCostQueries = new LowCostQueries( this.transactionManager, "pa", "APP" );
-
-        System.out.println( Arrays.toString( this.lowCostQueries.selectOneStat( "SELECT MIN(public.depts.deptno) FROM public.depts GROUP BY public.depts.deptno ORDER BY MIN(public.depts.deptno) " )
-                .getData() ) );
-
-        log.info( "SQL query interface started." );
+        this.statQueryProcessor = new StatQueryProcessor( this.transactionManager, "pa", "APP" );
     }
 
 }
