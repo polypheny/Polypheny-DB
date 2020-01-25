@@ -53,6 +53,8 @@ public abstract class Store {
 
     public abstract void commit( PolyXid xid );
 
+    public abstract void rollback( PolyXid xid );
+
     public abstract void truncate( Context context, CatalogCombinedTable table );
 
     public abstract void updateColumnType( Context context, CatalogColumn catalogColumn );

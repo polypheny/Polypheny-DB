@@ -171,9 +171,9 @@ class FileSchema extends AbstractSchema {
         final Source sourceSansCsv = sourceSansGz.trimOrNull( ".csv" );
         if ( sourceSansCsv != null ) {
             //
-            // TODO: MV: This two nulls most properly introduce trouble. Fix to have the correct row details at this point.
+            // TODO: MV: This three nulls most properly introduce trouble. Fix to have the correct row details at this point.
             //
-            final Table table = new CsvFilterableTable( source, null, null );
+            final Table table = new CsvFilterableTable( source, null, null, null );
             builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
             return true;
         }

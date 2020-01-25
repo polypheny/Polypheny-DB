@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.GeodeUtils;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util.JavaTypeFactoryExtImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
@@ -71,7 +72,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
@@ -216,8 +216,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return new GeodeQueryable<>( queryProvider, schema, this, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new GeodeQueryable<>( dataContext, schema, this, tableName );
     }
 
 
@@ -241,8 +241,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
      */
     public static class GeodeQueryable<T> extends AbstractTableQueryable<T> {
 
-        public GeodeQueryable( QueryProvider queryProvider, SchemaPlus schema, GeodeTable table, String tableName ) {
-            super( queryProvider, schema, table, tableName );
+        public GeodeQueryable( DataContext dataContext, SchemaPlus schema, GeodeTable table, String tableName ) {
+            super( dataContext, schema, table, tableName );
         }
 
 

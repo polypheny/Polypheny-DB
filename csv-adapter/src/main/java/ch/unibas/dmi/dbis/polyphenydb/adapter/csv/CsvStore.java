@@ -42,13 +42,13 @@ public class CsvStore extends Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.TRANSLATABLE );
+        currentSchema = new CsvSchema( csvDir, Flavor.SCANNABLE );
     }
 
 
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return currentSchema.createCsvTable( combinedTable );
+        return currentSchema.createCsvTable( combinedTable, this );
     }
 
 
@@ -84,14 +84,20 @@ public class CsvStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.warn( "CSV Store does not support distributed transactions." );
+        log.warn( "CSV Store does not support prepare()." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.warn( "CSV Store does not support distributed transactions." );
+        log.warn( "CSV Store does not support commit()." );
+    }
+
+
+    @Override
+    public void rollback( PolyXid xid ) {
+        log.warn( "CSV Store does not support rollback()." );
     }
 
 

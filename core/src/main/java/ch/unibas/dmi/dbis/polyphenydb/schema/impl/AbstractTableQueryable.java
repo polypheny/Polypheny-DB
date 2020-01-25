@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
@@ -66,14 +67,14 @@ import org.apache.calcite.linq4j.tree.Expression;
  */
 public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
 
-    public final QueryProvider queryProvider;
+    public final DataContext dataContext;
     public final SchemaPlus schema;
     public final QueryableTable table;
     public final String tableName;
 
 
-    public AbstractTableQueryable( QueryProvider queryProvider, SchemaPlus schema, QueryableTable table, String tableName ) {
-        this.queryProvider = queryProvider;
+    public AbstractTableQueryable( DataContext dataContext, SchemaPlus schema, QueryableTable table, String tableName ) {
+        this.dataContext = dataContext;
         this.schema = schema;
         this.table = table;
         this.tableName = tableName;
@@ -88,7 +89,7 @@ public abstract class AbstractTableQueryable<T> extends AbstractQueryable<T> {
 
     @Override
     public QueryProvider getProvider() {
-        return queryProvider;
+        return dataContext.getQueryProvider();
     }
 
 

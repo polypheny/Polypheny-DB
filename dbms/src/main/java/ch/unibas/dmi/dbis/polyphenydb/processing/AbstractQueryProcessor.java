@@ -279,6 +279,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 internalParameters.put( "_conformance", conformance );
 
                 bindable = EnumerableInterpretable.toBindable( internalParameters, transaction.getPrepareContext().spark(), enumerable, prefer, transaction );
+                transaction.getDataContext().addAll( internalParameters );
             } finally {
                 CatalogReader.THREAD_LOCAL.remove();
             }

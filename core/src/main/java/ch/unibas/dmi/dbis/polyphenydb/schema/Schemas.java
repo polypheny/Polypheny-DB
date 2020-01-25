@@ -245,7 +245,7 @@ public final class Schemas {
      */
     public static <E> Queryable<E> queryable( DataContext root, SchemaPlus schema, Class<E> clazz, String tableName ) {
         QueryableTable table = (QueryableTable) schema.getTable( tableName );
-        return table.asQueryable( root.getQueryProvider(), schema, tableName );
+        return table.asQueryable( root, schema, tableName );
     }
 
 

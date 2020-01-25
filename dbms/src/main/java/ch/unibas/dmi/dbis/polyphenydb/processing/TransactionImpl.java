@@ -32,7 +32,6 @@ import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
-import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
@@ -55,7 +54,9 @@ import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
 import com.google.common.collect.ImmutableCollection;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +86,11 @@ public class TransactionImpl implements Transaction {
     private final boolean analyze;
 
     private final ArrayList<TransactionStat> stats = new ArrayList<>();
+    private DataContext dataContext = null;
+    private ContextImpl prepareContext = null;
+
+    @Getter
+    private List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
@@ -134,6 +140,14 @@ public class TransactionImpl implements Transaction {
 
 
     @Override
+    public void registerInvolvedStore( Store store ) {
+        if ( !involvedStores.contains( store ) ) {
+            involvedStores.add( store );
+        }
+    }
+
+
+    @Override
     public void commit() throws TransactionException {
         try {
             // Prepare to commit changes on all involved stores and the catalog
@@ -141,9 +155,10 @@ public class TransactionImpl implements Transaction {
             if ( catalog != null ) {
                 okToCommit &= catalog.prepare();
             }
-            ImmutableCollection<Store> stores = StoreManager.getInstance().getStores().values();
-            for ( Store store : stores ) {
-                okToCommit &= store.prepare( xid );
+            if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
+                for ( Store store : involvedStores ) {
+                    okToCommit &= store.prepare( xid );
+                }
             }
 
             if ( okToCommit ) {
@@ -151,7 +166,7 @@ public class TransactionImpl implements Transaction {
                 if ( catalog != null ) {
                     catalog.commit();
                 }
-                for ( Store store : stores ) {
+                for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
 
@@ -175,8 +190,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void rollback() throws TransactionException {
-
-        // TODO: rollback changes to the stores
+        //  rollback changes to the stores
+        for ( Store store : involvedStores ) {
+            store.rollback( xid );
+        }
 
         // Rollback changes to the catalog
         try {
@@ -191,20 +208,23 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public DataContext getDataContext() {
-        Map<String, Object> map = new LinkedHashMap<>();
-        // Avoid overflow
-        int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
-        if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
-            map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
-        }
+        if ( dataContext == null ) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            // Avoid overflow
+            int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
+            if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
+                map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
+            }
 
-        final AtomicBoolean cancelFlag;
-        cancelFlag = getCancelFlag();
-        map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
-        if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
-            return new SlimDataContext();
+            final AtomicBoolean cancelFlag;
+            cancelFlag = getCancelFlag();
+            map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
+            if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
+                return new SlimDataContext();
+            }
+            dataContext = new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
         }
-        return new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
+        return dataContext;
     }
 
 
@@ -216,7 +236,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public ContextImpl getPrepareContext() {
-        return new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+        if ( prepareContext == null ) {
+            prepareContext = new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+        }
+        return prepareContext;
     }
 
 
@@ -229,9 +252,14 @@ public class TransactionImpl implements Transaction {
     }
 
 
+    /*
+     * This should be called in the query interfaces for every new query before we start with processing it.
+     */
     @Override
     public void resetQueryProcessor() {
         queryProcessor = null;
+        dataContext = null;
+        prepareContext = null;
     }
 
 

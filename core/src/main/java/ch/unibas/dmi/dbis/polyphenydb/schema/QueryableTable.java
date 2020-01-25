@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import java.lang.reflect.Type;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -59,7 +59,7 @@ public interface QueryableTable extends Table {
     /**
      * Converts this table into a {@link Queryable}.
      */
-    <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName );
+    <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName );
 
     /**
      * Returns the element type of the collection that will implement this table.

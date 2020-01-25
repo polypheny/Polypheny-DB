@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -66,7 +67,6 @@ import java.util.Map;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.bson.BsonDocument;
@@ -108,8 +108,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return new MongoQueryable<>( queryProvider, schema, this, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new MongoQueryable<>( dataContext, schema, this, tableName );
     }
 
 
@@ -200,8 +200,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      */
     public static class MongoQueryable<T> extends AbstractTableQueryable<T> {
 
-        MongoQueryable( QueryProvider queryProvider, SchemaPlus schema, MongoTable table, String tableName ) {
-            super( queryProvider, schema, table, tableName );
+        MongoQueryable( DataContext dataContext, SchemaPlus schema, MongoTable table, String tableName ) {
+            super( dataContext, schema, table, tableName );
         }
 
 

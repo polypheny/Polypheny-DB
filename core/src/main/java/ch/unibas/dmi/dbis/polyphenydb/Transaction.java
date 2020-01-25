@@ -34,6 +34,8 @@ import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public interface Transaction {
@@ -50,6 +52,10 @@ public interface Transaction {
 
     void rollback() throws TransactionException;
 
+    void registerInvolvedStore( Store store );
+
+    List<Store> getInvolvedStores();
+
     PolyphenyDbSchema getSchema();
 
     boolean isAnalyze();
@@ -60,7 +66,7 @@ public interface Transaction {
 
     JavaTypeFactory getTypeFactory();
 
-    java.util.concurrent.atomic.AtomicBoolean getCancelFlag();
+    AtomicBoolean getCancelFlag();
 
     Context getPrepareContext();
 
