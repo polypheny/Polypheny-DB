@@ -24,6 +24,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Getter
     private final PolySqlType type;
 
+
     @Expose
     @Getter
     @Setter

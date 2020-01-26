@@ -24,6 +24,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private List<T> uniqueValues = new ArrayList<>();
 
     @Expose
+    private final String columnType = "numeric";
+
+    @Expose
     @Getter
     @Setter
     private T min;

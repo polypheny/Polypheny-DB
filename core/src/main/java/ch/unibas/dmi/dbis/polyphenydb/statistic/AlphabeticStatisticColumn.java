@@ -24,6 +24,9 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     private List<T> uniqueValues = new ArrayList<>();
 
     @Expose
+    private final String columnType = "alphabetic";
+
+    @Expose
     private boolean isFull = false;
 
 

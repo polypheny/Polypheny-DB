@@ -4,8 +4,12 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
@@ -42,13 +46,15 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
 
     private StatisticsStore() {
-        this.columns = new ConcurrentHashMap<>();
-        displayInformation();
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticBuffer" ) );
+        cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
+        cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
+        cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
 
-        System.out.println( "inizalized" );
+        this.columns = new ConcurrentHashMap<>();
+        displayInformation();
 
         // should only run when needed
         BackgroundTaskManager.INSTANCE.registerTask(
@@ -58,7 +64,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                 TaskSchedulingType.EVERY_THIRTY_SECONDS );
 
         // security messure for now
-        BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
+        // BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
 
     }
 
@@ -322,7 +328,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      * else Method goes through all columns for update
      */
     public synchronized void sync() {
-        System.out.println( "sync" );
+        // TODO: real disable of query assistance
+        if( !ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ){
+            return;
+        }
+
         reevaluateStore();
         /*
         if(storeOutOfSync){
@@ -345,6 +355,5 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     @Override
     public void run() {
-        System.out.println( "running" );
     }
 }
