@@ -85,7 +85,6 @@ public class CassandraProject extends Project implements CassandraRel {
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
-//        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
 
@@ -102,7 +101,6 @@ public class CassandraProject extends Project implements CassandraRel {
             }
         }
         context.addSelectColumns( fields );
-//        implementor.add( fields, null );
     }
 }
 

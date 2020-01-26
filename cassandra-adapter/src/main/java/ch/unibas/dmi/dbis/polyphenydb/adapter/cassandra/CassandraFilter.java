@@ -104,7 +104,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
 
     public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode convert, RexNode condition ) {
-        this( cluster, traitSet, convert, condition, new ArrayList<>(  ), new ArrayList<>(  ), new ArrayList<>(  ) );
+        this( cluster, traitSet, convert, condition, new ArrayList<>(), new ArrayList<>(), new ArrayList<>() );
     }
 
 
@@ -117,7 +117,6 @@ public class CassandraFilter extends Filter implements CassandraRel {
     @Override
     public CassandraFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
         return new CassandraFilter( getCluster(), traitSet, input, condition );
-//        return new CassandraFilter( getCluster(), traitSet, input, condition, partitionKeys, clusteringKeys, implicitFieldCollations );
     }
 
 
@@ -239,8 +238,6 @@ public class CassandraFilter extends Filter implements CassandraRel {
         private static Object literalValue( RexLiteral literal ) {
             Object value = CassandraValues.literalValue( literal );
             return value;
-//            Object value = literal.getValue2();
-//            return String.valueOf( value );
         }
 
 

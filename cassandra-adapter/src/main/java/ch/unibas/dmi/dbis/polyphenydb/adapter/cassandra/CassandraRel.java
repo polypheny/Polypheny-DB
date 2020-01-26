@@ -69,19 +69,6 @@ public interface CassandraRel extends RelNode {
 
     void implement( CassandraImplementContext context );
 
-    /**
-     * Calling convention for relational operations that occur in Cassandra.
-     */
-    Convention CONVENTION = new Convention.Impl( "CASSANDRA", CassandraRel.class ) {
-//        @Override
-//        public void register( RelOptPlanner planner ) {
-//            for ( RelOptRule rule : CassandraRules.RULES ) {
-//                planner.addRule( rule );
-//            }
-//            planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-//        }
-    };
-
 
     /**
      * Callback for the implementation process that converts a tree of {@link CassandraRel} nodes into a CQL query.
@@ -115,7 +102,7 @@ public interface CassandraRel extends RelNode {
         }
 
 
-        public void addWhereRelations(List<Relation> relations) {
+        public void addWhereRelations( List<Relation> relations ) {
             if ( relations != null ) {
                 whereClause.addAll( relations );
             }
@@ -132,7 +119,7 @@ public interface CassandraRel extends RelNode {
         }
 
 
-        public void addAssignments(List<Assignment> assignments) {
+        public void addAssignments( List<Assignment> assignments ) {
             this.setAssignments.addAll( assignments );
         }
 

@@ -72,18 +72,21 @@ import org.slf4j.Logger;
 
 
 /**
- * Rules and relational operators for {@link CassandraRel#CONVENTION} calling convention.
+ * Rules and relational operators for {@link CassandraConvention} calling convention.
  */
 public class CassandraRules {
 
     private CassandraRules() {
     }
 
+
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+
 
     public static List<RelOptRule> rules( CassandraConvention out ) {
         return rules( out, RelFactories.LOGICAL_BUILDER );
     }
+
 
     public static List<RelOptRule> rules( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
         return ImmutableList.of(
@@ -126,6 +129,7 @@ public class CassandraRules {
         }
     }
 
+
     /**
      * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
      */
@@ -134,7 +138,7 @@ public class CassandraRules {
         // TODO: Check for an equality predicate on the partition key. Right now this just checks if we have a single top-level AND
         private static final Predicate<LogicalFilter> PREDICATE = filter -> RelOptUtil.disjunctions( filter.getCondition() ).size() == 1;
 
-//        private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
+        //        private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
         protected final Convention out;
 
 
@@ -255,9 +259,6 @@ public class CassandraRules {
      */
     private static class CassandraProjectRuleOld extends CassandraConverterRule {
 
-//        private static final CassandraProjectRule INSTANCE = new CassandraProjectRule();
-
-
         private CassandraProjectRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
             super( LogicalProject.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraProjectRule" );
         }
@@ -295,7 +296,6 @@ public class CassandraRules {
 
         private static final RelOptRuleOperand CASSANDRA_OP = operand( CassandraToEnumerableConverter.class, operandJ( CassandraFilter.class, null, CassandraFilter::isSinglePartition, any() ) ); // We can only use implicit sorting within a single partition
 
-//        private static final CassandraSortRule INSTANCE = new CassandraSortRule();
         protected final Convention out;
 
 

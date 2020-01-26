@@ -38,12 +38,13 @@ public class CassandraUtils {
 
     /**
      * Finds the underlying {@link CassandraTable} of the subset.
+     *
      * @param relSubset the subset.
      * @return the {@link CassandraTable} or <code>null</code> if not found.
      */
     public static CassandraTable getUnderlyingTable( RelSubset relSubset ) {
         List<RelNode> rels = relSubset.getRelList();
-        for ( RelNode relNode: rels ) {
+        for ( RelNode relNode : rels ) {
             if ( relNode instanceof CassandraTableScan ) {
                 return ((CassandraTableScan) relNode).cassandraTable;
             } else if ( relNode instanceof CassandraTableModify ) {

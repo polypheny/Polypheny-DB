@@ -109,12 +109,7 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        // TODO JS: Double check
-//        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
         getConvention().register( planner );
-//        for ( RelOptRule rule : getConvention() ) {
-//            planner.addRule( rule );
-//        }
     }
 
 
@@ -126,9 +121,6 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
     @Override
     public void implement( CassandraImplementContext context ) {
-
-
-
         context.cassandraTable = cassandraTable;
         context.table = table;
 

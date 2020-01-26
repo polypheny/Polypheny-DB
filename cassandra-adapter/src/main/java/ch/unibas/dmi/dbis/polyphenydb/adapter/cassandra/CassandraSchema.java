@@ -158,23 +158,6 @@ public class CassandraSchema extends AbstractSchema {
         super();
 
         throw new RuntimeException( "THIS CONSTRUCTOR IS CURRENTLY NOT USABLE! Call Jan." );
-        /*this.keyspace = keyspace;
-        try {
-            Cluster cluster;
-            List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
-            contactPoints.add( new InetSocketAddress( host, port ) );
-            if ( username != null && password != null ) {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).withCredentials( username, password ).build();
-            } else {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).build();
-            }
-
-            this.session = cluster.connect( keyspace );
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-        this.parentSchema = parentSchema;
-        this.name = name;*/
     }
 
     public CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention ) {
@@ -235,7 +218,6 @@ public class CassandraSchema extends AbstractSchema {
         qualifiedNames.add( columnFamily );
         String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
-//            throw new RuntimeException( "Views are currently broken." );
             relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
             relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();

@@ -44,6 +44,7 @@ public class CassandraLimitRule extends CassandraConverterRule {
         super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, relBuilderFactory, "CassandraLimitRule" );
     }
 
+
     @Override
     public RelNode convert( RelNode rel ) {
         final EnumerableLimit limit = (EnumerableLimit) rel;

@@ -67,9 +67,9 @@ import org.apache.calcite.linq4j.Enumerator;
 class CassandraEnumerator implements Enumerator<Object> {
 
     private final Iterator<Row> iterator;
-//    private final List<RelDataTypeField> fieldTypes;
     private final ColumnDefinitions columnDefinitions;
     private Row current;
+
 
     /**
      * Creates a CassandraEnumerator.
@@ -80,9 +80,6 @@ class CassandraEnumerator implements Enumerator<Object> {
         this.iterator = results.iterator();
         this.current = null;
         this.columnDefinitions = results.getColumnDefinitions();
-
-//        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-//        this.fieldTypes = protoRowType.apply( typeFactory ).getFieldList();
     }
 
 

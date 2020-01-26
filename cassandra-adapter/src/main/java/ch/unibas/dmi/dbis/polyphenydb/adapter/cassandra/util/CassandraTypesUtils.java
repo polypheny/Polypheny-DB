@@ -56,6 +56,7 @@ public class CassandraTypesUtils {
         }
     }
 
+
     public static SqlTypeName getSqlTypeName( DataType dataType ) {
         if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
             return SqlTypeName.CHAR;

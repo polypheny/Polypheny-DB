@@ -34,6 +34,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 
 
 public class CassandraConvention extends Convention.Impl {
+
     public static final double COST_MULTIPLIER = 0.8d;
 
     public final Expression expression;

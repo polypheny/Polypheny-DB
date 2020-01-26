@@ -39,11 +39,13 @@ public class CassandraPhysicalNameProvider {
 
     private final Catalog catalog;
 
+
     public CassandraPhysicalNameProvider( Catalog catalog ) {
         this.catalog = catalog;
     }
 
-    public String getPhysicalTableName( List<String> qualifiedName) {
+
+    public String getPhysicalTableName( List<String> qualifiedName ) {
         String schemaName;
         String tableName;
         if ( qualifiedName.size() == 1 ) {

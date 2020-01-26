@@ -39,11 +39,9 @@ import java.util.function.Predicate;
 
 
 /**
- * Rule to convert a relational expression from {@link CassandraRel#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert a relational expression from {@link CassandraConvention} to {@link EnumerableConvention}.
  */
 public class CassandraToEnumerableConverterRule extends ConverterRule {
-
-//    public static final ConverterRule INSTANCE = new CassandraToEnumerableConverterRule( RelFactories.LOGICAL_BUILDER );
 
 
     /**

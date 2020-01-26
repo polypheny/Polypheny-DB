@@ -117,7 +117,6 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( cassandraSchema.name );
         qualifiedNames.add( columnFamily );
-//        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         this.physicalName = cassandraSchema.getConvention().physicalNameProvider.getPhysicalTableName( qualifiedNames );
     }
 
@@ -226,20 +225,6 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         final SimpleStatement statement = select.build();
 
         return new CassandraEnumerable( session, statement, offset );
-
-        /*return new AbstractEnumerable<Object>() {
-            @Override
-            public Enumerator<Object> enumerator() {
-                final ResultSet results = session.execute( statement );
-                // Skip results until we get to the right offset
-                int skip = 0;
-                Enumerator<Object> enumerator = new CassandraEnumerator( results, resultRowType );
-                while ( skip < offset && enumerator.moveNext() ) {
-                    skip++;
-                }
-                return enumerator;
-            }
-        };*/
     }
 
     public Enumerable<Object> insert() {

@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CassandraTableModify extends TableModify implements CassandraRel {
 
     public final CassandraTable cassandraTable;
-//    private final String columnFamily;
+
 
     /**
      * Creates a {@code TableModify}.
@@ -79,7 +79,6 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
     public CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cassandraTable = table.unwrap( CassandraTable.class );
-//        this.columnFamily = this.cassandraTable.getColumnFamily();
     }
 
 
@@ -94,10 +93,12 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
         return new CassandraTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), AbstractRelNode.sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
     }
 
+
     @Override
     public void register( RelOptPlanner planner ) {
         getConvention().register( planner );
     }
+
 
     @Override
     public void implement( CassandraImplementContext context ) {
@@ -116,10 +117,9 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                 context.type = Type.UPDATE;
                 context.visitChild( 0, getInput() );
 
-
                 List<Assignment> setAssignments = new ArrayList<>();
-                for(Pair<String, RexNode> entry :Pair.zip(this.getUpdateColumnList(), this.getSourceExpressionList())) {
-                    if ( ! ( entry.right instanceof RexLiteral ) ) {
+                for ( Pair<String, RexNode> entry : Pair.zip( this.getUpdateColumnList(), this.getSourceExpressionList() ) ) {
+                    if ( ! (entry.right instanceof RexLiteral) ) {
                         throw new RuntimeException( "Non literal values are not yet supported." );
                     }
                     setAssignments.add( Assignment.setColumn( entry.left, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );

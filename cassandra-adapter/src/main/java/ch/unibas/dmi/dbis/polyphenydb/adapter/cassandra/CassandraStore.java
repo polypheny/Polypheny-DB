@@ -54,7 +54,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 
-
 @Slf4j
 public class CassandraStore extends Store {
 
@@ -82,6 +81,7 @@ public class CassandraStore extends Store {
     private final CqlSession session;
     private CassandraSchema currentSchema;
 
+
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings );
 
@@ -106,18 +106,12 @@ public class CassandraStore extends Store {
             mySession = cluster.build();
             try {
                 CreateKeyspace createKs = SchemaBuilder.createKeyspace( this.dbKeyspace ).ifNotExists().withSimpleStrategy( 1 );
-                mySession.execute( createKs.build(  ) );
-//                SimpleStatement.builder( "USE " + this.dbKeyspace );
+                mySession.execute( createKs.build() );
                 mySession.execute( "USE " + this.dbKeyspace );
-//                mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
-//                mySession = cluster.connect( this.dbKeyspace );
             } catch ( Exception e ) {
                 log.warn( "Unable to use keyspace {}.", this.dbKeyspace, e );
-//                CqlSession tempSession = cluster.build();
                 mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
                 mySession.execute( "USE KEYSPACE " + this.dbKeyspace );
-//                tempSession.close();
-//                mySession = cluster.build();
             }
             this.session = mySession;
         } catch ( Exception e ) {
@@ -128,7 +122,6 @@ public class CassandraStore extends Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-//        this.currentSchema = new CassandraSchema( this.dbHostname, this.dbPort, this.dbKeyspace, this.dbUsername, this.dbPassword, rootSchema, name );
         this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog() ) );
     }
 
@@ -136,7 +129,6 @@ public class CassandraStore extends Store {
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
         // TODO: Implement
-//        log.warn( "createTableSchema is not implemented yet." );
         return new CassandraTable( this.currentSchema, combinedTable.getTable().name, false );
     }
 
@@ -154,7 +146,6 @@ public class CassandraStore extends Store {
         qualifiedNames.add( combinedTable.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
-//        String physicalTableName = combinedTable.getTable().name;
         List<CatalogColumn> columns = combinedTable.getColumns();
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
@@ -163,11 +154,8 @@ public class CassandraStore extends Store {
         for ( CatalogColumn c : columns ) {
             createTable = createTable.withColumn( c.name, getDataType( c.type ) );
         }
-//        columns.forEach( c -> {
-//            createTable = createTable.withColumn( c.name, getDataType( c.type ) );
-//        } );
 
-        this.session.execute( createTable.build(  ) );
+        this.session.execute( createTable.build() );
     }
 
 
@@ -178,7 +166,7 @@ public class CassandraStore extends Store {
         qualifiedNames.add( combinedTable.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
-        SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build(  );
+        SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
         this.session.execute( dropTable );
     }
 
@@ -328,11 +316,6 @@ public class CassandraStore extends Store {
                 return "TIMESTAMP";
         }
         throw new RuntimeException( "Unknown type: " + polySqlType.name() );
-    }
-
-
-    private void executeUpdate( StringBuilder builder ) {
-        this.session.execute( builder.toString() );
     }
 
 }

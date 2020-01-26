@@ -45,12 +45,12 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
     final BatchStatement batchStatement;
     final String stringStatement;
     final Integer offset;
-//    final RelProtoDataType resultRowType;
 
 
     public CassandraEnumerable( final CqlSession session, final SimpleStatement simpleStatement ) {
         this( session, simpleStatement, 0 );
     }
+
 
     public CassandraEnumerable( final CqlSession session, final BatchStatement batchStatement ) {
         this.session = session;
@@ -60,7 +60,8 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         this.offset = 0;
     }
 
-    public static CassandraEnumerable of(CqlSession session, BatchStatement batchStatement ) {
+
+    public static CassandraEnumerable of( CqlSession session, BatchStatement batchStatement ) {
         log.warn( "Creating batched enumerable." );
         return new CassandraEnumerable( session, batchStatement );
     }
@@ -72,13 +73,14 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         this.batchStatement = null;
         this.stringStatement = null;
         this.offset = offset;
-//        this.resultRowType = resultRowType;
     }
+
 
     public static CassandraEnumerable of( CqlSession session, SimpleStatement statement ) {
         log.warn( "Creating simple enumerable with: {}", statement.getQuery() );
         return new CassandraEnumerable( session, statement );
     }
+
 
     public CassandraEnumerable( CqlSession session, String statement ) {
         this.session = session;
@@ -88,6 +90,7 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         this.offset = 0;
 
     }
+
 
     public static CassandraEnumerable of( CqlSession session, String statement ) {
         log.warn( "Creating string enumerable with: {}", statement );
@@ -101,12 +104,12 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
         final ResultSet results;
         if ( this.simpleStatement != null ) {
             results = session.execute( simpleStatement );
-        } else if (this.batchStatement != null ) {
+        } else if ( this.batchStatement != null ) {
             results = session.execute( batchStatement );
         } else if ( this.stringStatement != null ) {
             results = session.execute( this.stringStatement );
         } else {
-            throw new AssertionError("unable to run enumerator..." );
+            throw new AssertionError( "unable to run enumerator..." );
         }
         // Skip results until we get to the right offset
         int skip = 0;

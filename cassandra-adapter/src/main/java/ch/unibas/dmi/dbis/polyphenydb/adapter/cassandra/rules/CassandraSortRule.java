@@ -40,8 +40,8 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import java.util.List;
 
+
 /**
- *
  * Rule to convert a {@link Sort} to a
  * {@link CassandraSort}.
  */
@@ -58,6 +58,7 @@ public class CassandraSortRule extends CassandraConverterRule {
         final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
         return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
     }
+
 
     @Override
     public boolean matches( RelOptRuleCall call ) {

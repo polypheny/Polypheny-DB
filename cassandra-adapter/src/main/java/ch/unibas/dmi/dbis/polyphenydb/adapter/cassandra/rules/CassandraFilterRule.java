@@ -90,23 +90,12 @@ public class CassandraFilterRule extends CassandraConverterRule {
         if ( filter.getInput() instanceof RelSubset ) {
             RelSubset subset = (RelSubset) filter.getInput();
             table = CassandraUtils.getUnderlyingTable( subset );
-//            if ( subset.getRelList().get( 0 ) instanceof CassandraTableScan ) {
-//                table = (CassandraTableScan) subset.getRelList().get( 0 );
-//            }
         }
-
-//        for( RelNode possible: call.getRelList() ) {
-//            if ( possible instanceof CassandraTableScan ) {
-//                table = (CassandraTableScan) possible;
-//                break;
-//            }
-//        }
 
         if ( table == null ) {
             log.debug( "Cannot convert, cannot find table as child." );
             return false;
         }
-
 
         Pair<List<String>, List<String>> keyFields = table.getKeyFields();
         Set<String> partitionKeys = new HashSet<>( keyFields.left );
@@ -118,15 +107,6 @@ public class CassandraFilterRule extends CassandraConverterRule {
             if ( !isEqualityOnKey( predicate, fieldNames, partitionKeys, keyFields.right ) ) {
                 return false;
             }
-            /*if ( !(predicate.getKind() == SqlKind.EQUALS
-                    && predicate.getKind() == SqlKind.GREATER_THAN
-                    && predicate.getKind() == SqlKind.GREATER_THAN_OR_EQUAL
-                    && predicate.getKind() == SqlKind.LESS_THAN
-                    && predicate.getKind() == SqlKind.LESS_THAN_OR_EQUAL
-                    && predicate.getKind() == SqlKind.NOT_EQUALS)
-            ) {
-                return false;
-            }*/
         }
 
         return true;
@@ -143,7 +123,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
      * @return True if the node represents an equality predicate on a primary key
      */
     private boolean isEqualityOnKey( RexNode node, List<String> fieldNames, Set<String> partitionKeys, List<String> clusteringKeys ) {
-        if ( ! ( node.getKind() == SqlKind.EQUALS
+        if ( ! (node.getKind() == SqlKind.EQUALS
                 || node.getKind() == SqlKind.GREATER_THAN
                 || node.getKind() == SqlKind.GREATER_THAN_OR_EQUAL
                 || node.getKind() == SqlKind.LESS_THAN

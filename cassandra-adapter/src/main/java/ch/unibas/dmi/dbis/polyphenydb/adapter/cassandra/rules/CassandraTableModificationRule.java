@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CassandraTableModificationRule extends CassandraConverterRule {
+
     CassandraTableModificationRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
         super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraTableModificationRule" );
     }
