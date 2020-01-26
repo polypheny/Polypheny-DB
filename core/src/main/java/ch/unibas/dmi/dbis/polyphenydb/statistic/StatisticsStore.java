@@ -53,6 +53,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
         cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 25 ).withUi( "statisticSettings" ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
@@ -331,7 +332,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                             }
 
                         } else {
-                            alphabeticalInformation.addRow( name, ((AlphabeticStatisticColumn) v).getUniqueValues().toString() );
+                            String values = ((AlphabeticStatisticColumn) v).getUniqueValues().toString();
+                            alphabeticalInformation.addRow(
+                                    name,
+                                    values.substring( 0, Math.min( values.length(), ConfigManager.getInstance().getConfig( "maxCharUniqueVal" ).getInt() ) )
+                            );
                         }
 
                     } ) ) );

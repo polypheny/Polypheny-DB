@@ -14,17 +14,17 @@ import lombok.Setter;
  */
 
 public abstract class StatisticColumn<T extends Comparable<T>> {
-    @Expose
     @Getter
     private final String schema;
-    @Expose
     @Getter
     private final String table;
-    @Expose
     @Getter
     private final String column;
     @Getter
     private final PolySqlType type;
+
+    @Expose
+    private final String fullColumnName;
 
 
     @Expose
@@ -46,6 +46,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.table = table;
         this.column = column;
         this.type = type;
+        this.fullColumnName = schema + "." + table + "." + column;
     }
 
 
