@@ -17,14 +17,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
-import ch.unibas.dmi.dbis.polyphenydb.information.Information;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
@@ -47,7 +41,7 @@ import org.apache.calcite.linq4j.Enumerable;
 
 
 @Slf4j
-public class StatQueryProcessor{
+public class StatQueryProcessor {
 
     private final TransactionManager transactionManager;
     private final String databaseName;
@@ -92,6 +86,7 @@ public class StatQueryProcessor{
     /**
      * Method checks is limit is the same as buffer for statistics
      * adds/matches is to the value in the configManager
+     *
      * @param query the query to check
      * @return the "sanitized" query
      */
@@ -372,6 +367,7 @@ public class StatQueryProcessor{
             }
         }
     }
+
 
     private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
         PolyphenyDbSignature signature;

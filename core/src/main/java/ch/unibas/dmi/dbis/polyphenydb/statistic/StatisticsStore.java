@@ -4,7 +4,6 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
-import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
@@ -14,11 +13,13 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,7 +38,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     private static volatile StatisticsStore instance = null;
 
     @Getter
-    public ConcurrentHashMap<String, StatisticColumn> columns;
+    public ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
 
     private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
     private StatQueryProcessor sqlQueryInterface;
@@ -53,7 +54,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
 
-        this.columns = new ConcurrentHashMap<>();
+        this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
 
         // should only run when needed
@@ -100,18 +101,43 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private void insert( String schema, String table, String column, PolySqlType type, T val ) {
         // TODO: switch back to {table = [columns], table = [columns]}
-        if ( !this.columns.containsKey( column ) ) {
+        if ( !this.statisticSchemaMap.containsKey( column ) ) {
             addColumn( column, type );
         }
-        columns.get( column ).insert( val );
+        getColumn( schema, table, column ).insert( val );
     }
 
 
+    /**
+     * Gets the specific statisticColumn if it exists in the tracked columns
+     * else null
+     *
+     * @return the statisticColumn which matches the criteria
+     */
+    private StatisticColumn<T> getColumn( String schema, String table, String column ) {
+        if ( this.statisticSchemaMap.containsKey( schema ) ) {
+            if ( this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
+                if ( this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
+                    return this.statisticSchemaMap.get( schema ).get( table ).get( column );
+                }
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Adds a new column to the tracked columns and sorts it correctly
+     *
+     * @param column column name as [schema].[table].[column]
+     * @param type the type of the new column
+     */
     private void addColumn( String column, PolySqlType type ) {
+        String[] splits = QueryColumn.getSplitColumn( column );
         if ( type.isNumericalType() ) {
-            this.columns.put( column, new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column ), type ) );
+            put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
         } else if ( type.isCharType() ) {
-            this.columns.put( column, new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column ), type ) );
+            put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
         }
     }
 
@@ -128,11 +154,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      */
     synchronized private void reevaluateStore() {
         log.warn( "Resetting StatisticStore." );
-        this.columns.clear();
+        this.statisticSchemaMap.clear();
         this.columnsToUpdate.clear();
 
         // TODO: check why null
-        if( this.sqlQueryInterface == null ){
+        if ( this.sqlQueryInterface == null ) {
             return;
         }
 
@@ -171,7 +197,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
         statisticColumn.setCount( count );
 
-        this.columns.put( column.getFullName(), statisticColumn );
+        put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
     }
 
 
@@ -183,7 +209,23 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
         statisticColumn.setCount( count );
 
-        this.columns.put( column.getFullName(), statisticColumn );
+        put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
+    }
+
+
+    private void put( String schema, String table, String column, StatisticColumn statisticColumn ) {
+        if ( !this.statisticSchemaMap.containsKey( schema ) ) {
+            this.statisticSchemaMap.put( schema, new HashMap<>() );
+        }
+
+        if ( !this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
+            this.statisticSchemaMap.get( schema ).put( table, new HashMap<>() );
+        }
+
+        if ( !this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
+            this.statisticSchemaMap.get( schema ).get( table ).put( column, statisticColumn );
+        }
+
     }
 
 
@@ -243,21 +285,23 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
         im.registerInformation( statisticsInformation );
 
-        Timer t2 = new Timer();
-        t2.scheduleAtFixedRate( new TimerTask() {
-            @Override
-            public void run() {
-                statisticsInformation.reset();
-                columns.forEach( ( k, v ) -> {
-                    if ( v.isUpdated() ) {
-                        statisticsInformation.addRow( k, v.getType().name(), v.getCount(), "✔" );
-                    } else {
-                        statisticsInformation.addRow( k, v.getType().name(), v.getCount(), "❌" );
-                    }
+        BackgroundTaskManager.INSTANCE.registerTask(
+                () -> {
+                    statisticsInformation.reset();
+                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
+                        String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
+                        if ( v.isUpdated() ) {
+                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "✔" );
+                        } else {
+                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "❌" );
+                        }
 
-                } );
-            }
-        }, 5000, 5000 );
+                    } ) ) );
+                },
+                "Reset the Statistic InformationPage for the dynamicQuering",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_FIVE_SECONDS
+        );
 
         InformationGroup alphabeticalGroup = new InformationGroup( page, "Alphabetical Statistics" );
         im.addGroup( alphabeticalGroup );
@@ -272,27 +316,29 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
 
-        Timer t3 = new Timer();
-        t3.scheduleAtFixedRate( new TimerTask() {
-            @Override
-            public void run() {
-                numericalInformation.reset();
-                alphabeticalInformation.reset();
-                columns.forEach( ( k, v ) -> {
-                    if ( v instanceof NumericalStatisticColumn ) {
-                        if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
-                            numericalInformation.addRow( k, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+        BackgroundTaskManager.INSTANCE.registerTask(
+                () -> {
+                    numericalInformation.reset();
+                    alphabeticalInformation.reset();
+                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
+                        String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
+                        if ( v instanceof NumericalStatisticColumn ) {
+
+                            if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
+                                numericalInformation.addRow( name, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                            } else {
+                                numericalInformation.addRow( name, "❌", "❌" );
+                            }
+
                         } else {
-                            numericalInformation.addRow( k, "❌", "❌" );
+                            alphabeticalInformation.addRow( name, ((AlphabeticStatisticColumn) v).getUniqueValues().toString() );
                         }
 
-                    } else {
-                        alphabeticalInformation.addRow( k, ((AlphabeticStatisticColumn) v).getUniqueValues().toString() );
-                    }
+                    } ) ) );
 
-                } );
-            }
-        }, 5000, 5000 );
+                }, "Reset Min Max for all numericalColumns.",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_FIVE_SECONDS );
 
     }
 
@@ -312,9 +358,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
             } else if ( type == TransactionStatType.DELETE || type == TransactionStatType.UPDATE ) {
                 // TODO: wait to be evalutated
 
-                if ( columns.containsKey( s.getColumnName() ) ) {
-                    columns.get( s.getColumnName() ).setUpdated( false );
-                    columnsToUpdate.put( s.getColumnName(), columns.get( s.getColumnName() ).getType() );
+                if ( statisticSchemaMap.containsKey( s.getColumnName() ) ) {
+                    getColumn( s.getSchema(), s.getTable(), s.getColumn() ).setUpdated( false );
+                    columnsToUpdate.put( s.getColumnName(), getColumn( s.getSchema(), s.getTable(), s.getColumn() ).getType() );
                 } else {
                     columnsToUpdate.put( s.getColumnName(), sqlQueryInterface.getColumnType( s.getColumnName() ) );
                 }
@@ -329,7 +375,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      */
     public synchronized void sync() {
         // TODO: real disable of query assistance
-        if( !ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ){
+        if ( !ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ) {
             return;
         }
 

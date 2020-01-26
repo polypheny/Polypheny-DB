@@ -60,7 +60,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
@@ -645,7 +644,7 @@ public class Crud implements InformationObserver {
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
         if ( ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ){
-            return store.getColumns();
+            return store.getStatisticSchemaMap();
         }else {
             return new ConcurrentHashMap<>(  );
         }
