@@ -27,6 +27,9 @@ repositories {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
+    maven {
+        url "https://clojars.org/repo/"
+    }
     mavenCentral()
 }
 
