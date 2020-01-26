@@ -41,6 +41,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -210,8 +211,9 @@ public class CassandraStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogCombinedTable table ) {
-        // TODO: Implement
-        log.warn( "truncate is not implemented yet." );
+        String physicalTableName = table.getTable().name;
+        SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
+        this.session.execute( truncateTable );
     }
 
 
