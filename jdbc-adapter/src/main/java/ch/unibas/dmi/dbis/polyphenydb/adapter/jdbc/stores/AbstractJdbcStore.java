@@ -26,7 +26,16 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
@@ -35,32 +44,48 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
+import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.dbcp2.BasicDataSource;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 
+@Slf4j
 public abstract class AbstractJdbcStore extends Store {
 
     private InformationPage informationPage;
     private InformationGroup informationGroupConnectionPool;
     private List<Information> informationElements;
 
+    protected SqlDialect dialect;
+    protected JdbcSchema currentJdbcSchema;
 
-    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings ) {
+    protected ConnectionFactory connectionFactory;
+
+
+    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings, ConnectionFactory connectionFactory, SqlDialect dialect ) {
         super( storeId, uniqueName, settings );
+        this.connectionFactory = connectionFactory;
+        this.dialect = dialect;
+        // Register the JDBC Pool Size as information in the information manager
+        registerJdbcPoolSizeInformation( uniqueName );
     }
 
 
-    protected void registerJdbcPoolSizeInformation( String uniqueName, BasicDataSource dataSource ) {
+    protected void registerJdbcPoolSizeInformation( String uniqueName ) {
         informationPage = new InformationPage( uniqueName, uniqueName );
-        informationGroupConnectionPool = new InformationGroup( informationPage, uniqueName + " JDBC Connection Pool" );
+        informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
 
         informationElements = new ArrayList<>();
 
@@ -82,8 +107,190 @@ public abstract class AbstractJdbcStore extends Store {
         im.registerInformation( connectionPoolSizeTable );
         informationElements.add( connectionPoolSizeTable );
 
-        ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable, dataSource );
-        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update " + uniqueName + " JDBC conncetion pool size information", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
+        ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable );
+        BackgroundTaskManager.INSTANCE.registerTask(
+                connectionPoolSizeInfo,
+                "Update " + uniqueName + " JDBC connection factory pool size information",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_FIVE_SECONDS );
+    }
+
+
+    @Override
+    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+        //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
+        // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ), this );
+    }
+
+
+    protected abstract String getTypeString( PolySqlType polySqlType );
+
+
+    @Override
+    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( combinedTable.getSchema().name );
+        qualifiedNames.add( combinedTable.getTable().name );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
+        }
+        builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
+        boolean first = true;
+        for ( CatalogColumn column : combinedTable.getColumns() ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
+            builder.append( getTypeString( column.type ) );
+            if ( column.length != null ) {
+                builder.append( "(" ).append( column.length );
+                if ( column.scale != null ) {
+                    builder.append( "," ).append( column.scale );
+                }
+                builder.append( ")" );
+            }
+
+        }
+        builder.append( " )" );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
+    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( catalogTable.getSchema().name );
+        qualifiedNames.add( catalogTable.getTable().name );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
+        builder.append( catalogColumn.type.name() );
+        if ( catalogColumn.length != null ) {
+            builder.append( "(" );
+            builder.append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
+            }
+            builder.append( ")" );
+        }
+        if ( catalogColumn.nullable ) {
+            builder.append( " NULL" );
+        } else {
+            builder.append( " NOT NULL" );
+        }
+        if ( catalogColumn.position <= catalogTable.getColumns().size() ) {
+            String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
+            builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
+        }
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
+    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( catalogColumn.schemaName );
+        qualifiedNames.add( catalogColumn.tableName );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
+        builder.append( " TYPE " ).append( catalogColumn.type );
+        if ( catalogColumn.length != null ) {
+            builder.append( "(" );
+            builder.append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
+            }
+            builder.append( ")" );
+        }
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
+    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( combinedTable.getSchema().name );
+        qualifiedNames.add( combinedTable.getTable().name );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
+    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( catalogTable.getSchema().name );
+        qualifiedNames.add( catalogTable.getTable().name );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
+    public void truncate( Context context, CatalogCombinedTable combinedTable ) {
+        StringBuilder builder = new StringBuilder();
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( combinedTable.getSchema().name );
+        qualifiedNames.add( combinedTable.getTable().name );
+        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        executeUpdate( builder, context );
+    }
+
+
+    protected void executeUpdate( StringBuilder builder, Context context ) {
+        try {
+            context.getTransaction().registerInvolvedStore( this );
+            connectionFactory.getOrCreateConnectionHandler( context.getTransaction().getXid() ).executeUpdate( builder.toString() );
+        } catch ( SQLException | ConnectionHandlerException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @SneakyThrows
+    @Override
+    public boolean prepare( PolyXid xid ) {
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            return connectionFactory.getConnectionHandler( xid ).prepare();
+        } else {
+            log.warn( "There is no connection to prepare (Uniquename: {}, XID: {})! Returning true.", getUniqueName(), xid );
+            return true;
+        }
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void commit( PolyXid xid ) {
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            connectionFactory.getConnectionHandler( xid ).commit();
+        } else {
+            log.warn( "There is no connection to commit (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        }
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void rollback( PolyXid xid ) {
+        if ( connectionFactory.hasConnectionHandler( xid ) ) {
+            connectionFactory.getConnectionHandler( xid ).rollback();
+        } else {
+            log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        }
     }
 
 
@@ -97,30 +304,28 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    private static class ConnectionPoolSizeInfo implements BackgroundTask {
+    private class ConnectionPoolSizeInfo implements BackgroundTask {
 
         private final InformationGraph graph;
         private final InformationTable table;
-        private final BasicDataSource dataSource;
 
 
-        ConnectionPoolSizeInfo( InformationGraph graph, InformationTable table, BasicDataSource dataSource ) {
+        ConnectionPoolSizeInfo( InformationGraph graph, InformationTable table ) {
             this.graph = graph;
             this.table = table;
-            this.dataSource = dataSource;
         }
 
 
         @Override
         public void backgroundTask() {
-            int idle = dataSource.getNumIdle();
-            int active = dataSource.getNumActive();
-            int max = dataSource.getMaxTotal();
+            int idle = connectionFactory.getNumIdle();
+            int active = connectionFactory.getNumActive();
+            int max = connectionFactory.getMaxTotal();
             int available = max - idle - active;
 
             graph.updateGraph(
                     new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( "hsqldb-connection-pool-data", new Integer[]{ active, available, idle } )
+                    new GraphData<>( getUniqueName() + "-connection-pool-data", new Integer[]{ active, available, idle } )
             );
 
             table.reset();

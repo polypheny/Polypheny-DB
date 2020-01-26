@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -78,7 +79,6 @@ import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 
@@ -330,8 +330,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return new ElasticsearchQueryable<>( queryProvider, schema, this, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new ElasticsearchQueryable<>( dataContext, schema, this, tableName );
     }
 
 
@@ -349,8 +349,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
      */
     public static class ElasticsearchQueryable<T> extends AbstractTableQueryable<T> {
 
-        ElasticsearchQueryable( QueryProvider queryProvider, SchemaPlus schema, ElasticsearchTable table, String tableName ) {
-            super( queryProvider, schema, table, tableName );
+        ElasticsearchQueryable( DataContext dataContext, SchemaPlus schema, ElasticsearchTable table, String tableName ) {
+            super( dataContext, schema, table, tableName );
         }
 
 

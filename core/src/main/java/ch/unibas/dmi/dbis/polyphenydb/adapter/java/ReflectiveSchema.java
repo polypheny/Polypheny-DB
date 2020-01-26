@@ -79,7 +79,6 @@ import java.util.Map;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -291,8 +290,8 @@ public class ReflectiveSchema extends AbstractSchema {
 
 
         @Override
-        public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-            return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+        public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+            return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
                 @Override
                 @SuppressWarnings("unchecked")
                 public Enumerator<T> enumerator() {
