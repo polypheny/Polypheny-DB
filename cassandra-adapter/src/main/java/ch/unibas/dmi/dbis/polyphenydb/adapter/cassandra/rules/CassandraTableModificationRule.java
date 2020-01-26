@@ -30,10 +30,13 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableModify;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,6 +46,14 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
     CassandraTableModificationRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
         super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraTableModificationRule" );
     }
+
+
+    @Override
+    public boolean matches( RelOptRuleCall call ) {
+        final TableModify tableModify = call.rel( 0 );
+        return tableModify.getOperation() != Operation.MERGE;
+    }
+
 
     @Override
     public RelNode convert( RelNode rel ) {

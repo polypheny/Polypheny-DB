@@ -171,9 +171,12 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
                 break;
             case DELETE:
+                log.debug( "CTM: Delete detected." );
+                context.type = Type.DELETE;
+                context.visitChild( 0, getInput() );
                 break;
             case MERGE:
-                break;
+                throw new RuntimeException( "Merge is not supported." );
         }
     }
 }

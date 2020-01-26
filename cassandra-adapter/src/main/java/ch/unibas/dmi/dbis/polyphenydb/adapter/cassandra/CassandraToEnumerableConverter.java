@@ -129,7 +129,7 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 select = select.where( cassandraContext.whereClause );
                 // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
                 Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
-                for (Map.Entry<String, ClusteringOrder> entry: cassandraContext.order.entrySet() ) {
+                for ( Map.Entry<String, ClusteringOrder> entry : cassandraContext.order.entrySet() ) {
                     orderMap.put( entry.getKey(), entry.getValue() );
                 }
 
@@ -153,7 +153,7 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 } else {
 //                    List<SimpleStatement> statements = new ArrayList<>(  );
                     StringJoiner joiner = new StringJoiner( ";", "BEGIN BATCH ", " APPLY BATCH;" );
-                    for ( Map<String, Term> insertValue: cassandraContext.insertValues ) {
+                    for ( Map<String, Term> insertValue : cassandraContext.insertValues ) {
                         InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getColumnFamily() );
 
                         joiner.add( insertInto.values( insertValue ).build().getQuery() );
@@ -167,18 +167,19 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                         .set( cassandraContext.setAssignments )
                         .where( cassandraContext.whereClause )
                         .build()
-                        .getQuery()
-                        ;
+                        .getQuery();
                 break;
             case DELETE:
-                cqlString = "";
+                cqlString = QueryBuilder.deleteFrom( cassandraContext.cassandraTable.getColumnFamily() )
+                        .where( cassandraContext.whereClause )
+                        .build()
+                        .getQuery();
                 break;
             default:
                 cqlString = "";
         }
 
         Expression enumerable;
-
 
         final Expression simpleStatement = list.append( "statement", Expressions.constant( cqlString ) );
         final Expression cqlSession_ = list.append( "cqlSession",
