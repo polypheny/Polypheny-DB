@@ -10,6 +10,9 @@ buildscript {
         mavenCentral()
         jcenter()
         maven {
+            url "https://clojars.org/repo/"
+        }
+        maven {
             url "https://plugins.gradle.org/m2/"
         }
     }
@@ -25,6 +28,10 @@ repositories {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
+    maven {
+        url "https://clojars.org/repo/"
+    }
+    jcenter()
     mavenCentral()
 }
 
@@ -52,11 +59,10 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
+    // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
-
-    // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation group: 'org.postgresql', name: 'postgresql', version: postgresql_version
-
+    implementation group: 'monetdb', name: 'monetdb-jdbc', version: monetdb_version
 
 
     // --- Test Compile ---
