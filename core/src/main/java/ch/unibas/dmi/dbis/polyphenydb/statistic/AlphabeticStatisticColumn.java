@@ -2,6 +2,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +18,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AlphabeticStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
-
-    @Expose
-    @Getter
-    @Setter
-    private List<T> uniqueValues = new ArrayList<>();
 
     @Expose
     private final String columnType = "alphabetic";
@@ -42,7 +38,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
     @Override
     public void insert( T val ) {
-        if ( uniqueValues.size() < getListBufferSize() ) {
+        if ( uniqueValues.size() < ConfigManager.getInstance().getConfig( "StatisticPerColumn" ).getInt() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
             }

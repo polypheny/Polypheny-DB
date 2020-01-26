@@ -52,8 +52,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
         cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 25 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
@@ -195,10 +195,21 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         statisticColumn.setMin( min.getData()[0] );
         statisticColumn.setMax( max.getData()[0] );
-        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        assignUnique( unique, statisticColumn );
+
         statisticColumn.setCount( count );
 
         put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
+    }
+
+
+    private void assignUnique( StatQueryColumn unique, StatisticColumn<String> statisticColumn ) {
+        int maxLength = ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt();
+        if ( unique.getData().length <= maxLength ) {
+            statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        } else {
+            statisticColumn.setFull( true );
+        }
     }
 
 
@@ -207,7 +218,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         Integer count = this.getCount( column );
 
         AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
+        assignUnique( unique, statisticColumn );
         statisticColumn.setCount( count );
 
         put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
@@ -248,7 +259,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private StatQueryColumn getUniqueValues( QueryColumn column ) {
         //TODO ASK needs limit, else throws error when casting to autoclose
-        String query = "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " GROUP BY " + column.getFullName() + getStatQueryLimit();
+        String query = "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " GROUP BY " + column.getFullName() + getStatQueryLimit( 1 );
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
@@ -260,7 +271,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
 
     private String getStatQueryLimit() {
-        return " LIMIT " + ConfigManager.getInstance().getConfig( "StatisticsPerColumn" ).getInt();
+        return getStatQueryLimit( 0 );
+    }
+
+
+    private String getStatQueryLimit( int add ) {
+        return " LIMIT " + (ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() + add);
     }
 
 
@@ -332,10 +348,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                             }
 
                         } else {
+                            // TODO: concationate to long entries
                             String values = ((AlphabeticStatisticColumn) v).getUniqueValues().toString();
                             alphabeticalInformation.addRow(
                                     name,
-                                    values.substring( 0, Math.min( values.length(), ConfigManager.getInstance().getConfig( "maxCharUniqueVal" ).getInt() ) )
+                                    values
                             );
                         }
 
