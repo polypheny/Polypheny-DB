@@ -2,18 +2,14 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
@@ -34,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
-    private static StatisticsStore instance = null;
+    private static volatile StatisticsStore instance = null;
 
     @Getter
     public ConcurrentHashMap<String, StatisticColumn> columns;
@@ -50,9 +46,19 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         displayInformation();
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticView" ) );
+        cm.registerConfig( new ConfigInteger( "StatisticsPerColumn", "Number of rows per page in the data view", 10 ).withUi( "statisticBuffer" ) );
 
-        BackgroundTaskManager.INSTANCE.registerTask( new StatisticsStoreWorker(), "Updated unsynced Statistic Columns.", TaskPriority.LOW, TaskSchedulingType.EVERY_TEN_SECONDS );
+        System.out.println( "inizalized" );
+
+        // should only run when needed
+        BackgroundTaskManager.INSTANCE.registerTask(
+                this::sync,
+                "Updated unsynced Statistic Columns.",
+                TaskPriority.HIGH,
+                TaskSchedulingType.EVERY_THIRTY_SECONDS );
+
+        // security messure for now
+        BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
 
     }
 
@@ -61,6 +67,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         // To ensure only one instance is created
         if ( instance == null ) {
             instance = new StatisticsStore();
+            instance.run();
         }
         return instance;
     }
@@ -113,15 +120,22 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     /**
      * Reset all statistics and reevaluate them
      */
-    public void reevaluateStore() {
+    synchronized private void reevaluateStore() {
+        log.warn( "Resetting StatisticStore." );
         this.columns.clear();
+        this.columnsToUpdate.clear();
+
+        // TODO: check why null
+        if( this.sqlQueryInterface == null ){
+            return;
+        }
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             System.out.println( column.getFullName() );
             reevaluateColumn( column );
 
         }
-
+        log.warn( "Finished resetting StatisticStore." );
     }
 
 
@@ -189,6 +203,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
+
     private Integer getCount( QueryColumn column ) {
         String query = "SELECT COUNT(" + column.getFullName() + ") FROM " + column.getFullTableName();
         return Integer.parseInt( this.sqlQueryInterface.selectOneStat( query ).getData()[0] );
@@ -219,10 +234,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         im.addGroup( contentGroup );
 
         InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count", "Updated" ) );
-
-        columns.forEach( ( k, v ) -> {
-            statisticsInformation.addRow( k, v.getType().toString(), v.getCount(), Boolean.toString( v.isUpdated() ) );
-        } );
 
         im.registerInformation( statisticsInformation );
 
@@ -310,34 +321,30 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      * Checks if store is in sync or reevalutates
      * else Method goes through all columns for update
      */
-    public void sync() {
-
+    public synchronized void sync() {
+        System.out.println( "sync" );
+        reevaluateStore();
+        /*
         if(storeOutOfSync){
-            reevaluateStore();
+
             storeOutOfSync = false;
         }else {
             columnsToUpdate.forEach( ( column, type ) -> {
                 columns.remove( column );
                 reevaluateColumn( new QueryColumn( column, type ) );
             } );
-        }
+        }*/
 
         columnsToUpdate.clear();
     }
 
 
-    @Override
-    public void run() {
-
+    private void checkSync() {
     }
 
 
-    private static class StatisticsStoreWorker implements BackgroundTask {
-
-
-        @Override
-        public void backgroundTask() {
-            StatisticsStore.getInstance().sync();
-        }
+    @Override
+    public void run() {
+        System.out.println( "running" );
     }
 }
