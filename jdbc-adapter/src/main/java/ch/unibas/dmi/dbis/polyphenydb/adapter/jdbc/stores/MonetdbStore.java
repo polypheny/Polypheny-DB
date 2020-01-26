@@ -114,7 +114,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        // TODO: Implement disconnect and reconnect to PostgreSQL instance.
+        // TODO: Implement disconnect and reconnect to MonetDB instance.
     }
 
 

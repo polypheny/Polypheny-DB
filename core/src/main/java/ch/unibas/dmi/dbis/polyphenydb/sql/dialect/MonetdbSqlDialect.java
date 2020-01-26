@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * A <code>SqlDialect</code> implementation for the Hsqldb database.
+ * A <code>SqlDialect</code> implementation for the MonetDB database.
  */
 @Slf4j
 public class MonetdbSqlDialect extends SqlDialect {
@@ -44,7 +44,7 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     /**
-     * Creates an HsqldbSqlDialect.
+     * Creates an MonetdbSqlDialect.
      */
     public MonetdbSqlDialect( Context context ) {
         super( context );
