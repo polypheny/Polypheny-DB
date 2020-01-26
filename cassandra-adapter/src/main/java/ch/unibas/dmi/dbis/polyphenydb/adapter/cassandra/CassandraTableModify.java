@@ -26,12 +26,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter.Translator;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
@@ -42,17 +40,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
-import com.datastax.oss.driver.api.querybuilder.update.UpdateStart;
-import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CassandraTableModify extends TableModify implements CassandraRel {
 
-    final private CassandraTable cassandraTable;
+    public final CassandraTable cassandraTable;
     private final String columnFamily;
 
     /**
@@ -83,7 +76,7 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    protected CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cassandraTable = table.unwrap( CassandraTable.class );
         this.columnFamily = this.cassandraTable.getColumnFamily();
@@ -112,45 +105,44 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
     }
 
     @Override
-    public void implement( Implementor implementor ) {
+    public void implement( CassandraImplementContext context ) {
         log.debug( "CTM: Implementing." );
 //        implementor.visitChild( 0, getInput() );
-        implementor.cassandraTable = cassandraTable;
-        implementor.table = table;
+        context.cassandraTable = cassandraTable;
+        context.table = table;
 
         switch ( this.getOperation() ) {
             case INSERT:
                 log.debug( "CTM: Insert detected." );
-                implementor.type = Type.INSERT;
-                implementor.visitChild( 0, getInput() );
+                context.type = Type.INSERT;
+                context.visitChild( 0, getInput() );
 
-                if ( implementor.insertValues.size() == 1 ) {
+                if ( context.insertValues.size() == 1 ) {
                     log.info( "CTM: Simple Insert detected." );
                     InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
-                    RegularInsert insert = insertInto.values( implementor.insertValues.get( 0 ) );
+                    RegularInsert insert = insertInto.values( context.insertValues.get( 0 ) );
 
-                    implementor.simpleStatement = insert.build();
                 } else {
                     // TODO JS: I don't like this solution, but for now it'll do!
                     log.debug( "CTM: Batch Insert detected." );
 //                    BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
                     List<SimpleStatement> statements = new ArrayList<>(  );
 
-                    for ( Map<String, Term> insertValue: implementor.insertValues ) {
+                    for ( Map<String, Term> insertValue: context.insertValues ) {
                         InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
 
                         statements.add( insertInto.values( insertValue ).build() );
 //                        builder.addStatement( insertInto.values( insertValue ).build() );
                     }
 
-                    implementor.addState( statements );
+//                    context.addState( statements );
 //                    implementor.batchStatement = builder.build();
                 }
                 break;
             case UPDATE:
                 log.debug( "CTM: Update detected." );
-                implementor.type = Type.UPDATE;
-                implementor.visitChild( 0, getInput() );
+                context.type = Type.UPDATE;
+                context.visitChild( 0, getInput() );
 
 //                updateStart.set
 
@@ -163,14 +155,16 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                     setAssignments.add( Assignment.setColumn( entry.left, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );
                 }
 
+                context.addAssignments( setAssignments );
+
 
                 SimpleStatement updateStart = QueryBuilder.update( this.columnFamily )
                         .set( setAssignments )
-                        .where( implementor.whereClause )
+                        .where( context.whereClause )
                         .build()
                         ;
 
-                implementor.simpleStatement = updateStart;
+//                implementor.simpleStatement = updateStart;
 //                UpdateWithAssignments update = updateStart.set( setAssignments );
 //                update.where( implementor.whereClause );
 

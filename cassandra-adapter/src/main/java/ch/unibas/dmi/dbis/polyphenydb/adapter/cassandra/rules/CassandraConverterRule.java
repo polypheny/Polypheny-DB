@@ -23,32 +23,26 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import java.util.function.Predicate;
 
 
-public class CassandraConvention extends Convention.Impl {
-    public static final double COST_MULTIPLIER = 0.8d;
+/**
+ * Base class for planner rules that convert a relational expression to Cassandra calling convention.
+ */
+public abstract class CassandraConverterRule extends ConverterRule {
+    protected final Convention out;
 
-    public final Expression expression;
-
-
-    public CassandraConvention( String name, Expression expression ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
-        this.expression = expression;
-    }
-
-
-    @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
-            planner.addRule( rule );
-        }
+    <R extends RelNode> CassandraConverterRule( Class<R> clazz, Predicate<? super R> predicate, RelTrait in, CassandraConvention out, RelBuilderFactory relBuilderFactory, String description ) {
+        super( clazz, predicate, in, out, relBuilderFactory, description );
+        this.out = out;
     }
 }

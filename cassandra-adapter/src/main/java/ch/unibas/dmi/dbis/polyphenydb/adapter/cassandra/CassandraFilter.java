@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -63,13 +64,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -81,24 +81,18 @@ import java.util.Set;
  */
 public class CassandraFilter extends Filter implements CassandraRel {
 
-    private final List<String> partitionKeys;
     private Boolean singlePartition;
-    private final List<String> clusteringKeys;
-    private final List<RelFieldCollation> implicitFieldCollations;
     private RelCollation implicitCollation;
-    private List<Relation> match;
 
 
     public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
         super( cluster, traitSet, child, condition );
 
-        this.partitionKeys = partitionKeys;
         this.singlePartition = false;
-        this.clusteringKeys = new ArrayList<>( clusteringKeys );
-        this.implicitFieldCollations = implicitFieldCollations;
+//        List<String> clusteringKeys1 = new ArrayList<>( clusteringKeys );
 
-        Translator translator = new Translator( getRowType(), partitionKeys, clusteringKeys, implicitFieldCollations );
-        this.match = translator.translateMatch( condition );
+//        Translator translator = new Translator( getRowType(), partitionKeys, clusteringKeys, implicitFieldCollations );
+//        this.match = translator.translateMatch( condition );
         // Testing if this is really needed...
 //        this.singlePartition = translator.isSinglePartition();
 //        this.implicitCollation = translator.getImplicitCollation();
@@ -106,6 +100,11 @@ public class CassandraFilter extends Filter implements CassandraRel {
         // TODO JS: Check this
 //        assert getConvention() == CONVENTION;
 //        assert getConvention() == child.getConvention();
+    }
+
+
+    public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode convert, RexNode condition ) {
+        this( cluster, traitSet, convert, condition, new ArrayList<>(  ), new ArrayList<>(  ), new ArrayList<>(  ) );
     }
 
 
@@ -117,14 +116,24 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
     @Override
     public CassandraFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
-        return new CassandraFilter( getCluster(), traitSet, input, condition, partitionKeys, clusteringKeys, implicitFieldCollations );
+        return new CassandraFilter( getCluster(), traitSet, input, condition );
+//        return new CassandraFilter( getCluster(), traitSet, input, condition, partitionKeys, clusteringKeys, implicitFieldCollations );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
-        implementor.addWhereRelations( this.match );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
+
+        context.filterCollation = this.getImplicitCollation();
+
+        final Pair<List<String>, List<String>> keyFields = context.cassandraTable.getKeyFields();
+
+        Translator translator = new Translator( getRowType(), keyFields.left, keyFields.right, context.cassandraTable.getClusteringOrder() );
+
+        List<Relation> match = translator.translateMatch( condition );
+
+        context.addWhereRelations( match );
     }
 
 
@@ -155,19 +164,19 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
         private final RelDataType rowType;
         private final List<String> fieldNames;
-//        private final Set<String> partitionKeys;
-//        private final List<String> clusteringKeys;
-//        private int restrictedClusteringKeys;
-//        private final List<RelFieldCollation> implicitFieldCollations;
+        private final Set<String> partitionKeys;
+        private final List<String> clusteringKeys;
+        private int restrictedClusteringKeys;
+        private final List<RelFieldCollation> implicitFieldCollations;
 
 
         Translator( RelDataType rowType, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
             this.rowType = rowType;
             this.fieldNames = CassandraRules.cassandraFieldNames( rowType );
-//            this.partitionKeys = new HashSet<>( partitionKeys );
-//            this.clusteringKeys = clusteringKeys;
-//            this.restrictedClusteringKeys = 0;
-//            this.implicitFieldCollations = implicitFieldCollations;
+            this.partitionKeys = new HashSet<>( partitionKeys );
+            this.clusteringKeys = clusteringKeys;
+            this.restrictedClusteringKeys = 0;
+            this.implicitFieldCollations = implicitFieldCollations;
         }
 
 
@@ -176,9 +185,9 @@ public class CassandraFilter extends Filter implements CassandraRel {
          *
          * @return True if the matches translated so far have resulted in a single partition
          */
-        /*public boolean isSinglePartition() {
+        public boolean isSinglePartition() {
             return partitionKeys.isEmpty();
-        }*/
+        }
 
 
         /**
@@ -186,7 +195,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          *
          * @return The collation of the filtered results
          */
-        /*public RelCollation getImplicitCollation() {
+        public RelCollation getImplicitCollation() {
             // No collation applies if we aren't restricted to a single partition
             if ( !isSinglePartition() ) {
                 return RelCollations.EMPTY;
@@ -201,7 +210,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
             }
 
             return RelCollations.of( fieldCollations );
-        }*/
+        }
 
 
         /**
@@ -321,12 +330,12 @@ public class CassandraFilter extends Filter implements CassandraRel {
          */
         private Relation translateOp2( SqlKind op, String name, RexLiteral right ) {
             // In case this is a key, record that it is now restricted
-            /*if ( op.equals( "=" ) ) {
+            if ( op.equals( "=" ) ) {
                 partitionKeys.remove( name );
                 if ( clusteringKeys.contains( name ) ) {
                     restrictedClusteringKeys++;
                 }
-            }*/
+            }
 
             Object value = literalValue( right );
             String valueString = value.toString();

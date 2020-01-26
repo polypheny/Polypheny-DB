@@ -23,32 +23,31 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraValues;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 
 
-public class CassandraConvention extends Convention.Impl {
-    public static final double COST_MULTIPLIER = 0.8d;
+public class CassandraValuesRule extends CassandraConverterRule {
 
-    public final Expression expression;
-
-
-    public CassandraConvention( String name, Expression expression ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
-        this.expression = expression;
+    CassandraValuesRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule" );
     }
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
-            planner.addRule( rule );
-        }
+    public RelNode convert( RelNode rel ) {
+        Values values = (Values) rel;
+        return new CassandraValues(
+                values.getCluster(),
+                values.getRowType(),
+                values.getTuples(),
+                values.getTraitSet().replace( out ) );
     }
 }

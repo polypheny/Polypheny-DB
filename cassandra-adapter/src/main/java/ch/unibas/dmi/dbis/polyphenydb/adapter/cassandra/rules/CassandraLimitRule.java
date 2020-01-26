@@ -23,32 +23,31 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraLimit;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 
 
-public class CassandraConvention extends Convention.Impl {
-    public static final double COST_MULTIPLIER = 0.8d;
+/**
+ * Rule to convert a {@link EnumerableLimit} to a {@link CassandraLimit}.
+ */
+public class CassandraLimitRule extends CassandraConverterRule {
 
-    public final Expression expression;
-
-
-    public CassandraConvention( String name, Expression expression ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
-        this.expression = expression;
+    CassandraLimitRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, relBuilderFactory, "CassandraLimitRule" );
     }
 
-
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
-            planner.addRule( rule );
-        }
+    public RelNode convert( RelNode rel ) {
+        final EnumerableLimit limit = (EnumerableLimit) rel;
+        final RelTraitSet traitSet = limit.getTraitSet().replace( out );
+        return new CassandraLimit( limit.getCluster(), traitSet, convert( limit.getInput(), limit.getInput().getTraitSet().replace( out ) ), limit.offset, limit.fetch );
     }
 }

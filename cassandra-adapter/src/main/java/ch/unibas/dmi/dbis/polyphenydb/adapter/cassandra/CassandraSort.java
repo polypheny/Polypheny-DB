@@ -57,7 +57,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +67,8 @@ import java.util.Map;
  */
 public class CassandraSort extends Sort implements CassandraRel {
 
-    public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation ) {
-        super( cluster, traitSet, child, collation, null, null );
+    public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+        super( cluster, traitSet, child, collation, offset, fetch );
 
         // TODO JS: Check this
 //        assert getConvention() == CONVENTION;
@@ -90,13 +89,13 @@ public class CassandraSort extends Sort implements CassandraRel {
 
     @Override
     public Sort copy( RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch ) {
-        return new CassandraSort( getCluster(), traitSet, input, collation );
+        return new CassandraSort( getCluster(), traitSet, input, collation, offset, fetch );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
 
         List<RelFieldCollation> sortCollations = collation.getFieldCollations();
         Map<String, ClusteringOrder> fieldOrder = new LinkedHashMap<>();
@@ -117,7 +116,7 @@ public class CassandraSort extends Sort implements CassandraRel {
                 fieldOrder.put( name, direction );
             }
 
-            implementor.addOrder( fieldOrder );
+            context.addOrder( fieldOrder );
         }
     }
 }

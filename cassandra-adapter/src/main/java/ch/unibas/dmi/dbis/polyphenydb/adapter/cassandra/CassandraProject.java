@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -59,9 +60,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -91,8 +90,8 @@ public class CassandraProject extends Project implements CassandraRel {
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
         final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraFieldNames( getInput().getRowType() ) );
         final List<Selector> fields = new ArrayList<>();
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
@@ -102,7 +101,7 @@ public class CassandraProject extends Project implements CassandraRel {
                 fields.add( Selector.column( originalName ).as( name ) );
             }
         }
-        implementor.addSelectColumns( fields );
+        context.addSelectColumns( fields );
 //        implementor.add( fields, null );
     }
 }

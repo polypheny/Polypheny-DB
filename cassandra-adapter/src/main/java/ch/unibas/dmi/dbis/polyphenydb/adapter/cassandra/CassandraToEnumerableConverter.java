@@ -45,13 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.CassandraImplementContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -61,18 +60,16 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
-import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.AbstractList;
-import java.util.ArrayList;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -82,8 +79,6 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**
@@ -92,7 +87,7 @@ import org.apache.calcite.linq4j.tree.Types;
 @Slf4j
 public class CassandraToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
-    protected CassandraToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    public CassandraToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
@@ -113,12 +108,96 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         // Generates a call to "query" with the appropriate fields and predicates
         final BlockBuilder list = new BlockBuilder();
-        final CassandraRel.Implementor cassandraImplementor = new CassandraRel.Implementor();
-        cassandraImplementor.visitChild( 0, getInput() );
+        final CassandraImplementContext cassandraContext = new CassandraImplementContext();
+        cassandraContext.visitChild( 0, getInput() );
         final CassandraConvention convention = (CassandraConvention) getInput().getConvention();
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+
+        String cqlString;
+        switch ( cassandraContext.type ) {
+            case SELECT:
+                SelectFrom selectFrom = QueryBuilder.selectFrom( cassandraContext.cassandraTable.getColumnFamily() );
+                Select select;
+                // Construct the list of fields to project
+                if ( cassandraContext.selectFields.isEmpty() ) {
+                    select = selectFrom.all();
+                } else {
+                    select = selectFrom.selectors( cassandraContext.selectFields );
+                }
+
+                select = select.where( cassandraContext.whereClause );
+                // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
+                Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
+                for (Map.Entry<String, ClusteringOrder> entry: cassandraContext.order.entrySet() ) {
+                    orderMap.put( entry.getKey(), entry.getValue() );
+                }
+
+                select = select.orderBy( orderMap );
+                int limit = cassandraContext.offset;
+                if ( cassandraContext.fetch >= 0 ) {
+                    limit += cassandraContext.fetch;
+                }
+                if ( limit > 0 ) {
+                    select = select.limit( limit );
+                }
+
+                select = select.allowFiltering();
+                cqlString = select.build().getQuery();
+                break;
+            case INSERT:
+                if ( cassandraContext.insertValues.size() == 1 ) {
+                    InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getColumnFamily() );
+                    RegularInsert insert = insertInto.values( cassandraContext.insertValues.get( 0 ) );
+                    cqlString = insert.build().getQuery();
+                } else {
+//                    List<SimpleStatement> statements = new ArrayList<>(  );
+                    StringJoiner joiner = new StringJoiner( ";", "BEGIN BATCH ", " APPLY BATCH;" );
+                    for ( Map<String, Term> insertValue: cassandraContext.insertValues ) {
+                        InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getColumnFamily() );
+
+                        joiner.add( insertInto.values( insertValue ).build().getQuery() );
+                    }
+
+                    cqlString = joiner.toString();
+                }
+                break;
+            case UPDATE:
+                cqlString = QueryBuilder.update( cassandraContext.cassandraTable.getColumnFamily() )
+                        .set( cassandraContext.setAssignments )
+                        .where( cassandraContext.whereClause )
+                        .build()
+                        .getQuery()
+                        ;
+                break;
+            case DELETE:
+                cqlString = "";
+                break;
+            default:
+                cqlString = "";
+        }
+
         Expression enumerable;
+
+
+        final Expression simpleStatement = list.append( "statement", Expressions.constant( cqlString ) );
+        final Expression cqlSession_ = list.append( "cqlSession",
+                Expressions.call(
+                        Schemas.unwrap( convention.expression, CassandraSchema.class ),
+                        "getSession" ) );
+
+        enumerable = list.append(
+                "enumerable",
+                Expressions.call(
+                        CassandraMethod.CASSANDRA_STRING_ENUMERABLE.method,
+                        cqlSession_,
+                        simpleStatement
+                ) );
+        list.add( Expressions.return_( null, enumerable ) );
+
+        return implementor.result( physType, list.toBlock() );
+
+/*
         if ( cassandraImplementor.type == Type.SELECT && false ) {
             final Expression fields =
                     list.append( "fields",
@@ -188,13 +267,13 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                                 "getSession" ) );
                 list.append( "temp11", Expressions.call( println_, Expressions.constant( "Fetched cqlSession" ) ) );
                 list.append( "temp12", Expressions.call( println_, Expressions.call( cqlSession_, Types.lookupMethod( CqlSession.class, "getName" ) ) ) );
-                /*enumerable = builder.append(
+                *//*enumerable = builder.append(
                         "enumerable",
                         Expressions.call(
                                 CassandraMethod.CASSANDRA_STRING_ENUMERABLE.method,
                                 cqlSession_,
                                 simpleStatement
-                        ) );*/
+                        ) );*//*
                 enumerable = list.append(
                         "enumerable",
                         Expressions.call(
@@ -203,13 +282,13 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                                 simpleStatement
                         ) );
                 list.add( Expressions.return_( null, enumerable ) );
-                /*final Expression getSession_ = list.append( "getSession",
+                *//*final Expression getSession_ = list.append( "getSession",
                         Expressions.block(
                                 Expressions.tryCatch(
                                         builder.toBlock()
                                         , Expressions.catch_( e_, Expressions.throw_( Expressions.new_( RuntimeException.class, e_ ) ) ) ) ) );
                 list.append( "temp1", Expressions.call( println_, Expressions.constant( "Okay, let's see...." ) ) );
-                list.append( "temp2", Expressions.call( println_, Expressions.call( cqlSession_, Types.lookupMethod( CqlSession.class, "getName" ) ) ) );*/
+                list.append( "temp2", Expressions.call( println_, Expressions.call( cqlSession_, Types.lookupMethod( CqlSession.class, "getName" ) ) ) );*//*
             } else {
                 final Expression table = list.append( "table", cassandraImplementor.table.getExpression( CassandraEnumerable.class ) );
                 final Expression batchStatement = list.append( "statement", Expressions.constant( cassandraImplementor.batchStatement ) );
@@ -220,7 +299,7 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
             }
         }
 //        list.add( Expressions.return_( null, enumerable ) );
-        return implementor.result( physType, list.toBlock() );
+        return implementor.result( physType, list.toBlock() );*/
     }
 
 

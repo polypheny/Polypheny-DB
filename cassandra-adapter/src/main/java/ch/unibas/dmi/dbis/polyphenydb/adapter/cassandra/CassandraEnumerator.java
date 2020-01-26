@@ -116,6 +116,7 @@ class CassandraEnumerator implements Enumerator<Object> {
      */
     private Object currentRowField( int index ) {
         DataType type = this.columnDefinitions.get( index ).getType();
+
         if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
             return current.getString( index );
         } else if ( type == DataTypes.INT || type == DataTypes.VARINT ) {
@@ -128,6 +129,12 @@ class CassandraEnumerator implements Enumerator<Object> {
             return current.getFloat( index );
         } else if ( type == DataTypes.UUID || type == DataTypes.TIMEUUID ) {
             return current.getUuid( index ).toString();
+        } else if ( type == DataTypes.DATE ) {
+            return (int) current.getLocalDate( index ).toEpochDay();
+        } else if ( type == DataTypes.TIME ) {
+            return ((int) current.getLocalTime( index ).toNanoOfDay()) / 1000000;
+        } else if ( type == DataTypes.TIMESTAMP ) {
+            return current.getInstant( index ).getEpochSecond() * 1000L + current.getInstant( index ).getNano() / 1000000L;
         } else {
             return null;
         }

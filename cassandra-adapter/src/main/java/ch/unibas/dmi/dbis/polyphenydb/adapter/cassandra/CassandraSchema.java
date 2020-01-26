@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraTypesUtils;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -196,7 +197,6 @@ public class CassandraSchema extends AbstractSchema {
 //        String physicalTableName =
         Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
-//            columns = getKeyspace().getMaterializedView( "\"" + columnFamily + "\"" ).getColumns();
             throw new RuntimeException( "Views are currently broken." );
         } else {
             columns = getKeyspace().getTable( "\"" + columnFamily + "\"" ).get().getColumns();
@@ -210,19 +210,7 @@ public class CassandraSchema extends AbstractSchema {
             final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
-            SqlTypeName typeName = SqlTypeName.ANY;
-            if ( type == DataTypes.UUID || type == DataTypes.TIMEUUID ) {
-                // We currently rely on this in CassandraFilter to detect UUID columns. That is, these fixed length literals should be unquoted in CQL.
-                typeName = SqlTypeName.CHAR;
-            } else if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
-                typeName = SqlTypeName.VARCHAR;
-            } else if ( type == DataTypes.INT || type == DataTypes.VARINT ) {
-                typeName = SqlTypeName.INTEGER;
-            } else if ( type == DataTypes.BIGINT ) {
-                typeName = SqlTypeName.BIGINT;
-            } else if ( type == DataTypes.DOUBLE || type == DataTypes.FLOAT || type == DataTypes.DECIMAL ) {
-                typeName = SqlTypeName.DOUBLE;
-            }
+            SqlTypeName typeName = CassandraTypesUtils.getSqlTypeName( type );
 
             fieldInfo.add( columnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }

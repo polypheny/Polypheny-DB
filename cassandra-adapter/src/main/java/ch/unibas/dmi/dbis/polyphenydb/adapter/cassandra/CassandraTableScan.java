@@ -45,11 +45,10 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.Implementor.Type;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
@@ -71,7 +70,7 @@ import java.util.Map;
  */
 public class CassandraTableScan extends TableScan implements CassandraRel {
 
-    final CassandraTable cassandraTable;
+    public final CassandraTable cassandraTable;
     final RelDataType projectRowType;
 
 
@@ -126,43 +125,43 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
 
     @Override
-    public void implement( Implementor implementor ) {
+    public void implement( CassandraImplementContext context ) {
 
 
 
-        implementor.cassandraTable = cassandraTable;
-        implementor.table = table;
+        context.cassandraTable = cassandraTable;
+        context.table = table;
 
-        if ( implementor.type != null ) {
+        if ( context.type != null ) {
             return;
         }
 
-        implementor.type = Type.SELECT;
+        context.type = Type.SELECT;
 
-        SelectFrom selectFrom = QueryBuilder.selectFrom( implementor.cassandraTable.getColumnFamily() );
+        SelectFrom selectFrom = QueryBuilder.selectFrom( context.cassandraTable.getColumnFamily() );
 
 //        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
 
         Select select;
         // Construct the list of fields to project
-        if ( implementor.selectFields.isEmpty() ) {
+        if ( context.selectFields.isEmpty() ) {
             select = selectFrom.all();
         } else {
-            select = selectFrom.selectors( implementor.selectFields );
+            select = selectFrom.selectors( context.selectFields );
         }
 
-        select = select.where( implementor.whereClause );
+        select = select.where( context.whereClause );
 
         // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
         Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ClusteringOrder> entry: implementor.order.entrySet() ) {
+        for (Map.Entry<String, ClusteringOrder> entry: context.order.entrySet() ) {
             orderMap.put( entry.getKey(), entry.getValue() );
         }
 
         select = select.orderBy( orderMap );
-        int limit = implementor.offset;
-        if ( implementor.fetch >= 0 ) {
-            limit += implementor.fetch;
+        int limit = context.offset;
+        if ( context.fetch >= 0 ) {
+            limit += context.fetch;
         }
         if ( limit > 0 ) {
             select = select.limit( limit );
@@ -173,7 +172,7 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
         final SimpleStatement statement = select.build();
 
-        implementor.simpleStatement = statement;
+//        implementor.simpleStatement = statement;
     }
 }
 

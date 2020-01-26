@@ -46,14 +46,11 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -70,7 +67,7 @@ import java.util.Map;
  */
 public interface CassandraRel extends RelNode {
 
-    void implement( Implementor implementor );
+    void implement( CassandraImplementContext context );
 
     /**
      * Calling convention for relational operations that occur in Cassandra.
@@ -89,19 +86,7 @@ public interface CassandraRel extends RelNode {
     /**
      * Callback for the implementation process that converts a tree of {@link CassandraRel} nodes into a CQL query.
      */
-    class Implementor {
-
-        public static void printhelper(String input) {
-            System.out.println( input );
-        }
-
-        SimpleStatement simpleStatement = null;
-        BatchStatement batchStatement = null;
-        List<SimpleStatement> statements = new ArrayList<>(  );
-
-        public void addState( List<SimpleStatement> s ) {
-            this.statements.addAll( s );
-        }
+    public class CassandraImplementContext {
 
         Type type = null;
 
@@ -119,8 +104,10 @@ public interface CassandraRel extends RelNode {
         RelOptTable table;
         CassandraTable cassandraTable;
 
+        RelCollation filterCollation = null;
 
-        enum Type {
+
+        public enum Type {
             SELECT,
             INSERT,
             UPDATE,
@@ -134,24 +121,19 @@ public interface CassandraRel extends RelNode {
             }
         }
 
+
         public void addInsertValues( List<Map<String, Term>> additionalValues ) {
             this.insertValues.addAll( additionalValues );
         }
+
 
         public void addSelectColumns( List<Selector> selectFields ) {
             this.selectFields.addAll( selectFields );
         }
 
-        /*
-         * Adds newly projected fields and restricted predicates.
-         *
-         * @param fields New fields to be projected from a query
-         * @param predicates New predicates to be applied to the query
-         */
 
-
-        public void addAssignment(Assignment assignment) {
-
+        public void addAssignments(List<Assignment> assignments) {
+            this.setAssignments.addAll( assignments );
         }
 
 

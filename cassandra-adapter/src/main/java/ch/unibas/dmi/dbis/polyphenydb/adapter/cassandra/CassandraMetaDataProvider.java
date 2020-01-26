@@ -26,29 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
+public class CassandraMetaDataProvider {
 
-
-public class CassandraConvention extends Convention.Impl {
-    public static final double COST_MULTIPLIER = 0.8d;
-
-    public final Expression expression;
-
-
-    public CassandraConvention( String name, Expression expression ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
-        this.expression = expression;
-    }
-
-
-    @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
-            planner.addRule( rule );
-        }
-    }
 }

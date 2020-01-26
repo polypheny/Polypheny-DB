@@ -23,32 +23,34 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableModify;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableScan;
+import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
+import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import java.util.List;
 
 
-public class CassandraConvention extends Convention.Impl {
-    public static final double COST_MULTIPLIER = 0.8d;
+public class CassandraUtils {
 
-    public final Expression expression;
-
-
-    public CassandraConvention( String name, Expression expression ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
-        this.expression = expression;
-    }
-
-
-    @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
-            planner.addRule( rule );
+    /**
+     * Finds the underlying {@link CassandraTable} of the subset.
+     * @param relSubset the subset.
+     * @return the {@link CassandraTable} or <code>null</code> if not found.
+     */
+    public static CassandraTable getUnderlyingTable( RelSubset relSubset ) {
+        List<RelNode> rels = relSubset.getRelList();
+        for ( RelNode relNode: rels ) {
+            if ( relNode instanceof CassandraTableScan ) {
+                return ((CassandraTableScan) relNode).cassandraTable;
+            } else if ( relNode instanceof CassandraTableModify ) {
+                return ((CassandraTableModify) relNode).cassandraTable;
+            }
         }
+
+        return null;
     }
 }
