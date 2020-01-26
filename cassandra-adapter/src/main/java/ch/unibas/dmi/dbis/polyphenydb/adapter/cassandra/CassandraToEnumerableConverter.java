@@ -70,6 +70,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -114,10 +115,15 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
+//        List<String> qualifiedNames = new LinkedList<>();
+//        qualifiedNames.add( combinedTable.getSchema().name );
+//        qualifiedNames.add( combinedTable.getTable().name );
+//        String physicalTableName = cassandraContext.cassandraTable.getPhysicalTableName( qualifiedNames );
+
         String cqlString;
         switch ( cassandraContext.type ) {
             case SELECT:
-                SelectFrom selectFrom = QueryBuilder.selectFrom( cassandraContext.cassandraTable.getColumnFamily() );
+                SelectFrom selectFrom = QueryBuilder.selectFrom( cassandraContext.cassandraTable.getPhysicalName() );
                 Select select;
                 // Construct the list of fields to project
                 if ( cassandraContext.selectFields.isEmpty() ) {
@@ -147,14 +153,14 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 break;
             case INSERT:
                 if ( cassandraContext.insertValues.size() == 1 ) {
-                    InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getColumnFamily() );
+                    InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getPhysicalName() );
                     RegularInsert insert = insertInto.values( cassandraContext.insertValues.get( 0 ) );
                     cqlString = insert.build().getQuery();
                 } else {
 //                    List<SimpleStatement> statements = new ArrayList<>(  );
                     StringJoiner joiner = new StringJoiner( ";", "BEGIN BATCH ", " APPLY BATCH;" );
                     for ( Map<String, Term> insertValue : cassandraContext.insertValues ) {
-                        InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getColumnFamily() );
+                        InsertInto insertInto = QueryBuilder.insertInto( cassandraContext.cassandraTable.getPhysicalName() );
 
                         joiner.add( insertInto.values( insertValue ).build().getQuery() );
                     }
@@ -163,14 +169,14 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 }
                 break;
             case UPDATE:
-                cqlString = QueryBuilder.update( cassandraContext.cassandraTable.getColumnFamily() )
+                cqlString = QueryBuilder.update( cassandraContext.cassandraTable.getPhysicalName() )
                         .set( cassandraContext.setAssignments )
                         .where( cassandraContext.whereClause )
                         .build()
                         .getQuery();
                 break;
             case DELETE:
-                cqlString = QueryBuilder.deleteFrom( cassandraContext.cassandraTable.getColumnFamily() )
+                cqlString = QueryBuilder.deleteFrom( cassandraContext.cassandraTable.getPhysicalName() )
                         .where( cassandraContext.whereClause )
                         .build()
                         .getQuery();

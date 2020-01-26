@@ -72,6 +72,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -185,21 +186,24 @@ public class CassandraSchema extends AbstractSchema {
         this.convention = convention;
     }
 
-    public static CassandraSchema create( SchemaPlus parentSchema, String name, CqlSession session, String keyspace ) {
+    public static CassandraSchema create( SchemaPlus parentSchema, String name, CqlSession session, String keyspace, CassandraPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
-        final CassandraConvention convention = new CassandraConvention( name, expression );
+        final CassandraConvention convention = new CassandraConvention( name, expression, physicalNameProvider );
         return new CassandraSchema( session, keyspace, parentSchema, name, convention );
     }
 
 
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
         log.info( "getRelDataType: {}", columnFamily );
-//        String physicalTableName =
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
             throw new RuntimeException( "Views are currently broken." );
         } else {
-            columns = getKeyspace().getTable( "\"" + columnFamily + "\"" ).get().getColumns();
+            columns = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get().getColumns();
         }
 
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
@@ -226,11 +230,15 @@ public class CassandraSchema extends AbstractSchema {
      */
     Pair<List<String>, List<String>> getKeyFields( String columnFamily, boolean view ) {
         RelationMetadata relation;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
 //            throw new RuntimeException( "Views are currently broken." );
-            relation = getKeyspace().getView( "\"" + columnFamily + "\"" ).get();
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
-            relation = getKeyspace().getTable( "\"" + columnFamily + "\"" ).get();
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
         }
 
         List<ColumnMetadata> partitionKey = relation.getPartitionKey();
@@ -256,11 +264,15 @@ public class CassandraSchema extends AbstractSchema {
      */
     public List<RelFieldCollation> getClusteringOrder( String columnFamily, boolean view ) {
         RelationMetadata relation;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
 //            throw new RuntimeException( "Views are currently broken." );
-            relation = getKeyspace().getView( "\"" + columnFamily + "\"" ).get();
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
-            relation = getKeyspace().getTable( "\"" + columnFamily + "\"" ).get();
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
         }
 
         Map<ColumnMetadata, ClusteringOrder> clusteringOrder = relation.getClusteringColumns();

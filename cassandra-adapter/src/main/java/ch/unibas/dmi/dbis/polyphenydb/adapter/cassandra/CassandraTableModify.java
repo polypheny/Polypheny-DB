@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CassandraTableModify extends TableModify implements CassandraRel {
 
     public final CassandraTable cassandraTable;
-    private final String columnFamily;
+//    private final String columnFamily;
 
     /**
      * Creates a {@code TableModify}.
@@ -79,13 +79,12 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
     public CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cassandraTable = table.unwrap( CassandraTable.class );
-        this.columnFamily = this.cassandraTable.getColumnFamily();
+//        this.columnFamily = this.cassandraTable.getColumnFamily();
     }
 
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-//        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -98,16 +97,11 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
     @Override
     public void register( RelOptPlanner planner ) {
         getConvention().register( planner );
-//        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-//        for ( RelOptRule rule : CassandraRules.RULES ) {
-//            planner.addRule( rule );
-//        }
     }
 
     @Override
     public void implement( CassandraImplementContext context ) {
         log.debug( "CTM: Implementing." );
-//        implementor.visitChild( 0, getInput() );
         context.cassandraTable = cassandraTable;
         context.table = table;
 
@@ -116,35 +110,11 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                 log.debug( "CTM: Insert detected." );
                 context.type = Type.INSERT;
                 context.visitChild( 0, getInput() );
-
-                if ( context.insertValues.size() == 1 ) {
-                    log.info( "CTM: Simple Insert detected." );
-                    InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
-                    RegularInsert insert = insertInto.values( context.insertValues.get( 0 ) );
-
-                } else {
-                    // TODO JS: I don't like this solution, but for now it'll do!
-                    log.debug( "CTM: Batch Insert detected." );
-//                    BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
-                    List<SimpleStatement> statements = new ArrayList<>(  );
-
-                    for ( Map<String, Term> insertValue: context.insertValues ) {
-                        InsertInto insertInto = QueryBuilder.insertInto( this.columnFamily );
-
-                        statements.add( insertInto.values( insertValue ).build() );
-//                        builder.addStatement( insertInto.values( insertValue ).build() );
-                    }
-
-//                    context.addState( statements );
-//                    implementor.batchStatement = builder.build();
-                }
                 break;
             case UPDATE:
                 log.debug( "CTM: Update detected." );
                 context.type = Type.UPDATE;
                 context.visitChild( 0, getInput() );
-
-//                updateStart.set
 
 
                 List<Assignment> setAssignments = new ArrayList<>();
@@ -156,18 +126,6 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                 }
 
                 context.addAssignments( setAssignments );
-
-
-                SimpleStatement updateStart = QueryBuilder.update( this.columnFamily )
-                        .set( setAssignments )
-                        .where( context.whereClause )
-                        .build()
-                        ;
-
-//                implementor.simpleStatement = updateStart;
-//                UpdateWithAssignments update = updateStart.set( setAssignments );
-//                update.where( implementor.whereClause );
-
 
                 break;
             case DELETE:

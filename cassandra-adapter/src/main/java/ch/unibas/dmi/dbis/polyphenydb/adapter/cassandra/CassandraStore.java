@@ -48,6 +48,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -128,7 +129,7 @@ public class CassandraStore extends Store {
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
 //        this.currentSchema = new CassandraSchema( this.dbHostname, this.dbPort, this.dbKeyspace, this.dbUsername, this.dbPassword, rootSchema, name );
-        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace );
+        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog() ) );
     }
 
 
@@ -148,7 +149,12 @@ public class CassandraStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogCombinedTable combinedTable ) {
-        String physicalTableName = combinedTable.getTable().name;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( combinedTable.getSchema().name );
+        qualifiedNames.add( combinedTable.getTable().name );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+//        String physicalTableName = combinedTable.getTable().name;
         List<CatalogColumn> columns = combinedTable.getColumns();
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
@@ -167,7 +173,11 @@ public class CassandraStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
-        String physicalTableName = combinedTable.getTable().name;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( combinedTable.getSchema().name );
+        qualifiedNames.add( combinedTable.getTable().name );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build(  );
         this.session.execute( dropTable );
     }
@@ -211,7 +221,11 @@ public class CassandraStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogCombinedTable table ) {
-        String physicalTableName = table.getTable().name;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( table.getSchema().name );
+        qualifiedNames.add( table.getTable().name );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
         this.session.execute( truncateTable );
     }

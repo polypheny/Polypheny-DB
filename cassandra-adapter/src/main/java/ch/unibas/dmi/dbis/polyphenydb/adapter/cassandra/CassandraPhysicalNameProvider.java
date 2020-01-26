@@ -43,7 +43,7 @@ public class CassandraPhysicalNameProvider {
         this.catalog = catalog;
     }
 
-    public SqlIdentifier getPhyiscalTableName( List<String> qualifiedName) {
+    public String getPhysicalTableName( List<String> qualifiedName) {
         String schemaName;
         String tableName;
         if ( qualifiedName.size() == 1 ) {
@@ -62,7 +62,6 @@ public class CassandraPhysicalNameProvider {
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
-        String physicalName = "tab" + catalogTable.id;
-        return new SqlIdentifier( physicalName, SqlParserPos.ZERO );
+        return "tab" + catalogTable.id;
     }
 }

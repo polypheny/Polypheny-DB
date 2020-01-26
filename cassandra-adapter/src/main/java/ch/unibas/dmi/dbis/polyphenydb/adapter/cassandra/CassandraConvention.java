@@ -37,11 +37,13 @@ public class CassandraConvention extends Convention.Impl {
     public static final double COST_MULTIPLIER = 0.8d;
 
     public final Expression expression;
+    public final CassandraPhysicalNameProvider physicalNameProvider;
 
 
-    public CassandraConvention( String name, Expression expression ) {
+    public CassandraConvention( String name, Expression expression, CassandraPhysicalNameProvider physicalNameProvider ) {
         super( "CASSANDRA." + name, CassandraRel.class );
         this.expression = expression;
+        this.physicalNameProvider = physicalNameProvider;
     }
 
 

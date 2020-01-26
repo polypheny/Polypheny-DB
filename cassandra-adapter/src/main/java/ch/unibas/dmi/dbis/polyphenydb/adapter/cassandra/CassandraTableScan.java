@@ -137,42 +137,6 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
         }
 
         context.type = Type.SELECT;
-
-        SelectFrom selectFrom = QueryBuilder.selectFrom( context.cassandraTable.getColumnFamily() );
-
-//        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
-
-        Select select;
-        // Construct the list of fields to project
-        if ( context.selectFields.isEmpty() ) {
-            select = selectFrom.all();
-        } else {
-            select = selectFrom.selectors( context.selectFields );
-        }
-
-        select = select.where( context.whereClause );
-
-        // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
-        Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ClusteringOrder> entry: context.order.entrySet() ) {
-            orderMap.put( entry.getKey(), entry.getValue() );
-        }
-
-        select = select.orderBy( orderMap );
-        int limit = context.offset;
-        if ( context.fetch >= 0 ) {
-            limit += context.fetch;
-        }
-        if ( limit > 0 ) {
-            select = select.limit( limit );
-        }
-
-        select = select.allowFiltering();
-
-
-        final SimpleStatement statement = select.build();
-
-//        implementor.simpleStatement = statement;
     }
 }
 

@@ -83,6 +83,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -103,6 +104,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     List<RelFieldCollation> clusteringOrder;
     private final CassandraSchema cassandraSchema;
     private final String columnFamily;
+    private final String physicalName;
     private final boolean view;
 
 
@@ -111,6 +113,12 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         this.cassandraSchema = cassandraSchema;
         this.columnFamily = columnFamily;
         this.view = view;
+
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( cassandraSchema.name );
+        qualifiedNames.add( columnFamily );
+//        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        this.physicalName = cassandraSchema.getConvention().physicalNameProvider.getPhysicalTableName( qualifiedNames );
     }
 
 
@@ -257,6 +265,10 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     String getColumnFamily() {
         return this.columnFamily;
+    }
+
+    String getPhysicalName() {
+        return this.physicalName;
     }
 
 
