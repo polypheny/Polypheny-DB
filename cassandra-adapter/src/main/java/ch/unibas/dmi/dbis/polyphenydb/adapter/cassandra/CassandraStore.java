@@ -188,16 +188,23 @@ public class CassandraStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
+        // TODO js: implement cassandra prepare
+        log.warn( "Prepare is not yet supported." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        // TODO: implement
-        log.warn( "Not implemented yet" );
+        // TODO js: implement cassandra commit
+        log.warn( "Commit is not yet supported." );
+    }
+
+
+    @Override
+    public void rollback( PolyXid xid ) {
+        // TODO js: implement cassandra rollback
+        log.warn( "Rollback is not yet supported." );
     }
 
 
