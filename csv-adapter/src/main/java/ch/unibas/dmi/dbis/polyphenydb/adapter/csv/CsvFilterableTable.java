@@ -71,8 +71,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes ) {
-        super( source, protoRowType, fieldTypes );
+    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
+        super( source, protoRowType, fieldTypes, csvStore );
     }
 
 
@@ -83,6 +83,7 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
 
     @Override
     public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
+        root.getTransaction().registerInvolvedStore( csvStore );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );

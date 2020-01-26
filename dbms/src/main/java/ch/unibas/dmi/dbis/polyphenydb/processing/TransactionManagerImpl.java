@@ -32,6 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PUID.NodeId;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
 import ch.unibas.dmi.dbis.polyphenydb.PUID.UserId;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
+import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
@@ -44,12 +45,42 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+
+
+    public TransactionManagerImpl() {
+        InformationManager im = InformationManager.getInstance();
+        InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        im.addPage( page );
+        InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
+        im.addGroup( runningTransactionsGroup );
+        InformationTable runningTransactionsTable = new InformationTable(
+                runningTransactionsGroup,
+                Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
+        im.registerInformation( runningTransactionsTable );
+        BackgroundTaskManager.INSTANCE.registerTask(
+                () -> {
+                    runningTransactionsTable.reset();
+                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
+                },
+                "Update transaction overview",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_FIVE_SECONDS );
+    }
 
 
     @Override
@@ -67,9 +98,17 @@ public class TransactionManagerImpl implements TransactionManager {
     public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
 
+        // TODO MV: This is not nice and should be replaced
+        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first  need to create a "dummy" transaction for accessing the catalog
+        // to get the actual information required for starting the actual transaction.
         Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
 
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
     }
@@ -87,4 +126,6 @@ public class TransactionManagerImpl implements TransactionManager {
     private static PolyXid generateNewTransactionId( final NodeId nodeId, final UserId userId, final ConnectionId connectionId ) {
         return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
     }
+
+
 }

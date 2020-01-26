@@ -153,7 +153,13 @@ public enum RuntimeConfig {
     JOIN_COMMUTE( "runtime/joinCommute",
             "Commute joins in planner.",
             false,
-            ConfigType.BOOLEAN );
+            ConfigType.BOOLEAN ),
+
+    TWO_PC_MODE( "runtime/twoPcMode",
+            "Commute joins in planner.",
+            false,
+            ConfigType.BOOLEAN,
+            "runtimeGroup" );
 
 
     private final String key;
@@ -169,9 +175,15 @@ public enum RuntimeConfig {
         final WebUiGroup planningGroup = new WebUiGroup( "planningGroup", processingPage.getId() );
         final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
 
+        final WebUiPage runtimePage = new WebUiPage( "runtimePage", "Runtime Settings", "Core Settings" );
+        final WebUiGroup runtimeGroup = new WebUiGroup( "runtimeGroup", runtimePage.getId() );
+
         configManager.registerWebUiPage( processingPage );
+        configManager.registerWebUiPage( runtimePage );
+
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
+        configManager.registerWebUiGroup( runtimeGroup );
     }
 
 

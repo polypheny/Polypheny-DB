@@ -85,7 +85,6 @@ import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.Enumerables;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.RandomFunction;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ResultSetEnumerable;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.SortedMultiMap;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
 import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.FlatProductInputType;
@@ -120,7 +119,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import javax.sql.DataSource;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -130,7 +128,6 @@ import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.ExtendedEnumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.apache.calcite.linq4j.function.Function0;
@@ -150,7 +147,7 @@ import org.apache.calcite.linq4j.tree.Types;
 public enum BuiltInMethod {
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
-    QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", QueryProvider.class, SchemaPlus.class, String.class ),
+    QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
     AS_QUERYABLE( Enumerable.class, "asQueryable" ),
     ABSTRACT_ENUMERABLE_CTOR( AbstractEnumerable.class ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
@@ -168,10 +165,6 @@ public enum BuiltInMethod {
     //JDBC_SCHEMA_DATA_SOURCE( JdbcSchema.class, "getDataSource" ),
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
-    RESULT_SET_ENUMERABLE_SET_TIMEOUT( ResultSetEnumerable.class, "setTimeout", DataContext.class ),
-    RESULT_SET_ENUMERABLE_OF( ResultSetEnumerable.class, "of", DataSource.class, String.class, Function1.class ),
-    RESULT_SET_ENUMERABLE_OF_PREPARED( ResultSetEnumerable.class, "of", DataSource.class, String.class, Function1.class, ResultSetEnumerable.PreparedStatementEnricher.class ),
-    CREATE_ENRICHER( ResultSetEnumerable.class, "createEnricher", Integer[].class, DataContext.class ),
     JOIN( ExtendedEnumerable.class, "join", Enumerable.class, Function1.class, Function1.class, Function2.class ),
     MERGE_JOIN( EnumerableDefaults.class, "mergeJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class, Function2.class, boolean.class, boolean.class ),
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),

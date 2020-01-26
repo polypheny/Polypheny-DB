@@ -42,16 +42,16 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
 import ch.unibas.dmi.dbis.polyphenydb.util.Static;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Connection;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.PreparedStatement;
@@ -69,7 +69,6 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -89,7 +88,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 @Slf4j
 public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
-    private final DataSource dataSource;
+    private final ConnectionHandler connectionHandler;
     private final String sql;
     private final Function1<ResultSet, Function0<T>> rowBuilderFactory;
     private final PreparedStatementEnricher preparedStatementEnricher;
@@ -142,40 +141,40 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             };
 
 
-    private ResultSetEnumerable( DataSource dataSource, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher preparedStatementEnricher ) {
-        this.dataSource = dataSource;
+    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher preparedStatementEnricher ) {
+        this.connectionHandler = connectionHandler;
         this.sql = sql;
         this.rowBuilderFactory = rowBuilderFactory;
         this.preparedStatementEnricher = preparedStatementEnricher;
     }
 
 
-    private ResultSetEnumerable( DataSource dataSource, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
-        this( dataSource, sql, rowBuilderFactory, null );
+    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+        this( connectionHandler, sql, rowBuilderFactory, null );
     }
 
 
     /**
      * Creates an ResultSetEnumerable.
      */
-    public static ResultSetEnumerable<Object> of( DataSource dataSource, String sql ) {
-        return of( dataSource, sql, AUTO_ROW_BUILDER_FACTORY );
+    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql ) {
+        return of( connectionHandler, sql, AUTO_ROW_BUILDER_FACTORY );
     }
 
 
     /**
      * Creates an ResultSetEnumerable that retrieves columns as specific Java types.
      */
-    public static ResultSetEnumerable<Object> of( DataSource dataSource, String sql, Primitive[] primitives ) {
-        return of( dataSource, sql, primitiveRowBuilderFactory( primitives ) );
+    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql, Primitive[] primitives ) {
+        return of( connectionHandler, sql, primitiveRowBuilderFactory( primitives ) );
     }
 
 
     /**
      * Executes a SQL query and returns the results as an enumerator, using a row builder to convert JDBC column values into rows.
      */
-    public static <T> ResultSetEnumerable<T> of( DataSource dataSource, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
-        return new ResultSetEnumerable<>( dataSource, sql, rowBuilderFactory );
+    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+        return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory );
     }
 
 
@@ -184,8 +183,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      *
      * It uses a {@link PreparedStatement} for computing the query result, and that means that it can bind parameters.
      */
-    public static <T> ResultSetEnumerable<T> of( DataSource dataSource, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher consumer ) {
-        return new ResultSetEnumerable<>( dataSource, sql, rowBuilderFactory, consumer );
+    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher consumer ) {
+        return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory, consumer );
     }
 
 
@@ -280,11 +279,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private Enumerator<T> enumeratorBasedOnStatement() {
+    /*private Enumerator<T> enumeratorBasedOnStatement() {
         Connection connection = null;
         Statement statement = null;
         try {
-            connection = dataSource.getConnection();
+            connection = connectionHandler.getConnection();
             statement = connection.createStatement();
             setTimeoutIfPossible( statement );
             if ( statement.execute( sql ) ) {
@@ -301,14 +300,35 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } finally {
             closeIfPossible( connection, statement );
         }
+    }*/
+
+
+    private Enumerator<T> enumeratorBasedOnStatement() {
+        Statement statement = null;
+        try {
+            statement = connectionHandler.getStatement();
+            setTimeoutIfPossible( statement );
+            if ( statement.execute( sql ) ) {
+                final ResultSet resultSet = statement.getResultSet();
+                statement = null;
+                return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
+            } else {
+                Integer updateCount = statement.getUpdateCount();
+                return Linq4j.singletonEnumerator( (T) updateCount );
+            }
+        } catch ( SQLException e ) {
+            throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
+        } finally {
+            closeIfPossible( statement );
+        }
     }
 
 
-    private Enumerator<T> enumeratorBasedOnPreparedStatement() {
+   /* private Enumerator<T> enumeratorBasedOnPreparedStatement() {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
-            connection = dataSource.getConnection();
+            connection = connectionHandler.getConnection();
             preparedStatement = connection.prepareStatement( sql );
             setTimeoutIfPossible( preparedStatement );
             preparedStatementEnricher.enrich( preparedStatement );
@@ -324,8 +344,13 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } catch ( SQLException e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
-            closeIfPossible( connection, preparedStatement );
+            closeIfPossible( preparedStatement );
         }
+    } */
+
+
+    private Enumerator<T> enumeratorBasedOnPreparedStatement() {
+        throw new RuntimeException( "Not implemented yet!" );
     }
 
 
@@ -354,7 +379,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private void closeIfPossible( Connection connection, Statement statement ) {
+    private void closeIfPossible( Statement statement ) {
         if ( statement != null ) {
             try {
                 statement.close();
@@ -362,15 +387,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 // ignore
             }
         }
-        if ( connection != null ) {
-            try {
-                connection.close();
-            } catch ( SQLException e ) {
-                // ignore
-            }
-        }
     }
-
 
     /**
      * Implementation of {@link Enumerator} that reads from a {@link ResultSet}.
@@ -424,11 +441,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     final Statement statement = savedResultSet.getStatement();
                     savedResultSet.close();
                     if ( statement != null ) {
-                        final Connection connection = statement.getConnection();
+                        //final Connection connection = statement.getConnection();
                         statement.close();
-                        if ( connection != null ) {
+                        /*if ( connection != null ) {
                             connection.close();
-                        }
+                        }*/
                     }
                 } catch ( SQLException e ) {
                     // ignore

@@ -83,7 +83,6 @@ import org.apache.calcite.linq4j.BaseQueryable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Parameter;
@@ -126,7 +125,7 @@ public class Smalls {
         final Enumerable<Integer> enumerable = Linq4j.asEnumerable( items );
         return new AbstractQueryableTable( Integer.class ) {
             @Override
-            public <E> Queryable<E> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 //noinspection unchecked
                 return (Queryable<E>) enumerable.asQueryable();
             }
@@ -157,7 +156,7 @@ public class Smalls {
 
 
             @Override
-            public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 BaseQueryable<IntString> queryable =
                         new BaseQueryable<IntString>( null, IntString.class, null ) {
                             @Override
@@ -227,7 +226,7 @@ public class Smalls {
 
 
             @Override
-            public Queryable<Object[]> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public Queryable<Object[]> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 final List<Object[]> table = new AbstractList<Object[]>() {
                     @Override
                     public Object[] get( int index ) {
@@ -354,7 +353,7 @@ public class Smalls {
 
 
             @Override
-            public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 final Enumerable<Integer> enumerable = a.select( a0 -> offset + ((Integer) a0[0]) );
                 //noinspection unchecked
                 return (Queryable) enumerable.asQueryable();
@@ -377,7 +376,7 @@ public class Smalls {
 
 
             @Override
-            public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
+            public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 final Enumerable<Integer> enumerable = a.zip( b, ( v0, v1 ) -> ((Integer) v0[1]) + v1.n + offset );
                 //noinspection unchecked
                 return (Queryable) enumerable.asQueryable();

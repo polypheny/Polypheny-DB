@@ -32,7 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.TransactionalConne
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
+import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.MonetdbSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
 import java.util.List;
@@ -40,43 +40,36 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 
-// TODO(jan): General PostgresqlStore todo list:
-//   - Implement better logging.
-//   - Check all the functions whether they are properly adjusted to Postgres.
-//   - Link to Postgres documentation.
-
 
 @Slf4j
-public class PostgresqlStore extends AbstractJdbcStore {
+public class MonetdbStore extends AbstractJdbcStore {
 
-    public static final String ADAPTER_NAME = "PostgreSQL";
+    public static final String ADAPTER_NAME = "MonetDB";
 
-    public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features.";
+    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
+            new AdapterSettingInteger( "port", false, true, false, 50000 ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" ),
             new AdapterSettingString( "password", false, true, false, "" ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
     );
 
 
-    public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings ), PostgresqlSqlDialect.DEFAULT );
+    public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, createConnectionFactory( settings ), MonetdbSqlDialect.DEFAULT );
     }
 
 
     public static ConnectionFactory createConnectionFactory( final Map<String, String> settings ) {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName( "org.postgresql.Driver" );
+        dataSource.setDriverClassName( "nl.cwi.monetdb.jdbc.MonetDriver" );
 
         final String connectionUrl = getConnectionUrl( settings.get( "host" ), Integer.parseInt( settings.get( "port" ) ), settings.get( "database" ) );
         dataSource.setUrl( connectionUrl );
-        if ( log.isInfoEnabled() ) {
-            log.info( "Postgres Connection URL: {}", connectionUrl );
-        }
+        log.info( "MonetDB Connection URL: {}", connectionUrl );
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
@@ -121,7 +114,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        // TODO: Implement disconnect and reconnect to PostgreSQL instance.
+        // TODO: Implement disconnect and reconnect to MonetDB instance.
     }
 
 
@@ -131,7 +124,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
-                return "VARBINARY";
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
             case INTEGER:
                 return "INT";
             case BIGINT:
@@ -139,7 +132,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case REAL:
                 return "REAL";
             case DOUBLE:
-                return "FLOAT";
+                return "DOUBLE";
             case DECIMAL:
                 return "DECIMAL";
             case VARCHAR:
@@ -158,7 +151,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+        return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 }

@@ -48,7 +48,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
@@ -61,7 +60,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ResultSetEnumerable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
@@ -77,19 +75,15 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 
 
@@ -182,8 +176,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-        return new JdbcTableQueryable<>( queryProvider, schema, tableName );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new JdbcTableQueryable<>( dataContext, schema, tableName );
     }
 
 
@@ -191,13 +185,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     public Enumerable<Object[]> scan( DataContext root ) {
         final JavaTypeFactory typeFactory = root.getTypeFactory();
         final SqlString sql = generateSql();
-        return ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
+        return ResultSetEnumerable.of( jdbcSchema.getConnectionHandler( root ), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
     }
 
 
     @Override
     public Collection getModifiableCollection() {
-        return new DummyCollection();
+        throw new RuntimeException( "getModifiableCollection() is not implemented for JDBC adapter!" );
     }
 
 
@@ -221,8 +215,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
      */
     private class JdbcTableQueryable<T> extends AbstractTableQueryable<T> {
 
-        JdbcTableQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-            super( queryProvider, schema, JdbcTable.this, tableName );
+        JdbcTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+            super( dataContext, schema, JdbcTable.this, tableName );
         }
 
 
@@ -234,55 +228,14 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public Enumerator<T> enumerator() {
-            // final JavaTypeFactory typeFactory = ((PolyphenyDbEmbeddedConnection) queryProvider).getTypeFactory();
-            final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl(); // TODO MV: Potential bug
+            final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final SqlString sql = generateSql();
             //noinspection unchecked
-            final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of( jdbcSchema.getDataSource(), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
+            final Enumerable<T> enumerable = (Enumerable<T>) ResultSetEnumerable.of(
+                    jdbcSchema.getConnectionHandler( dataContext ),
+                    sql.getSql(),
+                    JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
             return enumerable.enumerator();
-        }
-    }
-
-
-    // TODO MV: This should no longer be required. Consider removing
-    private class DummyCollection extends HashSet {
-
-        @Override
-        public boolean add( Object obj ) {
-            Object[] o;
-            if ( obj instanceof Object[] ) {
-                o = (Object[]) obj;
-            } else {
-                o = new Object[1];
-                o[0] = obj;
-            }
-
-            super.add( o ); // Add to the hash set in case we need any other method like contains
-            StringBuilder builder = new StringBuilder();
-            SqlIdentifier physicalTableName = jdbcSchema.getConvention().physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
-            builder.append( "INSERT INTO " + jdbcSchema.dialect.quoteIdentifier( physicalTableName.names.get( 0 ) ) + " ( " );
-            for ( String columnName : columnNames ) {
-                builder.append( jdbcSchema.dialect.quoteIdentifier( columnName ) ).append( "," );
-            }
-            builder.setLength( builder.length() - 1 ); // remove last comma
-            builder.append( ") VALUES ( " );
-            for ( Object object : o ) {
-                if ( object instanceof String ) {
-                    builder.append( jdbcSchema.dialect.quoteStringLiteral( object.toString() ) ).append( "," );
-                } else if ( object != null ) {
-                    builder.append( object.toString() ).append( "," );
-                } else {
-                    builder.append( " NULL," );
-                }
-            }
-            builder.setLength( builder.length() - 1 ); // remove last comma
-            builder.append( " )" );
-            try ( Connection connection = jdbcSchema.getDataSource().getConnection() ) {
-                int s = connection.createStatement().executeUpdate( builder.toString() );
-                return s > 0;
-            } catch ( SQLException e ) {
-                throw new RuntimeException( e );
-            }
         }
     }
 

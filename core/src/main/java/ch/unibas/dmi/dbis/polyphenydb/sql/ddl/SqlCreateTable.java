@@ -47,6 +47,7 @@ package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
 
 import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
@@ -104,7 +105,6 @@ import java.util.Objects;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -352,8 +352,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
         @Override
-        public <T> Queryable<T> asQueryable( QueryProvider queryProvider, SchemaPlus schema, String tableName ) {
-            return new AbstractTableQueryable<T>( queryProvider, schema, this, tableName ) {
+        public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+            return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
                 @Override
                 public Enumerator<T> enumerator() {
                     //noinspection unchecked

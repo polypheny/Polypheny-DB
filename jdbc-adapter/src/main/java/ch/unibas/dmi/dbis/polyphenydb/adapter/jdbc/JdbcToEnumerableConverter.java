@@ -52,6 +52,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
@@ -80,12 +81,14 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 
 
@@ -99,7 +102,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    public static final String JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME = "getDataSource";
+    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod( JdbcSchema.class, "getConnectionHandler", DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "setTimeout", DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class, ResultSetEnumerable.PreparedStatementEnricher.class );
+    public static final Method CREATE_ENRICHER_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "createEnricher", Integer[].class, DataContext.class );
 
 
     @Override
@@ -182,17 +189,18 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     builder0.append(
                             "preparedStatementConsumer",
                             Expressions.call(
-                                    BuiltInMethod.CREATE_ENRICHER.method,
+                                    CREATE_ENRICHER_METHOD,
                                     Expressions.newArrayInit( Integer.class, 1, toIndexesTableExpression( sqlString ) ),
                                     DataContext.ROOT ) );
 
             enumerable = builder0.append(
                     "enumerable",
                     Expressions.call(
-                            BuiltInMethod.RESULT_SET_ENUMERABLE_OF_PREPARED.method,
+                            RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD,
                             Expressions.call(
                                     Schemas.unwrap( jdbcConvention.expression, JdbcSchema.class ),
-                                    JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME ),
+                                    JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD,
+                                    DataContext.ROOT ),
                             sql_,
                             rowBuilderFactory_,
                             preparedStatementConsumer_ ) );
@@ -200,10 +208,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             enumerable = builder0.append(
                     "enumerable",
                     Expressions.call(
-                            BuiltInMethod.RESULT_SET_ENUMERABLE_OF.method,
+                            RESULT_SET_ENUMERABLE_OF_METHOD,
                             Expressions.call(
                                     Schemas.unwrap( jdbcConvention.expression, JdbcSchema.class ),
-                                    JDBC_SCHEMA_GET_DATA_SOURCE_METHOD_NAME ),
+                                    JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD,
+                                    DataContext.ROOT ),
                             sql_,
                             rowBuilderFactory_ ) );
         }
@@ -211,7 +220,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 Expressions.statement(
                         Expressions.call(
                                 enumerable,
-                                BuiltInMethod.RESULT_SET_ENUMERABLE_SET_TIMEOUT.method,
+                                RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD,
                                 DataContext.ROOT ) ) );
         builder0.add( Expressions.return_( null, enumerable ) );
         return implementor.result( physType, builder0.toBlock() );
