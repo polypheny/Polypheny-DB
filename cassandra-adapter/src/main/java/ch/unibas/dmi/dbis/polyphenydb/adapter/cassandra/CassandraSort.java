@@ -56,8 +56,10 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import java.util.ArrayList;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -65,11 +67,12 @@ import java.util.List;
  */
 public class CassandraSort extends Sort implements CassandraRel {
 
-    public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation ) {
-        super( cluster, traitSet, child, collation, null, null );
+    public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+        super( cluster, traitSet, child, collation, offset, fetch );
 
-        assert getConvention() == CONVENTION;
-        assert getConvention() == child.getConvention();
+        // TODO JS: Check this
+//        assert getConvention() == CONVENTION;
+//        assert getConvention() == child.getConvention();
     }
 
 
@@ -86,34 +89,34 @@ public class CassandraSort extends Sort implements CassandraRel {
 
     @Override
     public Sort copy( RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch ) {
-        return new CassandraSort( getCluster(), traitSet, input, collation );
+        return new CassandraSort( getCluster(), traitSet, input, collation, offset, fetch );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
 
         List<RelFieldCollation> sortCollations = collation.getFieldCollations();
-        List<String> fieldOrder = new ArrayList<>();
+        Map<String, ClusteringOrder> fieldOrder = new LinkedHashMap<>();
         if ( !sortCollations.isEmpty() ) {
             // Construct a series of order clauses from the desired collation
             final List<RelDataTypeField> fields = getRowType().getFieldList();
             for ( RelFieldCollation fieldCollation : sortCollations ) {
                 final String name =
                         fields.get( fieldCollation.getFieldIndex() ).getName();
-                final String direction;
+                final ClusteringOrder direction;
                 switch ( fieldCollation.getDirection() ) {
                     case DESCENDING:
-                        direction = "DESC";
+                        direction = ClusteringOrder.DESC;
                         break;
                     default:
-                        direction = "ASC";
+                        direction = ClusteringOrder.ASC;
                 }
-                fieldOrder.add( name + " " + direction );
+                fieldOrder.put( name, direction );
             }
 
-            implementor.addOrder( fieldOrder );
+            context.addOrder( fieldOrder );
         }
     }
 }
