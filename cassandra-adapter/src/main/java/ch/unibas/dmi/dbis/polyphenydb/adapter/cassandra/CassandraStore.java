@@ -237,8 +237,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-        // TODO JS: Implement
-        log.warn( "updateColumnType is not implemented yet." );
+        throw new RuntimeException( "Cassandra adapter does not support updating column types!" );
     }
 
 
