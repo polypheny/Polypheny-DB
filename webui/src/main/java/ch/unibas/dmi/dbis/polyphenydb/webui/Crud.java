@@ -1972,6 +1972,7 @@ public class Crud implements InformationObserver {
             String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
             // TODO use iterator instead of Result
             Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
+            transaction.commit();
 
             int totalRows = tableData.getData().length;
             int counter = 0;
@@ -2040,6 +2041,9 @@ public class Crud implements InformationObserver {
             } catch ( JsonSyntaxException e ) {
                 return new Result( resultString );
             }
+        } catch ( TransactionException e) {
+            log.error( "Error while fetching table", e );
+            return new Result( "Error while fetching table" );
         } catch ( IOException e ) {
             log.error( "Failed to write temporary file", e );
             return new Result( "Failed to write temporary file" );
