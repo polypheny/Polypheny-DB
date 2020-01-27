@@ -129,7 +129,6 @@ public class CassandraStore extends Store {
 
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        // TODO: Implement
         return new CassandraTable( this.currentSchema, combinedTable.getTable().name, false );
     }
 
@@ -174,21 +173,21 @@ public class CassandraStore extends Store {
 
     @Override
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO: Implement
+        // TODO JS: Implement
         log.warn( "addColumn is not implemented yet." );
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO: Implement
+        // TODO JS: Implement
         log.warn( "dropColumn is not implemented yet." );
     }
 
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        // TODO js: implement cassandra prepare
+        // TODO JS: implement cassandra prepare
         log.warn( "Prepare is not yet supported." );
         return true;
     }
@@ -196,14 +195,14 @@ public class CassandraStore extends Store {
 
     @Override
     public void commit( PolyXid xid ) {
-        // TODO js: implement cassandra commit
+        // TODO JS: implement cassandra commit
         log.warn( "Commit is not yet supported." );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        // TODO js: implement cassandra rollback
+        // TODO JS: implement cassandra rollback
         log.warn( "Rollback is not yet supported." );
     }
 
@@ -222,7 +221,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-        // TODO: Implement
+        // TODO JS: Implement
         log.warn( "updateColumnType is not implemented yet." );
     }
 
@@ -241,19 +240,17 @@ public class CassandraStore extends Store {
 
     @Override
     public void shutdown() {
-        // TODO: Implement
         try {
             this.session.close();
         } catch ( RuntimeException e ) {
             log.warn( "Exception while shutting down " + getUniqueName(), e );
         }
-//        log.warn( "shutdown is not implemented yet." );
     }
 
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        // TODO: Implement
+        // TODO JS: Implement
         log.warn( "reloadSettings is not implemented yet." );
     }
 
