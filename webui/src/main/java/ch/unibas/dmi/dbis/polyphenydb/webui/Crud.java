@@ -101,6 +101,7 @@ import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Status;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
@@ -121,8 +122,7 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
+import au.com.bytecode.opencsv.CSVReader;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -159,6 +159,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -1855,11 +1856,13 @@ public class Crud implements InformationObserver {
             //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
 
             final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
-            int csvCounter = 0;
+            long csvCounter = 0;
             try (
                     Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
                     CSVReader csvReader = new CSVReader( reader );
             ) {
+                long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
+                Status status = new Status( "tableImport", lineCount );
                 String[] nextRecord;
                 while ( (nextRecord = csvReader.readNext()) != null ) {
                     rowJoiner = new StringJoiner( ",", "(", ")" );
@@ -1876,11 +1879,15 @@ public class Crud implements InformationObserver {
                         String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
                         executeSqlUpdate( transaction, insertQuery );
                         valueJoiner = new StringJoiner( ",", "VALUES", "" );
+                        status.setStatus( csvCounter );
+                        WebSocket.broadcast( gson.toJson(status, Status.class ));
                     }
                 }
                 if ( csvCounter % BATCH_SIZE != 0 ) {
                     String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
                     executeSqlUpdate( transaction, insertQuery );
+                    status.complete();
+                    WebSocket.broadcast( gson.toJson(status, Status.class ));
                 }
             }
 
@@ -1906,7 +1913,8 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while rolling back transaction", e );
                 }
             }
-        } catch ( CsvValidationException | GenericCatalogException e ) {
+        //} catch ( CsvValidationException | GenericCatalogException e ) {
+        } catch ( GenericCatalogException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
             if ( transaction != null ) {
@@ -1965,6 +1973,9 @@ public class Crud implements InformationObserver {
             // TODO use iterator instead of Result
             Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
 
+            int totalRows = tableData.getData().length;
+            int counter = 0;
+            Status status = new Status( "tableExport", totalRows );
             for ( String[] row : tableData.getData() ) {
                 int cols = row.length;
                 for ( int i = 0; i < cols; i++ ) {
@@ -1980,7 +1991,14 @@ public class Crud implements InformationObserver {
                         tableStream.write( "\n".getBytes( charset ) );
                     }
                 }
+                counter ++;
+                if( counter % 100 == 0) {
+                    status.setStatus( counter );
+                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                }
             }
+            status.complete();
+            WebSocket.broadcast( gson.toJson(status, Status.class ));
             tableStream.flush();
 
             //from https://www.baeldung.com/java-compress-and-uncompress

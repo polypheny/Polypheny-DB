@@ -67,7 +67,7 @@ dependencies {
 
     compile group: 'com.mashape.unirest', name: 'unirest-java', version: unirest_version
 
-    compile group: 'com.opencsv', name: 'opencsv', version: '5.0'
+    compile group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
 
 
     // --- Test Compile ---
