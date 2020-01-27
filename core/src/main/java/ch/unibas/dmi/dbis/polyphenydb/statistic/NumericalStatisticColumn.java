@@ -32,9 +32,6 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     @Setter
     private T max;
 
-    @Expose
-    private boolean isFull = false;
-
 
     public NumericalStatisticColumn( String schema, String table, String column, PolySqlType type ) {
         super( schema, table, column, type );
@@ -48,7 +45,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
     @Override
     public void insert( T val ) {
-        if ( uniqueValues.size() < ConfigManager.getInstance().getConfig( "StatisticPerColumn" ).getInt() ) {
+        if ( uniqueValues.size() < ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
             }
@@ -76,11 +73,6 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         stats += "unique Value: " + uniqueValues.toString();
 
         return stats;
-
-    }
-
-
-    public void setUnique( List<String> unique ) {
 
     }
 

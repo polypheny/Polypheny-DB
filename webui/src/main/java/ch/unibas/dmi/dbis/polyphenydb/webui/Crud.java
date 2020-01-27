@@ -644,6 +644,7 @@ public class Crud implements InformationObserver {
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
         if ( ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ){
+            System.out.println( store.getStatisticSchemaMap() );
             return store.getStatisticSchemaMap();
         }else {
             return new ConcurrentHashMap<>(  );
