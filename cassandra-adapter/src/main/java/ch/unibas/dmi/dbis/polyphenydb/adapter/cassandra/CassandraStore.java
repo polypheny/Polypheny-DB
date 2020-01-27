@@ -141,11 +141,8 @@ public class CassandraStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogCombinedTable combinedTable ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( combinedTable.getSchema().name, combinedTable.getTable().name );
         List<CatalogColumn> columns = combinedTable.getColumns();
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
@@ -163,11 +160,8 @@ public class CassandraStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( combinedTable.getSchema().name, combinedTable.getTable().name );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
         // FIXME JS: Cassandra transaction hotfix
@@ -178,12 +172,8 @@ public class CassandraStore extends Store {
 
     @Override
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO JS: Implement
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchema().name );
-        qualifiedNames.add( catalogTable.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
 
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .addColumn( catalogColumn.name, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();

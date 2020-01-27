@@ -39,9 +39,31 @@ public class CassandraPhysicalNameProvider {
 
     private final Catalog catalog;
 
+    private final String DEFAULT_SCHEMA = "public";
 
     public CassandraPhysicalNameProvider( Catalog catalog ) {
         this.catalog = catalog;
+    }
+
+
+    private long tableId( String schemaName, String tableName ) {
+        CatalogTable catalogTable;
+        try {
+            catalogTable = catalog.getTable( "APP", schemaName, tableName );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+        return catalogTable.id;
+    }
+
+
+    public String getPhysicalTableName( String schemaName, String tableName ) {
+        return "tab" + tableId( schemaName, tableName );
+    }
+
+
+    public String getPhysicalTableName( String tableName ) {
+        return getPhysicalTableName( DEFAULT_SCHEMA, tableName );
     }
 
 
@@ -49,7 +71,7 @@ public class CassandraPhysicalNameProvider {
         String schemaName;
         String tableName;
         if ( qualifiedName.size() == 1 ) {
-            schemaName = "public";
+            schemaName = DEFAULT_SCHEMA;
             tableName = qualifiedName.get( 0 );
         } else if ( qualifiedName.size() == 2 ) {
             schemaName = qualifiedName.get( 0 );
@@ -58,12 +80,6 @@ public class CassandraPhysicalNameProvider {
             throw new RuntimeException( "Unknown format for qualified name! Size: " + qualifiedName.size() );
         }
 
-        CatalogTable catalogTable;
-        try {
-            catalogTable = catalog.getTable( "APP", schemaName, tableName );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
-        return "tab" + catalogTable.id;
+        return getPhysicalTableName( schemaName, tableName );
     }
 }
