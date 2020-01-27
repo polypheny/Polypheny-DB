@@ -129,8 +129,10 @@ class CassandraEnumerator implements Enumerator<Object> {
         } else if ( type == DataTypes.DATE ) {
             return (int) current.getLocalDate( index ).toEpochDay();
         } else if ( type == DataTypes.TIME ) {
+            // Time is represented in Polypheny-DB as an integer counting the number of milliseconds since the start of the day.
             return ((int) current.getLocalTime( index ).toNanoOfDay()) / 1000000;
         } else if ( type == DataTypes.TIMESTAMP ) {
+            // Timestamp is represented in Polypheny-DB as a long counting the number of milliseconds since 1970-01-01T00:00:00+0000
             return current.getInstant( index ).getEpochSecond() * 1000L + current.getInstant( index ).getNano() / 1000000L;
         } else {
             return null;
