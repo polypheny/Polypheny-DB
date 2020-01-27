@@ -181,14 +181,20 @@ public class CassandraStore extends Store {
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
         this.session.execute( addColumn );
-//        log.warn( "addColumn is not implemented yet." );
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO JS: Implement
-        log.warn( "dropColumn is not implemented yet." );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
+
+        SimpleStatement dropColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+                .dropColumn( catalogColumn.name ).build();
+
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
+        this.session.execute( dropColumn );
     }
 
 
