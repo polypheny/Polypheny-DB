@@ -179,7 +179,19 @@ public class CassandraStore extends Store {
     @Override
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         // TODO JS: Implement
-        log.warn( "addColumn is not implemented yet." );
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( catalogTable.getSchema().name );
+        qualifiedNames.add( catalogTable.getTable().name );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+
+        SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+                .addColumn( catalogColumn.name, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();
+
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
+        this.session.execute( addColumn );
+//        log.warn( "addColumn is not implemented yet." );
     }
 
 
