@@ -61,24 +61,12 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
     }
 
 
-    public static CassandraEnumerable of( CqlSession session, BatchStatement batchStatement ) {
-        log.warn( "Creating batched enumerable." );
-        return new CassandraEnumerable( session, batchStatement );
-    }
-
-
     public CassandraEnumerable( CqlSession session, SimpleStatement statement, Integer offset ) {
         this.session = session;
         this.simpleStatement = statement;
         this.batchStatement = null;
         this.stringStatement = null;
         this.offset = offset;
-    }
-
-
-    public static CassandraEnumerable of( CqlSession session, SimpleStatement statement ) {
-        log.warn( "Creating simple enumerable with: {}", statement.getQuery() );
-        return new CassandraEnumerable( session, statement );
     }
 
 
@@ -93,7 +81,20 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
 
 
     public static CassandraEnumerable of( CqlSession session, String statement ) {
-        log.warn( "Creating string enumerable with: {}", statement );
+        log.debug( "Creating string enumerable with: {}", statement );
+        return new CassandraEnumerable( session, statement );
+    }
+
+
+    public static CassandraEnumerable of( CqlSession session, BatchStatement batchStatement ) {
+        // BatchStatement cannot be turned into a string easily.
+        log.debug( "Creating batched enumerable." );
+        return new CassandraEnumerable( session, batchStatement );
+    }
+
+
+    public static CassandraEnumerable of( CqlSession session, SimpleStatement statement ) {
+        log.debug( "Creating simple enumerable with: {}", statement.getQuery() );
         return new CassandraEnumerable( session, statement );
     }
 
