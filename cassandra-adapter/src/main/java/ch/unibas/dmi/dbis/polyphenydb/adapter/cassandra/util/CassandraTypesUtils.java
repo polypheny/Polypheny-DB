@@ -78,9 +78,8 @@ public class CassandraTypesUtils {
         } else if ( dataType == DataTypes.TIMESTAMP ) {
             return SqlTypeName.TIMESTAMP;
         } else {
-            log.info( "Unable to find type for cql type: {}. Returning ANY.", dataType );
+            log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
             return SqlTypeName.ANY;
-//            throw new RuntimeException( "Unable to convert cql type: " + dataType );
         }
     }
 
