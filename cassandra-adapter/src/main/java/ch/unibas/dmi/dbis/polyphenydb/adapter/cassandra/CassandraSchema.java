@@ -90,16 +90,12 @@ import org.slf4j.Logger;
 @Slf4j
 public class CassandraSchema extends AbstractSchema {
 
-//    @Getter
+    @Getter
     final CqlSession session;
     final String keyspace;
     private final SchemaPlus parentSchema;
     final String name;
 
-    public CqlSession getSession() {
-        log.info( "GetSession call" );
-        return this.session;
-    }
 
     @Getter
     private final CassandraConvention convention;
@@ -109,58 +105,7 @@ public class CassandraSchema extends AbstractSchema {
     private static final int DEFAULT_CASSANDRA_PORT = 9042;
 
 
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     */
-    public CassandraSchema( String host, String keyspace, SchemaPlus parentSchema, String name ) {
-        this( host, DEFAULT_CASSANDRA_PORT, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param port Cassandra port, e.g. 9042
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     */
-    public CassandraSchema( String host, int port, String keyspace, SchemaPlus parentSchema, String name ) {
-        this( host, port, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     * @param username Cassandra username
-     * @param password Cassandra password
-     */
-    public CassandraSchema( String host, String keyspace, String username, String password, SchemaPlus parentSchema, String name ) {
-        this( host, DEFAULT_CASSANDRA_PORT, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param port Cassandra port, e.g. 9042
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     * @param username Cassandra username
-     * @param password Cassandra password
-     */
-    public CassandraSchema( String host, int port, String keyspace, String username, String password, SchemaPlus parentSchema, String name ) {
-        super();
-
-        throw new RuntimeException( "THIS CONSTRUCTOR IS CURRENTLY NOT USABLE! Call Jan." );
-    }
-
-    public CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention ) {
+    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention ) {
         super();
         this.session = session;
         this.keyspace = keyspace;
@@ -168,6 +113,7 @@ public class CassandraSchema extends AbstractSchema {
         this.name = name;
         this.convention = convention;
     }
+
 
     public static CassandraSchema create( SchemaPlus parentSchema, String name, CqlSession session, String keyspace, CassandraPhysicalNameProvider physicalNameProvider ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
@@ -298,7 +244,7 @@ public class CassandraSchema extends AbstractSchema {
 
     private KeyspaceMetadata getKeyspace() {
         Optional<KeyspaceMetadata> metadata = session.getMetadata().getKeyspace( keyspace );
-        if (metadata.isPresent()) {
+        if ( metadata.isPresent() ) {
             return metadata.get();
         } else {
             throw new RuntimeException( "There is no metadata." );
