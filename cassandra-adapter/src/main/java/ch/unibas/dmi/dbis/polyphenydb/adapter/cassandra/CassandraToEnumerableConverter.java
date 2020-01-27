@@ -191,9 +191,10 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
         enumerable = list.append(
                 "enumerable",
                 Expressions.call(
-                        CassandraMethod.CASSANDRA_STRING_ENUMERABLE.method,
+                        CassandraMethod.CASSANDRA_STRING_ENUMERABLE_OFFSET.method,
                         cqlSession_,
-                        simpleStatement
+                        simpleStatement,
+                        Expressions.constant( cassandraContext.offset )
                 ) );
         list.add( Expressions.return_( null, enumerable ) );
 

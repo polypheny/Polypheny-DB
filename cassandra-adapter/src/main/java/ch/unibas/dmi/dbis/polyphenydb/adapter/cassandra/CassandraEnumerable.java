@@ -41,60 +41,29 @@ import org.apache.calcite.linq4j.Enumerator;
 public class CassandraEnumerable extends AbstractEnumerable<Object> {
 
     final CqlSession session;
-    final SimpleStatement simpleStatement;
-    final BatchStatement batchStatement;
     final String stringStatement;
     final Integer offset;
 
 
-    public CassandraEnumerable( final CqlSession session, final SimpleStatement simpleStatement ) {
-        this( session, simpleStatement, 0 );
-    }
-
-
-    public CassandraEnumerable( final CqlSession session, final BatchStatement batchStatement ) {
+    public CassandraEnumerable( CqlSession session, String statement, Integer offset ) {
         this.session = session;
-        this.simpleStatement = null;
-        this.batchStatement = batchStatement;
-        this.stringStatement = null;
-        this.offset = 0;
-    }
-
-
-    public CassandraEnumerable( CqlSession session, SimpleStatement statement, Integer offset ) {
-        this.session = session;
-        this.simpleStatement = statement;
-        this.batchStatement = null;
-        this.stringStatement = null;
+        this.stringStatement = statement;
         this.offset = offset;
     }
 
 
     public CassandraEnumerable( CqlSession session, String statement ) {
-        this.session = session;
-        this.simpleStatement = null;
-        this.batchStatement = null;
-        this.stringStatement = statement;
-        this.offset = 0;
-
+        this( session, statement, 0 );
     }
 
 
     public static CassandraEnumerable of( CqlSession session, String statement ) {
-        log.debug( "Creating string enumerable with: {}", statement );
-        return new CassandraEnumerable( session, statement );
+        return CassandraEnumerable.of( session, statement, 0 );
     }
 
 
-    public static CassandraEnumerable of( CqlSession session, BatchStatement batchStatement ) {
-        // BatchStatement cannot be turned into a string easily.
-        log.debug( "Creating batched enumerable." );
-        return new CassandraEnumerable( session, batchStatement );
-    }
-
-
-    public static CassandraEnumerable of( CqlSession session, SimpleStatement statement ) {
-        log.debug( "Creating simple enumerable with: {}", statement.getQuery() );
+    public static CassandraEnumerable of( CqlSession session, String statement, Integer offset ) {
+        log.debug( "Creating string enumerable with: {}, offset: {}", statement, offset );
         return new CassandraEnumerable( session, statement );
     }
 
@@ -102,16 +71,7 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
     @Override
     public Enumerator<Object> enumerator() {
 
-        final ResultSet results;
-        if ( this.simpleStatement != null ) {
-            results = session.execute( simpleStatement );
-        } else if ( this.batchStatement != null ) {
-            results = session.execute( batchStatement );
-        } else if ( this.stringStatement != null ) {
-            results = session.execute( this.stringStatement );
-        } else {
-            throw new AssertionError( "unable to run enumerator..." );
-        }
+        final ResultSet results = session.execute( this.stringStatement );
         // Skip results until we get to the right offset
         int skip = 0;
         Enumerator<Object> enumerator = new CassandraEnumerator( results );

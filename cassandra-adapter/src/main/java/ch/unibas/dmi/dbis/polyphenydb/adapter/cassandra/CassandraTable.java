@@ -224,7 +224,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         final SimpleStatement statement = select.build();
 
-        return new CassandraEnumerable( session, statement, offset );
+        return new CassandraEnumerable( session, statement.getQuery(), offset );
     }
 
     public Enumerable<Object> insert() {
