@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -81,5 +82,35 @@ public class CassandraTypesUtils {
             return SqlTypeName.ANY;
 //            throw new RuntimeException( "Unable to convert cql type: " + dataType );
         }
+    }
+
+    public static DataType getDataType( PolySqlType polySqlType ) {
+        switch ( polySqlType ) {
+            case BOOLEAN:
+                return DataTypes.BOOLEAN;
+            case VARBINARY:
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
+            case INTEGER:
+                return DataTypes.INT;
+            case BIGINT:
+                return DataTypes.BIGINT;
+            case REAL:
+                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
+            case DOUBLE:
+                return DataTypes.DOUBLE;
+            case DECIMAL:
+                return DataTypes.DECIMAL;
+            case VARCHAR:
+                return DataTypes.TEXT;
+            case TEXT:
+                return DataTypes.TEXT;
+            case DATE:
+                return DataTypes.DATE;
+            case TIME:
+                return DataTypes.TIME;
+            case TIMESTAMP:
+                return DataTypes.TIMESTAMP;
+        }
+        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
     }
 }

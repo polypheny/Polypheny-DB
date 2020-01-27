@@ -30,6 +30,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraTypesUtils;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -149,10 +150,10 @@ public class CassandraStore extends Store {
         List<CatalogColumn> columns = combinedTable.getColumns();
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
-                .withPartitionKey( column.name, getDataType( column.type ) );
+                .withPartitionKey( column.name, CassandraTypesUtils.getDataType( column.type ) );
 
         for ( CatalogColumn c : columns ) {
-            createTable = createTable.withColumn( c.name, getDataType( c.type ) );
+            createTable = createTable.withColumn( c.name, CassandraTypesUtils.getDataType( c.type ) );
         }
 
         this.session.execute( createTable.build() );
@@ -254,68 +255,6 @@ public class CassandraStore extends Store {
     protected void reloadSettings( List<String> updatedSettings ) {
         // TODO: Implement
         log.warn( "reloadSettings is not implemented yet." );
-    }
-
-
-    private DataType getDataType( PolySqlType polySqlType ) {
-        switch ( polySqlType ) {
-            case BOOLEAN:
-                return DataTypes.BOOLEAN;
-            case VARBINARY:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case INTEGER:
-                return DataTypes.INT;
-            case BIGINT:
-                return DataTypes.BIGINT;
-            case REAL:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case DOUBLE:
-                return DataTypes.DOUBLE;
-            case DECIMAL:
-                return DataTypes.DECIMAL;
-            case VARCHAR:
-                return DataTypes.TEXT;
-            case TEXT:
-                return DataTypes.TEXT;
-            case DATE:
-                return DataTypes.DATE;
-            case TIME:
-                return DataTypes.TIME;
-            case TIMESTAMP:
-                return DataTypes.TIMESTAMP;
-        }
-        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
-    }
-
-
-    private String getTypeString( PolySqlType polySqlType ) {
-        switch ( polySqlType ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case DOUBLE:
-                return "DOUBLE";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case TEXT:
-                return "TEXT";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-        }
-        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
     }
 
 }
