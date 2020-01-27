@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraTypesUtils;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -100,30 +101,44 @@ public class CassandraSchema extends AbstractSchema {
     @Getter
     private final CassandraConvention convention;
 
+    private final CassandraStore cassandraStore;
+
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
     private static final int DEFAULT_CASSANDRA_PORT = 9042;
 
 
-    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention ) {
+    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention, CassandraStore cassandraStore ) {
         super();
         this.session = session;
         this.keyspace = keyspace;
         this.parentSchema = parentSchema;
         this.name = name;
         this.convention = convention;
+        this.cassandraStore = cassandraStore;
     }
 
 
-    public static CassandraSchema create( SchemaPlus parentSchema, String name, CqlSession session, String keyspace, CassandraPhysicalNameProvider physicalNameProvider ) {
+    public static CassandraSchema create(
+            SchemaPlus parentSchema,
+            String name,
+            CqlSession session,
+            String keyspace,
+            CassandraPhysicalNameProvider physicalNameProvider,
+            CassandraStore cassandraStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
         final CassandraConvention convention = new CassandraConvention( name, expression, physicalNameProvider );
-        return new CassandraSchema( session, keyspace, parentSchema, name, convention );
+        return new CassandraSchema( session, keyspace, parentSchema, name, convention, cassandraStore );
+    }
+
+
+    // FIXME JS: Temporary hotfix for transaction management until proper cassandra transaction management is implemented!
+    public void registerStore( DataContext dataContext ) {
+        dataContext.getTransaction().registerInvolvedStore( this.cassandraStore );
     }
 
 
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
-        log.info( "getRelDataType: {}", columnFamily );
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( this.name );
         qualifiedNames.add( columnFamily );

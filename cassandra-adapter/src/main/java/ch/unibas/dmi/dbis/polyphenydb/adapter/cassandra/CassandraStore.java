@@ -123,7 +123,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog() ) );
+        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog() ), this );
     }
 
 
@@ -155,6 +155,8 @@ public class CassandraStore extends Store {
             createTable = createTable.withColumn( c.name, CassandraTypesUtils.getDataType( c.type ) );
         }
 
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
         this.session.execute( createTable.build() );
     }
 
@@ -167,6 +169,9 @@ public class CassandraStore extends Store {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
+
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
         this.session.execute( dropTable );
     }
 
@@ -215,6 +220,9 @@ public class CassandraStore extends Store {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
+
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
         this.session.execute( truncateTable );
     }
 

@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.CassandraImplementContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
@@ -179,6 +180,11 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
             default:
                 cqlString = "";
         }
+
+        list.add( Expressions.statement( Expressions.call(
+                Schemas.unwrap( convention.expression, CassandraSchema.class ),
+                "registerStore",
+                DataContext.ROOT ) ) );
 
         Expression enumerable;
 
