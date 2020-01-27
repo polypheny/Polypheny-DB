@@ -45,12 +45,9 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -71,9 +68,10 @@ public interface CassandraRel extends RelNode {
 
 
     /**
-     * Callback for the implementation process that converts a tree of {@link CassandraRel} nodes into a CQL query.
+     * Context to convert a tree of {@link CassandraRel} nodes into a CQL query.
      */
     public class CassandraImplementContext {
+        // TODO JS: Find a better name for this class
 
         Type type = null;
 
