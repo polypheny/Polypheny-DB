@@ -67,6 +67,11 @@ public class CassandraProjectRule extends CassandraConverterRule {
     public RelNode convert( RelNode rel ) {
         final Project project = (Project) rel;
         final RelTraitSet traitSet = project.getTraitSet().replace( out );
-        return new CassandraProject( project.getCluster(), traitSet, convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ), project.getProjects(), project.getRowType() );
+        return new CassandraProject(
+                project.getCluster(),
+                traitSet,
+                convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
+                project.getProjects(),
+                project.getRowType() );
     }
 }

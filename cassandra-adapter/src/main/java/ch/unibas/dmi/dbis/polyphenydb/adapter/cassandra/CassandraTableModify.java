@@ -76,7 +76,16 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public CassandraTableModify( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public CassandraTableModify(
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            RelOptTable table,
+            CatalogReader catalogReader,
+            RelNode input,
+            Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened ) {
         super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
         this.cassandraTable = table.unwrap( CassandraTable.class );
     }
@@ -90,7 +99,16 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new CassandraTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), AbstractRelNode.sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+        return new CassandraTableModify(
+                getCluster(),
+                traitSet,
+                getTable(),
+                getCatalogReader(),
+                AbstractRelNode.sole( inputs ),
+                getOperation(),
+                getUpdateColumnList(),
+                getSourceExpressionList(),
+                isFlattened() );
     }
 
 

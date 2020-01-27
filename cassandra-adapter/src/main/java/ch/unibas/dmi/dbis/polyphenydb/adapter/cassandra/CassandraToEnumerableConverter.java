@@ -183,7 +183,8 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
         Expression enumerable;
 
         final Expression simpleStatement = list.append( "statement", Expressions.constant( cqlString ) );
-        final Expression cqlSession_ = list.append( "cqlSession",
+        final Expression cqlSession_ = list.append(
+                "cqlSession",
                 Expressions.call(
                         Schemas.unwrap( convention.expression, CassandraSchema.class ),
                         "getSession" ) );

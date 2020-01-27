@@ -49,6 +49,11 @@ public class CassandraLimitRule extends CassandraConverterRule {
     public RelNode convert( RelNode rel ) {
         final EnumerableLimit limit = (EnumerableLimit) rel;
         final RelTraitSet traitSet = limit.getTraitSet().replace( out );
-        return new CassandraLimit( limit.getCluster(), traitSet, convert( limit.getInput(), limit.getInput().getTraitSet().replace( out ) ), limit.offset, limit.fetch );
+        return new CassandraLimit(
+                limit.getCluster(),
+                traitSet,
+                convert( limit.getInput(), limit.getInput().getTraitSet().replace( out ) ),
+                limit.offset,
+                limit.fetch );
     }
 }

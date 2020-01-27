@@ -85,7 +85,14 @@ public class CassandraFilter extends Filter implements CassandraRel {
     private RelCollation implicitCollation;
 
 
-    public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
+    public CassandraFilter(
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            RelNode child,
+            RexNode condition,
+            List<String> partitionKeys,
+            List<String> clusteringKeys,
+            List<RelFieldCollation> implicitFieldCollations ) {
         super( cluster, traitSet, child, condition );
 
         this.singlePartition = false;

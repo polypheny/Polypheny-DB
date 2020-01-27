@@ -43,7 +43,13 @@ public abstract class CassandraConverterRule extends ConverterRule {
     protected final Convention out;
 
 
-    <R extends RelNode> CassandraConverterRule( Class<R> clazz, Predicate<? super R> predicate, RelTrait in, CassandraConvention out, RelBuilderFactory relBuilderFactory, String description ) {
+    <R extends RelNode> CassandraConverterRule(
+            Class<R> clazz,
+            Predicate<? super R> predicate,
+            RelTrait in,
+            CassandraConvention out,
+            RelBuilderFactory relBuilderFactory,
+            String description ) {
         super( clazz, predicate, in, out, relBuilderFactory, description );
         this.out = out;
     }
