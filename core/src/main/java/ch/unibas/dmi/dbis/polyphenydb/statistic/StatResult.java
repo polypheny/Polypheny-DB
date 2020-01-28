@@ -20,6 +20,9 @@ public class StatResult {
     private String[] columnNames;
 
 
+    public StatResult( ) {
+    }
+
     public StatResult( StatQueryColumn[] columns ) {
         this.columns = columns;
     }
@@ -30,14 +33,17 @@ public class StatResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
+    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) { ;
+        if ( data.length == 0 || data[0].length == 0 ) {
+            this.columns = new StatQueryColumn[0];
+        } else {
+            this.columns = new StatQueryColumn[data[0].length];
 
-        this.columns = new StatQueryColumn[data[0].length];
+            String[][] rotated = rotate2dArray( data );
 
-        String[][] rotated = rotate2dArray( data );
-
-        for ( int i = 0; i < rotated.length; i++ ) {
-            this.columns[i] = new StatQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+            for ( int i = 0; i < rotated.length; i++ ) {
+                this.columns[i] = new StatQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+            }
         }
 
     }
@@ -60,6 +66,7 @@ public class StatResult {
         }
         return rotated;
     }
+
 
     /**
      * Transforms an StatResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map

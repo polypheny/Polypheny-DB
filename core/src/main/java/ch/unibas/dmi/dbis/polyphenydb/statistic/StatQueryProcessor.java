@@ -29,8 +29,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +73,11 @@ public class StatQueryProcessor {
      * @return result of the query
      */
     public StatQueryColumn selectOneStat( String query ) {
-        return this.executeSqlSelect( query ).getColumns()[0];
+        StatResult res = this.executeSqlSelect( query );
+        if(res.getColumns() != null && res.getColumns().length == 1 ){
+            return res.getColumns()[0];
+        }
+        return null;
     }
 
 
@@ -272,9 +278,9 @@ public class StatQueryProcessor {
 
     private StatResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
-        StatResult result = new StatResult( new StatQueryColumn[]{} );
-
+        StatResult result = new StatResult();
         try {
+
             result = executeSqlSelect( transaction, query );
             transaction.commit();
             transaction = getTransaction();
@@ -316,12 +322,17 @@ public class StatQueryProcessor {
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
+
+
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
+
             iterator = enumerable.iterator();
+
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
@@ -357,8 +368,12 @@ public class StatQueryProcessor {
                 }
                 data.add( temp );
             }
+
             // TODO: own result object?
-            return new StatResult( names, types, data.toArray( new String[0][] ) );
+            String[][] d = data.toArray( new String[0][] );
+
+            StatResult res = new StatResult( names, types, d );
+            return res;
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
@@ -397,12 +412,31 @@ public class StatQueryProcessor {
     }
 
 
-    public boolean hasData( String table, String column ) {
-        return executeSqlSelect( "SELECT " + column + " FROM " + table + " " ).getColumns().length > 0;
+    public boolean hasData( String schema, String table, String column ) {
+        String query = "SELECT * FROM " + buildName( schema, table ) + " LIMIT 1";
+        StatResult res = executeSqlSelect( query );
+        return res.getColumns().length > 0;
+    }
+
+
+    public static String buildName( String... strings ) {
+        return new StringBuilder( "\"" )
+                .append( String.join( "\".\"", strings ) )
+                .append( "\"" ).toString();
     }
 
 
     static class QueryExecutionException extends Exception {
+
+        QueryExecutionException( String message ) {
+            super( message );
+        }
+
+
+        QueryExecutionException( String message, Exception e ) {
+            super( message, e );
+        }
+
 
         QueryExecutionException( Throwable t ) {
             super( t );

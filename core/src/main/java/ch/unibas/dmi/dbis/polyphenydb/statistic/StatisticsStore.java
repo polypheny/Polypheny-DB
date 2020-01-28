@@ -2,6 +2,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
@@ -17,6 +18,7 @@ import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
 
 
 /**
@@ -39,7 +42,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     private static volatile StatisticsStore instance = null;
 
     @Getter
-    public ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
+    public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
 
     private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
     private StatQueryProcessor sqlQueryInterface;
@@ -53,7 +56,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
         cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
@@ -154,10 +157,10 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     /**
      * Reset all statistics and reevaluate them
      */
-    synchronized private void reevaluateStore() {
+    private void reevaluateStore() {
         log.warn( "Resetting StatisticStore." );
-        this.statisticSchemaMap.clear();
         this.columnsToUpdate.clear();
+        ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
         // TODO: check why null
         if ( this.sqlQueryInterface == null ) {
@@ -166,46 +169,67 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             System.out.println( column.getFullName() );
-            reevaluateColumn( column );
+            StatisticColumn col = reevaluateColumn( column );
+            if ( col != null ) {
+                put( statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col );
+            }
 
         }
+        replaceStatistics( statisticSchemaMapCopy );
         log.warn( "Finished resetting StatisticStore." );
+    }
+
+
+    /**
+     * replace the the tracked statistics with other statistics
+     */
+    private synchronized void replaceStatistics( ConcurrentHashMap map ) {
+        this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
 
     /**
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
-    private void reevaluateColumn( QueryColumn column ) {
-        if ( !this.sqlQueryInterface.hasData( column.getFullTableName(), column.getFullName() ) ) {
-            return;
+    private StatisticColumn reevaluateColumn( QueryColumn column ) {
+        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+            return null;
         }
         if ( column.getType().isNumericalType() ) {
-            this.reevaluateNumericalColumn( column );
+            return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().isCharType() ) {
-            this.reevaluateAlphabeticalColumn( column );
+            return this.reevaluateAlphabeticalColumn( column );
         }
+        return null;
     }
 
 
-    private void reevaluateNumericalColumn( QueryColumn column ) {
+    private StatisticColumn reevaluateNumericalColumn( QueryColumn column ) {
         StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
         StatQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
-        statisticColumn.setMin( min.getData()[0] );
-        statisticColumn.setMax( max.getData()[0] );
+        if ( min != null ) {
+            statisticColumn.setMin( min.getData()[0] );
+        }
+        if ( max != null ) {
+            statisticColumn.setMax( max.getData()[0] );
+        }
+
         assignUnique( unique, statisticColumn );
 
         statisticColumn.setCount( count );
 
-        put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
+        return statisticColumn;
     }
 
 
     private void assignUnique( StatQueryColumn unique, StatisticColumn<String> statisticColumn ) {
         int maxLength = ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt();
+        if ( unique == null || unique.getData() == null ) {
+            return;
+        }
         if ( unique.getData().length <= maxLength ) {
             statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
         } else {
@@ -214,7 +238,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
-    private void reevaluateAlphabeticalColumn( QueryColumn column ) {
+    private StatisticColumn reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
 
@@ -222,52 +246,75 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         assignUnique( unique, statisticColumn );
         statisticColumn.setCount( count );
 
-        put( column.getSchema(), column.getTable(), column.getName(), statisticColumn );
+        return statisticColumn;
+    }
+
+
+    private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
+        if ( !map.containsKey( schema ) ) {
+            map.put( schema, new HashMap<>() );
+        }
+
+        if ( !map.get( schema ).containsKey( table ) ) {
+            map.get( schema ).put( table, new HashMap<>() );
+        }
+
+        if ( !map.get( schema ).get( table ).containsKey( column ) ) {
+            map.get( schema ).get( table ).put( column, statisticColumn );
+        }
     }
 
 
     private void put( String schema, String table, String column, StatisticColumn statisticColumn ) {
-        if ( !this.statisticSchemaMap.containsKey( schema ) ) {
-            this.statisticSchemaMap.put( schema, new HashMap<>() );
-        }
-
-        if ( !this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
-            this.statisticSchemaMap.get( schema ).put( table, new HashMap<>() );
-        }
-
-        if ( !this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
-            this.statisticSchemaMap.get( schema ).get( table ).put( column, statisticColumn );
-        }
+        put( this.statisticSchemaMap, schema, table, column, statisticColumn );
 
     }
 
 
     /**
      * Method to get a generic Aggregate Stat
+     * null if no result is available
      *
      * @return a StatQueryColumn which contains the requested value
      */
     private StatQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
-        return getAggregateColumn( column.getFullName(), column.getFullTableName(), aggregate );
+        return getAggregateColumn( column.getSchema(), column.getTable(), column.getName(), aggregate );
     }
 
 
-    private StatQueryColumn getAggregateColumn( String column, String table, String aggregate ) {
-        String query = "SELECT " + aggregate + " (" + column + ") FROM " + table + getStatQueryLimit();
+    private StatQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
+        String query = "SELECT " + aggregate + " (" + StatQueryProcessor.buildName( schema, table, column ) + ") FROM " + StatQueryProcessor.buildName( schema, table ) + getStatQueryLimit();
+        System.out.println( query );
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
 
     private StatQueryColumn getUniqueValues( QueryColumn column ) {
         //TODO ASK needs limit, else throws error when casting to autoclose
-        String query = "SELECT " + column.getFullName() + " FROM " + column.getFullTableName() + " GROUP BY " + column.getFullName() + getStatQueryLimit( 1 );
+        String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
+        String query = "SELECT " + columnName + " FROM " + tableName + " GROUP BY " + columnName + getStatQueryLimit( 1 );
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
 
     private Integer getCount( QueryColumn column ) {
-        String query = "SELECT COUNT(" + column.getFullName() + ") FROM " + column.getFullTableName();
-        return Integer.parseInt( this.sqlQueryInterface.selectOneStat( query ).getData()[0] );
+        String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
+        String query = "SELECT COUNT(" + columnName + ") FROM " + tableName;
+        StatQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
+
+        if ( res != null && res.getData() != null && res.getData().length != 0 ) {
+            System.out.println( res );
+            System.out.println( res.getData() );
+            System.out.println( res.getData()[0] );
+            try {
+                return Integer.parseInt( res.getData()[0] );
+            } catch ( NumberFormatException e ) {
+                log.error( "Count could not be parsed." );
+            }
+        }
+        return 0;
     }
 
 
