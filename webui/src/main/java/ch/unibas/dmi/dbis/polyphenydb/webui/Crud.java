@@ -643,7 +643,7 @@ public class Crud implements InformationObserver {
      * TODO: potentially change all to specific statistics
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
-        if ( ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ){
+        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ){
             System.out.println( store.getStatisticSchemaMap() );
             return store.getStatisticSchemaMap();
         }else {

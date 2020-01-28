@@ -55,7 +55,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
-        cm.registerConfig( new ConfigBoolean( "useStatistics", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
 
@@ -442,7 +442,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      */
     public synchronized void sync() {
         // TODO: real disable of query assistance
-        if ( !ConfigManager.getInstance().getConfig( "useStatistics" ).getBoolean() ) {
+        if ( !ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
             return;
         }
 
