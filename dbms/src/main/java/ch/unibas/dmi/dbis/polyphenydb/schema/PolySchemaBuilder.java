@@ -27,7 +27,6 @@ package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -49,19 +48,12 @@ public class PolySchemaBuilder {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
-    private Map<PolyXid, AbstractPolyphenyDbSchema> cache = new HashMap<>();
-
-
     public static PolySchemaBuilder getInstance() {
         return INSTANCE;
     }
 
 
     public AbstractPolyphenyDbSchema getCurrent( Transaction transaction ) {
-        /*if ( !cache.containsKey( transaction.getXid() ) ) {
-            cache.put( transaction.getXid(), update( transaction ) );
-        }
-        return cache.get( transaction.getXid() ); */
         return update( transaction );
     }
 
