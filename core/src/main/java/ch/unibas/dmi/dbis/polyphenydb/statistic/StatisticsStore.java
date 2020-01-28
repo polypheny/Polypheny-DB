@@ -393,9 +393,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                         } else {
                             // TODO: concationate to long entries
                             String values = ((AlphabeticStatisticColumn) v).getUniqueValues().toString();
-                            if( !v.isFull ){
+                            if ( !v.isFull ) {
                                 alphabeticalInformation.addRow( name, values );
-                            }else {
+                            } else {
                                 alphabeticalInformation.addRow( name, "is Full" );
                             }
 
