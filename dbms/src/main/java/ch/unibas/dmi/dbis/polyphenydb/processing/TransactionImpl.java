@@ -170,7 +170,7 @@ public class TransactionImpl implements Transaction {
                     store.commit( xid );
                 }
 
-                if(stats.size() > 0) StatisticsStore.getInstance().apply(stats);
+                // if(stats.size() > 0) StatisticsStore.getInstance().apply(stats);
 
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );

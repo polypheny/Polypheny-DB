@@ -66,8 +66,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         BackgroundTaskManager.INSTANCE.registerTask(
                 this::sync,
                 "Updated unsynced Statistic Columns.",
-                TaskPriority.HIGH,
-                TaskSchedulingType.EVERY_THIRTY_SECONDS );
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_TEN_SECONDS );
 
         // security messure for now
         // BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
@@ -168,7 +168,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         }
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
-            System.out.println( column.getFullName() );
             StatisticColumn col = reevaluateColumn( column );
             if ( col != null ) {
                 put( statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col );
@@ -284,7 +283,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
     private StatQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
         String query = "SELECT " + aggregate + " (" + StatQueryProcessor.buildName( schema, table, column ) + ") FROM " + StatQueryProcessor.buildName( schema, table ) + getStatQueryLimit();
-        System.out.println( query );
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
@@ -305,9 +303,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         StatQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
 
         if ( res != null && res.getData() != null && res.getData().length != 0 ) {
-            System.out.println( res );
-            System.out.println( res.getData() );
-            System.out.println( res.getData()[0] );
             try {
                 return Integer.parseInt( res.getData()[0] );
             } catch ( NumberFormatException e ) {
@@ -398,10 +393,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                         } else {
                             // TODO: concationate to long entries
                             String values = ((AlphabeticStatisticColumn) v).getUniqueValues().toString();
-                            alphabeticalInformation.addRow(
-                                    name,
-                                    values
-                            );
+                            if( !v.isFull ){
+                                alphabeticalInformation.addRow( name, values );
+                            }else {
+                                alphabeticalInformation.addRow( name, "is Full" );
+                            }
+
                         }
 
                     } ) ) );
