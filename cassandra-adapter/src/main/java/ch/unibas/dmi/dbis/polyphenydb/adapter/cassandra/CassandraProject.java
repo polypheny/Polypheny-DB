@@ -45,6 +45,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -54,11 +55,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import java.util.LinkedHashMap;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -68,8 +70,9 @@ public class CassandraProject extends Project implements CassandraRel {
 
     public CassandraProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
-        assert getConvention() == CassandraRel.CONVENTION;
-        assert getConvention() == input.getConvention();
+        // TODO JS: Check this
+//        assert getConvention() == CassandraRel.CONVENTION;
+//        assert getConvention() == input.getConvention();
     }
 
 
@@ -81,21 +84,23 @@ public class CassandraProject extends Project implements CassandraRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
         final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraFieldNames( getInput().getRowType() ) );
-        final Map<String, String> fields = new LinkedHashMap<>();
+        final List<Selector> fields = new ArrayList<>();
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
-            final String name = pair.right;
-            final String originalName = pair.left.accept( translator );
-            fields.put( originalName, name );
+            if ( pair.left instanceof RexInputRef ) {
+                final String name = pair.right;
+                final String originalName = pair.left.accept( translator );
+                fields.add( Selector.column( originalName ).as( name ) );
+            }
         }
-        implementor.add( fields, null );
+        context.addSelectColumns( fields );
     }
 }
 

@@ -51,9 +51,11 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
@@ -65,21 +67,19 @@ import org.apache.calcite.linq4j.Enumerator;
 class CassandraEnumerator implements Enumerator<Object> {
 
     private final Iterator<Row> iterator;
-    private final List<RelDataTypeField> fieldTypes;
+    private final ColumnDefinitions columnDefinitions;
     private Row current;
+
 
     /**
      * Creates a CassandraEnumerator.
      *
-     * @param results Cassandra result set ({@link com.datastax.driver.core.ResultSet})
-     * @param protoRowType The type of resulting rows
+     * @param results Cassandra result set ({@link com.datastax.oss.driver.api.core.cql.ResultSet})
      */
-    CassandraEnumerator( ResultSet results, RelProtoDataType protoRowType ) {
+    CassandraEnumerator( ResultSet results ) {
         this.iterator = results.iterator();
         this.current = null;
-
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        this.fieldTypes = protoRowType.apply( typeFactory ).getFieldList();
+        this.columnDefinitions = results.getColumnDefinitions();
     }
 
 
@@ -90,14 +90,16 @@ class CassandraEnumerator implements Enumerator<Object> {
      */
     @Override
     public Object current() {
-        if ( fieldTypes.size() == 1 ) {
+        if ( columnDefinitions.size() == 0 ) {
+            return 0;
+        } else if ( columnDefinitions.size() == 1 ) {
             // If we just have one field, produce it directly
-            return currentRowField( 0, fieldTypes.get( 0 ).getType().getSqlTypeName() );
+            return currentRowField( 0 );
         } else {
             // Build an array with all fields in this row
-            Object[] row = new Object[fieldTypes.size()];
-            for ( int i = 0; i < fieldTypes.size(); i++ ) {
-                row[i] = currentRowField( i, fieldTypes.get( i ).getType().getSqlTypeName() );
+            Object[] row = new Object[columnDefinitions.size()];
+            for ( int i = 0; i < columnDefinitions.size(); i++ ) {
+                row[i] = currentRowField( i );
             }
             return row;
         }
@@ -108,22 +110,30 @@ class CassandraEnumerator implements Enumerator<Object> {
      * Get a field for the current row from the underlying object.
      *
      * @param index Index of the field within the Row object
-     * @param typeName Type of the field in this row
      */
-    private Object currentRowField( int index, SqlTypeName typeName ) {
-        DataType type = current.getColumnDefinitions().getType( index );
-        if ( type == DataType.ascii() || type == DataType.text() || type == DataType.varchar() ) {
+    private Object currentRowField( int index ) {
+        DataType type = this.columnDefinitions.get( index ).getType();
+
+        if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
             return current.getString( index );
-        } else if ( type == DataType.cint() || type == DataType.varint() ) {
+        } else if ( type == DataTypes.INT || type == DataTypes.VARINT ) {
             return current.getInt( index );
-        } else if ( type == DataType.bigint() ) {
+        } else if ( type == DataTypes.BIGINT ) {
             return current.getLong( index );
-        } else if ( type == DataType.cdouble() ) {
+        } else if ( type == DataTypes.DOUBLE ) {
             return current.getDouble( index );
-        } else if ( type == DataType.cfloat() ) {
+        } else if ( type == DataTypes.FLOAT ) {
             return current.getFloat( index );
-        } else if ( type == DataType.uuid() || type == DataType.timeuuid() ) {
-            return current.getUUID( index ).toString();
+        } else if ( type == DataTypes.UUID || type == DataTypes.TIMEUUID ) {
+            return current.getUuid( index ).toString();
+        } else if ( type == DataTypes.DATE ) {
+            return (int) current.getLocalDate( index ).toEpochDay();
+        } else if ( type == DataTypes.TIME ) {
+            // Time is represented in Polypheny-DB as an integer counting the number of milliseconds since the start of the day.
+            return ((int) current.getLocalTime( index ).toNanoOfDay()) / 1000000;
+        } else if ( type == DataTypes.TIMESTAMP ) {
+            // Timestamp is represented in Polypheny-DB as a long counting the number of milliseconds since 1970-01-01T00:00:00+0000
+            return current.getInstant( index ).getEpochSecond() * 1000L + current.getInstant( index ).getNano() / 1000000L;
         } else {
             return null;
         }

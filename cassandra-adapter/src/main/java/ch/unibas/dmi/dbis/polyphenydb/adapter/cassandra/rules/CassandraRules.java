@@ -1,27 +1,7 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
- *
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- *
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2020 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"), to deal
@@ -40,11 +20,21 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraLimit;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraProject;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraSort;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableScan;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraToEnumerableConverter;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
@@ -65,19 +55,24 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
+import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
 
 
 /**
- * Rules and relational operators for {@link CassandraRel#CONVENTION} calling convention.
+ * Rules and relational operators for {@link CassandraConvention} calling convention.
  */
 public class CassandraRules {
 
@@ -85,15 +80,29 @@ public class CassandraRules {
     }
 
 
-    public static final RelOptRule[] RULES = {
-            CassandraFilterRule.INSTANCE,
-            CassandraProjectRule.INSTANCE,
-            CassandraSortRule.INSTANCE,
-            CassandraLimitRule.INSTANCE
-    };
+    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
 
-    static List<String> cassandraFieldNames( final RelDataType rowType ) {
+    public static List<RelOptRule> rules( CassandraConvention out ) {
+        return rules( out, RelFactories.LOGICAL_BUILDER );
+    }
+
+
+    public static List<RelOptRule> rules( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        return ImmutableList.of(
+                new CassandraToEnumerableConverterRule( out, relBuilderFactory ),
+                new CassandraFilterRule( out, relBuilderFactory ),
+                new CassandraProjectRule( out, relBuilderFactory ),
+                // TODO js: Disabling sort till I have time to figure out how to properly implement it.
+//                new CassandraSortRule( out, relBuilderFactory ),
+                new CassandraLimitRule( out, relBuilderFactory ),
+                new CassandraValuesRule( out, relBuilderFactory ),
+                new CassandraTableModificationRule( out, relBuilderFactory )
+        );
+    }
+
+
+    public static List<String> cassandraFieldNames( final RelDataType rowType ) {
         return SqlValidatorUtil.uniquify( rowType.getFieldNames(), SqlValidatorUtil.EXPR_SUGGESTER, true );
     }
 
@@ -101,13 +110,13 @@ public class CassandraRules {
     /**
      * Translator from {@link RexNode} to strings in Cassandra's expression language.
      */
-    static class RexToCassandraTranslator extends RexVisitorImpl<String> {
+    public static class RexToCassandraTranslator extends RexVisitorImpl<String> {
 
         private final JavaTypeFactory typeFactory;
         private final List<String> inFields;
 
 
-        protected RexToCassandraTranslator( JavaTypeFactory typeFactory, List<String> inFields ) {
+        public RexToCassandraTranslator( JavaTypeFactory typeFactory, List<String> inFields ) {
             super( true );
             this.typeFactory = typeFactory;
             this.inFields = inFields;
@@ -122,38 +131,20 @@ public class CassandraRules {
 
 
     /**
-     * Base class for planner rules that convert a relational expression to Cassandra calling convention.
-     */
-    abstract static class CassandraConverterRule extends ConverterRule {
-
-        protected final Convention out;
-
-
-        CassandraConverterRule( Class<? extends RelNode> clazz, String description ) {
-            this( clazz, r -> true, description );
-        }
-
-
-        <R extends RelNode> CassandraConverterRule( Class<R> clazz, Predicate<? super R> predicate, String description ) {
-            super( clazz, predicate, Convention.NONE, CassandraRel.CONVENTION, RelFactories.LOGICAL_BUILDER, description );
-            this.out = CassandraRel.CONVENTION;
-        }
-    }
-
-
-    /**
      * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
      */
-    private static class CassandraFilterRule extends RelOptRule {
+    private static class CassandraFilterRuleOld extends RelOptRule {
 
         // TODO: Check for an equality predicate on the partition key. Right now this just checks if we have a single top-level AND
         private static final Predicate<LogicalFilter> PREDICATE = filter -> RelOptUtil.disjunctions( filter.getCondition() ).size() == 1;
 
-        private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
+        //        private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
+        protected final Convention out;
 
 
-        private CassandraFilterRule() {
+        private CassandraFilterRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
             super( operand( LogicalFilter.class, operand( CassandraTableScan.class, none() ) ), "CassandraFilterRule" );
+            this.out = out;
         }
 
 
@@ -165,7 +156,7 @@ public class CassandraRules {
 
             // Get field names from the scan operation
             CassandraTableScan scan = call.rel( 1 );
-            Pair<List<String>, List<String>> keyFields = scan.cassandraTable.getKeyFields();
+            Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             Set<String> partitionKeys = new HashSet<>( keyFields.left );
             List<String> fieldNames = CassandraRules.cassandraFieldNames( filter.getInput().getRowType() );
 
@@ -256,9 +247,9 @@ public class CassandraRules {
 
 
         public RelNode convert( LogicalFilter filter, CassandraTableScan scan ) {
-            final RelTraitSet traitSet = filter.getTraitSet().replace( CassandraRel.CONVENTION );
-            final Pair<List<String>, List<String>> keyFields = scan.cassandraTable.getKeyFields();
-            return new CassandraFilter( filter.getCluster(), traitSet, convert( filter.getInput(), CassandraRel.CONVENTION ), filter.getCondition(), keyFields.left, keyFields.right, scan.cassandraTable.getClusteringOrder() );
+            final RelTraitSet traitSet = filter.getTraitSet().replace( out );
+            final Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
+            return new CassandraFilter( filter.getCluster(), traitSet, convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ), filter.getCondition(), keyFields.left, keyFields.right, ((CassandraTable) scan.getTable()).getClusteringOrder() );
         }
     }
 
@@ -266,13 +257,10 @@ public class CassandraRules {
     /**
      * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to a {@link CassandraProject}.
      */
-    private static class CassandraProjectRule extends CassandraConverterRule {
+    private static class CassandraProjectRuleOld extends CassandraConverterRule {
 
-        private static final CassandraProjectRule INSTANCE = new CassandraProjectRule();
-
-
-        private CassandraProjectRule() {
-            super( LogicalProject.class, "CassandraProjectRule" );
+        private CassandraProjectRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+            super( LogicalProject.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraProjectRule" );
         }
 
 
@@ -280,11 +268,13 @@ public class CassandraRules {
         public boolean matches( RelOptRuleCall call ) {
             LogicalProject project = call.rel( 0 );
             for ( RexNode e : project.getProjects() ) {
-                if ( !(e instanceof RexInputRef) ) {
+                if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
+                    LOGGER.debug( "Failed to match CassandraProject." );
                     return false;
                 }
             }
 
+            LOGGER.debug( "Matched CassandraProject." );
             return true;
         }
 
@@ -293,7 +283,7 @@ public class CassandraRules {
         public RelNode convert( RelNode rel ) {
             final LogicalProject project = (LogicalProject) rel;
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
-            return new CassandraProject( project.getCluster(), traitSet, convert( project.getInput(), out ), project.getProjects(), project.getRowType() );
+            return new CassandraProject( project.getCluster(), traitSet, convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ), project.getProjects(), project.getRowType() );
         }
     }
 
@@ -306,22 +296,23 @@ public class CassandraRules {
 
         private static final RelOptRuleOperand CASSANDRA_OP = operand( CassandraToEnumerableConverter.class, operandJ( CassandraFilter.class, null, CassandraFilter::isSinglePartition, any() ) ); // We can only use implicit sorting within a single partition
 
-        private static final CassandraSortRule INSTANCE = new CassandraSortRule();
+        protected final Convention out;
 
 
-        private CassandraSortRule() {
+        private CassandraSortRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
             super(
                     operandJ( Sort.class, null,
                             // Limits are handled by CassandraLimit
                             sort -> sort.offset == null && sort.fetch == null, CASSANDRA_OP ),
                     "CassandraSortRule"
             );
+            this.out = out;
         }
 
 
         public RelNode convert( Sort sort, CassandraFilter filter ) {
-            final RelTraitSet traitSet = sort.getTraitSet().replace( CassandraRel.CONVENTION ).replace( sort.getCollation() );
-            return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation() );
+            final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
+            return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
         }
 
 
@@ -400,39 +391,6 @@ public class CassandraRules {
             final Sort sort = call.rel( 0 );
             CassandraFilter filter = call.rel( 2 );
             final RelNode converted = convert( sort, filter );
-            if ( converted != null ) {
-                call.transformTo( converted );
-            }
-        }
-    }
-
-
-    /**
-     * Rule to convert a {@link EnumerableLimit} to a {@link CassandraLimit}.
-     */
-    private static class CassandraLimitRule extends RelOptRule {
-
-        private static final CassandraLimitRule INSTANCE = new CassandraLimitRule();
-
-
-        private CassandraLimitRule() {
-            super( operand( EnumerableLimit.class, operand( CassandraToEnumerableConverter.class, any() ) ), "CassandraLimitRule" );
-        }
-
-
-        public RelNode convert( EnumerableLimit limit ) {
-            final RelTraitSet traitSet = limit.getTraitSet().replace( CassandraRel.CONVENTION );
-            return new CassandraLimit( limit.getCluster(), traitSet, convert( limit.getInput(), CassandraRel.CONVENTION ), limit.offset, limit.fetch );
-        }
-
-
-        /**
-         * @see ConverterRule
-         */
-        @Override
-        public void onMatch( RelOptRuleCall call ) {
-            final EnumerableLimit limit = call.rel( 0 );
-            final RelNode converted = convert( limit );
             if ( converted != null ) {
                 call.transformTo( converted );
             }

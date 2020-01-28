@@ -89,13 +89,13 @@ public class CassandraLimit extends SingleRel implements CassandraRel {
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+    public void implement( CassandraImplementContext context ) {
+        context.visitChild( 0, getInput() );
         if ( offset != null ) {
-            implementor.offset = RexLiteral.intValue( offset );
+            context.offset = RexLiteral.intValue( offset );
         }
         if ( fetch != null ) {
-            implementor.fetch = RexLiteral.intValue( fetch );
+            context.fetch = RexLiteral.intValue( fetch );
         }
     }
 
