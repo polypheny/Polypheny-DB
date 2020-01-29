@@ -1313,11 +1313,11 @@ public class Crud implements InformationObserver {
     String getStores( final Request req, final Response res ) {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
-            List<AdapterSetting> currentSettings = new ArrayList<>();
+            List<AdapterSetting> adapterSettings = new ArrayList<>();
             for ( AdapterSetting s : src.getAvailableSettings() ) {
                 for ( String current : src.getCurrentSettings().keySet() ) {
                     if ( s.name.equals( current ) ) {
-                        currentSettings.add( s );
+                        adapterSettings.add( s );
                     }
                 }
             }
@@ -1325,7 +1325,8 @@ public class Crud implements InformationObserver {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "storeId", src.getStoreId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "settings", context.serialize( currentSettings ) );
+            jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
             return jsonStore;
@@ -1367,7 +1368,7 @@ public class Crud implements InformationObserver {
             jsonStore.addProperty( "name", src.name );
             jsonStore.addProperty( "description", src.description );
             jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
-            jsonStore.add( "settings", context.serialize( src.settings ) );
+            jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
             return jsonStore;
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
