@@ -5,6 +5,7 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
@@ -37,17 +38,18 @@ import org.apache.commons.lang3.concurrent.ConcurrentException;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> implements Runnable {
+public class StatisticsStore<T extends Comparable<T>> {
 
     private static volatile StatisticsStore instance = null;
 
-    @Getter
     public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
 
     private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
     private StatQueryProcessor sqlQueryInterface;
 
-    private boolean storeOutOfSync = false;
+    private long lastReevaluate;
+
+    private boolean outOfSync = false;
 
 
     private StatisticsStore() {
@@ -58,19 +60,31 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings" ) );
         cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "minSecReevaluate", "Number of rows per page in the data view", 120 ).withUi( "statisticSettings" ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
+        reevaluateStore();
 
         // should only run when needed
-        BackgroundTaskManager.INSTANCE.registerTask(
+        /*BackgroundTaskManager.INSTANCE.registerTask(
                 this::sync,
                 "Updated unsynced Statistic Columns.",
                 TaskPriority.LOW,
-                TaskSchedulingType.EVERY_TEN_SECONDS );
+                TaskSchedulingType.EVERY_TEN_SECONDS );*/
 
         // security messure for now
         // BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
+
+    }
+
+
+    public ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> getStatisticSchemaMap() {
+        try {
+            return statisticSchemaMap;
+        } finally {
+            sync();
+        }
 
     }
 
@@ -79,15 +93,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         // To ensure only one instance is created
         if ( instance == null ) {
             instance = new StatisticsStore();
-            instance.run();
         }
         return instance;
-    }
-
-
-    private void insert( String schemaTableColumn, T val ) {
-        String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
-        insert( splits[0], splits[1], splits[2], val );
     }
 
 
@@ -101,6 +108,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     private void insert( String schema, String table, String column, T val ) {
         PolySqlType type = this.sqlQueryInterface.getColumnType( column );
         insert( schema, table, column, type, val );
+    }
+
+
+    private void insert( String schemaTableColumn, T val ) {
+        String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
+        insert( splits[0], splits[1], splits[2], val );
     }
 
 
@@ -155,17 +168,19 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
 
     /**
-     * Reset all statistics and reevaluate them
+     * Reset all statistics and reevaluate them if enough time passed
      */
     private void reevaluateStore() {
-        log.warn( "Resetting StatisticStore." );
-        this.columnsToUpdate.clear();
-        ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
-
-        // TODO: check why null
         if ( this.sqlQueryInterface == null ) {
             return;
         }
+        if ( (System.currentTimeMillis() - this.lastReevaluate) / 1000 < ConfigManager.getInstance().getConfig( "minSecReevaluate" ).getInt() ) {
+            log.warn( "Resetting StatisticStore not necessary." );
+            return;
+        }
+        log.warn( "Resetting StatisticStore." );
+        this.columnsToUpdate.clear();
+        ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             StatisticColumn col = reevaluateColumn( column );
@@ -184,6 +199,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      */
     private synchronized void replaceStatistics( ConcurrentHashMap map ) {
         this.statisticSchemaMap = new ConcurrentHashMap<>( map );
+        this.lastReevaluate = System.currentTimeMillis();
     }
 
 
@@ -249,6 +265,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
+    /**
+     * places the StatisticColumn into the correct position in the map
+     */
     private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
         if ( !map.containsKey( schema ) ) {
             map.put( schema, new HashMap<>() );
@@ -287,6 +306,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
+    /**
+     * Queries unique Values for a column
+     * only the configured amount from the configManager
+     *
+     * @return the result as a StatQueryColumn
+     */
     private StatQueryColumn getUniqueValues( QueryColumn column ) {
         //TODO ASK needs limit, else throws error when casting to autoclose
         String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
@@ -296,6 +321,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
+    /**
+     * Gets the count for the column
+     */
     private Integer getCount( QueryColumn column ) {
         String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
         String columnName = StatQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
@@ -318,11 +346,20 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
+    /**
+     * Gets the "LIMIT [x]" where x denotes the configured statisticColumnBuffer in the ConfigManager
+     *
+     * @param add additional amount which gets added to the configured value
+     * @return the "LIMIT [x]"
+     */
     private String getStatQueryLimit( int add ) {
         return " LIMIT " + (ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() + add);
     }
 
 
+    /**
+     * Sets a new StatQueryInterface and reevaluates the store completly
+     */
     public void setSqlQueryInterface( StatQueryProcessor statQueryProcessor ) {
         this.sqlQueryInterface = statQueryProcessor;
 
@@ -331,10 +368,12 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     }
 
 
-    public void displayInformation() {
+    /**
+     * Configures the updating "Statistic" information page for the frontend
+     */
+    private void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        // TODO: only testwise replace with actual changing data later
         InformationPage page = new InformationPage( "statistics", "Statistics" );
         im.addPage( page );
 
@@ -441,7 +480,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      * else Method goes through all columns for update
      */
     public synchronized void sync() {
-        // TODO: real disable of query assistance
         if ( !ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
             return;
         }
@@ -457,16 +495,5 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
                 reevaluateColumn( new QueryColumn( column, type ) );
             } );
         }*/
-
-        columnsToUpdate.clear();
-    }
-
-
-    private void checkSync() {
-    }
-
-
-    @Override
-    public void run() {
     }
 }

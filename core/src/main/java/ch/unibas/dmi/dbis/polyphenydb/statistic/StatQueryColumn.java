@@ -10,7 +10,6 @@ import lombok.Getter;
 
 /**
  * Contains stat data for a column
- * TODO: "combine" with Result model through interface...
  */
 public class StatQueryColumn extends QueryColumn {
 
@@ -38,7 +37,6 @@ public class StatQueryColumn extends QueryColumn {
         super( schema, table, name, type );
         this.data = data;
     }
-
 
 
 }
