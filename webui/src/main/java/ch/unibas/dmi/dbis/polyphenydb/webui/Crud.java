@@ -453,6 +453,12 @@ public class Crud implements InformationObserver {
             values.add( value );
         }
 
+        String tableName = t[0] + "." + t[1];
+        request.data.forEach( ( k, v ) -> log.error( tableName + "+" + k + "+" + v ) );
+        request.data.forEach( ( k, v ) -> {
+            transaction.addStat( new TransactionStat( t[0], t[1], k, v , TransactionStatType.INSERT) );
+        } );
+
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
 
@@ -637,10 +643,11 @@ public class Crud implements InformationObserver {
      * TODO: potentially change all to specific statistics
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
-        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
+        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ){
+            System.out.println( store.getStatisticSchemaMap() );
             return store.getStatisticSchemaMap();
-        } else {
-            return new ConcurrentHashMap<>();
+        }else {
+            return new ConcurrentHashMap<>(  );
         }
 
     }
@@ -677,10 +684,13 @@ public class Crud implements InformationObserver {
         }
         builder.append( joiner.toString() );
 
+
+
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
+                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.DELETE) );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -732,6 +742,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
+                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.UPDATE ) );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {

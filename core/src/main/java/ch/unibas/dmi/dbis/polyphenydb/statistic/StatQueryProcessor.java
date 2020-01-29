@@ -74,7 +74,7 @@ public class StatQueryProcessor {
      */
     public StatQueryColumn selectOneStat( String query ) {
         StatResult res = this.executeSqlSelect( query );
-        if ( res.getColumns() != null && res.getColumns().length == 1 ) {
+        if(res.getColumns() != null && res.getColumns().length == 1 ){
             return res.getColumns()[0];
         }
         return null;
@@ -104,6 +104,7 @@ public class StatQueryProcessor {
 
     /**
      * Method to get all schemas, tables, and their columns in a database
+     * TODO: separate so you can get all or specific database or table
      */
     public ArrayList<ArrayList<String>> getSchemaTree() {
 
@@ -170,6 +171,7 @@ public class StatQueryProcessor {
 
             for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
                 for ( CatalogCombinedTable table : schema.getTables() ) {
+                    //TODO: solve, better solution to distinguish between schema, table, column
                     columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
                 }
             }
@@ -248,6 +250,7 @@ public class StatQueryProcessor {
      */
     public PolySqlType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
+        // TODO: fix possible nullpointer
         PolySqlType type = null;
 
         try {
@@ -319,6 +322,7 @@ public class StatQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
+
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
@@ -345,6 +349,7 @@ public class StatQueryProcessor {
             for ( ColumnMetaData metaData : signature.columns ) {
 
                 types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
+                // TODO: reevaluate
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 
@@ -363,6 +368,7 @@ public class StatQueryProcessor {
                 data.add( temp );
             }
 
+            // TODO: own result object?
             String[][] d = data.toArray( new String[0][] );
 
             StatResult res = new StatResult( names, types, d );
