@@ -26,6 +26,7 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import au.com.bytecode.opencsv.CSVReader;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
@@ -122,7 +123,6 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import au.com.bytecode.opencsv.CSVReader;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -159,7 +159,6 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -1416,7 +1415,7 @@ public class Crud implements InformationObserver {
             StoreManager.getInstance().removeStore( trx.getCatalog(), uniqueName );
             trx.commit();
         } catch ( Exception | TransactionException e ) {
-            log.error( "Could not remove store " + req.body(), e );
+            log.error( "Could not remove store {}", req.body(), e );
             try {
                 if ( trx != null ) {
                     trx.rollback();
@@ -1825,7 +1824,7 @@ public class Crud implements InformationObserver {
 
             // delete .zip after unzipping
             if ( !zipFile.delete() ) {
-                log.error( "Unable to delete zip file: " + zipFile.getAbsolutePath() );
+                log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
             }
             // table name
             String tableName = null;
@@ -1870,6 +1869,12 @@ public class Crud implements InformationObserver {
                     for ( int i = 0; i < table.getColumns().size(); i++ ) {
                         if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
                             rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.DATE ) {
+                            rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIME ) {
+                            rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIMESTAMP ) {
+                            rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
                         } else {
                             rowJoiner.add( nextRecord[i] );
                         }
@@ -1928,7 +1933,7 @@ public class Crud implements InformationObserver {
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
-                log.error( "Unable to delete temp folder: " + tempDir.getAbsolutePath() );
+                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
             }
         }
 
@@ -2054,7 +2059,7 @@ public class Crud implements InformationObserver {
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
-                log.error( "Unable to delete temp folder: " + tempDir.getAbsolutePath() );
+                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
             }
         }
     }
