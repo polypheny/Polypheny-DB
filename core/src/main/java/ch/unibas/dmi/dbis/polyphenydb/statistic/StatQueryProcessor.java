@@ -189,12 +189,12 @@ public class StatQueryProcessor {
     }
 
 
-    private ArrayList<String> getColumns( String schemaTable ) {
+    private ArrayList<QueryColumn> getAllColumns( String schemaTable ) {
         String[] split = schemaTable.split( "." );
         if ( split.length != 2 ) {
-            return new ArrayList<String>();
+            return new ArrayList<QueryColumn>();
         }
-        return getColumns( split[0], split[1] );
+        return getAllColumns( split[0], split[1] );
     }
 
 
@@ -205,20 +205,20 @@ public class StatQueryProcessor {
      * @param tableName the name of the table
      * @return all columns
      */
-    private ArrayList<String> getColumns( String schemaName, String tableName ) {
+    ArrayList<QueryColumn> getAllColumns( String schemaName, String tableName ) {
+        System.out.println( schemaName );
         Transaction transaction = getTransaction();
 
-        ArrayList<String> columns = new ArrayList<>();
+        ArrayList<QueryColumn> columns = new ArrayList<>();
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-
             for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
                 if ( schema.getSchema().name.equals( schemaName ) ) {
                     for ( CatalogCombinedTable table : schema.getTables() ) {
                         if ( table.getTable().name.equals( tableName ) ) {
-                            columns.addAll( table.getColumns().stream().map( c -> c.name ).collect( Collectors.toList() ) );
+                            columns.addAll( table.getColumns().stream().map( c -> new QueryColumn(schema.getSchema().name, table.getTable().name, c.name, c.type) ).collect( Collectors.toList() ) );
                         }
                     }
                 }
@@ -423,6 +423,7 @@ public class StatQueryProcessor {
                 .append( String.join( "\".\"", strings ) )
                 .append( "\"" ).toString();
     }
+
 
 
     static class QueryExecutionException extends Exception {

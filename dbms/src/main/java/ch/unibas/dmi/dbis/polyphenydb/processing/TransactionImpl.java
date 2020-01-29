@@ -85,7 +85,7 @@ public class TransactionImpl implements Transaction {
     @Getter
     private final boolean analyze;
 
-    private final ArrayList<TransactionStat> stats = new ArrayList<>();
+    private final ArrayList<String> stats = new ArrayList<>();
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
 
@@ -170,7 +170,7 @@ public class TransactionImpl implements Transaction {
                     store.commit( xid );
                 }
 
-                // if(stats.size() > 0) StatisticsStore.getInstance().apply(stats);
+                if(stats.size() > 0) StatisticsStore.getInstance().apply(stats);
 
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
@@ -264,8 +264,10 @@ public class TransactionImpl implements Transaction {
 
 
     @Override
-    public void addStat( TransactionStat stat ) {
-        this.stats.add( stat );
+    public void addStat( String stat ) {
+        if(!this.stats.contains( stat )){
+            this.stats.add( stat );
+        }
     }
 
 }

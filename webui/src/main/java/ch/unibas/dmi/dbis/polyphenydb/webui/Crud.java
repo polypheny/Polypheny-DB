@@ -453,10 +453,8 @@ public class Crud implements InformationObserver {
             values.add( value );
         }
 
-        String tableName = t[0] + "." + t[1];
-        request.data.forEach( ( k, v ) -> log.error( tableName + "+" + k + "+" + v ) );
         request.data.forEach( ( k, v ) -> {
-            transaction.addStat( new TransactionStat( t[0], t[1], k, v , TransactionStatType.INSERT) );
+            transaction.addStat( tableId );
         } );
 
         query.append( cols.toString() );
@@ -690,7 +688,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
-                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.DELETE) );
+                transaction.addStat(tableId );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -742,7 +740,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
-                transaction.addStat( new TransactionStat( t[0], t[1], column, TransactionStatType.UPDATE ) );
+                transaction.addStat( tableId );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {

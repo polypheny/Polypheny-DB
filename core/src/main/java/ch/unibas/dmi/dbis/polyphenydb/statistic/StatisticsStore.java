@@ -37,7 +37,7 @@ import org.apache.commons.lang3.concurrent.ConcurrentException;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> implements Runnable {
+public class StatisticsStore<T extends Comparable<T>> {
 
     private static volatile StatisticsStore instance = null;
 
@@ -48,6 +48,7 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
     private StatQueryProcessor sqlQueryInterface;
 
     private boolean storeOutOfSync = false;
+    private ArrayList<String> tablesToUpdate;
 
 
     private StatisticsStore() {
@@ -63,11 +64,11 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         displayInformation();
 
         // should only run when needed
-        BackgroundTaskManager.INSTANCE.registerTask(
+        /*BackgroundTaskManager.INSTANCE.registerTask(
                 this::sync,
                 "Updated unsynced Statistic Columns.",
                 TaskPriority.LOW,
-                TaskSchedulingType.EVERY_TEN_SECONDS );
+                TaskSchedulingType.EVERY_TEN_SECONDS );*/
 
         // security messure for now
         // BackgroundTaskManager.INSTANCE.registerTask( () -> System.out.println( "still running" ), "Check if store is still synced.", TaskPriority.LOW, TaskSchedulingType.EVERY_THIRTY_SECONDS );
@@ -79,7 +80,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         // To ensure only one instance is created
         if ( instance == null ) {
             instance = new StatisticsStore();
-            instance.run();
         }
         return instance;
     }
@@ -105,7 +105,6 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
 
 
     private void insert( String schema, String table, String column, PolySqlType type, T val ) {
-        // TODO: switch back to {table = [columns], table = [columns]}
         if ( !this.statisticSchemaMap.containsKey( column ) ) {
             addColumn( column, type );
         }
@@ -158,14 +157,13 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      * Reset all statistics and reevaluate them
      */
     private void reevaluateStore() {
+        if ( this.sqlQueryInterface == null ) {
+            return;
+        }
         log.warn( "Resetting StatisticStore." );
         this.columnsToUpdate.clear();
         ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
-        // TODO: check why null
-        if ( this.sqlQueryInterface == null ) {
-            return;
-        }
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             StatisticColumn col = reevaluateColumn( column );
@@ -176,6 +174,31 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         }
         replaceStatistics( statisticSchemaMapCopy );
         log.warn( "Finished resetting StatisticStore." );
+    }
+
+
+    private void reevaluateTable( String table ) {
+        log.warn( "Reevaluating table" + table );
+        if ( this.sqlQueryInterface == null ) {
+            return;
+        }
+
+        String[] splits = table.replace( "\"", "" ).split( "\\." );
+        if ( splits.length != 2 ) {
+            return;
+        }
+
+        ArrayList<QueryColumn> res = this.sqlQueryInterface.getAllColumns( splits[0], splits[1] );
+
+        for ( QueryColumn column : res ) {
+            StatisticColumn col = reevaluateColumn( column );
+            if ( col != null ) {
+                put( column.getSchema(), column.getTable(), column.getName(), col );
+            }
+
+        }
+        log.warn( "Finished reevaluating table" + table );
+
     }
 
 
@@ -257,10 +280,8 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         if ( !map.get( schema ).containsKey( table ) ) {
             map.get( schema ).put( table, new HashMap<>() );
         }
+        map.get( schema ).get( table ).put( column, statisticColumn );
 
-        if ( !map.get( schema ).get( table ).containsKey( column ) ) {
-            map.get( schema ).get( table ).put( column, statisticColumn );
-        }
     }
 
 
@@ -415,24 +436,9 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
      *
      * @param stats all changes for this store
      */
-    public void apply( ArrayList<TransactionStat> stats ) {
+    public void apply( ArrayList<String> stats ) {
+        stats.forEach( this::reevaluateTable );
 
-        stats.forEach( s -> {
-            TransactionStatType type = s.getTransactionType();
-            // TODO: better prefiltering
-            if ( type == TransactionStatType.INSERT ) {
-                insert( s.getSchema(), s.getTableName(), s.getColumnName(), (T) s.getData() );
-            } else if ( type == TransactionStatType.DELETE || type == TransactionStatType.UPDATE ) {
-                // TODO: wait to be evalutated
-
-                if ( statisticSchemaMap.containsKey( s.getColumnName() ) ) {
-                    getColumn( s.getSchema(), s.getTable(), s.getColumn() ).setUpdated( false );
-                    columnsToUpdate.put( s.getColumnName(), getColumn( s.getSchema(), s.getTable(), s.getColumn() ).getType() );
-                } else {
-                    columnsToUpdate.put( s.getColumnName(), sqlQueryInterface.getColumnType( s.getColumnName() ) );
-                }
-            }
-        } );
     }
 
 
@@ -447,26 +453,5 @@ public class StatisticsStore<T extends Comparable<T>> implements Runnable {
         }
 
         reevaluateStore();
-        /*
-        if(storeOutOfSync){
-
-            storeOutOfSync = false;
-        }else {
-            columnsToUpdate.forEach( ( column, type ) -> {
-                columns.remove( column );
-                reevaluateColumn( new QueryColumn( column, type ) );
-            } );
-        }*/
-
-        columnsToUpdate.clear();
-    }
-
-
-    private void checkSync() {
-    }
-
-
-    @Override
-    public void run() {
     }
 }
