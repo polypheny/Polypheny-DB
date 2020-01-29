@@ -283,7 +283,6 @@ public class StatQueryProcessor {
 
             result = executeSqlSelect( transaction, query );
             transaction.commit();
-            transaction = getTransaction();
 
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
