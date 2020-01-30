@@ -34,7 +34,6 @@ import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
@@ -51,7 +50,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
-import com.google.common.collect.ImmutableCollection;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -170,7 +168,9 @@ public class TransactionImpl implements Transaction {
                     store.commit( xid );
                 }
 
-                if(stats.size() > 0) StatisticsStore.getInstance().apply(stats);
+                if ( stats.size() > 0 ) {
+                    StatisticsStore.getInstance().apply( stats );
+                }
 
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
@@ -265,7 +265,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void addStat( String stat ) {
-        if(!this.stats.contains( stat )){
+        if ( !this.stats.contains( stat ) ) {
             this.stats.add( stat );
         }
     }

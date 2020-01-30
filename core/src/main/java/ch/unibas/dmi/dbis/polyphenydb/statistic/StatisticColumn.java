@@ -2,7 +2,6 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
 import java.util.List;

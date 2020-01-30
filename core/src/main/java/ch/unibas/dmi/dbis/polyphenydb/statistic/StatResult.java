@@ -2,7 +2,6 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,8 +19,9 @@ public class StatResult {
     private String[] columnNames;
 
 
-    public StatResult( ) {
+    public StatResult() {
     }
+
 
     public StatResult( StatQueryColumn[] columns ) {
         this.columns = columns;
@@ -33,7 +33,8 @@ public class StatResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) { ;
+    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
+        ;
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatQueryColumn[0];
         } else {

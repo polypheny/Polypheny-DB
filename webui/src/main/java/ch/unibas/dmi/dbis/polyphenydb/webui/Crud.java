@@ -34,8 +34,6 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionStat;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionStatType;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
@@ -81,12 +79,12 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticColumn;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
-import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
+import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
 import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
@@ -116,8 +114,15 @@ import java.math.BigDecimal;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -236,7 +241,6 @@ public class Crud implements InformationObserver {
 
     ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
-        System.out.println( req.body() );
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         if ( request.depth < 1 ) {
@@ -297,7 +301,6 @@ public class Crud implements InformationObserver {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Transaction transaction = getTransaction();
 
-        System.out.println( req.body() );
         Result result;
         try {
             List<CatalogTable> tables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
@@ -638,14 +641,12 @@ public class Crud implements InformationObserver {
 
     /**
      * Return all available statistics to the client
-     * TODO: potentially change all to specific statistics
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
-        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ){
-            System.out.println( store.getStatisticSchemaMap() );
+        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
             return store.getStatisticSchemaMap();
-        }else {
-            return new ConcurrentHashMap<>(  );
+        } else {
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -682,13 +683,11 @@ public class Crud implements InformationObserver {
         }
         builder.append( joiner.toString() );
 
-
-
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
-                transaction.addStat(tableId );
+                transaction.addStat( tableId );
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {

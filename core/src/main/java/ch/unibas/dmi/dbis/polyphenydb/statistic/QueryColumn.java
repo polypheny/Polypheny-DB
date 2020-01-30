@@ -3,7 +3,6 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -54,7 +53,7 @@ class QueryColumn {
 
     /**
      * FullTableName Builder
-     * TODO: Move to different location
+     *
      * @return fullTableName
      */
     public static String getFullTableName( String schema, String table ) {

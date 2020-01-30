@@ -29,10 +29,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +72,7 @@ public class StatQueryProcessor {
      */
     public StatQueryColumn selectOneStat( String query ) {
         StatResult res = this.executeSqlSelect( query );
-        if(res.getColumns() != null && res.getColumns().length == 1 ){
+        if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
         return null;
@@ -206,7 +204,6 @@ public class StatQueryProcessor {
      * @return all columns
      */
     ArrayList<QueryColumn> getAllColumns( String schemaName, String tableName ) {
-        System.out.println( schemaName );
         Transaction transaction = getTransaction();
 
         ArrayList<QueryColumn> columns = new ArrayList<>();
@@ -218,7 +215,7 @@ public class StatQueryProcessor {
                 if ( schema.getSchema().name.equals( schemaName ) ) {
                     for ( CatalogCombinedTable table : schema.getTables() ) {
                         if ( table.getTable().name.equals( tableName ) ) {
-                            columns.addAll( table.getColumns().stream().map( c -> new QueryColumn(schema.getSchema().name, table.getTable().name, c.name, c.type) ).collect( Collectors.toList() ) );
+                            columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
                         }
                     }
                 }
@@ -322,7 +319,6 @@ public class StatQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
-
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
@@ -423,7 +419,6 @@ public class StatQueryProcessor {
                 .append( String.join( "\".\"", strings ) )
                 .append( "\"" ).toString();
     }
-
 
 
     static class QueryExecutionException extends Exception {

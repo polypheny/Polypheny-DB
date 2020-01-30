@@ -2,9 +2,6 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 
 
@@ -38,7 +35,6 @@ public class StatQueryColumn extends QueryColumn {
         super( schema, table, name, type );
         this.data = data;
     }
-
 
 
 }
