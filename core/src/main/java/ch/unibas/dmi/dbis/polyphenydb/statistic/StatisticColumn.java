@@ -13,7 +13,6 @@ import lombok.Setter;
  * Stores the available statistic data of a specific column
  * If is responsible to ask for a update if it falls out of "sync"
  */
-
 public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose

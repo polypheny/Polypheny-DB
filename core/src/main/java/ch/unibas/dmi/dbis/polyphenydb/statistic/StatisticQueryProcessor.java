@@ -41,7 +41,7 @@ import org.apache.calcite.linq4j.Enumerable;
 
 
 @Slf4j
-public class StatQueryProcessor {
+public class StatisticQueryProcessor {
 
     private final TransactionManager transactionManager;
     private final String databaseName;
@@ -52,14 +52,14 @@ public class StatQueryProcessor {
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public StatQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
+    public StatisticQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
     }
 
 
-    public StatQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
+    public StatisticQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
         this( transactionManager, "pa", "APP" );
     }
 
@@ -70,8 +70,8 @@ public class StatQueryProcessor {
      * @param query the select query
      * @return result of the query
      */
-    public StatQueryColumn selectOneStat( String query ) {
-        StatResult res = this.executeSqlSelect( query );
+    public StatisticQueryColumn selectOneStat( String query ) {
+        StatsticResult res = this.executeSqlSelect( query );
         if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
@@ -82,7 +82,7 @@ public class StatQueryProcessor {
     /**
      * Handles the request which retrieves the stats for multiple columns
      */
-    public StatResult selectMultipleStats( String query ) {
+    public StatsticResult selectMultipleStats( String query ) {
         return this.executeSqlSelect( query );
     }
 
@@ -273,9 +273,9 @@ public class StatQueryProcessor {
     }
 
 
-    private StatResult executeSqlSelect( String query ) {
+    private StatsticResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
-        StatResult result = new StatResult();
+        StatsticResult result = new StatsticResult();
         try {
 
             result = executeSqlSelect( transaction, query );
@@ -307,7 +307,7 @@ public class StatQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
+    private StatsticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -367,7 +367,7 @@ public class StatQueryProcessor {
             // TODO: own result object?
             String[][] d = data.toArray( new String[0][] );
 
-            StatResult res = new StatResult( names, types, d );
+            StatsticResult res = new StatsticResult( names, types, d );
             return res;
         } finally {
             try {
@@ -409,7 +409,7 @@ public class StatQueryProcessor {
 
     public boolean hasData( String schema, String table, String column ) {
         String query = "SELECT * FROM " + buildName( schema, table ) + " LIMIT 1";
-        StatResult res = executeSqlSelect( query );
+        StatsticResult res = executeSqlSelect( query );
         return res.getColumns().length > 0;
     }
 

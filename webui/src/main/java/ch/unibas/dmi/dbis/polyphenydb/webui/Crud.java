@@ -81,7 +81,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
 import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticColumn;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
@@ -145,7 +145,7 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final StatisticsStore store = StatisticsStore.getInstance();
+    private final StatisticsManager store = StatisticsManager.getInstance();
 
 
     /**

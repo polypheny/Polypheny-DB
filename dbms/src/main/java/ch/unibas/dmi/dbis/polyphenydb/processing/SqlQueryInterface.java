@@ -27,9 +27,8 @@ package ch.unibas.dmi.dbis.polyphenydb.processing;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatQueryProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticQueryProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import java.util.Arrays;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +39,7 @@ import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
 public class SqlQueryInterface extends QueryInterface {
 
     @Getter
-    StatQueryProcessor statQueryProcessor;
+    StatisticQueryProcessor statisticQueryProcessor;
 
 
     /**
@@ -54,7 +53,7 @@ public class SqlQueryInterface extends QueryInterface {
 
     @Override
     public void run() {
-        this.statQueryProcessor = new StatQueryProcessor( this.transactionManager, "pa", "APP" );
+        this.statisticQueryProcessor = new StatisticQueryProcessor( this.transactionManager, "pa", "APP" );
     }
 
 }

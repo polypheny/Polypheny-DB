@@ -49,7 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsStore;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -169,7 +169,7 @@ public class TransactionImpl implements Transaction {
                 }
 
                 if ( stats.size() > 0 ) {
-                    StatisticsStore.getInstance().apply( stats );
+                    StatisticsManager.getInstance().apply( stats );
                 }
 
             } else {

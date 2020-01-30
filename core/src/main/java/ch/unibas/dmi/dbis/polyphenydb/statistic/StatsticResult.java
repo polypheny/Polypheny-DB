@@ -11,19 +11,19 @@ import lombok.Getter;
 /**
  * Contains stats for multiple columns  TODO: evaluate need
  */
-public class StatResult {
+public class StatsticResult {
 
     @Getter
-    private StatQueryColumn[] columns;
+    private StatisticQueryColumn[] columns;
     @Getter
     private String[] columnNames;
 
 
-    public StatResult() {
+    public StatsticResult() {
     }
 
 
-    public StatResult( StatQueryColumn[] columns ) {
+    public StatsticResult( StatisticQueryColumn[] columns ) {
         this.columns = columns;
     }
 
@@ -33,17 +33,17 @@ public class StatResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
+    public StatsticResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
         ;
         if ( data.length == 0 || data[0].length == 0 ) {
-            this.columns = new StatQueryColumn[0];
+            this.columns = new StatisticQueryColumn[0];
         } else {
-            this.columns = new StatQueryColumn[data[0].length];
+            this.columns = new StatisticQueryColumn[data[0].length];
 
             String[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), rotated[i] );
             }
         }
 
@@ -70,11 +70,11 @@ public class StatResult {
 
 
     /**
-     * Transforms an StatResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
+     * Transforms an StatsticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
      *
      * @return map with <b>value</b> as key and <b>occurrence</b> as value
      */
-    public static <E> Map<E, Integer> toOccurrenceMap( StatResult stats ) {
+    public static <E> Map<E, Integer> toOccurrenceMap( StatsticResult stats ) {
         HashMap<E, Integer> map = new HashMap();
         String[] values = stats.getColumns()[0].getData();
         String[] occurrences = stats.getColumns()[1].getData();

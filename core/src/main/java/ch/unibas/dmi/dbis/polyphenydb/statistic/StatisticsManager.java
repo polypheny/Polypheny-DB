@@ -29,22 +29,22 @@ import lombok.extern.slf4j.Slf4j;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsStore<T extends Comparable<T>> {
+public class StatisticsManager<T extends Comparable<T>> {
 
-    private static volatile StatisticsStore instance = null;
+    private static volatile StatisticsManager instance = null;
 
     @Getter
     public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
 
     private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
-    private StatQueryProcessor sqlQueryInterface;
+    private StatisticQueryProcessor sqlQueryInterface;
 
     @Setter
     @Getter
     private String revalId = null;
 
 
-    private StatisticsStore() {
+    private StatisticsManager() {
 
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
@@ -90,10 +90,10 @@ public class StatisticsStore<T extends Comparable<T>> {
     }
 
 
-    public static synchronized StatisticsStore getInstance() {
+    public static synchronized StatisticsManager getInstance() {
         // To ensure only one instance is created
         if ( instance == null ) {
-            instance = new StatisticsStore();
+            instance = new StatisticsManager();
         }
         return instance;
     }
@@ -243,9 +243,9 @@ public class StatisticsStore<T extends Comparable<T>> {
 
 
     private StatisticColumn reevaluateNumericalColumn( QueryColumn column ) {
-        StatQueryColumn min = this.getAggregateColumn( column, "MIN" );
-        StatQueryColumn max = this.getAggregateColumn( column, "MAX" );
-        StatQueryColumn unique = this.getUniqueValues( column );
+        StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
+        StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
+        StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
         NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
         if ( min != null ) {
@@ -269,7 +269,7 @@ public class StatisticsStore<T extends Comparable<T>> {
      * @param unique the unique values
      * @param statisticColumn the column in which the values should be inserted
      */
-    private void assignUnique( StatQueryColumn unique, StatisticColumn<String> statisticColumn ) {
+    private void assignUnique( StatisticQueryColumn unique, StatisticColumn<String> statisticColumn ) {
         int maxLength = ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt();
         if ( unique == null || unique.getData() == null ) {
             return;
@@ -283,7 +283,7 @@ public class StatisticsStore<T extends Comparable<T>> {
 
 
     private StatisticColumn reevaluateAlphabeticalColumn( QueryColumn column ) {
-        StatQueryColumn unique = this.getUniqueValues( column );
+        StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
 
         AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
@@ -325,7 +325,7 @@ public class StatisticsStore<T extends Comparable<T>> {
      *
      * @return a StatQueryColumn which contains the requested value
      */
-    private StatQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
+    private StatisticQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
         return getAggregateColumn( column.getSchema(), column.getTable(), column.getName(), aggregate );
     }
 
@@ -335,8 +335,8 @@ public class StatisticsStore<T extends Comparable<T>> {
      *
      * @param aggregate the aggregate funciton to us
      */
-    private StatQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
-        String query = "SELECT " + aggregate + " (" + StatQueryProcessor.buildName( schema, table, column ) + ") FROM " + StatQueryProcessor.buildName( schema, table ) + getStatQueryLimit();
+    private StatisticQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
+        String query = "SELECT " + aggregate + " (" + StatisticQueryProcessor.buildName( schema, table, column ) + ") FROM " + StatisticQueryProcessor.buildName( schema, table ) + getStatQueryLimit();
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
@@ -346,9 +346,9 @@ public class StatisticsStore<T extends Comparable<T>> {
      *
      * @return the unique values
      */
-    private StatQueryColumn getUniqueValues( QueryColumn column ) {
-        String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
-        String columnName = StatQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
+    private StatisticQueryColumn getUniqueValues( QueryColumn column ) {
+        String tableName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
         String query = "SELECT " + columnName + " FROM " + tableName + " GROUP BY " + columnName + getStatQueryLimit( 1 );
         return this.sqlQueryInterface.selectOneStat( query );
     }
@@ -358,10 +358,10 @@ public class StatisticsStore<T extends Comparable<T>> {
      * Gets the amount of entries for a column
      */
     private Integer getCount( QueryColumn column ) {
-        String tableName = StatQueryProcessor.buildName( column.getSchema(), column.getTable() );
-        String columnName = StatQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
+        String tableName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
         String query = "SELECT COUNT(" + columnName + ") FROM " + tableName;
-        StatQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
+        StatisticQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
 
         if ( res != null && res.getData() != null && res.getData().length != 0 ) {
             try {
@@ -384,8 +384,8 @@ public class StatisticsStore<T extends Comparable<T>> {
     }
 
 
-    public void setSqlQueryInterface( StatQueryProcessor statQueryProcessor ) {
-        this.sqlQueryInterface = statQueryProcessor;
+    public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
+        this.sqlQueryInterface = statisticQueryProcessor;
 
         this.reevaluateStore();
 
