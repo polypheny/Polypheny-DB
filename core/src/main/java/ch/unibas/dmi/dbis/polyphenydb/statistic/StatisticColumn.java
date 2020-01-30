@@ -56,11 +56,11 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
 
     public StatisticColumn( String schema, String table, String column, PolySqlType type ) {
-        this.schema = schema;
-        this.table = table;
-        this.column = column;
+        this.schema = schema.replace("\\", "").replace( "\"", "" ) ;
+        this.table = table.replace("\\", "").replace( "\"", "" ) ;
+        this.column = column.replace("\\", "").replace( "\"", "" ) ;
         this.type = type;
-        this.fullColumnName = schema + "." + table + "." + column;
+        this.fullColumnName = this.schema  + "." + this.table + "." + this.column;
     }
 
 
