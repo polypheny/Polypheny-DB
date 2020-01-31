@@ -7,7 +7,6 @@ import lombok.Getter;
 
 /**
  * Contains stat data for a column
- * TODO: "combine" with Result model through interface...
  */
 public class StatisticQueryColumn extends QueryColumn {
 

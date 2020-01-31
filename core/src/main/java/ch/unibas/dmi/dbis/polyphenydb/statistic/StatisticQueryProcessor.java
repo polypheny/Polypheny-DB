@@ -102,7 +102,6 @@ public class StatisticQueryProcessor {
 
     /**
      * Method to get all schemas, tables, and their columns in a database
-     * TODO: separate so you can get all or specific database or table
      */
     public ArrayList<ArrayList<String>> getSchemaTree() {
 
@@ -345,7 +344,6 @@ public class StatisticQueryProcessor {
             for ( ColumnMetaData metaData : signature.columns ) {
 
                 types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
-                // TODO: reevaluate
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 
@@ -364,7 +362,6 @@ public class StatisticQueryProcessor {
                 data.add( temp );
             }
 
-            // TODO: own result object?
             String[][] d = data.toArray( new String[0][] );
 
             StatsticResult res = new StatsticResult( names, types, d );

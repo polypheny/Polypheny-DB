@@ -109,20 +109,20 @@ public class StatisticsManager<T extends Comparable<T>> {
      * adds data for a column to the store
      *
      * @param schema schema name
-     * @param table table name in form [schema].[table]
-     * @param column column name in form [schema].[table].[column]
+     * @param qualifiedTable table name
+     * @param qualifiedColumn column name
      */
-    private void insert( String schema, String table, String column, T val ) {
-        PolySqlType type = this.sqlQueryInterface.getColumnType( column );
-        insert( schema, table, column, type, val );
+    private void insert( String schema, String qualifiedTable, String qualifiedColumn, T val ) {
+        PolySqlType type = this.sqlQueryInterface.getColumnType( qualifiedColumn );
+        insert( schema, qualifiedTable, qualifiedColumn, type, val );
     }
 
 
-    private void insert( String schema, String table, String column, PolySqlType type, T val ) {
-        if ( !this.statisticSchemaMap.containsKey( column ) ) {
-            addColumn( column, type );
+    private void insert( String schema, String qualifiedTable, String qualifiedColumn, PolySqlType type, T val ) {
+        if ( !this.statisticSchemaMap.containsKey( qualifiedColumn ) ) {
+            addColumn( qualifiedColumn, type );
         }
-        getColumn( schema, table, column ).insert( val );
+        getColumn( schema, qualifiedTable, qualifiedColumn ).insert( val );
     }
 
 
@@ -147,11 +147,11 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Adds a new column to the tracked columns and sorts it correctly
      *
-     * @param column column name as [schema].[table].[column]
+     * @param qualifiedColumn column name
      * @param type the type of the new column
      */
-    private void addColumn( String column, PolySqlType type ) {
-        String[] splits = QueryColumn.getSplitColumn( column );
+    private void addColumn( String qualifiedColumn, PolySqlType type ) {
+        String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
         if ( type.isNumericalType() ) {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
         } else if ( type.isCharType() ) {
@@ -193,14 +193,14 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Gets a columns of a table and reevaluates them
      *
-     * @param table the table name as  [schema].[table]
+     * @param qualifiedTable table name
      */
-    private void reevaluateTable( String table ) {
+    private void reevaluateTable( String qualifiedTable ) {
         if ( this.sqlQueryInterface == null ) {
             return;
         }
 
-        String[] splits = table.replace( "\"", "" ).split( "\\." );
+        String[] splits = qualifiedTable.replace( "\"", "" ).split( "\\." );
         if ( splits.length != 2 ) {
             return;
         }
@@ -247,7 +247,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
         StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
-        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         if ( min != null ) {
             statisticColumn.setMin( min.getData()[0] );
         }
@@ -286,7 +286,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
 
-        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getFullName() ), column.getType() );
+        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         assignUnique( unique, statisticColumn );
         statisticColumn.setCount( count );
 

@@ -37,32 +37,32 @@ class QueryColumn {
 
 
     /**
-     * Builds the full name of the column
+     * Builds the qualified name of the column
      *
-     * @return full name [schema].[table].[column]
+     * @return qualifiedColumnName
      */
-    public String getFullName() {
-        return getFullName( schema, table, name );
+    public String getQualifiedColumnName() {
+        return getQualifiedColumnName( schema, table, name );
     }
 
 
-    public String getFullTableName() {
-        return getFullTableName( schema, table );
+    public String getQualifiedTableName() {
+        return getQualifiedTableName( schema, table );
     }
 
 
     /**
-     * FullTableName Builder
+     * QualifiedTableName Builder
      *
      * @return fullTableName
      */
-    public static String getFullTableName( String schema, String table ) {
+    public static String getQualifiedTableName(String schema, String table ) {
         return schema + "\".\"" + table;
     }
 
 
-    public static String getFullName( String schema, String table, String column ) {
-        return "\"" + getFullTableName( schema, table ) + "\".\"" + column;
+    public static String getQualifiedColumnName(String schema, String table, String column ) {
+        return "\"" + getQualifiedTableName( schema, table ) + "\".\"" + column;
     }
 
 
