@@ -157,7 +157,7 @@ public class StatisticQueryProcessor {
      *
      * @return all the columns
      */
-    public ArrayList<QueryColumn> getAllColumns() {
+    public List<QueryColumn> getAllColumns() {
         Transaction transaction = getTransaction();
 
         ArrayList<QueryColumn> columns = new ArrayList<>();
