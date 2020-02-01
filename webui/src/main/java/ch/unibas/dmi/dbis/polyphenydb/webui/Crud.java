@@ -38,10 +38,11 @@ import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ForeignKeyOption;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -1240,16 +1241,31 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
-            List<CatalogDataPlacement> placements = combinedTable.getPlacements();
-
-            DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Type" ) };
+            Map<Integer, List<CatalogColumnPlacement>> placementsByStore = combinedTable.getColumnPlacementsByStore();
+            DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Columns" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
-            for ( CatalogDataPlacement placement : placements ) {
+            for ( Entry<Integer, List<CatalogColumnPlacement>> entrySet : placementsByStore.entrySet() ) {
+                Store store = StoreManager.getInstance().getStore( entrySet.getKey() );
+                List<CatalogColumnPlacement> placements = entrySet.getValue();
                 String[] arr = new String[3];
-                arr[0] = placement.storeUniqueName;
-                arr[1] = StoreManager.getInstance().getStore( placement.storeId ).getAdapterName();
-                arr[2] = placement.placementType.name();
+                arr[0] = store.getUniqueName();
+                arr[1] = store.getAdapterName();
+                boolean first = true;
+                for ( CatalogColumnPlacement p : placements ) {
+                    String prefix = ", ";
+                    String suffix = "";
+                    if ( first ) {
+                        first = false;
+                        prefix = "";
+                    }
+                    if ( p.placementType == PlacementType.MANUAL ) {
+                        prefix += "<b>";
+                        suffix += "</b>";
+                    }
+                    arr[2] += prefix + p.columnName + suffix;
+                }
+
                 data.add( arr );
             }
 

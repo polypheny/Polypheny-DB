@@ -49,7 +49,6 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
@@ -117,12 +116,14 @@ public class SqlDropTable extends SqlDropObject {
             throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
         }
 
-        // Delete data from the stores and remove the data placement
+        // Delete data from the stores and remove the column placement
         try {
-            for ( CatalogDataPlacement dp : table.getPlacements() ) {
-                StoreManager.getInstance().getStore( dp.storeId ).dropTable( context, table );
-                // Delete data placement in catalog
-                transaction.getCatalog().deleteDataPlacement( dp.storeId, dp.tableId );
+            for ( int storeId : table.getColumnPlacementsByStore().keySet() ) {
+                StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
+                // Delete column placement in catalog
+                for ( CatalogColumn catalogColumn : table.getColumns() ) {
+                    transaction.getCatalog().deleteColumnPlacement( storeId, catalogColumn.id );
+                }
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while deleting data from stores.", e );

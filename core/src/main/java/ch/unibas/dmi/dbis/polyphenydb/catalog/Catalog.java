@@ -30,8 +30,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -319,30 +319,46 @@ public abstract class Catalog {
     public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException;
 
     /**
-     * Adds a placement for a table
+     * Adds a placement for a column.
      *
      * @param storeId The store on which the table should be placed on
-     * @param tableId The id of the table to be placed
+     * @param columnId The id of the column to be placed
      * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the data store
+     * @param physicalTableName The table name on the data store
+     * @param physicalColumnName The column name on the data store
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void addDataPlacement( int storeId, long tableId, PlacementType placementType ) throws GenericCatalogException;
+    public abstract void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException;
 
     /**
-     * Deletes a data placement
+     * Deletes a column placement
      *
      * @param storeId The id of the store
-     * @param tableId The id of the table
+     * @param columnId The id of the table
      */
-    public abstract void deleteDataPlacement( int storeId, long tableId ) throws GenericCatalogException;
+    public abstract void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
 
     /**
-     * Get data placements by store
+     * Get column placements on a store
      *
      * @param storeId The id of the store
-     * @return List of data placements on this store
+     * @return List of column placements on this store
      */
-    public abstract List<CatalogDataPlacement> getDataPlacementsByStore( int storeId ) throws GenericCatalogException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
+
+
+    /**
+     * Change physical names of a placement.
+     *
+     * @param storeId The id of the store
+     * @param columnId The id of the column
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
+     * @param physicalColumnName The physical column name
+     */
+    public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException;
+
 
     /**
      * Get all columns of the specified table.

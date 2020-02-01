@@ -32,7 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -89,13 +89,18 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         }
         try {
             // Check whether this placement already exists
-            for ( CatalogDataPlacement p : combinedTable.getPlacements()) {
-                if (p.storeId == storeInstance.getStoreId()) {
+            for ( int storeId : combinedTable.getColumnPlacementsByStore().keySet() ) {
+                if ( storeId == storeInstance.getStoreId() ) {
                     throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementAlreadyExists( storeName.getSimple(), combinedTable.getTable().name ) );
                 }
             }
-            // Create placement
-            transaction.getCatalog().addDataPlacement( storeInstance.getStoreId(), combinedTable.getTable().id, PlacementType.MANUAL );
+            // Create column placements
+            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+                transaction.getCatalog().addColumnPlacement( storeInstance.getStoreId(), catalogColumn.id, PlacementType.MANUAL, null, null, null );
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // TODO MV: Now we need to actually create the placement on the store and get the physical schema, table and column name
+                //
+            }
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

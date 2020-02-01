@@ -27,20 +27,21 @@ package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 
 
 public class CatalogCombinedTable implements CatalogCombinedEntity {
 
-    private static final long serialVersionUID = -2756878360463728977L;
+    private static final long serialVersionUID = 8962946154629484568L;
 
     @Getter
     private CatalogTable table;
@@ -53,18 +54,29 @@ public class CatalogCombinedTable implements CatalogCombinedEntity {
     @Getter
     private final CatalogUser owner;
     @Getter
-    private final List<CatalogDataPlacement> placements;
+    private final Map<Integer, List<CatalogColumnPlacement>> columnPlacementsByStore;
+    @Getter
+    private final Map<Long, List<CatalogColumnPlacement>> columnPlacementsByColumn;
     @Getter
     private final List<CatalogKey> keys;
 
 
-    public CatalogCombinedTable( @NonNull CatalogTable table, @NonNull List<CatalogColumn> columns, @NonNull CatalogSchema schema, @NonNull CatalogDatabase database, @NonNull CatalogUser owner, @NonNull List<CatalogDataPlacement> placements, @NonNull List<CatalogKey> keys ) {
+    public CatalogCombinedTable(
+            @NonNull CatalogTable table,
+            @NonNull List<CatalogColumn> columns,
+            @NonNull CatalogSchema schema,
+            @NonNull CatalogDatabase database,
+            @NonNull CatalogUser owner,
+            @NonNull Map<Integer, List<CatalogColumnPlacement>> columnPlacementsByStore, // StoreID -> List of column placements
+            @NonNull Map<Long, List<CatalogColumnPlacement>> columnPlacementsByColumn, // ColumnID -> List of column placements
+            @NonNull List<CatalogKey> keys ) {
         this.table = table;
         this.columns = columns;
         this.schema = schema;
         this.database = database;
         this.owner = owner;
-        this.placements = placements;
+        this.columnPlacementsByStore = columnPlacementsByStore;
+        this.columnPlacementsByColumn = columnPlacementsByColumn;
         this.keys = keys;
     }
 

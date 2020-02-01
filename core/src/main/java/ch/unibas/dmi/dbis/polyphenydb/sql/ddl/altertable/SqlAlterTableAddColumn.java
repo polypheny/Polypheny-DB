@@ -33,8 +33,8 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
@@ -170,14 +170,20 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
                 transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
             }
+
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO MV: Adding the column on all stares which have already a placement for columns of this table. We need a more sophisticated approach here.
+            //
+
+            // Add column on underlying data stores
+            for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
+                transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
+            }
         } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
 
-        // Add column on underlying data stores
-        for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
-            StoreManager.getInstance().getStore( dp.storeId ).addColumn( context, catalogTable, addedColumn );
-        }
     }
 
 }

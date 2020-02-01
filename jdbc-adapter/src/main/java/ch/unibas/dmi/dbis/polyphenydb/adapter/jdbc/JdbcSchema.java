@@ -51,6 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.AbstractJdbcStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -104,7 +105,14 @@ public class JdbcSchema implements Schema {
     private final AbstractJdbcStore jdbcStore;
 
 
-    private JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap, AbstractJdbcStore jdbcStore ) {
+    private JdbcSchema(
+            @NonNull ConnectionFactory connectionFactory,
+            @NonNull SqlDialect dialect,
+            JdbcConvention convention,
+            String catalog,
+            String schema,
+            Map<String, JdbcTable> tableMap,
+            AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -125,7 +133,13 @@ public class JdbcSchema implements Schema {
      * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String database, String schema, AbstractJdbcStore jdbcStore ) {
+    public JdbcSchema(
+            @NonNull ConnectionFactory connectionFactory,
+            @NonNull SqlDialect dialect,
+            JdbcConvention convention,
+            String database,
+            String schema,
+            AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -142,19 +156,45 @@ public class JdbcSchema implements Schema {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> columnNames = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( jdbcStore.getStoreId() ) ) {
+            CatalogColumn catalogColumn = null;
+            // TODO MV: This is not really efficient
+            // Get catalog column
+            for ( CatalogColumn c : combinedTable.getColumns() ) {
+                if ( c.id == placement.columnId ) {
+                    catalogColumn = c;
+                }
+            }
+            if ( catalogColumn == null ) {
+                throw new RuntimeException( "Column not found." ); // This should not happen
+            }
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
+            fieldInfo.add( placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             columnNames.add( catalogColumn.name );
         }
-        JdbcTable table = new JdbcTable( this, database, combinedTable.getSchema().name, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType.name() ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
+        JdbcTable table = new JdbcTable(
+                this,
+                database,
+                combinedTable.getSchema().name,
+                combinedTable.getTable().name,
+                TableType.valueOf( combinedTable.getTable().tableType.name() ),
+                RelDataTypeImpl.proto( fieldInfo.build() ),
+                columnNames );
         tableMap.put( combinedTable.getTable().name, table );
         return table;
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, ConnectionFactory connectionFactory, SqlDialect dialect, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider, AbstractJdbcStore jdbcStore ) {
+    public static JdbcSchema create(
+            SchemaPlus parentSchema,
+            String name,
+            ConnectionFactory connectionFactory,
+            SqlDialect dialect,
+            String catalog,
+            String schema,
+            JdbcPhysicalNameProvider physicalNameProvider,
+            AbstractJdbcStore jdbcStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
         return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema, jdbcStore );

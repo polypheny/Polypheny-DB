@@ -84,8 +84,11 @@ public class PolySchemaBuilder {
             for ( Store store : StoreManager.getInstance().getStores().values() ) {
                 store.createNewSchema( transaction, rootSchema, combinedSchema.getSchema().name );
             }
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
+            //
             for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                int storeId = combinedTable.getPlacements().get( 0 ).storeId;
+                int storeId = combinedTable.getColumnPlacementsByStore().keySet().iterator().next(); // TODO MV: This looks inefficient
                 Store store = StoreManager.getInstance().getStore( storeId );
                 Table table = store.createTableSchema( combinedTable );
                 s.add( combinedTable.getTable().name, table );

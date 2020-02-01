@@ -96,12 +96,13 @@ public class CsvSchema extends AbstractSchema {
         for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
+            // TODO MV: Do we have to set the physical column name here?
             fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
 
-        Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
+        // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
+        Source source = Sources.of( new File( directoryFile, combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv" ) );
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
         tableMap.put( combinedTable.getTable().name, table );
         return table;

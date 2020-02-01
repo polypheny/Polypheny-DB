@@ -136,11 +136,15 @@ CREATE TABLE "store" (
 );
 
 
-CREATE TABLE "data_placement" (
+CREATE TABLE "column_placement" (
     "store" INTEGER NOT NULL REFERENCES "store" ("id"),
+    "column" BIGINT  NOT NULL REFERENCES "column" ("id"),
     "table" BIGINT  NOT NULL REFERENCES "table" ("id"),
     "type" INTEGER NOT NULL,
-    PRIMARY KEY ("store", "table")
+    "physical_schema"  VARCHAR(100)     NULL,
+    "physical_table"  VARCHAR(100)     NULL,
+    "physical_column"  VARCHAR(100)    NULL,
+    PRIMARY KEY ("store", "column")
 );
 
 
@@ -298,11 +302,12 @@ CREATE UNIQUE INDEX "store_unique_name"
 CREATE INDEX "store_adapter"
     ON "store" ("adapter");
 
-CREATE INDEX "data_placement_store"
-    ON "data_placement" ("store");
-CREATE INDEX "data_placement_table"
-    ON "data_placement" ("table");
-
+CREATE INDEX "column_placement_store"
+    ON "column_placement" ("store");
+CREATE INDEX "column_placement_table"
+    ON "column_placement" ("table");
+CREATE INDEX "column_placement_column"
+    ON "column_placement" ("column");
 
 -- ---------------------------------------------------------------
 
@@ -383,9 +388,14 @@ ALTER TABLE "store"
 
 
 --
--- data placement
+-- column placement
 --
-INSERT INTO "data_placement" ( "store", "table", "type" )
-VALUES ( 1, 0, 2 ),
-       ( 1, 1, 2 );
+INSERT INTO "column_placement" ( "store", "column", "table", "type", "physical_schema", "physical_table", "physical_column" )
+VALUES ( 1, 0, 0, 2, null, 'depts', 'deptno' ),
+    ( 1, 1, 0, 2, null, 'depts', 'name' ),
+    ( 1, 2, 1, 2, null, 'emps', 'empid' ),
+    ( 1, 3, 1, 2, null, 'emps', 'deptno' ),
+    ( 1, 4, 1, 2, null, 'emps', 'name' ),
+    ( 1, 5, 1, 2, null, 'emps', 'salary' ),
+    ( 1, 6, 1, 2, null, 'emps', 'commission' );
 

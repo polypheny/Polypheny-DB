@@ -35,7 +35,10 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
@@ -133,23 +136,29 @@ public abstract class AbstractJdbcStore extends Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = "tab" + combinedTable.getTable().id;
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
         }
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
-        for ( CatalogColumn column : combinedTable.getColumns() ) {
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+            CatalogColumn catalogColumn;
+            try {
+                catalogColumn = context.getTransaction().getCatalog().getColumn( placement.columnId );
+            } catch ( GenericCatalogException | UnknownColumnException e ) {
+                throw new RuntimeException( e );
+            }
             if ( !first ) {
                 builder.append( ", " );
             }
             first = false;
-            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
-            builder.append( getTypeString( column.type ) );
-            if ( column.length != null ) {
-                builder.append( "(" ).append( column.length );
-                if ( column.scale != null ) {
-                    builder.append( "," ).append( column.scale );
+            builder.append( dialect.quoteIdentifier( "col" + placement.columnId ) ).append( " " );
+            builder.append( getTypeString( catalogColumn.type ) );
+            if ( catalogColumn.length != null ) {
+                builder.append( "(" ).append( catalogColumn.length );
+                if ( catalogColumn.scale != null ) {
+                    builder.append( "," ).append( catalogColumn.scale );
                 }
                 builder.append( ")" );
             }
@@ -157,6 +166,20 @@ public abstract class AbstractJdbcStore extends Store {
         }
         builder.append( " )" );
         executeUpdate( builder, context );
+        // Add physical names to placements
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+            try {
+                context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                        getStoreId(),
+                        placement.columnId,
+                        null, // TODO MV: physical schema name
+                        physicalTableName,
+                        "col" + placement.columnId );
+            } catch ( GenericCatalogException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
     }
 
 

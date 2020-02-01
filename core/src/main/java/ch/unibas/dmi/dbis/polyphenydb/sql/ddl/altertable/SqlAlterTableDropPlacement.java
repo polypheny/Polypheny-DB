@@ -31,7 +31,7 @@ import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
@@ -43,6 +43,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.ddl.SqlAlterTable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 
@@ -87,15 +88,17 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
-            // Check if there are at least to placements
-            if ( combinedTable.getPlacements().size() < 2 ) {
-                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+            // Check if there are at least to placements for each column of this table
+            for ( List<CatalogColumnPlacement> placements : combinedTable.getColumnPlacementsByColumn().values() ) {
+                if ( placements.size() < 2 ) {
+                    throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+                }
             }
             // Check whether this placement exists
-            for ( CatalogDataPlacement p : combinedTable.getPlacements()) {
-                if (p.storeId == storeInstance.getStoreId()) {
+            for ( Map.Entry<Integer, List<CatalogColumnPlacement>> p : combinedTable.getColumnPlacementsByStore().entrySet() ) {
+                if ( p.getKey() == storeInstance.getStoreId() ) {
                     // Delete placement
-                    transaction.getCatalog().deleteDataPlacement( storeInstance.getStoreId(), combinedTable.getTable().id );
+                    transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), combinedTable.getTable().id );
                     return;
                 }
             }
