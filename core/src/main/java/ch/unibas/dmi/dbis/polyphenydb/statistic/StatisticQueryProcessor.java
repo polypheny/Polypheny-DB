@@ -103,7 +103,7 @@ public class StatisticQueryProcessor {
     /**
      * Method to get all schemas, tables, and their columns in a database
      */
-    public ArrayList<ArrayList<String>> getSchemaTree() {
+    public List<List<String>> getSchemaTree() {
 
         ArrayList<ArrayList<String>> result = new ArrayList<>();
 
