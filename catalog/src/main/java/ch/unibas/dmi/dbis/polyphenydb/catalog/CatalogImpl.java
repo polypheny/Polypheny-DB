@@ -1347,6 +1347,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogStore getStore( String uniqueName ) throws GenericCatalogException {
+        uniqueName = uniqueName.toLowerCase();
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getStore( transactionHandler, uniqueName );
@@ -1366,6 +1367,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
+        uniqueName = uniqueName.toLowerCase();
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.addStore( transactionHandler, uniqueName, adapter, settings );

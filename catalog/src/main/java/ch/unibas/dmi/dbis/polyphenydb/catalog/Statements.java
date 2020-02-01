@@ -77,6 +77,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringEscapeUtils;
 
 
 /**
@@ -1132,7 +1133,7 @@ final class Statements {
 
     // Get Store by store name
     static CatalogStore getStore( XATransactionHandler transactionHandler, String uniqueName ) throws GenericCatalogException, UnknownStoreException {
-        String filter = " \"unique_name\" = " + uniqueName;
+        String filter = " \"unique_name\" = " + quoteString( uniqueName );
         List<CatalogStore> list = storeFilter( transactionHandler, filter );
         if ( list.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
@@ -1148,7 +1149,7 @@ final class Statements {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "unique_name", quoteString( unique_name ) );
         data.put( "adapter", quoteString( adapter ) );
-        data.put( "settings", gson.toJson( settings ) );
+        data.put( "settings", quoteString( StringEscapeUtils.escapeSql( gson.toJson( settings ) ) ) );
         return Math.toIntExact(insertHandler( transactionHandler, "store", data ));
     }
 
