@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 
 
@@ -80,7 +81,13 @@ public class SchemaToJsonMapper {
     }
 
 
-    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String storeName ) {
+    public static String getTableNameFromJson( @NonNull String json ) {
+        JsonTable table = gson.fromJson( json, JsonTable.class );
+        return table.tableName;
+    }
+
+
+    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String tableName, String storeName ) {
         JsonTable table = gson.fromJson( json, JsonTable.class );
         SqlWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT, true, null );
         writer.keyword( "CREATE TABLE" );
@@ -89,7 +96,11 @@ public class SchemaToJsonMapper {
         SqlWriter.Frame identifierFrame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
         writer.identifier( schemaName );
         writer.sep( ".", true );
-        writer.identifier( table.tableName );
+        if ( tableName != null ) {
+            writer.identifier( tableName );
+        } else {
+            writer.identifier( table.tableName );
+        }
         writer.endList( identifierFrame );
 
         // Print column list
@@ -147,7 +158,8 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonTable {
+    @Getter
+    static class JsonTable {
 
         public final String tableName;
         public final List<JsonColumn> columns;
@@ -156,7 +168,7 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonColumn {
+    static class JsonColumn {
 
         public final String columnName;
         public final String type;

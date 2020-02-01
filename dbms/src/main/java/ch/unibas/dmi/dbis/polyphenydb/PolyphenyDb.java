@@ -74,10 +74,20 @@ public class PolyphenyDb {
     public void runPolyphenyDb() throws GenericCatalogException {
 
         Catalog catalog;
+        Transaction trx = null;
         try {
-            catalog = CatalogManagerImpl.getInstance().getCatalog( transactionManager.startTransaction( "pa", "APP", false ).getXid() );
+            trx = transactionManager.startTransaction( "pa", "APP", false );
+            catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException e ) {
+            trx.commit();
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+            if ( trx != null ) {
+                try {
+                    trx.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Error while rolling back the transaction", e );
+                }
+            }
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
@@ -148,7 +158,6 @@ public class PolyphenyDb {
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        // prolly overkill just for testing
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );

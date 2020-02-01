@@ -74,13 +74,25 @@ public class SchemaToJsonMapperTest {
 
     @Test
     public void getStatementTest() {
-        String statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, true, true, "foo", "hsqldb1" );
+        String statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, true, true, "foo", null, "hsqldb1" );
         final String expected1 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30) DEFAULT 'Basel', PRIMARY KEY(\"sid\", \"name\")) ON STORE \"hsqldb1\"";
         Assert.assertEquals( statement, expected1 );
 
-        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", null );
+        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", null, null );
         final String expected2 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
         Assert.assertEquals( statement, expected2 );
+
+        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", "bar", null );
+        final String expected3 = "CREATE TABLE \"foo\".\"bar\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
+        Assert.assertEquals( statement, expected3 );
+    }
+
+
+    @Test
+    public void getTableNameTest() {
+        String name = SchemaToJsonMapper.getTableNameFromJson( mockJson );
+        final String expected = "stores";
+        Assert.assertEquals( name, expected );
     }
 
 }

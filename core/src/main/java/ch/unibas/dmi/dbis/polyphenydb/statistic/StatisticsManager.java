@@ -61,15 +61,11 @@ public class StatisticsManager<T extends Comparable<T>> {
 
     }
 
+
+    /**
+     * Registers toggleable option to active passive querying
+     */
     private void configureBackgroundTask() {
-        // When low WORKLOAD flags works this comment can be removed
-        setRevalId(BackgroundTaskManager.INSTANCE.registerTask(
-                StatisticsManager.this::reevaluateStore,
-                "Reevalate Statistic Store.",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_THIRTY_SECONDS));
-
-
         ConfigManager.getInstance().getConfig("passiveQuerying").addObserver(new Config.ConfigListener() {
             @Override
             public void onConfigChange(Config c) {
@@ -77,7 +73,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 if (c.getBoolean() && id == null) {
                     String revalId = BackgroundTaskManager.INSTANCE.registerTask(
                             StatisticsManager.this::reevaluateStore,
-                            "Reevalute store.",
+                            "Reevalute StatisticsManager.",
                             TaskPriority.LOW,
                             TaskSchedulingType.EVERY_THIRTY_SECONDS);
                     StatisticsManager.getInstance().setRevalId(revalId);
@@ -181,7 +177,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         if (this.sqlQueryInterface == null) {
             return;
         }
-        log.warn("Resetting StatisticStore.");
+        log.debug("Resetting StatisticStore.");
         this.columnsToUpdate.clear();
         ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
@@ -193,7 +189,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         }
         replaceStatistics(statisticSchemaMapCopy);
-        log.warn("Finished resetting StatisticStore.");
+        log.debug("Finished resetting StatisticStore.");
     }
 
 
@@ -372,9 +368,9 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         if (res != null && res.getData() != null && res.getData().length != 0) {
             try {
-                return Integer.parseInt(res.getData()[0]);
-            } catch (NumberFormatException e) {
-                log.error("Count could not be parsed.");
+                return Integer.parseInt( res.getData()[0] );
+            } catch ( NumberFormatException e ) {
+                log.error( "Count could not be parsed for column {}.", column.getQualifiedColumnName(), e );
             }
         }
         return 0;
@@ -461,8 +457,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                             }
 
                         } else {
-                            // TODO: concationate to long entries
-                            String values = ((AlphabeticStatisticColumn) v).getUniqueValues().toString();
+                            String values = v.getUniqueValues().toString();
                             if (!v.isFull) {
                                 alphabeticalInformation.addRow(name, values);
                             } else {

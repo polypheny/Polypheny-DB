@@ -26,9 +26,11 @@
 package ch.unibas.dmi.dbis.polyphenydb.webui;
 
 
+import au.com.bytecode.opencsv.CSVReader;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
+import ch.unibas.dmi.dbis.polyphenydb.Store.AdapterSetting;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager.AdapterInformation;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -88,33 +90,62 @@ import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
 import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SchemaToJsonMapper.JsonColumn;
+import ch.unibas.dmi.dbis.polyphenydb.webui.SchemaToJsonMapper.JsonTable;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Adapter;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbColumn;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.DbTable;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Debug;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ForeignKey;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.HubResult;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Index;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Result;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.ResultType;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Schema;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SidebarElement;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.Status;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.TableConstraint;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.Uml;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ColumnRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.ConstraintRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.EditTableRequest;
+import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.HubRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.QueryRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.SchemaTreeRequest;
 import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -124,18 +155,24 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import spark.Request;
 import spark.Response;
+import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -159,9 +196,10 @@ public class Crud implements InformationObserver {
         this.userName = userName;
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny-DB UI", "Settings for the user interface." ) );
+        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny UI", "Settings for the user interface." ) );
         cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
         cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
+        cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
     }
 
 
@@ -445,7 +483,7 @@ public class Crud implements InformationObserver {
             if ( value == null ) {
                 value = "NULL";
             } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
-                value = "'" + value + "'";
+                value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
             } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.DATE ) {
                 value = "DATE '" + value + "'";
             } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIME ) {
@@ -676,7 +714,7 @@ public class Crud implements InformationObserver {
             } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
-                condition = String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() );
+                condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
             }
             column = entry.getKey();
             joiner.add( condition );
@@ -723,7 +761,7 @@ public class Crud implements InformationObserver {
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
-                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql(entry.getValue()) ) );
             }
             column = entry.getKey();
         }
@@ -1301,35 +1339,123 @@ public class Crud implements InformationObserver {
     /**
      * Get current stores
      */
-    Result getStores( final Request req, final Response res ) {
-        DbColumn[] header = { new DbColumn( "id" ), new DbColumn( "name" ), new DbColumn( "adapter" ) };
-        ArrayList<String[]> data = new ArrayList<>();
-        ImmutableMap<String, Store> storeManager = StoreManager.getInstance().getStores();
-        for ( Store store : storeManager.values() ) {
-            String[] arr = new String[3];
-            arr[0] = "" + store.getStoreId();
-            arr[1] = store.getUniqueName();
-            arr[2] = store.getAdapterName();
-            data.add( arr );
-        }
-        return new Result( header, data.toArray( new String[0][2] ) );
+    String getStores( final Request req, final Response res ) {
+        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
+        JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
+            List<AdapterSetting> adapterSettings = new ArrayList<>();
+            for ( AdapterSetting s : src.getAvailableSettings() ) {
+                for ( String current : src.getCurrentSettings().keySet() ) {
+                    if ( s.name.equals( current ) ) {
+                        adapterSettings.add( s );
+                    }
+                }
+            }
+
+            JsonObject jsonStore = new JsonObject();
+            jsonStore.addProperty( "storeId", src.getStoreId() );
+            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
+            jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.addProperty( "adapterName", src.getAdapterName() );
+            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            return jsonStore;
+        };
+        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
+        Store[] out = stores.values().toArray( new Store[0] );
+        return storeGson.toJson( out, Store[].class );
+    }
+
+
+    /**
+     * Update the settings of a stoe
+     */
+    Store updateStoreSettings( final Request req, final Response res ) {
+        //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
+        JsonDeserializer<Store> storeDeserializer = ( json, typeOfT, context ) -> {
+            JsonObject jsonObject = json.getAsJsonObject();
+            String type = jsonObject.get( "type" ).getAsString();
+            try {
+                return context.deserialize( jsonObject, Class.forName( type ) );
+            } catch ( ClassNotFoundException cnfe ) {
+                throw new JsonParseException( "Unknown element type: " + type, cnfe );
+            }
+        };
+        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeDeserializer ).create();
+        Store store = storeGson.fromJson( req.body(), Store.class );
+        StoreManager.getInstance().getStore( store.getStoreId() ).updateSettings( store.getCurrentSettings() );
+        return store;
     }
 
 
     /**
      * Get available adapters
      */
-    Result getAdapters( final Request req, final Response res ) {
-        DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "description" ) };
-        ArrayList<String[]> data = new ArrayList<>();
+    String getAdapters( final Request req, final Response res ) {
+        JsonSerializer<AdapterInformation> adapterSerializer = ( src, typeOfSrc, context ) -> {
+            JsonObject jsonStore = new JsonObject();
+            jsonStore.addProperty( "name", src.name );
+            jsonStore.addProperty( "description", src.description );
+            jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+            jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
+            return jsonStore;
+        };
+        Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
+
         List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
-        for ( AdapterInformation adapter : adapters ) {
-            String[] arr = new String[2];
-            arr[0] = adapter.name;
-            arr[1] = adapter.description;
-            data.add( arr );
+        AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
+        return adapterGson.toJson( out, AdapterInformation[].class );
+    }
+
+
+    /**
+     * Deploy a new store
+     */
+    boolean addStore( final Request req, final Response res ) {
+        String body = req.body();
+        Adapter a = this.gson.fromJson( body, Adapter.class );
+        Transaction trx = null;
+        try {
+            trx = getTransaction();
+            StoreManager.getInstance().addStore( trx.getCatalog(), a.clazzName, a.uniqueName, a.settings );
+            trx.commit();
+        } catch ( Exception | TransactionException e ) {
+            log.error( "Could not deploy store", e );
+            try {
+                if ( trx != null ) {
+                    trx.rollback();
+                }
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
+            return false;
         }
-        return new Result( header, data.toArray( new String[0][2] ) );
+        return true;
+    }
+
+
+    /**
+     * Remove an existing store
+     */
+    boolean removeStore( final Request req, final Response res ) {
+        String uniqueName = req.body();
+        Transaction trx = null;
+        try {
+            trx = getTransaction();
+            StoreManager.getInstance().removeStore( trx.getCatalog(), uniqueName );
+            trx.commit();
+        } catch ( Exception | TransactionException e ) {
+            log.error( "Could not remove store {}", req.body(), e );
+            try {
+                if ( trx != null ) {
+                    trx.rollback();
+                }
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
+            return false;
+        }
+        return true;
     }
 
 
@@ -1669,12 +1795,319 @@ public class Crud implements InformationObserver {
         return "";
     }
 
+
+    /**
+     * Import a dataset from Polypheny-Hub into Polypheny-DB
+     */
+    HubResult importDataset( final spark.Request req, final spark.Response res ) {
+        HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
+        String error = null;
+
+        String randomFileName = UUID.randomUUID().toString();
+        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
+        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
+        if ( !tempDir.mkdirs() ) { // create folder
+            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
+            return new HubResult( "Unable to create temp folder" );
+        }
+
+        // see: https://www.baeldung.com/java-download-file
+        final File zipFile = new File( tempDir, "import.zip" );
+        Transaction transaction = null;
+        try (
+                BufferedInputStream in = new BufferedInputStream( new URL( request.url ).openStream() );
+                FileOutputStream fos = new FileOutputStream( zipFile )
+        ) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ( (bytesRead = in.read( dataBuffer, 0, 1024 )) != -1 ) {
+                fos.write( dataBuffer, 0, bytesRead );
+            }
+
+            // extract zip, see https://www.baeldung.com/java-compress-and-uncompress
+            dataBuffer = new byte[1024];
+            String jsonFileName = "";
+            String csvFileName = "";
+            final File extractedFolder = new File( tempDir, "import" );
+            if ( !extractedFolder.mkdirs() ) {
+                log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
+                return new HubResult( "Unable to create folder for extracting files" );
+            }
+            try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                while ( zipEntry != null ) {
+                    if ( zipEntry.getName().endsWith( ".csv" ) ) {
+                        csvFileName = zipEntry.getName();
+                    } else if ( zipEntry.getName().endsWith( ".json" ) ) {
+                        jsonFileName = zipEntry.getName();
+                    }
+                    File newFile = new File( extractedFolder, zipEntry.getName() );
+                    try ( FileOutputStream fosEntry = new FileOutputStream( newFile ) ) {
+                        int len;
+                        while ( (len = zis.read( dataBuffer )) > 0 ) {
+                            fosEntry.write( dataBuffer, 0, len );
+                        }
+                    }
+                    zipEntry = zis.getNextEntry();
+                }
+            }
+
+            // delete .zip after unzipping
+            if ( !zipFile.delete() ) {
+                log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
+            }
+            // table name
+            String tableName = null;
+            if ( request.tableName != null && request.tableName.trim().length() > 0 ) {
+                tableName = request.tableName.trim();
+            }
+            // create table from .json file
+            String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
+            JsonTable table = gson.fromJson( json, JsonTable.class );
+            transaction = getTransaction();
+            List<CatalogTable> tablesInSchema = transaction.getCatalog().getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+            int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( table.tableName ) ).count();
+            if ( tableAlreadyExists > 0 ) {
+                return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, table.tableName ) );
+            }
+
+            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
+            executeSqlUpdate( transaction, createTable );
+
+            // import data from .csv file
+            StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
+            for ( JsonColumn col : table.getColumns() ) {
+                columnJoiner.add( "\"" + col.columnName + "\"" );
+            }
+            String columns = columnJoiner.toString();
+            StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
+            StringJoiner rowJoiner;
+
+            //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
+
+            final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
+            long csvCounter = 0;
+            try (
+                    Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
+                    CSVReader csvReader = new CSVReader( reader );
+            ) {
+                long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
+                Status status = new Status( "tableImport", lineCount );
+                String[] nextRecord;
+                while ( (nextRecord = csvReader.readNext()) != null ) {
+                    rowJoiner = new StringJoiner( ",", "(", ")" );
+                    for ( int i = 0; i < table.getColumns().size(); i++ ) {
+                        if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                            rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.DATE ) {
+                            rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIME ) {
+                            rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIMESTAMP ) {
+                            rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                        } else {
+                            rowJoiner.add( nextRecord[i] );
+                        }
+                    }
+                    valueJoiner.add( rowJoiner.toString() );
+                    csvCounter++;
+                    if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                        String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
+                        executeSqlUpdate( transaction, insertQuery );
+                        valueJoiner = new StringJoiner( ",", "VALUES", "" );
+                        status.setStatus( csvCounter );
+                        WebSocket.broadcast( gson.toJson(status, Status.class ));
+                    }
+                }
+                if ( csvCounter % BATCH_SIZE != 0 ) {
+                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
+                    executeSqlUpdate( transaction, insertQuery );
+                    status.complete();
+                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                }
+            }
+
+            transaction.commit();
+
+        } catch ( IOException | TransactionException e ) {
+            log.error( "Could not import dataset", e );
+            error = "Could not import dataset" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
+        } catch ( QueryExecutionException e ) {
+            log.error( "Could not create table from imported json file", e );
+            error = "Could not create table from imported json file" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
+        //} catch ( CsvValidationException | GenericCatalogException e ) {
+        } catch ( GenericCatalogException e ) {
+            log.error( "Could not export csv file", e );
+            error = "Could not export csv file" + e.getMessage();
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rolling back transaction", e );
+                }
+            }
+        } finally {
+            // delete temp folder
+            if ( !deleteDirectory( tempDir ) ) {
+                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
+            }
+        }
+
+        if ( error != null ) {
+            return new HubResult( error );
+        } else {
+            return new HubResult().setMessage( String.format( "Imported dataset into table %s on store %s", request.schema, request.store ) );
+        }
+    }
+
+
+    /**
+     * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
+     */
+    Result exportTable( final Request req, final Response res ) {
+        HubRequest request = gson.fromJson( req.body(), HubRequest.class );
+        Transaction transaction = getTransaction( false );
+
+        String randomFileName = UUID.randomUUID().toString();
+        final Charset charset = StandardCharsets.UTF_8;
+        final String sysTempDir = System.getProperty( "java.io.tmpdir" );
+        final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
+        if ( !tempDir.mkdirs() ) { // create folder
+            log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
+            return new Result( "Unable to create temp folder" );
+        }
+        File tableFile = new File( tempDir, "table.csv" );
+        File catalogFile = new File( tempDir, "catalog.json" );
+        File zipFile = new File( tempDir, "table.zip" );
+        try (
+                OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
+                FileOutputStream tableStream = new FileOutputStream( tableFile );
+                FileOutputStream zipStream = new FileOutputStream( zipFile );
+        ) {
+            log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
+            CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, request.schema, request.table );
+            CatalogCombinedTable catalogCombinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
+
+            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, request.createPks, request.defaultValues ) );
+            catalogWriter.flush();
+
+            String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
+            // TODO use iterator instead of Result
+            Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
+            transaction.commit();
+
+            int totalRows = tableData.getData().length;
+            int counter = 0;
+            Status status = new Status( "tableExport", totalRows );
+            for ( String[] row : tableData.getData() ) {
+                int cols = row.length;
+                for ( int i = 0; i < cols; i++ ) {
+                    if ( row[i].contains( "\n" ) ) {
+                        String line = String.format( "\"%s\"", row[i] );
+                        tableStream.write( line.getBytes( charset ) );
+                    } else {
+                        tableStream.write( row[i].getBytes( charset ) );
+                    }
+                    if ( i != cols - 1 ) {
+                        tableStream.write( ",".getBytes( charset ) );
+                    } else {
+                        tableStream.write( "\n".getBytes( charset ) );
+                    }
+                }
+                counter ++;
+                if( counter % 100 == 0) {
+                    status.setStatus( counter );
+                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                }
+            }
+            status.complete();
+            WebSocket.broadcast( gson.toJson(status, Status.class ));
+            tableStream.flush();
+
+            //from https://www.baeldung.com/java-compress-and-uncompress
+            List<File> srcFiles = Arrays.asList( catalogFile, tableFile );
+            try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
+                for ( File fileToZip : srcFiles ) {
+                    try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
+                        ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
+                        zipOut.putNextEntry( zipEntry );
+
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ( (length = fis.read( bytes )) >= 0 ) {
+                            zipOut.write( bytes, 0, length );
+                        }
+                    }
+                }
+                zipOut.finish();
+            }
+
+            //send file to php backend using Unirest
+            HttpResponse jsonResponse = Unirest.post( request.hubLink )
+                    .field( "action", "uploadDataset" )
+                    .field( "userId", String.valueOf( request.userId ) )
+                    .field( "secret", request.secret )
+                    .field( "name", request.name )
+                    .field( "pub", String.valueOf( request.pub ) )
+                    .field( "dataset", zipFile )
+                    .asString();
+
+            // Get result
+            StringWriter writer = new StringWriter();
+            IOUtils.copy( jsonResponse.getRawBody(), writer );
+            String resultString = writer.toString();
+            log.info( String.format( "Exported %s.%s", request.schema, request.table ) );
+
+            try {
+                return gson.fromJson( resultString, Result.class );
+            } catch ( JsonSyntaxException e ) {
+                return new Result( resultString );
+            }
+        } catch ( TransactionException e) {
+            log.error( "Error while fetching table", e );
+            return new Result( "Error while fetching table" );
+        } catch ( IOException e ) {
+            log.error( "Failed to write temporary file", e );
+            return new Result( "Failed to write temporary file" );
+        } catch ( Exception e ) {
+            log.error( "Error while exporting table", e );
+            return new Result( "Error while exporting table" );
+        } finally {
+            // delete temp folder
+            if ( !deleteDirectory( tempDir ) ) {
+                log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
 
 
+    /**
+     * Execute a select statement with default limit
+     */
     private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+        return executeSqlSelect( transaction, request, sqlSelect, false );
+    }
+
+
+    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -1690,7 +2123,12 @@ public class Crud implements InformationObserver {
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+            if( noLimit ){
+                rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
+            } else {
+                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+            }
+
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
@@ -1941,6 +2379,21 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception", e );
         }
         return dataTypes;
+    }
+
+
+    /**
+     * Helper function to delete a directory
+     * from https://www.baeldung.com/java-delete-directory
+     */
+    boolean deleteDirectory( final File directoryToBeDeleted ) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if ( allContents != null ) {
+            for ( File file : allContents ) {
+                deleteDirectory( file );
+            }
+        }
+        return directoryToBeDeleted.delete();
     }
 
 

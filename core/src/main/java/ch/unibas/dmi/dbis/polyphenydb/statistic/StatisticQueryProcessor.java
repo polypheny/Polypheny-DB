@@ -103,27 +103,25 @@ public class StatisticQueryProcessor {
     /**
      * Method to get all schemas, tables, and their columns in a database
      */
-    public ArrayList<ArrayList<String>> getSchemaTree() {
+    public List<List<String>> getSchemaTree() {
 
-        ArrayList<ArrayList<String>> result = new ArrayList<>();
+        List<List<String>> result = new ArrayList<>();
 
         Transaction transaction = getTransaction();
         try {
 
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            ArrayList<String> schemaTree = new ArrayList<>();
+            List<String> schemaTree = new ArrayList<>();
             for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
                 // schema
                 // schemaTree.add( combinedSchema.getSchema().name );
 
-                ArrayList<String> tables = new ArrayList<>();
+                List<String> tables = new ArrayList<>();
 
                 for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                    // table
-                    //table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name );
 
-                    ArrayList<String> table = new ArrayList<>();
+                    List<String> table = new ArrayList<>();
 
                     for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                         table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
@@ -157,7 +155,7 @@ public class StatisticQueryProcessor {
      *
      * @return all the columns
      */
-    public ArrayList<QueryColumn> getAllColumns() {
+    public List<QueryColumn> getAllColumns() {
         Transaction transaction = getTransaction();
 
         ArrayList<QueryColumn> columns = new ArrayList<>();
@@ -168,7 +166,6 @@ public class StatisticQueryProcessor {
 
             for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
                 for ( CatalogCombinedTable table : schema.getTables() ) {
-                    //TODO: solve, better solution to distinguish between schema, table, column
                     columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
                 }
             }

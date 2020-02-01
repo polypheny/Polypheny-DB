@@ -192,7 +192,6 @@ public enum PolySqlType {
     }
 
     public boolean isNumericalType() {
-        //TODO: reevaluate
         return  this == INTEGER || this == BIGINT || this == REAL || this == DOUBLE || this == DECIMAL;
     }
 
