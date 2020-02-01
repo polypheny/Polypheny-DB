@@ -367,7 +367,7 @@ public class StatisticsManager<T extends Comparable<T>> {
             try {
                 return Integer.parseInt( res.getData()[0] );
             } catch ( NumberFormatException e ) {
-                log.error( "Count could not be parsed." );
+                log.error( "Count could not be parsed for column {}.", column.getQualifiedColumnName(), e );
             }
         }
         return 0;
