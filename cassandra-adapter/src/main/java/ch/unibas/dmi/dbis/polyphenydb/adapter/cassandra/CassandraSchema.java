@@ -45,148 +45,120 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraTypesUtils;
+import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
+import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
 import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
-import com.datastax.driver.core.AbstractTableMetadata;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ClusteringOrder;
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.MaterializedViewMetadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.slf4j.Logger;
 
 
 /**
  * Schema mapped onto a Cassandra column family
  */
+@Slf4j
 public class CassandraSchema extends AbstractSchema {
 
-    final Session session;
+    @Getter
+    final CqlSession session;
     final String keyspace;
     private final SchemaPlus parentSchema;
     final String name;
+
+
+    @Getter
+    private final CassandraConvention convention;
+
+    private final CassandraStore cassandraStore;
 
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
     private static final int DEFAULT_CASSANDRA_PORT = 9042;
 
 
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     */
-    public CassandraSchema( String host, String keyspace, SchemaPlus parentSchema, String name ) {
-        this( host, DEFAULT_CASSANDRA_PORT, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param port Cassandra port, e.g. 9042
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     */
-    public CassandraSchema( String host, int port, String keyspace, SchemaPlus parentSchema, String name ) {
-        this( host, port, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     * @param username Cassandra username
-     * @param password Cassandra password
-     */
-    public CassandraSchema( String host, String keyspace, String username, String password, SchemaPlus parentSchema, String name ) {
-        this( host, DEFAULT_CASSANDRA_PORT, keyspace, null, null, parentSchema, name );
-    }
-
-
-    /**
-     * Creates a Cassandra schema.
-     *
-     * @param host Cassandra host, e.g. "localhost"
-     * @param port Cassandra port, e.g. 9042
-     * @param keyspace Cassandra keyspace name, e.g. "twissandra"
-     * @param username Cassandra username
-     * @param password Cassandra password
-     */
-    public CassandraSchema( String host, int port, String keyspace, String username, String password, SchemaPlus parentSchema, String name ) {
+    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention, CassandraStore cassandraStore ) {
         super();
-
+        this.session = session;
         this.keyspace = keyspace;
-        try {
-            Cluster cluster;
-            List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
-            contactPoints.add( new InetSocketAddress( host, port ) );
-            if ( username != null && password != null ) {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).withCredentials( username, password ).build();
-            } else {
-                cluster = Cluster.builder().addContactPointsWithPorts( contactPoints ).build();
-            }
-
-            this.session = cluster.connect( keyspace );
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
         this.parentSchema = parentSchema;
         this.name = name;
+        this.convention = convention;
+        this.cassandraStore = cassandraStore;
+    }
+
+
+    public static CassandraSchema create(
+            SchemaPlus parentSchema,
+            String name,
+            CqlSession session,
+            String keyspace,
+            CassandraPhysicalNameProvider physicalNameProvider,
+            CassandraStore cassandraStore ) {
+        final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
+        final CassandraConvention convention = new CassandraConvention( name, expression, physicalNameProvider );
+        return new CassandraSchema( session, keyspace, parentSchema, name, convention, cassandraStore );
+    }
+
+
+    // FIXME JS: Temporary hotfix for transaction management until proper cassandra transaction management is implemented!
+    public void registerStore( DataContext dataContext ) {
+        dataContext.getTransaction().registerInvolvedStore( this.cassandraStore );
     }
 
 
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
-        List<ColumnMetadata> columns;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
-            columns = getKeyspace().getMaterializedView( "\"" + columnFamily + "\"" ).getColumns();
+            throw new RuntimeException( "Views are currently broken." );
         } else {
-            columns = getKeyspace().getTable( "\"" + columnFamily + "\"" ).getColumns();
+            columns = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get().getColumns();
         }
 
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        for ( ColumnMetadata column : columns ) {
-            final String columnName = column.getName();
-            final DataType type = column.getType();
+        for ( Entry<CqlIdentifier, ColumnMetadata> column : columns.entrySet() ) {
+            final String columnName = column.getKey().toString();
+            final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
-            SqlTypeName typeName = SqlTypeName.ANY;
-            if ( type == DataType.uuid() || type == DataType.timeuuid() ) {
-                // We currently rely on this in CassandraFilter to detect UUID columns. That is, these fixed length literals should be unquoted in CQL.
-                typeName = SqlTypeName.CHAR;
-            } else if ( type == DataType.ascii() || type == DataType.text() || type == DataType.varchar() ) {
-                typeName = SqlTypeName.VARCHAR;
-            } else if ( type == DataType.cint() || type == DataType.varint() ) {
-                typeName = SqlTypeName.INTEGER;
-            } else if ( type == DataType.bigint() ) {
-                typeName = SqlTypeName.BIGINT;
-            } else if ( type == DataType.cdouble() || type == DataType.cfloat() || type == DataType.decimal() ) {
-                typeName = SqlTypeName.DOUBLE;
-            }
+            SqlTypeName typeName = CassandraTypesUtils.getSqlTypeName( type );
 
             fieldInfo.add( columnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }
@@ -201,23 +173,27 @@ public class CassandraSchema extends AbstractSchema {
      * @return A list of field names that are part of the partition and clustering keys
      */
     Pair<List<String>, List<String>> getKeyFields( String columnFamily, boolean view ) {
-        AbstractTableMetadata table;
+        RelationMetadata relation;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
-            table = getKeyspace().getMaterializedView( "\"" + columnFamily + "\"" );
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
-            table = getKeyspace().getTable( "\"" + columnFamily + "\"" );
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
         }
 
-        List<ColumnMetadata> partitionKey = table.getPartitionKey();
+        List<ColumnMetadata> partitionKey = relation.getPartitionKey();
         List<String> pKeyFields = new ArrayList<>();
         for ( ColumnMetadata column : partitionKey ) {
-            pKeyFields.add( column.getName() );
+            pKeyFields.add( column.getName().toString() );
         }
 
-        List<ColumnMetadata> clusteringKey = table.getClusteringColumns();
+        Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
         List<String> cKeyFields = new ArrayList<>();
-        for ( ColumnMetadata column : clusteringKey ) {
-            cKeyFields.add( column.getName() );
+        for ( Entry<ColumnMetadata, ClusteringOrder> column : clusteringKey.entrySet() ) {
+            cKeyFields.add( column.getKey().toString() );
         }
 
         return Pair.of( ImmutableList.copyOf( pKeyFields ), ImmutableList.copyOf( cKeyFields ) );
@@ -230,20 +206,25 @@ public class CassandraSchema extends AbstractSchema {
      * @return A RelCollations representing the collation of all clustering keys
      */
     public List<RelFieldCollation> getClusteringOrder( String columnFamily, boolean view ) {
-        AbstractTableMetadata table;
+        RelationMetadata relation;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
-            table = getKeyspace().getMaterializedView( "\"" + columnFamily + "\"" );
+//            throw new RuntimeException( "Views are currently broken." );
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
-            table = getKeyspace().getTable( "\"" + columnFamily + "\"" );
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
         }
 
-        List<ClusteringOrder> clusteringOrder = table.getClusteringOrder();
+        Map<ColumnMetadata, ClusteringOrder> clusteringOrder = relation.getClusteringColumns();
         List<RelFieldCollation> keyCollations = new ArrayList<>();
 
         int i = 0;
-        for ( ClusteringOrder order : clusteringOrder ) {
+        for ( Entry<ColumnMetadata, ClusteringOrder> order : clusteringOrder.entrySet() ) {
             RelFieldCollation.Direction direction;
-            switch ( order ) {
+            switch ( order.getValue() ) {
                 case DESC:
                     direction = RelFieldCollation.Direction.DESCENDING;
                     break;
@@ -263,21 +244,26 @@ public class CassandraSchema extends AbstractSchema {
     @Override
     protected Map<String, Table> getTableMap() {
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-        for ( TableMetadata table : getKeyspace().getTables() ) {
-            String tableName = table.getName();
-            builder.put( tableName, new CassandraTable( this, tableName ) );
+        for ( Entry<CqlIdentifier, TableMetadata> table : getKeyspace().getTables().entrySet() ) {
+            builder.put( table.getKey().toString(), new CassandraTable( this, table.getKey().toString() ) );
 
-            for ( MaterializedViewMetadata view : table.getViews() ) {
+            // TODO JS: Fix the view situation!
+            /*for ( MaterializedViewMetadata view : table.getValue().getViews() ) {
                 String viewName = view.getName();
                 builder.put( viewName, new CassandraTable( this, viewName, true ) );
-            }
+            }*/
         }
         return builder.build();
     }
 
 
     private KeyspaceMetadata getKeyspace() {
-        return session.getCluster().getMetadata().getKeyspace( keyspace );
+        Optional<KeyspaceMetadata> metadata = session.getMetadata().getKeyspace( keyspace );
+        if ( metadata.isPresent() ) {
+            return metadata.get();
+        } else {
+            throw new RuntimeException( "There is no metadata." );
+        }
     }
 }
 

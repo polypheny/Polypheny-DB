@@ -47,15 +47,22 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
+import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
+import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
+import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
+import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
@@ -63,12 +70,23 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -79,26 +97,32 @@ import org.apache.calcite.linq4j.function.Function1;
 /**
  * Table based on a Cassandra column family
  */
-public class CassandraTable extends AbstractQueryableTable implements TranslatableTable {
+public class CassandraTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
     RelProtoDataType protoRowType;
     Pair<List<String>, List<String>> keyFields;
     List<RelFieldCollation> clusteringOrder;
-    private final CassandraSchema schema;
+    private final CassandraSchema cassandraSchema;
     private final String columnFamily;
+    private final String physicalName;
     private final boolean view;
 
 
-    public CassandraTable( CassandraSchema schema, String columnFamily, boolean view ) {
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, boolean view ) {
         super( Object[].class );
-        this.schema = schema;
+        this.cassandraSchema = cassandraSchema;
         this.columnFamily = columnFamily;
         this.view = view;
+
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( cassandraSchema.name );
+        qualifiedNames.add( columnFamily );
+        this.physicalName = cassandraSchema.getConvention().physicalNameProvider.getPhysicalTableName( qualifiedNames );
     }
 
 
-    public CassandraTable( CassandraSchema schema, String columnFamily ) {
-        this( schema, columnFamily, false );
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily ) {
+        this( cassandraSchema, columnFamily, false );
     }
 
 
@@ -110,7 +134,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
-            protoRowType = schema.getRelDataType( columnFamily, view );
+            protoRowType = cassandraSchema.getRelDataType( columnFamily, view );
         }
         return protoRowType.apply( typeFactory );
     }
@@ -118,7 +142,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public Pair<List<String>, List<String>> getKeyFields() {
         if ( keyFields == null ) {
-            keyFields = schema.getKeyFields( columnFamily, view );
+            keyFields = cassandraSchema.getKeyFields( columnFamily, view );
         }
         return keyFields;
     }
@@ -126,13 +150,13 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public List<RelFieldCollation> getClusteringOrder() {
         if ( clusteringOrder == null ) {
-            clusteringOrder = schema.getClusteringOrder( columnFamily, view );
+            clusteringOrder = cassandraSchema.getClusteringOrder( columnFamily, view );
         }
         return clusteringOrder;
     }
 
 
-    public Enumerable<Object> query( final Session session ) {
+    public Enumerable<Object> query( final CqlSession session ) {
         return query( session, ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), 0, -1 );
     }
 
@@ -142,19 +166,69 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      *
      * @param session Cassandra session
      * @param fields List of fields to project
+     * @param selectFields
      * @param predicates A list of predicates which should be used in the query
+     * @param order
      * @return Enumerator of results
      */
     public Enumerable<Object> query(
-            final Session session,
-            List<Map.Entry<String, Class>> fields,
-            final List<Map.Entry<String, String>> selectFields,
-            List<String> predicates,
-            List<String> order,
+            final CqlSession session,
+            List<Entry<String, Class>> fields,
+            final List<Selector> selectFields,
+            List<Relation> predicates,
+            List<Entry<String, ClusteringOrder>> order,
             final Integer offset,
             final Integer fetch ) {
         // Build the type of the resulting row based on the provided fields
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        /*final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final RelDataType rowType = getRowType( typeFactory );
+
+        Function1<String, Void> addField = fieldName -> {
+            SqlTypeName typeName = rowType.getField( fieldName, true, false ).getType().getSqlTypeName();
+            fieldInfo.add( fieldName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            return null;
+        };*/
+
+        SelectFrom selectFrom = QueryBuilder.selectFrom( columnFamily );
+
+//        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+
+        Select select;
+        // Construct the list of fields to project
+        if ( selectFields.isEmpty() ) {
+            select = selectFrom.all();
+        } else {
+            select = selectFrom.selectors( selectFields );
+        }
+
+        select = select.where( predicates );
+
+        // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
+        Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ClusteringOrder> entry: order) {
+            orderMap.put( entry.getKey(), entry.getValue() );
+        }
+
+        select = select.orderBy( orderMap );
+        int limit = offset;
+        if ( fetch >= 0 ) {
+            limit += fetch;
+        }
+        if ( limit > 0 ) {
+            select = select.limit( limit );
+        }
+
+        select = select.allowFiltering();
+
+
+        final SimpleStatement statement = select.build();
+
+        return new CassandraEnumerable( session, statement.getQuery(), offset );
+    }
+
+    public Enumerable<Object> insert() {
+        /*final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         final RelDataType rowType = getRowType( typeFactory );
 
@@ -164,87 +238,22 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
             return null;
         };
 
-        if ( selectFields.isEmpty() ) {
-            for ( Map.Entry<String, Class> field : fields ) {
-                addField.apply( field.getKey() );
-            }
-        } else {
-            for ( Map.Entry<String, String> field : selectFields ) {
-                addField.apply( field.getKey() );
-            }
-        }
-
-        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
-
-        // Construct the list of fields to project
-        final String selectString;
-        if ( selectFields.isEmpty() ) {
-            selectString = "*";
-        } else {
-            selectString = Util.toString( () -> {
-                final Iterator<Map.Entry<String, String>> selectIterator = selectFields.iterator();
-
-                return new Iterator<String>() {
-                    @Override
-                    public boolean hasNext() {
-                        return selectIterator.hasNext();
-                    }
+        final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );*/
 
 
-                    @Override
-                    public String next() {
-                        Map.Entry<String, String> entry = selectIterator.next();
-                        return entry.getKey() + " AS " + entry.getValue();
-                    }
+        return null;
+    }
 
+    CqlSession getSession() {
+        return cassandraSchema.getSession();
+    }
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }, "", ", ", "" );
-        }
+    String getColumnFamily() {
+        return this.columnFamily;
+    }
 
-        // Combine all predicates conjunctively
-        String whereClause = "";
-        if ( !predicates.isEmpty() ) {
-            whereClause = " WHERE ";
-            whereClause += Util.toString( predicates, "", " AND ", "" );
-        }
-
-        // Build and issue the query and return an Enumerator over the results
-        StringBuilder queryBuilder = new StringBuilder( "SELECT " );
-        queryBuilder.append( selectString );
-        queryBuilder.append( " FROM \"" ).append( columnFamily ).append( "\"" );
-        queryBuilder.append( whereClause );
-        if ( !order.isEmpty() ) {
-            queryBuilder.append( Util.toString( order, " ORDER BY ", ", ", "" ) );
-        }
-
-        int limit = offset;
-        if ( fetch >= 0 ) {
-            limit += fetch;
-        }
-        if ( limit > 0 ) {
-            queryBuilder.append( " LIMIT " ).append( limit );
-        }
-        queryBuilder.append( " ALLOW FILTERING" );
-        final String query = queryBuilder.toString();
-
-        return new AbstractEnumerable<Object>() {
-            @Override
-            public Enumerator<Object> enumerator() {
-                final ResultSet results = session.execute( query );
-                // Skip results until we get to the right offset
-                int skip = 0;
-                Enumerator<Object> enumerator = new CassandraEnumerator( results, resultRowType );
-                while ( skip < offset && enumerator.moveNext() ) {
-                    skip++;
-                }
-                return enumerator;
-            }
-        };
+    String getPhysicalName() {
+        return this.physicalName;
     }
 
 
@@ -257,7 +266,22 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
-        return new CassandraTableScan( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), relOptTable, this, null );
+        return new CassandraTableScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), relOptTable, this, null );
+    }
+
+
+    @Override
+    public Collection getModifiableCollection() {
+        return null;
+    }
+
+
+    @Override
+    public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+//        return new CassandraTableModify( cluster,  )
+        cassandraSchema.getConvention().register( cluster.getPlanner() );
+        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+//        return new CassandraTableModify( cluster, cluster.traitSetOf( CassandraRel.CONVENTION ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened, this, this.columnFamily );
     }
 
 
@@ -266,7 +290,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      *
      * @param <T> element type
      */
-    public static class CassandraQueryable<T> extends AbstractTableQueryable<T> {
+    public class CassandraQueryable<T> extends AbstractTableQueryable<T> {
 
         public CassandraQueryable( DataContext dataContext, SchemaPlus schema, CassandraTable table, String tableName ) {
             super( dataContext, schema, table, tableName );
@@ -286,7 +310,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         }
 
 
-        private Session getSession() {
+        private CqlSession getSession() {
             return schema.unwrap( CassandraSchema.class ).session;
         }
 
@@ -299,12 +323,17 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> query(
                 List<Map.Entry<String, Class>> fields,
-                List<Map.Entry<String, String>> selectFields,
-                List<String> predicates,
-                List<String> order,
+                List<Selector> selectFields,
+                List<Relation> predicates,
+                List<Map.Entry<String, ClusteringOrder>> order,
                 Integer offset,
                 Integer fetch ) {
-            return getTable().query( getSession(), fields, selectFields, predicates, order, offset, fetch );
+            return getTable().query( cassandraSchema.getSession(), fields, selectFields, predicates, order, offset, fetch );
+        }
+
+        public Enumerable<Object> insert(
+                String query ) {
+            return CassandraEnumerable.of( getSession(), query );
         }
     }
 }

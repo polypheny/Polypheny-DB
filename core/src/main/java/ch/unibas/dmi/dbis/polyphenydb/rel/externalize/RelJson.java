@@ -98,6 +98,7 @@ public class RelJson {
                     "ch.unibas.dmi.dbis.polyphenydb.rel.",
                     "ch.unibas.dmi.dbis.polyphenydb.rel.core.",
                     "ch.unibas.dmi.dbis.polyphenydb.rel.logical.",
+                    "ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.",
                     "ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.",
                     "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.",
                     "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules$",

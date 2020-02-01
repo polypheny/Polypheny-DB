@@ -45,15 +45,24 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
+import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
+import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -61,7 +70,7 @@ import java.util.List;
  */
 public class CassandraTableScan extends TableScan implements CassandraRel {
 
-    final CassandraTable cassandraTable;
+    public final CassandraTable cassandraTable;
     final RelDataType projectRowType;
 
 
@@ -80,14 +89,15 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
         this.projectRowType = projectRowType;
 
         assert cassandraTable != null;
-        assert getConvention() == CONVENTION;
+        // TODO JS: Check this
+//        assert getConvention() == CONVENTION;
     }
 
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert inputs.isEmpty();
-        return this;
+        return new CassandraTableScan( getCluster(), traitSet, this.table, this.cassandraTable, this.projectRowType );
     }
 
 
@@ -99,17 +109,26 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        planner.addRule( CassandraToEnumerableConverterRule.INSTANCE );
-        for ( RelOptRule rule : CassandraRules.RULES ) {
-            planner.addRule( rule );
-        }
+        getConvention().register( planner );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.cassandraTable = cassandraTable;
-        implementor.table = table;
+    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
+    }
+
+
+    @Override
+    public void implement( CassandraImplementContext context ) {
+        context.cassandraTable = cassandraTable;
+        context.table = table;
+
+        if ( context.type != null ) {
+            return;
+        }
+
+        context.type = Type.SELECT;
     }
 }
 
