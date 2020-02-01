@@ -2,15 +2,12 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
+import ch.unibas.dmi.dbis.polyphenydb.config.*;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
@@ -55,28 +52,34 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
+        configureBackgroundTask();
 
+
+    }
+
+    private void configureBackgroundTask() {
         // When low WORKLOAD flags works this comment can be removed
-        /*BackgroundTaskManager.INSTANCE.registerTask(
-                StatisticsStore.this::reevaluateStore,
+        setRevalId(BackgroundTaskManager.INSTANCE.registerTask(
+                StatisticsManager.this::reevaluateStore,
                 "Reevalate Statistic Store.",
                 TaskPriority.LOW,
-                TaskSchedulingType.Workload );
+                TaskSchedulingType.EVERY_THIRTY_SECONDS ));
 
-        ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).addObserver( new ConfigListener() {
+
+        ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).addObserver(new Config.ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
-                String id = StatisticsStore.getInstance().getRevalId();
+                String id = StatisticsManager.getInstance().getRevalId();
                 if ( c.getBoolean() && id == null ) {
                     String revalId = BackgroundTaskManager.INSTANCE.registerTask(
-                            StatisticsStore.this::reevaluateStore,
+                            StatisticsManager.this::reevaluateStore,
                             "Reevalute store.",
                             TaskPriority.LOW,
-                            TaskSchedulingType.WORKLOAD );
-                    StatisticsStore.getInstance().setRevalId( revalId );
+                            TaskSchedulingType.EVERY_THIRTY_SECONDS );
+                    StatisticsManager.getInstance().setRevalId( revalId );
                 } else if ( !c.getBoolean() && id != null ) {
-                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsStore.getInstance().getRevalId() );
-                    StatisticsStore.getInstance().setRevalId( null );
+                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
+                    StatisticsManager.getInstance().setRevalId( null );
                 }
 
             }
@@ -86,7 +89,7 @@ public class StatisticsManager<T extends Comparable<T>> {
             public void restart( Config c ) {
 
             }
-        } );*/
+        } );
     }
 
 
