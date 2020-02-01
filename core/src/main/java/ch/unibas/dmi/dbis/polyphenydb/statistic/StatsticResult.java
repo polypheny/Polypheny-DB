@@ -2,14 +2,14 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 
 
 /**
- * Contains stats for multiple columns  TODO: evaluate need
+ * Contains stats for multiple columns
  */
 public class StatsticResult {
 
@@ -33,7 +33,7 @@ public class StatsticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatsticResult( ArrayList<String> names, ArrayList<PolySqlType> type, String[][] data ) {
+    public StatsticResult( List<String> names, List<PolySqlType> type, String[][] data ) {
         ;
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];

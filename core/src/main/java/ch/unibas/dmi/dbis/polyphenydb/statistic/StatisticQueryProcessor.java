@@ -158,7 +158,7 @@ public class StatisticQueryProcessor {
     public List<QueryColumn> getAllColumns() {
         Transaction transaction = getTransaction();
 
-        ArrayList<QueryColumn> columns = new ArrayList<>();
+        List<QueryColumn> columns = new ArrayList<>();
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -183,7 +183,7 @@ public class StatisticQueryProcessor {
     }
 
 
-    private ArrayList<QueryColumn> getAllColumns( String schemaTable ) {
+    private List<QueryColumn> getAllColumns( String schemaTable ) {
         String[] split = schemaTable.split( "." );
         if ( split.length != 2 ) {
             return new ArrayList<QueryColumn>();
@@ -199,10 +199,10 @@ public class StatisticQueryProcessor {
      * @param tableName the name of the table
      * @return all columns
      */
-    ArrayList<QueryColumn> getAllColumns( String schemaName, String tableName ) {
+    public List<QueryColumn> getAllColumns( String schemaName, String tableName ) {
         Transaction transaction = getTransaction();
 
-        ArrayList<QueryColumn> columns = new ArrayList<>();
+        List<QueryColumn> columns = new ArrayList<>();
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -336,15 +336,15 @@ public class StatisticQueryProcessor {
         }
 
         try {
-            ArrayList<PolySqlType> types = new ArrayList<>();
-            ArrayList<String> names = new ArrayList<>();
+            List<PolySqlType> types = new ArrayList<>();
+            List<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
 
                 types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 
-            ArrayList<String[]> data = new ArrayList<>();
+            List<String[]> data = new ArrayList<>();
             for ( List<Object> row : rows ) {
                 String[] temp = new String[row.size()];
                 int counter = 0;

@@ -2,22 +2,24 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.*;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
+import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,13 +48,12 @@ public class StatisticsManager<T extends Comparable<T>> {
     private StatisticsManager() {
 
         ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage(new WebUiPage("queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance."));
-        cm.registerWebUiGroup(new WebUiGroup("statisticSettings", "queryStatistics").withTitle("Statistics Settings"));
-        cm.registerConfig(new ConfigBoolean("useDynamicQuerying", "Use statistics for query assistance.", true).withUi("statisticSettings"));
-        cm.registerConfig(new ConfigInteger("StatisticColumnBuffer", "Number of rows per page in the data view", 5).withUi("statisticSettings"));
-        cm.registerConfig(new ConfigInteger("maxCharUniqueVal", "Number of rows per page in the data view", 10).withUi("statisticSettings"));
-        cm.registerConfig(new ConfigBoolean("passiveQuerying", "Reevaluated the whole store, after a set time.", false).withUi("statisticSettings"));
-
+        cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
+        cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
+        cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigBoolean( "passiveQuerying", "Reevaluated the whole store, after a set time.", false ).withUi( "statisticSettings" ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
@@ -66,66 +67,68 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Registers toggleable option to active passive querying
      */
     private void configureBackgroundTask() {
-        ConfigManager.getInstance().getConfig("passiveQuerying").addObserver(new Config.ConfigListener() {
+        ConfigManager.getInstance().getConfig( "passiveQuerying" ).addObserver( new Config.ConfigListener() {
             @Override
-            public void onConfigChange(Config c) {
+            public void onConfigChange( Config c ) {
                 String id = StatisticsManager.getInstance().getRevalId();
-                if (c.getBoolean() && id == null) {
+                if ( c.getBoolean() && id == null ) {
                     String revalId = BackgroundTaskManager.INSTANCE.registerTask(
                             StatisticsManager.this::reevaluateStore,
                             "Reevalute StatisticsManager.",
                             TaskPriority.LOW,
-                            TaskSchedulingType.EVERY_THIRTY_SECONDS);
-                    StatisticsManager.getInstance().setRevalId(revalId);
-                } else if (!c.getBoolean() && id != null) {
-                    BackgroundTaskManager.INSTANCE.removeBackgroundTask(StatisticsManager.getInstance().getRevalId());
-                    StatisticsManager.getInstance().setRevalId(null);
+                            TaskSchedulingType.EVERY_THIRTY_SECONDS );
+                    StatisticsManager.getInstance().setRevalId( revalId );
+                } else if ( !c.getBoolean() && id != null ) {
+                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
+                    StatisticsManager.getInstance().setRevalId( null );
                 }
 
             }
 
 
             @Override
-            public void restart(Config c) {
+            public void restart( Config c ) {
 
             }
-        });
+        } );
     }
 
 
-    public static synchronized StatisticsManager getInstance() {
+    public static StatisticsManager getInstance() {
         // To ensure only one instance is created
-        if (instance == null) {
-            instance = new StatisticsManager();
+        synchronized ( StatisticsManager.class ) {
+            if ( instance == null ) {
+                instance = new StatisticsManager();
+            }
         }
         return instance;
     }
 
 
-    private void insert(String schemaTableColumn, T val) {
-        String[] splits = QueryColumn.getSplitColumn(schemaTableColumn);
-        insert(splits[0], splits[1], splits[2], val);
+    private void insert( String schemaTableColumn, T val ) {
+        String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
+        insert( splits[0], splits[1], splits[2], val );
     }
 
 
     /**
      * adds data for a column to the store
      *
-     * @param schema          schema name
-     * @param qualifiedTable  table name
+     * @param schema schema name
+     * @param qualifiedTable table name
      * @param qualifiedColumn column name
      */
-    private void insert(String schema, String qualifiedTable, String qualifiedColumn, T val) {
-        PolySqlType type = this.sqlQueryInterface.getColumnType(qualifiedColumn);
-        insert(schema, qualifiedTable, qualifiedColumn, type, val);
+    private void insert( String schema, String qualifiedTable, String qualifiedColumn, T val ) {
+        PolySqlType type = this.sqlQueryInterface.getColumnType( qualifiedColumn );
+        insert( schema, qualifiedTable, qualifiedColumn, type, val );
     }
 
 
-    private void insert(String schema, String qualifiedTable, String qualifiedColumn, PolySqlType type, T val) {
-        if (!this.statisticSchemaMap.containsKey(qualifiedColumn)) {
-            addColumn(qualifiedColumn, type);
+    private void insert( String schema, String qualifiedTable, String qualifiedColumn, PolySqlType type, T val ) {
+        if ( !this.statisticSchemaMap.containsKey( qualifiedColumn ) ) {
+            addColumn( qualifiedColumn, type );
         }
-        getColumn(schema, qualifiedTable, qualifiedColumn).insert(val);
+        getColumn( schema, qualifiedTable, qualifiedColumn ).insert( val );
     }
 
 
@@ -135,11 +138,11 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @return the statisticColumn which matches the criteria
      */
-    private StatisticColumn<T> getColumn(String schema, String table, String column) {
-        if (this.statisticSchemaMap.containsKey(schema)) {
-            if (this.statisticSchemaMap.get(schema).containsKey(table)) {
-                if (this.statisticSchemaMap.get(schema).get(table).containsKey(column)) {
-                    return this.statisticSchemaMap.get(schema).get(table).get(column);
+    private StatisticColumn<T> getColumn( String schema, String table, String column ) {
+        if ( this.statisticSchemaMap.containsKey( schema ) ) {
+            if ( this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
+                if ( this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
+                    return this.statisticSchemaMap.get( schema ).get( table ).get( column );
                 }
             }
         }
@@ -151,22 +154,22 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Adds a new column to the tracked columns and sorts it correctly
      *
      * @param qualifiedColumn column name
-     * @param type            the type of the new column
+     * @param type the type of the new column
      */
-    private void addColumn(String qualifiedColumn, PolySqlType type) {
-        String[] splits = QueryColumn.getSplitColumn(qualifiedColumn);
-        if (type.isNumericalType()) {
-            put(splits[0], splits[1], splits[2], new NumericalStatisticColumn<>(splits, type));
-        } else if (type.isCharType()) {
-            put(splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>(splits, type));
+    private void addColumn( String qualifiedColumn, PolySqlType type ) {
+        String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
+        if ( type.isNumericalType() ) {
+            put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
+        } else if ( type.isCharType() ) {
+            put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
         }
     }
 
 
-    public void addAll(String schema, String table, String column, PolySqlType type, List<T> vals) {
-        vals.forEach(val -> {
-            insert(schema, table, column, type, val);
-        });
+    public void addAll( String schema, String table, String column, PolySqlType type, List<T> vals ) {
+        vals.forEach( val -> {
+            insert( schema, table, column, type, val );
+        } );
     }
 
 
@@ -174,22 +177,22 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Reset all statistics and reevaluate them
      */
     private void reevaluateStore() {
-        if (this.sqlQueryInterface == null) {
+        if ( this.sqlQueryInterface == null ) {
             return;
         }
-        log.debug("Resetting StatisticStore.");
+        log.debug( "Resetting StatisticStore." );
         this.columnsToUpdate.clear();
         ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
-        for (QueryColumn column : this.sqlQueryInterface.getAllColumns()) {
-            StatisticColumn col = reevaluateColumn(column);
-            if (col != null) {
-                put(statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col);
+        for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
+            StatisticColumn col = reevaluateColumn( column );
+            if ( col != null ) {
+                put( statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col );
             }
 
         }
-        replaceStatistics(statisticSchemaMapCopy);
-        log.debug("Finished resetting StatisticStore.");
+        replaceStatistics( statisticSchemaMapCopy );
+        log.debug( "Finished resetting StatisticStore." );
     }
 
 
@@ -198,22 +201,22 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @param qualifiedTable table name
      */
-    private void reevaluateTable(String qualifiedTable) {
-        if (this.sqlQueryInterface == null) {
+    private void reevaluateTable( String qualifiedTable ) {
+        if ( this.sqlQueryInterface == null ) {
             return;
         }
 
-        String[] splits = qualifiedTable.replace("\"", "").split("\\.");
-        if (splits.length != 2) {
+        String[] splits = qualifiedTable.replace( "\"", "" ).split( "\\." );
+        if ( splits.length != 2 ) {
             return;
         }
 
-        ArrayList<QueryColumn> res = this.sqlQueryInterface.getAllColumns(splits[0], splits[1]);
+        List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( splits[0], splits[1] );
 
-        for (QueryColumn column : res) {
-            StatisticColumn col = reevaluateColumn(column);
-            if (col != null) {
-                put(column.getSchema(), column.getTable(), column.getName(), col);
+        for ( QueryColumn column : res ) {
+            StatisticColumn col = reevaluateColumn( column );
+            if ( col != null ) {
+                put( column.getSchema(), column.getTable(), column.getName(), col );
             }
 
         }
@@ -224,43 +227,43 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * replace the the tracked statistics with other statistics
      */
-    private synchronized void replaceStatistics(ConcurrentHashMap map) {
-        this.statisticSchemaMap = new ConcurrentHashMap<>(map);
+    private synchronized void replaceStatistics( ConcurrentHashMap map ) {
+        this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
 
     /**
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
-    private StatisticColumn reevaluateColumn(QueryColumn column) {
-        if (!this.sqlQueryInterface.hasData(column.getSchema(), column.getTable(), column.getName())) {
+    private StatisticColumn reevaluateColumn( QueryColumn column ) {
+        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
-        if (column.getType().isNumericalType()) {
-            return this.reevaluateNumericalColumn(column);
-        } else if (column.getType().isCharType()) {
-            return this.reevaluateAlphabeticalColumn(column);
+        if ( column.getType().isNumericalType() ) {
+            return this.reevaluateNumericalColumn( column );
+        } else if ( column.getType().isCharType() ) {
+            return this.reevaluateAlphabeticalColumn( column );
         }
         return null;
     }
 
 
-    private StatisticColumn reevaluateNumericalColumn(QueryColumn column) {
-        StatisticQueryColumn min = this.getAggregateColumn(column, "MIN");
-        StatisticQueryColumn max = this.getAggregateColumn(column, "MAX");
-        StatisticQueryColumn unique = this.getUniqueValues(column);
-        Integer count = this.getCount(column);
-        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>(QueryColumn.getSplitColumn(column.getQualifiedColumnName()), column.getType());
-        if (min != null) {
-            statisticColumn.setMin(min.getData()[0]);
+    private StatisticColumn reevaluateNumericalColumn( QueryColumn column ) {
+        StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
+        StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
+        StatisticQueryColumn unique = this.getUniqueValues( column );
+        Integer count = this.getCount( column );
+        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        if ( min != null ) {
+            statisticColumn.setMin( min.getData()[0] );
         }
-        if (max != null) {
-            statisticColumn.setMax(max.getData()[0]);
+        if ( max != null ) {
+            statisticColumn.setMax( max.getData()[0] );
         }
 
-        assignUnique(unique, statisticColumn);
+        assignUnique( unique, statisticColumn );
 
-        statisticColumn.setCount(count);
+        statisticColumn.setCount( count );
 
         return statisticColumn;
     }
@@ -269,29 +272,29 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Helper method tho assign unique values or set isFull if too much exist
      *
-     * @param unique          the unique values
+     * @param unique the unique values
      * @param statisticColumn the column in which the values should be inserted
      */
-    private void assignUnique(StatisticQueryColumn unique, StatisticColumn<String> statisticColumn) {
-        int maxLength = ConfigManager.getInstance().getConfig("StatisticColumnBuffer").getInt();
-        if (unique == null || unique.getData() == null) {
+    private void assignUnique( StatisticQueryColumn unique, StatisticColumn<String> statisticColumn ) {
+        int maxLength = ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt();
+        if ( unique == null || unique.getData() == null ) {
             return;
         }
-        if (unique.getData().length <= maxLength) {
-            statisticColumn.setUniqueValues(Arrays.asList(unique.getData()));
+        if ( unique.getData().length <= maxLength ) {
+            statisticColumn.setUniqueValues( Arrays.asList( unique.getData() ) );
         } else {
-            statisticColumn.setFull(true);
+            statisticColumn.setFull( true );
         }
     }
 
 
-    private StatisticColumn reevaluateAlphabeticalColumn(QueryColumn column) {
-        StatisticQueryColumn unique = this.getUniqueValues(column);
-        Integer count = this.getCount(column);
+    private StatisticColumn reevaluateAlphabeticalColumn( QueryColumn column ) {
+        StatisticQueryColumn unique = this.getUniqueValues( column );
+        Integer count = this.getCount( column );
 
-        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>(QueryColumn.getSplitColumn(column.getQualifiedColumnName()), column.getType());
-        assignUnique(unique, statisticColumn);
-        statisticColumn.setCount(count);
+        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        assignUnique( unique, statisticColumn );
+        statisticColumn.setCount( count );
 
         return statisticColumn;
     }
@@ -300,24 +303,24 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Places a column at the correct position in the schemaMap
      *
-     * @param map             which schemaMap should be used
+     * @param map which schemaMap should be used
      * @param statisticColumn the Column with its statistics
      */
-    private void put(ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn) {
-        if (!map.containsKey(schema)) {
-            map.put(schema, new HashMap<>());
+    private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
+        if ( !map.containsKey( schema ) ) {
+            map.put( schema, new HashMap<>() );
         }
 
-        if (!map.get(schema).containsKey(table)) {
-            map.get(schema).put(table, new HashMap<>());
+        if ( !map.get( schema ).containsKey( table ) ) {
+            map.get( schema ).put( table, new HashMap<>() );
         }
-        map.get(schema).get(table).put(column, statisticColumn);
+        map.get( schema ).get( table ).put( column, statisticColumn );
 
     }
 
 
-    private void put(String schema, String table, String column, StatisticColumn statisticColumn) {
-        put(this.statisticSchemaMap, schema, table, column, statisticColumn);
+    private void put( String schema, String table, String column, StatisticColumn statisticColumn ) {
+        put( this.statisticSchemaMap, schema, table, column, statisticColumn );
 
     }
 
@@ -328,8 +331,8 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @return a StatQueryColumn which contains the requested value
      */
-    private StatisticQueryColumn getAggregateColumn(QueryColumn column, String aggregate) {
-        return getAggregateColumn(column.getSchema(), column.getTable(), column.getName(), aggregate);
+    private StatisticQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
+        return getAggregateColumn( column.getSchema(), column.getTable(), column.getName(), aggregate );
     }
 
 
@@ -338,9 +341,9 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @param aggregate the aggregate funciton to us
      */
-    private StatisticQueryColumn getAggregateColumn(String schema, String table, String column, String aggregate) {
-        String query = "SELECT " + aggregate + " (" + StatisticQueryProcessor.buildName(schema, table, column) + ") FROM " + StatisticQueryProcessor.buildName(schema, table) + getStatQueryLimit();
-        return this.sqlQueryInterface.selectOneStat(query);
+    private StatisticQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
+        String query = "SELECT " + aggregate + " (" + StatisticQueryProcessor.buildName( schema, table, column ) + ") FROM " + StatisticQueryProcessor.buildName( schema, table ) + getStatQueryLimit();
+        return this.sqlQueryInterface.selectOneStat( query );
     }
 
 
@@ -349,24 +352,24 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @return the unique values
      */
-    private StatisticQueryColumn getUniqueValues(QueryColumn column) {
-        String tableName = StatisticQueryProcessor.buildName(column.getSchema(), column.getTable());
-        String columnName = StatisticQueryProcessor.buildName(column.getSchema(), column.getTable(), column.getName());
-        String query = "SELECT " + columnName + " FROM " + tableName + " GROUP BY " + columnName + getStatQueryLimit(1);
-        return this.sqlQueryInterface.selectOneStat(query);
+    private StatisticQueryColumn getUniqueValues( QueryColumn column ) {
+        String tableName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
+        String query = "SELECT " + columnName + " FROM " + tableName + " GROUP BY " + columnName + getStatQueryLimit( 1 );
+        return this.sqlQueryInterface.selectOneStat( query );
     }
 
 
     /**
      * Gets the amount of entries for a column
      */
-    private Integer getCount(QueryColumn column) {
-        String tableName = StatisticQueryProcessor.buildName(column.getSchema(), column.getTable());
-        String columnName = StatisticQueryProcessor.buildName(column.getSchema(), column.getTable(), column.getName());
+    private Integer getCount( QueryColumn column ) {
+        String tableName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable() );
+        String columnName = StatisticQueryProcessor.buildName( column.getSchema(), column.getTable(), column.getName() );
         String query = "SELECT COUNT(" + columnName + ") FROM " + tableName;
-        StatisticQueryColumn res = this.sqlQueryInterface.selectOneStat(query);
+        StatisticQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
 
-        if (res != null && res.getData() != null && res.getData().length != 0) {
+        if ( res != null && res.getData() != null && res.getData().length != 0 ) {
             try {
                 return Integer.parseInt( res.getData()[0] );
             } catch ( NumberFormatException e ) {
@@ -378,16 +381,16 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     private String getStatQueryLimit() {
-        return getStatQueryLimit(0);
+        return getStatQueryLimit( 0 );
     }
 
 
-    private String getStatQueryLimit(int add) {
-        return " LIMIT " + (ConfigManager.getInstance().getConfig("StatisticColumnBuffer").getInt() + add);
+    private String getStatQueryLimit( int add ) {
+        return " LIMIT " + (ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() + add);
     }
 
 
-    public void setSqlQueryInterface(StatisticQueryProcessor statisticQueryProcessor) {
+    public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         this.sqlQueryInterface = statisticQueryProcessor;
 
         this.reevaluateStore();
@@ -401,76 +404,76 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage("statistics", "Statistics");
-        im.addPage(page);
+        InformationPage page = new InformationPage( "statistics", "Statistics" );
+        im.addPage( page );
 
-        InformationGroup contentGroup = new InformationGroup(page, "Column Statistic Status");
-        im.addGroup(contentGroup);
+        InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
+        im.addGroup( contentGroup );
 
-        InformationTable statisticsInformation = new InformationTable(contentGroup, Arrays.asList("Column Name", "Type", "Count", "Updated"));
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count", "Updated" ) );
 
-        im.registerInformation(statisticsInformation);
+        im.registerInformation( statisticsInformation );
 
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     statisticsInformation.reset();
-                    statisticSchemaMap.values().forEach(schema -> schema.values().forEach(table -> table.forEach((k, v) -> {
+                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                         String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
-                        if (v.isUpdated()) {
-                            statisticsInformation.addRow(name, v.getType().name(), v.getCount(), "✔");
+                        if ( v.isUpdated() ) {
+                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "✔" );
                         } else {
-                            statisticsInformation.addRow(name, v.getType().name(), v.getCount(), "❌");
+                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "❌" );
                         }
 
-                    })));
+                    } ) ) );
                 },
                 "Reset the Statistic InformationPage for the dynamicQuering",
                 TaskPriority.LOW,
                 TaskSchedulingType.EVERY_FIVE_SECONDS
         );
 
-        InformationGroup alphabeticalGroup = new InformationGroup(page, "Alphabetical Statistics");
-        im.addGroup(alphabeticalGroup);
+        InformationGroup alphabeticalGroup = new InformationGroup( page, "Alphabetical Statistics" );
+        im.addGroup( alphabeticalGroup );
 
-        InformationGroup numericalGroup = new InformationGroup(page, "Numerical Statistics");
-        im.addGroup(numericalGroup);
+        InformationGroup numericalGroup = new InformationGroup( page, "Numerical Statistics" );
+        im.addGroup( numericalGroup );
 
-        InformationTable numericalInformation = new InformationTable(numericalGroup, Arrays.asList("Column Name", "Min", "Max"));
+        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
-        InformationTable alphabeticalInformation = new InformationTable(alphabeticalGroup, Arrays.asList("Column Name", "Unique Values"));
+        InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
 
-        im.registerInformation(numericalInformation);
-        im.registerInformation(alphabeticalInformation);
+        im.registerInformation( numericalInformation );
+        im.registerInformation( alphabeticalInformation );
 
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     numericalInformation.reset();
                     alphabeticalInformation.reset();
-                    statisticSchemaMap.values().forEach(schema -> schema.values().forEach(table -> table.forEach((k, v) -> {
+                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                         String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
-                        if (v instanceof NumericalStatisticColumn) {
+                        if ( v instanceof NumericalStatisticColumn ) {
 
-                            if (((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null) {
-                                numericalInformation.addRow(name, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString());
+                            if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
+                                numericalInformation.addRow( name, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
                             } else {
-                                numericalInformation.addRow(name, "❌", "❌");
+                                numericalInformation.addRow( name, "❌", "❌" );
                             }
 
                         } else {
                             String values = v.getUniqueValues().toString();
-                            if (!v.isFull) {
-                                alphabeticalInformation.addRow(name, values);
+                            if ( !v.isFull ) {
+                                alphabeticalInformation.addRow( name, values );
                             } else {
-                                alphabeticalInformation.addRow(name, "is Full");
+                                alphabeticalInformation.addRow( name, "is Full" );
                             }
 
                         }
 
-                    })));
+                    } ) ) );
 
                 }, "Reset Min Max for all numericalColumns.",
                 TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS);
+                TaskSchedulingType.EVERY_FIVE_SECONDS );
 
     }
 
@@ -480,8 +483,8 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @param stats all changes for this store
      */
-    public void apply(ArrayList<String> stats) {
-        stats.forEach(this::reevaluateTable);
+    public void apply( List<String> stats ) {
+        stats.forEach( this::reevaluateTable );
 
     }
 
@@ -491,7 +494,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * else Method goes through all columns for update
      */
     public synchronized void sync() {
-        if (!ConfigManager.getInstance().getConfig("useDynamicQuerying").getBoolean()) {
+        if ( !ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
             return;
         }
 
