@@ -391,7 +391,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
         im.addGroup( contentGroup );
 
-        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count", "Updated" ) );
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count" ) );
 
         im.registerInformation( statisticsInformation );
 
@@ -399,12 +399,9 @@ public class StatisticsManager<T extends Comparable<T>> {
                 () -> {
                     statisticsInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
-                        if ( v.isUpdated() ) {
-                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "✔" );
-                        } else {
-                            statisticsInformation.addRow( name, v.getType().name(), v.getCount(), "❌" );
-                        }
+                        String name = QueryColumn.getQualifiedColumnName( v.getSchema(), v.getTable(), v.getColumn() );
+                        statisticsInformation.addRow( name, v.getType().name(), v.getCount());
+
 
                     } ) ) );
                 },
@@ -431,7 +428,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                     numericalInformation.reset();
                     alphabeticalInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        String name = v.getSchema() + "." + v.getTable() + "." + v.getColumn();
+                        String name = QueryColumn.getQualifiedColumnName( v.getSchema(), v.getTable(), v.getColumn() );
                         if ( v instanceof NumericalStatisticColumn ) {
 
                             if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {

@@ -49,11 +49,6 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     public int count;
 
 
-    @Getter
-    @Setter
-    private boolean updated = true;
-
-
     public StatisticColumn( String schema, String table, String column, PolySqlType type ) {
         this.schema = schema.replace("\\", "").replace( "\"", "" ) ;
         this.table = table.replace("\\", "").replace( "\"", "" ) ;
