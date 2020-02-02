@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
+import ch.unibas.dmi.dbis.polyphenydb.config.ConfigEnum;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
@@ -19,6 +20,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +39,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     @Getter
     public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
 
-    private ConcurrentHashMap<String, PolySqlType> columnsToUpdate = new ConcurrentHashMap<>();
     private StatisticQueryProcessor sqlQueryInterface;
+
+    private ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
     @Setter
     @Getter
@@ -49,10 +53,13 @@ public class StatisticsManager<T extends Comparable<T>> {
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
-        cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings" ) );
-        cm.registerConfig( new ConfigBoolean( "passiveQuerying", "Reevaluated the whole store, after a set time.", false ).withUi( "statisticSettings" ) );
+        cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings", 0 ) );
+        cm.registerConfig( new ConfigBoolean( "activeTracking", "All transactions are tracked and statistics collected.", true ).withUi( "statisticSettings", 1 ) );
+        cm.registerConfig( new ConfigBoolean( "passiveTracking", "Reevaluated the whole store, after a set time.", false ).withUi( "statisticSettings", 2 ) );
+        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings", 10 ) );
+        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings", 11 ) );
+
+        cm.registerConfig( new ConfigEnum( "passiveTrackingRate", TaskSchedulingType.class, TaskSchedulingType.EVERY_THIRTY_SECONDS ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
@@ -66,28 +73,32 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Registers toggleable option to active passive querying
      */
     private void configureBackgroundTask() {
-        ConfigManager.getInstance().getConfig( "passiveQuerying" ).addObserver( new Config.ConfigListener() {
+        ConfigManager.getInstance().getConfig( "passiveTracking" ).addObserver( new Config.ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
-                String id = StatisticsManager.getInstance().getRevalId();
-                if ( c.getBoolean() && id == null ) {
-                    String revalId = BackgroundTaskManager.INSTANCE.registerTask(
-                            StatisticsManager.this::reevaluateStore,
-                            "Reevalute StatisticsManager.",
-                            TaskPriority.LOW,
-                            TaskSchedulingType.EVERY_THIRTY_SECONDS );
-                    StatisticsManager.getInstance().setRevalId( revalId );
-                } else if ( ! c.getBoolean() && id != null ) {
-                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
-                    StatisticsManager.getInstance().setRevalId( null );
-                }
-
+                registerToggable( c );
             }
 
 
             @Override
             public void restart( Config c ) {
+                registerToggable( c );
+            }
 
+
+            public void registerToggable( Config c ) {
+                String id = StatisticsManager.getInstance().getRevalId();
+                if ( c.getBoolean() && id == null ) {
+                    String revalId = BackgroundTaskManager.INSTANCE.registerTask(
+                            StatisticsManager.this::asyncReevaluateStore,
+                            "Reevalute StatisticsManager.",
+                            TaskPriority.LOW,
+                            (TaskSchedulingType) ConfigManager.getInstance().getConfig( "backgroundTaskRate" ).getEnum() );
+                    StatisticsManager.getInstance().setRevalId( revalId );
+                } else if ( ! c.getBoolean() && id != null ) {
+                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
+                    StatisticsManager.getInstance().setRevalId( null );
+                }
             }
         } );
     }
@@ -101,33 +112,6 @@ public class StatisticsManager<T extends Comparable<T>> {
             }
         }
         return instance;
-    }
-
-
-    private void insert( String schemaTableColumn, T val ) {
-        String[] splits = QueryColumn.getSplitColumn( schemaTableColumn );
-        insert( splits[0], splits[1], splits[2], val );
-    }
-
-
-    /**
-     * adds data for a column to the store
-     *
-     * @param schema schema name
-     * @param qualifiedTable table name
-     * @param qualifiedColumn column name
-     */
-    private void insert( String schema, String qualifiedTable, String qualifiedColumn, T val ) {
-        PolySqlType type = this.sqlQueryInterface.getColumnType( qualifiedColumn );
-        insert( schema, qualifiedTable, qualifiedColumn, type, val );
-    }
-
-
-    private void insert( String schema, String qualifiedTable, String qualifiedColumn, PolySqlType type, T val ) {
-        if ( ! this.statisticSchemaMap.containsKey( qualifiedColumn ) ) {
-            addColumn( qualifiedColumn, type );
-        }
-        getColumn( schema, qualifiedTable, qualifiedColumn ).insert( val );
     }
 
 
@@ -165,13 +149,6 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
-    public void addAll( String schema, String table, String column, PolySqlType type, List<T> vals ) {
-        vals.forEach( val -> {
-            insert( schema, table, column, type, val );
-        } );
-    }
-
-
     /**
      * Reset all statistics and reevaluate them
      */
@@ -180,7 +157,6 @@ public class StatisticsManager<T extends Comparable<T>> {
             return;
         }
         log.debug( "Resetting StatisticStore." );
-        this.columnsToUpdate.clear();
         ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
@@ -247,6 +223,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
+    /**
+     * Reevaluates a numerical column, with the configured statistics
+     */
     private StatisticColumn reevaluateNumericalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
@@ -287,6 +266,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
+    /**
+     * Reevaluates an alphabetical column, with the configured statistics
+     */
     private StatisticColumn reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
@@ -392,7 +374,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         this.sqlQueryInterface = statisticQueryProcessor;
 
-        this.reevaluateStore();
+        this.asyncReevaluateStore();
 
     }
 
@@ -477,26 +459,19 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
-    /**
-     * Reevalutes all tables which received changes which impact their statistic data
-     *
-     * @param changedTables all tables which got changed in a transaction
-     */
-    public void apply( List<String> changedTables ) {
-        changedTables.forEach( this::reevaluateTable );
-
+    public void asyncReevaluateStore() {
+        threadPool.execute( this::reevaluateStore );
     }
 
 
     /**
-     * Checks if store is in sync or reevalutates
-     * else Method goes through all columns for update
+     * Reevalutes all tables which received changes impacting their statistic data
+     *
+     * @param changedTables all tables which got changed in a transaction
      */
-    public synchronized void sync() {
-        if ( ! ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
-            return;
-        }
-
-        reevaluateStore();
+    public void apply( List<String> changedTables ) {
+        threadPool.execute( () -> {
+            changedTables.forEach( this::reevaluateTable );
+        } );
     }
 }

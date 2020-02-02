@@ -60,6 +60,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
@@ -183,6 +185,7 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     private final String userName;
     private final StatisticsManager store = StatisticsManager.getInstance();
+    private boolean isActiveTracking = false;
 
 
     /**
@@ -200,6 +203,20 @@ public class Crud implements InformationObserver {
         cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
         cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
         cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
+
+        this.isActiveTracking = cm.getConfig( "activeTracking" ).getBoolean();
+        cm.getConfig( "activeTracking" ).addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                isActiveTracking = c.getBoolean();
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                isActiveTracking = c.getBoolean();
+            }
+        } );
     }
 
 
@@ -494,9 +511,12 @@ public class Crud implements InformationObserver {
             values.add( value );
         }
 
-        request.data.forEach( ( k, v ) -> {
-            transaction.addChangedTable( tableId );
-        } );
+        if( isActiveTracking ) {
+            request.data.forEach( ( k, v ) -> {
+                transaction.addChangedTable( tableId );
+            } );
+        }
+
 
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
@@ -725,7 +745,10 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
-                transaction.addChangedTable( tableId );
+                if ( isActiveTracking ){
+                    transaction.addChangedTable( tableId );
+                }
+
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -777,7 +800,9 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
-                transaction.addChangedTable( tableId );
+                if ( isActiveTracking ) {
+                    transaction.addChangedTable( tableId );
+                }
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
