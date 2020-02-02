@@ -19,10 +19,10 @@ public class StatisticQueryColumn extends QueryColumn {
 
 
     /**
-     * Builds a StatColumn with the individual stats of a column
+     * Builds a StatColumn with the individual statistics of a column
      *
      * @param type db type of the column
-     * @param data map consisting of different values to a given stat
+     * @param data map consisting of different values to a given statistic
      */
     public StatisticQueryColumn( String schemaTableName, final PolySqlType type, final String[] data ) {
         super( schemaTableName, type );

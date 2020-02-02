@@ -11,7 +11,6 @@ import lombok.Setter;
 
 /**
  * Stores the available statistic data of a specific column
- * If is responsible to ask for a update if it falls out of "sync"
  */
 public abstract class StatisticColumn<T extends Comparable<T>> {
 
@@ -30,7 +29,9 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Getter
     private final PolySqlType type;
 
+    // TODO: change to qualifiedColumnName when frontend supports it
     @Expose
+    @Getter
     private final String fullColumnName;
 
     @Expose

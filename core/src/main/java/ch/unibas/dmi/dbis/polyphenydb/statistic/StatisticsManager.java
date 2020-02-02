@@ -55,7 +55,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
         cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings", 0 ) );
         cm.registerConfig( new ConfigBoolean( "activeTracking", "All transactions are tracked and statistics collected.", true ).withUi( "statisticSettings", 1 ) );
-        cm.registerConfig( new ConfigBoolean( "passiveTracking", "Reevaluated the whole store, after a set time.", false ).withUi( "statisticSettings", 2 ) );
+        cm.registerConfig( new ConfigBoolean( "passiveTracking", "Reevaluates statistics for all columns, after a set time.", false ).withUi( "statisticSettings", 2 ) );
         cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings", 10 ) );
         cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings", 11 ) );
 
@@ -90,7 +90,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 String id = StatisticsManager.getInstance().getRevalId();
                 if ( c.getBoolean() && id == null ) {
                     String revalId = BackgroundTaskManager.INSTANCE.registerTask(
-                            StatisticsManager.this::asyncReevaluateStore,
+                            StatisticsManager.this::asyncReevaluateAllStatistics,
                             "Reevalute StatisticsManager.",
                             TaskPriority.LOW,
                             (TaskSchedulingType) ConfigManager.getInstance().getConfig( "backgroundTaskRate" ).getEnum() );
@@ -152,11 +152,11 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Reset all statistics and reevaluate them
      */
-    private void reevaluateStore() {
+    private void reevaluateAllStatistics() {
         if ( this.sqlQueryInterface == null ) {
             return;
         }
-        log.debug( "Resetting StatisticStore." );
+        log.debug( "Resetting StatisticManager." );
         ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
@@ -167,7 +167,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         }
         replaceStatistics( statisticSchemaMapCopy );
-        log.debug( "Finished resetting StatisticStore." );
+        log.debug( "Finished resetting StatisticManager." );
     }
 
 
@@ -374,7 +374,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         this.sqlQueryInterface = statisticQueryProcessor;
 
-        this.asyncReevaluateStore();
+        this.asyncReevaluateAllStatistics();
 
     }
 
@@ -399,8 +399,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 () -> {
                     statisticsInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        String name = QueryColumn.getQualifiedColumnName( v.getSchema(), v.getTable(), v.getColumn() );
-                        statisticsInformation.addRow( name, v.getType().name(), v.getCount());
+                        statisticsInformation.addRow( v.getFullColumnName(), v.getType().name(), v.getCount());
 
 
                     } ) ) );
@@ -428,21 +427,20 @@ public class StatisticsManager<T extends Comparable<T>> {
                     numericalInformation.reset();
                     alphabeticalInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        String name = QueryColumn.getQualifiedColumnName( v.getSchema(), v.getTable(), v.getColumn() );
                         if ( v instanceof NumericalStatisticColumn ) {
 
                             if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
-                                numericalInformation.addRow( name, ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                                numericalInformation.addRow( v.getFullColumnName(), ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
                             } else {
-                                numericalInformation.addRow( name, "❌", "❌" );
+                                numericalInformation.addRow( v.getFullColumnName(), "❌", "❌" );
                             }
 
                         } else {
                             String values = v.getUniqueValues().toString();
                             if ( ! v.isFull ) {
-                                alphabeticalInformation.addRow( name, values );
+                                alphabeticalInformation.addRow( v.getFullColumnName(), values );
                             } else {
-                                alphabeticalInformation.addRow( name, "is Full" );
+                                alphabeticalInformation.addRow( v.getFullColumnName(), "is Full" );
                             }
 
                         }
@@ -456,8 +454,8 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
-    public void asyncReevaluateStore() {
-        threadPool.execute( this::reevaluateStore );
+    public void asyncReevaluateAllStatistics() {
+        threadPool.execute( this::reevaluateAllStatistics );
     }
 
 

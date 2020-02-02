@@ -9,7 +9,7 @@ import lombok.Getter;
 
 
 /**
- * Contains stats for multiple columns
+ * Contains statistics for multiple columns
  */
 public class StatisticResult {
 

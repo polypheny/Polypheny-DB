@@ -62,14 +62,14 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
     @Override
     public String toString() {
-        String stats = "";
+        String statistics = "";
 
-        stats += "min: " + min;
-        stats += "max: " + max;
-        stats += "count: " + count;
-        stats += "unique Value: " + uniqueValues.toString();
+        statistics += "min: " + min;
+        statistics += "max: " + max;
+        statistics += "count: " + count;
+        statistics += "unique Value: " + uniqueValues.toString();
 
-        return stats;
+        return statistics;
 
     }
 

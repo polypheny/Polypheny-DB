@@ -42,12 +42,12 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
     @Override
     public String toString() {
-        String stats = "";
+        String statistics = "";
 
-        stats += "count: " + count;
-        stats += "unique Value: " + uniqueValues.toString();
+        statistics += "count: " + count;
+        statistics += "unique Value: " + uniqueValues.toString();
 
-        return stats;
+        return statistics;
 
     }
 
