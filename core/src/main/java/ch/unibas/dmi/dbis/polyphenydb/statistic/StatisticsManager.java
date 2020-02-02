@@ -15,7 +15,6 @@ import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -78,7 +77,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                             TaskPriority.LOW,
                             TaskSchedulingType.EVERY_THIRTY_SECONDS );
                     StatisticsManager.getInstance().setRevalId( revalId );
-                } else if ( !c.getBoolean() && id != null ) {
+                } else if ( ! c.getBoolean() && id != null ) {
                     BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
                     StatisticsManager.getInstance().setRevalId( null );
                 }
@@ -125,7 +124,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     private void insert( String schema, String qualifiedTable, String qualifiedColumn, PolySqlType type, T val ) {
-        if ( !this.statisticSchemaMap.containsKey( qualifiedColumn ) ) {
+        if ( ! this.statisticSchemaMap.containsKey( qualifiedColumn ) ) {
             addColumn( qualifiedColumn, type );
         }
         getColumn( schema, qualifiedTable, qualifiedColumn ).insert( val );
@@ -236,7 +235,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn reevaluateColumn( QueryColumn column ) {
-        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+        if ( ! this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().isNumericalType() ) {
@@ -307,11 +306,11 @@ public class StatisticsManager<T extends Comparable<T>> {
      * @param statisticColumn the Column with its statistics
      */
     private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
-        if ( !map.containsKey( schema ) ) {
+        if ( ! map.containsKey( schema ) ) {
             map.put( schema, new HashMap<>() );
         }
 
-        if ( !map.get( schema ).containsKey( table ) ) {
+        if ( ! map.get( schema ).containsKey( table ) ) {
             map.get( schema ).put( table, new HashMap<>() );
         }
         map.get( schema ).get( table ).put( column, statisticColumn );
@@ -461,7 +460,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
                         } else {
                             String values = v.getUniqueValues().toString();
-                            if ( !v.isFull ) {
+                            if ( ! v.isFull ) {
                                 alphabeticalInformation.addRow( name, values );
                             } else {
                                 alphabeticalInformation.addRow( name, "is Full" );
@@ -479,12 +478,12 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     /**
-     * Transaction hands it changes so they can be added.
+     * Reevalutes all tables which received changes which impact their statistic data
      *
-     * @param stats all changes for this store
+     * @param changedTables all tables which got changed in a transaction
      */
-    public void apply( List<String> stats ) {
-        stats.forEach( this::reevaluateTable );
+    public void apply( List<String> changedTables ) {
+        changedTables.forEach( this::reevaluateTable );
 
     }
 
@@ -494,7 +493,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * else Method goes through all columns for update
      */
     public synchronized void sync() {
-        if ( !ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
+        if ( ! ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
             return;
         }
 

@@ -83,7 +83,7 @@ public class TransactionImpl implements Transaction {
     @Getter
     private final boolean analyze;
 
-    private final ArrayList<String> stats = new ArrayList<>();
+    private final List<String> changedTables = new ArrayList<>();
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
 
@@ -168,8 +168,8 @@ public class TransactionImpl implements Transaction {
                     store.commit( xid );
                 }
 
-                if ( stats.size() > 0 ) {
-                    StatisticsManager.getInstance().apply( stats );
+                if ( changedTables.size() > 0 ) {
+                    StatisticsManager.getInstance().apply( changedTables );
                 }
 
             } else {
@@ -264,9 +264,9 @@ public class TransactionImpl implements Transaction {
 
 
     @Override
-    public void addStat( String stat ) {
-        if ( !this.stats.contains( stat ) ) {
-            this.stats.add( stat );
+    public void addChangedTable( String qualifiedTableName ) {
+        if ( ! this.changedTables.contains( qualifiedTableName ) ) {
+            this.changedTables.add( qualifiedTableName );
         }
     }
 

@@ -11,7 +11,7 @@ import lombok.Getter;
 /**
  * Contains stats for multiple columns
  */
-public class StatsticResult {
+public class StatisticResult {
 
     @Getter
     private StatisticQueryColumn[] columns;
@@ -19,21 +19,21 @@ public class StatsticResult {
     private String[] columnNames;
 
 
-    public StatsticResult() {
+    public StatisticResult() {
     }
 
 
-    public StatsticResult( StatisticQueryColumn[] columns ) {
+    public StatisticResult( StatisticQueryColumn[] columns ) {
         this.columns = columns;
     }
 
 
     /**
-     * Constructor which transforms an answer-array into multiple statcolums
+     * Constructor which transforms an answer-array into multiple StatisticColumns
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatsticResult( List<String> names, List<PolySqlType> type, String[][] data ) {
+    public StatisticResult( List<String> names, List<PolySqlType> type, String[][] data ) {
         ;
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];
@@ -70,11 +70,11 @@ public class StatsticResult {
 
 
     /**
-     * Transforms an StatsticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
+     * Transforms an StatisticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
      *
      * @return map with <b>value</b> as key and <b>occurrence</b> as value
      */
-    public static <E> Map<E, Integer> toOccurrenceMap( StatsticResult stats ) {
+    public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
         HashMap<E, Integer> map = new HashMap();
         String[] values = stats.getColumns()[0].getData();
         String[] occurrences = stats.getColumns()[1].getData();

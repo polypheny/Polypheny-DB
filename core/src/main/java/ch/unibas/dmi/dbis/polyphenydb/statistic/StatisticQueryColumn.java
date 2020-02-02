@@ -12,7 +12,7 @@ public class StatisticQueryColumn extends QueryColumn {
 
 
     /**
-     * all specified stats for a column identified by their keys
+     * all specified statistics for a column identified by their keys
      */
     @Getter
     private String[] data;

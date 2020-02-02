@@ -76,5 +76,5 @@ public interface Transaction {
 
     void resetQueryProcessor();
 
-    void addStat( String stat );
+    void addChangedTable( String stat );
 }

@@ -71,7 +71,7 @@ public class StatisticQueryProcessor {
      * @return result of the query
      */
     public StatisticQueryColumn selectOneStat( String query ) {
-        StatsticResult res = this.executeSqlSelect( query );
+        StatisticResult res = this.executeSqlSelect( query );
         if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
@@ -82,7 +82,7 @@ public class StatisticQueryProcessor {
     /**
      * Handles the request which retrieves the stats for multiple columns
      */
-    public StatsticResult selectMultipleStats( String query ) {
+    public StatisticResult selectMultipleStats( String query ) {
         return this.executeSqlSelect( query );
     }
 
@@ -232,7 +232,6 @@ public class StatisticQueryProcessor {
 
 
     public PolySqlType getColumnType( String schemaTableColumn ) {
-        // TODO:
         String[] splits = schemaTableColumn.split( "\\." );
         return getColumnType( splits[0], splits[1], splits[2] );
     }
@@ -269,9 +268,9 @@ public class StatisticQueryProcessor {
     }
 
 
-    private StatsticResult executeSqlSelect( String query ) {
+    private StatisticResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
-        StatsticResult result = new StatsticResult();
+        StatisticResult result = new StatisticResult();
         try {
 
             result = executeSqlSelect( transaction, query );
@@ -303,7 +302,7 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatsticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
+    private StatisticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -361,8 +360,7 @@ public class StatisticQueryProcessor {
 
             String[][] d = data.toArray( new String[0][] );
 
-            StatsticResult res = new StatsticResult( names, types, d );
-            return res;
+            return new StatisticResult( names, types, d );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
@@ -403,7 +401,7 @@ public class StatisticQueryProcessor {
 
     public boolean hasData( String schema, String table, String column ) {
         String query = "SELECT * FROM " + buildName( schema, table ) + " LIMIT 1";
-        StatsticResult res = executeSqlSelect( query );
+        StatisticResult res = executeSqlSelect( query );
         return res.getColumns().length > 0;
     }
 

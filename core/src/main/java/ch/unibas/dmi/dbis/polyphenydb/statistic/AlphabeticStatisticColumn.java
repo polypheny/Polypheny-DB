@@ -31,7 +31,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     @Override
     public void insert( T val ) {
         if ( uniqueValues.size() < ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() ) {
-            if ( !uniqueValues.contains( val ) ) {
+            if ( ! uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
             }
         } else {
