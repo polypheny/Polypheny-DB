@@ -3,6 +3,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigBoolean;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigEnum;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
@@ -53,17 +54,17 @@ public class StatisticsManager<T extends Comparable<T>> {
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
-        cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings", 0 ) );
-        cm.registerConfig( new ConfigBoolean( "activeTracking", "All transactions are tracked and statistics collected.", true ).withUi( "statisticSettings", 1 ) );
-        cm.registerConfig( new ConfigBoolean( "passiveTracking", "Reevaluates statistics for all columns, after a set time.", false ).withUi( "statisticSettings", 2 ) );
-        cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings", 10 ) );
-        cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings", 11 ) );
-
-        cm.registerConfig( new ConfigEnum( "passiveTrackingRate", TaskSchedulingType.class, TaskSchedulingType.EVERY_THIRTY_SECONDS ) );
+        //cm.registerConfig( new ConfigBoolean( "useDynamicQuerying", "Use statistics for query assistance.", true ).withUi( "statisticSettings", 0 ) );
+        //cm.registerConfig( new ConfigBoolean( "activeTracking", "All transactions are tracked and statistics collected.", true ).withUi( "statisticSettings", 1 ) );
+        //cm.registerConfig( new ConfigBoolean( "passiveTracking", "Reevaluates statistics for all columns, after a set time.", false ).withUi( "statisticSettings", 2 ) );
+        //cm.registerConfig( new ConfigInteger( "StatisticColumnBuffer", "Number of rows per page in the data view", 5 ).withUi( "statisticSettings", 10 ) );
+        //cm.registerConfig( new ConfigInteger( "maxCharUniqueVal", "Number of rows per page in the data view", 10 ).withUi( "statisticSettings", 11 ) );
+        // TODO: move to RuntimeConfig
+        cm.registerConfig( new ConfigEnum( "statistics/passiveTrackingRate", TaskSchedulingType.class, TaskSchedulingType.EVERY_THIRTY_SECONDS ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
-        configureBackgroundTask();
+        configureBackgroundTask( cm );
 
 
     }
@@ -72,8 +73,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Registers toggleable option to active passive querying
      */
-    private void configureBackgroundTask() {
-        ConfigManager.getInstance().getConfig( "passiveTracking" ).addObserver( new Config.ConfigListener() {
+    private void configureBackgroundTask( ConfigManager cm ) {
+
+        ConfigListener configListener = new Config.ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
                 registerToggable( c );
@@ -88,19 +90,21 @@ public class StatisticsManager<T extends Comparable<T>> {
 
             public void registerToggable( Config c ) {
                 String id = StatisticsManager.getInstance().getRevalId();
-                if ( c.getBoolean() && id == null ) {
+                if ( id == null && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean() && cm.getConfig( "statistics/passiveTracking" ).getBoolean() ) {
                     String revalId = BackgroundTaskManager.INSTANCE.registerTask(
                             StatisticsManager.this::asyncReevaluateAllStatistics,
-                            "Reevalute StatisticsManager.",
+                            "Reevaluate StatisticsManager.",
                             TaskPriority.LOW,
-                            (TaskSchedulingType) ConfigManager.getInstance().getConfig( "passiveTrackingRate" ).getEnum() );
-                    StatisticsManager.getInstance().setRevalId( revalId );
-                } else if ( ! c.getBoolean() && id != null ) {
-                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
-                    StatisticsManager.getInstance().setRevalId( null );
+                            (TaskSchedulingType) cm.getConfig( "statistics/passiveTrackingRate" ).getEnum() );
+                    setRevalId( revalId );
+                } else if ( id != null && (!cm.getConfig( "statistics/passiveTracking" ).getBoolean() || !cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
+                    BackgroundTaskManager.INSTANCE.removeBackgroundTask( getRevalId() );
+                    setRevalId( null );
                 }
             }
-        } );
+        };
+        ConfigManager.getInstance().getConfig( "statistics/passiveTracking" ).addObserver( configListener );
+        ConfigManager.getInstance().getConfig( "statistics/useDynamicQuerying" ).addObserver( configListener );
     }
 
 
@@ -211,7 +215,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn reevaluateColumn( QueryColumn column ) {
-        if ( ! this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().isNumericalType() ) {
@@ -254,7 +258,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * @param statisticColumn the column in which the values should be inserted
      */
     private void assignUnique( StatisticQueryColumn unique, StatisticColumn<String> statisticColumn ) {
-        int maxLength = ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt();
+        int maxLength = ConfigManager.getInstance().getConfig( "statistics/StatisticColumnBuffer" ).getInt();
         if ( unique == null || unique.getData() == null ) {
             return;
         }
@@ -288,11 +292,11 @@ public class StatisticsManager<T extends Comparable<T>> {
      * @param statisticColumn the Column with its statistics
      */
     private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
-        if ( ! map.containsKey( schema ) ) {
+        if ( !map.containsKey( schema ) ) {
             map.put( schema, new HashMap<>() );
         }
 
-        if ( ! map.get( schema ).containsKey( table ) ) {
+        if ( !map.get( schema ).containsKey( table ) ) {
             map.get( schema ).put( table, new HashMap<>() );
         }
         map.get( schema ).get( table ).put( column, statisticColumn );
@@ -367,7 +371,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     private String getStatQueryLimit( int add ) {
-        return " LIMIT " + (ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() + add);
+        return " LIMIT " + (ConfigManager.getInstance().getConfig( "statistics/StatisticColumnBuffer" ).getInt() + add);
     }
 
 
@@ -399,7 +403,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 () -> {
                     statisticsInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount());
+                        statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount() );
 
 
                     } ) ) );
@@ -437,7 +441,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
                         } else {
                             String values = v.getUniqueValues().toString();
-                            if ( ! v.isFull ) {
+                            if ( !v.isFull ) {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                             } else {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );

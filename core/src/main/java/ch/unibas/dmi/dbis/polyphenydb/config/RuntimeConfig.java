@@ -159,7 +159,32 @@ public enum RuntimeConfig {
             "Commute joins in planner.",
             false,
             ConfigType.BOOLEAN,
-            "runtimeGroup" );
+            "runtimeGroup" ),
+    DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
+            "Use statistics for query assistance.",
+            true,
+            ConfigType.BOOLEAN,
+            "statisticSettings" ),
+    ACTIVE_TRACKING( "statistics/activeTracking",
+            "All transactions are tracked and statistics collected during execution.",
+            true,
+            ConfigType.BOOLEAN,
+            "statisticSettings" ),
+    PASSIVE_TRACKING( "statistics/passiveTracking",
+            "Reevaluates statistics for all columns constantly, after a set time interval.",
+            false,
+            ConfigType.BOOLEAN,
+            "statisticSettings" ),
+    STATISTIC_BUFFER( "statistics/StatisticColumnBuffer",
+            "Number of buffered statistics e.g. for unique values.",
+            5,
+            ConfigType.INTEGER,
+            "statisticSettings" ),
+    UNIQUE_VALUES( "statistics/maxCharUniqueVal",
+            "Maximum character of unique values",
+            10,
+            ConfigType.INTEGER,
+            "statisticSettings" );
 
 
     private final String key;

@@ -204,19 +204,35 @@ public class Crud implements InformationObserver {
         cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
         cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
 
-        this.isActiveTracking = cm.getConfig( "activeTracking" ).getBoolean();
-        cm.getConfig( "activeTracking" ).addObserver( new ConfigListener() {
+        registerStatisticObserver( cm );
+    }
+
+
+    /**
+     * Ensures that changes in the ConfigManger toggle the statistics correctly
+     * @param cm ConfigManager
+     */
+    private void registerStatisticObserver( ConfigManager cm ) {
+        this.isActiveTracking = cm.getConfig( "statistics/activeTracking" ).getBoolean() && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean();
+        ConfigListener observer = new ConfigListener(){
             @Override
             public void onConfigChange( Config c ) {
-                isActiveTracking = c.getBoolean();
+                setConfig( c );
             }
 
 
             @Override
             public void restart( Config c ) {
-                isActiveTracking = c.getBoolean();
+                setConfig( c );
             }
-        } );
+
+
+            private void setConfig( Config c ) {
+                isActiveTracking = c.getBoolean() && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean();
+            }
+        };
+        cm.getConfig( "statistics/activeTracking" ).addObserver( observer );
+        cm.getConfig( "statistics/useDynamicQuerying" ).addObserver( observer );
     }
 
 
@@ -511,12 +527,11 @@ public class Crud implements InformationObserver {
             values.add( value );
         }
 
-        if( isActiveTracking ) {
+        if ( isActiveTracking ) {
             request.data.forEach( ( k, v ) -> {
                 transaction.addChangedTable( tableId );
             } );
         }
-
 
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
@@ -701,7 +716,7 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      */
     ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
-        if ( ConfigManager.getInstance().getConfig( "useDynamicQuerying" ).getBoolean() ) {
+        if ( ConfigManager.getInstance().getConfig( "statistics/useDynamicQuerying" ).getBoolean() ) {
             return store.getStatisticSchemaMap();
         } else {
             return new ConcurrentHashMap<>();
@@ -745,7 +760,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
-                if ( isActiveTracking ){
+                if ( isActiveTracking ) {
                     transaction.addChangedTable( tableId );
                 }
 
@@ -784,7 +799,7 @@ public class Crud implements InformationObserver {
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
-                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql(entry.getValue()) ) );
+                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) ) );
             }
             column = entry.getKey();
         }
@@ -1941,14 +1956,14 @@ public class Crud implements InformationObserver {
                         executeSqlUpdate( transaction, insertQuery );
                         valueJoiner = new StringJoiner( ",", "VALUES", "" );
                         status.setStatus( csvCounter );
-                        WebSocket.broadcast( gson.toJson(status, Status.class ));
+                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
                     }
                 }
                 if ( csvCounter % BATCH_SIZE != 0 ) {
                     String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
                     executeSqlUpdate( transaction, insertQuery );
                     status.complete();
-                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 }
             }
 
@@ -1974,7 +1989,7 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while rolling back transaction", e );
                 }
             }
-        //} catch ( CsvValidationException | GenericCatalogException e ) {
+            //} catch ( CsvValidationException | GenericCatalogException e ) {
         } catch ( GenericCatalogException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
@@ -2053,14 +2068,14 @@ public class Crud implements InformationObserver {
                         tableStream.write( "\n".getBytes( charset ) );
                     }
                 }
-                counter ++;
-                if( counter % 100 == 0) {
+                counter++;
+                if ( counter % 100 == 0 ) {
                     status.setStatus( counter );
-                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 }
             }
             status.complete();
-            WebSocket.broadcast( gson.toJson(status, Status.class ));
+            WebSocket.broadcast( gson.toJson( status, Status.class ) );
             tableStream.flush();
 
             //from https://www.baeldung.com/java-compress-and-uncompress
@@ -2102,7 +2117,7 @@ public class Crud implements InformationObserver {
             } catch ( JsonSyntaxException e ) {
                 return new Result( resultString );
             }
-        } catch ( TransactionException e) {
+        } catch ( TransactionException e ) {
             log.error( "Error while fetching table", e );
             return new Result( "Error while fetching table" );
         } catch ( IOException e ) {
@@ -2148,7 +2163,7 @@ public class Crud implements InformationObserver {
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
-            if( noLimit ){
+            if ( noLimit ) {
                 rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             } else {
                 rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
