@@ -335,7 +335,7 @@ public abstract class Catalog {
      * Deletes a column placement
      *
      * @param storeId The id of the store
-     * @param columnId The id of the table
+     * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
 

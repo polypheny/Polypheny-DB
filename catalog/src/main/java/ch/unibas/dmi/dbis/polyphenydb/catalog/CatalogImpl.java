@@ -558,9 +558,8 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
             CatalogColumn column = Statements.getColumn( transactionHandler, columnId );
-            CatalogTable table = Statements.getTable( transactionHandler, column.tableId );
-            Statements.addColumnPlacement( transactionHandler, store.id, column.id, table.id, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownTableTypeException | UnknownTableException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
+            Statements.addColumnPlacement( transactionHandler, store.id, column.id, column.tableId, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -570,7 +569,7 @@ public class CatalogImpl extends Catalog {
      * Deletes a column placement
      *
      * @param storeId The id of the store
-     * @param columnId The id of the table
+     * @param columnId The id of the column
      */
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
