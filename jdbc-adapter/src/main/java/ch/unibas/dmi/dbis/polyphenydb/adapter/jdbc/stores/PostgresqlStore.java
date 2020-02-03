@@ -51,7 +51,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     public static final String ADAPTER_NAME = "PostgreSQL";
 
-    public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features.";
+    public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),

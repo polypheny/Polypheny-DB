@@ -29,7 +29,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "HSQLDB";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "Java-based relational database system.";
+    public static final String DESCRIPTION = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
