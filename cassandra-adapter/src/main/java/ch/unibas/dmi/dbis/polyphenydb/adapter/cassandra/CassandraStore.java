@@ -26,7 +26,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -40,8 +39,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
@@ -61,7 +58,7 @@ public class CassandraStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Cassandra";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter for querying Cassandra.";
+    public static final String DESCRIPTION = "Apache Cassandra is an open-source key-value store designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
