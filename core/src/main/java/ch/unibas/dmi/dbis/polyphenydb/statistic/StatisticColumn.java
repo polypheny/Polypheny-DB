@@ -29,10 +29,9 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Getter
     private final PolySqlType type;
 
-    // TODO: change to qualifiedColumnName when frontend supports it
     @Expose
     @Getter
-    private final String fullColumnName;
+    private final String qualifiedColumnName;
 
     @Expose
     @Setter
@@ -55,7 +54,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.table = table.replace("\\", "").replace( "\"", "" ) ;
         this.column = column.replace("\\", "").replace( "\"", "" ) ;
         this.type = type;
-        this.fullColumnName = this.schema  + "." + this.table + "." + this.column;
+        this.qualifiedColumnName = this.schema  + "." + this.table + "." + this.column;
     }
 
 

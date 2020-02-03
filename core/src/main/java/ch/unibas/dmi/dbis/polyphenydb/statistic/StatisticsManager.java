@@ -93,7 +93,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                             StatisticsManager.this::asyncReevaluateAllStatistics,
                             "Reevalute StatisticsManager.",
                             TaskPriority.LOW,
-                            (TaskSchedulingType) ConfigManager.getInstance().getConfig( "backgroundTaskRate" ).getEnum() );
+                            (TaskSchedulingType) ConfigManager.getInstance().getConfig( "passiveTrackingRate" ).getEnum() );
                     StatisticsManager.getInstance().setRevalId( revalId );
                 } else if ( ! c.getBoolean() && id != null ) {
                     BackgroundTaskManager.INSTANCE.removeBackgroundTask( StatisticsManager.getInstance().getRevalId() );
@@ -121,7 +121,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @return the statisticColumn which matches the criteria
      */
-    private StatisticColumn<T> getColumn( String schema, String table, String column ) {
+    private StatisticColumn getColumn( String schema, String table, String column ) {
         if ( this.statisticSchemaMap.containsKey( schema ) ) {
             if ( this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
                 if ( this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
@@ -399,7 +399,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 () -> {
                     statisticsInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        statisticsInformation.addRow( v.getFullColumnName(), v.getType().name(), v.getCount());
+                        statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount());
 
 
                     } ) ) );
@@ -430,17 +430,17 @@ public class StatisticsManager<T extends Comparable<T>> {
                         if ( v instanceof NumericalStatisticColumn ) {
 
                             if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
-                                numericalInformation.addRow( v.getFullColumnName(), ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                                numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
                             } else {
-                                numericalInformation.addRow( v.getFullColumnName(), "❌", "❌" );
+                                numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                             }
 
                         } else {
                             String values = v.getUniqueValues().toString();
                             if ( ! v.isFull ) {
-                                alphabeticalInformation.addRow( v.getFullColumnName(), values );
+                                alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                             } else {
-                                alphabeticalInformation.addRow( v.getFullColumnName(), "is Full" );
+                                alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
                             }
 
                         }
