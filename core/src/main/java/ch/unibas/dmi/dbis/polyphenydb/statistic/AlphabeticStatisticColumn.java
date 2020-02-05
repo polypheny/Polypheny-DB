@@ -4,6 +4,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import com.google.gson.annotations.Expose;
+import java.util.Observable;
 import lombok.extern.slf4j.Slf4j;
 
 

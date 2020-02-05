@@ -715,7 +715,7 @@ public class Crud implements InformationObserver {
     /**
      * Return all available statistics to the client
      */
-    ConcurrentHashMap<String, StatisticColumn> getStatistics( final Request req, final Response res ) {
+    ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> getStatistics( final Request req, final Response res ) {
         if ( ConfigManager.getInstance().getConfig( "statistics/useDynamicQuerying" ).getBoolean() ) {
             return store.getStatisticSchemaMap();
         } else {
