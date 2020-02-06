@@ -410,9 +410,7 @@ public class StatisticQueryProcessor {
 
 
     public static String buildQualifiedName( String... strings ) {
-        return new StringBuilder( "\"" )
-                .append( String.join( "\".\"", strings ) )
-                .append( "\"" ).toString();
+        return "\"" + String.join( "\".\"", strings ) + "\"" ;
     }
 
 

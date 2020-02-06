@@ -91,15 +91,6 @@ public class Result {
         this.data = data;
     }
 
-    /**
-     * Build a Result with only the header
-     *
-     * @param header columns and their specific data
-     */
-    public Result( final DbColumn[] header ){
-        this.header = header;
-    }
-
 
     /**
      * Build a Result object containing the error message of a failed query
