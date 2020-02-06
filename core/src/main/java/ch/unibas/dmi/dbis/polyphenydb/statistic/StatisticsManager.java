@@ -219,7 +219,7 @@ public class StatisticsManager {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn reevaluateColumn( QueryColumn column ) {
-        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+        if ( ! this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().isNumericalType() ) {
@@ -294,11 +294,11 @@ public class StatisticsManager {
      * @param statisticColumn the Column with its statistics
      */
     private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
-        if ( !map.containsKey( schema ) ) {
+        if ( ! map.containsKey( schema ) ) {
             map.put( schema, new HashMap<>() );
         }
 
-        if ( !map.get( schema ).containsKey( table ) ) {
+        if ( ! map.get( schema ).containsKey( table ) ) {
             map.get( schema ).put( table, new HashMap<>() );
         }
         map.get( schema ).get( table ).put( column, statisticColumn );
@@ -448,7 +448,7 @@ public class StatisticsManager {
 
                         } else {
                             String values = v.getUniqueValues().toString();
-                            if ( !v.isFull ) {
+                            if ( ! v.isFull ) {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                             } else {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
@@ -515,7 +515,7 @@ public class StatisticsManager {
                         TaskPriority.LOW,
                         (TaskSchedulingType) cm.getConfig( "statistics/passiveTrackingRate" ).getEnum() );
                 setRevalId( revalId );
-            } else if ( id != null && (!cm.getConfig( "statistics/passiveTracking" ).getBoolean() || !cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
+            } else if ( id != null && (! cm.getConfig( "statistics/passiveTracking" ).getBoolean() || ! cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
                 BackgroundTaskManager.INSTANCE.removeBackgroundTask( getRevalId() );
                 setRevalId( null );
             }
