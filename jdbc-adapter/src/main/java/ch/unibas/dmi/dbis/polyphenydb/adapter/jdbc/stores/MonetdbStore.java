@@ -46,7 +46,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     public static final String ADAPTER_NAME = "MonetDB";
 
-    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system.";
+    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
