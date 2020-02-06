@@ -233,6 +233,9 @@ public class StatisticQueryProcessor {
 
     public PolySqlType getColumnType( String schemaTableColumn ) {
         String[] splits = schemaTableColumn.split( "\\." );
+        if( splits.length != 3 ) {
+            return null;
+        }
         return getColumnType( splits[0], splits[1], splits[2] );
     }
 
