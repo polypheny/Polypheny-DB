@@ -210,11 +210,12 @@ public class Crud implements InformationObserver {
 
     /**
      * Ensures that changes in the ConfigManger toggle the statistics correctly
+     *
      * @param cm ConfigManager
      */
     private void registerStatisticObserver( ConfigManager cm ) {
         this.isActiveTracking = cm.getConfig( "statistics/activeTracking" ).getBoolean() && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean();
-        ConfigListener observer = new ConfigListener(){
+        ConfigListener observer = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
                 setConfig( c );
@@ -2278,6 +2279,7 @@ public class Crud implements InformationObserver {
 
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
+
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );

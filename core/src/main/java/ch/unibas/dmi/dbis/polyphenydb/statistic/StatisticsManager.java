@@ -186,7 +186,7 @@ public class StatisticsManager {
         if ( splits.length != 2 ) {
             return;
         }
-
+        deleteTable( splits[0], splits[1] );
         List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( splits[0], splits[1] );
 
         for ( QueryColumn column : res ) {
@@ -197,6 +197,13 @@ public class StatisticsManager {
 
         }
 
+    }
+
+
+    private void deleteTable( String schema, String table ) {
+        if( this.statisticSchemaMap.get( schema ) != null ) {
+            this.statisticSchemaMap.get( schema ).remove( table );
+        }
     }
 
 
@@ -472,6 +479,11 @@ public class StatisticsManager {
         threadPool.execute( () -> {
             changedTables.forEach( this::reevaluateTable );
         } );
+    }
+
+
+    public void applyTable( String changedQualifiedTable ) {
+        this.reevaluateTable( changedQualifiedTable );
     }
 
 
