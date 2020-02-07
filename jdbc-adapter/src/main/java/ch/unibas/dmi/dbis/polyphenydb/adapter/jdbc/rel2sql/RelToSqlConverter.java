@@ -470,7 +470,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                         new SqlUpdate(
                                 POS,
                                 sqlTargetTable,
-                                identifierList( modify.getUpdateColumnList() ),
+                                physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
                                 exprList( context, modify.getSourceExpressionList() ),
                                 ((SqlSelect) input.node).getWhere(),
                                 input.asSelect(),
