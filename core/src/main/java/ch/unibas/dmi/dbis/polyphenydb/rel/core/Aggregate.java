@@ -364,7 +364,7 @@ public abstract class Aggregate extends SingleRel {
                     name = base + "_" + i++;
                 }
                 containedNames.add( name );
-                builder.add( name, booleanType );
+                builder.add( name, null, booleanType );
             }
         }
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggCalls ) ) {
@@ -380,7 +380,7 @@ public abstract class Aggregate extends SingleRel {
                 name = base + "_" + i++;
             }
             containedNames.add( name );
-            builder.add( name, aggCall.e.type );
+            builder.add( name, null, aggCall.e.type );
         }
         return builder.build();
     }

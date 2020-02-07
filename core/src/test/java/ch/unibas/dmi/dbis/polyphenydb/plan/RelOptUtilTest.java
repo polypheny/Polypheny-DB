@@ -109,14 +109,14 @@ public class RelOptUtilTest {
     public void testTypeDump() {
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         RelDataType t1 = typeFactory.builder()
-                .add( "f0", SqlTypeName.DECIMAL, 5, 2 )
-                .add( "f1", SqlTypeName.VARCHAR, 10 )
+                .add( "f0", null, SqlTypeName.DECIMAL, 5, 2 )
+                .add( "f1", null, SqlTypeName.VARCHAR, 10 )
                 .build();
         TestUtil.assertEqualsVerbose( TestUtil.fold( "f0 DECIMAL(5, 2) NOT NULL,", "f1 VARCHAR(10) NOT NULL" ), Util.toLinux( RelOptUtil.dumpType( t1 ) + "\n" ) );
 
         RelDataType t2 = typeFactory.builder()
-                .add( "f0", t1 )
-                .add( "f1", typeFactory.createMultisetType( t1, -1 ) )
+                .add( "f0", null, t1 )
+                .add( "f1", null, typeFactory.createMultisetType( t1, -1 ) )
                 .build();
         TestUtil.assertEqualsVerbose(
                 TestUtil.fold(

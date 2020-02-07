@@ -274,7 +274,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
             final RelDataTypeFactory.Builder b = context.getCluster().getTypeFactory().builder();
             for ( RelDataTypeField field : rowType.getFieldList() ) {
                 if ( strategies.get( field.getIndex() ) != ColumnStrategy.VIRTUAL ) {
-                    b.add( field.getName(), field.getType() );
+                    b.add( field.getName(), null, field.getType() );
                 }
             }
             final RelOptTable relOptTable =

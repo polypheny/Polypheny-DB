@@ -719,9 +719,9 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", SqlTypeName.BIGINT )
-                        .add( "b", SqlTypeName.VARCHAR, 10 )
-                        .add( "c", SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, SqlTypeName.BIGINT )
+                        .add( "b", null, SqlTypeName.VARCHAR, 10 )
+                        .add( "c", null, SqlTypeName.VARCHAR, 10 )
                         .build();
         RelNode root =
                 builder.scan( "department" )
@@ -739,9 +739,9 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", SqlTypeName.BIGINT )
-                        .add( "b", SqlTypeName.VARCHAR, 10 )
-                        .add( "c", SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, SqlTypeName.BIGINT )
+                        .add( "b", null, SqlTypeName.VARCHAR, 10 )
+                        .add( "c", null, SqlTypeName.VARCHAR, 10 )
                         .build();
         RelNode root =
                 builder.scan( "department" )
@@ -1975,8 +1975,8 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", SqlTypeName.BIGINT )
-                        .add( "a", SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, SqlTypeName.BIGINT )
+                        .add( "a", null, SqlTypeName.VARCHAR, 10 )
                         .build();
         RelNode root = builder.values( rowType, null, null, 1, null ).build();
         final String expected = "LogicalValues(tuples=[[{ null, null }, { 1, null }]])\n";

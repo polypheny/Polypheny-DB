@@ -115,8 +115,8 @@ public class FrameworksTest {
                             final RelDataType stringType = typeFactory.createJavaType( String.class );
                             final RelDataType integerType = typeFactory.createJavaType( Integer.class );
                             return typeFactory.builder()
-                                    .add( "s", stringType )
-                                    .add( "i", integerType )
+                                    .add( "s", null, stringType )
+                                    .add( "i", null, integerType )
                                     .build();
                         }
                     };
@@ -384,8 +384,8 @@ public class FrameworksTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "id", typeFactory.createSqlType( SqlTypeName.INTEGER ) )
-                    .add( "name", typeFactory.createSqlType( SqlTypeName.INTEGER ) )
+                    .add( "id", null, typeFactory.createSqlType( SqlTypeName.INTEGER ) )
+                    .add( "name", null, typeFactory.createSqlType( SqlTypeName.INTEGER ) )
                     .build();
         }
 

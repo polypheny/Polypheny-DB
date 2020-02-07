@@ -85,7 +85,9 @@ public class PigTable extends AbstractTable implements TranslatableTable {
             // only supports CHARARRAY types for now
             final RelDataType relDataType = typeFactory.createSqlType( PigDataType.valueOf( DataType.CHARARRAY ).getSqlType() );
             final RelDataType nullableRelDataType = typeFactory.createTypeWithNullability( relDataType, true );
-            builder.add( fieldName, nullableRelDataType );
+            // TODO (PCP)
+            String physicalColumnName = fieldName;
+            builder.add( fieldName, physicalColumnName, nullableRelDataType );
         }
         return builder.build();
     }

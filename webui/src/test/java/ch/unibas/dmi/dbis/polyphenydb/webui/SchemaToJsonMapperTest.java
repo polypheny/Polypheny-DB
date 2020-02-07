@@ -37,8 +37,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,7 +61,8 @@ public class SchemaToJsonMapperTest {
                 new CatalogSchema( 1, "public", 1, "APP", 1, "hans", SchemaType.RELATIONAL ),
                 new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" ),
                 new CatalogUser( 1, "hans", "secrete" ),
-                new ArrayList<>(),
+                new HashMap<>(),
+                new HashMap<>(),
                 Arrays.asList(
                         new CatalogKey( 23L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 5L, 6L ), Arrays.asList( "sid", "name" ) ),
                         new CatalogKey( 24L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 6L ), Arrays.asList( "name" ) )

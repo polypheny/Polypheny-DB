@@ -93,7 +93,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 public class JdbcSchema implements Schema {
 
     final ConnectionFactory connectionFactory;
-    final String database;
     final String schema;
     public final SqlDialect dialect;
 
@@ -101,6 +100,7 @@ public class JdbcSchema implements Schema {
     private final JdbcConvention convention;
 
     private final Map<String, JdbcTable> tableMap;
+    private final Map<String, String> physicalToLogicalTableNameMap;
 
     private final AbstractJdbcStore jdbcStore;
 
@@ -109,17 +109,17 @@ public class JdbcSchema implements Schema {
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            String catalog,
             String schema,
             Map<String, JdbcTable> tableMap,
+            Map<String, String> physicalToLogicalTableNameMap,
             AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
-        this.database = catalog;
         this.schema = schema;
         this.tableMap = tableMap;
+        this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.jdbcStore = jdbcStore;
     }
 
@@ -130,23 +130,22 @@ public class JdbcSchema implements Schema {
      * @param connectionFactory Connection Factory
      * @param dialect SQL dialect
      * @param convention Calling convention
-     * @param database Database name, or null
      * @param schema Schema name pattern
      */
     public JdbcSchema(
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            String database,
             String schema,
             AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
+        convention.setJdbcSchema( this );
         this.convention = convention;
-        this.database = database;
         this.schema = schema;
         this.tableMap = new HashMap<>();
+        this.physicalToLogicalTableNameMap = new HashMap<>();
         this.jdbcStore = jdbcStore;
     }
 
@@ -155,7 +154,10 @@ public class JdbcSchema implements Schema {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        List<String> columnNames = new LinkedList<>();
+        List<String> logicalColumnNames = new LinkedList<>();
+        List<String> physicalColumnNames = new LinkedList<>();
+        String physicalSchemaName = null;
+        String physicalTableName = null;
         for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( jdbcStore.getStoreId() ) ) {
             CatalogColumn catalogColumn = null;
             // TODO MV: This is not really efficient
@@ -168,20 +170,30 @@ public class JdbcSchema implements Schema {
             if ( catalogColumn == null ) {
                 throw new RuntimeException( "Column not found." ); // This should not happen
             }
+            if ( physicalSchemaName == null ) {
+                physicalSchemaName = placement.physicalSchemaName;
+            }
+            if ( physicalTableName == null ) {
+                physicalTableName = placement.physicalTableName;
+            }
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            columnNames.add( catalogColumn.name );
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            logicalColumnNames.add( catalogColumn.name );
+            physicalColumnNames.add( placement.physicalColumnName );
         }
         JdbcTable table = new JdbcTable(
                 this,
-                database,
                 combinedTable.getSchema().name,
                 combinedTable.getTable().name,
+                logicalColumnNames,
                 TableType.valueOf( combinedTable.getTable().tableType.name() ),
                 RelDataTypeImpl.proto( fieldInfo.build() ),
-                columnNames );
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnNames );
         tableMap.put( combinedTable.getTable().name, table );
+        physicalToLogicalTableNameMap.put( physicalTableName, combinedTable.getTable().name );
         return table;
     }
 
@@ -191,13 +203,11 @@ public class JdbcSchema implements Schema {
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
-            String catalog,
             String schema,
-            JdbcPhysicalNameProvider physicalNameProvider,
             AbstractJdbcStore jdbcStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
-        return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema, jdbcStore );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        return new JdbcSchema( connectionFactory, dialect, convention, schema, jdbcStore );
     }
 
 
@@ -217,7 +227,7 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( connectionFactory, dialect, convention, database, schema, tableMap, jdbcStore );
+        return new JdbcSchema( connectionFactory, dialect, convention, schema, tableMap, physicalToLogicalTableNameMap, jdbcStore );
     }
 
 

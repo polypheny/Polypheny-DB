@@ -80,7 +80,9 @@ public class JsonTable extends AbstractTable implements ScannableTable {
 
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.builder().add( "_MAP",
+        return typeFactory.builder().add(
+                "_MAP",
+                null,
                 typeFactory.createMapType(
                         typeFactory.createSqlType( SqlTypeName.VARCHAR ),
                         typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.VARCHAR ), true ) ) ).build();

@@ -23,7 +23,7 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -32,6 +32,7 @@ import static org.junit.Assert.assertThat;
 import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
@@ -40,7 +41,6 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
 import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionMergeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;

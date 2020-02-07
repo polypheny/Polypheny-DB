@@ -42,7 +42,7 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -964,7 +964,6 @@ public abstract class SqlImplementor {
         private final boolean qualified;
         private final Map<String, RelDataType> aliases;
 
-
         /**
          * Creates an AliasContext; use {@link #aliasContext(Map, boolean)}.
          */
@@ -973,7 +972,6 @@ public abstract class SqlImplementor {
             this.aliases = aliases;
             this.qualified = qualified;
         }
-
 
         @Override
         public SqlNode field( int ordinal ) {
@@ -985,9 +983,13 @@ public abstract class SqlImplementor {
                     if ( mappedSqlNode != null ) {
                         return mappedSqlNode;
                     }
+                    String physicalColumnName = field.getName();
+                    if ( field.getPhysicalName() != null ) {
+                        physicalColumnName = field.getPhysicalName();
+                    }
                     return new SqlIdentifier( !qualified
-                            ? ImmutableList.of( field.getName() )
-                            : ImmutableList.of( alias.getKey(), field.getName() ), POS );
+                            ? ImmutableList.of( physicalColumnName )
+                            : ImmutableList.of( alias.getKey(), physicalColumnName ), POS );
                 }
                 ordinal -= fields.size();
             }

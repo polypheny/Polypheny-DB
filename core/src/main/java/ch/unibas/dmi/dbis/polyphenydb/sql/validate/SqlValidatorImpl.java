@@ -4723,7 +4723,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 identifier.validate( this, scope );
                 RelDataType type = deriveType( scope, identifier );
                 String name = identifier.names.get( 1 );
-                typeBuilder.add( name, type );
+                typeBuilder.add( name, null, type );
             }
         }
 
@@ -4743,7 +4743,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     RelDataType type = deriveType( scope, identifier );
                     String name = identifier.names.get( 1 );
                     if ( !typeBuilder.nameExists( name ) ) {
-                        typeBuilder.add( name, type );
+                        typeBuilder.add( name, null, type );
                     }
                 }
             }
@@ -4825,7 +4825,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         List<Map.Entry<String, RelDataType>> measureColumns = validateMeasure( matchRecognize, scope, allRows );
         for ( Map.Entry<String, RelDataType> c : measureColumns ) {
             if ( !typeBuilder.nameExists( c.getKey() ) ) {
-                typeBuilder.add( c.getKey(), c.getValue() );
+                typeBuilder.add( c.getKey(), null, c.getValue() );
             }
         }
 

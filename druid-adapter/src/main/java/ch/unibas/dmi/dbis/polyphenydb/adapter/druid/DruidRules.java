@@ -323,7 +323,9 @@ public class DruidRules {
                 } else {
                     name = null;
                 }
-                builder.add( name, e.getType() );
+                // TODO (PCP)
+                String physicalColumnName = name;
+                builder.add( name, physicalColumnName, e.getType() );
             }
             final RelNode newProject = project.copy( project.getTraitSet(), input, below, builder.build() );
             final DruidQuery newQuery = DruidQuery.extendQuery( query, newProject );

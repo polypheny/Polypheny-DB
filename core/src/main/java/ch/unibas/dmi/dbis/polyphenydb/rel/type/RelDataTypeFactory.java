@@ -103,6 +103,17 @@ public interface RelDataTypeFactory {
     RelDataType createStructType( StructKind kind, List<RelDataType> typeList, List<String> fieldNameList );
 
     /**
+     * Creates a type that represents a structured collection of fields, given lists of the names and types of the fields.
+     *
+     * @param kind Name resolution policy
+     * @param typeList types of the fields
+     * @param fieldNameList names of the fields
+     * @param physicalFieldNameList physical names of the fields
+     * @return canonical struct type descriptor
+     */
+    RelDataType createStructType( StructKind kind, final List<RelDataType> typeList, final List<String> fieldNameList, final List<String> physicalFieldNameList );
+
+    /**
      * Creates a type that represents a structured collection of fields. Shorthand for <code>createStructType(StructKind.FULLY_QUALIFIED, typeList, fieldNameList)</code>.
      */
     RelDataType createStructType( List<RelDataType> typeList, List<String> fieldNameList );
@@ -283,6 +294,16 @@ public interface RelDataTypeFactory {
          */
         String getFieldName( int index );
 
+
+        /**
+         * Returns the physical name of a given field.
+         *
+         * @param index Ordinal of field
+         * @return Name of given field
+         */
+        String getPhysicalFieldName( int index );
+
+
         /**
          * Returns the type of a given field.
          *
@@ -305,32 +326,32 @@ public interface RelDataTypeFactory {
 
 
         @Override
-        public FieldInfoBuilder add( String name, RelDataType type ) {
-            return (FieldInfoBuilder) super.add( name, type );
+        public FieldInfoBuilder add( String name, String physicalName, RelDataType type ) {
+            return (FieldInfoBuilder) super.add( name, physicalName, type );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, SqlTypeName typeName ) {
-            return (FieldInfoBuilder) super.add( name, typeName );
+        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName ) {
+            return (FieldInfoBuilder) super.add( name, physicalName, typeName );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, SqlTypeName typeName, int precision ) {
-            return (FieldInfoBuilder) super.add( name, typeName, precision );
+        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName, int precision ) {
+            return (FieldInfoBuilder) super.add( name, physicalName, typeName, precision );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, SqlTypeName typeName, int precision, int scale ) {
-            return (FieldInfoBuilder) super.add( name, typeName, precision, scale );
+        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName, int precision, int scale ) {
+            return (FieldInfoBuilder) super.add( name, physicalName, typeName, precision, scale );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
-            return (FieldInfoBuilder) super.add( name, startUnit, startPrecision, endUnit, fractionalSecondPrecision );
+        public FieldInfoBuilder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
+            return (FieldInfoBuilder) super.add( name, physicalName, startUnit, startPrecision, endUnit, fractionalSecondPrecision );
         }
 
 
@@ -371,6 +392,7 @@ public interface RelDataTypeFactory {
     class Builder {
 
         private final List<String> names = new ArrayList<>();
+        private final List<String> physicalNames = new ArrayList<>();
         private final List<RelDataType> types = new ArrayList<>();
         private StructKind kind = StructKind.FULLY_QUALIFIED;
         private final RelDataTypeFactory typeFactory;
@@ -406,6 +428,17 @@ public interface RelDataTypeFactory {
 
 
         /**
+         * Returns the physical name of a given field.
+         *
+         * @param index Ordinal of field
+         * @return Name of given field
+         */
+        public String getPhysicalFieldName( int index ) {
+            return physicalNames.get( index );
+        }
+
+
+        /**
          * Returns the type of a given field.
          *
          * @param index Ordinal of field
@@ -419,8 +452,9 @@ public interface RelDataTypeFactory {
         /**
          * Adds a field with given name and type.
          */
-        public Builder add( String name, RelDataType type ) {
+        public Builder add( String name, String physicalName, RelDataType type ) {
             names.add( name );
+            physicalNames.add( physicalName );
             types.add( type );
             return this;
         }
@@ -429,8 +463,8 @@ public interface RelDataTypeFactory {
         /**
          * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName)}.
          */
-        public Builder add( String name, SqlTypeName typeName ) {
-            add( name, typeFactory.createSqlType( typeName ) );
+        public Builder add( String name, String physicalName, SqlTypeName typeName ) {
+            add( name, physicalName, typeFactory.createSqlType( typeName ) );
             return this;
         }
 
@@ -438,8 +472,8 @@ public interface RelDataTypeFactory {
         /**
          * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int)}.
          */
-        public Builder add( String name, SqlTypeName typeName, int precision ) {
-            add( name, typeFactory.createSqlType( typeName, precision ) );
+        public Builder add( String name, String physicalName, SqlTypeName typeName, int precision ) {
+            add( name, physicalName, typeFactory.createSqlType( typeName, precision ) );
             return this;
         }
 
@@ -447,8 +481,8 @@ public interface RelDataTypeFactory {
         /**
          * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int, int)}.
          */
-        public Builder add( String name, SqlTypeName typeName, int precision, int scale ) {
-            add( name, typeFactory.createSqlType( typeName, precision, scale ) );
+        public Builder add( String name, String physicalName, SqlTypeName typeName, int precision, int scale ) {
+            add( name, physicalName, typeFactory.createSqlType( typeName, precision, scale ) );
             return this;
         }
 
@@ -456,9 +490,9 @@ public interface RelDataTypeFactory {
         /**
          * Adds a field with an interval type.
          */
-        public Builder add( String name, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
+        public Builder add( String name, String physicalName, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision ) {
             final SqlIntervalQualifier q = new SqlIntervalQualifier( startUnit, startPrecision, endUnit, fractionalSecondPrecision, SqlParserPos.ZERO );
-            add( name, typeFactory.createSqlIntervalType( q ) );
+            add( name, physicalName, typeFactory.createSqlIntervalType( q ) );
             return this;
         }
 
@@ -482,7 +516,7 @@ public interface RelDataTypeFactory {
          * Adds a field. Field's ordinal is ignored.
          */
         public Builder add( RelDataTypeField field ) {
-            add( field.getName(), field.getType() );
+            add( field.getName(), field.getPhysicalName(), field.getType() );
             return this;
         }
 
@@ -492,7 +526,8 @@ public interface RelDataTypeFactory {
          */
         public Builder addAll( Iterable<? extends Map.Entry<String, RelDataType>> fields ) {
             for ( Map.Entry<String, RelDataType> field : fields ) {
-                add( field.getKey(), field.getValue() );
+                // TODO MV: Adding null for physical name
+                add( field.getKey(), null, field.getValue() );
             }
             return this;
         }
@@ -521,7 +556,7 @@ public interface RelDataTypeFactory {
          * Creates a struct type with the current contents of this builder.
          */
         public RelDataType build() {
-            return typeFactory.createStructType( kind, types, names );
+            return typeFactory.createStructType( kind, types, names, physicalNames );
         }
 
 

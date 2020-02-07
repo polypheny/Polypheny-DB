@@ -133,7 +133,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                         getRowType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
-        SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.physicalNameProvider );
+        SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
         String sql = sqlString.getSql();
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( "[" + sql + "]" );
@@ -349,8 +349,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private SqlString generateSql( SqlDialect dialect, JdbcPhysicalNameProvider physicalNameProvider ) {
-        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), physicalNameProvider );
+    private SqlString generateSql( SqlDialect dialect, JdbcSchema jdbcSchema ) {
+        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), jdbcSchema );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }

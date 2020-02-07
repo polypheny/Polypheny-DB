@@ -45,6 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -79,8 +81,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;

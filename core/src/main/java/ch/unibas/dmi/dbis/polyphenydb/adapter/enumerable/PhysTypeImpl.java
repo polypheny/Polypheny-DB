@@ -121,7 +121,7 @@ public class PhysTypeImpl implements PhysType {
         if ( javaRowClass instanceof Types.RecordType ) {
             final Types.RecordType recordType = (Types.RecordType) javaRowClass;
             for ( Types.RecordField field : recordType.getRecordFields() ) {
-                builder.add( field.getName(), typeFactory.createType( field.getType() ) );
+                builder.add( field.getName(), null, typeFactory.createType( field.getType() ) );
             }
         }
         RelDataType rowType = builder.build();
@@ -151,7 +151,7 @@ public class PhysTypeImpl implements PhysType {
         if ( indicator ) {
             final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), false );
             for ( int index : integers ) {
-                builder.add( "i$" + rowType.getFieldList().get( index ).getName(), booleanType );
+                builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }
         }
         RelDataType projectedRowType = builder.build();
@@ -483,7 +483,7 @@ public class PhysTypeImpl implements PhysType {
             return type;
         }
         return typeFactory.builder()
-                .add( SqlUtil.deriveAliasFromOrdinal( 0 ), type )
+                .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, type )
                 .build();
     }
 

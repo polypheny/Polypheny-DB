@@ -42,7 +42,7 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -278,8 +278,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( TableScan e ) {
-        final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
-        return result( identifier, ImmutableList.of( Clause.FROM ), e, null );
+        //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
+        return result( new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ), ImmutableList.of( Clause.FROM ), e, null );
     }
 
 
@@ -452,7 +452,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
         // Target Table Name
         //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getQualifiedName() );
+        String tableName = modify.getTable().getQualifiedName().get( 0 ); // TODO MV: deal with qualified names
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( tableName );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -460,7 +461,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                 // dialects support naked VALUES, but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
 
-                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, identifierList( modify.getInput().getRowType().getFieldNames() ) );
+                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, physicalIdentifierList( tableName, modify.getInput().getRowType().getFieldNames() ) );
 
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -512,6 +513,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     private SqlNodeList identifierList( List<String> names ) {
         return new SqlNodeList( Lists.transform( names, name -> new SqlIdentifier( name, POS ) ), POS );
+    }
+
+
+    /**
+     * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
+     */
+    private SqlNodeList physicalIdentifierList( String tableName, List<String> columnNames ) {
+        return new SqlNodeList( Lists.transform( columnNames, columnName -> getPhysicalColumnName( tableName, columnName ) ), POS );
     }
 
 
@@ -645,7 +654,10 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( List<String> qualifiedName );
+    public abstract SqlIdentifier getPhysicalTableName( String tableName );
+
+
+    public abstract SqlIdentifier getPhysicalColumnName( String tableName, String columnName );
 
 
     /**
@@ -675,8 +687,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
-            return new SqlIdentifier( qualifiedName, POS );
+        public SqlIdentifier getPhysicalTableName( String tableName ) {
+            return new SqlIdentifier( tableName, POS );
+        }
+
+
+        @Override
+        public SqlIdentifier getPhysicalColumnName( String tableName, String columnName ) {
+            return new SqlIdentifier( columnName, POS );
         }
     }
 

@@ -51,6 +51,8 @@ import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterSetOpTransposeRule;
 import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
@@ -73,19 +75,21 @@ public class JdbcConvention extends Convention.Impl {
 
     public final SqlDialect dialect;
     public final Expression expression;
-    public final JdbcPhysicalNameProvider physicalNameProvider;
+
+    @Getter
+    @Setter
+    private JdbcSchema jdbcSchema;
 
 
-    public JdbcConvention( SqlDialect dialect, Expression expression, String name, JdbcPhysicalNameProvider physicalNameProvider ) {
+    public JdbcConvention( SqlDialect dialect, Expression expression, String name ) {
         super( "JDBC." + name, JdbcRel.class );
         this.dialect = dialect;
         this.expression = expression;
-        this.physicalNameProvider = physicalNameProvider;
     }
 
 
-    public static JdbcConvention of( SqlDialect dialect, Expression expression, String name, JdbcPhysicalNameProvider physicalNameProvider ) {
-        return new JdbcConvention( dialect, expression, name, physicalNameProvider );
+    public static JdbcConvention of( SqlDialect dialect, Expression expression, String name ) {
+        return new JdbcConvention( dialect, expression, name );
     }
 
 
@@ -97,4 +101,5 @@ public class JdbcConvention extends Convention.Impl {
         planner.addRule( FilterSetOpTransposeRule.INSTANCE );
         planner.addRule( ProjectRemoveRule.INSTANCE );
     }
+
 }

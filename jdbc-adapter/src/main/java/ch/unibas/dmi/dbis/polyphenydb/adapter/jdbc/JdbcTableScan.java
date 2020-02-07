@@ -45,12 +45,12 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor.Result;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
@@ -79,7 +79,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
 
     @Override
     public Result implement( JdbcImplementor implementor ) {
-        return implementor.result( implementor.getPhysicalTableName( jdbcTable.tableName().names ), ImmutableList.of( JdbcImplementor.Clause.FROM ), this, null );
+        return implementor.result( jdbcTable.physicalTableName(), ImmutableList.of( JdbcImplementor.Clause.FROM ), this, null );
     }
 }
 

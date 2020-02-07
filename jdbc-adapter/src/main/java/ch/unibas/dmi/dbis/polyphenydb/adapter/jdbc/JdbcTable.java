@@ -67,6 +67,7 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
@@ -75,16 +76,15 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
@@ -97,28 +97,44 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     private RelProtoDataType protoRowType;
     private JdbcSchema jdbcSchema;
-    private final String jdbcCatalogName;
-    private final String jdbcSchemaName;
-    private final String jdbcTableName;
+
+    private final String physicalSchemaName;
+    private final String physicalTableName;
+    private final List<String> physicalColumnNames;
+
+    private final String logicalSchemaName;
+    private final String logicalTableName;
+    private final List<String> logicalColumnNames;
+
     private final TableType jdbcTableType;
 
-    private final List<String> columnNames;
 
-
-    public JdbcTable( JdbcSchema jdbcSchema, String jdbcCatalogName, String jdbcSchemaName, String tableName, TableType jdbcTableType, RelProtoDataType protoRowType, List<String> columnNames ) {
+    public JdbcTable(
+            JdbcSchema jdbcSchema,
+            String logicalSchemaName,
+            String logicalTableName,
+            List<String> logicalColumnNames,
+            TableType jdbcTableType,
+            RelProtoDataType protoRowType,
+            String physicalSchemaName,
+            String physicalTableName,
+            List<String> physicalColumnNames ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
-        this.jdbcCatalogName = jdbcCatalogName;
-        this.jdbcSchemaName = jdbcSchemaName;
-        this.jdbcTableName = tableName;
+        this.logicalSchemaName = logicalSchemaName;
+        this.logicalTableName = logicalTableName;
+        this.logicalColumnNames = logicalColumnNames;
+        this.physicalSchemaName = physicalSchemaName;
+        this.physicalTableName = physicalTableName;
+        this.physicalColumnNames = physicalColumnNames;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
-        this.columnNames = columnNames;
+
     }
 
 
     public String toString() {
-        return "JdbcTable {" + jdbcSchemaName + "." + jdbcTableName + "}";
+        return "JdbcTable {" + physicalSchemaName + "." + physicalTableName + "}";
     }
 
 
@@ -146,8 +162,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     SqlString generateSql() {
-        final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
-        SqlIdentifier physicalTableName = jdbcSchema.getConvention().physicalNameProvider.getPhysicalTableName( Arrays.asList( jdbcSchemaName, jdbcTableName ) );
+        List<SqlNode> pcnl = Expressions.list();
+        for ( String str : physicalColumnNames ) {
+            pcnl.add( new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), SqlParserPos.ZERO ) );
+        }
+        //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
+        final SqlNodeList selectList = new SqlNodeList( pcnl, SqlParserPos.ZERO );
+        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), SqlParserPos.ZERO );
         SqlSelect node = new SqlSelect( SqlParserPos.ZERO, SqlNodeList.EMPTY, selectList, physicalTableName, null, null, null, null, null, null, null );
         final SqlPrettyWriter writer = new SqlPrettyWriter( jdbcSchema.dialect );
         node.unparse( writer, 0, 0 );
@@ -155,17 +176,14 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
-    SqlIdentifier tableName() {
-        final List<String> strings = new ArrayList<>();
-        /*if ( jdbcSchema != null && jdbcSchema.database != null ) {
-            strings.add( jdbcSchema.database );
-        }
-        if ( jdbcSchema != null && jdbcSchema.schema != null ) {
-            strings.add( jdbcSchema.schema );
-        }*/
-        strings.add( jdbcSchemaName );
-        strings.add( jdbcTableName );
-        return new SqlIdentifier( strings, SqlParserPos.ZERO );
+    public SqlIdentifier physicalTableName() {
+        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), SqlParserPos.ZERO );
+    }
+
+
+    public SqlIdentifier physicalColumnName( String logicalColumnName ) {
+        String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
+        return new SqlIdentifier( Arrays.asList( physicalName ), SqlParserPos.ZERO );
     }
 
 
@@ -222,7 +240,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
         @Override
         public String toString() {
-            return "JdbcTableQueryable {table: " + jdbcSchemaName + "." + tableName + "}";
+            return "JdbcTableQueryable {table: " + physicalSchemaName + "." + tableName + "}";
         }
 
 

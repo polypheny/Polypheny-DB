@@ -45,8 +45,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor.Result;
 
 
 /**

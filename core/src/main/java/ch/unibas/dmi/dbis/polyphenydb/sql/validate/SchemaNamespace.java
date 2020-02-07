@@ -82,7 +82,7 @@ class SchemaNamespace extends AbstractNamespace {
         for ( SqlMoniker moniker : validator.catalogReader.getAllSchemaObjectNames( names ) ) {
             final List<String> names1 = moniker.getFullyQualifiedNames();
             final SqlValidatorTable table = validator.catalogReader.getTable( names1 );
-            builder.add( Util.last( names1 ), table.getRowType() );
+            builder.add( Util.last( names1 ), null, table.getRowType() );
         }
         return builder.build();
     }

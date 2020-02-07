@@ -1641,7 +1641,7 @@ public class SubstitutionVisitor {
             RelDataType newRowType =
                     cluster.getTypeFactory().builder()
                             .addAll( project.getRowType().getFieldList() )
-                            .add( "condition", Util.last( newProjects ).getType() )
+                            .add( "condition", null, Util.last( newProjects ).getType() )
                             .build();
             final RelNode newProject =
                     project.copy( project.getTraitSet(),

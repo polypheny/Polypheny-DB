@@ -30,7 +30,6 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcPhysicalNameProvider;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
@@ -123,7 +122,7 @@ public abstract class AbstractJdbcStore extends Store {
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
         // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, null, new JdbcPhysicalNameProvider( transaction.getCatalog() ), this );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, this );
     }
 
 
@@ -136,7 +135,7 @@ public abstract class AbstractJdbcStore extends Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( combinedTable.getSchema().name );
         qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = "tab" + combinedTable.getTable().id;
+        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
         }
@@ -172,7 +171,7 @@ public abstract class AbstractJdbcStore extends Store {
                 context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
-                        null, // TODO MV: physical schema name
+                        "public", // TODO MV: physical schema name
                         physicalTableName,
                         "col" + placement.columnId );
             } catch ( GenericCatalogException e ) {
@@ -186,10 +185,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchema().name );
-        qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
         builder.append( catalogColumn.type.name() );
@@ -217,10 +213,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogColumn.schemaName );
-        qualifiedNames.add( catalogColumn.tableName );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
         builder.append( " TYPE " ).append( catalogColumn.type );
@@ -239,10 +232,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
         builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder, context );
     }
@@ -251,10 +241,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchema().name );
-        qualifiedNames.add( catalogTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
         executeUpdate( builder, context );
@@ -264,10 +251,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void truncate( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = new JdbcPhysicalNameProvider( context.getTransaction().getCatalog() ).getPhysicalTableName( qualifiedNames ).names.get( 0 );
+        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
         builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder, context );
     }
@@ -314,6 +298,11 @@ public abstract class AbstractJdbcStore extends Store {
         } else {
             log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
         }
+    }
+
+
+    protected String getPhysicalTableName( long tableId ) {
+        return "tab" + tableId;
     }
 
 
