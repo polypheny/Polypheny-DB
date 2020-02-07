@@ -52,6 +52,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 
 /**
@@ -83,16 +84,30 @@ public class JdbcImplementor extends RelToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( String tableName ) {
-        //String qualifiedName = names.get( 0 ) + "." +  names.get( 1 );
-        return schema.getTableMap().get( tableName ).physicalTableName();
+    public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+        if ( tableNames.size() == 1 ) {
+            // only table name
+            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalTableName();
+        } else if ( tableNames.size() == 2 ) {
+            // schema name and table name
+            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalTableName();
+        } else {
+            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
+        }
     }
 
 
     @Override
-    public SqlIdentifier getPhysicalColumnName( String tableName, String columnName ) {
-        //String qualifiedName = names.get( 0 ) + "." +  names.get( 1 );
-        return schema.getTableMap().get( tableName ).physicalColumnName( columnName );
+    public SqlIdentifier getPhysicalColumnName( List<String> tableNames, String columnName ) {
+        if ( tableNames.size() == 1 ) {
+            // only table name
+            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
+        } else if ( tableNames.size() == 2 ) {
+            // schema name and table name
+            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
+        } else {
+            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
+        }
     }
 
 }

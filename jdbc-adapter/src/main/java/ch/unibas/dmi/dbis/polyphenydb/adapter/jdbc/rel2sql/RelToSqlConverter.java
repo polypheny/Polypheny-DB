@@ -452,16 +452,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
         // Target Table Name
         //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
-        String tableName = modify.getTable().getQualifiedName().get( 0 ); // TODO MV: deal with qualified names
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( tableName );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getQualifiedName() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
-                // Convert the input to a SELECT query or keep as VALUES. Not all
-                // dialects support naked VALUES, but all support VALUES inside INSERT.
+                // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES, but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
 
-                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, physicalIdentifierList( tableName, modify.getInput().getRowType().getFieldNames() ) );
+                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getInput().getRowType().getFieldNames() ) );
 
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -519,7 +517,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     /**
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
-    private SqlNodeList physicalIdentifierList( String tableName, List<String> columnNames ) {
+    private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
         return new SqlNodeList( Lists.transform( columnNames, columnName -> getPhysicalColumnName( tableName, columnName ) ), POS );
     }
 
@@ -654,10 +652,10 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( String tableName );
+    public abstract SqlIdentifier getPhysicalTableName( List<String> tableName );
 
 
-    public abstract SqlIdentifier getPhysicalColumnName( String tableName, String columnName );
+    public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
 
 
     /**
@@ -687,13 +685,13 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( String tableName ) {
-            return new SqlIdentifier( tableName, POS );
+        public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+            return new SqlIdentifier( tableNames, POS );
         }
 
 
         @Override
-        public SqlIdentifier getPhysicalColumnName( String tableName, String columnName ) {
+        public SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName ) {
             return new SqlIdentifier( columnName, POS );
         }
     }
