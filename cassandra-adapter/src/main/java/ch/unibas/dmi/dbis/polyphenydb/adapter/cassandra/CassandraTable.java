@@ -58,20 +58,14 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
 import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
 import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -81,17 +75,14 @@ import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 
 
 /**
@@ -166,9 +157,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
      *
      * @param session Cassandra session
      * @param fields List of fields to project
-     * @param selectFields
      * @param predicates A list of predicates which should be used in the query
-     * @param order
      * @return Enumerator of results
      */
     public Enumerable<Object> query(
@@ -206,7 +195,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.
         Map<String, ClusteringOrder> orderMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ClusteringOrder> entry: order) {
+        for ( Map.Entry<String, ClusteringOrder> entry : order ) {
             orderMap.put( entry.getKey(), entry.getValue() );
         }
 
@@ -221,11 +210,11 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         select = select.allowFiltering();
 
-
         final SimpleStatement statement = select.build();
 
         return new CassandraEnumerable( session, statement.getQuery(), offset );
     }
+
 
     public Enumerable<Object> insert() {
         /*final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -240,17 +229,19 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
         final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );*/
 
-
         return null;
     }
+
 
     CqlSession getSession() {
         return cassandraSchema.getSession();
     }
 
+
     String getColumnFamily() {
         return this.columnFamily;
     }
+
 
     String getPhysicalName() {
         return this.physicalName;
@@ -330,6 +321,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
                 Integer fetch ) {
             return getTable().query( cassandraSchema.getSession(), fields, selectFields, predicates, order, offset, fetch );
         }
+
 
         public Enumerable<Object> insert(
                 String query ) {

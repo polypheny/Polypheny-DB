@@ -1,4 +1,3 @@
-
 /**
  * Translates a relational expression to SQL parse tree.
  */

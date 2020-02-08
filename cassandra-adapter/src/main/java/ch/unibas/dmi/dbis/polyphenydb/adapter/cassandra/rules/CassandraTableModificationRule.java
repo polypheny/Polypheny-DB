@@ -36,7 +36,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
 import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 

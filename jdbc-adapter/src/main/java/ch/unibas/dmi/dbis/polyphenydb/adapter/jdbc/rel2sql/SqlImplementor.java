@@ -980,6 +980,7 @@ public abstract class SqlImplementor {
         private final boolean qualified;
         private final Map<String, RelDataType> aliases;
 
+
         /**
          * Creates an AliasContext; use {@link #aliasContext(Map, boolean)}.
          */
@@ -988,6 +989,7 @@ public abstract class SqlImplementor {
             this.aliases = aliases;
             this.qualified = qualified;
         }
+
 
         @Override
         public SqlNode field( int ordinal ) {

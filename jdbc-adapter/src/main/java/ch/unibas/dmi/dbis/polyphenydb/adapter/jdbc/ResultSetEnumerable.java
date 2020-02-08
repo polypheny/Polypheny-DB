@@ -411,6 +411,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         }
     }
 
+
     /**
      * Implementation of {@link Enumerator} that reads from a {@link ResultSet}.
      *

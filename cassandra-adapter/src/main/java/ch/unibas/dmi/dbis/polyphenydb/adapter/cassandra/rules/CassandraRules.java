@@ -28,14 +28,11 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraLimit;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraProject;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraRel;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraSort;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableScan;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraToEnumerableConverter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
