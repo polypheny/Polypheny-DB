@@ -233,7 +233,7 @@ public class StatisticQueryProcessor {
 
     public PolySqlType getColumnType( String schemaTableColumn ) {
         String[] splits = schemaTableColumn.split( "\\." );
-        if( splits.length != 3 ) {
+        if ( splits.length != 3 ) {
             return null;
         }
         return getColumnType( splits[0], splits[1], splits[2] );
@@ -410,7 +410,7 @@ public class StatisticQueryProcessor {
 
 
     public static String buildQualifiedName( String... strings ) {
-        return "\"" + String.join( "\".\"", strings ) + "\"" ;
+        return "\"" + String.join( "\".\"", strings ) + "\"";
     }
 
 

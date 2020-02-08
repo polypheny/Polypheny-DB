@@ -201,7 +201,7 @@ public class StatisticsManager {
 
 
     private void deleteTable( String schema, String table ) {
-        if( this.statisticSchemaMap.get( schema ) != null ) {
+        if ( this.statisticSchemaMap.get( schema ) != null ) {
             this.statisticSchemaMap.get( schema ).remove( table );
         }
     }

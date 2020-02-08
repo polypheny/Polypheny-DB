@@ -113,7 +113,7 @@ public class HttpServer extends QueryInterface {
 
         post( "/anyQuery", crud::anyQuery, gson::toJson );
 
-        post( "/allStatistics", crud::getStatistics, gsonExpose::toJson);
+        post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
 
         post( "/getColumns", crud::getColumns, gson::toJson );
 

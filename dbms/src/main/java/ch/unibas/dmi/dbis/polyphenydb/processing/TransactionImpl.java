@@ -266,7 +266,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public void addChangedTable( String qualifiedTableName ) {
         if ( !this.changedTables.contains( qualifiedTableName ) ) {
-            System.out.println( qualifiedTableName );
+            log.debug( "Add changed table: " + qualifiedTableName );
             this.changedTables.add( qualifiedTableName );
         }
     }

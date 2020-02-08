@@ -41,7 +41,6 @@ class BackgroundTaskHandle implements Runnable {
         this.priority = priority;
         this.schedulingType = schedulingType;
 
-
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         if ( schedulingType == TaskSchedulingType.WORKLOAD ) {
@@ -51,9 +50,11 @@ class BackgroundTaskHandle implements Runnable {
         }
     }
 
+
     public void stop() {
-        if(runner != null && !this.runner.isCancelled())
-        this.runner.cancel(false);
+        if ( runner != null && !this.runner.isCancelled() ) {
+            this.runner.cancel( false );
+        }
     }
 
 

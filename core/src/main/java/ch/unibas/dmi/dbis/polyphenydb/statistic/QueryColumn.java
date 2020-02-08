@@ -24,9 +24,9 @@ class QueryColumn {
 
 
     QueryColumn( String schema, String table, String name, PolySqlType type ) {
-        this.schema = schema.replace("\\", "").replace( "\"", "" );
-        this.table = table.replace("\\", "").replace( "\"", "" );
-        this.name = name.replace("\\", "").replace( "\"", "" );
+        this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
+        this.table = table.replace( "\\", "" ).replace( "\"", "" );
+        this.name = name.replace( "\\", "" ).replace( "\"", "" );
         this.type = type;
     }
 
@@ -56,12 +56,12 @@ class QueryColumn {
      *
      * @return fullTableName
      */
-    public static String getQualifiedTableName(String schema, String table ) {
+    public static String getQualifiedTableName( String schema, String table ) {
         return schema + "\".\"" + table;
     }
 
 
-    public static String getQualifiedColumnName(String schema, String table, String column ) {
+    public static String getQualifiedColumnName( String schema, String table, String column ) {
         return "\"" + getQualifiedTableName( schema, table ) + "\".\"" + column;
     }
 
