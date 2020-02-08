@@ -63,6 +63,7 @@ dependencies {
     compile project(":catalog")
     compile project(":webui")
     compile project(":jdbc-interface")
+    compile project(":statistic")
 
     ////// Logging
     compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0

@@ -70,5 +70,4 @@ class QueryColumn {
         return schemaTableColumn.split( "\\." );
     }
 
-
 }

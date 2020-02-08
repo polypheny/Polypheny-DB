@@ -1,6 +1,7 @@
 
 group "ch.unibas.dmi.dbis.polyphenydb"
 
+
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
@@ -20,13 +21,11 @@ buildscript {
 
 
 repositories {
-    mavenLocal()
     maven {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     mavenCentral()
-    jcenter()
 }
 
 
@@ -35,9 +34,9 @@ apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+javadoc.options.encoding = 'UTF-8'
 
 
 configurations.all {
@@ -50,30 +49,10 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 
-configurations {
-   uiFiles { transitive = false } 
-} 
-
-
 dependencies {
-    implementation project(":core")
-    api project(":statistic")
-
-    uiFiles group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-ui", version: polyphenydb_ui_version
-
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
-
-
-    compile group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version
-
-    compile group: 'com.mashape.unirest', name: 'unirest-java', version: unirest_version
-
-    compile group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
-
+    api project(":core")
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
-
     testCompile group: "junit", name: "junit", version: junit_version
 }
 
@@ -86,7 +65,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources","$buildDir/webapp"]
+            srcDirs = ["src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -101,21 +80,6 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
-
-
-
-// unzip ui files
-task unzipUiFIles(type: Copy) {
-   from zipTree(configurations.uiFiles.singleFile)
-   into "$buildDir/webapp"
-   doLast {
-       file("$buildDir/webapp/index").mkdirs()
-       ant.move file: "$buildDir/webapp/webapp/index.html",
-                toDir: "$buildDir/webapp/index/"
-    }
-}
-
-classes.dependsOn(unzipUiFIles)
 
 
 
@@ -143,7 +107,6 @@ jar {
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
     }
-    from("$buildDir/webapp") // include webapp files
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"
