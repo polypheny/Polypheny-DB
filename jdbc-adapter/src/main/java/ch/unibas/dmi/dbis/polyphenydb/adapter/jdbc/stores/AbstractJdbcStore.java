@@ -156,7 +156,7 @@ public abstract class AbstractJdbcStore extends Store {
                 builder.append( ", " );
             }
             first = false;
-            builder.append( dialect.quoteIdentifier( "col" + placement.columnId ) ).append( " " );
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
             builder.append( getTypeString( catalogColumn.type ) );
             if ( catalogColumn.length != null ) {
                 builder.append( "(" ).append( catalogColumn.length );
@@ -177,7 +177,7 @@ public abstract class AbstractJdbcStore extends Store {
                         placement.columnId,
                         "public", // TODO MV: physical schema name
                         physicalTableName,
-                        "col" + placement.columnId );
+                        getPhysicalColumnName( placement.columnId ) );
             } catch ( GenericCatalogException e ) {
                 throw new RuntimeException( e );
             }
@@ -307,6 +307,11 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected String getPhysicalTableName( long tableId ) {
         return "tab" + tableId;
+    }
+
+
+    protected String getPhysicalColumnName( long columnId ) {
+        return "col" + columnId;
     }
 
 
