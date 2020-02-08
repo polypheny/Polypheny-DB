@@ -1245,9 +1245,6 @@ final class Statements {
         String sql = "DELETE FROM " + quoteIdentifier( "column_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "column" ) + " = " + columnId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
-            if ( rowsEffected != 1 ) {
-                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
-            }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );
         }

@@ -98,11 +98,13 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             for ( Map.Entry<Integer, List<CatalogColumnPlacement>> p : combinedTable.getColumnPlacementsByStore().entrySet() ) {
                 if ( p.getKey() == storeInstance.getStoreId() ) {
                     // Delete placement
-                    transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), combinedTable.getTable().id );
+                    for ( CatalogColumnPlacement cp : p.getValue() ) {
+                        transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), cp.columnId );
+                    }
                     return;
                 }
             }
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( storeName.getSimple(), combinedTable.getTable().name ) );
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( combinedTable.getTable().name, storeName.getSimple() ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
