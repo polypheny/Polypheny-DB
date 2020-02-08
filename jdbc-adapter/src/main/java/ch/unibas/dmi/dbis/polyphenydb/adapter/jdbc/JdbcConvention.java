@@ -59,12 +59,16 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * Calling convention for relational operations that occur in a JDBC database.
  *
- * The convention is a slight misnomer. The operations occur in whatever data-flow architecture the database uses internally. Nevertheless, the result pops out in JDBC.
+ * The convention is a slight misnomer. The operations occur in whatever data-flow architecture the database
+ * uses internally. Nevertheless, the result pops out in JDBC.
  *
- * This is the only convention, thus far, that is not a singleton. Each instance contains a JDBC schema (and therefore a data source). If Polypheny-DB is working with two different databases, it would even make sense to convert
- * from "JDBC#A" convention to "JDBC#B", even though we don't do it currently. (That would involve asking database B to open a database link to database A.)
+ * This is the only convention, thus far, that is not a singleton. Each instance contains a JDBC schema
+ * (and therefore a data source). If Polypheny-DB is working with two different databases, it would even make
+ * sense to convert from "JDBC#A" convention to "JDBC#B", even though we don't do it currently.
+ * (That would involve asking database B to open a database link to database A.)
  *
- * As a result, converter rules from and to this convention need to be instantiated, at the start of planning, for each JDBC database in play.
+ * As a result, converter rules from and to this convention need to be instantiated, at the start of planning,
+ * for each JDBC database in play.
  */
 public class JdbcConvention extends Convention.Impl {
 

@@ -279,7 +279,11 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( TableScan e ) {
         //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
-        return result( new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ), ImmutableList.of( Clause.FROM ), e, null );
+        return result(
+                new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ),
+                ImmutableList.of( Clause.FROM ),
+                e,
+                null );
     }
 
 
@@ -456,39 +460,39 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
         switch ( modify.getOperation() ) {
             case INSERT: {
-                // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES, but all support VALUES inside INSERT.
+                // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES,
+                // but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
-
-                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getInput().getRowType().getFieldNames() ) );
-
+                final SqlInsert sqlInsert = new SqlInsert(
+                        POS,
+                        SqlNodeList.EMPTY,
+                        sqlTargetTable,
+                        sqlSource,
+                        physicalIdentifierList(
+                                modify.getTable().getQualifiedName(),
+                                modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
             case UPDATE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlUpdate sqlUpdate =
-                        new SqlUpdate(
-                                POS,
-                                sqlTargetTable,
-                                physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
-                                exprList( context, modify.getSourceExpressionList() ),
-                                ((SqlSelect) input.node).getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlUpdate sqlUpdate = new SqlUpdate(
+                        POS,
+                        sqlTargetTable,
+                        physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
+                        exprList( context, modify.getSourceExpressionList() ),
+                        ((SqlSelect) input.node).getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlUpdate, input.clauses, modify, null );
             }
             case DELETE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlDelete sqlDelete =
-                        new SqlDelete(
-                                POS,
-                                sqlTargetTable,
-                                input.asSelect().getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlDelete sqlDelete = new SqlDelete(
+                        POS,
+                        sqlTargetTable,
+                        input.asSelect().getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlDelete, input.clauses, modify, null );
             }
             case MERGE:

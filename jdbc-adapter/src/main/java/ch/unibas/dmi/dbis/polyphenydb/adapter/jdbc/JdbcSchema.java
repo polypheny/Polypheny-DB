@@ -88,7 +88,8 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * Implementation of {@link Schema} that is backed by a JDBC data source.
  *
- * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed against those tables, pushing down as much as possible of the query logic to SQL.
+ * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed
+ * against those tables, pushing down as much as possible of the query logic to SQL.
  */
 public class JdbcSchema implements Schema {
 
@@ -151,7 +152,8 @@ public class JdbcSchema implements Schema {
 
 
     public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
-        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
+        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
+        // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
@@ -227,7 +229,14 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( connectionFactory, dialect, convention, schema, tableMap, physicalToLogicalTableNameMap, jdbcStore );
+        return new JdbcSchema(
+                connectionFactory,
+                dialect,
+                convention,
+                schema,
+                tableMap,
+                physicalToLogicalTableNameMap,
+                jdbcStore );
     }
 
 

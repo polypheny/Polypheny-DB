@@ -97,16 +97,37 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
  */
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
+    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
+            JdbcSchema.class,
+            "getConnectionHandler",
+            DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "setTimeout",
+            DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "of",
+            ConnectionHandler.class,
+            String.class,
+            Function1.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "of",
+            ConnectionHandler.class,
+            String.class,
+            Function1.class,
+            ResultSetEnumerable.PreparedStatementEnricher.class );
+    public static final Method CREATE_ENRICHER_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "createEnricher",
+            Integer[].class,
+            DataContext.class );
+
+
     protected JdbcToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
-
-
-    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod( JdbcSchema.class, "getConnectionHandler", DataContext.class );
-    public static final Method RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "setTimeout", DataContext.class );
-    public static final Method RESULT_SET_ENUMERABLE_OF_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class );
-    public static final Method RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class, ResultSetEnumerable.PreparedStatementEnricher.class );
-    public static final Method CREATE_ENRICHER_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "createEnricher", Integer[].class, DataContext.class );
 
 
     @Override
@@ -244,7 +265,15 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private void generateGet( EnumerableRelImplementor implementor, PhysType physType, BlockBuilder builder, ParameterExpression resultSet_, int i, Expression target, Expression calendar_, CalendarPolicy calendarPolicy ) {
+    private void generateGet(
+            EnumerableRelImplementor implementor,
+            PhysType physType,
+            BlockBuilder builder,
+            ParameterExpression resultSet_,
+            int i,
+            Expression target,
+            Expression calendar_,
+            CalendarPolicy calendarPolicy ) {
         final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
@@ -256,7 +285,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 dateTimeArgs.add( calendar_ );
                 break;
             case NULL:
-                // We don't specify a calendar at all, so we don't add an argument and instead use the version of the getXXX that doesn't take a Calendar
+                // We don't specify a calendar at all, so we don't add an argument and instead use the version of
+                // the getXXX that doesn't take a Calendar
                 break;
             case DIRECT:
                 sqlTypeName = SqlTypeName.ANY;

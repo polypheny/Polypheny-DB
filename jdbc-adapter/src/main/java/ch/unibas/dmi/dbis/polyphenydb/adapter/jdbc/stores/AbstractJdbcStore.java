@@ -76,7 +76,12 @@ public abstract class AbstractJdbcStore extends Store {
     protected ConnectionFactory connectionFactory;
 
 
-    public AbstractJdbcStore( int storeId, String uniqueName, Map<String, String> settings, ConnectionFactory connectionFactory, SqlDialect dialect ) {
+    public AbstractJdbcStore(
+            int storeId,
+            String uniqueName,
+            Map<String, String> settings,
+            ConnectionFactory connectionFactory,
+            SqlDialect dialect ) {
         super( storeId, uniqueName, settings );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -109,9 +114,8 @@ public abstract class AbstractJdbcStore extends Store {
         im.registerInformation( connectionPoolSizeTable );
         informationElements.add( connectionPoolSizeTable );
 
-        ConnectionPoolSizeInfo connectionPoolSizeInfo = new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable );
         BackgroundTaskManager.INSTANCE.registerTask(
-                connectionPoolSizeInfo,
+                new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable ),
                 "Update " + uniqueName + " JDBC connection factory pool size information",
                 TaskPriority.LOW,
                 TaskSchedulingType.EVERY_FIVE_SECONDS );

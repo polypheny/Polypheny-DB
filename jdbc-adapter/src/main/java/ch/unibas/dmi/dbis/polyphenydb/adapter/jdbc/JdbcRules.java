@@ -149,7 +149,14 @@ public class JdbcRules {
 
         protected final JdbcConvention out;
 
-        <R extends RelNode> JdbcConverterRule( Class<R> clazz, Predicate<? super R> predicate, RelTrait in, JdbcConvention out, RelBuilderFactory relBuilderFactory, String description ) {
+
+        <R extends RelNode> JdbcConverterRule(
+                Class<R> clazz,
+                Predicate<? super R> predicate,
+                RelTrait in,
+                JdbcConvention out,
+                RelBuilderFactory relBuilderFactory,
+                String description ) {
             super( clazz, predicate, in, out, relBuilderFactory, description );
             this.out = out;
         }
@@ -166,7 +173,13 @@ public class JdbcRules {
          * Creates a JdbcJoinRule.
          */
         public JdbcJoinRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Join.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcJoinRule" );
+            super(
+                    Join.class,
+                    (Predicate<RelNode>) r -> true,
+                    Convention.NONE,
+                    out,
+                    relBuilderFactory,
+                    "JdbcJoinRule" );
         }
 
 
@@ -199,7 +212,14 @@ public class JdbcRules {
                 return null;
             }
             try {
-                return new JdbcJoin( join.getCluster(), join.getTraitSet().replace( out ), newInputs.get( 0 ), newInputs.get( 1 ), join.getCondition(), join.getVariablesSet(), join.getJoinType() );
+                return new JdbcJoin(
+                        join.getCluster(),
+                        join.getTraitSet().replace( out ),
+                        newInputs.get( 0 ),
+                        newInputs.get( 1 ),
+                        join.getCondition(),
+                        join.getVariablesSet(),
+                        join.getJoinType() );
             } catch ( InvalidRelException e ) {
                 LOGGER.debug( e.toString() );
                 return null;
@@ -256,7 +276,14 @@ public class JdbcRules {
         /**
          * Creates a JdbcJoin.
          */
-        public JdbcJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
+        public JdbcJoin(
+                RelOptCluster cluster,
+                RelTraitSet traitSet,
+                RelNode left,
+                RelNode right,
+                RexNode condition,
+                Set<CorrelationId> variablesSet,
+                JoinRelType joinType ) throws InvalidRelException {
             super( cluster, traitSet, left, right, condition, variablesSet, joinType );
         }
 
@@ -318,7 +345,11 @@ public class JdbcRules {
                 return null;
             }
 
-            return new JdbcCalc( rel.getCluster(), rel.getTraitSet().replace( out ), convert( calc.getInput(), calc.getTraitSet().replace( out ) ), calc.getProgram() );
+            return new JdbcCalc(
+                    rel.getCluster(),
+                    rel.getTraitSet().replace( out ),
+                    convert( calc.getInput(), calc.getTraitSet().replace( out ) ),
+                    calc.getProgram() );
         }
     }
 
@@ -509,7 +540,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcAggregate}.
+     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcAggregate}.
      */
     public static class JdbcAggregateRule extends JdbcConverterRule {
 
@@ -531,7 +563,14 @@ public class JdbcRules {
             }
             final RelTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
-                return new JdbcAggregate( rel.getCluster(), traitSet, convert( agg.getInput(), out ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
+                return new JdbcAggregate(
+                        rel.getCluster(),
+                        traitSet,
+                        convert( agg.getInput(), out ),
+                        agg.indicator,
+                        agg.getGroupSet(),
+                        agg.getGroupSets(),
+                        agg.getAggCallList() );
             } catch ( InvalidRelException e ) {
                 LOGGER.debug( e.toString() );
                 return null;
@@ -576,7 +615,13 @@ public class JdbcRules {
 
 
         @Override
-        public JdbcAggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        public JdbcAggregate copy(
+                RelTraitSet traitSet,
+                RelNode input,
+                boolean indicator,
+                ImmutableBitSet groupSet,
+                List<ImmutableBitSet> groupSets,
+                List<AggregateCall> aggCalls ) {
             try {
                 return new JdbcAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
             } catch ( InvalidRelException e ) {
@@ -661,7 +706,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcUnion}.
+     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcUnion}.
      */
     public static class JdbcUnionRule extends JdbcConverterRule {
 
@@ -712,7 +758,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcIntersect}.
+     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcIntersect}.
      */
     public static class JdbcIntersectRule extends JdbcConverterRule {
 
@@ -852,7 +899,8 @@ public class JdbcRules {
         private final Expression expression;
 
 
-        public JdbcTableModify( RelOptCluster cluster,
+        public JdbcTableModify(
+                RelOptCluster cluster,
                 RelTraitSet traitSet,
                 RelOptTable table,
                 Prepare.CatalogReader catalogReader,
@@ -883,7 +931,16 @@ public class JdbcRules {
 
         @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-            return new JdbcTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), AbstractRelNode.sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+            return new JdbcTableModify(
+                    getCluster(),
+                    traitSet,
+                    getTable(),
+                    getCatalogReader(),
+                    AbstractRelNode.sole( inputs ),
+                    getOperation(),
+                    getUpdateColumnList(),
+                    getSourceExpressionList(),
+                    isFlattened() );
         }
 
 

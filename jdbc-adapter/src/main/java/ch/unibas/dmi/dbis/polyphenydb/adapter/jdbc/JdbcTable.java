@@ -90,7 +90,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 /**
  * Queryable that gets its data from a table within a JDBC connection.
  *
- * The idea is not to read the whole table, however. The idea is to use this as a building block for a query, by applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
+ * The idea is not to read the whole table, however. The idea is to use this as a building block for a query, by
+ * applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
  * The resulting queryable can then be converted to a SQL query, which can be executed efficiently on the JDBC server.
  */
 public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
@@ -169,7 +170,18 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
         final SqlNodeList selectList = new SqlNodeList( pcnl, SqlParserPos.ZERO );
         SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), SqlParserPos.ZERO );
-        SqlSelect node = new SqlSelect( SqlParserPos.ZERO, SqlNodeList.EMPTY, selectList, physicalTableName, null, null, null, null, null, null, null );
+        SqlSelect node = new SqlSelect(
+                SqlParserPos.ZERO,
+                SqlNodeList.EMPTY,
+                selectList,
+                physicalTableName,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null );
         final SqlPrettyWriter writer = new SqlPrettyWriter( jdbcSchema.dialect );
         node.unparse( writer, 0, 0 );
         return writer.toSqlString();
@@ -203,7 +215,10 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     public Enumerable<Object[]> scan( DataContext root ) {
         final JavaTypeFactory typeFactory = root.getTypeFactory();
         final SqlString sql = generateSql();
-        return ResultSetEnumerable.of( jdbcSchema.getConnectionHandler( root ), sql.getSql(), JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
+        return ResultSetEnumerable.of(
+                jdbcSchema.getConnectionHandler( root ),
+                sql.getSql(),
+                JdbcUtils.ObjectArrayRowBuilder.factory( fieldClasses( typeFactory ) ) );
     }
 
 
@@ -214,9 +229,26 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public TableModify toModificationRel(
+            RelOptCluster cluster,
+            RelOptTable table,
+            CatalogReader catalogReader,
+            RelNode input,
+            Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalTableModify(
+                cluster,
+                cluster.traitSetOf( Convention.NONE ),
+                table,
+                catalogReader,
+                input,
+                operation,
+                updateColumnList,
+                sourceExpressionList,
+                flattened );
     }
 
 

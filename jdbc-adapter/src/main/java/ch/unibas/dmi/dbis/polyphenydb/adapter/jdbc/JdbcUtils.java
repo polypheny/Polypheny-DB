@@ -142,7 +142,8 @@ public final class JdbcUtils {
 
 
     /**
-     * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type is a primitive {@code xxx}, and returns an array of objects for each row.
+     * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type
+     * is a primitive {@code xxx}, and returns an array of objects for each row.
      */
     static class ObjectArrayRowBuilder implements Function0<Object[]> {
 
@@ -163,7 +164,10 @@ public final class JdbcUtils {
         public static Function1<ResultSet, Function0<Object[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
             return resultSet -> {
                 try {
-                    return new ObjectArrayRowBuilder( resultSet, Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ), Ints.toArray( Pair.right( list ) ) );
+                    return new ObjectArrayRowBuilder(
+                            resultSet,
+                            Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
+                            Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
                     throw new RuntimeException( e );
                 }
@@ -191,7 +195,8 @@ public final class JdbcUtils {
          * @param i Ordinal of column (1-based, per JDBC)
          */
         private Object value( int i ) throws SQLException {
-            // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar should prevent this, but does not. So we shift explicitly.
+            // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
+            // should prevent this, but does not. So we shift explicitly.
             switch ( types[i] ) {
                 case Types.TIMESTAMP:
                     return shift( resultSet.getTimestamp( i + 1 ) );
@@ -238,7 +243,8 @@ public final class JdbcUtils {
     /**
      * Ensures that if two data sources have the same definition, they will use the same object.
      *
-     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source, we have to open a connection to find out what database product and version it is.
+     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source,
+     * we have to open a connection to find out what database product and version it is.
      */
     public static class DataSourcePool {
 
@@ -259,7 +265,8 @@ public final class JdbcUtils {
 
 
         public DataSource get( String url, String driverClassName, String username, String password ) {
-            // Get data source objects from a cache, so that we don't have to sniff out what kind of database they are quite as often.
+            // Get data source objects from a cache, so that we don't have to sniff out what kind of
+            // database they are quite as often.
             final List<String> key = ImmutableNullableList.of( url, username, password, driverClassName );
             return cache.getUnchecked( key );
         }

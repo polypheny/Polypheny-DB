@@ -170,7 +170,8 @@ public abstract class SqlImplementor {
                 return false;
             }
         }
-        return i == inputRowType.getFieldCount() && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );
+        return i == inputRowType.getFieldCount()
+                && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );
     }
 
 
@@ -429,12 +430,24 @@ public abstract class SqlImplementor {
                 || ((SqlCall) node).getOperator() == SqlStdOperatorTable.AS
                 || ((SqlCall) node).getOperator() == SqlStdOperatorTable.VALUES)
                 : node;
-        return new SqlSelect( POS, SqlNodeList.EMPTY, null, node, null, null, null, SqlNodeList.EMPTY, null, null, null );
+        return new SqlSelect(
+                POS,
+                SqlNodeList.EMPTY,
+                null,
+                node,
+                null,
+                null,
+                null,
+                SqlNodeList.EMPTY,
+                null,
+                null,
+                null );
     }
 
 
     /**
-     * Context for translating a {@link RexNode} expression (within a {@link RelNode}) into a {@link SqlNode} expression (within a SQL parse tree).
+     * Context for translating a {@link RexNode} expression (within a {@link RelNode}) into a {@link SqlNode}
+     * expression (within a SQL parse tree).
      */
     public abstract static class Context {
 
@@ -864,8 +877,9 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Simple implementation of {@link Context} that cannot handle sub-queries or correlations. Because it is so simple, you do not need to create a {@link SqlImplementor} or {@link RelBuilder}
-     * to use it. It is a good way to convert a {@link RexNode} to SQL text.
+     * Simple implementation of {@link Context} that cannot handle sub-queries or correlations. Because it is so simple,
+     * you do not need to create a {@link SqlImplementor} or {@link RelBuilder} to use it. It is a good way to
+     * convert a {@link RexNode} to SQL text.
      */
     public static class SimpleContext extends Context {
 
@@ -887,7 +901,8 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Implementation of {@link Context} that has an enclosing {@link SqlImplementor} and can therefore do non-trivial expressions.
+     * Implementation of {@link Context} that has an enclosing {@link SqlImplementor} and can therefore
+     * do non-trivial expressions.
      */
     protected abstract class BaseContext extends Context {
 
@@ -957,7 +972,8 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Implementation of Context that precedes field references with their "table alias" based on the current sub-query's FROM clause.
+     * Implementation of Context that precedes field references with their "table alias" based on the current
+     * sub-query's FROM clause.
      */
     public class AliasContext extends BaseContext {
 
@@ -1050,12 +1066,15 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to implement the current relational expression by adding additional clauses to the SQL query.
+         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to
+         * implement the current relational expression by adding additional clauses to the SQL query.
          *
-         * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query. For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
+         * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query.
+         * For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
          * start a new SELECT that wraps the previous result.
          *
-         * When you have called {@link Builder#setSelect(SqlNodeList)}, {@link Builder#setWhere(SqlNode)} etc. call {@link Builder#result(SqlNode, Collection, RelNode, Map)} to fix the new query.
+         * When you have called {@link Builder#setSelect(SqlNodeList)}, {@link Builder#setWhere(SqlNode)} etc.
+         * call {@link Builder#result(SqlNode, Collection, RelNode, Map)} to fix the new query.
          *
          * @param rel Relational expression being implemented
          * @param clauses Clauses that will be generated to implement current relational expression
@@ -1072,7 +1091,9 @@ public abstract class SqlImplementor {
                     break;
                 }
             }
-            if ( rel instanceof LogicalAggregate && !dialect.supportsNestedAggregations() && hasNestedAggregations( (LogicalAggregate) rel ) ) {
+            if ( rel instanceof LogicalAggregate
+                    && !dialect.supportsNestedAggregations()
+                    && hasNestedAggregations( (LogicalAggregate) rel ) ) {
                 needNew = true;
             }
 
@@ -1152,7 +1173,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Returns a node that can be included in the FROM clause or a JOIN. It has an alias that is unique within the query. The alias is implicit if it can be derived using the usual rules (For example, "SELECT * FROM emp" is
+         * Returns a node that can be included in the FROM clause or a JOIN. It has an alias that is unique within the query.
+         * The alias is implicit if it can be derived using the usual rules (For example, "SELECT * FROM emp" is
          * equivalent to "SELECT * FROM emp AS emp".)
          */
         public SqlNode asFrom() {
@@ -1183,7 +1205,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT) and DML operators (INSERT, UPDATE, DELETE, MERGE) remain as is.
+         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT)
+         * and DML operators (INSERT, UPDATE, DELETE, MERGE) remain as is.
          */
         public SqlNode asStatement() {
             switch ( node.getKind() ) {
@@ -1218,7 +1241,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Returns a context that always qualifies identifiers. Useful if the Context deals with just one arm of a join, yet we wish to generate a join condition that qualifies column names to disambiguate them.
+         * Returns a context that always qualifies identifiers. Useful if the Context deals with just one arm
+         * of a join, yet we wish to generate a join condition that qualifies column names to disambiguate them.
          */
         public Context qualifiedContext() {
             return aliasContext( aliases, true );
