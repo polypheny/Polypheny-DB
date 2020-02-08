@@ -636,7 +636,11 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
     @Override
     public void addSelect( List<SqlNode> selectList, SqlNode node, RelDataType rowType ) {
-        String name = rowType.getFieldNames().get( selectList.size() );
+        //String name = rowType.getFieldNames().get( selectList.size() );
+        String name = rowType.getFieldList().get( selectList.size() ).getPhysicalName();
+        if ( name == null ) {
+            name = rowType.getFieldList().get( selectList.size() ).getName();
+        }
         String alias = SqlValidatorUtil.getAlias( node, -1 );
         final String lowerName = name.toLowerCase( Locale.ROOT );
         if ( lowerName.startsWith( "expr$" ) ) {

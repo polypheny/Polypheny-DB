@@ -1005,9 +1005,11 @@ public abstract class SqlImplementor {
                     if ( field.getPhysicalName() != null ) {
                         physicalColumnName = field.getPhysicalName();
                     }
-                    return new SqlIdentifier( !qualified
-                            ? ImmutableList.of( physicalColumnName )
-                            : ImmutableList.of( alias.getKey(), physicalColumnName ), POS );
+                    return new SqlIdentifier(
+                            !qualified
+                                    ? ImmutableList.of( physicalColumnName )
+                                    : ImmutableList.of( alias.getKey(), physicalColumnName ),
+                            POS );
                 }
                 ordinal -= fields.size();
             }

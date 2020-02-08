@@ -122,17 +122,19 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     protected RelSubset root;
 
     /**
-     * If true, the planner keeps applying rules as long as they continue to reduce the cost. If false, the planner terminates as soon as it has found any
-     * implementation, no matter how expensive.
+     * If true, the planner keeps applying rules as long as they continue to reduce the cost. If false, the planner
+     * terminates as soon as it has found any implementation, no matter how expensive.
      */
     protected boolean ambitious = true;
 
     /**
      * If true, and if {@link #ambitious} is true, the planner waits a finite number of iterations for the cost to improve.
      *
-     * The number of iterations K is equal to the number of iterations required to get the first finite plan. After the first finite plan, it continues to fire rules to try to improve it.
-     * The planner sets a target cost of the current best cost multiplied by {@link #COST_IMPROVEMENT}. If it does not meet that cost target within K steps, it quits, and uses the
-     * current best plan. If it meets the cost, it sets a new, lower target, and has another K iterations to meet it. And so forth.
+     * The number of iterations K is equal to the number of iterations required to get the first finite plan. After the
+     * first finite plan, it continues to fire rules to try to improve it. The planner sets a target cost of the current
+     * best cost multiplied by {@link #COST_IMPROVEMENT}. If it does not meet that cost target within K steps, it quits,
+     * and uses the current best plan. If it meets the cost, it sets a new, lower target, and has another K iterations
+     * to meet it. And so forth.
      *
      * If false, the planner continues to fire rules until the rule queue is empty.
      */
@@ -141,7 +143,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Operands that apply to a given class of {@link RelNode}.
      *
-     * Any operand can be an 'entry point' to a rule call, when a RelNode is registered which matches the operand. This map allows us to narrow down operands based on the class of the RelNode.
+     * Any operand can be an 'entry point' to a rule call, when a RelNode is registered which matches the operand.
+     * This map allows us to narrow down operands based on the class of the RelNode.
      */
     private final Multimap<Class<? extends RelNode>, RelOptRuleOperand> classOperands = LinkedListMultimap.create();
 
@@ -153,25 +156,28 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Canonical map from {@link String digest} to the unique {@link RelNode relational expression} with that digest.
      *
-     * Row type is part of the key for the rare occasion that similar expressions have different types, e.g. variants of {@code Project(child=rel#1, a=null)} where a is a null
-     * INTEGER or a null VARCHAR(10).
+     * Row type is part of the key for the rare occasion that similar expressions have different types, e.g. variants
+     * of {@code Project(child=rel#1, a=null)} where a is a null INTEGER or a null VARCHAR(10).
      */
     private final Map<String, RelNode> mapDigestToRel = new HashMap<>();
 
     /**
      * Map each registered expression ({@link RelNode}) to its equivalence set ({@link RelSubset}).
      *
-     * We use an {@link IdentityHashMap} to simplify the process of merging {@link RelSet} objects. Most {@link RelNode} objects are identified by their digest, which involves the set that
-     * their child relational expressions belong to. If those children belong to the same set, we have to be careful, otherwise it gets incestuous.</p>
+     * We use an {@link IdentityHashMap} to simplify the process of merging {@link RelSet} objects. Most {@link RelNode}
+     * objects are identified by their digest, which involves the set that their child relational expressions belong to.
+     * If those children belong to the same set, we have to be careful, otherwise it gets incestuous.
      */
     private final IdentityHashMap<RelNode, RelSubset> mapRel2Subset = new IdentityHashMap<>();
 
     /**
      * The importance of relational expressions.
      *
-     * The map contains only RelNodes whose importance has been overridden using {@link RelOptPlanner#setImportance(RelNode, double)}. Other RelNodes are presumed to have 'normal' importance.
+     * The map contains only RelNodes whose importance has been overridden using
+     * {@link RelOptPlanner#setImportance(RelNode, double)}. Other RelNodes are presumed to have 'normal' importance.
      *
-     * If a RelNode has 0 importance, all {@link RelOptRuleCall}s using it are ignored, and future RelOptRuleCalls are not queued up.
+     * If a RelNode has 0 importance, all {@link RelOptRuleCall}s using it are ignored, and future
+     * RelOptRuleCalls are not queued up.
      */
     final Map<RelNode, Double> relImportances = new HashMap<>();
 
@@ -198,7 +204,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     private int nextSetId = 0;
 
     /**
-     * Incremented every time a relational expression is registered or two sets are merged. Tells us whether anything is going on.
+     * Incremented every time a relational expression is registered or two sets are merged.
+     * Tells us whether anything is going on.
      */
     private int registerCount;
 
@@ -235,7 +242,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the desired set of relations, rules, and calling conventions.
+     * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the
+     * desired set of relations, rules, and calling conventions.
      */
     public VolcanoPlanner() {
         this( null, null );
@@ -243,7 +251,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the desired set of relations, rules, and calling conventions.
+     * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the
+     * desired set of relations, rules, and calling conventions.
      */
     public VolcanoPlanner( Context externalContext ) {
         this( null, externalContext );
@@ -279,7 +288,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     @Override
     public void setRoot( RelNode rel ) {
-        // We're registered all the rules, and therefore RelNode classes, we're interested in, and have not yet started calling metadata providers.
+        // We're registered all the rules, and therefore RelNode classes, we're interested in, and have not yet started
+        // calling metadata providers.
         // So now is a good time to tell the metadata layer what to expect.
         registerMetadataRels();
 
@@ -478,19 +488,25 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Finds the most efficient expression to implement the query given via {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#setRoot(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode)}.
+     * Finds the most efficient expression to implement the query given via
+     * {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#setRoot(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode)}.
      *
-     * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies. The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
+     * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
+     * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
      *
-     * In each phase, the planner sets the initial importance of the existing RelSubSets ({@link #setInitialImportance()}). The planner then iterates over the rule matches presented by the rule queue until:
+     * In each phase, the planner sets the initial importance of the existing RelSubSets ({@link #setInitialImportance()}).
+     * The planner then iterates over the rule matches presented by the rule queue until:
      *
      * <ol>
      * <li>The rule queue becomes empty.</li>
-     * <li>For ambitious planners: No improvements to the plan have been made recently (specifically within a number of iterations that is 10% of the number of iterations necessary to first reach an implementable plan or 25 iterations whichever is larger).</li>
+     * <li>For ambitious planners: No improvements to the plan have been made recently (specifically within a number of
+     * iterations that is 10% of the number of iterations necessary to first reach an implementable plan or 25 iterations
+     * whichever is larger).</li>
      * <li>For non-ambitious planners: When an implementable plan is found.</li>
      * </ol>
      *
-     * Furthermore, after every 10 iterations without an implementable plan, RelSubSets that contain only logical RelNodes are given an importance boost via {@link #injectImportanceBoost()}. Once an implementable plan is found,
+     * Furthermore, after every 10 iterations without an implementable plan, RelSubSets that contain only logical RelNodes
+     * are given an importance boost via {@link #injectImportanceBoost()}. Once an implementable plan is found,
      * the artificially raised importance values are cleared (see {@link #clearImportanceBoost()}).
      *
      * @return the most efficient RelNode tree found for implementing the given query
@@ -517,12 +533,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                         clearImportanceBoost();
                     }
                     if ( ambitious ) {
-                        // Choose a slightly more ambitious target cost, and try again. If it took us 1000 iterations to find our first finite plan, give ourselves another 100 iterations to reduce the cost by 10%.
+                        // Choose a slightly more ambitious target cost, and try again. If it took us 1000 iterations to
+                        // find our first finite plan, give ourselves another 100 iterations to reduce the cost by 10%.
                         targetCost = root.bestCost.multiplyBy( 0.9 );
                         ++splitCount;
                         if ( impatient ) {
                             if ( firstFiniteTick < 10 ) {
-                                // It's possible pre-processing can create an implementable plan -- give us some time to actually optimize it.
+                                // It's possible pre-processing can create an implementable plan -- give us
+                                // some time to actually optimize it.
                                 giveUpTick = cumulativeTicks + 25;
                             } else {
                                 giveUpTick = cumulativeTicks + Math.max( firstFiniteTick / 10, 25 );
@@ -571,7 +589,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Informs {@link JaninoRelMetadataProvider} about the different kinds of {@link RelNode} that we will be dealing with. It will reduce the number of times that we need to re-generate the provider.
+     * Informs {@link JaninoRelMetadataProvider} about the different kinds of {@link RelNode} that we will be dealing with.
+     * It will reduce the number of times that we need to re-generate the provider.
      */
     private void registerMetadataRels() {
         JaninoRelMetadataProvider.DEFAULT.register( classOperands.keySet() );
@@ -579,10 +598,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Ensures that the subset that is the root relational expression contains converters to all other subsets in its equivalence set.
+     * Ensures that the subset that is the root relational expression contains converters to all other subsets
+     * in its equivalence set.
      *
-     * Thus the planner tries to find cheap implementations of those other subsets, which can then be converted to the root. This is the only place in the plan where explicit converters are required; elsewhere, a consumer
-     * will be asking for the result in a particular convention, but the root has no consumers.
+     * Thus the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
+     * This is the only place in the plan where explicit converters are required; elsewhere, a consumer will be asking for
+     * the result in a particular convention, but the root has no consumers.
      */
     void ensureRootConverters() {
         final Set<RelSubset> subsets = new HashSet<>();
@@ -594,17 +615,21 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         for ( RelSubset subset : root.set.subsets ) {
             final ImmutableList<RelTrait> difference = root.getTraitSet().difference( subset.getTraitSet() );
             if ( difference.size() == 1 && subsets.add( subset ) ) {
-                register( new AbstractConverter( subset.getCluster(), subset, difference.get( 0 ).getTraitDef(), root.getTraitSet() ), root );
+                register(
+                        new AbstractConverter( subset.getCluster(), subset, difference.get( 0 ).getTraitDef(), root.getTraitSet() ),
+                        root );
             }
         }
     }
 
 
     /**
-     * Returns a multi-line string describing the provenance of a tree of relational expressions. For each node in the tree, prints the rule that created the node, if any. Recursively describes the provenance of the
-     * relational expressions that are the arguments to that rule.
+     * Returns a multi-line string describing the provenance of a tree of relational expressions. For each node in the
+     * tree, prints the rule that created the node, if any. Recursively describes the provenance of the relational
+     * expressions that are the arguments to that rule.
      *
-     * Thus, every relational expression and rule invocation that affected the final outcome is described in the provenance. This can be useful when finding the root cause of "mistakes" in a query plan.
+     * Thus, every relational expression and rule invocation that affected the final outcome is described in the
+     * provenance. This can be useful when finding the root cause of "mistakes" in a query plan.
      *
      * @param root Root relational expression in a tree
      * @return Multi-line string describing the rules that created the tree
@@ -900,8 +925,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         final boolean allowInfiniteCostConverters =
                 SaffronProperties.INSTANCE.allowInfiniteCostConverters().get();
 
-        // Traits may build on top of another...for example a collation trait would typically come after a distribution trait since distribution destroys collation; so when doing the conversion below we use fromTraits
-        // as the trait of the just previously converted RelNode. Also, toTraits may have fewer traits than fromTraits, excess traits will be left as is.  Finally, any null entries in toTraits are ignored.
+        // Traits may build on top of another...for example a collation trait would typically come after a distribution
+        // trait since distribution destroys collation; so when doing the conversion below we use fromTraits as the trait
+        // of the just previously converted RelNode. Also, toTraits may have fewer traits than fromTraits, excess traits
+        // will be left as is. Finally, any null entries in toTraits are ignored.
         RelNode converted = rel;
         for ( int i = 0; (converted != null) && (i < toTraits.size()); i++ ) {
             RelTrait fromTrait = converted.getTraitSet().getTrait( i );
@@ -946,7 +973,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Converts traits using well-founded induction. We don't require that each conversion preserves all traits that have previously been converted, but if it changes "locked in" traits we'll try some other conversion.
+     * Converts traits using well-founded induction. We don't require that each conversion preserves all traits that
+     * have previously been converted, but if it changes "locked in" traits we'll try some other conversion.
      *
      * @param rel Relational expression
      * @param allowInfiniteCostConverters Whether to allow infinite converters
@@ -954,7 +982,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * @param usedTraits Traits that have been locked in
      * @return Converted relational expression
      */
-    private RelNode completeConversion( RelNode rel, boolean allowInfiniteCostConverters, RelTraitSet toTraits, Expressions.FluentList<RelTraitDef> usedTraits ) {
+    private RelNode completeConversion(
+            RelNode rel,
+            boolean allowInfiniteCostConverters,
+            RelTraitSet toTraits,
+            Expressions.FluentList<RelTraitDef> usedTraits ) {
         if ( true ) {
             return rel;
         }
@@ -1071,8 +1103,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Re-computes the digest of a {@link RelNode}.
      *
-     * Since a relational expression's digest contains the identifiers of its children, this method needs to be called when the child has been renamed,
-     * for example if the child's set merges with another.
+     * Since a relational expression's digest contains the identifiers of its children, this method needs to be called
+     * when the child has been renamed, for example if the child's set merges with another.
      *
      * @param rel Relational expression
      */
@@ -1107,7 +1139,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                     ((RelSubset) input).set.parents.remove( rel );
                 }
 
-                // Remove rel from its subset. (This may leave the subset empty, but if so, that will be dealt with when the sets get merged.)
+                // Remove rel from its subset. (This may leave the subset empty, but if so, that will be dealt
+                // with when the sets get merged.)
                 final RelSubset subset = mapRel2Subset.put( rel, equivRelSubset );
                 assert subset != null;
                 boolean existed = subset.set.rels.remove( rel );
@@ -1131,7 +1164,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * @param rel Relational expression
      */
     void reregister( RelSet set, RelNode rel ) {
-        // Is there an equivalent relational expression? (This might have just occurred because the relational expression's child was just found to be equivalent to another set.)
+        // Is there an equivalent relational expression? (This might have just occurred because the relational
+        // expression's child was just found to be equivalent to another set.)
         RelNode equivRel = mapDigestToRel.get( rel.getDigest() );
         if ( equivRel != null && equivRel != rel ) {
             assert equivRel.getClass() == rel.getClass();
@@ -1154,7 +1188,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * If a subset has one or more equivalent subsets (owing to a set having merged with another), returns the subset which is the leader of the equivalence class.
+     * If a subset has one or more equivalent subsets (owing to a set having merged with another),
+     * returns the subset which is the leader of the equivalence class.
      *
      * @param subset Subset
      * @return Leader of subset's equivalence class
@@ -1282,8 +1317,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Registers a new expression <code>exp</code> and queues up rule matches. If <code>set</code> is not null, makes the expression part of that equivalence set. If an identical expression is already registered, we
-     * don't need to register this one and nor should we queue up rule matches.
+     * Registers a new expression <code>exp</code> and queues up rule matches. If <code>set</code> is not null, makes
+     * the expression part of that equivalence set. If an identical expression is already registered, we don't need to
+     * register this one and nor should we queue up rule matches.
      *
      * @param rel relational expression to register. Must be either a {@link RelSubset}, or an unregistered {@link RelNode}
      * @param set set that rel belongs to, or <code>null</code>
@@ -1349,7 +1385,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                 merge( set, childSet );
                 registerCount++;
 
-                // During the mergers, the child set may have changed, and since we're not registered yet, we won't have been informed. So check whether we are now equivalent to an existing expression.
+                // During the mergers, the child set may have changed, and since we're not registered yet, we won't have
+                // been informed. So check whether we are now equivalent to an existing expression.
                 if ( fixUpInputs( rel ) ) {
                     rel.recomputeDigest();
                     key = rel.getDigest();
@@ -1362,7 +1399,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                                 equivRel.getRowType(),
                                 Litmus.THROW );
 
-                        // make sure this bad rel didn't get into the set in any way (fixupInputs will do this but it doesn't know if it should so it does it anyway)
+                        // Make sure this bad rel didn't get into the set in any way (fixupInputs will do this but it
+                        // doesn't know if it should so it does it anyway)
                         set.obliterateRelNode( rel );
 
                         // There is already an equivalent expression. Use that one, and forget about this one.
@@ -1400,7 +1438,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
         LOGGER.trace( "Register {} in {}", rel.getDescription(), subset.getDescription() );
 
-        // This relational expression may have been registered while we recursively registered its children. If this is the case, we're done.
+        // This relational expression may have been registered while we recursively registered its children.
+        // If this is the case, we're done.
         if ( xx != null ) {
             return subset;
         }
@@ -1447,8 +1486,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         RelSubset subset = set.add( rel );
         mapRel2Subset.put( rel, subset );
 
-        // While a tree of RelNodes is being registered, sometimes nodes' costs improve and the subset doesn't hear about it. You can end up with a subset with a single rel of cost 99 which thinks its best
-        // cost is 100. We think this happens because the back-links to parents are not established. So, give the subset another change to figure out its cost.
+        // While a tree of RelNodes is being registered, sometimes nodes' costs improve and the subset doesn't
+        // hear about it. You can end up with a subset with a single rel of cost 99 which thinks its best cost is 100.
+        // We think this happens because the back-links to parents are not established.
+        // So, give the subset another change to figure out its cost.
         final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
         subset.propagateCostImprovements( this, mq, rel, new HashSet<>() );
 
@@ -1499,7 +1540,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Normalizes references to subsets within the string representation of a plan.
      *
-     * This is useful when writing tests: it helps to ensure that tests don't break when an extra rule is introduced that generates a new subset and causes subsequent subset numbers to be off by one.
+     * This is useful when writing tests: it helps to ensure that tests don't break when an extra rule is introduced
+     * that generates a new subset and causes subsequent subset numbers to be off by one.
      *
      * For example,
      *
@@ -1548,7 +1590,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Sets whether this planner is locked. A locked planner does not accept new rules. {@link #addRule(ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule)} will do nothing and return false.
+     * Sets whether this planner is locked. A locked planner does not accept new rules.
+     * {@link #addRule(ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule)} will do nothing and return false.
      *
      * @param locked Whether planner is locked
      */
@@ -1565,7 +1608,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * A rule call which defers its actions. Whereas {@link RelOptRuleCall} invokes the rule when it finds a match, a <code>DeferringRuleCall</code> creates a {@link VolcanoRuleMatch} which can be invoked later.
+     * A rule call which defers its actions. Whereas {@link RelOptRuleCall} invokes the rule when it finds a match,
+     * a <code>DeferringRuleCall</code> creates a {@link VolcanoRuleMatch} which can be invoked later.
      */
     private static class DeferringRuleCall extends VolcanoRuleCall {
 
@@ -1575,7 +1619,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
         /**
-         * Rather than invoking the rule (as the base method does), creates a {@link VolcanoRuleMatch} which can be invoked later.
+         * Rather than invoking the rule (as the base method does), creates a {@link VolcanoRuleMatch}
+         * which can be invoked later.
          */
         @Override
         protected void onMatch() {
