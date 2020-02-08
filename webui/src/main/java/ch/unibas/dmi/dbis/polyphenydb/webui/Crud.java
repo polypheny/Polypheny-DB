@@ -1289,6 +1289,7 @@ public class Crud implements InformationObserver {
                 String[] arr = new String[3];
                 arr[0] = store.getUniqueName();
                 arr[1] = store.getAdapterName();
+                arr[2] = "";
                 boolean first = true;
                 for ( CatalogColumnPlacement p : placements ) {
                     String prefix = ", ";
