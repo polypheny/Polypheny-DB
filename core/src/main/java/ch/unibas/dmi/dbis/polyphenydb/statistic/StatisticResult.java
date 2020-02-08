@@ -34,7 +34,6 @@ public class StatisticResult {
      * @param data answer per stat as a two-dimensional array
      */
     public StatisticResult( List<String> names, List<PolySqlType> type, String[][] data ) {
-        ;
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];
         } else {
@@ -75,10 +74,10 @@ public class StatisticResult {
      * @return map with <b>value</b> as key and <b>occurrence</b> as value
      */
     public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
-        HashMap<E, Integer> map = new HashMap();
+        HashMap<E, Integer> map = new HashMap<>();
         String[] values = stats.getColumns()[0].getData();
         String[] occurrences = stats.getColumns()[1].getData();
-        //TODO: handle missmatch
+        //TODO: handle mismatch
         for ( int i = 0; i < values.length; i++ ) {
             map.put( (E) values[i], Integer.parseInt( occurrences[i] ) );
         }

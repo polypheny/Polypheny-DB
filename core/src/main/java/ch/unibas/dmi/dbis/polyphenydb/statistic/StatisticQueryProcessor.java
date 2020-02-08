@@ -186,7 +186,7 @@ public class StatisticQueryProcessor {
     private List<QueryColumn> getAllColumns( String schemaTable ) {
         String[] split = schemaTable.split( "." );
         if ( split.length != 2 ) {
-            return new ArrayList<QueryColumn>();
+            return new ArrayList<>();
         }
         return getAllColumns( split[0], split[1] );
     }
@@ -245,7 +245,7 @@ public class StatisticQueryProcessor {
      */
     public PolySqlType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
-        // TODO: fix possible nullpointer
+        // TODO: fix possible NullPointer
         PolySqlType type = null;
 
         try {

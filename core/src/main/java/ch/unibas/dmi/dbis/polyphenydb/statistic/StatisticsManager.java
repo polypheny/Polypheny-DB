@@ -41,7 +41,7 @@ public class StatisticsManager {
 
     private StatisticQueryProcessor sqlQueryInterface;
 
-    private ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
     private int buffer = RuntimeConfig.STATISTIC_BUFFER.getInteger();
 
@@ -51,7 +51,6 @@ public class StatisticsManager {
 
 
     private StatisticsManager() {
-
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
@@ -62,7 +61,6 @@ public class StatisticsManager {
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
-
     }
 
 
@@ -324,9 +322,9 @@ public class StatisticsManager {
 
 
     /**
-     * Queries the database with a aggreagate query
+     * Queries the database with a aggregate query
      *
-     * @param aggregate the aggregate funciton to us
+     * @param aggregate the aggregate function to us
      */
     private StatisticQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
         String query = "SELECT " + aggregate + " (" + StatisticQueryProcessor.buildQualifiedName( schema, table, column ) + ") FROM " + StatisticQueryProcessor.buildQualifiedName( schema, table ) + getStatQueryLimit();
@@ -391,7 +389,7 @@ public class StatisticsManager {
 
 
     /**
-     * Configures and registers the statistics informationpage for the frontend
+     * Configures and registers the statistics InformationPage for the frontend
      */
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
@@ -411,11 +409,9 @@ public class StatisticsManager {
                     statisticsInformation.reset();
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                         statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount() );
-
-
                     } ) ) );
                 },
-                "Reset the Statistic InformationPage for the dynamicQuering",
+                "Reset the Statistic InformationPage for the dynamicQuerying",
                 TaskPriority.LOW,
                 TaskSchedulingType.EVERY_FIVE_SECONDS
         );
@@ -471,14 +467,12 @@ public class StatisticsManager {
 
 
     /**
-     * Reevalutes all tables which received changes impacting their statistic data
+     * Reevaluates all tables which received changes impacting their statistic data
      *
      * @param changedTables all tables which got changed in a transaction
      */
     public void apply( List<String> changedTables ) {
-        threadPool.execute( () -> {
-            changedTables.forEach( this::reevaluateTable );
-        } );
+        threadPool.execute( () -> changedTables.forEach( this::reevaluateTable ) );
     }
 
 
@@ -488,8 +482,7 @@ public class StatisticsManager {
 
 
     /**
-     * class reevaluates if backgroundtracking should be stopped or restarted
-     * depending on the state of the ConfigManager
+     * This class reevaluates if background tracking should be stopped or restarted depending on the state of the ConfigManager
      */
     class TrackingListener implements Config.ConfigListener {
 
@@ -515,15 +508,12 @@ public class StatisticsManager {
                         TaskPriority.LOW,
                         (TaskSchedulingType) cm.getConfig( "statistics/passiveTrackingRate" ).getEnum() );
                 setRevalId( revalId );
-            } else if ( id != null && (! cm.getConfig( "statistics/passiveTracking" ).getBoolean() || ! cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
+            } else if ( id != null && (!cm.getConfig( "statistics/passiveTracking" ).getBoolean() || !cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
                 BackgroundTaskManager.INSTANCE.removeBackgroundTask( getRevalId() );
                 setRevalId( null );
             }
         }
 
     }
-
-
-    ;
 
 }

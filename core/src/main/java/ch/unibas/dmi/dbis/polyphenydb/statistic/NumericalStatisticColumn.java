@@ -70,8 +70,6 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         statistics += "unique Value: " + uniqueValues.toString();
 
         return statistics;
-
     }
-
 
 }
