@@ -32,6 +32,7 @@ import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
 import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedDatabase;
@@ -139,9 +140,6 @@ public class StatisticQueryProcessor {
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             List<String> schemaTree = new ArrayList<>();
             for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
-                // schema
-                // schemaTree.add( combinedSchema.getSchema().name );
-
                 List<String> tables = new ArrayList<>();
 
                 for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
@@ -152,7 +150,7 @@ public class StatisticQueryProcessor {
                         table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
                     }
 
-                    if ( combinedTable.getTable().tableType.equals( "TABLE" ) ) {
+                    if ( combinedTable.getTable().tableType == TableType.TABLE ) {
                         tables.addAll( table );
                     }
                 }
