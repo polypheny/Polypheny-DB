@@ -79,8 +79,6 @@ public class StatisticsManager {
         ConfigManager cm = ConfigManager.getInstance();
         cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
         cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
-        // TODO: move to RuntimeConfig
-        cm.registerConfig( new ConfigEnum( "statistics/passiveTrackingRate", TaskSchedulingType.class, TaskSchedulingType.EVERY_THIRTY_SECONDS ) );
 
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();

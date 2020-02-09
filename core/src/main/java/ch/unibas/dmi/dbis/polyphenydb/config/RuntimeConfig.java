@@ -26,6 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+
 import java.math.BigDecimal;
 
 
@@ -184,7 +186,11 @@ public enum RuntimeConfig {
             "Maximum character of unique values",
             10,
             ConfigType.INTEGER,
-            "statisticSettings" );
+            "statisticSettings" ),
+    STATISTIC_RATE("statistics/passiveTrackingRate",
+            "Rate of passive tracking of statistics.",
+            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            ConfigType.ENUM);
 
 
     private final String key;
@@ -245,6 +251,10 @@ public enum RuntimeConfig {
 
             case STRING:
                 config = new ConfigString( key, description, (String) defaultValue );
+                break;
+
+            case ENUM:
+                config = new ConfigEnum( key, defaultValue.getClass(), (Enum) defaultValue );
                 break;
 
             case BOOLEAN_TABLE:
@@ -368,7 +378,7 @@ public enum RuntimeConfig {
 
 
     public enum ConfigType {
-        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY
+        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY
     }
 
 }
