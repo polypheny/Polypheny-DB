@@ -187,10 +187,10 @@ public enum RuntimeConfig {
             10,
             ConfigType.INTEGER,
             "statisticSettings" ),
-    STATISTIC_RATE("statistics/passiveTrackingRate",
+    STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
-            ConfigType.ENUM);
+            ConfigType.ENUM );
 
 
     private final String key;
