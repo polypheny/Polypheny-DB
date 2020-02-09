@@ -26,8 +26,8 @@
 package ch.unibas.dmi.dbis.polyphenydb.config;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
-
 import java.math.BigDecimal;
 
 
@@ -166,31 +166,41 @@ public enum RuntimeConfig {
             "Use statistics for query assistance.",
             true,
             ConfigType.BOOLEAN,
-            "statisticSettings" ),
+            "statisticSettingsGroup" ),
     ACTIVE_TRACKING( "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
             true,
             ConfigType.BOOLEAN,
-            "statisticSettings" ),
+            "statisticSettingsGroup" ),
     PASSIVE_TRACKING( "statistics/passiveTracking",
             "Reevaluates statistics for all columns constantly, after a set time interval.",
             false,
             ConfigType.BOOLEAN,
-            "statisticSettings" ),
-    STATISTIC_BUFFER( "statistics/StatisticColumnBuffer",
+            "statisticSettingsGroup" ),
+    STATISTIC_BUFFER( "statistics/statisticColumnBuffer",
             "Number of buffered statistics e.g. for unique values.",
             5,
             ConfigType.INTEGER,
-            "statisticSettings" ),
+            "statisticSettingsGroup" ),
     UNIQUE_VALUES( "statistics/maxCharUniqueVal",
             "Maximum character of unique values",
             10,
             ConfigType.INTEGER,
-            "statisticSettings" ),
+            "statisticSettingsGroup" ),
     STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
-            ConfigType.ENUM );
+            ConfigType.ENUM ),
+    UI_PAGE_SIZE( "ui/pageSize",
+            "Number of rows per page in the data view.",
+            10,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+    HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
+            "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
+            100,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" );
 
 
     private final String key;
@@ -202,19 +212,43 @@ public enum RuntimeConfig {
     static {
         final ConfigManager configManager = ConfigManager.getInstance();
 
-        final WebUiPage processingPage = new WebUiPage( "processingPage", "Query Processing", "Settings influencing the query processing." );
+        // Query processing settings
+        final WebUiPage processingPage = new WebUiPage(
+                "processingPage",
+                "Query Processing",
+                "Settings influencing the query processing." );
         final WebUiGroup planningGroup = new WebUiGroup( "planningGroup", processingPage.getId() );
         final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
-
-        final WebUiPage runtimePage = new WebUiPage( "runtimePage", "Runtime Settings", "Core Settings" );
-        final WebUiGroup runtimeGroup = new WebUiGroup( "runtimeGroup", runtimePage.getId() );
-
         configManager.registerWebUiPage( processingPage );
-        configManager.registerWebUiPage( runtimePage );
-
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
+
+        // Runtime settings
+        final WebUiPage runtimePage = new WebUiPage(
+                "runtimePage",
+                "Runtime Settings",
+                "Core Settings" );
+        final WebUiGroup runtimeGroup = new WebUiGroup( "runtimeGroup", runtimePage.getId() );
+        configManager.registerWebUiPage( runtimePage );
         configManager.registerWebUiGroup( runtimeGroup );
+
+        // Statistics and dynamic querying settings
+        final WebUiPage queryStatisticsPage = new WebUiPage(
+                "queryStatisticsPage",
+                "Dynamic Querying",
+                "Statistics Settings which can assists with building a query with dynamic assistance." );
+        final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() ).withTitle( "Statistics Settings" );
+        configManager.registerWebUiPage( queryStatisticsPage );
+        configManager.registerWebUiGroup( statisticSettingsGroup );
+
+        // UI specific setting
+        final WebUiPage uiSettingsPage = new WebUiPage(
+                "uiSettings",
+                "Polypheny UI",
+                "Settings for the user interface." );
+        final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() ).withTitle( "Data View" );
+        configManager.registerWebUiPage( uiSettingsPage );
+        configManager.registerWebUiGroup( uiSettingsDataViewGroup );
     }
 
 
@@ -330,6 +364,11 @@ public enum RuntimeConfig {
     }
 
 
+    public Enum getEnum() {
+        return configManager.getConfig( key ).getEnum();
+    }
+
+
     public int getInteger() {
         return configManager.getConfig( key ).getInt();
     }
@@ -374,6 +413,11 @@ public enum RuntimeConfig {
 
     public void setString( final String value ) {
         configManager.getConfig( key ).setString( value );
+    }
+
+
+    public void addObserver( final ConfigListener listener ) {
+        configManager.getConfig( key ).addObserver( listener );
     }
 
 

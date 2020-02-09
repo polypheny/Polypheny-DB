@@ -29,11 +29,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigEnum;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
@@ -76,10 +72,6 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     private StatisticsManager() {
-        ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage( new WebUiPage( "queryStatistics", "Dynamic Querying", "Statistics Settings which can assists with building a query with dynamic assistance." ) );
-        cm.registerWebUiGroup( new WebUiGroup( "statisticSettings", "queryStatistics" ).withTitle( "Statistics Settings" ) );
-
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
         registerTaskTracking();
@@ -92,8 +84,8 @@ public class StatisticsManager<T extends Comparable<T>> {
      */
     private void registerTaskTracking() {
         TrackingListener listener = new TrackingListener();
-        ConfigManager.getInstance().getConfig( "statistics/passiveTracking" ).addObserver( listener );
-        ConfigManager.getInstance().getConfig( "statistics/useDynamicQuerying" ).addObserver( listener );
+        RuntimeConfig.PASSIVE_TRACKING.addObserver( listener );
+        RuntimeConfig.DYNAMIC_QUERYING.addObserver( listener );
     }
 
 
@@ -115,7 +107,7 @@ public class StatisticsManager<T extends Comparable<T>> {
                 resetAllIsFull();
             }
         };
-        ConfigManager.getInstance().getConfig( "statistics/StatisticColumnBuffer" ).addObserver( listener );
+        RuntimeConfig.STATISTIC_BUFFER.addObserver( listener );
     }
 
 
@@ -403,7 +395,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     private String getStatQueryLimit( int add ) {
-        return " LIMIT " + (ConfigManager.getInstance().getConfig( "statistics/StatisticColumnBuffer" ).getInt() + add);
+        return " LIMIT " + (RuntimeConfig.STATISTIC_BUFFER.getInteger() + add);
     }
 
 
@@ -526,16 +518,15 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
         private void registerTrackingToggle() {
-            ConfigManager cm = ConfigManager.getInstance();
             String id = StatisticsManager.getInstance().getRevalId();
-            if ( id == null && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean() && cm.getConfig( "statistics/passiveTracking" ).getBoolean() ) {
+            if ( id == null && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() && RuntimeConfig.PASSIVE_TRACKING.getBoolean() ) {
                 String revalId = BackgroundTaskManager.INSTANCE.registerTask(
                         StatisticsManager.this::asyncReevaluateAllStatistics,
                         "Reevaluate StatisticsManager.",
                         TaskPriority.LOW,
-                        (TaskSchedulingType) cm.getConfig( "statistics/passiveTrackingRate" ).getEnum() );
+                        (TaskSchedulingType) RuntimeConfig.STATISTIC_RATE.getEnum() );
                 setRevalId( revalId );
-            } else if ( id != null && (!cm.getConfig( "statistics/passiveTracking" ).getBoolean() || !cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean()) ) {
+            } else if ( id != null && (!RuntimeConfig.PASSIVE_TRACKING.getBoolean() || !RuntimeConfig.DYNAMIC_QUERYING.getBoolean()) ) {
                 BackgroundTaskManager.INSTANCE.removeBackgroundTask( getRevalId() );
                 setRevalId( null );
             }

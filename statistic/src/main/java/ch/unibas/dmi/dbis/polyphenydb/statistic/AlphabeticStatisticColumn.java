@@ -27,7 +27,7 @@ package ch.unibas.dmi.dbis.polyphenydb.statistic;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import com.google.gson.annotations.Expose;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,8 +55,8 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
     @Override
     public void insert( T val ) {
-        if ( uniqueValues.size() < ConfigManager.getInstance().getConfig( "StatisticColumnBuffer" ).getInt() ) {
-            if ( ! uniqueValues.contains( val ) ) {
+        if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+            if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
             }
         } else {

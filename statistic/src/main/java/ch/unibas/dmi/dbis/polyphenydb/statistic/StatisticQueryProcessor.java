@@ -43,7 +43,6 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseExceptio
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
@@ -57,7 +56,6 @@ import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -114,49 +112,28 @@ public class StatisticQueryProcessor {
 
 
     /**
-     * Method checks is limit is the same as buffer for statistics
-     * adds/matches is to the value in the configManager
-     *
-     * @param query the query to check
-     * @return the "sanitized" query
-     */
-    private String queryLimitCheck( String query ) {
-        Pattern pattern = Pattern.compile( "^.*(?=(limit))" );
-        return pattern.matcher( query ) + " LIMIT " + ConfigManager.getInstance().getConfig( "StatisticSize" ) + ";";
-    }
-
-
-    /**
      * Method to get all schemas, tables, and their columns in a database
      */
     public List<List<String>> getSchemaTree() {
-
         List<List<String>> result = new ArrayList<>();
-
         Transaction transaction = getTransaction();
-        try {
 
+        try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             List<String> schemaTree = new ArrayList<>();
             for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
                 List<String> tables = new ArrayList<>();
-
                 for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-
                     List<String> table = new ArrayList<>();
-
                     for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                         table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
                     }
-
                     if ( combinedTable.getTable().tableType == TableType.TABLE ) {
                         tables.addAll( table );
                     }
                 }
-
                 schemaTree.addAll( tables );
-
                 result.add( schemaTree );
             }
             transaction.commit();
@@ -179,7 +156,6 @@ public class StatisticQueryProcessor {
      */
     public List<QueryColumn> getAllColumns() {
         Transaction transaction = getTransaction();
-
         List<QueryColumn> columns = new ArrayList<>();
 
         try {
@@ -192,7 +168,6 @@ public class StatisticQueryProcessor {
                 }
             }
             transaction.commit();
-
         } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception", e );
             try {
@@ -414,7 +389,7 @@ public class StatisticQueryProcessor {
      * Get the page
      */
     private int getPageSize() {
-        return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
+        return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
 

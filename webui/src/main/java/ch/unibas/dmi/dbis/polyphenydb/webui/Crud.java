@@ -62,11 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config;
 import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
@@ -197,24 +193,15 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-
-        ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny UI", "Settings for the user interface." ) );
-        cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
-        cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
-        cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
-
-        registerStatisticObserver( cm );
+        registerStatisticObserver();
     }
 
 
     /**
      * Ensures that changes in the ConfigManger toggle the statistics correctly
-     *
-     * @param cm ConfigManager
      */
-    private void registerStatisticObserver( ConfigManager cm ) {
-        this.isActiveTracking = cm.getConfig( "statistics/activeTracking" ).getBoolean() && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean();
+    private void registerStatisticObserver() {
+        this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
         ConfigListener observer = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
@@ -229,11 +216,11 @@ public class Crud implements InformationObserver {
 
 
             private void setConfig( Config c ) {
-                isActiveTracking = c.getBoolean() && cm.getConfig( "statistics/useDynamicQuerying" ).getBoolean();
+                isActiveTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
             }
         };
-        cm.getConfig( "statistics/activeTracking" ).addObserver( observer );
-        cm.getConfig( "statistics/useDynamicQuerying" ).addObserver( observer );
+        RuntimeConfig.ACTIVE_TRACKING.addObserver( observer );
+        RuntimeConfig.DYNAMIC_QUERYING.addObserver( observer );
     }
 
 
@@ -717,7 +704,7 @@ public class Crud implements InformationObserver {
      * Return all available statistics to the client
      */
     ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> getStatistics( final Request req, final Response res ) {
-        if ( ConfigManager.getInstance().getConfig( "statistics/useDynamicQuerying" ).getBoolean() ) {
+        if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
             return store.getStatisticSchemaMap();
         } else {
             return new ConcurrentHashMap<>();
@@ -1926,7 +1913,7 @@ public class Crud implements InformationObserver {
 
             //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
 
-            final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
+            final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
             long csvCounter = 0;
             try (
                     Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
@@ -2346,7 +2333,7 @@ public class Crud implements InformationObserver {
      * Get the number of rows that should be displayed in one page in the data view
      */
     private int getPageSize() {
-        return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
+        return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
 
