@@ -37,7 +37,7 @@ import lombok.Setter;
 /**
  * Stores the available statistic data of a specific column
  */
-public abstract class StatisticColumn<T> {
+public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose
     @Getter

@@ -57,12 +57,12 @@ import lombok.extern.slf4j.Slf4j;
  * DELETEs and UPADTEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsManager {
+public class StatisticsManager<T extends Comparable<T>> {
 
-    private static volatile StatisticsManager instance = null;
+    private static volatile StatisticsManager<?> instance = null;
 
     @Getter
-    public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> statisticSchemaMap;
+    public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> statisticSchemaMap;
 
     private StatisticQueryProcessor sqlQueryInterface;
 
@@ -119,11 +119,11 @@ public class StatisticsManager {
     }
 
 
-    public static StatisticsManager getInstance() {
+    public static StatisticsManager<?> getInstance() {
         // To ensure only one instance is created
         synchronized ( StatisticsManager.class ) {
             if ( instance == null ) {
-                instance = new StatisticsManager();
+                instance = new StatisticsManager<>();
             }
         }
         return instance;
@@ -136,7 +136,7 @@ public class StatisticsManager {
      *
      * @return the statisticColumn which matches the criteria
      */
-    private StatisticColumn getColumn( String schema, String table, String column ) {
+    private StatisticColumn<T> getColumn( String schema, String table, String column ) {
         if ( this.statisticSchemaMap.containsKey( schema ) ) {
             if ( this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
                 if ( this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
@@ -172,10 +172,10 @@ public class StatisticsManager {
             return;
         }
         log.debug( "Resetting StatisticManager." );
-        ConcurrentHashMap statisticSchemaMapCopy = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticColumn>>>();
+        ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
-            StatisticColumn col = reevaluateColumn( column );
+            StatisticColumn<T> col = reevaluateColumn( column );
             if ( col != null ) {
                 put( statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col );
             }
@@ -211,7 +211,7 @@ public class StatisticsManager {
         List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( splits[0], splits[1] );
 
         for ( QueryColumn column : res ) {
-            StatisticColumn col = reevaluateColumn( column );
+            StatisticColumn<T> col = reevaluateColumn( column );
             if ( col != null ) {
                 put( column.getSchema(), column.getTable(), column.getName(), col );
             }
@@ -231,7 +231,7 @@ public class StatisticsManager {
     /**
      * replace the the tracked statistics with other statistics
      */
-    private synchronized void replaceStatistics( ConcurrentHashMap map ) {
+    private synchronized void replaceStatistics( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> map ) {
         this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
@@ -239,8 +239,8 @@ public class StatisticsManager {
     /**
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
-    private StatisticColumn reevaluateColumn( QueryColumn column ) {
-        if ( ! this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+    private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
+        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
         if ( column.getType().isNumericalType() ) {
@@ -255,16 +255,18 @@ public class StatisticsManager {
     /**
      * Reevaluates a numerical column, with the configured statistics
      */
-    private StatisticColumn reevaluateNumericalColumn( QueryColumn column ) {
+    private StatisticColumn<T> reevaluateNumericalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
         Integer count = this.getCount( column );
-        NumericalStatisticColumn<String> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        NumericalStatisticColumn<T> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         if ( min != null ) {
-            statisticColumn.setMin( min.getData()[0] );
+            //noinspection unchecked
+            statisticColumn.setMin( (T) min.getData()[0] );
         }
         if ( max != null ) {
-            statisticColumn.setMax( max.getData()[0] );
+            //noinspection unchecked
+            statisticColumn.setMax( (T) max.getData()[0] );
         }
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
@@ -281,12 +283,13 @@ public class StatisticsManager {
      *
      * @param column the column in which the values should be inserted
      */
-    private void assignUnique( StatisticColumn<String> column, StatisticQueryColumn unique ) {
+    private void assignUnique( StatisticColumn<T> column, StatisticQueryColumn unique ) {
         if ( unique == null || unique.getData() == null ) {
             return;
         }
         if ( unique.getData().length <= this.buffer ) {
-            column.setUniqueValues( Arrays.asList( unique.getData() ) );
+            //noinspection unchecked
+            column.setUniqueValues( Arrays.asList( (T[]) unique.getData() ) );
         } else {
             column.setFull( true );
         }
@@ -296,15 +299,16 @@ public class StatisticsManager {
     /**
      * Reevaluates an alphabetical column, with the configured statistics
      */
-    private StatisticColumn reevaluateAlphabeticalColumn( QueryColumn column ) {
+    private StatisticColumn<T> reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
 
-        AlphabeticStatisticColumn<String> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        AlphabeticStatisticColumn<T> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
         assignUnique( statisticColumn, unique );
         statisticColumn.setCount( count );
 
         return statisticColumn;
+
     }
 
 
@@ -314,12 +318,12 @@ public class StatisticsManager {
      * @param map which schemaMap should be used
      * @param statisticColumn the Column with its statistics
      */
-    private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> map, String schema, String table, String column, StatisticColumn statisticColumn ) {
-        if ( ! map.containsKey( schema ) ) {
+    private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> map, String schema, String table, String column, StatisticColumn<T> statisticColumn ) {
+        if ( !map.containsKey( schema ) ) {
             map.put( schema, new HashMap<>() );
         }
 
-        if ( ! map.get( schema ).containsKey( table ) ) {
+        if ( !map.get( schema ).containsKey( table ) ) {
             map.get( schema ).put( table, new HashMap<>() );
         }
         map.get( schema ).get( table ).put( column, statisticColumn );
@@ -327,7 +331,7 @@ public class StatisticsManager {
     }
 
 
-    private void put( String schema, String table, String column, StatisticColumn statisticColumn ) {
+    private void put( String schema, String table, String column, StatisticColumn<T> statisticColumn ) {
         put( this.statisticSchemaMap, schema, table, column, statisticColumn );
 
     }
@@ -459,15 +463,15 @@ public class StatisticsManager {
                     statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                         if ( v instanceof NumericalStatisticColumn ) {
 
-                            if ( ((NumericalStatisticColumn) v).getMin() != null && ((NumericalStatisticColumn) v).getMax() != null ) {
-                                numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn) v).getMin().toString(), ((NumericalStatisticColumn) v).getMax().toString() );
+                            if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
+                                numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
                             } else {
                                 numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                             }
 
                         } else {
                             String values = v.getUniqueValues().toString();
-                            if ( ! v.isFull ) {
+                            if ( !v.isFull ) {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                             } else {
                                 alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
