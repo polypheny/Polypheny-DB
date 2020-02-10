@@ -42,7 +42,7 @@
  * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -278,8 +278,12 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( TableScan e ) {
-        final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
-        return result( identifier, ImmutableList.of( Clause.FROM ), e, null );
+        //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
+        return result(
+                new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ),
+                ImmutableList.of( Clause.FROM ),
+                e,
+                null );
     }
 
 
@@ -456,40 +460,39 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
         switch ( modify.getOperation() ) {
             case INSERT: {
-                // Convert the input to a SELECT query or keep as VALUES. Not all
-                // dialects support naked VALUES, but all support VALUES inside INSERT.
+                // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES,
+                // but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
-
-                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, identifierList( modify.getInput().getRowType().getFieldNames() ) );
-
+                final SqlInsert sqlInsert = new SqlInsert(
+                        POS,
+                        SqlNodeList.EMPTY,
+                        sqlTargetTable,
+                        sqlSource,
+                        physicalIdentifierList(
+                                modify.getTable().getQualifiedName(),
+                                modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
             case UPDATE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlUpdate sqlUpdate =
-                        new SqlUpdate(
-                                POS,
-                                sqlTargetTable,
-                                identifierList( modify.getUpdateColumnList() ),
-                                exprList( context, modify.getSourceExpressionList() ),
-                                ((SqlSelect) input.node).getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlUpdate sqlUpdate = new SqlUpdate(
+                        POS,
+                        sqlTargetTable,
+                        physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
+                        exprList( context, modify.getSourceExpressionList() ),
+                        ((SqlSelect) input.node).getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlUpdate, input.clauses, modify, null );
             }
             case DELETE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlDelete sqlDelete =
-                        new SqlDelete(
-                                POS,
-                                sqlTargetTable,
-                                input.asSelect().getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlDelete sqlDelete = new SqlDelete(
+                        POS,
+                        sqlTargetTable,
+                        input.asSelect().getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlDelete, input.clauses, modify, null );
             }
             case MERGE:
@@ -512,6 +515,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     private SqlNodeList identifierList( List<String> names ) {
         return new SqlNodeList( Lists.transform( names, name -> new SqlIdentifier( name, POS ) ), POS );
+    }
+
+
+    /**
+     * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
+     */
+    private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
+        return new SqlNodeList( Lists.transform( columnNames, columnName -> getPhysicalColumnName( tableName, columnName ) ), POS );
     }
 
 
@@ -625,7 +636,11 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
     @Override
     public void addSelect( List<SqlNode> selectList, SqlNode node, RelDataType rowType ) {
-        String name = rowType.getFieldNames().get( selectList.size() );
+        //String name = rowType.getFieldNames().get( selectList.size() );
+        String name = rowType.getFieldList().get( selectList.size() ).getPhysicalName();
+        if ( name == null ) {
+            name = rowType.getFieldList().get( selectList.size() ).getName();
+        }
         String alias = SqlValidatorUtil.getAlias( node, -1 );
         final String lowerName = name.toLowerCase( Locale.ROOT );
         if ( lowerName.startsWith( "expr$" ) ) {
@@ -645,7 +660,10 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( List<String> qualifiedName );
+    public abstract SqlIdentifier getPhysicalTableName( List<String> tableName );
+
+
+    public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
 
 
     /**
@@ -675,8 +693,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
-            return new SqlIdentifier( qualifiedName, POS );
+        public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+            return new SqlIdentifier( tableNames, POS );
+        }
+
+
+        @Override
+        public SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName ) {
+            return new SqlIdentifier( columnName, POS );
         }
     }
 

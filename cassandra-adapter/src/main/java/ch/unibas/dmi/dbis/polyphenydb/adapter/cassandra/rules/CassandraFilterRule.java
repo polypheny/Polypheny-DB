@@ -123,7 +123,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
      * @return True if the node represents an equality predicate on a primary key
      */
     private boolean isEqualityOnKey( RexNode node, List<String> fieldNames, Set<String> partitionKeys, List<String> clusteringKeys ) {
-        if ( ! (node.getKind() == SqlKind.EQUALS
+        if ( !(node.getKind() == SqlKind.EQUALS
                 || node.getKind() == SqlKind.GREATER_THAN
                 || node.getKind() == SqlKind.GREATER_THAN_OR_EQUAL
                 || node.getKind() == SqlKind.LESS_THAN

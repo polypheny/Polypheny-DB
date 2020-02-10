@@ -124,7 +124,7 @@ public class LogicalValues extends Values {
         final RelDataType rowType =
                 cluster.getTypeFactory()
                         .builder()
-                        .add( "ZERO", SqlTypeName.INTEGER )
+                        .add( "ZERO", null, SqlTypeName.INTEGER )
                         .nullable( false )
                         .build();
         final ImmutableList<ImmutableList<RexLiteral>> tuples =

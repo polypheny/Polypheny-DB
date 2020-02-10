@@ -62,7 +62,13 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
      * Creates a JdbcToEnumerableConverterRule.
      */
     public JdbcToEnumerableConverterRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, out, EnumerableConvention.INSTANCE, relBuilderFactory, "JdbcToEnumerableConverterRule:" + out );
+        super(
+                RelNode.class,
+                (Predicate<RelNode>) r -> true,
+                out,
+                EnumerableConvention.INSTANCE,
+                relBuilderFactory,
+                "JdbcToEnumerableConverterRule:" + out );
     }
 
 

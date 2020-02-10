@@ -582,18 +582,18 @@ public class RexImplicationCheckerTest {
             str = ref( 11, stringDataType );
 
             rowType = typeFactory.builder()
-                    .add( "bool", this.boolRelDataType )
-                    .add( "int", intRelDataType )
-                    .add( "dec", decRelDataType )
-                    .add( "long", longRelDataType )
-                    .add( "short", shortDataType )
-                    .add( "byte", byteDataType )
-                    .add( "float", floatDataType )
-                    .add( "char", charDataType )
-                    .add( "date", dateDataType )
-                    .add( "timestamp", timestampDataType )
-                    .add( "time", timeDataType )
-                    .add( "string", stringDataType )
+                    .add( "bool", null, this.boolRelDataType )
+                    .add( "int", null, intRelDataType )
+                    .add( "dec", null, decRelDataType )
+                    .add( "long", null, longRelDataType )
+                    .add( "short", null, shortDataType )
+                    .add( "byte", null, byteDataType )
+                    .add( "float", null, floatDataType )
+                    .add( "char", null, charDataType )
+                    .add( "date", null, dateDataType )
+                    .add( "timestamp", null, timestampDataType )
+                    .add( "time", null, timeDataType )
+                    .add( "string", null, stringDataType )
                     .build();
 
             final Holder<RexExecutorImpl> holder = Holder.of( null );

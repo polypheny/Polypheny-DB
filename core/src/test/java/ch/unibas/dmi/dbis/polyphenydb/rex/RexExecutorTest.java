@@ -151,7 +151,7 @@ public class RexExecutorTest {
             ImmutableList<RexNode> constExps = ImmutableList.of( substr );
 
             final RelDataType rowType = typeFactory.builder()
-                    .add( "someStr", varchar )
+                    .add( "someStr", null, varchar )
                     .build();
 
             final RexExecutable exec = executor.getExecutable( rexBuilder, constExps, rowType );

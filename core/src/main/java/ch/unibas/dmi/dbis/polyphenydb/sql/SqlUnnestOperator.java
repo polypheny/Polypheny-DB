@@ -99,7 +99,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
             if ( type.getSqlTypeName() == SqlTypeName.ANY ) {
                 // Unnest Operator in schema less systems returns one column as the output $unnest is a place holder to specify that one column with type ANY is output.
                 return builder
-                        .add( "$unnest", SqlTypeName.ANY )
+                        .add( "$unnest", null, SqlTypeName.ANY )
                         .nullable( true )
                         .build();
             }
@@ -110,18 +110,18 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
 
             assert type instanceof ArraySqlType || type instanceof MultisetSqlType || type instanceof MapSqlType;
             if ( type instanceof MapSqlType ) {
-                builder.add( MAP_KEY_COLUMN_NAME, type.getKeyType() );
-                builder.add( MAP_VALUE_COLUMN_NAME, type.getValueType() );
+                builder.add( MAP_KEY_COLUMN_NAME, null, type.getKeyType() );
+                builder.add( MAP_VALUE_COLUMN_NAME, null, type.getValueType() );
             } else {
                 if ( type.getComponentType().isStruct() ) {
                     builder.addAll( type.getComponentType().getFieldList() );
                 } else {
-                    builder.add( SqlUtil.deriveAliasFromOrdinal( operand ), type.getComponentType() );
+                    builder.add( SqlUtil.deriveAliasFromOrdinal( operand ), null, type.getComponentType() );
                 }
             }
         }
         if ( withOrdinality ) {
-            builder.add( ORDINALITY_COLUMN_NAME, SqlTypeName.INTEGER );
+            builder.add( ORDINALITY_COLUMN_NAME, null, SqlTypeName.INTEGER );
         }
         return builder.build();
     }

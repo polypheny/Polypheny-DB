@@ -56,6 +56,7 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
 
     private final RelDataType type;
     private final String name;
+    private String physicalName;
     private final int index;
 
 
@@ -63,11 +64,17 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
      * Creates a RelDataTypeFieldImpl.
      */
     public RelDataTypeFieldImpl( String name, int index, RelDataType type ) {
+        this( name, null, index, type );
+    }
+
+
+    public RelDataTypeFieldImpl( String name, String physicalName, int index, RelDataType type ) {
         assert name != null;
         assert type != null;
         this.name = name;
         this.index = index;
         this.type = type;
+        this.physicalName = physicalName;
     }
 
 
@@ -96,6 +103,13 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
     @Override
     public String getName() {
         return name;
+    }
+
+
+    // implement RelDataTypeField
+    @Override
+    public String getPhysicalName() {
+        return physicalName;
     }
 
 
@@ -136,7 +150,7 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
 
     // for debugging
     public String toString() {
-        return "#" + index + ": " + name + " " + type;
+        return "#" + index + ": " + name + " (" + physicalName + ") " + type;
     }
 
 

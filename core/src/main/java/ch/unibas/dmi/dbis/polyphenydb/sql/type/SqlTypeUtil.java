@@ -179,7 +179,7 @@ public abstract class SqlTypeUtil {
             if ( fieldName == null ) {
                 fieldName = "ROW_VALUE";
             }
-            type = typeFactory.builder().add( fieldName, type ).build();
+            type = typeFactory.builder().add( fieldName, null, type ).build();
         }
         return type;
     }

@@ -64,6 +64,13 @@ public interface RelDataTypeField extends Map.Entry<String, RelDataType> {
     String getName();
 
     /**
+     * Gets the physical name of this field
+     *
+     * @return physical field name
+     */
+    String getPhysicalName();
+
+    /**
      * Gets the ordinal of this field within its containing type.
      *
      * @return 0-based ordinal

@@ -133,7 +133,7 @@ public class Smalls {
 
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "c", SqlTypeName.INTEGER ).build();
+                return typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build();
             }
         };
     }
@@ -216,10 +216,10 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 final RelDataTypeFactory.Builder builder = typeFactory.builder();
-                builder.add( "row_name", typeFactory.createJavaType( String.class ) );
+                builder.add( "row_name", null, typeFactory.createJavaType( String.class ) );
                 final RelDataType int_ = typeFactory.createJavaType( int.class );
                 for ( int i = 1; i <= ncol; i++ ) {
-                    builder.add( "c" + i, int_ );
+                    builder.add( "c" + i, null, int_ );
                 }
                 return builder.build();
             }
@@ -265,7 +265,7 @@ public class Smalls {
         return new ScannableTable() {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "N", SqlTypeName.BIGINT ).build();
+                return typeFactory.builder().add( "N", null, SqlTypeName.BIGINT ).build();
             }
 
 
@@ -347,7 +347,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", SqlTypeName.INTEGER )
+                        .add( "result", null, SqlTypeName.INTEGER )
                         .build();
             }
 
@@ -370,7 +370,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", SqlTypeName.INTEGER )
+                        .add( "result", null, SqlTypeName.INTEGER )
                         .build();
             }
 
@@ -387,14 +387,14 @@ public class Smalls {
 
     public static TranslatableTable view( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.INTEGER ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build(),
                 "values (1), (3), " + s, ImmutableList.of(), Arrays.asList( "view" ) );
     }
 
 
     public static TranslatableTable strView( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
                 "values (" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( s ) + ")",
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -404,7 +404,7 @@ public class Smalls {
         assertThat( RexLiteral.validConstant( o, Litmus.THROW ), is( true ) );
         assertThat( RexLiteral.validConstant( p, Litmus.THROW ), is( true ) );
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
                 "values " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( o.toString() ) + ", " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( p.toString() ),
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -1137,7 +1137,7 @@ public class Smalls {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "S", SqlTypeName.VARCHAR, 12 )
+                    .add( "S", null, SqlTypeName.VARCHAR, 12 )
                     .build();
         }
 

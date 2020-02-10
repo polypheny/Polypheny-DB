@@ -39,8 +39,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
@@ -194,8 +194,8 @@ final class Statements {
             resultSet = transactionHandler.executeSelect( "SELECT * FROM \"store\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
 
-            System.out.println( "Data Placement:" );
-            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"data_placement\";" );
+            System.out.println( "Column Placement:" );
+            resultSet = transactionHandler.executeSelect( "SELECT * FROM \"column_placement\";" );
             System.out.println( TablePrinter.processResultSet( resultSet ) );
 
             System.out.println( "Key:" );
@@ -1168,22 +1168,27 @@ final class Statements {
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
-    //                                                                Data Placement
+    //                                                                Column Placement
     //
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    private static List<CatalogDataPlacement> dataPlacementFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
-        String sql = "SELECT t.\"id\", t.\"name\", st.\"id\", st.\"unique_name\", dp.\"type\" FROM \"data_placement\" dp, \"store\" st, \"table\" t WHERE dp.\"store\" = st.\"id\" AND dp.\"table\" = t.\"id\"" + filter;
+    private static List<CatalogColumnPlacement> columnPlacementFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException {
+        String sql = "SELECT t.\"id\", t.\"name\", c.\"id\", c.\"name\", st.\"id\", st.\"unique_name\", cp.\"type\", cp.\"physical_schema\", cp.\"physical_table\", cp.\"physical_column\" FROM \"column_placement\" cp, \"store\" st, \"table\" t, \"column\" c WHERE cp.\"store\" = st.\"id\" AND cp.\"table\" = t.\"id\" AND cp.\"column\" = c.\"id\"" + filter;
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
-            List<CatalogDataPlacement> list = new LinkedList<>();
+            List<CatalogColumnPlacement> list = new LinkedList<>();
             while ( rs.next() ) {
-                list.add( new CatalogDataPlacement(
+                list.add( new CatalogColumnPlacement(
                         getLong( rs, 1 ),
                         rs.getString( 2 ),
-                        getInt( rs, 3 ),
+                        getLong( rs, 3 ),
                         rs.getString( 4 ),
-                        PlacementType.getById( getInt( rs, 5 ) )
+                        getInt( rs, 5 ),
+                        rs.getString( 6 ),
+                        PlacementType.getById( getInt( rs, 7 ) ),
+                        rs.getString( 8 ),
+                        rs.getString( 9 ),
+                        rs.getString( 10 )
                 ) );
             }
             return list;
@@ -1193,34 +1198,53 @@ final class Statements {
     }
 
 
-    static List<CatalogDataPlacement> getDataPlacements( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
+    static List<CatalogColumnPlacement> getColumnPlacements( XATransactionHandler transactionHandler, long columnId ) throws GenericCatalogException {
+        String filter = " AND c.\"id\" = " + columnId;
+        return columnPlacementFilter( transactionHandler, filter );
+    }
+
+
+    static List<CatalogColumnPlacement> getColumnPlacementsOfTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException {
         String filter = " AND t.\"id\" = " + tableId;
-        return dataPlacementFilter( transactionHandler, filter );
+        return columnPlacementFilter( transactionHandler, filter );
     }
 
 
-    static List<CatalogDataPlacement> getDataPlacementsByStore( XATransactionHandler transactionHandler, int storeId ) throws GenericCatalogException {
+    static List<CatalogColumnPlacement> getColumnPlacementsOnStore( XATransactionHandler transactionHandler, long storeId ) throws GenericCatalogException {
         String filter = " AND st.\"id\" = " + storeId;
-        return dataPlacementFilter( transactionHandler, filter );
+        return columnPlacementFilter( transactionHandler, filter );
     }
 
 
-    static long addDataPlacement( XATransactionHandler transactionHandler, int store, long table, PlacementType placementType ) throws GenericCatalogException {
+    public static void updateColumnPlacementPhysicalNames( XATransactionHandler transactionHandler, int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
-        data.put( "store", "" + store );
-        data.put( "table", "" + table );
-        data.put( "type", "" + placementType.getId() );
-        return insertHandler( transactionHandler, "data_placement", data );
+        data.put( "physical_schema", quoteString( physicalSchemaName ) );
+        data.put( "physical_table", quoteString( physicalTableName ) );
+        data.put( "physical_column", quoteString( physicalColumnName ) );
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put( "column", "" + columnId );
+        where.put( "store", "" + storeId );
+        updateHandler( transactionHandler, "column_placement", data, where );
     }
 
 
-    static void deleteDataPlacement( XATransactionHandler transactionHandler, int storeId, long tableId ) throws GenericCatalogException {
-        String sql = "DELETE FROM " + quoteIdentifier( "data_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "table" ) + " = " + tableId;
+    static long addColumnPlacement( XATransactionHandler transactionHandler, int storeId, long columnId, long tableId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put( "store", "" + storeId );
+        data.put( "column", "" + columnId );
+        data.put( "table", "" + tableId );
+        data.put( "type", "" + placementType.getId() );
+        data.put( "physical_schema", quoteString( physicalSchemaName ) );
+        data.put( "physical_table", quoteString( physicalTableName ) );
+        data.put( "physical_column", quoteString( physicalColumnName ) );
+        return insertHandler( transactionHandler, "column_placement", data );
+    }
+
+
+    static void deleteColumnPlacement( XATransactionHandler transactionHandler, int storeId, long columnId ) throws GenericCatalogException {
+        String sql = "DELETE FROM " + quoteIdentifier( "column_placement" ) + " WHERE " + quoteIdentifier( "store" ) + " = " + storeId + " AND " + quoteIdentifier( "column" ) + " = " + columnId;
         try {
             int rowsEffected = transactionHandler.executeUpdate( sql );
-            if ( rowsEffected != 1 ) {
-                throw new GenericCatalogException( "Expected only one effected row, but " + rowsEffected + " have been effected." );
-            }
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1752,7 +1776,7 @@ final class Statements {
                 builder.append( " WHERE " );
                 first = false;
             } else {
-                builder.append( ", " );
+                builder.append( " AND " );
             }
             builder.append( quoteIdentifier( entry.getKey() ) ).append( "=" ).append( entry.getValue() );
         }

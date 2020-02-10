@@ -111,15 +111,23 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
      * @param predicates A list of predicates which should be used in the query
      * @return Enumerator of results
      */
-    public Enumerable<Object> query( final GemFireCache clientCache, final List<Map.Entry<String, Class>> fields, final List<Map.Entry<String, String>> selectFields, final List<Map.Entry<String, String>> aggregateFunctions,
-            final List<String> groupByFields, List<String> predicates, List<String> orderByFields, Long limit ) {
-
+    public Enumerable<Object> query(
+            final GemFireCache clientCache,
+            final List<Map.Entry<String, Class>> fields,
+            final List<Map.Entry<String, String>> selectFields,
+            final List<Map.Entry<String, String>> aggregateFunctions,
+            final List<String> groupByFields,
+            List<String> predicates,
+            List<String> orderByFields,
+            Long limit ) {
         final RelDataTypeFactory typeFactory = new JavaTypeFactoryExtImpl();
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( Map.Entry<String, Class> field : fields ) {
             SqlTypeName typeName = typeFactory.createJavaType( field.getValue() ).getSqlTypeName();
-            fieldInfo.add( field.getKey(), typeFactory.createSqlType( typeName ) ).nullable( true );
+            // TODO (PCP)
+            String physicalColumnName = field.getKey();
+            fieldInfo.add( field.getKey(), physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }
 
         final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
@@ -267,8 +275,14 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
          * Called via code-generation.
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> query( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, String>> selectFields, List<Map.Entry<String, String>> aggregateFunctions,
-                List<String> groupByFields, List<String> predicates, List<String> order, Long limit ) {
+        public Enumerable<Object> query(
+                List<Map.Entry<String, Class>> fields,
+                List<Map.Entry<String, String>> selectFields,
+                List<Map.Entry<String, String>> aggregateFunctions,
+                List<String> groupByFields,
+                List<String> predicates,
+                List<String> order,
+                Long limit ) {
             return getTable().query( getClientCache(), fields, selectFields, aggregateFunctions, groupByFields, predicates, order, limit );
         }
     }

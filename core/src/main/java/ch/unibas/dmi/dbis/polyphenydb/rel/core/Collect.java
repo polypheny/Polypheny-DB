@@ -141,7 +141,7 @@ public class Collect extends SingleRel {
         assert childType.isStruct();
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         RelDataType ret = SqlTypeUtil.createMultisetType( typeFactory, childType, false );
-        ret = typeFactory.builder().add( fieldName, ret ).build();
+        ret = typeFactory.builder().add( fieldName, null, ret ).build();
         return typeFactory.createTypeWithNullability( ret, false );
     }
 }

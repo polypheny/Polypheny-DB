@@ -40,13 +40,10 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.IntervalSqlType;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
 import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import com.datastax.oss.driver.api.querybuilder.Literal;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -75,7 +72,7 @@ public class CassandraValues extends Values implements CassandraRel {
      * @return String representation of the literal
      */
     public static Object literalValue( RexLiteral literal ) {
-        Object valueType = getJavaClass( literal);
+        Object valueType = getJavaClass( literal );
         return valueType;
     }
 

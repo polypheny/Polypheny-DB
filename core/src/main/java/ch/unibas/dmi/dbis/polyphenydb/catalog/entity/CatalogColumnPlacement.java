@@ -31,35 +31,51 @@ import java.io.Serializable;
 import lombok.NonNull;
 
 
-public class CatalogDataPlacement implements CatalogEntity {
+public class CatalogColumnPlacement implements CatalogEntity {
 
     private static final long serialVersionUID = 4754069156177607149L;
 
     public final long tableId;
     public final String tableName;
+    public final long columnId;
+    public final String columnName;
     public final int storeId;
     public final String storeUniqueName;
     public final PlacementType placementType;
 
+    public final String physicalSchemaName;
+    public final String physicalTableName;
+    public final String physicalColumnName;
 
-    public CatalogDataPlacement(
+
+    public CatalogColumnPlacement(
             final long tableId,
             @NonNull final String tableName,
+            final long columnId,
+            @NonNull final String columnName,
             final int storeId,
             @NonNull final String storeUniqueName,
-            final PlacementType placementType ) {
+            final PlacementType placementType,
+            final String physicalSchemaName,
+            final String physicalTableName,
+            final String physicalColumnName ) {
         this.tableId = tableId;
         this.tableName = tableName;
+        this.columnId = columnId;
+        this.columnName = columnName;
         this.storeId = storeId;
         this.storeUniqueName = storeUniqueName;
         this.placementType = placementType;
+        this.physicalSchemaName = physicalSchemaName;
+        this.physicalTableName = physicalTableName;
+        this.physicalColumnName = physicalColumnName;
     }
 
 
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ tableName, storeUniqueName, placementType.name() };
+        return new Serializable[]{ tableName, storeUniqueName, placementType.name(), physicalSchemaName, physicalTableName, physicalColumnName };
     }
 
 }

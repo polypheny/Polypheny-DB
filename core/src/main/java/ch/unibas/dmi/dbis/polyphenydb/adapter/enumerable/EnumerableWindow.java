@@ -246,7 +246,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             final Builder typeBuilder = typeFactory.builder();
             typeBuilder.addAll( inputPhysType.getRowType().getFieldList() );
             for ( AggImpState agg : aggs ) {
-                typeBuilder.add( agg.call.name, agg.call.type );
+                typeBuilder.add( agg.call.name, null, agg.call.type );
             }
             RelDataType outputRowType = typeBuilder.build();
             final PhysType outputPhysType = PhysTypeImpl.of( typeFactory, outputRowType, pref.prefer( result.format ) );

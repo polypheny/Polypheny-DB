@@ -83,6 +83,7 @@ public class CassandraTypesUtils {
         }
     }
 
+
     public static DataType getDataType( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:

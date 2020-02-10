@@ -449,7 +449,7 @@ public class ScannableTableTest {
 
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            return typeFactory.builder().add( "i", SqlTypeName.INTEGER ).build();
+            return typeFactory.builder().add( "i", null, SqlTypeName.INTEGER ).build();
         }
 
 
@@ -474,8 +474,8 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", SqlTypeName.INTEGER )
-                    .add( "j", SqlTypeName.VARCHAR )
+                    .add( "i", null, SqlTypeName.INTEGER )
+                    .add( "j", null, SqlTypeName.VARCHAR )
                     .build();
         }
 
@@ -510,9 +510,9 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", SqlTypeName.INTEGER )
-                    .add( "j", SqlTypeName.VARCHAR )
-                    .add( "k", SqlTypeName.INTEGER )
+                    .add( "i", null, SqlTypeName.INTEGER )
+                    .add( "j", null, SqlTypeName.VARCHAR )
+                    .add( "k", null, SqlTypeName.INTEGER )
                     .build();
         }
 
@@ -548,9 +548,9 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", SqlTypeName.INTEGER )
-                    .add( "j", SqlTypeName.VARCHAR )
-                    .add( "k", SqlTypeName.INTEGER )
+                    .add( "i", null, SqlTypeName.INTEGER )
+                    .add( "j", null, SqlTypeName.VARCHAR )
+                    .add( "k", null, SqlTypeName.INTEGER )
                     .build();
         }
 

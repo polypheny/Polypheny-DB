@@ -30,8 +30,8 @@ import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
@@ -62,6 +62,7 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -490,7 +491,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Delete the specified table. Columns, Keys and Data Placements need to be deleted before.
+     * Delete the specified table. Columns, Keys and ColumnPlacements need to be deleted before.
      *
      * @param tableId The id of the table to delete
      */
@@ -541,37 +542,40 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a placement for a table
+     * Adds a placement for a column.
      *
      * @param storeId The store on which the table should be placed on
-     * @param tableId The id of the table to be placed
+     * @param columnId The id of the column to be placed
      * @param placementType The type of placement
+     * @param physicalSchemaName The schema name on the data store
+     * @param physicalTableName The table name on the data store
+     * @param physicalColumnName The column name on the data store
      * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void addDataPlacement( int storeId, long tableId, PlacementType placementType ) throws GenericCatalogException {
+    public void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
-            CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            Statements.addDataPlacement( transactionHandler, store.id, table.id, placementType );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownTableTypeException | UnknownTableException e ) {
+            CatalogColumn column = Statements.getColumn( transactionHandler, columnId );
+            Statements.addColumnPlacement( transactionHandler, store.id, column.id, column.tableId, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownStoreException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
 
 
     /**
-     * Deletes a data placement
+     * Deletes a column placement
      *
      * @param storeId The id of the store
-     * @param tableId The id of the table
+     * @param columnId The id of the column
      */
     @Override
-    public void deleteDataPlacement( int storeId, long tableId ) throws GenericCatalogException {
+    public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteDataPlacement( transactionHandler, storeId, tableId );
+            Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -579,16 +583,36 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get data placements on a store
+     * Get column placements on a store
      *
      * @param storeId The id of the store
-     * @return List of data placements on this store
+     * @return List of column placements on this store
      */
     @Override
-    public List<CatalogDataPlacement> getDataPlacementsByStore( int storeId ) throws GenericCatalogException {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getDataPlacementsByStore( transactionHandler, storeId );
+            return Statements.getColumnPlacementsOnStore( transactionHandler, storeId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
+     * Change physical names of a placement.
+     *
+     * @param storeId The id of the store
+     * @param columnId The id of the column
+     * @param physicalSchemaName The physical schema name
+     * @param physicalTableName The physical table name
+     * @param physicalColumnName The physical column name
+     */
+    @Override
+    public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            Statements.updateColumnPlacementPhysicalNames( transactionHandler, storeId, columnId, physicalSchemaName, physicalTableName, physicalColumnName );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1447,9 +1471,23 @@ public class CatalogImpl extends Catalog {
             CatalogSchema schema = Statements.getSchema( transactionHandler, table.schemaId );
             CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, table.ownerId );
-            List<CatalogDataPlacement> placements = Statements.getDataPlacements( transactionHandler, tableId );
+
+            Map<Integer, List<CatalogColumnPlacement>> columnPlacementsByStore = new LinkedHashMap<>();
+            Map<Long, List<CatalogColumnPlacement>> columnPlacementsByColumn = new LinkedHashMap<>();
+            // We know the columns
+            for ( CatalogColumn catalogColumn : columns ) {
+                columnPlacementsByColumn.put( catalogColumn.id, new LinkedList<>() );
+            }
+            for ( CatalogColumnPlacement p : Statements.getColumnPlacementsOfTable( transactionHandler, tableId ) ) {
+                columnPlacementsByColumn.get( p.columnId ).add( p );
+                if ( !columnPlacementsByStore.containsKey( p.storeId ) ) {
+                    columnPlacementsByStore.put( p.storeId, new LinkedList<>() );
+                }
+                columnPlacementsByStore.get( p.storeId ).add( p );
+            }
+
             List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
-            return new CatalogCombinedTable( table, columns, schema, database, owner, placements, keys );
+            return new CatalogCombinedTable( table, columns, schema, database, owner, columnPlacementsByStore, columnPlacementsByColumn, keys );
         } catch ( UnknownCollationException | UnknownTypeException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }

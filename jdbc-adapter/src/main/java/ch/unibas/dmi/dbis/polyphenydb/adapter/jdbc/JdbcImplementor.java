@@ -46,8 +46,8 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.RelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.RelToSqlConverter;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
 import ch.unibas.dmi.dbis.polyphenydb.util.Util;
@@ -60,13 +60,13 @@ import java.util.List;
  */
 public class JdbcImplementor extends RelToSqlConverter {
 
-    private final JdbcPhysicalNameProvider physicalNameProvider;
+    private final JdbcSchema schema;
 
 
-    public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory, JdbcPhysicalNameProvider physicalNameProvider ) {
+    public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory, JdbcSchema schema ) {
         super( dialect );
         Util.discard( typeFactory );
-        this.physicalNameProvider = physicalNameProvider;
+        this.schema = schema;
     }
 
 
@@ -74,7 +74,7 @@ public class JdbcImplementor extends RelToSqlConverter {
      * @see #dispatch
      */
     public Result visit( JdbcTableScan scan ) {
-        return result( getPhysicalTableName( scan.jdbcTable.tableName().names ), ImmutableList.of( Clause.FROM ), scan, null );
+        return result( scan.jdbcTable.physicalTableName(), ImmutableList.of( Clause.FROM ), scan, null );
     }
 
 
@@ -84,8 +84,31 @@ public class JdbcImplementor extends RelToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
-        return physicalNameProvider.getPhysicalTableName( qualifiedName );
+    public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+        if ( tableNames.size() == 1 ) {
+            // only table name
+            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalTableName();
+        } else if ( tableNames.size() == 2 ) {
+            // schema name and table name
+            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalTableName();
+        } else {
+            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
+        }
     }
+
+
+    @Override
+    public SqlIdentifier getPhysicalColumnName( List<String> tableNames, String columnName ) {
+        if ( tableNames.size() == 1 ) {
+            // only table name
+            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
+        } else if ( tableNames.size() == 2 ) {
+            // schema name and table name
+            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
+        } else {
+            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
+        }
+    }
+
 }
 

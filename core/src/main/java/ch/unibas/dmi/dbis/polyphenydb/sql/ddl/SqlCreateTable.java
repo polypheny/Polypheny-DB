@@ -206,7 +206,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             if ( this.columnList == null ) {
                 // "CREATE TABLE t" is invalid; because there is no "AS query" we need a list of column names and types, "CREATE TABLE t (INT c)".
-                throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.createTableRequiresColumnList() );
+                throw SqlUtil.newContextException( SqlParserPos.ZERO, RESOURCE.createTableRequiresColumnList() );
             }
 
             int storeId = context.getDefaultStore();
@@ -224,8 +224,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     context.getCurrentUserId(),
                     TableType.TABLE,
                     null );
-
-            transaction.getCatalog().addDataPlacement( storeId, tableId, PlacementType.AUTOMATIC );
 
             List<SqlNode> columnList = this.columnList.getList();
             int position = 1;
@@ -251,6 +249,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             columnDeclaration.dataType.getNullable(),
                             collation
                     );
+
+                    transaction.getCatalog().addColumnPlacement(
+                            storeId,
+                            addedColumnId,
+                            PlacementType.AUTOMATIC,
+                            null,
+                            null,
+                            null );
 
                     // Add default value
                     if ( ((SqlColumnDeclaration) c.e).expression != null ) {

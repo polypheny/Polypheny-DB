@@ -97,44 +97,47 @@ final class Fixture {
         booleanTypeNull = typeFactory.createTypeWithNullability( booleanType, true );
         rectilinearCoordType =
                 typeFactory.builder()
-                        .add( "X", intType )
-                        .add( "Y", intType )
+                        .add( "X", null, intType )
+                        .add( "Y", null, intType )
                         .build();
         rectilinearPeekCoordType =
                 typeFactory.builder()
-                        .add( "X", intType )
-                        .add( "Y", intType )
+                        .add( "X", null, intType )
+                        .add( "Y", null, intType )
                         .kind( StructKind.PEEK_FIELDS )
                         .build();
         rectilinearPeekNoExpandCoordType =
                 typeFactory.builder()
-                        .add( "M", intType )
+                        .add( "M", null, intType )
                         .add( "SUB",
+                                null,
                                 typeFactory.builder()
-                                        .add( "A", intType )
-                                        .add( "B", intType )
+                                        .add( "A", null, intType )
+                                        .add( "B", null, intType )
                                         .kind( StructKind.PEEK_FIELDS_NO_EXPAND )
                                         .build() )
                         .kind( StructKind.PEEK_FIELDS_NO_EXPAND )
                         .build();
         abRecordType =
                 typeFactory.builder()
-                        .add( "A", varchar10Type )
-                        .add( "B", varchar10Type )
+                        .add( "A", null, varchar10Type )
+                        .add( "B", null, varchar10Type )
                         .build();
         skillRecordType =
                 typeFactory.builder()
-                        .add( "TYPE", varchar10Type )
-                        .add( "DESC", varchar20Type )
-                        .add( "OTHERS", abRecordType )
+                        .add( "TYPE", null, varchar10Type )
+                        .add( "DESC", null, varchar20Type )
+                        .add( "OTHERS", null, abRecordType )
                         .build();
         empRecordType =
                 typeFactory.builder()
-                        .add( "EMPNO", intType )
-                        .add( "ENAME", varchar10Type )
+                        .add( "EMPNO", null, intType )
+                        .add( "ENAME", null, varchar10Type )
                         .add( "DETAIL",
-                                typeFactory.builder().add( "SKILLS",
-                                        typeFactory.createArrayType( skillRecordType, -1 ) ).build() )
+                                null,
+                                typeFactory.builder()
+                                        .add( "SKILLS", null, typeFactory.createArrayType( skillRecordType, -1 ) )
+                                        .build() )
                         .build();
         empListType = typeFactory.createArrayType( empRecordType, -1 );
         addressType =

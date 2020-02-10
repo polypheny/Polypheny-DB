@@ -141,7 +141,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             };
 
 
-    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher preparedStatementEnricher ) {
+    private ResultSetEnumerable(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            PreparedStatementEnricher preparedStatementEnricher ) {
         this.connectionHandler = connectionHandler;
         this.sql = sql;
         this.rowBuilderFactory = rowBuilderFactory;
@@ -149,7 +153,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+    private ResultSetEnumerable(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
         this( connectionHandler, sql, rowBuilderFactory, null );
     }
 
@@ -157,7 +164,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable.
      */
-    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql ) {
+    public static ResultSetEnumerable<Object> of(
+            ConnectionHandler connectionHandler,
+            String sql ) {
         return of( connectionHandler, sql, AUTO_ROW_BUILDER_FACTORY );
     }
 
@@ -165,25 +174,37 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable that retrieves columns as specific Java types.
      */
-    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql, Primitive[] primitives ) {
+    public static ResultSetEnumerable<Object> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Primitive[] primitives ) {
         return of( connectionHandler, sql, primitiveRowBuilderFactory( primitives ) );
     }
 
 
     /**
-     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert JDBC column values into rows.
+     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
+     * JDBC column values into rows.
      */
-    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+    public static <T> ResultSetEnumerable<T> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
         return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory );
     }
 
 
     /**
-     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert JDBC column values into rows.
+     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
+     * JDBC column values into rows.
      *
      * It uses a {@link PreparedStatement} for computing the query result, and that means that it can bind parameters.
      */
-    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher consumer ) {
+    public static <T> ResultSetEnumerable<T> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            PreparedStatementEnricher consumer ) {
         return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory, consumer );
     }
 
@@ -216,7 +237,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
 
     /**
-     * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx} method based on the type of the value.
+     * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
+     * method based on the type of the value.
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value ) throws SQLException {
         if ( value == null ) {
@@ -388,6 +410,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             }
         }
     }
+
 
     /**
      * Implementation of {@link Enumerator} that reads from a {@link ResultSet}.

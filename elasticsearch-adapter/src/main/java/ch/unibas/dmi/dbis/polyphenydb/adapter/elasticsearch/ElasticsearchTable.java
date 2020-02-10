@@ -307,9 +307,11 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
         final Function1<ElasticsearchJson.SearchHit, Object> getter = ElasticsearchEnumerators.getter( fields, ImmutableMap.copyOf( mapping ) );
 
-        ElasticsearchJson.SearchHits hits = new ElasticsearchJson.SearchHits( total, result.stream()
-                .map( r -> new ElasticsearchJson.SearchHit( "_id", r, null ) )
-                .collect( Collectors.toList() ) );
+        ElasticsearchJson.SearchHits hits = new ElasticsearchJson.SearchHits(
+                total,
+                result.stream()
+                        .map( r -> new ElasticsearchJson.SearchHit( "_id", r, null ) )
+                        .collect( Collectors.toList() ) );
 
         return Linq4j.asEnumerable( hits.hits() ).select( getter );
     }
@@ -317,9 +319,11 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
     @Override
     public RelDataType getRowType( RelDataTypeFactory relDataTypeFactory ) {
-        final RelDataType mapType = relDataTypeFactory.createMapType( relDataTypeFactory.createSqlType( SqlTypeName.VARCHAR ),
+        final RelDataType mapType = relDataTypeFactory.createMapType(
+                relDataTypeFactory.createSqlType( SqlTypeName.VARCHAR ),
                 relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createSqlType( SqlTypeName.ANY ), true ) );
-        return relDataTypeFactory.builder().add( "_MAP", mapType ).build();
+        // TODO (PCP)
+        return relDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
     }
 
 
@@ -374,8 +378,15 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
          * @see ElasticsearchMethod#ELASTICSEARCH_QUERYABLE_FIND
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> find( List<String> ops, List<Map.Entry<String, Class>> fields, List<Map.Entry<String, RelFieldCollation.Direction>> sort, List<String> groupBy,
-                List<Map.Entry<String, String>> aggregations, Map<String, String> mappings, Long offset, Long fetch ) {
+        public Enumerable<Object> find(
+                List<String> ops,
+                List<Map.Entry<String, Class>> fields,
+                List<Map.Entry<String, RelFieldCollation.Direction>> sort,
+                List<String> groupBy,
+                List<Map.Entry<String, String>> aggregations,
+                Map<String, String> mappings,
+                Long offset,
+                Long fetch ) {
             try {
                 return getTable().find( ops, fields, sort, groupBy, aggregations, mappings, offset, fetch );
             } catch ( IOException e ) {

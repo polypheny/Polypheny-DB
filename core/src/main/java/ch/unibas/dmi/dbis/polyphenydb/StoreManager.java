@@ -3,7 +3,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 
 import ch.unibas.dmi.dbis.polyphenydb.Store.AdapterSetting;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import com.google.common.collect.ImmutableMap;
@@ -123,8 +123,8 @@ public class StoreManager {
             CatalogStore catalogStore = catalog.getStore( uniqueName );
 
             // Check if the store has any placements
-            List<CatalogDataPlacement> placements = catalog.getDataPlacementsByStore( catalogStore.id );
-            if ( placements.size() != 0 ) {
+            List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id );
+            if (placements.size() != 0) {
                 throw new RuntimeException( "There is still data placed on this store" );
             }
 

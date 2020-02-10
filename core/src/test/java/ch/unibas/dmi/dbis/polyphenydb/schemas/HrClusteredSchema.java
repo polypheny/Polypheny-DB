@@ -83,11 +83,11 @@ public final class HrClusteredSchema extends AbstractSchema {
                         new PkClusteredTable(
                                 factory ->
                                         new RelDataTypeFactory.Builder( factory )
-                                                .add( "empid", factory.createJavaType( int.class ) )
-                                                .add( "deptno", factory.createJavaType( int.class ) )
-                                                .add( "name", factory.createJavaType( String.class ) )
-                                                .add( "salary", factory.createJavaType( int.class ) )
-                                                .add( "commission", factory.createJavaType( Integer.class ) )
+                                                .add( "empid", null, factory.createJavaType( int.class ) )
+                                                .add( "deptno", null, factory.createJavaType( int.class ) )
+                                                .add( "name", null, factory.createJavaType( String.class ) )
+                                                .add( "salary", null, factory.createJavaType( int.class ) )
+                                                .add( "commission", null, factory.createJavaType( Integer.class ) )
                                                 .build(),
                                 ImmutableBitSet.of( 0 ),
                                 Arrays.asList(
@@ -100,8 +100,8 @@ public final class HrClusteredSchema extends AbstractSchema {
                         new PkClusteredTable(
                                 factory ->
                                         new RelDataTypeFactory.Builder( factory )
-                                                .add( "deptno", factory.createJavaType( int.class ) )
-                                                .add( "name", factory.createJavaType( String.class ) )
+                                                .add( "deptno", null, factory.createJavaType( int.class ) )
+                                                .add( "name", null, factory.createJavaType( String.class ) )
                                                 .build(),
                                 ImmutableBitSet.of( 0 ),
                                 Arrays.asList(

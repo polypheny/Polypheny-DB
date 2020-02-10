@@ -130,7 +130,7 @@ public class SqlTypeUtilTest {
     private RelDataType struct( RelDataType... relDataTypes ) {
         final Builder builder = f.typeFactory.builder();
         for ( int i = 0; i < relDataTypes.length; i++ ) {
-            builder.add( "field" + i, relDataTypes[i] );
+            builder.add( "field" + i, null, relDataTypes[i] );
         }
         return builder.build();
     }

@@ -675,14 +675,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", booleanType )
-                .add( "b", booleanType )
-                .add( "c", booleanType )
-                .add( "d", booleanType )
-                .add( "e", booleanType )
-                .add( "f", booleanType )
-                .add( "g", booleanType )
-                .add( "h", intType )
+                .add( "a", null, booleanType )
+                .add( "b", null, booleanType )
+                .add( "c", null, booleanType )
+                .add( "d", null, booleanType )
+                .add( "e", null, booleanType )
+                .add( "f", null, booleanType )
+                .add( "g", null, booleanType )
+                .add( "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -738,11 +738,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testCnf2() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "x", intType )
-                .add( "y", intType )
-                .add( "z", intType )
-                .add( "a", intType )
-                .add( "b", intType )
+                .add( "x", null, intType )
+                .add( "y", null, intType )
+                .add( "z", null, intType )
+                .add( "a", null, intType )
+                .add( "b", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -808,8 +808,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testThresholdCnf() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "x", intType )
-                .add( "y", intType )
+                .add( "x", null, intType )
+                .add( "y", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -859,8 +859,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < n; i++ ) {
-            builder.add( "x" + i, booleanType )
-                    .add( "y" + i, booleanType );
+            builder.add( "x" + i, null, booleanType )
+                    .add( "y" + i, null, booleanType );
         }
         final RelDataType rowType3 = builder.build();
         final RexDynamicParam range3 = rexBuilder.makeDynamicParam( rowType3, 0 );
@@ -887,14 +887,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", booleanType )
-                .add( "b", booleanType )
-                .add( "c", booleanType )
-                .add( "d", booleanType )
-                .add( "e", booleanType )
-                .add( "f", booleanType )
-                .add( "g", booleanType )
-                .add( "h", intType )
+                .add( "a", null, booleanType )
+                .add( "b", null, booleanType )
+                .add( "c", null, booleanType )
+                .add( "d", null, booleanType )
+                .add( "e", null, booleanType )
+                .add( "f", null, booleanType )
+                .add( "g", null, booleanType )
+                .add( "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -944,17 +944,17 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType intNullableType = typeFactory.createTypeWithNullability( intType, true );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", booleanType )
-                .add( "b", booleanType )
-                .add( "c", booleanType )
-                .add( "d", booleanType )
-                .add( "e", booleanType )
-                .add( "f", booleanType )
-                .add( "g", booleanType )
-                .add( "h", intType )
-                .add( "i", intNullableType )
-                .add( "j", intType )
-                .add( "k", intType )
+                .add( "a", null, booleanType )
+                .add( "b", null, booleanType )
+                .add( "c", null, booleanType )
+                .add( "d", null, booleanType )
+                .add( "e", null, booleanType )
+                .add( "f", null, booleanType )
+                .add( "g", null, booleanType )
+                .add( "h", null, intType )
+                .add( "i", null, intNullableType )
+                .add( "j", null, intType )
+                .add( "k", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1177,14 +1177,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", intType )
-                .add( "b", intType )
-                .add( "c", booleanType )
-                .add( "d", booleanType )
-                .add( "e", booleanType )
-                .add( "f", booleanType )
-                .add( "g", booleanType )
-                .add( "h", intType )
+                .add( "a", null, intType )
+                .add( "b", null, intType )
+                .add( "c", null, booleanType )
+                .add( "d", null, booleanType )
+                .add( "e", null, booleanType )
+                .add( "f", null, booleanType )
+                .add( "g", null, booleanType )
+                .add( "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1352,8 +1352,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyAndPush() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", intType )
-                .add( "b", intType )
+                .add( "a", null, intType )
+                .add( "b", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1413,9 +1413,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyOrTerms() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", intType ).nullable( false )
-                .add( "b", intType ).nullable( true )
-                .add( "c", intType ).nullable( true )
+                .add( "a", null, intType ).nullable( false )
+                .add( "b", null, intType ).nullable( true )
+                .add( "c", null, intType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1506,7 +1506,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyUnknown() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", intType ).nullable( true )
+                .add( "a", null, intType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1550,7 +1550,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyAnd3() {
         final RelDataType boolType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", boolType ).nullable( true )
+                .add( "a", null, boolType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -2065,11 +2065,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testConstantMap() {
         final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
         final RelDataType rowType = typeFactory.builder()
-                .add( "a", intType )
-                .add( "b", intType )
-                .add( "c", intType )
-                .add( "d", intType )
-                .add( "e", intType )
+                .add( "a", null, intType )
+                .add( "b", null, intType )
+                .add( "c", null, intType )
+                .add( "d", null, intType )
+                .add( "e", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );

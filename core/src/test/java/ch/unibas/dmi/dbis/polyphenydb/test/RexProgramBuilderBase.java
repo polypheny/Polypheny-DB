@@ -192,12 +192,12 @@ public abstract class RexProgramBuilderBase {
             RelDataType nullableType = typeFactory.createTypeWithNullability( k, true );
             Builder builder = typeFactory.builder();
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
-                builder.add( fieldNamePrefix + i, nullableType );
+                builder.add( fieldNamePrefix + i, null, nullableType );
             }
             String notNullPrefix = "notNull" + Character.toUpperCase( fieldNamePrefix.charAt( 0 ) ) + fieldNamePrefix.substring( 1 );
 
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
-                builder.add( notNullPrefix + i, k );
+                builder.add( notNullPrefix + i, null, k );
             }
             return rexBuilder.makeDynamicParam( builder.build(), 0 );
         } );

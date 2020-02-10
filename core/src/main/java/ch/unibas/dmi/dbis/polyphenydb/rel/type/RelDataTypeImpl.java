@@ -174,6 +174,14 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     }
 
 
+    public List<String> getPhysicalFieldNames() {
+        // TODO MV: Is there a more efficient way for doing this?
+        List<String> l = new ArrayList<>();
+        fieldList.forEach( f -> l.add( f.getPhysicalName() ) );
+        return l;
+    }
+
+
     @Override
     public int getFieldCount() {
         assert isStruct() : this;

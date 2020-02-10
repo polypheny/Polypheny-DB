@@ -708,7 +708,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final RelDataType x =
                 typeFactory.builder()
-                        .add( SqlUtil.deriveAliasFromOrdinal( 0 ), SqlTypeName.INTEGER )
+                        .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, SqlTypeName.INTEGER )
                         .build();
         @SuppressWarnings("unchecked") final List<T> list = (List) ImmutableList.of( 1 );
         final List<String> origin = null;
@@ -1046,7 +1046,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         if ( type.isStruct() ) {
             return type;
         }
-        return typeFactory.builder().add( "$0", type ).build();
+        return typeFactory.builder().add( "$0", null, type ).build();
     }
 
 

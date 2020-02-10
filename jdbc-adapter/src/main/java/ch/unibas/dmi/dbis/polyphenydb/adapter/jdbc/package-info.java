@@ -1,4 +1,3 @@
-
 /**
  * Query provider based on a JDBC data source.
  */

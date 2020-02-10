@@ -149,15 +149,15 @@ public class Uncollect extends SingleRel {
         if ( fields.size() == 1 && fields.get( 0 ).getType().getSqlTypeName() == SqlTypeName.ANY ) {
             // Component type is unknown to Uncollect, build a row type with input column name and Any type.
             return builder
-                    .add( fields.get( 0 ).getName(), SqlTypeName.ANY )
+                    .add( fields.get( 0 ).getName(), null, SqlTypeName.ANY )
                     .nullable( true )
                     .build();
         }
 
         for ( RelDataTypeField field : fields ) {
             if ( field.getType() instanceof MapSqlType ) {
-                builder.add( SqlUnnestOperator.MAP_KEY_COLUMN_NAME, field.getType().getKeyType() );
-                builder.add( SqlUnnestOperator.MAP_VALUE_COLUMN_NAME, field.getType().getValueType() );
+                builder.add( SqlUnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().getKeyType() );
+                builder.add( SqlUnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().getValueType() );
             } else {
                 RelDataType ret = field.getType().getComponentType();
                 assert null != ret;
@@ -165,12 +165,12 @@ public class Uncollect extends SingleRel {
                     builder.addAll( ret.getFieldList() );
                 } else {
                     // Element type is not a record. It may be a scalar type, say "INTEGER". Wrap it in a struct type.
-                    builder.add( SqlUtil.deriveAliasFromOrdinal( field.getIndex() ), ret );
+                    builder.add( SqlUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );
                 }
             }
         }
         if ( withOrdinality ) {
-            builder.add( SqlUnnestOperator.ORDINALITY_COLUMN_NAME, SqlTypeName.INTEGER );
+            builder.add( SqlUnnestOperator.ORDINALITY_COLUMN_NAME, null, SqlTypeName.INTEGER );
         }
         return builder.build();
     }

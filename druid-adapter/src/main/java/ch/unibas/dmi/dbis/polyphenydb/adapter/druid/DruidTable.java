@@ -285,7 +285,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
             final RelDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map.Entry<String, SqlTypeName> field : fields.entrySet() ) {
                 final String key = field.getKey();
-                builder.add( key, field.getValue() )
+                // TODO (PCP)
+                String physicalColumnName = key;
+                builder.add( key, physicalColumnName, field.getValue() )
                         // Druid's time column is always not null and the only column called __time.
                         .nullable( !timestampColumn.equals( key ) );
             }

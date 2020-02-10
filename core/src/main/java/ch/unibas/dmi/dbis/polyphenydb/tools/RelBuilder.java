@@ -1582,7 +1582,7 @@ public class RelBuilder {
             final Values v = (Values) build();
             final RelDataTypeFactory.Builder b = getTypeFactory().builder();
             for ( Pair<String, RelDataTypeField> p : Pair.zip( newFieldNames, v.getRowType().getFieldList() ) ) {
-                b.add( p.left, p.right.getType() );
+                b.add( p.left, null, p.right.getType() );
             }
             return values( v.tuples, b.build() );
         }
@@ -2022,7 +2022,7 @@ public class RelBuilder {
                             return rowCount;
                         }
                     } );
-            builder.add( name, type );
+            builder.add( name, null, type );
         }
         final RelDataType rowType = builder.build();
         return values( tupleList, rowType );
@@ -2369,12 +2369,12 @@ public class RelBuilder {
 
         final RelDataTypeFactory.Builder typeBuilder = cluster.getTypeFactory().builder();
         for ( RexNode partitionKey : partitionKeys ) {
-            typeBuilder.add( partitionKey.toString(), partitionKey.getType() );
+            typeBuilder.add( partitionKey.toString(), null, partitionKey.getType() );
         }
         if ( allRows ) {
             for ( RexNode orderKey : orderKeys ) {
                 if ( !typeBuilder.nameExists( orderKey.toString() ) ) {
-                    typeBuilder.add( orderKey.toString(), orderKey.getType() );
+                    typeBuilder.add( orderKey.toString(), null, orderKey.getType() );
                 }
             }
 
@@ -2390,7 +2390,7 @@ public class RelBuilder {
         for ( RexNode measure : measureList ) {
             List<RexNode> operands = ((RexCall) measure).getOperands();
             String alias = operands.get( 1 ).toString();
-            typeBuilder.add( alias, operands.get( 0 ).getType() );
+            typeBuilder.add( alias, null, operands.get( 0 ).getType() );
             measures.put( alias, operands.get( 0 ) );
         }
 

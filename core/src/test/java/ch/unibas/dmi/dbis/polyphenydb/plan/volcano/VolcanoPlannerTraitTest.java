@@ -396,7 +396,7 @@ public class VolcanoPlannerTraitTest {
         protected RelDataType deriveRowType() {
             final RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
             return typeFactory.builder()
-                    .add( "this", typeFactory.createJavaType( Void.TYPE ) )
+                    .add( "this", null, typeFactory.createJavaType( Void.TYPE ) )
                     .build();
         }
 

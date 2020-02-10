@@ -92,7 +92,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         final Key key = (Key) k;
         final ImmutableList.Builder<RelDataTypeField> list = ImmutableList.builder();
         for ( int i = 0; i < key.names.size(); i++ ) {
-            list.add( new RelDataTypeFieldImpl( key.names.get( i ), i, key.types.get( i ) ) );
+            list.add( new RelDataTypeFieldImpl( key.names.get( i ), key.physicalNames.get( i ), i, key.types.get( i ) ) );
         }
         return new RelRecordType( key.kind, list.build() );
     }
@@ -168,14 +168,35 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
     @Override
     public RelDataType createStructType( StructKind kind, final List<RelDataType> typeList, final List<String> fieldNameList ) {
+        return createStructType( kind, typeList, fieldNameList, ImmutableList.copyOf( fieldNameList ) );
+    }
+
+
+    @Override
+    public RelDataType createStructType( StructKind kind, final List<RelDataType> typeList, final List<String> fieldNameList, final List<String> physicalFieldNameList ) {
         assert typeList.size() == fieldNameList.size();
-        return canonize( kind, fieldNameList, typeList );
+        assert typeList.size() == physicalFieldNameList.size();
+        return canonize( kind, fieldNameList, physicalFieldNameList, typeList );
     }
 
 
     @Override
     public final RelDataType createStructType( final List<? extends Map.Entry<String, RelDataType>> fieldList ) {
-        return canonize( StructKind.FULLY_QUALIFIED,
+        return canonize(
+                StructKind.FULLY_QUALIFIED,
+                new AbstractList<String>() {
+                    @Override
+                    public String get( int index ) {
+                        return fieldList.get( index ).getKey();
+                    }
+
+
+                    @Override
+                    public int size() {
+                        return fieldList.size();
+                    }
+                },
+                // TODO MV: Using the logical names here might be wrong
                 new AbstractList<String>() {
                     @Override
                     public String get( int index ) {
@@ -236,6 +257,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
             final int k = j;
             builder.add(
                     type0.getFieldList().get( j ).getName(),
+                    null,
                     leastRestrictive(
                             new AbstractList<RelDataType>() {
                                 @Override
@@ -280,7 +302,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         // Shouldn't null refer to the nullability of the record type not the individual field types?
         // For flattening and outer joins, it is desirable to change the nullability of the individual fields.
 
-        return createStructType( type.getStructKind(),
+        return createStructType(
+                type.getStructKind(),
                 new AbstractList<RelDataType>() {
                     @Override
                     public RelDataType get( int index ) {
@@ -298,7 +321,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                         return type.getFieldCount();
                     }
                 },
-                type.getFieldNames() );
+                type.getFieldNames(),
+                type.getPhysicalFieldNames() );
     }
 
 
@@ -353,14 +377,15 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
      *
      * This approach allows us to use a cheap temporary key. A permanent key is more expensive, because it must be immutable and not hold references into other data structures.
      */
-    protected RelDataType canonize( final StructKind kind, final List<String> names, final List<RelDataType> types ) {
-        final RelDataType type = CACHE.getIfPresent( new Key( kind, names, types ) );
+    protected RelDataType canonize( final StructKind kind, final List<String> names, final List<String> physicalNames, final List<RelDataType> types ) {
+        final RelDataType type = CACHE.getIfPresent( new Key( kind, names, physicalNames, types ) );
         if ( type != null ) {
             return type;
         }
         final ImmutableList<String> names2 = ImmutableList.copyOf( names );
+        final List<String> physicalNames2 = physicalNames;
         final ImmutableList<RelDataType> types2 = ImmutableList.copyOf( types );
-        return CACHE.getUnchecked( new Key( kind, names2, types2 ) );
+        return CACHE.getUnchecked( new Key( kind, names2, physicalNames2, types2 ) );
     }
 
 
@@ -646,19 +671,21 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
         private final StructKind kind;
         private final List<String> names;
+        private final List<String> physicalNames;
         private final List<RelDataType> types;
 
 
-        Key( StructKind kind, List<String> names, List<RelDataType> types ) {
+        Key( StructKind kind, List<String> names, List<String> physicalNames, List<RelDataType> types ) {
             this.kind = kind;
             this.names = names;
+            this.physicalNames = physicalNames;
             this.types = types;
         }
 
 
         @Override
         public int hashCode() {
-            return Objects.hash( kind, names, types );
+            return Objects.hash( kind, names, physicalNames, types );
         }
 
 
@@ -668,6 +695,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                     || obj instanceof Key
                     && kind == ((Key) obj).kind
                     && names.equals( ((Key) obj).names )
+                    && physicalNames.equals( ((Key) obj).physicalNames )
                     && types.equals( ((Key) obj).types );
         }
     }

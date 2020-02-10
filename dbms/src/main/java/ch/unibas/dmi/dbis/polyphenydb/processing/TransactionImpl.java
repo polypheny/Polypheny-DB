@@ -90,6 +90,8 @@ public class TransactionImpl implements Transaction {
     @Getter
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
+    private PolyphenyDbSchema cachedSchema = null;
+
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
         this.xid = xid;
@@ -127,7 +129,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public PolyphenyDbSchema getSchema() {
-        return PolySchemaBuilder.getInstance().getCurrent( this );
+        if ( cachedSchema == null ) {
+            cachedSchema = PolySchemaBuilder.getInstance().getCurrent( this );
+        }
+        return cachedSchema;
     }
 
 
@@ -182,6 +187,8 @@ public class TransactionImpl implements Transaction {
             log.error( "Exception while committing changes. Execution rollback!" );
             rollback();
             throw new TransactionException( e );
+        } finally {
+            cachedSchema = null;
         }
 
 
@@ -202,6 +209,8 @@ public class TransactionImpl implements Transaction {
             }
         } catch ( CatalogTransactionException e ) {
             throw new TransactionException( e );
+        } finally {
+            cachedSchema = null;
         }
     }
 
@@ -260,6 +269,7 @@ public class TransactionImpl implements Transaction {
         queryProcessor = null;
         dataContext = null;
         prepareContext = null;
+        cachedSchema = null; // TODO: This should no be necessary.
     }
 
 

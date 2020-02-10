@@ -153,8 +153,8 @@ public class TraitPropagationTest {
                 @Override
                 public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                     return typeFactory.builder()
-                            .add( "s", stringType )
-                            .add( "i", integerType ).build();
+                            .add( "s", null, stringType )
+                            .add( "i", null, integerType ).build();
                 }
 
 
@@ -178,7 +178,7 @@ public class TraitPropagationTest {
             // project s column
             RelNode project = LogicalProject.create( rt1,
                     ImmutableList.of( (RexNode) rexBuilder.makeInputRef( stringType, 0 ), rexBuilder.makeInputRef( integerType, 1 ) ),
-                    typeFactory.builder().add( "s", stringType ).add( "i", integerType ).build() );
+                    typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
 
             // aggregate on s, count
             AggregateCall aggCall = AggregateCall.create( SqlStdOperatorTable.COUNT, false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
@@ -408,7 +408,7 @@ public class TraitPropagationTest {
             RelDataTypeFactory typeFactory = cluster.getTypeFactory();
             final RelDataType stringType = typeFactory.createJavaType( String.class );
             final RelDataType integerType = typeFactory.createJavaType( Integer.class );
-            this.rowType = typeFactory.builder().add( "s", stringType ).add( "i", integerType ).build();
+            this.rowType = typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build();
         }
 
 

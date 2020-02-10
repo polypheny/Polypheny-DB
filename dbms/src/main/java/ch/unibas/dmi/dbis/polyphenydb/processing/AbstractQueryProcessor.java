@@ -331,7 +331,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( type.isStruct() ) {
             return type;
         }
-        return typeFactory.builder().add( "$0", type ).build();
+        // TODO MV: This "null" might be wrong
+        return typeFactory.builder().add( "$0", null, type ).build();
     }
 
 

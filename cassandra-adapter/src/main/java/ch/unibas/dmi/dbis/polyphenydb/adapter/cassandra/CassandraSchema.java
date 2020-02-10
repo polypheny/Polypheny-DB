@@ -47,7 +47,6 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraTypesUtils;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
@@ -69,7 +68,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
@@ -78,7 +76,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -160,7 +157,9 @@ public class CassandraSchema extends AbstractSchema {
             // TODO: This mapping of types can be done much better
             SqlTypeName typeName = CassandraTypesUtils.getSqlTypeName( type );
 
-            fieldInfo.add( columnName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            // TODO (PCP)
+            String physicalColumnName = columnName;
+            fieldInfo.add( columnName, physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }
 
         return RelDataTypeImpl.proto( fieldInfo.build() );

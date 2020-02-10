@@ -27,7 +27,6 @@ package ch.unibas.dmi.dbis.polyphenydb.schema;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -49,19 +48,12 @@ public class PolySchemaBuilder {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
-    private Map<PolyXid, AbstractPolyphenyDbSchema> cache = new HashMap<>();
-
-
     public static PolySchemaBuilder getInstance() {
         return INSTANCE;
     }
 
 
     public AbstractPolyphenyDbSchema getCurrent( Transaction transaction ) {
-        /*if ( !cache.containsKey( transaction.getXid() ) ) {
-            cache.put( transaction.getXid(), update( transaction ) );
-        }
-        return cache.get( transaction.getXid() ); */
         return update( transaction );
     }
 
@@ -92,8 +84,11 @@ public class PolySchemaBuilder {
             for ( Store store : StoreManager.getInstance().getStores().values() ) {
                 store.createNewSchema( transaction, rootSchema, combinedSchema.getSchema().name );
             }
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
+            //
             for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                int storeId = combinedTable.getPlacements().get( 0 ).storeId;
+                int storeId = combinedTable.getColumnPlacementsByStore().keySet().iterator().next(); // TODO MV: This looks inefficient
                 Store store = StoreManager.getInstance().getStore( storeId );
                 Table table = store.createTableSchema( combinedTable );
                 s.add( combinedTable.getTable().name, table );

@@ -46,6 +46,7 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -93,15 +94,26 @@ public class CsvSchema extends AbstractSchema {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ) ) {
+            CatalogColumn catalogColumn = null;
+            // TODO MV: This is not efficient
+            // Get catalog column
+            for ( CatalogColumn c : combinedTable.getColumns() ) {
+                if ( c.id == placement.columnId ) {
+                    catalogColumn = c;
+                }
+            }
+            if ( catalogColumn == null ) {
+                throw new RuntimeException( "Column not found." ); // This should not happen
+            }
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
 
-        Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
+        // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
+        Source source = Sources.of( new File( directoryFile, combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv" ) );
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
         tableMap.put( combinedTable.getTable().name, table );
         return table;

@@ -215,7 +215,7 @@ public class RelJson {
             @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonList = (List<Map<String, Object>>) o;
             final RelDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map<String, Object> jsonMap : jsonList ) {
-                builder.add( (String) jsonMap.get( "name" ), toType( typeFactory, jsonMap ) );
+                builder.add( (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
             }
             return builder.build();
         } else {

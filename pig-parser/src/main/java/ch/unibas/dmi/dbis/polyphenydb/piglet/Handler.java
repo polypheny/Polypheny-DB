@@ -279,7 +279,7 @@ public class Handler {
     private RelDataType toType( Ast.Schema schema ) {
         final RelDataTypeFactory.Builder typeBuilder = builder.getTypeFactory().builder();
         for ( Ast.FieldSchema fieldSchema : schema.fieldSchemaList ) {
-            typeBuilder.add( fieldSchema.id.value, toType( fieldSchema.type ) );
+            typeBuilder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }
         return typeBuilder.build();
     }
@@ -335,7 +335,7 @@ public class Handler {
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Ast.FieldSchema fieldSchema : type.fieldSchemaList ) {
-            builder.add( fieldSchema.id.value, toType( fieldSchema.type ) );
+            builder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }
         return builder.build();
     }

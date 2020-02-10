@@ -77,7 +77,7 @@ class WithItemNamespace extends AbstractNamespace {
         }
         final Builder builder = validator.getTypeFactory().builder();
         for ( Pair<SqlNode, RelDataTypeField> pair : Pair.zip( withItem.columnList, rowType.getFieldList() ) ) {
-            builder.add( ((SqlIdentifier) pair.left).getSimple(), pair.right.getType() );
+            builder.add( ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
         }
         return builder.build();
     }
