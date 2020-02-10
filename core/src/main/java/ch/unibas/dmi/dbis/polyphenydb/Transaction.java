@@ -75,4 +75,7 @@ public interface Transaction {
     PolyphenyDbCatalogReader getCatalogReader();
 
     void resetQueryProcessor();
+
+    void addChangedTable( String qualifiedTableName );
+
 }

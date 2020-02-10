@@ -49,6 +49,8 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +83,7 @@ public class TransactionImpl implements Transaction {
     @Getter
     private final boolean analyze;
 
+    private final List<String> changedTables = new ArrayList<>();
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
 
@@ -169,6 +172,11 @@ public class TransactionImpl implements Transaction {
                 for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
+
+                if ( changedTables.size() > 0 ) {
+                    StatisticsManager.getInstance().apply( changedTables );
+                }
+
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
@@ -182,6 +190,8 @@ public class TransactionImpl implements Transaction {
         } finally {
             cachedSchema = null;
         }
+
+
     }
 
 
@@ -260,6 +270,15 @@ public class TransactionImpl implements Transaction {
         dataContext = null;
         prepareContext = null;
         cachedSchema = null; // TODO: This should no be necessary.
+    }
+
+
+    @Override
+    public void addChangedTable( String qualifiedTableName ) {
+        if ( !this.changedTables.contains( qualifiedTableName ) ) {
+            log.debug( "Add changed table: {}", qualifiedTableName );
+            this.changedTables.add( qualifiedTableName );
+        }
     }
 
 }

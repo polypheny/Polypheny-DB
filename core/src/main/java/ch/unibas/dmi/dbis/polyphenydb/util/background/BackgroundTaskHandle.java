@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.apache.commons.lang.time.StopWatch;
@@ -30,6 +31,8 @@ class BackgroundTaskHandle implements Runnable {
     @Getter
     private long maxExecTime = 0L;
 
+    private ScheduledFuture runner;
+
 
     public BackgroundTaskHandle( String id, BackgroundTask task, String description, TaskPriority priority, TaskSchedulingType schedulingType ) {
         this.id = id;
@@ -41,11 +44,17 @@ class BackgroundTaskHandle implements Runnable {
         // Schedule
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         if ( schedulingType == TaskSchedulingType.WORKLOAD ) {
-            exec.scheduleWithFixedDelay( this, 0, 100, TimeUnit.MILLISECONDS ); // TODO MV: implement workload based scheduling
+            this.runner = exec.scheduleWithFixedDelay( this, 0, 100, TimeUnit.MILLISECONDS ); // TODO MV: implement workload based scheduling
         } else {
-            exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
+            this.runner = exec.scheduleAtFixedRate( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
         }
+    }
 
+
+    public void stop() {
+        if ( runner != null && !this.runner.isCancelled() ) {
+            this.runner.cancel( false );
+        }
     }
 
 

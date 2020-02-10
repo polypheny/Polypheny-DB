@@ -17,5 +17,6 @@ include 'dbms'
 include 'catalog'
 include 'config'
 include 'information'
+include 'statistic'
 
 include 'dbms'
