@@ -516,9 +516,7 @@ public class Crud implements InformationObserver {
         }
 
         if ( isActiveTracking ) {
-            request.data.forEach( ( k, v ) -> {
-                transaction.addChangedTable( tableId );
-            } );
+            transaction.addChangedTable( tableId );
         }
 
         query.append( cols.toString() );
