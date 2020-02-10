@@ -58,7 +58,7 @@ public class CassandraStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Cassandra";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter for querying Cassandra.";
+    public static final String DESCRIPTION = "Apache Cassandra is an open-source key-value store designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
