@@ -60,11 +60,9 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownKeyException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownTableException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigInteger;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config;
+import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
 import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiGroup;
-import ch.unibas.dmi.dbis.polyphenydb.config.WebUiPage;
 import ch.unibas.dmi.dbis.polyphenydb.information.Information;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
 import ch.unibas.dmi.dbis.polyphenydb.information.InformationHtml;
@@ -82,6 +80,8 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
 import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticColumn;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
 import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
 import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
 import ch.unibas.dmi.dbis.polyphenydb.util.LimitIterator;
@@ -153,6 +153,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -179,6 +180,8 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
+    private final StatisticsManager store = StatisticsManager.getInstance();
+    private boolean isActiveTracking = false;
 
 
     /**
@@ -190,12 +193,34 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
+        registerStatisticObserver();
+    }
 
-        ConfigManager cm = ConfigManager.getInstance();
-        cm.registerWebUiPage( new WebUiPage( "webUi", "Polypheny UI", "Settings for the user interface." ) );
-        cm.registerWebUiGroup( new WebUiGroup( "dataView", "webUi" ).withTitle( "Data View" ) );
-        cm.registerConfig( new ConfigInteger( "pageSize", "Number of rows per page in the data view", 10 ).withUi( "dataView" ) );
-        cm.registerConfig( new ConfigInteger( "hub.import.batchSize", "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub", 100 ).withUi( "dataView" ) );
+
+    /**
+     * Ensures that changes in the ConfigManger toggle the statistics correctly
+     */
+    private void registerStatisticObserver() {
+        this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
+        ConfigListener observer = new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                setConfig( c );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                setConfig( c );
+            }
+
+
+            private void setConfig( Config c ) {
+                isActiveTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
+            }
+        };
+        RuntimeConfig.ACTIVE_TRACKING.addObserver( observer );
+        RuntimeConfig.DYNAMIC_QUERYING.addObserver( observer );
     }
 
 
@@ -334,6 +359,7 @@ public class Crud implements InformationObserver {
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         Transaction transaction = getTransaction();
+
         Result result;
         try {
             List<CatalogTable> tables = transaction.getCatalog().getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
@@ -488,6 +514,11 @@ public class Crud implements InformationObserver {
             }
             values.add( value );
         }
+
+        if ( isActiveTracking ) {
+            transaction.addChangedTable( tableId );
+        }
+
         query.append( cols.toString() );
         query.append( " VALUES " ).append( values.toString() );
 
@@ -630,6 +661,7 @@ public class Crud implements InformationObserver {
                     }
                 }
             }
+
         }
 
         try {
@@ -667,6 +699,19 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Return all available statistics to the client
+     */
+    ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> getStatistics( final Request req, final Response res ) {
+        if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+            return store.getStatisticSchemaMap();
+        } else {
+            return new ConcurrentHashMap<>();
+        }
+
+    }
+
+
+    /**
      * Delete a row from a table.
      * The row is determined by the value of every column in that row (conjunction).
      * The transaction is being rolled back, if more that one row would be deleted.
@@ -682,6 +727,7 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
         Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition;
             if ( entry.getValue() == null ) {
@@ -691,6 +737,7 @@ public class Crud implements InformationObserver {
             } else {
                 condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
             }
+            column = entry.getKey();
             joiner.add( condition );
         }
         builder.append( joiner.toString() );
@@ -699,6 +746,10 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
             // only commit if one row is deleted
             if ( numOfRows == 1 ) {
+                if ( isActiveTracking ) {
+                    transaction.addChangedTable( tableId );
+                }
+
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -727,14 +778,16 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         builder.append( "UPDATE " ).append( tableId ).append( " SET " );
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
+        String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
-                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql(entry.getValue()) ) );
+                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) ) );
             }
+            column = entry.getKey();
         }
         builder.append( setStatements.toString() );
 
@@ -748,6 +801,9 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
+                if ( isActiveTracking ) {
+                    transaction.addChangedTable( tableId );
+                }
                 transaction.commit();
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
@@ -1855,7 +1911,7 @@ public class Crud implements InformationObserver {
 
             //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
 
-            final int BATCH_SIZE = ConfigManager.getInstance().getConfig( "hub.import.batchSize" ).getInt();
+            final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
             long csvCounter = 0;
             try (
                     Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
@@ -1886,14 +1942,14 @@ public class Crud implements InformationObserver {
                         executeSqlUpdate( transaction, insertQuery );
                         valueJoiner = new StringJoiner( ",", "VALUES", "" );
                         status.setStatus( csvCounter );
-                        WebSocket.broadcast( gson.toJson(status, Status.class ));
+                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
                     }
                 }
                 if ( csvCounter % BATCH_SIZE != 0 ) {
                     String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
                     executeSqlUpdate( transaction, insertQuery );
                     status.complete();
-                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 }
             }
 
@@ -1919,7 +1975,7 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while rolling back transaction", e );
                 }
             }
-        //} catch ( CsvValidationException | GenericCatalogException e ) {
+            //} catch ( CsvValidationException | GenericCatalogException e ) {
         } catch ( GenericCatalogException e ) {
             log.error( "Could not export csv file", e );
             error = "Could not export csv file" + e.getMessage();
@@ -1998,14 +2054,14 @@ public class Crud implements InformationObserver {
                         tableStream.write( "\n".getBytes( charset ) );
                     }
                 }
-                counter ++;
-                if( counter % 100 == 0) {
+                counter++;
+                if ( counter % 100 == 0 ) {
                     status.setStatus( counter );
-                    WebSocket.broadcast( gson.toJson(status, Status.class ));
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 }
             }
             status.complete();
-            WebSocket.broadcast( gson.toJson(status, Status.class ));
+            WebSocket.broadcast( gson.toJson( status, Status.class ) );
             tableStream.flush();
 
             //from https://www.baeldung.com/java-compress-and-uncompress
@@ -2047,7 +2103,7 @@ public class Crud implements InformationObserver {
             } catch ( JsonSyntaxException e ) {
                 return new Result( resultString );
             }
-        } catch ( TransactionException e) {
+        } catch ( TransactionException e ) {
             log.error( "Error while fetching table", e );
             return new Result( "Error while fetching table" );
         } catch ( IOException e ) {
@@ -2093,7 +2149,7 @@ public class Crud implements InformationObserver {
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
-            if( noLimit ){
+            if ( noLimit ) {
                 rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             } else {
                 rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
@@ -2208,6 +2264,7 @@ public class Crud implements InformationObserver {
 
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
+
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
@@ -2274,7 +2331,7 @@ public class Crud implements InformationObserver {
      * Get the number of rows that should be displayed in one page in the data view
      */
     private int getPageSize() {
-        return ConfigManager.getInstance().getConfig( "pageSize" ).getInt();
+        return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
 
