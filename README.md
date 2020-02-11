@@ -39,4 +39,4 @@ The Polypheny-DB project is supported by the Swiss National Science Foundation (
 
 
 ## License ##
-The MIT License (MIT)
+The Apache 2.0 License

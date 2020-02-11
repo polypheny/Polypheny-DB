@@ -1,2 +1,14 @@
-Based on Apache Calcite 
-Forked at 07.02.2019 ( 866d855 )
+Polypheny-DB
+Copyright 2017-2020 The Polypheny Project
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This product contains code from the Apache Calcite
+project which is based on source code originally developed
+by DynamoBI Corporation, LucidEra Inc., SQLstream Inc. and others
+under the auspices of the Eigenbase Foundation
+and released as the LucidDB project.
+
+Polypheny-DB is a research system that emerged from the 
+University of Basel, Switzerland.
