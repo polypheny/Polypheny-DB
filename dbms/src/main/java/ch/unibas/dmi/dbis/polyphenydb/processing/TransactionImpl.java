@@ -1,26 +1,17 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.processing;
@@ -49,6 +40,8 @@ import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
 import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
 import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,11 +74,14 @@ public class TransactionImpl implements Transaction {
     @Getter
     private final boolean analyze;
 
+    private final List<String> changedTables = new ArrayList<>();
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
 
     @Getter
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
+
+    private PolyphenyDbSchema cachedSchema = null;
 
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
@@ -124,7 +120,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public PolyphenyDbSchema getSchema() {
-        return PolySchemaBuilder.getInstance().getCurrent( this );
+        if ( cachedSchema == null ) {
+            cachedSchema = PolySchemaBuilder.getInstance().getCurrent( this );
+        }
+        return cachedSchema;
     }
 
 
@@ -164,6 +163,11 @@ public class TransactionImpl implements Transaction {
                 for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
+
+                if ( changedTables.size() > 0 ) {
+                    StatisticsManager.getInstance().apply( changedTables );
+                }
+
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
@@ -174,7 +178,11 @@ public class TransactionImpl implements Transaction {
             log.error( "Exception while committing changes. Execution rollback!" );
             rollback();
             throw new TransactionException( e );
+        } finally {
+            cachedSchema = null;
         }
+
+
     }
 
 
@@ -192,6 +200,8 @@ public class TransactionImpl implements Transaction {
             }
         } catch ( CatalogTransactionException e ) {
             throw new TransactionException( e );
+        } finally {
+            cachedSchema = null;
         }
     }
 
@@ -250,6 +260,16 @@ public class TransactionImpl implements Transaction {
         queryProcessor = null;
         dataContext = null;
         prepareContext = null;
+        cachedSchema = null; // TODO: This should no be necessary.
+    }
+
+
+    @Override
+    public void addChangedTable( String qualifiedTableName ) {
+        if ( !this.changedTables.contains( qualifiedTableName ) ) {
+            log.debug( "Add changed table: {}", qualifiedTableName );
+            this.changedTables.add( qualifiedTableName );
+        }
     }
 
 }

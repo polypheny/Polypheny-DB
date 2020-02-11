@@ -3,7 +3,7 @@ package ch.unibas.dmi.dbis.polyphenydb;
 
 import ch.unibas.dmi.dbis.polyphenydb.Store.AdapterSetting;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import com.google.common.collect.ImmutableMap;
@@ -38,6 +38,7 @@ public class StoreManager {
 
 
     public Store getStore( String uniqueName ) {
+        uniqueName = uniqueName.toLowerCase();
         return storesByName.get( uniqueName );
     }
 
@@ -86,7 +87,6 @@ public class StoreManager {
                 Store instance = (Store) ctor.newInstance( store.id, store.uniqueName, store.settings );
                 storesByName.put( instance.getUniqueName(), instance );
                 storesById.put( instance.getStoreId(), instance );
-
             }
         } catch ( GenericCatalogException | NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
@@ -95,6 +95,7 @@ public class StoreManager {
 
 
     public Store addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
+        uniqueName = uniqueName.toLowerCase();
         if (storesByName.containsKey( uniqueName )) {
             throw new RuntimeException( "There is already a store with this unique name" );
         }
@@ -114,6 +115,7 @@ public class StoreManager {
 
 
     public void removeStore( Catalog catalog, String uniqueName ) {
+        uniqueName = uniqueName.toLowerCase();
         if (!storesByName.containsKey( uniqueName )) {
             throw new RuntimeException( "Unknown store: " + uniqueName );
         }
@@ -121,13 +123,17 @@ public class StoreManager {
             CatalogStore catalogStore = catalog.getStore( uniqueName );
 
             // Check if the store has any placements
-            List<CatalogDataPlacement> placements = catalog.getDataPlacementsByStore( catalogStore.id );
+            List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id );
             if (placements.size() != 0) {
                 throw new RuntimeException( "There is still data placed on this store" );
             }
 
             // Shutdown store
             storesByName.get( uniqueName ).shutdown();
+
+            // remove store from maps
+            storesById.remove( catalogStore.id );
+            storesByName.remove( uniqueName );
 
             // delete store from catalog
             catalog.deleteStore( catalogStore.id );

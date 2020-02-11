@@ -4,7 +4,7 @@ _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload awa
 
 Polypheny-DB is a research system developed at the University of Basel, Switzerland. As a research system, Polypheny-DB is not intended to be used in a productive environment.
 
-If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://edoc.unibas.ch/58210/). 
+If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://ieeexplore.ieee.org/document/8622353).
 
 
 ## Getting Started ##
@@ -39,4 +39,4 @@ The Polypheny-DB project is supported by the Swiss National Science Foundation (
 
 
 ## License ##
-The MIT License (MIT)
+The Apache 2.0 License

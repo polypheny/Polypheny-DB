@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
@@ -51,6 +40,7 @@ import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
 import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.AbstractJdbcStore;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -87,12 +77,12 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * Implementation of {@link Schema} that is backed by a JDBC data source.
  *
- * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed against those tables, pushing down as much as possible of the query logic to SQL.
+ * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed
+ * against those tables, pushing down as much as possible of the query logic to SQL.
  */
 public class JdbcSchema implements Schema {
 
     final ConnectionFactory connectionFactory;
-    final String database;
     final String schema;
     public final SqlDialect dialect;
 
@@ -100,18 +90,26 @@ public class JdbcSchema implements Schema {
     private final JdbcConvention convention;
 
     private final Map<String, JdbcTable> tableMap;
+    private final Map<String, String> physicalToLogicalTableNameMap;
 
     private final AbstractJdbcStore jdbcStore;
 
 
-    private JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String catalog, String schema, Map<String, JdbcTable> tableMap, AbstractJdbcStore jdbcStore ) {
+    private JdbcSchema(
+            @NonNull ConnectionFactory connectionFactory,
+            @NonNull SqlDialect dialect,
+            JdbcConvention convention,
+            String schema,
+            Map<String, JdbcTable> tableMap,
+            Map<String, String> physicalToLogicalTableNameMap,
+            AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
-        this.database = catalog;
         this.schema = schema;
         this.tableMap = tableMap;
+        this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.jdbcStore = jdbcStore;
     }
 
@@ -122,42 +120,85 @@ public class JdbcSchema implements Schema {
      * @param connectionFactory Connection Factory
      * @param dialect SQL dialect
      * @param convention Calling convention
-     * @param database Database name, or null
      * @param schema Schema name pattern
      */
-    public JdbcSchema( @NonNull ConnectionFactory connectionFactory, @NonNull SqlDialect dialect, JdbcConvention convention, String database, String schema, AbstractJdbcStore jdbcStore ) {
+    public JdbcSchema(
+            @NonNull ConnectionFactory connectionFactory,
+            @NonNull SqlDialect dialect,
+            JdbcConvention convention,
+            String schema,
+            AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
+        convention.setJdbcSchema( this );
         this.convention = convention;
-        this.database = database;
         this.schema = schema;
         this.tableMap = new HashMap<>();
+        this.physicalToLogicalTableNameMap = new HashMap<>();
         this.jdbcStore = jdbcStore;
     }
 
 
     public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
-        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
+        // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
+        // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        List<String> columnNames = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+        List<String> logicalColumnNames = new LinkedList<>();
+        List<String> physicalColumnNames = new LinkedList<>();
+        String physicalSchemaName = null;
+        String physicalTableName = null;
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( jdbcStore.getStoreId() ) ) {
+            CatalogColumn catalogColumn = null;
+            // TODO MV: This is not really efficient
+            // Get catalog column
+            for ( CatalogColumn c : combinedTable.getColumns() ) {
+                if ( c.id == placement.columnId ) {
+                    catalogColumn = c;
+                }
+            }
+            if ( catalogColumn == null ) {
+                throw new RuntimeException( "Column not found." ); // This should not happen
+            }
+            if ( physicalSchemaName == null ) {
+                physicalSchemaName = placement.physicalSchemaName;
+            }
+            if ( physicalTableName == null ) {
+                physicalTableName = placement.physicalTableName;
+            }
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-            columnNames.add( catalogColumn.name );
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            logicalColumnNames.add( catalogColumn.name );
+            physicalColumnNames.add( placement.physicalColumnName );
         }
-        JdbcTable table = new JdbcTable( this, database, combinedTable.getSchema().name, combinedTable.getTable().name, TableType.valueOf( combinedTable.getTable().tableType.name() ), RelDataTypeImpl.proto( fieldInfo.build() ), columnNames );
+        JdbcTable table = new JdbcTable(
+                this,
+                combinedTable.getSchema().name,
+                combinedTable.getTable().name,
+                logicalColumnNames,
+                TableType.valueOf( combinedTable.getTable().tableType.name() ),
+                RelDataTypeImpl.proto( fieldInfo.build() ),
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnNames );
         tableMap.put( combinedTable.getTable().name, table );
+        physicalToLogicalTableNameMap.put( physicalTableName, combinedTable.getTable().name );
         return table;
     }
 
 
-    public static JdbcSchema create( SchemaPlus parentSchema, String name, ConnectionFactory connectionFactory, SqlDialect dialect, String catalog, String schema, JdbcPhysicalNameProvider physicalNameProvider, AbstractJdbcStore jdbcStore ) {
+    public static JdbcSchema create(
+            SchemaPlus parentSchema,
+            String name,
+            ConnectionFactory connectionFactory,
+            SqlDialect dialect,
+            String schema,
+            AbstractJdbcStore jdbcStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name, physicalNameProvider );
-        return new JdbcSchema( connectionFactory, dialect, convention, catalog, schema, jdbcStore );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        return new JdbcSchema( connectionFactory, dialect, convention, schema, jdbcStore );
     }
 
 
@@ -177,7 +218,14 @@ public class JdbcSchema implements Schema {
 
     @Override
     public Schema snapshot( SchemaVersion version ) {
-        return new JdbcSchema( connectionFactory, dialect, convention, database, schema, tableMap, jdbcStore );
+        return new JdbcSchema(
+                connectionFactory,
+                dialect,
+                convention,
+                schema,
+                tableMap,
+                physicalToLogicalTableNameMap,
+                jdbcStore );
     }
 
 

@@ -57,10 +57,18 @@ configurations {
 
 dependencies {
     implementation project(":core")
+    api project(":statistic")
 
     uiFiles group: "ch.unibas.dmi.dbis.polyphenydb", name: "polyphenydb-ui", version: polyphenydb_ui_version
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+
+
+    compile group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version
+
+    compile group: 'com.mashape.unirest', name: 'unirest-java', version: unirest_version
+
+    compile group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
 
 
     // --- Test Compile ---

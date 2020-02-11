@@ -55,6 +55,7 @@ public class BackgroundTaskManager {
 
     public void removeBackgroundTask( String id ) {
         if ( tasks.containsKey( id ) ) {
+            tasks.get( id ).stop();
             tasks.remove( id );
         } else {
             throw new RuntimeException( "There is no tasks with this id: " + id );

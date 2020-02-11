@@ -1,25 +1,17 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2017 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb;
@@ -37,6 +29,8 @@ import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
 import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
 import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
 import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticQueryProcessor;
+import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
 import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
 import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
@@ -72,10 +66,20 @@ public class PolyphenyDb {
     public void runPolyphenyDb() throws GenericCatalogException {
 
         Catalog catalog;
+        Transaction trx = null;
         try {
-            catalog = CatalogManagerImpl.getInstance().getCatalog( transactionManager.startTransaction( "pa", "APP", false ).getXid() );
+            trx = transactionManager.startTransaction( "pa", "APP", false );
+            catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException e ) {
+            trx.commit();
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+            if ( trx != null ) {
+                try {
+                    trx.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Error while rolling back the transaction", e );
+                }
+            }
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
@@ -127,7 +131,7 @@ public class PolyphenyDb {
         }
 
         final ShutdownHelper sh = new ShutdownHelper();
-       // shutdownHookId = addShutdownHook( "Component Terminator", sh );
+        // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
         final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
@@ -146,6 +150,7 @@ public class PolyphenyDb {
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -153,12 +158,18 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
+
+
+
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+
+        StatisticsManager store = StatisticsManager.getInstance();
+        store.setSqlQueryInterface( statisticQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
@@ -111,15 +100,23 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
      * @param predicates A list of predicates which should be used in the query
      * @return Enumerator of results
      */
-    public Enumerable<Object> query( final GemFireCache clientCache, final List<Map.Entry<String, Class>> fields, final List<Map.Entry<String, String>> selectFields, final List<Map.Entry<String, String>> aggregateFunctions,
-            final List<String> groupByFields, List<String> predicates, List<String> orderByFields, Long limit ) {
-
+    public Enumerable<Object> query(
+            final GemFireCache clientCache,
+            final List<Map.Entry<String, Class>> fields,
+            final List<Map.Entry<String, String>> selectFields,
+            final List<Map.Entry<String, String>> aggregateFunctions,
+            final List<String> groupByFields,
+            List<String> predicates,
+            List<String> orderByFields,
+            Long limit ) {
         final RelDataTypeFactory typeFactory = new JavaTypeFactoryExtImpl();
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( Map.Entry<String, Class> field : fields ) {
             SqlTypeName typeName = typeFactory.createJavaType( field.getValue() ).getSqlTypeName();
-            fieldInfo.add( field.getKey(), typeFactory.createSqlType( typeName ) ).nullable( true );
+            // TODO (PCP)
+            String physicalColumnName = field.getKey();
+            fieldInfo.add( field.getKey(), physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }
 
         final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );
@@ -267,8 +264,14 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
          * Called via code-generation.
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> query( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, String>> selectFields, List<Map.Entry<String, String>> aggregateFunctions,
-                List<String> groupByFields, List<String> predicates, List<String> order, Long limit ) {
+        public Enumerable<Object> query(
+                List<Map.Entry<String, Class>> fields,
+                List<Map.Entry<String, String>> selectFields,
+                List<Map.Entry<String, String>> aggregateFunctions,
+                List<String> groupByFields,
+                List<String> predicates,
+                List<String> order,
+                Long limit ) {
             return getTable().query( getClientCache(), fields, selectFields, aggregateFunctions, groupByFields, predicates, order, limit );
         }
     }

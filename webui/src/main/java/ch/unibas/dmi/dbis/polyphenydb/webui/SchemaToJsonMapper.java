@@ -1,26 +1,17 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
@@ -38,6 +29,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 
 
@@ -80,7 +72,13 @@ public class SchemaToJsonMapper {
     }
 
 
-    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String storeName ) {
+    public static String getTableNameFromJson( @NonNull String json ) {
+        JsonTable table = gson.fromJson( json, JsonTable.class );
+        return table.tableName;
+    }
+
+
+    public static String getCreateTableStatementFromJson( @NonNull String json, boolean createPrimaryKey, boolean addDefaultValueDefinition, @NonNull String schemaName, String tableName, String storeName ) {
         JsonTable table = gson.fromJson( json, JsonTable.class );
         SqlWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT, true, null );
         writer.keyword( "CREATE TABLE" );
@@ -89,7 +87,11 @@ public class SchemaToJsonMapper {
         SqlWriter.Frame identifierFrame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
         writer.identifier( schemaName );
         writer.sep( ".", true );
-        writer.identifier( table.tableName );
+        if ( tableName != null ) {
+            writer.identifier( tableName );
+        } else {
+            writer.identifier( table.tableName );
+        }
         writer.endList( identifierFrame );
 
         // Print column list
@@ -147,7 +149,8 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonTable {
+    @Getter
+    static class JsonTable {
 
         public final String tableName;
         public final List<JsonColumn> columns;
@@ -156,7 +159,7 @@ public class SchemaToJsonMapper {
 
 
     @AllArgsConstructor
-    private static class JsonColumn {
+    static class JsonColumn {
 
         public final String columnName;
         public final String type;

@@ -1,26 +1,17 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.webui;
@@ -37,8 +28,8 @@ import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,7 +52,8 @@ public class SchemaToJsonMapperTest {
                 new CatalogSchema( 1, "public", 1, "APP", 1, "hans", SchemaType.RELATIONAL ),
                 new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" ),
                 new CatalogUser( 1, "hans", "secrete" ),
-                new ArrayList<>(),
+                new HashMap<>(),
+                new HashMap<>(),
                 Arrays.asList(
                         new CatalogKey( 23L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 5L, 6L ), Arrays.asList( "sid", "name" ) ),
                         new CatalogKey( 24L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 6L ), Arrays.asList( "name" ) )
@@ -74,13 +66,25 @@ public class SchemaToJsonMapperTest {
 
     @Test
     public void getStatementTest() {
-        String statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, true, true, "foo", "hsqldb1" );
+        String statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, true, true, "foo", null, "hsqldb1" );
         final String expected1 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30) DEFAULT 'Basel', PRIMARY KEY(\"sid\", \"name\")) ON STORE \"hsqldb1\"";
         Assert.assertEquals( statement, expected1 );
 
-        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", null );
+        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", null, null );
         final String expected2 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
         Assert.assertEquals( statement, expected2 );
+
+        statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", "bar", null );
+        final String expected3 = "CREATE TABLE \"foo\".\"bar\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
+        Assert.assertEquals( statement, expected3 );
+    }
+
+
+    @Test
+    public void getTableNameTest() {
+        String name = SchemaToJsonMapper.getTableNameFromJson( mockJson );
+        final String expected = "stores";
+        Assert.assertEquals( name, expected );
     }
 
 }

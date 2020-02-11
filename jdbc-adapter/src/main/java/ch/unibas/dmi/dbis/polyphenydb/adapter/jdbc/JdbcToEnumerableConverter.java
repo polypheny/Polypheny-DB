@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
@@ -97,16 +86,37 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
  */
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
+    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
+            JdbcSchema.class,
+            "getConnectionHandler",
+            DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "setTimeout",
+            DataContext.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "of",
+            ConnectionHandler.class,
+            String.class,
+            Function1.class );
+    public static final Method RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "of",
+            ConnectionHandler.class,
+            String.class,
+            Function1.class,
+            ResultSetEnumerable.PreparedStatementEnricher.class );
+    public static final Method CREATE_ENRICHER_METHOD = Types.lookupMethod(
+            ResultSetEnumerable.class,
+            "createEnricher",
+            Integer[].class,
+            DataContext.class );
+
+
     protected JdbcToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
-
-
-    public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod( JdbcSchema.class, "getConnectionHandler", DataContext.class );
-    public static final Method RESULT_SET_ENUMERABLE_SET_TIMEOUT_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "setTimeout", DataContext.class );
-    public static final Method RESULT_SET_ENUMERABLE_OF_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class );
-    public static final Method RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "of", ConnectionHandler.class, String.class, Function1.class, ResultSetEnumerable.PreparedStatementEnricher.class );
-    public static final Method CREATE_ENRICHER_METHOD = Types.lookupMethod( ResultSetEnumerable.class, "createEnricher", Integer[].class, DataContext.class );
 
 
     @Override
@@ -133,7 +143,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                         getRowType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
-        SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.physicalNameProvider );
+        SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
         String sql = sqlString.getSql();
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             System.out.println( "[" + sql + "]" );
@@ -244,7 +254,15 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private void generateGet( EnumerableRelImplementor implementor, PhysType physType, BlockBuilder builder, ParameterExpression resultSet_, int i, Expression target, Expression calendar_, CalendarPolicy calendarPolicy ) {
+    private void generateGet(
+            EnumerableRelImplementor implementor,
+            PhysType physType,
+            BlockBuilder builder,
+            ParameterExpression resultSet_,
+            int i,
+            Expression target,
+            Expression calendar_,
+            CalendarPolicy calendarPolicy ) {
         final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
@@ -256,7 +274,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 dateTimeArgs.add( calendar_ );
                 break;
             case NULL:
-                // We don't specify a calendar at all, so we don't add an argument and instead use the version of the getXXX that doesn't take a Calendar
+                // We don't specify a calendar at all, so we don't add an argument and instead use the version of
+                // the getXXX that doesn't take a Calendar
                 break;
             case DIRECT:
                 sqlTypeName = SqlTypeName.ANY;
@@ -349,8 +368,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private SqlString generateSql( SqlDialect dialect, JdbcPhysicalNameProvider physicalNameProvider ) {
-        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), physicalNameProvider );
+    private SqlString generateSql( SqlDialect dialect, JdbcSchema jdbcSchema ) {
+        final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, (JavaTypeFactory) getCluster().getTypeFactory(), jdbcSchema );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }

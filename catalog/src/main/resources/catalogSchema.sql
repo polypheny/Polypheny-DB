@@ -1,26 +1,3 @@
--- The MIT License (MIT)
---
--- Copyright (c) 2017 Databases and Information Systems Research Group, University of Basel, Switzerland
---
--- Permission is hereby granted, free of charge, to any person obtaining a copy
--- of this software and associated documentation files (the "Software"), to deal
--- in the Software without restriction, including without limitation the rights
--- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
--- copies of the Software, and to permit persons to whom the Software is
--- furnished to do so, subject to the following conditions:
---
--- The above copyright notice and this permission notice shall be included in all
--- copies or substantial portions of the Software.
---
--- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
--- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
--- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
--- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
--- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
--- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
--- SOFTWARE.
-
-
 CREATE TABLE "user" (
     "id"       INTEGER IDENTITY NOT NULL,
     "username" VARCHAR(100)     NOT NULL,
@@ -136,11 +113,15 @@ CREATE TABLE "store" (
 );
 
 
-CREATE TABLE "data_placement" (
+CREATE TABLE "column_placement" (
     "store" INTEGER NOT NULL REFERENCES "store" ("id"),
+    "column" BIGINT  NOT NULL REFERENCES "column" ("id"),
     "table" BIGINT  NOT NULL REFERENCES "table" ("id"),
     "type" INTEGER NOT NULL,
-    PRIMARY KEY ("store", "table")
+    "physical_schema"  VARCHAR(100)     NULL,
+    "physical_table"  VARCHAR(100)     NULL,
+    "physical_column"  VARCHAR(100)    NULL,
+    PRIMARY KEY ("store", "column")
 );
 
 
@@ -298,11 +279,12 @@ CREATE UNIQUE INDEX "store_unique_name"
 CREATE INDEX "store_adapter"
     ON "store" ("adapter");
 
-CREATE INDEX "data_placement_store"
-    ON "data_placement" ("store");
-CREATE INDEX "data_placement_table"
-    ON "data_placement" ("table");
-
+CREATE INDEX "column_placement_store"
+    ON "column_placement" ("store");
+CREATE INDEX "column_placement_table"
+    ON "column_placement" ("table");
+CREATE INDEX "column_placement_column"
+    ON "column_placement" ("column");
 
 -- ---------------------------------------------------------------
 
@@ -383,9 +365,14 @@ ALTER TABLE "store"
 
 
 --
--- data placement
+-- column placement
 --
-INSERT INTO "data_placement" ( "store", "table", "type" )
-VALUES ( 1, 0, 2 ),
-       ( 1, 1, 2 );
+INSERT INTO "column_placement" ( "store", "column", "table", "type", "physical_schema", "physical_table", "physical_column" )
+VALUES ( 1, 0, 0, 2, null, 'depts', 'deptno' ),
+    ( 1, 1, 0, 2, null, 'depts', 'name' ),
+    ( 1, 2, 1, 2, null, 'emps', 'empid' ),
+    ( 1, 3, 1, 2, null, 'emps', 'deptno' ),
+    ( 1, 4, 1, 2, null, 'emps', 'name' ),
+    ( 1, 5, 1, 2, null, 'emps', 'salary' ),
+    ( 1, 6, 1, 2, null, 'emps', 'commission' );
 

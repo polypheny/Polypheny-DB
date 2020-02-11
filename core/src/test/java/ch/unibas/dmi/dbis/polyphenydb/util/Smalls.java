@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- *  The MIT License (MIT)
- *
- *  Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a
- *  copy of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.util;
@@ -133,7 +122,7 @@ public class Smalls {
 
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "c", SqlTypeName.INTEGER ).build();
+                return typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build();
             }
         };
     }
@@ -216,10 +205,10 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 final RelDataTypeFactory.Builder builder = typeFactory.builder();
-                builder.add( "row_name", typeFactory.createJavaType( String.class ) );
+                builder.add( "row_name", null, typeFactory.createJavaType( String.class ) );
                 final RelDataType int_ = typeFactory.createJavaType( int.class );
                 for ( int i = 1; i <= ncol; i++ ) {
-                    builder.add( "c" + i, int_ );
+                    builder.add( "c" + i, null, int_ );
                 }
                 return builder.build();
             }
@@ -265,7 +254,7 @@ public class Smalls {
         return new ScannableTable() {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "N", SqlTypeName.BIGINT ).build();
+                return typeFactory.builder().add( "N", null, SqlTypeName.BIGINT ).build();
             }
 
 
@@ -347,7 +336,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", SqlTypeName.INTEGER )
+                        .add( "result", null, SqlTypeName.INTEGER )
                         .build();
             }
 
@@ -370,7 +359,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", SqlTypeName.INTEGER )
+                        .add( "result", null, SqlTypeName.INTEGER )
                         .build();
             }
 
@@ -387,14 +376,14 @@ public class Smalls {
 
     public static TranslatableTable view( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.INTEGER ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build(),
                 "values (1), (3), " + s, ImmutableList.of(), Arrays.asList( "view" ) );
     }
 
 
     public static TranslatableTable strView( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
                 "values (" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( s ) + ")",
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -404,7 +393,7 @@ public class Smalls {
         assertThat( RexLiteral.validConstant( o, Litmus.THROW ), is( true ) );
         assertThat( RexLiteral.validConstant( p, Litmus.THROW ), is( true ) );
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
                 "values " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( o.toString() ) + ", " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( p.toString() ),
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -1137,7 +1126,7 @@ public class Smalls {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "S", SqlTypeName.VARCHAR, 12 )
+                    .add( "S", null, SqlTypeName.VARCHAR, 12 )
                     .build();
         }
 

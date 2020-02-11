@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,32 +29,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -170,7 +159,8 @@ public abstract class SqlImplementor {
                 return false;
             }
         }
-        return i == inputRowType.getFieldCount() && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );
+        return i == inputRowType.getFieldCount()
+                && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );
     }
 
 
@@ -429,12 +419,24 @@ public abstract class SqlImplementor {
                 || ((SqlCall) node).getOperator() == SqlStdOperatorTable.AS
                 || ((SqlCall) node).getOperator() == SqlStdOperatorTable.VALUES)
                 : node;
-        return new SqlSelect( POS, SqlNodeList.EMPTY, null, node, null, null, null, SqlNodeList.EMPTY, null, null, null );
+        return new SqlSelect(
+                POS,
+                SqlNodeList.EMPTY,
+                null,
+                node,
+                null,
+                null,
+                null,
+                SqlNodeList.EMPTY,
+                null,
+                null,
+                null );
     }
 
 
     /**
-     * Context for translating a {@link RexNode} expression (within a {@link RelNode}) into a {@link SqlNode} expression (within a SQL parse tree).
+     * Context for translating a {@link RexNode} expression (within a {@link RelNode}) into a {@link SqlNode}
+     * expression (within a SQL parse tree).
      */
     public abstract static class Context {
 
@@ -864,8 +866,9 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Simple implementation of {@link Context} that cannot handle sub-queries or correlations. Because it is so simple, you do not need to create a {@link SqlImplementor} or {@link RelBuilder}
-     * to use it. It is a good way to convert a {@link RexNode} to SQL text.
+     * Simple implementation of {@link Context} that cannot handle sub-queries or correlations. Because it is so simple,
+     * you do not need to create a {@link SqlImplementor} or {@link RelBuilder} to use it. It is a good way to
+     * convert a {@link RexNode} to SQL text.
      */
     public static class SimpleContext extends Context {
 
@@ -887,7 +890,8 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Implementation of {@link Context} that has an enclosing {@link SqlImplementor} and can therefore do non-trivial expressions.
+     * Implementation of {@link Context} that has an enclosing {@link SqlImplementor} and can therefore
+     * do non-trivial expressions.
      */
     protected abstract class BaseContext extends Context {
 
@@ -957,7 +961,8 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Implementation of Context that precedes field references with their "table alias" based on the current sub-query's FROM clause.
+     * Implementation of Context that precedes field references with their "table alias" based on the current
+     * sub-query's FROM clause.
      */
     public class AliasContext extends BaseContext {
 
@@ -985,9 +990,15 @@ public abstract class SqlImplementor {
                     if ( mappedSqlNode != null ) {
                         return mappedSqlNode;
                     }
-                    return new SqlIdentifier( !qualified
-                            ? ImmutableList.of( field.getName() )
-                            : ImmutableList.of( alias.getKey(), field.getName() ), POS );
+                    String physicalColumnName = field.getName();
+                    if ( field.getPhysicalName() != null ) {
+                        physicalColumnName = field.getPhysicalName();
+                    }
+                    return new SqlIdentifier(
+                            !qualified
+                                    ? ImmutableList.of( physicalColumnName )
+                                    : ImmutableList.of( alias.getKey(), physicalColumnName ),
+                            POS );
                 }
                 ordinal -= fields.size();
             }
@@ -1048,12 +1059,15 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to implement the current relational expression by adding additional clauses to the SQL query.
+         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to
+         * implement the current relational expression by adding additional clauses to the SQL query.
          *
-         * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query. For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
+         * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query.
+         * For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
          * start a new SELECT that wraps the previous result.
          *
-         * When you have called {@link Builder#setSelect(SqlNodeList)}, {@link Builder#setWhere(SqlNode)} etc. call {@link Builder#result(SqlNode, Collection, RelNode, Map)} to fix the new query.
+         * When you have called {@link Builder#setSelect(SqlNodeList)}, {@link Builder#setWhere(SqlNode)} etc.
+         * call {@link Builder#result(SqlNode, Collection, RelNode, Map)} to fix the new query.
          *
          * @param rel Relational expression being implemented
          * @param clauses Clauses that will be generated to implement current relational expression
@@ -1070,7 +1084,9 @@ public abstract class SqlImplementor {
                     break;
                 }
             }
-            if ( rel instanceof LogicalAggregate && !dialect.supportsNestedAggregations() && hasNestedAggregations( (LogicalAggregate) rel ) ) {
+            if ( rel instanceof LogicalAggregate
+                    && !dialect.supportsNestedAggregations()
+                    && hasNestedAggregations( (LogicalAggregate) rel ) ) {
                 needNew = true;
             }
 
@@ -1150,7 +1166,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Returns a node that can be included in the FROM clause or a JOIN. It has an alias that is unique within the query. The alias is implicit if it can be derived using the usual rules (For example, "SELECT * FROM emp" is
+         * Returns a node that can be included in the FROM clause or a JOIN. It has an alias that is unique within the query.
+         * The alias is implicit if it can be derived using the usual rules (For example, "SELECT * FROM emp" is
          * equivalent to "SELECT * FROM emp AS emp".)
          */
         public SqlNode asFrom() {
@@ -1181,7 +1198,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT) and DML operators (INSERT, UPDATE, DELETE, MERGE) remain as is.
+         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT)
+         * and DML operators (INSERT, UPDATE, DELETE, MERGE) remain as is.
          */
         public SqlNode asStatement() {
             switch ( node.getKind() ) {
@@ -1216,7 +1234,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Returns a context that always qualifies identifiers. Useful if the Context deals with just one arm of a join, yet we wish to generate a join condition that qualifies column names to disambiguate them.
+         * Returns a context that always qualifies identifiers. Useful if the Context deals with just one arm
+         * of a join, yet we wish to generate a join condition that qualifies column names to disambiguate them.
          */
         public Context qualifiedContext() {
             return aliasContext( aliases, true );

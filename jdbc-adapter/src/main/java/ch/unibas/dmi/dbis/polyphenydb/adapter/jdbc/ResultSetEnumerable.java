@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
@@ -141,7 +130,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             };
 
 
-    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher preparedStatementEnricher ) {
+    private ResultSetEnumerable(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            PreparedStatementEnricher preparedStatementEnricher ) {
         this.connectionHandler = connectionHandler;
         this.sql = sql;
         this.rowBuilderFactory = rowBuilderFactory;
@@ -149,7 +142,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private ResultSetEnumerable( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+    private ResultSetEnumerable(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
         this( connectionHandler, sql, rowBuilderFactory, null );
     }
 
@@ -157,7 +153,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable.
      */
-    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql ) {
+    public static ResultSetEnumerable<Object> of(
+            ConnectionHandler connectionHandler,
+            String sql ) {
         return of( connectionHandler, sql, AUTO_ROW_BUILDER_FACTORY );
     }
 
@@ -165,25 +163,37 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable that retrieves columns as specific Java types.
      */
-    public static ResultSetEnumerable<Object> of( ConnectionHandler connectionHandler, String sql, Primitive[] primitives ) {
+    public static ResultSetEnumerable<Object> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Primitive[] primitives ) {
         return of( connectionHandler, sql, primitiveRowBuilderFactory( primitives ) );
     }
 
 
     /**
-     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert JDBC column values into rows.
+     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
+     * JDBC column values into rows.
      */
-    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+    public static <T> ResultSetEnumerable<T> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
         return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory );
     }
 
 
     /**
-     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert JDBC column values into rows.
+     * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
+     * JDBC column values into rows.
      *
      * It uses a {@link PreparedStatement} for computing the query result, and that means that it can bind parameters.
      */
-    public static <T> ResultSetEnumerable<T> of( ConnectionHandler connectionHandler, String sql, Function1<ResultSet, Function0<T>> rowBuilderFactory, PreparedStatementEnricher consumer ) {
+    public static <T> ResultSetEnumerable<T> of(
+            ConnectionHandler connectionHandler,
+            String sql,
+            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            PreparedStatementEnricher consumer ) {
         return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory, consumer );
     }
 
@@ -216,7 +226,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
 
     /**
-     * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx} method based on the type of the value.
+     * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
+     * method based on the type of the value.
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value ) throws SQLException {
         if ( value == null ) {
@@ -388,6 +399,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             }
         }
     }
+
 
     /**
      * Implementation of {@link Enumerator} that reads from a {@link ResultSet}.

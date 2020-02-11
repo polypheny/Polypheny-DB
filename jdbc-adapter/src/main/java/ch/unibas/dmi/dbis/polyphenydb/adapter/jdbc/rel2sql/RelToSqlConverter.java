@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,32 +29,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql;
+package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
@@ -278,8 +267,12 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      * @see #dispatch
      */
     public Result visit( TableScan e ) {
-        final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
-        return result( identifier, ImmutableList.of( Clause.FROM ), e, null );
+        //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
+        return result(
+                new SqlIdentifier( e.getTable().getQualifiedName(), SqlParserPos.ZERO ),
+                ImmutableList.of( Clause.FROM ),
+                e,
+                null );
     }
 
 
@@ -456,40 +449,39 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
         switch ( modify.getOperation() ) {
             case INSERT: {
-                // Convert the input to a SELECT query or keep as VALUES. Not all
-                // dialects support naked VALUES, but all support VALUES inside INSERT.
+                // Convert the input to a SELECT query or keep as VALUES. Not all dialects support naked VALUES,
+                // but all support VALUES inside INSERT.
                 final SqlNode sqlSource = visitChild( 0, modify.getInput() ).asQueryOrValues();
-
-                final SqlInsert sqlInsert = new SqlInsert( POS, SqlNodeList.EMPTY, sqlTargetTable, sqlSource, identifierList( modify.getInput().getRowType().getFieldNames() ) );
-
+                final SqlInsert sqlInsert = new SqlInsert(
+                        POS,
+                        SqlNodeList.EMPTY,
+                        sqlTargetTable,
+                        sqlSource,
+                        physicalIdentifierList(
+                                modify.getTable().getQualifiedName(),
+                                modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
             case UPDATE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlUpdate sqlUpdate =
-                        new SqlUpdate(
-                                POS,
-                                sqlTargetTable,
-                                identifierList( modify.getUpdateColumnList() ),
-                                exprList( context, modify.getSourceExpressionList() ),
-                                ((SqlSelect) input.node).getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlUpdate sqlUpdate = new SqlUpdate(
+                        POS,
+                        sqlTargetTable,
+                        physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
+                        exprList( context, modify.getSourceExpressionList() ),
+                        ((SqlSelect) input.node).getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlUpdate, input.clauses, modify, null );
             }
             case DELETE: {
                 final Result input = visitChild( 0, modify.getInput() );
-
-                final SqlDelete sqlDelete =
-                        new SqlDelete(
-                                POS,
-                                sqlTargetTable,
-                                input.asSelect().getWhere(),
-                                input.asSelect(),
-                                null );
-
+                final SqlDelete sqlDelete = new SqlDelete(
+                        POS,
+                        sqlTargetTable,
+                        input.asSelect().getWhere(),
+                        input.asSelect(),
+                        null );
                 return result( sqlDelete, input.clauses, modify, null );
             }
             case MERGE:
@@ -512,6 +504,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     private SqlNodeList identifierList( List<String> names ) {
         return new SqlNodeList( Lists.transform( names, name -> new SqlIdentifier( name, POS ) ), POS );
+    }
+
+
+    /**
+     * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
+     */
+    private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
+        return new SqlNodeList( Lists.transform( columnNames, columnName -> getPhysicalColumnName( tableName, columnName ) ), POS );
     }
 
 
@@ -625,7 +625,11 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
     @Override
     public void addSelect( List<SqlNode> selectList, SqlNode node, RelDataType rowType ) {
-        String name = rowType.getFieldNames().get( selectList.size() );
+        //String name = rowType.getFieldNames().get( selectList.size() );
+        String name = rowType.getFieldList().get( selectList.size() ).getPhysicalName();
+        if ( name == null ) {
+            name = rowType.getFieldList().get( selectList.size() ).getName();
+        }
         String alias = SqlValidatorUtil.getAlias( node, -1 );
         final String lowerName = name.toLowerCase( Locale.ROOT );
         if ( lowerName.startsWith( "expr$" ) ) {
@@ -645,7 +649,10 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( List<String> qualifiedName );
+    public abstract SqlIdentifier getPhysicalTableName( List<String> tableName );
+
+
+    public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
 
 
     /**
@@ -675,8 +682,14 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( List<String> qualifiedName ) {
-            return new SqlIdentifier( qualifiedName, POS );
+        public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+            return new SqlIdentifier( tableNames, POS );
+        }
+
+
+        @Override
+        public SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName ) {
+            return new SqlIdentifier( columnName, POS );
         }
     }
 

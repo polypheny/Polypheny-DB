@@ -1,32 +1,22 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
 import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
 import ch.unibas.dmi.dbis.polyphenydb.Store;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
@@ -40,8 +30,6 @@ import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
@@ -61,7 +49,7 @@ public class CassandraStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Cassandra";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter for querying Cassandra.";
+    public static final String DESCRIPTION = "Apache Cassandra is an open-source key-value store designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),

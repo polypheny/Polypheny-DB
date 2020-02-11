@@ -1,26 +1,17 @@
 /*
- * The MIT License (MIT)
+ * Copyright 2019-2020 The Polypheny Project
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.sql.ddl.altertable;
@@ -33,8 +24,8 @@ import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
 import ch.unibas.dmi.dbis.polyphenydb.Transaction;
 import ch.unibas.dmi.dbis.polyphenydb.UnknownTypeException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.Collation;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.PlacementType;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDataPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownCollationException;
@@ -170,14 +161,20 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
                 transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
             }
+
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO MV: Adding the column on all stares which have already a placement for columns of this table. We need a more sophisticated approach here.
+            //
+
+            // Add column on underlying data stores
+            for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
+                transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
+            }
         } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
 
-        // Add column on underlying data stores
-        for ( CatalogDataPlacement dp : catalogTable.getPlacements() ) {
-            StoreManager.getInstance().getStore( dp.storeId ).addColumn( context, catalogTable, addedColumn );
-        }
     }
 
 }

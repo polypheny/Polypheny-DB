@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,35 +29,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
 
 
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
+import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
 import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
@@ -93,15 +83,26 @@ public class CsvSchema extends AbstractSchema {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ) ) {
+            CatalogColumn catalogColumn = null;
+            // TODO MV: This is not efficient
+            // Get catalog column
+            for ( CatalogColumn c : combinedTable.getColumns() ) {
+                if ( c.id == placement.columnId ) {
+                    catalogColumn = c;
+                }
+            }
+            if ( catalogColumn == null ) {
+                throw new RuntimeException( "Column not found." ); // This should not happen
+            }
             SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
 
-        Source source = Sources.of( new File( directoryFile, combinedTable.getTable().name + ".csv" ) );
+        // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
+        Source source = Sources.of( new File( directoryFile, combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv" ) );
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
         tableMap.put( combinedTable.getTable().name, table );
         return table;

@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,29 +29,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
@@ -142,7 +131,8 @@ public final class JdbcUtils {
 
 
     /**
-     * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type is a primitive {@code xxx}, and returns an array of objects for each row.
+     * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type
+     * is a primitive {@code xxx}, and returns an array of objects for each row.
      */
     static class ObjectArrayRowBuilder implements Function0<Object[]> {
 
@@ -163,7 +153,10 @@ public final class JdbcUtils {
         public static Function1<ResultSet, Function0<Object[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
             return resultSet -> {
                 try {
-                    return new ObjectArrayRowBuilder( resultSet, Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ), Ints.toArray( Pair.right( list ) ) );
+                    return new ObjectArrayRowBuilder(
+                            resultSet,
+                            Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
+                            Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
                     throw new RuntimeException( e );
                 }
@@ -191,7 +184,8 @@ public final class JdbcUtils {
          * @param i Ordinal of column (1-based, per JDBC)
          */
         private Object value( int i ) throws SQLException {
-            // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar should prevent this, but does not. So we shift explicitly.
+            // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
+            // should prevent this, but does not. So we shift explicitly.
             switch ( types[i] ) {
                 case Types.TIMESTAMP:
                     return shift( resultSet.getTimestamp( i + 1 ) );
@@ -238,7 +232,8 @@ public final class JdbcUtils {
     /**
      * Ensures that if two data sources have the same definition, they will use the same object.
      *
-     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source, we have to open a connection to find out what database product and version it is.
+     * This in turn makes it easier to cache {@link SqlDialect} objects. Otherwise, each time we see a new data source,
+     * we have to open a connection to find out what database product and version it is.
      */
     public static class DataSourcePool {
 
@@ -259,7 +254,8 @@ public final class JdbcUtils {
 
 
         public DataSource get( String url, String driverClassName, String username, String password ) {
-            // Get data source objects from a cache, so that we don't have to sniff out what kind of database they are quite as often.
+            // Get data source objects from a cache, so that we don't have to sniff out what kind of
+            // database they are quite as often.
             final List<String> key = ImmutableNullableList.of( url, username, password, driverClassName );
             return cache.getUnchecked( key );
         }

@@ -1,7 +1,19 @@
 /*
- * This file is based on code taken from the Apache Calcite project, which was released under the Apache License.
- * The changes are released under the MIT license.
+ * Copyright 2019-2020 The Polypheny Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,34 +29,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
 
 
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor;
+import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
 import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
@@ -79,8 +70,6 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
 import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
 import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rel2sql.SqlImplementor.Result;
 import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
 import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
@@ -149,7 +138,14 @@ public class JdbcRules {
 
         protected final JdbcConvention out;
 
-        <R extends RelNode> JdbcConverterRule( Class<R> clazz, Predicate<? super R> predicate, RelTrait in, JdbcConvention out, RelBuilderFactory relBuilderFactory, String description ) {
+
+        <R extends RelNode> JdbcConverterRule(
+                Class<R> clazz,
+                Predicate<? super R> predicate,
+                RelTrait in,
+                JdbcConvention out,
+                RelBuilderFactory relBuilderFactory,
+                String description ) {
             super( clazz, predicate, in, out, relBuilderFactory, description );
             this.out = out;
         }
@@ -166,7 +162,13 @@ public class JdbcRules {
          * Creates a JdbcJoinRule.
          */
         public JdbcJoinRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Join.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcJoinRule" );
+            super(
+                    Join.class,
+                    (Predicate<RelNode>) r -> true,
+                    Convention.NONE,
+                    out,
+                    relBuilderFactory,
+                    "JdbcJoinRule" );
         }
 
 
@@ -199,7 +201,14 @@ public class JdbcRules {
                 return null;
             }
             try {
-                return new JdbcJoin( join.getCluster(), join.getTraitSet().replace( out ), newInputs.get( 0 ), newInputs.get( 1 ), join.getCondition(), join.getVariablesSet(), join.getJoinType() );
+                return new JdbcJoin(
+                        join.getCluster(),
+                        join.getTraitSet().replace( out ),
+                        newInputs.get( 0 ),
+                        newInputs.get( 1 ),
+                        join.getCondition(),
+                        join.getVariablesSet(),
+                        join.getJoinType() );
             } catch ( InvalidRelException e ) {
                 LOGGER.debug( e.toString() );
                 return null;
@@ -256,7 +265,14 @@ public class JdbcRules {
         /**
          * Creates a JdbcJoin.
          */
-        public JdbcJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
+        public JdbcJoin(
+                RelOptCluster cluster,
+                RelTraitSet traitSet,
+                RelNode left,
+                RelNode right,
+                RexNode condition,
+                Set<CorrelationId> variablesSet,
+                JoinRelType joinType ) throws InvalidRelException {
             super( cluster, traitSet, left, right, condition, variablesSet, joinType );
         }
 
@@ -318,7 +334,11 @@ public class JdbcRules {
                 return null;
             }
 
-            return new JdbcCalc( rel.getCluster(), rel.getTraitSet().replace( out ), convert( calc.getInput(), calc.getTraitSet().replace( out ) ), calc.getProgram() );
+            return new JdbcCalc(
+                    rel.getCluster(),
+                    rel.getTraitSet().replace( out ),
+                    convert( calc.getInput(), calc.getTraitSet().replace( out ) ),
+                    calc.getProgram() );
         }
     }
 
@@ -509,7 +529,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcAggregate}.
+     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcAggregate}.
      */
     public static class JdbcAggregateRule extends JdbcConverterRule {
 
@@ -531,7 +552,14 @@ public class JdbcRules {
             }
             final RelTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
-                return new JdbcAggregate( rel.getCluster(), traitSet, convert( agg.getInput(), out ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
+                return new JdbcAggregate(
+                        rel.getCluster(),
+                        traitSet,
+                        convert( agg.getInput(), out ),
+                        agg.indicator,
+                        agg.getGroupSet(),
+                        agg.getGroupSets(),
+                        agg.getAggCallList() );
             } catch ( InvalidRelException e ) {
                 LOGGER.debug( e.toString() );
                 return null;
@@ -576,7 +604,13 @@ public class JdbcRules {
 
 
         @Override
-        public JdbcAggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        public JdbcAggregate copy(
+                RelTraitSet traitSet,
+                RelNode input,
+                boolean indicator,
+                ImmutableBitSet groupSet,
+                List<ImmutableBitSet> groupSets,
+                List<AggregateCall> aggCalls ) {
             try {
                 return new JdbcAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
             } catch ( InvalidRelException e ) {
@@ -661,7 +695,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcUnion}.
+     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcUnion}.
      */
     public static class JdbcUnionRule extends JdbcConverterRule {
 
@@ -712,7 +747,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcIntersect}.
+     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} to a
+     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcIntersect}.
      */
     public static class JdbcIntersectRule extends JdbcConverterRule {
 
@@ -852,7 +888,8 @@ public class JdbcRules {
         private final Expression expression;
 
 
-        public JdbcTableModify( RelOptCluster cluster,
+        public JdbcTableModify(
+                RelOptCluster cluster,
                 RelTraitSet traitSet,
                 RelOptTable table,
                 Prepare.CatalogReader catalogReader,
@@ -883,7 +920,16 @@ public class JdbcRules {
 
         @Override
         public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-            return new JdbcTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), AbstractRelNode.sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+            return new JdbcTableModify(
+                    getCluster(),
+                    traitSet,
+                    getTable(),
+                    getCatalogReader(),
+                    AbstractRelNode.sole( inputs ),
+                    getOperation(),
+                    getUpdateColumnList(),
+                    getSourceExpressionList(),
+                    isFlattened() );
         }
 
 
