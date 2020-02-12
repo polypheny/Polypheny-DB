@@ -151,7 +151,7 @@ task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
     inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/ch/unibas/dmi/dbis/polyphenydb/sql/parser/impl")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/sql/parser/impl")
 }
 task generateJdbcVersionProperties(type: Copy) {
     from "src/main/resources/version"

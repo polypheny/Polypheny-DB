@@ -108,7 +108,7 @@ task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: 'false', lookahead: '2']
     inputDirectory = file('src/main/codegen/javacc')
-    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/ch/unibas/dmi/dbis/polyphenydb/piglet/parser')
+    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/piglet/parser')
 }
 compileJava {
     dependsOn("generateParser")
