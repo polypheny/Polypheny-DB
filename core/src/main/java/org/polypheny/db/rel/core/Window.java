@@ -31,35 +31,35 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexChecker;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSlot;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexWindowBound;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexChecker;
+import org.polypheny.db.rex.RexFieldCollation;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSlot;
+import org.polypheny.db.rex.RexWindowBound;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
@@ -73,9 +73,9 @@ import org.apache.calcite.linq4j.Ord;
  * A Window can handle several window aggregate functions, over several partitions, with pre- and post-expressions, and an optional post-filter.
  * Each of the partitions is defined by a partition key (zero or more columns) and a range (logical or physical). The partitions expect the data to be sorted correctly on input to the relational expression.
  *
- * Each {@link Window.Group} has a set of {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexOver} objects.
+ * Each {@link Window.Group} has a set of {@link org.polypheny.db.rex.RexOver} objects.
  *
- * Created by {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToWindowRule}.
+ * Created by {@link org.polypheny.db.rel.rules.ProjectToWindowRule}.
  */
 public abstract class Window extends SingleRel {
 
@@ -240,7 +240,7 @@ public abstract class Window extends SingleRel {
         private final String digest;
 
         /**
-         * List of {@link Window.RexWinAggCall} objects, each of which is a call to a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction}.
+         * List of {@link Window.RexWinAggCall} objects, each of which is a call to a {@link org.polypheny.db.sql.SqlAggFunction}.
          */
         public final ImmutableList<RexWinAggCall> aggCalls;
 
@@ -310,9 +310,9 @@ public abstract class Window extends SingleRel {
          * Returns if the window is guaranteed to have rows. This is useful to refine data type of window aggregates. For instance sum(non-nullable) over (empty window) is NULL.
          *
          * @return true when the window is non-empty
-         * @see ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow#isAlwaysNonEmpty()
-         * @see ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding#getGroupCount()
-         * @see SqlValidatorImpl#resolveWindow(ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode, ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope, boolean)
+         * @see org.polypheny.db.sql.SqlWindow#isAlwaysNonEmpty()
+         * @see org.polypheny.db.sql.SqlOperatorBinding#getGroupCount()
+         * @see SqlValidatorImpl#resolveWindow(org.polypheny.db.sql.SqlNode, org.polypheny.db.sql.validate.SqlValidatorScope, boolean)
          */
         public boolean isAlwaysNonEmpty() {
             int lowerKey = lowerBound.getOrderKey();
@@ -357,7 +357,7 @@ public abstract class Window extends SingleRel {
      *
      * Belongs to a {@link Window.Group}.
      *
-     * It's a bastard son of a {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexCall}; similar enough that it gets visited by a {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitor}, but it also has some extra data members.
+     * It's a bastard son of a {@link org.polypheny.db.rex.RexCall}; similar enough that it gets visited by a {@link org.polypheny.db.rex.RexVisitor}, but it also has some extra data members.
      */
     public static class RexWinAggCall extends RexCall {
 

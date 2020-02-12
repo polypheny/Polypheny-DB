@@ -31,58 +31,58 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.EquiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinInfo;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexOver;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexRangeRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSubQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlRowOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.EquiJoin;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinInfo;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexUnknownAs;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlRowOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.ArrayDeque;
@@ -110,12 +110,12 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
     public static final Pattern EXCLUSION_PATTERN = Pattern.compile( "Reduce(Expressions|Values)Rule.*" );
 
     /**
-     * Singleton rule that reduces constants inside a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter}.
+     * Singleton rule that reduces constants inside a {@link org.polypheny.db.rel.logical.LogicalFilter}.
      */
     public static final ReduceExpressionsRule FILTER_INSTANCE = new FilterReduceExpressionsRule( LogicalFilter.class, true, RelFactories.LOGICAL_BUILDER );
 
     /**
-     * Singleton rule that reduces constants inside a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}.
+     * Singleton rule that reduces constants inside a {@link org.polypheny.db.rel.logical.LogicalProject}.
      */
     public static final ReduceExpressionsRule PROJECT_INSTANCE = new ProjectReduceExpressionsRule( LogicalProject.class, true, RelFactories.LOGICAL_BUILDER );
 
@@ -134,7 +134,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
 
     /**
      * Rule that reduces constants inside a {@link Filter}.
-     * If the condition is a constant, the filter is removed (if TRUE) or replaced with an empty {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values} (if FALSE or NULL).
+     * If the condition is a constant, the filter is removed (if TRUE) or replaced with an empty {@link org.polypheny.db.rel.core.Values} (if FALSE or NULL).
      */
     public static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
 
@@ -192,7 +192,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
          * For static schema systems, a filter that is always false or null can be replaced by a values operator that produces no rows, as the schema information can just be taken from the input Rel.
          * In dynamic schema environments, the filter might have an unknown input type, in these cases they must define a system specific alternative to a Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
          *
-         * The default implementation of this method is to call {@link RelBuilder#empty}, which for the static schema will be optimized to an empty {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values}.
+         * The default implementation of this method is to call {@link RelBuilder#empty}, which for the static schema will be optimized to an empty {@link org.polypheny.db.rel.core.Values}.
          *
          * @param input rel to replace, assumes caller has already determined equivalence to Values operation for 0 records or a false filter.
          * @return equivalent but less expensive replacement rel
@@ -373,7 +373,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
          * For static schema systems, a filter that is always false or null can be replaced by a values operator that produces no rows, as the schema information can just be taken from the input Rel. In dynamic schema
          * environments, the filter might have an unknown input type, in these cases they must define a system specific alternative to a Values operator, such as inserting a limit 0 instead of a filter on top of the original input.
          *
-         * The default implementation of this method is to call {@link RelBuilder#empty}, which for the static schema will be optimized to an empty {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values}.
+         * The default implementation of this method is to call {@link RelBuilder#empty}, which for the static schema will be optimized to an empty {@link org.polypheny.db.rel.core.Values}.
          *
          * @param input rel to replace, assumes caller has already determined equivalence to Values operation for 0 records or a false filter.
          * @return equivalent but less expensive replacement rel

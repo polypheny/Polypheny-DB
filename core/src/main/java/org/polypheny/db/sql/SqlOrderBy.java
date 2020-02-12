@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.util.ImmutableNullableList;
 import java.util.List;
 
 
 /**
  * Parse tree node that represents an {@code ORDER BY} on a query other than a {@code SELECT} (e.g. {@code VALUES} or {@code UNION}).
  *
- * It is a purely syntactic operator, and is eliminated by {@code ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
+ * It is a purely syntactic operator, and is eliminated by {@code org.polypheny.db.sql.validate.SqlValidatorImpl#performUnconditionalRewrites} and replaced with the ORDER_OPERAND of SqlSelect.
  */
 public class SqlOrderBy extends SqlCall {
 

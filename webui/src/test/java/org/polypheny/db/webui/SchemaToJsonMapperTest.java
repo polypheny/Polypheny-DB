@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDefaultValue;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.Assert;

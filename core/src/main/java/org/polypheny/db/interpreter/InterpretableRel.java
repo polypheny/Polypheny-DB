@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.rel.RelNode;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;

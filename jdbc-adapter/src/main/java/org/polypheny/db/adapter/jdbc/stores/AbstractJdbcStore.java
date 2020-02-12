@@ -14,36 +14,36 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
+package org.polypheny.db.adapter.jdbc.stores;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Store;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcSchema;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownColumnException;
-import ch.unibas.dmi.dbis.polyphenydb.information.Information;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.PolyXid;
+import org.polypheny.db.Store;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGraph;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;

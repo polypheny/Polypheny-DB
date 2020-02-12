@@ -31,35 +31,35 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
 import static org.junit.Assert.assertTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.enumerable.EnumerableRel;
+import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.List;

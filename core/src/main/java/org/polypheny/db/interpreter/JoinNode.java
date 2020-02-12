@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
+import org.polypheny.db.rel.core.Join;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

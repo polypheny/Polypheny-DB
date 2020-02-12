@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package org.polypheny.db.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules.CassandraRules;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import java.util.ArrayList;
 import java.util.List;

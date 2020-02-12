@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptPlanner;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 

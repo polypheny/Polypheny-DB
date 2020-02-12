@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import org.polypheny.db.sql.SqlOperator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,7 +88,7 @@ public class RexSqlReflectiveConvertletTable implements RexSqlConvertletTable {
     /**
      * Registers a convertlet for a given operator instance
      *
-     * @param op Operator instance, say {@link ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable#MINUS}
+     * @param op Operator instance, say {@link org.polypheny.db.sql.fun.SqlStdOperatorTable#MINUS}
      * @param convertlet Convertlet
      */
     protected void registerOp( SqlOperator op, RexSqlConvertlet convertlet ) {

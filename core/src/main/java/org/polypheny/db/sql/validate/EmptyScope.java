@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.RelOptTableImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlDynamicParam;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;

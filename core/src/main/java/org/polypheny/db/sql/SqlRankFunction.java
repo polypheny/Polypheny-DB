@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.util.Optionality;
 
 
 /**

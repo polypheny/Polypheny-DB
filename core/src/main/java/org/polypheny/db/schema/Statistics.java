@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

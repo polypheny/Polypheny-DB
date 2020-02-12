@@ -31,57 +31,57 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql2rel;
+package org.polypheny.db.sql2rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexPermuteInputsShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectiveVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.IntPair;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
+import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeImpl;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexPermuteInputsShuttle;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.sql.SqlExplainFormat;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ReflectUtil;
+import org.polypheny.db.util.ReflectiveVisitor;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.IntPair;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.MappingType;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
@@ -286,7 +286,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Visit method, per {@link ch.unibas.dmi.dbis.polyphenydb.util.ReflectiveVisitor}.
+     * Visit method, per {@link org.polypheny.db.util.ReflectiveVisitor}.
      *
      * This method is invoked reflectively, so there may not be any apparent calls to it. The class (or derived classes) may contain overloads of this method with more specific types for the {@code rel} parameter.
      *
@@ -304,7 +304,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalProject}.
      */
     public TrimResult trimFields( Project project, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final RelDataType rowType = project.getRowType();
@@ -382,7 +382,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalFilter}.
      */
     public TrimResult trimFields( Filter filter, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final RelDataType rowType = filter.getRowType();
@@ -468,7 +468,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalJoin}.
      */
     public TrimResult trimFields( Join join, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getRowType().getFieldCount() + join.getRight().getRowType().getFieldCount();
@@ -588,7 +588,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp} (including UNION and UNION ALL).
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.core.SetOp} (including UNION and UNION ALL).
      */
     public TrimResult trimFields( SetOp setOp, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final RelDataType rowType = setOp.getRowType();
@@ -653,7 +653,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalAggregate}.
      */
     public TrimResult trimFields( Aggregate aggregate, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         // Fields:
@@ -759,7 +759,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalTableModify}.
      */
     public TrimResult trimFields( LogicalTableModify modifier, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         // Ignore what consumer wants. We always project all columns.
@@ -799,7 +799,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableFunctionScan}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalTableFunctionScan}.
      */
     public TrimResult trimFields( LogicalTableFunctionScan tabFun, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final RelDataType rowType = tabFun.getRowType();
@@ -836,7 +836,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues}.
+     * Variant of {@link #trimFields(RelNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.rel.logical.LogicalValues}.
      */
     public TrimResult trimFields( LogicalValues values, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields ) {
         final RelDataType rowType = values.getRowType();
@@ -917,7 +917,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
      *
      * The mapping describes where to find the columns wanted by the parent of the current relational expression.
      *
-     * The mapping is a {@link ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.SourceMapping}, which means that no column can be used more than once, and some columns are not used.
+     * The mapping is a {@link org.polypheny.db.util.mapping.Mappings.SourceMapping}, which means that no column can be used more than once, and some columns are not used.
      * {@code columnsUsed.getSource(i)} returns the source of the i'th output field.
      *
      * For example, consider the mapping for a relational expression that has 4 output columns but only two are being used. The mapping {2 &rarr; 1, 3 &rarr; 0} would give the following behavior:

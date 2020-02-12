@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.ReflectiveSqlOperatorTable;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.sql.type.SqlTypeTransforms;
+import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.function.Predicate;
 
 

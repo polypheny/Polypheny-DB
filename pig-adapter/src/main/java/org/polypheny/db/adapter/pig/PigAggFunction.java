@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import org.polypheny.db.sql.SqlKind;
 
 
 /**

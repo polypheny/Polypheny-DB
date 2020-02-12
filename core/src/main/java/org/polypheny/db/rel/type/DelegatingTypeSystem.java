@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem} that sends all methods to an underlying object.
+ * Implementation of {@link org.polypheny.db.rel.type.RelDataTypeSystem} that sends all methods to an underlying object.
  */
 public class DelegatingTypeSystem implements RelDataTypeSystem {
 

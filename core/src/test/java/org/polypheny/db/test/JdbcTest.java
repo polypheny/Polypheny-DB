@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableView;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableView;
+import org.polypheny.db.schema.impl.AbstractTable;
 import java.util.List;
 
 

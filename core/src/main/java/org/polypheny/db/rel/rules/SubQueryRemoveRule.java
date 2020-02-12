@@ -31,38 +31,38 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.LogicVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSubQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlQuantifyOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.LogicVisitor;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.fun.SqlQuantifyOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql2rel.RelDecorrelator;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
@@ -117,7 +117,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
 
 
     /**
-     * Rewrites a scalar sub-query into an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate}.
+     * Rewrites a scalar sub-query into an {@link org.polypheny.db.rel.core.Aggregate}.
      *
      * @param e IN sub-query to rewrite
      * @param variablesSet A set of variables used by a relational expression of the specified RexSubQuery
@@ -581,7 +581,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
 
 
     /**
-     * Shuttle that replaces occurrences of a given {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexSubQuery} with a replacement expression.
+     * Shuttle that replaces occurrences of a given {@link org.polypheny.db.rex.RexSubQuery} with a replacement expression.
      */
     private static class ReplaceSubQueryShuttle extends RexShuttle {
 

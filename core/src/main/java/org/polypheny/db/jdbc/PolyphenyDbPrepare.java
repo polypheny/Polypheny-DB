@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.CyclicDefinitionException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.validate.CyclicDefinitionException;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.util.ImmutableIntList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.InvocationTargetException;
@@ -151,7 +151,7 @@ public interface PolyphenyDbPrepare {
 
         private static SparkHandler createHandler() {
             try {
-                final Class<?> clazz = Class.forName( "ch.unibas.dmi.dbis.polyphenydb.adapter.spark.SparkHandlerImpl" );
+                final Class<?> clazz = Class.forName( "org.polypheny.db.adapter.spark.SparkHandlerImpl" );
                 Method method = clazz.getMethod( "instance" );
                 return (PolyphenyDbPrepare.SparkHandler) method.invoke( null );
             } catch ( ClassNotFoundException e ) {

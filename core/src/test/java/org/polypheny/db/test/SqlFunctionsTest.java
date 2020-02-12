@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.addMonths;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.charLength;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.concat;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.greater;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.initcap;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.lesser;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.lower;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.ltrim;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.rtrim;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.subtractMonths;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.trim;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.upper;
+import static org.polypheny.db.runtime.SqlFunctions.addMonths;
+import static org.polypheny.db.runtime.SqlFunctions.charLength;
+import static org.polypheny.db.runtime.SqlFunctions.concat;
+import static org.polypheny.db.runtime.SqlFunctions.greater;
+import static org.polypheny.db.runtime.SqlFunctions.initcap;
+import static org.polypheny.db.runtime.SqlFunctions.lesser;
+import static org.polypheny.db.runtime.SqlFunctions.lower;
+import static org.polypheny.db.runtime.SqlFunctions.ltrim;
+import static org.polypheny.db.runtime.SqlFunctions.rtrim;
+import static org.polypheny.db.runtime.SqlFunctions.subtractMonths;
+import static org.polypheny.db.runtime.SqlFunctions.trim;
+import static org.polypheny.db.runtime.SqlFunctions.upper;
 import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -56,9 +56,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Utilities;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;

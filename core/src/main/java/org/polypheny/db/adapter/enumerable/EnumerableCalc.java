@@ -31,29 +31,29 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.metadata.RelMdCollation;
+import org.polypheny.db.rel.metadata.RelMdDistribution;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;

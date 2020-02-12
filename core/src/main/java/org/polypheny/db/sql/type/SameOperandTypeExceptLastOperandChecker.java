@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.util.Static;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;

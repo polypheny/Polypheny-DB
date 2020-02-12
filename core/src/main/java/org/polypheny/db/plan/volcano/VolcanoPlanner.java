@@ -31,48 +31,48 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.AbstractRelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.Converter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.JaninoRelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateJoinTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateProjectMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinAssociateRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinCommuteRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SemiJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionToDistinctRule;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.SaffronProperties;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptCostFactory;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.convert.Converter;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.metadata.JaninoRelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.rules.AggregateJoinTransposeRule;
+import org.polypheny.db.rel.rules.AggregateProjectMergeRule;
+import org.polypheny.db.rel.rules.AggregateRemoveRule;
+import org.polypheny.db.rel.rules.CalcRemoveRule;
+import org.polypheny.db.rel.rules.FilterJoinRule;
+import org.polypheny.db.rel.rules.JoinAssociateRule;
+import org.polypheny.db.rel.rules.JoinCommuteRule;
+import org.polypheny.db.rel.rules.ProjectRemoveRule;
+import org.polypheny.db.rel.rules.SemiJoinRule;
+import org.polypheny.db.rel.rules.SortRemoveRule;
+import org.polypheny.db.rel.rules.UnionToDistinctRule;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.LinkedListMultimap;
@@ -478,7 +478,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     /**
      * Finds the most efficient expression to implement the query given via
-     * {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#setRoot(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode)}.
+     * {@link org.polypheny.db.plan.RelOptPlanner#setRoot(org.polypheny.db.rel.RelNode)}.
      *
      * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
      * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
@@ -645,7 +645,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Helper for {@link #provenance(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode)}.
+     * Helper for {@link #provenance(org.polypheny.db.rel.RelNode)}.
      */
     private void provenanceRecurse( PrintWriter pw, RelNode node, int i, Set<RelNode> visited ) {
         Spaces.append( pw, i * 2 );
@@ -1580,7 +1580,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     /**
      * Sets whether this planner is locked. A locked planner does not accept new rules.
-     * {@link #addRule(ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule)} will do nothing and return false.
+     * {@link #addRule(org.polypheny.db.plan.RelOptRule)} will do nothing and return false.
      *
      * @param locked Whether planner is locked
      */

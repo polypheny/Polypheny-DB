@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
 /**

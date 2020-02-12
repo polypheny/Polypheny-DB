@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rel.RelNode;
 import java.util.ArrayList;
 import java.util.List;
 

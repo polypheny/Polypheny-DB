@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import java.util.List;
 
 

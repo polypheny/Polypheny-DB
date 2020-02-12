@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.JavaToSqlTypeConversionRules;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.Util;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;

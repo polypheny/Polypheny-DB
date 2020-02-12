@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
 import java.util.Arrays;

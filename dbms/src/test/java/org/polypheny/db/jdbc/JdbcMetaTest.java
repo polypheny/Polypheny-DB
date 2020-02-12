@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.TestHelper;
-import ch.unibas.dmi.dbis.polyphenydb.TestHelper.JdbcConnection;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;

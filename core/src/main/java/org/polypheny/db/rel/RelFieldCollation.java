@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
 import java.util.Objects;
 
 

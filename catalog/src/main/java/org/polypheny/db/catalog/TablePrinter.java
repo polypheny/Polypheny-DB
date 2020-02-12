@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package org.polypheny.db.catalog;
 
 
 import java.sql.ResultSet;

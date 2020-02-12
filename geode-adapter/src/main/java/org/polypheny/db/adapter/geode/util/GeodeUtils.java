@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.util;
+package org.polypheny.db.adapter.geode.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.util.Util;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Date;

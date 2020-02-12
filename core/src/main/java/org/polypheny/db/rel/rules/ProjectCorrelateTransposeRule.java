@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttleImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.BitSets;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.BitSets;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Util;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;

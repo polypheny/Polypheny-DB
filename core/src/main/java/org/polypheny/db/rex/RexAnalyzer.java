@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;

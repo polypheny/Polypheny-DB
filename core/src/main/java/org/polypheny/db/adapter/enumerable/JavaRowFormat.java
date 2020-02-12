@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Unit;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.util.BuiltInMethod;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -209,7 +209,7 @@ public enum JavaRowFormat {
     },
 
     /**
-     * See {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.Row}
+     * See {@link org.polypheny.db.interpreter.Row}
      */
     ROW {
         @Override

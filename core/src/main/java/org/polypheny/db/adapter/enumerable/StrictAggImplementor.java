@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.CountImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.SumImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor;
+import org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;

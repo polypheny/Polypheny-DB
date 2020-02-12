@@ -31,23 +31,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists.ComparableList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonConstructorNullClause;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonExistsErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonQueryWrapperBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonValueEmptyOrErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.NumberUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimeWithTimeZoneString;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampWithTimeZoneString;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.TimeWithTimeZoneString;
+import org.polypheny.db.util.TimestampWithTimeZoneString;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;

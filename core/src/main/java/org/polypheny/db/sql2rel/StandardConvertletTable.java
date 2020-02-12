@@ -31,61 +31,61 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql2rel;
+package org.polypheny.db.sql2rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexRangeRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJdbcFunctionCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNumericLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlArrayValueConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlBetweenOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCase;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlDatetimeSubtractionOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlExtractFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlLiteralChainOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMapValueConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMultisetQueryConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMultisetValueConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlOverlapsOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlRowOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSequenceValueOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlTrimFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCallBinding;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIntervalLiteral;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlJdbcFunctionCall;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlNumericLiteral;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.fun.SqlBetweenOperator;
+import org.polypheny.db.sql.fun.SqlCase;
+import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
+import org.polypheny.db.sql.fun.SqlExtractFunction;
+import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
+import org.polypheny.db.sql.fun.SqlMapValueConstructor;
+import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
+import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.fun.SqlOverlapsOperator;
+import org.polypheny.db.sql.fun.SqlRowOperator;
+import org.polypheny.db.sql.fun.SqlSequenceValueOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.fun.SqlTrimFunction;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.math.BigDecimal;
@@ -229,7 +229,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     return cx.convertExpression( expanded );
                 } );
 
-        // REVIEW jvs 24-Apr-2006: This only seems to be working from within a windowed agg.  I have added an optimizer rule ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule which handles other cases post-translation.  The reason I did that was to defer the
+        // REVIEW jvs 24-Apr-2006: This only seems to be working from within a windowed agg.  I have added an optimizer rule org.polypheny.db.rel.rules.AggregateReduceFunctionsRule which handles other cases post-translation.  The reason I did that was to defer the
         // implementation decision; e.g. we may want to push it down to a foreign server directly rather than decomposed; decomposition is easier than recognition.
 
         // Convert "avg(<expr>)" to "cast(sum(<expr>) / count(<expr>) as <type>)". We don't need to handle the empty set specially, because the SUM is already supposed to come out as NULL in cases where the COUNT is zero, so the null check should take place first and prevent

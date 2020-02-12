@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandCountRanges;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.type.InferTypes;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.sql.type.SqlTypeUtil;
 
 
 /**
@@ -61,7 +61,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
  * <li><code>src-value [NOT] SIMILAR pattern-value [ESCAPE escape-value]</code></li>
  * </ul>
  *
- * <b>NOTE</b> If the <code>NOT</code> clause is present the {@link ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser parser} will generate a equivalent to <code>NOT (src LIKE pattern ...)</code>
+ * <b>NOTE</b> If the <code>NOT</code> clause is present the {@link org.polypheny.db.sql.parser.SqlParser parser} will generate a equivalent to <code>NOT (src LIKE pattern ...)</code>
  */
 public class SqlLikeOperator extends SqlSpecialOperator {
 

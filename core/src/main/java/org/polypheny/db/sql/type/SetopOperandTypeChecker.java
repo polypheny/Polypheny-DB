@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.util.Static;
 import java.util.AbstractList;
 import java.util.List;
 

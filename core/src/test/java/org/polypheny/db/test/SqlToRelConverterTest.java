@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelXmlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCaseOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlDelegatingConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
-import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReaderExtended;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
+import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.externalize.RelXmlWriter;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.fun.SqlCaseOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.sql.validate.SqlDelegatingConformance;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.TestUtil;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableSet;
 import java.io.PrintWriter;
 import java.io.StringWriter;

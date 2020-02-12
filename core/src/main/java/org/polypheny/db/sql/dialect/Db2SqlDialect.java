@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
+package org.polypheny.db.sql.dialect;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIntervalLiteral;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlWriter;
 
 
 /**

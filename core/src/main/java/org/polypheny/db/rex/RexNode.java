@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlKind;
 import java.util.Collection;
 
 
 /**
  * Row expression.
  *
- * Every row-expression has a type. (Compare with {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode}, which is created before validation, and therefore types may not be available.)
+ * Every row-expression has a type. (Compare with {@link org.polypheny.db.sql.SqlNode}, which is created before validation, and therefore types may not be available.)
  *
  * Some common row-expressions are: {@link RexLiteral} (constant value), {@link RexVariable} (variable), {@link RexCall} (call to operator with operands).
  * Expressions are generally created using a {@link RexBuilder} factory.

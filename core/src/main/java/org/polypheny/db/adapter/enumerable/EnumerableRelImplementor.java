@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
+import org.polypheny.db.plan.RelImplementor;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;

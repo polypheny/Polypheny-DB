@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.BuiltInMetadata.Parallelism;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.BuiltInMetadata.Parallelism;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
  * Default implementations of the {@link Parallelism} metadata provider for the standard logical algebra.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#isPhaseTransition
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#splitCount
+ * @see org.polypheny.db.rel.metadata.RelMetadataQuery#isPhaseTransition
+ * @see org.polypheny.db.rel.metadata.RelMetadataQuery#splitCount
  */
 public class RelMdParallelism implements MetadataHandler<BuiltInMetadata.Parallelism> {
 
@@ -73,7 +73,7 @@ public class RelMdParallelism implements MetadataHandler<BuiltInMetadata.Paralle
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Parallelism#isPhaseTransition()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#isPhaseTransition
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#isPhaseTransition
      */
     public Boolean isPhaseTransition( RelNode rel, RelMetadataQuery mq ) {
         return false;
@@ -98,7 +98,7 @@ public class RelMdParallelism implements MetadataHandler<BuiltInMetadata.Paralle
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Parallelism#splitCount()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#splitCount
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#splitCount
      */
     public Integer splitCount( RelNode rel, RelMetadataQuery mq ) {
         return 1;

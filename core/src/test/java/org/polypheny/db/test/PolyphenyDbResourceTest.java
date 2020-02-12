@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbResource;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.runtime.PolyphenyDbResource;
+import org.polypheny.db.util.Static;
 import java.util.Map;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;

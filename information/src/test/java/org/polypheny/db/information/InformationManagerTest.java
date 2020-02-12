@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package org.polypheny.db.information;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
 import org.junit.Assert;
 import org.junit.Test;
 

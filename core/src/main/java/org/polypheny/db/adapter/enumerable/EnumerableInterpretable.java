@@ -31,35 +31,35 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Compiler;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.InterpretableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.InterpretableRel;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Node;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Typed;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationCode;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.interpreter.Compiler;
+import org.polypheny.db.interpreter.InterpretableConvention;
+import org.polypheny.db.interpreter.InterpretableRel;
+import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Typed;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.util.Util;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;

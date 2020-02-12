@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.util.Util;
 import java.nio.charset.Charset;
 import java.util.List;
 

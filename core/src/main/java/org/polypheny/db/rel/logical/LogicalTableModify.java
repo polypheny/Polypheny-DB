@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
+package org.polypheny.db.rel.logical;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rex.RexNode;
 import java.util.List;
 
 

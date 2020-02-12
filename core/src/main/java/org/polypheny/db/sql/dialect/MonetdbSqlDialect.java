@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
+package org.polypheny.db.sql.dialect;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWriter;
 import lombok.extern.slf4j.Slf4j;
 
 

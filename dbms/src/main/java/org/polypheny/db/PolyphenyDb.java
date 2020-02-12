@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownDatabaseException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownSchemaException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.HostInformation;
-import ch.unibas.dmi.dbis.polyphenydb.information.JavaInformation;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JdbcInterface;
-import ch.unibas.dmi.dbis.polyphenydb.processing.AuthenticatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.processing.TransactionManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticQueryProcessor;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
-import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
-import ch.unibas.dmi.dbis.polyphenydb.webui.HttpServer;
-import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.HostInformation;
+import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.jdbc.JdbcInterface;
+import org.polypheny.db.processing.AuthenticatorImpl;
+import org.polypheny.db.processing.TransactionManagerImpl;
+import org.polypheny.db.statistic.StatisticQueryProcessor;
+import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.webui.ConfigServer;
+import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.InformationServer;
 import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 

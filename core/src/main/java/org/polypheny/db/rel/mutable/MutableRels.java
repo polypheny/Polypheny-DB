@@ -31,48 +31,48 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Collect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sample;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Uncollect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCorrelate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalExchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalSort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalWindow;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.Collect;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Sample;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Uncollect;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
+import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalWindow;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.Lists;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -138,7 +138,7 @@ public abstract class MutableRels {
 
 
     /**
-     * Based on {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule#strip}.
+     * Based on {@link org.polypheny.db.rel.rules.ProjectRemoveRule#strip}.
      */
     public static MutableRel strip( MutableProject project ) {
         return isTrivial( project ) ? project.getInput() : project;
@@ -146,7 +146,7 @@ public abstract class MutableRels {
 
 
     /**
-     * Based on {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule#isTrivial(ch.unibas.dmi.dbis.polyphenydb.rel.core.Project)}.
+     * Based on {@link org.polypheny.db.rel.rules.ProjectRemoveRule#isTrivial(org.polypheny.db.rel.core.Project)}.
      */
     public static boolean isTrivial( MutableProject project ) {
         MutableRel child = project.getInput();
@@ -155,7 +155,7 @@ public abstract class MutableRels {
 
 
     /**
-     * Equivalent to {@link RelOptUtil#createProject(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode, java.util.List)} for {@link MutableRel}.
+     * Equivalent to {@link RelOptUtil#createProject(org.polypheny.db.rel.RelNode, java.util.List)} for {@link MutableRel}.
      */
     public static MutableRel createProject( final MutableRel child, final List<Integer> posList ) {
         final RelDataType rowType = child.rowType;
@@ -182,7 +182,7 @@ public abstract class MutableRels {
 
 
     /**
-     * Equivalence to {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil#createCastRel} for {@link MutableRel}.
+     * Equivalence to {@link org.polypheny.db.plan.RelOptUtil#createCastRel} for {@link MutableRel}.
      */
     public static MutableRel createCastRel( MutableRel rel, RelDataType castRowType, boolean rename ) {
         RelDataType rowType = rel.rowType;

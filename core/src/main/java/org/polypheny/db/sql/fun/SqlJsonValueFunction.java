@@ -31,30 +31,30 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonValueEmptyOrErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandCountRanges;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.util.Static;
 import java.util.ArrayList;
 import java.util.List;
 

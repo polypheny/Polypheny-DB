@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb;
 
 
 import com.google.common.collect.ImmutableMap;

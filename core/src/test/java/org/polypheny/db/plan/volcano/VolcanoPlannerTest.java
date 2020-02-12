@@ -31,45 +31,45 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.GoodSingleRule;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.NoneLeafRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.NoneSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PhysLeafRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PhysLeafRule;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PhysSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.TestSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.newCluster;
-import static ch.unibas.dmi.dbis.polyphenydb.test.Matchers.isLinux;
+import static org.polypheny.db.plan.volcano.PlannerTests.GoodSingleRule;
+import static org.polypheny.db.plan.volcano.PlannerTests.NoneLeafRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.NoneSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
+import static org.polypheny.db.plan.volcano.PlannerTests.PhysLeafRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.PhysLeafRule;
+import static org.polypheny.db.plan.volcano.PlannerTests.PhysSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.TestSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.newCluster;
+import static org.polypheny.db.test.Matchers.isLinux;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.rules.ProjectRemoveRule;
+import org.polypheny.db.tools.RelBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

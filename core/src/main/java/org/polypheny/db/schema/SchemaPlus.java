@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import org.polypheny.db.rel.type.RelProtoDataType;
 import com.google.common.collect.ImmutableList;
 
 

@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.DefaultRelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
+import org.polypheny.db.rel.metadata.MetadataFactory;
+import org.polypheny.db.rel.metadata.MetadataFactoryImpl;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

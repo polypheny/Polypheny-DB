@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Planner rule that pushes {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Project} into a {@link MultiJoin}, creating a richer {@code MultiJoin}.
+ * Planner rule that pushes {@link org.polypheny.db.rel.core.Project} into a {@link MultiJoin}, creating a richer {@code MultiJoin}.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterMultiJoinMergeRule
+ * @see org.polypheny.db.rel.rules.FilterMultiJoinMergeRule
  */
 public class ProjectMultiJoinMergeRule extends RelOptRule {
 

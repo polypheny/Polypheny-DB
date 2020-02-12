@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexOver;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Pair;
 
 
 /**
- * Planner rule which merges a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} and a {@link LogicalCalc}.
+ * Planner rule which merges a {@link org.polypheny.db.rel.logical.LogicalProject} and a {@link LogicalCalc}.
  *
- * The resulting {@link LogicalCalc} has the same project list as the original {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}, but expressed in terms
+ * The resulting {@link LogicalCalc} has the same project list as the original {@link org.polypheny.db.rel.logical.LogicalProject}, but expressed in terms
  * of the original {@link LogicalCalc}'s inputs.
  *
  * @see FilterCalcMergeRule

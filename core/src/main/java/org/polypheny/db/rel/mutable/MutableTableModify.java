@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
 import java.util.List;
 import java.util.Objects;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.TableModify}.
  */
 public class MutableTableModify extends MutableSingleRel {
 

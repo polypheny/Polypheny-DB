@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
 import static spark.Spark.before;
@@ -24,10 +24,10 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.webSocket;
 
-import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
-import ch.unibas.dmi.dbis.polyphenydb.QueryInterface;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionManager;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import org.polypheny.db.Authenticator;
+import org.polypheny.db.QueryInterface;
+import org.polypheny.db.TransactionManager;
+import org.polypheny.db.config.RuntimeConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;

@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName.VARCHAR;
+import static org.polypheny.db.sql.type.SqlTypeName.VARCHAR;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.apache.pig.data.DataType;
 
 

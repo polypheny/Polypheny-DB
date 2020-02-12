@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.test.Matchers.isLinux;
+import static org.polypheny.db.test.Matchers.isLinux;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -50,16 +50,16 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ConsList;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
-import ch.unibas.dmi.dbis.polyphenydb.test.DiffTestCase;
-import ch.unibas.dmi.dbis.polyphenydb.test.Matchers;
+import org.polypheny.db.runtime.ConsList;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.util.SqlBuilder;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.test.DiffTestCase;
+import org.polypheny.db.test.Matchers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Iterables;
@@ -1625,7 +1625,7 @@ public class UtilTest {
 
 
     /**
-     * Test for {@link ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList}.
+     * Test for {@link org.polypheny.db.util.ImmutableNullableList}.
      */
     @Test
     public void testImmutableNullableList() {
@@ -1680,7 +1680,7 @@ public class UtilTest {
 
 
     /**
-     * Test for {@link ch.unibas.dmi.dbis.polyphenydb.util.UnmodifiableArrayList}.
+     * Test for {@link org.polypheny.db.util.UnmodifiableArrayList}.
      */
     @Test
     public void testUnmodifiableArrayList() {
@@ -1718,7 +1718,7 @@ public class UtilTest {
 
 
     /**
-     * Test for {@link ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList.Builder}.
+     * Test for {@link org.polypheny.db.util.ImmutableNullableList.Builder}.
      */
     @Test
     public void testImmutableNullableListBuilder() {
@@ -1853,7 +1853,7 @@ public class UtilTest {
 
 
     /**
-     * Tests {@link ch.unibas.dmi.dbis.polyphenydb.util.ReflectUtil#getParameterName}.
+     * Tests {@link org.polypheny.db.util.ReflectUtil#getParameterName}.
      */
     @Test
     public void testParameterName() throws NoSuchMethodException {
@@ -1894,7 +1894,7 @@ public class UtilTest {
 
 
     /**
-     * Tests {@link ch.unibas.dmi.dbis.polyphenydb.util.TryThreadLocal}.
+     * Tests {@link org.polypheny.db.util.TryThreadLocal}.
      *
      * TryThreadLocal was introduced to fix "Tests do not unset ThreadLocal values on exit".
      */
@@ -1961,7 +1961,7 @@ public class UtilTest {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.NameSet}.
+     * Unit test for {@link org.polypheny.db.util.NameSet}.
      */
     @Test
     public void testNameSet() {
@@ -2220,7 +2220,7 @@ public class UtilTest {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap}.
+     * Unit test for {@link org.polypheny.db.util.NameMultimap}.
      */
     @Test
     public void testNameMultimap() {

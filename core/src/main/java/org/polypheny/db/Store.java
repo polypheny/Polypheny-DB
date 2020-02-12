@@ -1,12 +1,12 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

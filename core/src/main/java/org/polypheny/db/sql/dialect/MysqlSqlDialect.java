@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
+package org.polypheny.db.sql.dialect;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBasicCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCase;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.SqlBasicCall;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.fun.SqlCase;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.InferTypes;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;

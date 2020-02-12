@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.pretty;
+package org.polypheny.db.sql.pretty;
 
 
 /**

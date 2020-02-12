@@ -1,18 +1,18 @@
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores;
+package org.polypheny.db.adapter.jdbc.stores;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PUID;
-import ch.unibas.dmi.dbis.polyphenydb.PUID.Type;
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandlerException;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.TransactionalConnectionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.PUID;
+import org.polypheny.db.PUID.Type;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.PolyXid;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.SQLException;

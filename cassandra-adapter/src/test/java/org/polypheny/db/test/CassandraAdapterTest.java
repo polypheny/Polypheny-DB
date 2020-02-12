@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.TestUtil;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Ignore;
 
 
 /**
- * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra} package.
+ * Tests for the {@code org.polypheny.db.adapter.cassandra} package.
  *
  * Will start embedded cassandra cluster and populate it from local {@code twissandra.cql} file. All configuration files are located in test classpath.
  *

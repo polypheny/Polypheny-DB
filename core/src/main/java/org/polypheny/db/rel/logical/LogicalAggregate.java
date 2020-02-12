@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
+package org.polypheny.db.rel.logical;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateProjectPullUpConstantsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.rules.AggregateProjectPullUpConstantsRule;
+import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.List;
 
 
@@ -55,7 +55,7 @@ import java.util.List;
  *
  * <ul>
  * <li>{@link AggregateProjectPullUpConstantsRule}</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExpandDistinctAggregatesRule}</li>
+ * <li>{@link org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule}</li>
  * <li>{@link AggregateReduceFunctionsRule}</li>
  * </ul>
  */

@@ -31,29 +31,29 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra;
+package org.polypheny.db.adapter.cassandra;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.AbstractQueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.util.Pair;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
@@ -266,7 +266,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     /**
-     * Implementation of {@link org.apache.calcite.linq4j.Queryable} based on a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable}.
+     * Implementation of {@link org.apache.calcite.linq4j.Queryable} based on a {@link org.polypheny.db.adapter.cassandra.CassandraTable}.
      *
      * @param <T> element type
      */
@@ -298,7 +298,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         /**
          * Called via code-generation.
          *
-         * @see ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraMethod#CASSANDRA_QUERYABLE_QUERY
+         * @see org.polypheny.db.adapter.cassandra.CassandraMethod#CASSANDRA_QUERYABLE_QUERY
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> query(

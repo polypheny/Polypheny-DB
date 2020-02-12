@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.util.ReflectUtil;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

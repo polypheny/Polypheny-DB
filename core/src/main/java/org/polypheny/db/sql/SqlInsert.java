@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.util.ImmutableNullableList;
 import java.util.List;
 import lombok.Setter;
 

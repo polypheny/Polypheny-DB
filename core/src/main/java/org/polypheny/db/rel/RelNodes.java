@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
+import org.polypheny.db.runtime.Utilities;
 import com.google.common.collect.Ordering;
 import java.util.Comparator;
 

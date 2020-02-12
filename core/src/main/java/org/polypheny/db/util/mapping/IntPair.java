@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.mapping;
+package org.polypheny.db.util.mapping;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
+import org.polypheny.db.runtime.Utilities;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;

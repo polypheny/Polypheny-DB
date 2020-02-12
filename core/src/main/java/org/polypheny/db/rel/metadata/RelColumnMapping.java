@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
 /**
- * Mapping from an input column of a {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode} to one of its output columns.
+ * Mapping from an input column of a {@link org.polypheny.db.rel.RelNode} to one of its output columns.
  */
 public class RelColumnMapping {
 

@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

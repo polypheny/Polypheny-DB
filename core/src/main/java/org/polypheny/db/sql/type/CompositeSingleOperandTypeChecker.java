@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 
 
 /**
- * Allows multiple {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlSingleOperandTypeChecker} rules to be combined into one rule.
+ * Allows multiple {@link org.polypheny.db.sql.type.SqlSingleOperandTypeChecker} rules to be combined into one rule.
  */
 public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeChecker implements SqlSingleOperandTypeChecker {
 

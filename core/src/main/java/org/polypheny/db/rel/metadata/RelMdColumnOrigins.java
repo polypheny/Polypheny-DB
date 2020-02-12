@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.Set;

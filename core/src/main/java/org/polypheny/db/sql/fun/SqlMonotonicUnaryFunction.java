@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlOperandTypeInference;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
 
 
 /**

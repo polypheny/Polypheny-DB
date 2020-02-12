@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs.FALSE;
-import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs.UNKNOWN;
+import static org.polypheny.db.rex.RexUnknownAs.FALSE;
+import static org.polypheny.db.rex.RexUnknownAs.UNKNOWN;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Strong;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.NullSentinel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;

@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.util.Static;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

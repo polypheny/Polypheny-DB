@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
+package org.polypheny.db.sql.dialect;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlFloorFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlFloorFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 
 

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.concurrent;
+package org.polypheny.db.test.concurrent;
 
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ import java.util.Arrays;
 /**
  * Sample mtsql plugin.
  *
- * To use add at start of script "@plugin ch.unibas.dmi.dbis.polyphenydb.test.concurrent.SamplePlugin".  After doing a prepare you can then do "@describeResultSet" to show columns returned by query.
+ * To use add at start of script "@plugin org.polypheny.db.test.concurrent.SamplePlugin".  After doing a prepare you can then do "@describeResultSet" to show columns returned by query.
  */
 public class SamplePlugin extends ConcurrentTestPlugin {
 

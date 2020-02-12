@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitPropagationVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelTraitPropagationVisitor;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;

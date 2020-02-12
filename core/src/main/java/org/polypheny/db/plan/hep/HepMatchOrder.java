@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+package org.polypheny.db.plan.hep;
 
 
 /**
@@ -56,8 +56,8 @@ public enum HepMatchOrder {
     /**
      * Match in depth-first order.
      *
-     * It avoids applying a rule to the previous {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode} repeatedly after new vertex is generated in one rule application. It can therefore be more efficient than
-     * {@link #ARBITRARY} in cases such as {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} with large fan-out.
+     * It avoids applying a rule to the previous {@link org.polypheny.db.rel.RelNode} repeatedly after new vertex is generated in one rule application. It can therefore be more efficient than
+     * {@link #ARBITRARY} in cases such as {@link org.polypheny.db.rel.core.Union} with large fan-out.
      */
     DEPTH_FIRST
 }

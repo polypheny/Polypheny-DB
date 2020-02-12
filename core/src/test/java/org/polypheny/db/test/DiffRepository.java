@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.XmlOutput;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.XmlOutput;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;

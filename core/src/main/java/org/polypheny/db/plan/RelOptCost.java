@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
 /**
@@ -43,7 +43,7 @@ package ch.unibas.dmi.dbis.polyphenydb.plan;
 public interface RelOptCost {
 
     /**
-     * @return number of rows processed; this should not be confused with the row count produced by a relational expression ({@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode#estimateRowCount})
+     * @return number of rows processed; this should not be confused with the row count produced by a relational expression ({@link org.polypheny.db.rel.RelNode#estimateRowCount})
      */
     double getRows();
 

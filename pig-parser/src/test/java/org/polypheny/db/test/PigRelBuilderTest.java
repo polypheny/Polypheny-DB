@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.PigRelBuilder;
+import org.polypheny.db.tools.Programs;
+import org.polypheny.db.util.Util;
 import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;

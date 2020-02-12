@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

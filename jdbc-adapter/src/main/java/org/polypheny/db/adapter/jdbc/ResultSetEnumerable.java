@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.util.Static;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Blob;

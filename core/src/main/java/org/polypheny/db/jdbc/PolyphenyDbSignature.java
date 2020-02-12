@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;

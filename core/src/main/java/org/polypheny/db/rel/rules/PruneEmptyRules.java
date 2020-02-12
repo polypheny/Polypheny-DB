@@ -31,36 +31,36 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.any;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.none;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.operand;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.operandJ;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.some;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule.unordered;
+import static org.polypheny.db.plan.RelOptRule.any;
+import static org.polypheny.db.plan.RelOptRule.none;
+import static org.polypheny.db.plan.RelOptRule.operand;
+import static org.polypheny.db.plan.RelOptRule.operandJ;
+import static org.polypheny.db.plan.RelOptRule.some;
+import static org.polypheny.db.plan.RelOptRule.unordered;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -119,7 +119,7 @@ public abstract class PruneEmptyRules {
             };
 
     /**
-     * Rule that removes empty children of a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus}.
+     * Rule that removes empty children of a {@link org.polypheny.db.rel.logical.LogicalMinus}.
      *
      * Examples:
      *
@@ -193,7 +193,7 @@ public abstract class PruneEmptyRules {
 
 
     /**
-     * Rule that converts a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to empty if its child is empty.
+     * Rule that converts a {@link org.polypheny.db.rel.logical.LogicalProject} to empty if its child is empty.
      *
      * Examples:
      *
@@ -207,7 +207,7 @@ public abstract class PruneEmptyRules {
                     "PruneEmptyProject" );
 
     /**
-     * Rule that converts a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter}
+     * Rule that converts a {@link org.polypheny.db.rel.logical.LogicalFilter}
      * to empty if its child is empty.
      *
      * <p>Examples:
@@ -250,7 +250,7 @@ public abstract class PruneEmptyRules {
             };
 
     /**
-     * Rule that converts an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to empty if its child is empty.
+     * Rule that converts an {@link org.polypheny.db.rel.core.Aggregate} to empty if its child is empty.
      *
      * Examples:
      *

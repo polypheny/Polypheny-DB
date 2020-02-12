@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorNamespace;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorNamespace;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
 import java.util.List;
 
 

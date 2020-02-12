@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Uncollect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions.FlatProductInputType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.MapSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Uncollect;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
+import org.polypheny.db.sql.type.MapSqlType;
+import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.primitives.Ints;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Uncollect} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.rel.core.Uncollect} in {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableUncollect extends Uncollect implements EnumerableRel {
 

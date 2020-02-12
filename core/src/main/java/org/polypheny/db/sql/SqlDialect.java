@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystemImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.JethroDataSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBuilder;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
+import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.util.SqlBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
@@ -599,7 +599,7 @@ public class SqlDialect {
      *
      * @param node The SqlNode representing the expression
      * @param nullsFirst Whether nulls should come first
-     * @param desc Whether the sort direction is {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation.Direction#DESCENDING} or {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation.Direction#STRICTLY_DESCENDING}
+     * @param desc Whether the sort direction is {@link org.polypheny.db.rel.RelFieldCollation.Direction#DESCENDING} or {@link org.polypheny.db.rel.RelFieldCollation.Direction#STRICTLY_DESCENDING}
      * @return A SqlNode for null direction emulation or <code>null</code> if not required
      */
     public SqlNode emulateNullDirection( SqlNode node, boolean nullsFirst, boolean desc ) {
@@ -741,7 +741,7 @@ public class SqlDialect {
 
 
     /**
-     * A few utility functions copied from ch.unibas.dmi.dbis.polyphenydb.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
+     * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */
     public static class FakeUtil {
 

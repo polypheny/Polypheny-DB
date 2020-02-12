@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
+package org.polypheny.db.rel.logical;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.core.Union;
 import java.util.List;
 
 
 /**
- * Sub-class of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link org.polypheny.db.rel.core.Union} not targeted at any particular engine or calling convention.
  */
 public final class LogicalUnion extends Union {
 

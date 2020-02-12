@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rex.RexProgram;
 import java.util.Objects;
 
 

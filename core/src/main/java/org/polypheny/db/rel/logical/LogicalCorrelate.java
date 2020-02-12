@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
+package org.polypheny.db.rel.logical;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SemiJoinType;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.sql.SemiJoinType;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Litmus;
 
 
 /**

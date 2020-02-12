@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
+package org.polypheny.db.adapter.elasticsearch;
 
 
 import static java.lang.String.format;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.QueryBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
+import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
+import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlSyntax;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import java.util.ArrayList;

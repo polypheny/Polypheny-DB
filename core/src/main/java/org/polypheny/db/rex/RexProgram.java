@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Permutation;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.externalize.RelWriterImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Permutation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import java.io.PrintWriter;

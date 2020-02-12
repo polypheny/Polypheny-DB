@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParserPos;
 import java.util.List;
 
 
@@ -48,7 +48,7 @@ public interface SqlValidatorWithHints extends SqlValidator {
 
     /**
      * Looks up completion hints for a syntactically correct SQL statement that has been parsed into an expression tree. (Note this should be called
-     * after {@link #validate(ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode)}.
+     * after {@link #validate(org.polypheny.db.sql.SqlNode)}.
      *
      * @param topNode top of expression tree in which to lookup completion hints
      * @param pos indicates the position in the sql statement we want to get completion hints for. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema

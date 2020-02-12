@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptTable;
 
 
 /**
  * Describes how a column gets populated.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory#generationStrategy
+ * @see org.polypheny.db.sql2rel.InitializerExpressionFactory#generationStrategy
  * @see RelOptTable#getColumnStrategies()
  */
 public enum ColumnStrategy {

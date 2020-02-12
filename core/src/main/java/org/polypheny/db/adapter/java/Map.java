@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.java;
+package org.polypheny.db.adapter.java;
 
 
 import static java.lang.annotation.ElementType.FIELD;

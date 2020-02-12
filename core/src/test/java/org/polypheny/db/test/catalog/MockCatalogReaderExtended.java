@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
+package org.polypheny.db.test.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;

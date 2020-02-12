@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+package org.polypheny.db.plan.hep;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRule;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;

@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlRexConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptCostFactory;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql2rel.SqlRexConvertletTable;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
 import com.google.common.collect.ImmutableList;
 
 
@@ -78,7 +78,7 @@ public interface FrameworkConfig {
     /**
      * Returns a list of one or more programs used during the course of query evaluation.
      *
-     * The common use case is when there is a single program created using {@link Programs#of(RuleSet)} and {@link ch.unibas.dmi.dbis.polyphenydb.tools.Planner#transform} will only be called once.
+     * The common use case is when there is a single program created using {@link Programs#of(RuleSet)} and {@link org.polypheny.db.tools.Planner#transform} will only be called once.
      *
      * However, consumers may also create programs not based on rule sets, register multiple programs, and do multiple repetitions of {@link Planner#transform} planning cycles using different indices.
      *
@@ -113,7 +113,7 @@ public interface FrameworkConfig {
     SqlRexConvertletTable getConvertletTable();
 
     /**
-     * Returns the PlannerContext that should be made available during planning by calling {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#getContext()}.
+     * Returns the PlannerContext that should be made available during planning by calling {@link org.polypheny.db.plan.RelOptPlanner#getContext()}.
      */
     Context getContext();
 
@@ -130,6 +130,6 @@ public interface FrameworkConfig {
     /**
      * Returns a prepare context.
      */
-    ch.unibas.dmi.dbis.polyphenydb.jdbc.Context getPrepareContext();
+    org.polypheny.db.jdbc.Context getPrepareContext();
 }
 

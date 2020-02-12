@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.advise;
+package org.polypheny.db.sql.advise;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
+import org.polypheny.db.sql.validate.SqlMoniker;
 import java.util.List;
 
 
@@ -52,7 +52,7 @@ public class SqlAdvisorHint {
      */
     public final String[] names;
     /**
-     * One of {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerType}.
+     * One of {@link org.polypheny.db.sql.validate.SqlMonikerType}.
      */
     public final String type;
 

@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Default implementations of the {@link ch.unibas.dmi.dbis.polyphenydb.rel.metadata.BuiltInMetadata.Memory} metadata provider for the standard logical algebra.
+ * Default implementations of the {@link org.polypheny.db.rel.metadata.BuiltInMetadata.Memory} metadata provider for the standard logical algebra.
  *
  * @see RelMetadataQuery#isPhaseTransition
  * @see RelMetadataQuery#splitCount
@@ -47,7 +47,7 @@ import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
 public class RelMdMemory implements MetadataHandler<BuiltInMetadata.Memory> {
 
     /**
-     * Source for {@link ch.unibas.dmi.dbis.polyphenydb.rel.metadata.BuiltInMetadata.Memory}.
+     * Source for {@link org.polypheny.db.rel.metadata.BuiltInMetadata.Memory}.
      */
     public static final RelMetadataProvider SOURCE =
             ReflectiveRelMetadataProvider.reflectiveSource(
@@ -70,7 +70,7 @@ public class RelMdMemory implements MetadataHandler<BuiltInMetadata.Memory> {
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Memory#memory()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#memory
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#memory
      */
     public Double memory( RelNode rel, RelMetadataQuery mq ) {
         return null;
@@ -80,7 +80,7 @@ public class RelMdMemory implements MetadataHandler<BuiltInMetadata.Memory> {
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Memory#cumulativeMemoryWithinPhase()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#memory
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#memory
      */
     public Double cumulativeMemoryWithinPhase( RelNode rel, RelMetadataQuery mq ) {
         Double nullable = mq.memory( rel );
@@ -108,7 +108,7 @@ public class RelMdMemory implements MetadataHandler<BuiltInMetadata.Memory> {
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Memory#cumulativeMemoryWithinPhaseSplit()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#cumulativeMemoryWithinPhaseSplit
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#cumulativeMemoryWithinPhaseSplit
      */
     public Double cumulativeMemoryWithinPhaseSplit( RelNode rel, RelMetadataQuery mq ) {
         final Double memoryWithinPhase = mq.cumulativeMemoryWithinPhase( rel );

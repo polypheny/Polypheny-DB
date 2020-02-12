@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
 import java.util.Collection;
@@ -43,10 +43,10 @@ import java.util.Set;
 /**
  * Enumerates the possible types of {@link SqlNode}.
  *
- * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly. To identity a call to a common operator such as '=', use {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode#isA}:
+ * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly. To identity a call to a common operator such as '=', use {@link org.polypheny.db.sql.SqlNode#isA}:
  *
  * <blockquote>
- * exp.{@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode#isA isA}({@link #EQUALS})
+ * exp.{@link org.polypheny.db.sql.SqlNode#isA isA}({@link #EQUALS})
  * </blockquote>
  *
  * Only commonly-used nodes have their own type; other nodes are of type {@link #OTHER}. Some of the values, such as {@link #SET_QUERY}, represent aggregates.

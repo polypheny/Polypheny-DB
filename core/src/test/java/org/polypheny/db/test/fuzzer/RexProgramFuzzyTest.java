@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.fuzzer;
+package org.polypheny.db.test.fuzzer;
 
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Strong;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUnknownAs;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.test.RexProgramBuilderBase;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUnknownAs;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;

@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +50,7 @@ import org.apache.pig.scripting.Pig;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} in {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link org.polypheny.db.rel.core.Aggregate} in {@link PigRel#CONVENTION Pig calling convention}.
  */
 public class PigAggregate extends Aggregate implements PigRel {
 

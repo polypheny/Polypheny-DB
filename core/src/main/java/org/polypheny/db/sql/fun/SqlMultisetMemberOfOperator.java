@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.MultisetSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandCountRanges;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.type.MultisetSqlType;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.util.Static;
 
 
 /**

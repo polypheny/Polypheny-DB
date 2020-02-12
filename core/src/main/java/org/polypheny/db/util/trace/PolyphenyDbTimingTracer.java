@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.trace;
+package org.polypheny.db.util.trace;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.NumberUtil;
+import org.polypheny.db.util.NumberUtil;
 import java.text.DecimalFormat;
 import org.slf4j.Logger;
 

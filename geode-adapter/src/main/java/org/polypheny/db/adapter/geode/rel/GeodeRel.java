@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
+package org.polypheny.db.adapter.geode.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

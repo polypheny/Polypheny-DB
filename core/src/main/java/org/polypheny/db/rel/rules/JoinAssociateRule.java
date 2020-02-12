@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexPermuteInputsShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexPermuteInputsShuttle;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.mapping.Mappings;
 import java.util.ArrayList;
 import java.util.List;
 

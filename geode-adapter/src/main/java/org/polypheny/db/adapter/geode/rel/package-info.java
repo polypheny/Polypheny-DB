@@ -3,5 +3,5 @@
  * Query provider based on Apache Geode (Gemfire) In Memory Data Grid
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
+package org.polypheny.db.adapter.geode.rel;
 

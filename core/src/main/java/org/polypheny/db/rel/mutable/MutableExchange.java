@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistribution;
 import java.util.Objects;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.Exchange}.
  */
 public class MutableExchange extends MutableSingleRel {
 

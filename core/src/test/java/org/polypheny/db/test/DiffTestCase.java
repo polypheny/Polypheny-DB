@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.util.ReflectUtil;
+import org.polypheny.db.util.Util;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;

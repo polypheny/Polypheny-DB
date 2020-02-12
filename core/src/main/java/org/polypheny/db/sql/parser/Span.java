@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
+package org.polypheny.db.sql.parser;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import org.polypheny.db.sql.SqlNode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

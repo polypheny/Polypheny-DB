@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttleImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelJsonReader;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelJsonWriter;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook.Closeable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.externalize.RelJsonReader;
+import org.polypheny.db.rel.externalize.RelJsonWriter;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Hook.Closeable;
+import org.polypheny.db.tools.Frameworks;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 
 
 /**
- * Runs {@link ch.unibas.dmi.dbis.polyphenydb.test.SqlToRelConverterTest} with extensions.
+ * Runs {@link org.polypheny.db.test.SqlToRelConverterTest} with extensions.
  */
 public class SqlToRelConverterExtendedTest extends SqlToRelConverterTest {
 

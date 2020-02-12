@@ -31,31 +31,31 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepMatchOrder;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CoerceInputsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterToCalcRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToCalcRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ReduceExpressionsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionToDistinctRule;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.hep.HepMatchOrder;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.rules.CalcMergeRule;
+import org.polypheny.db.rel.rules.CoerceInputsRule;
+import org.polypheny.db.rel.rules.FilterToCalcRule;
+import org.polypheny.db.rel.rules.ProjectRemoveRule;
+import org.polypheny.db.rel.rules.ProjectToCalcRule;
+import org.polypheny.db.rel.rules.ReduceExpressionsRule;
+import org.polypheny.db.rel.rules.UnionToDistinctRule;
 import org.junit.Test;
 
 

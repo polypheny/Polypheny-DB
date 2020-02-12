@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.RelMdCollation;
+import org.polypheny.db.rel.metadata.RelMdDistribution;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -60,7 +60,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.rel.core.Values} in {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableValues extends Values implements EnumerableRel {
 

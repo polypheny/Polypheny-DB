@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
 
 
 /**

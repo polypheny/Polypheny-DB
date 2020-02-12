@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertEquals;
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
+import org.polypheny.db.util.Sources;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -44,7 +44,7 @@ import org.junit.Ignore;
 
 
 /**
- * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.pig} package.
+ * Tests for the {@code org.polypheny.db.adapter.pig} package.
  */
 @Ignore
 public class PigAdapterTest extends AbstractPigTest {

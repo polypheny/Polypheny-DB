@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl;
+package org.polypheny.db.adapter.enumerable.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggResetContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.NestedBlockBuilderImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
+import org.polypheny.db.adapter.enumerable.AggResetContext;
+import org.polypheny.db.adapter.enumerable.NestedBlockBuilderImpl;
+import org.polypheny.db.rel.core.AggregateCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggResetContext}
+ * Implementation of {@link org.polypheny.db.adapter.enumerable.AggResetContext}
  */
 public abstract class AggResetContextImpl extends NestedBlockBuilderImpl implements AggResetContext {
 

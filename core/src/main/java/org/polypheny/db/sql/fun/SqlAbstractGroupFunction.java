@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.AggregatingSelectScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.OrderByScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SelectScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlOperandTypeInference;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.sql.validate.AggregatingSelectScope;
+import org.polypheny.db.sql.validate.OrderByScope;
+import org.polypheny.db.sql.validate.SelectScope;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Optionality;
+import org.polypheny.db.util.Static;
 
 
 /**

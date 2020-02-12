@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptCostFactory;
+import org.polypheny.db.plan.RelOptUtil;
 import java.util.Objects;
 
 
@@ -253,7 +253,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory} that creates {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoCost}s.
+     * Implementation of {@link org.polypheny.db.plan.RelOptCostFactory} that creates {@link org.polypheny.db.plan.volcano.VolcanoCost}s.
      */
     private static class Factory implements RelOptCostFactory {
 

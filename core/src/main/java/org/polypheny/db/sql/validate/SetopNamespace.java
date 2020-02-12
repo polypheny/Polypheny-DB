@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

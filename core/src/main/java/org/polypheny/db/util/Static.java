@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ConsList;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbResource;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
+import org.polypheny.db.runtime.ConsList;
+import org.polypheny.db.runtime.PolyphenyDbResource;
+import org.polypheny.db.runtime.Resources;
 import java.util.List;
 
 

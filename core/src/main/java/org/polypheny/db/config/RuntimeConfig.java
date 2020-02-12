@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.util.background.BackgroundTask;
 import java.math.BigDecimal;
 
 

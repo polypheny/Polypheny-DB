@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.mapping;
+package org.polypheny.db.util.mapping;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.BitSets;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Permutation;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.util.BitSets;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Permutation;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
@@ -56,7 +56,7 @@ import java.util.function.IntFunction;
  *
  * @see MappingType
  * @see Mapping
- * @see ch.unibas.dmi.dbis.polyphenydb.util.Permutation
+ * @see org.polypheny.db.util.Permutation
  */
 public abstract class Mappings {
 
@@ -1165,7 +1165,7 @@ public abstract class Mappings {
          *
          * @param sourceList List whose i'th element is the source of target #i
          * @param sourceCount Number of elements in the source domain
-         * @param mappingType Mapping type, must be {@link ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType#PARTIAL_SURJECTION} or stronger.
+         * @param mappingType Mapping type, must be {@link org.polypheny.db.util.mapping.MappingType#PARTIAL_SURJECTION} or stronger.
          */
         public PartialMapping( List<Integer> sourceList, int sourceCount, MappingType mappingType ) {
             this.mappingType = mappingType;

@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import java.sql.ResultSet;

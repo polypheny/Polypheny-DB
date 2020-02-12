@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
 import java.lang.reflect.Type;
@@ -42,10 +42,10 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * Implements an aggregate function by generating expressions to initialize, add to, and get a result from, an accumulator.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.StrictAggImplementor
+ * @see org.polypheny.db.adapter.enumerable.StrictAggImplementor
  * @see StrictWinAggImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.CountImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.SumImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor
  */
 public interface AggImplementor {
 

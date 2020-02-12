@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbSignature;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
+import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.rel.RelRoot;
 
 
 public interface QueryProcessor {

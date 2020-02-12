@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.List;
 
 
@@ -154,7 +154,7 @@ public class RelMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
     /**
      * Catch-all implementation for {@link BuiltInMetadata.PopulationSize#getPopulationSize(ImmutableBitSet)}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getPopulationSize(RelNode, ImmutableBitSet)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#getPopulationSize(RelNode, ImmutableBitSet)
      */
     public Double getPopulationSize( RelNode rel, RelMetadataQuery mq, ImmutableBitSet groupKey ) {
         // if the keys are unique, return the row count; otherwise, we have no further information on which to return any legitimate value

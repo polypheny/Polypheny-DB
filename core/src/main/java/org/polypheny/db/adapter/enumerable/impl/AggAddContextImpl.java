@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl;
+package org.polypheny.db.adapter.enumerable.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggAddContext;
+import org.polypheny.db.adapter.enumerable.AggAddContext;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggAddContext}.
+ * Implementation of {@link org.polypheny.db.adapter.enumerable.AggAddContext}.
  */
 public abstract class AggAddContextImpl extends AggResultContextImpl implements AggAddContext {
 

@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayEnumeratorCursor;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ObjectEnumeratorCursor;
+import org.polypheny.db.runtime.ArrayEnumeratorCursor;
+import org.polypheny.db.runtime.ObjectEnumeratorCursor;
 import com.google.common.collect.ImmutableList;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;

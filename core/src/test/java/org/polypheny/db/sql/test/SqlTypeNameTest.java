@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package org.polypheny.db.sql.test;
 
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.ExtraSqlTypes;
+import org.polypheny.db.sql.type.SqlTypeName;
 import java.sql.Types;
 import org.junit.Test;
 

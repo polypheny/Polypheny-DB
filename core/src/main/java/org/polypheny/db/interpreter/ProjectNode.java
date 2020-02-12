@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
+import org.polypheny.db.rel.core.Project;
 
 
 /**
- * Interpreter node that implements a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Project}.
+ * Interpreter node that implements a {@link org.polypheny.db.rel.core.Project}.
  */
 public class ProjectNode extends AbstractSingleNode<Project> {
 

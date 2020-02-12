@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
@@ -62,7 +62,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link PigFilter}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link PigFilter}.
      */
     private static class PigFilterRule extends ConverterRule {
 
@@ -106,7 +106,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to a {@link PigProject}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link PigProject}.
      */
     private static class PigProjectRule extends ConverterRule {
 
@@ -128,7 +128,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate} to a {@link PigAggregate}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalAggregate} to a {@link PigAggregate}.
      */
     private static class PigAggregateRule extends ConverterRule {
 
@@ -150,7 +150,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin} to a {@link PigJoin}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalJoin} to a {@link PigJoin}.
      */
     private static class PigJoinRule extends ConverterRule {
 

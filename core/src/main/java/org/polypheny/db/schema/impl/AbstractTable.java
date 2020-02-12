@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema.TableType;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistics;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Schema.TableType;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.Statistics;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

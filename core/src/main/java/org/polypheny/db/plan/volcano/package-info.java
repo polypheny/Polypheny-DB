@@ -4,25 +4,25 @@
  *
  * <h2>Overview</h2>
  *
- * A <dfn>planner</dfn> (also known as an <dfn>optimizer</dfn>) finds the most efficient implementation of a {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode relational expression}.
+ * A <dfn>planner</dfn> (also known as an <dfn>optimizer</dfn>) finds the most efficient implementation of a {@link org.polypheny.db.rel.RelNode relational expression}.
  *
- * Interface {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner} defines a planner, and class {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner} is an implementation which uses a
+ * Interface {@link org.polypheny.db.plan.RelOptPlanner} defines a planner, and class {@link org.polypheny.db.plan.volcano.VolcanoPlanner} is an implementation which uses a
  * dynamic programming technique. It is based upon the Volcano optimizer [<a href="#graefe93">1</a>].
  *
- * Interface {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost} defines a cost model; class {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoCost} is the implementation for a <code>VolcanoPlanner</code>.
+ * Interface {@link org.polypheny.db.plan.RelOptCost} defines a cost model; class {@link org.polypheny.db.plan.volcano.VolcanoCost} is the implementation for a <code>VolcanoPlanner</code>.
  *
- * A {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSet} is a set of equivalent relational expressions.  They are equivalent because they will produce the same result for any set of input data.
+ * A {@link org.polypheny.db.plan.volcano.RelSet} is a set of equivalent relational expressions.  They are equivalent because they will produce the same result for any set of input data.
  * It is an equivalence class: two expressions are in the same set if and only if they are in the same <code>RelSet</code>.
  *
  * One of the unique features of the optimizer is that expressions can take on a variety of physical traits. Each relational expression has a set of traits. Each trait is described by an implementation of
- * {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef}.  Manifestations of the trait implement {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait}. The most common example of a trait is calling convention: the protocol used
- * to receive and transmit data. {@link ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef} defines the trait and {@link ch.unibas.dmi.dbis.polyphenydb.plan.Convention} enumerates the protocols. Every relational expression has a
+ * {@link org.polypheny.db.plan.RelTraitDef}.  Manifestations of the trait implement {@link org.polypheny.db.plan.RelTrait}. The most common example of a trait is calling convention: the protocol used
+ * to receive and transmit data. {@link org.polypheny.db.plan.ConventionTraitDef} defines the trait and {@link org.polypheny.db.plan.Convention} enumerates the protocols. Every relational expression has a
  * single calling convention by which it returns its results. Some examples:</p>
  *
  * <ul>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcConvention} is a fairly conventional convention; the results are rows from a {@link java.sql.ResultSet JDBC result set}.</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.plan.Convention#NONE} means that a relational expression cannot be implemented; typically there are rules which can transform it to equivalent, implementable expressions.</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention} implements the expression by generating Java code. The code places the current row in a Java variable, then calls the piece of code which implements the consuming relational expression.
+ * <li>{@link org.polypheny.db.adapter.jdbc.JdbcConvention} is a fairly conventional convention; the results are rows from a {@link java.sql.ResultSet JDBC result set}.</li>
+ * <li>{@link org.polypheny.db.plan.Convention#NONE} means that a relational expression cannot be implemented; typically there are rules which can transform it to equivalent, implementable expressions.</li>
+ * <li>{@link org.polypheny.db.adapter.enumerable.EnumerableConvention} implements the expression by generating Java code. The code places the current row in a Java variable, then calls the piece of code which implements the consuming relational expression.
  * For example, a Java array reader of the <code>names</code> array would generate the following code:
  * <blockquote>
  * <pre>
@@ -37,22 +37,22 @@
  *
  * <p>New traits are added to the planner in one of two ways:</p>
  * <ol>
- * <li>If the new trait is integral to Polypheny-DB, then each and every implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode} should include its manifestation of the trait as part of the {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet} passed to
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode}'s constructor. It may be useful to provide alternate <code>AbstractRelNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
+ * <li>If the new trait is integral to Polypheny-DB, then each and every implementation of {@link org.polypheny.db.rel.RelNode} should include its manifestation of the trait as part of the {@link org.polypheny.db.plan.RelTraitSet} passed to
+ * {@link org.polypheny.db.rel.AbstractRelNode}'s constructor. It may be useful to provide alternate <code>AbstractRelNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
  *
- * <li>If the new trait describes some aspect of a Farrago extension, then the RelNodes passed to {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner#setRoot(ch.unibas.dmi.dbis.polyphenydb.rel.RelNode)} should have
+ * <li>If the new trait describes some aspect of a Farrago extension, then the RelNodes passed to {@link org.polypheny.db.plan.volcano.VolcanoPlanner#setRoot(org.polypheny.db.rel.RelNode)} should have
  * their trait sets expanded before the <code>setRoot(RelNode)</code> call.</li>*
  * </ol>
  *
- * The second trait extension mechanism requires that implementations of {@code ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
- * In either case, the new <code>RelTraitDef</code> implementation must be {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.VolcanoPlanner#addRelTraitDef(ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef)} registered with the planner.
+ * The second trait extension mechanism requires that implementations of {@code org.polypheny.db.rel.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
+ * In either case, the new <code>RelTraitDef</code> implementation must be {@link org.polypheny.db.plan.volcano.VolcanoPlanner#addRelTraitDef(org.polypheny.db.plan.RelTraitDef)} registered with the planner.
  *
- * A {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset} is a subset of a <code>RelSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.
+ * A {@link org.polypheny.db.plan.volcano.RelSubset} is a subset of a <code>RelSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.
  * Like <code>RelSet</code>,it is an equivalence class.
  *
  * <h2>Related packages</h2>
  * <ul>
- * <li>{@code <a href="../rel/package-summary.html">ch.unibas.dmi.dbis.polyphenydb.rel</a>} defines {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode relational expressions}.</li>
+ * <li>{@code <a href="../rel/package-summary.html">org.polypheny.db.rel</a>} defines {@link org.polypheny.db.rel.RelNode relational expressions}.</li>
  * </ul>
  *
  * <h2>Details</h2>
@@ -160,5 +160,5 @@
  * 1. <a id="graefe93" href="http://citeseer.nj.nec.com/graefe93volcano.html">The Volcano Optimizer Generator: Extensibility and Efficient Search - Goetz Graefe, William J. McKenna (1993)</a>.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 

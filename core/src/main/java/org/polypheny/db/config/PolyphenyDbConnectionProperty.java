@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
 import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.Bug;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -100,7 +100,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     /**
      * Parser factory.
      *
-     * The name of a class that implements {@link ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserImplFactory}.
+     * The name of a class that implements {@link org.polypheny.db.sql.parser.SqlParserImplFactory}.
      */
     PARSER_FACTORY( "parserFactory", Type.PLUGIN, null, false ),
 
@@ -121,7 +121,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     FORCE_DECORRELATE( "forceDecorrelate", Type.BOOLEAN, true, false ),
 
     /**
-     * Type system. The name of a class that implements {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem} and has a public default constructor or an {@code INSTANCE} constant.
+     * Type system. The name of a class that implements {@link org.polypheny.db.rel.type.RelDataTypeSystem} and has a public default constructor or an {@code INSTANCE} constant.
      */
     TYPE_SYSTEM( "typeSystem", Type.PLUGIN, null, false ),
 

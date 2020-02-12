@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 /**
- * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.druid} package.
+ * Tests for the {@code org.polypheny.db.adapter.druid} package.
  *
  * Before calling this test, you need to populate Druid, as follows:
  *
@@ -3075,7 +3075,7 @@ public class DruidAdapterIT {
 //
 //
 //    /**
-//     * Test to make sure that if a complex metric is also a dimension, then {@link ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidTable} should allow it to be used like any other column.
+//     * Test to make sure that if a complex metric is also a dimension, then {@link org.polypheny.db.adapter.druid.DruidTable} should allow it to be used like any other column.
 //     */
 //    @Test
 //    public void testComplexMetricAlsoDimension() {

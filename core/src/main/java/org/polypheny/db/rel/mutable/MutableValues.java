@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
+import org.polypheny.db.rel.core.Values;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.Values}.
  */
 public class MutableValues extends MutableLeafRel {
 

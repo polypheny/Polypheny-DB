@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogUser;
 
 
 /**

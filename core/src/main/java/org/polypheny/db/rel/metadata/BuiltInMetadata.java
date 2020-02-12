@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexTableInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexTableInputRef.RelTableRef;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexTableInputRef;
+import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import java.util.List;
@@ -451,7 +451,7 @@ public abstract class BuiltInMetadata {
          * Occurrences are generated in no particular order, but it is guaranteed that if two expressions referred to the same table, the qualified name + occurrence will be the same.
          *
          * @param expression expression whose lineage we want to resolve
-         * @return set of expressions with lineage resolved, or null if this information cannot be determined (e.g. origin of an expression is an aggregation in an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} operator)
+         * @return set of expressions with lineage resolved, or null if this information cannot be determined (e.g. origin of an expression is an aggregation in an {@link org.polypheny.db.rel.core.Aggregate} operator)
          */
         Set<RexNode> getExpressionLineage( RexNode expression );
 
@@ -598,7 +598,7 @@ public abstract class BuiltInMetadata {
      * Metadata about the predicates that hold in the rows emitted from a relational expression.
      *
      * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
-     * on {@link RexTableInputRef} to reference origin columns in {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan} for the result predicates.
+     * on {@link RexTableInputRef} to reference origin columns in {@link org.polypheny.db.rel.core.TableScan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
 
@@ -631,8 +631,8 @@ public abstract class BuiltInMetadata {
         /**
          * Returns whether each physical operator implementing this relational expression belongs to a different process than its inputs.
          *
-         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan},
-         * or with a phase-change node such as an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
+         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link org.polypheny.db.rel.core.TableScan},
+         * or with a phase-change node such as an {@link org.polypheny.db.rel.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
          */
         Boolean isPhaseTransition();
 
@@ -671,7 +671,7 @@ public abstract class BuiltInMetadata {
         /**
          * Returns the expected amount of memory, in bytes, required by a physical operator implementing this relational expression, across all splits.
          *
-         * How much memory is used depends very much on the algorithm; for example, an implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} that loads all data into a hash table requires approximately
+         * How much memory is used depends very much on the algorithm; for example, an implementation of {@link org.polypheny.db.rel.core.Aggregate} that loads all data into a hash table requires approximately
          * {@code rowCount * averageRowSize} bytes, whereas an implementation that assumes that the input is sorted requires only {@code averageRowSize} bytes to maintain a single accumulator for each aggregate function.
          */
         Double memory();

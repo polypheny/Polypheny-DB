@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.rex.RexNode;
 import java.util.Objects;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.Filter}.
  */
 public class MutableFilter extends MutableSingleRel {
 

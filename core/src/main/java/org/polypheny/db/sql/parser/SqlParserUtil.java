@@ -31,38 +31,38 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
+package org.polypheny.db.sql.parser;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDateLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNumericLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlPostfixOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlPrefixOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator.TokenSequence;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlTimeLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlTimestampLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
-import ch.unibas.dmi.dbis.polyphenydb.util.PrecedenceClimbingParser;
-import ch.unibas.dmi.dbis.polyphenydb.util.SaffronProperties;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlDateLiteral;
+import org.polypheny.db.sql.SqlIntervalLiteral;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlNumericLiteral;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlPostfixOperator;
+import org.polypheny.db.sql.SqlPrefixOperator;
+import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlSpecialOperator.TokenSequence;
+import org.polypheny.db.sql.SqlTimeLiteral;
+import org.polypheny.db.sql.SqlTimestampLiteral;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.PrecedenceClimbingParser;
+import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;

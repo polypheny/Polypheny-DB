@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
+package org.polypheny.db.test.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ObjectSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.ObjectSqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql2rel.InitializerExpressionFactory;
+import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.Arrays;

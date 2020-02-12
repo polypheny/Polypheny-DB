@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
+package org.polypheny.db.sql.utils;
 
 
 import static org.junit.Assert.assertNotNull;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil.StringAndPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTests.Stage;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.sql.utils.SqlTests.Stage;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.test.SqlTestFactory;
 
 
 /**

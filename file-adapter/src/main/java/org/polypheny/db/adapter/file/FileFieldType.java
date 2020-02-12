@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
+package org.polypheny.db.adapter.file;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;

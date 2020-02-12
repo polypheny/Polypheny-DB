@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.concurrent;
+package org.polypheny.db.test.concurrent;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
+import org.polypheny.db.util.Unsafe;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.DriverManager;

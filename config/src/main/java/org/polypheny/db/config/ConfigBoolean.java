@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 

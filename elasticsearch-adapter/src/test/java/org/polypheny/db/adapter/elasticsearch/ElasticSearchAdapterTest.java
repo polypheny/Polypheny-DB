@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
+package org.polypheny.db.adapter.elasticsearch;
 
 
 import org.junit.Ignore;
@@ -591,7 +591,7 @@ public class ElasticSearchAdapterTest {
 //
 //
 //    /**
-//     * Test of {@link ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable#APPROX_COUNT_DISTINCT} which will be translated to
+//     * Test of {@link org.polypheny.db.sql.fun.SqlStdOperatorTable#APPROX_COUNT_DISTINCT} which will be translated to
 //     * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-cardinality-aggregation.html">Cardinality Aggregation</a>
 //     * (approximate counts using HyperLogLog++ algorithm).
 //     */

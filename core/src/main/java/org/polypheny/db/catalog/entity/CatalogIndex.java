@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package org.polypheny.db.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.IndexType;
+import org.polypheny.db.catalog.Catalog.IndexType;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;

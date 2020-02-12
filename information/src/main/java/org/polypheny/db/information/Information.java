@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package org.polypheny.db.information;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.exception.InformationRuntimeException;
+import org.polypheny.db.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 

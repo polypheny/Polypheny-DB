@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.fuzzer;
+package org.polypheny.db.test.fuzzer;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

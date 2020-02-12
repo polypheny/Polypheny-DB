@@ -1,11 +1,11 @@
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Store.AdapterSetting;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumnPlacement;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogStore;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.Store.AdapterSetting;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogStore;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Constructor;
@@ -54,7 +54,7 @@ public class StoreManager {
 
 
     public List<AdapterInformation> getAvailableAdapters() {
-        Reflections reflections = new Reflections( "ch.unibas.dmi.dbis.polyphenydb" );
+        Reflections reflections = new Reflections( "org.polypheny.db" );
         Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( Store.class ) );
         List<AdapterInformation> result = new LinkedList<>();
         try {

@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.test.MongoAssertions;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaFactory;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.test.MongoAssertions;
+import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Util;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
 import com.mongodb.client.MongoCollection;
@@ -762,7 +762,7 @@ public class MongoAdapterTest implements SchemaFactory {
                 + "     {\n"
                 + "       type: 'custom',\n"
                 + "       name: 'test',\n"
-                + "       factory: 'ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb.MongoSchemaFactory',\n"
+                + "       factory: 'org.polypheny.db.adapter.mongodb.MongoSchemaFactory',\n"
                 + "       operand: {\n"
                 + "         host: 'localhost',\n"
                 + "         database: 'test'\n"

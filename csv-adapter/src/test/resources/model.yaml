@@ -6,6 +6,6 @@ defaultSchema: SALES
 schemas:
     -   name: SALES
         type: custom
-        factory: ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory
+        factory: org.polypheny.db.adapter.csv.CsvSchemaFactory
         operand:
             directory: sales

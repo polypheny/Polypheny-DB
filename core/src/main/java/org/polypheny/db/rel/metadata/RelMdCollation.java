@@ -31,48 +31,48 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCorrelate;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableJoin;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableMergeJoin;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableSemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableThetaJoin;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SortExchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SemiJoinType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.enumerable.EnumerableCorrelate;
+import org.polypheny.db.adapter.enumerable.EnumerableJoin;
+import org.polypheny.db.adapter.enumerable.EnumerableMergeJoin;
+import org.polypheny.db.adapter.enumerable.EnumerableSemiJoin;
+import org.polypheny.db.adapter.enumerable.EnumerableThetaJoin;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.SortExchange;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCallBinding;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.sql.SemiJoinType;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
@@ -89,7 +89,7 @@ import org.apache.calcite.linq4j.Ord;
 
 
 /**
- * RelMdCollation supplies a default implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#collations} for the standard logical algebra.
+ * RelMdCollation supplies a default implementation of {@link org.polypheny.db.rel.metadata.RelMetadataQuery#collations} for the standard logical algebra.
  */
 public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation> {
 
@@ -109,16 +109,16 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Collation#collations()}, invoked using reflection, for any relational expression not handled by a more specific method.
      *
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union},
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect},
+     * {@link org.polypheny.db.rel.core.Union},
+     * {@link org.polypheny.db.rel.core.Intersect},
      * {@link Minus},
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join},
+     * {@link org.polypheny.db.rel.core.Join},
      * {@link SemiJoin},
      * {@link Correlate} do not in general return sorted results (but implementations using particular algorithms may).
      *
      * @param rel Relational expression
      * @return Relational expression's collations
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#collations(RelNode)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#collations(RelNode)
      */
     public ImmutableList<RelCollation> collations( RelNode rel, RelMetadataQuery mq ) {
         return ImmutableList.of();
@@ -202,7 +202,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan}'s collation.
+     * Helper method to determine a {@link org.polypheny.db.rel.core.TableScan}'s collation.
      */
     public static List<RelCollation> table( RelOptTable table ) {
         return table.getCollationList();
@@ -218,7 +218,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter}'s collation.
+     * Helper method to determine a {@link org.polypheny.db.rel.core.Filter}'s collation.
      */
     public static List<RelCollation> filter( RelMetadataQuery mq, RelNode input ) {
         return mq.collations( input );
@@ -312,7 +312,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values}'s collation.
+     * Helper method to determine a {@link org.polypheny.db.rel.core.Values}'s collation.
      *
      * We actually under-report the collations. A Values with 0 or 1 rows - an edge case, but legitimate and very common - is ordered by every permutation of every subset of the columns.
      *

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
+package org.polypheny.db.adapter.geode.simple;
 
 
 import org.apache.geode.cache.Region;
@@ -56,7 +56,7 @@ public class BookMasterRegionTest {
 
         ClientCache clientCache = new ClientCacheFactory()
                 .addPoolLocator( "localhost", 10334 )
-                .setPdxSerializer( new ReflectionBasedAutoSerializer( "ch.unibas.dmi.dbis.polyphenydb.adapter.geode.*" ) )
+                .setPdxSerializer( new ReflectionBasedAutoSerializer( "org.polypheny.db.adapter.geode.*" ) )
                 .create();
 
         // Using Key/Value

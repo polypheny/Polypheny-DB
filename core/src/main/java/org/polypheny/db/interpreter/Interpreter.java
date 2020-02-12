@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory.Builder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectiveVisitDispatcher;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectiveVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.rules.CalcSplitRule;
+import org.polypheny.db.rel.rules.FilterTableScanRule;
+import org.polypheny.db.rel.rules.ProjectTableScanRule;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ReflectUtil;
+import org.polypheny.db.util.ReflectiveVisitDispatcher;
+import org.polypheny.db.util.ReflectiveVisitor;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;

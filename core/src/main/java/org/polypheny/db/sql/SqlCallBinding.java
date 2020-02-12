@@ -31,25 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SelectScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorNamespace;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.validate.SelectScope;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorException;
+import org.polypheny.db.sql.validate.SqlValidatorNamespace;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import com.google.common.collect.Lists;
 import java.util.List;
+import org.polypheny.db.util.Static;
 
 
 /**

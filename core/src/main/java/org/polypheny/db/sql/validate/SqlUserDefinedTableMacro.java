@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlOperandTypeInference;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -109,7 +109,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
 
 
     /**
-     * Converts arguments from {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode} to java object format.
+     * Converts arguments from {@link org.polypheny.db.sql.SqlNode} to java object format.
      *
      * @param typeFactory type factory used to convert the arguments
      * @param operandList input arguments

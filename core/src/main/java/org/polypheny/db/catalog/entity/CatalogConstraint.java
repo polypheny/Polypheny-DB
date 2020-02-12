@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package org.polypheny.db.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.ConstraintType;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 

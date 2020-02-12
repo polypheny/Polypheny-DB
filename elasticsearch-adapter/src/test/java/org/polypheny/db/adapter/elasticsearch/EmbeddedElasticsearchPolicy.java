@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
+package org.polypheny.db.adapter.elasticsearch;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Closer;
+import org.polypheny.db.util.Closer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;

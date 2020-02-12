@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlVisitor;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.util.SqlShuttle;
+import org.polypheny.db.sql.util.SqlVisitor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 

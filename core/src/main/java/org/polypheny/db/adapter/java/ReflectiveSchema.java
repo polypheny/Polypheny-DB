@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.java;
+package org.polypheny.db.adapter.java;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistic;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Statistics;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTableQueryable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ReflectiveFunctionBase;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.Statistics;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -108,7 +108,7 @@ public class ReflectiveSchema extends AbstractSchema {
     /**
      * Returns the wrapped object.
      *
-     * May not appear to be used, but is used in generated code via {@link ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod#REFLECTIVE_SCHEMA_GET_TARGET}.
+     * May not appear to be used, but is used in generated code via {@link org.polypheny.db.util.BuiltInMethod#REFLECTIVE_SCHEMA_GET_TARGET}.
      */
     public Object getTarget() {
         return target;

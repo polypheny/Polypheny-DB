@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.util;
+package org.polypheny.db.sql.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlDynamicParam;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlOperator;
 
 
 /**
- * Visitor class, follows the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#VISITOR_PATTERN visitor pattern}.
+ * Visitor class, follows the {@link org.polypheny.db.util.Glossary#VISITOR_PATTERN visitor pattern}.
  *
  * The type parameter <code>R</code> is the return type of each <code>visit()</code> method. If the methods do not need to return a value, use {@link Void}.
  *

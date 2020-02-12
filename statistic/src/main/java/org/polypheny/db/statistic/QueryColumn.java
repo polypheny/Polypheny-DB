@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.statistic;
+package org.polypheny.db.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
+import org.polypheny.db.PolySqlType;
 import lombok.Getter;
 
 

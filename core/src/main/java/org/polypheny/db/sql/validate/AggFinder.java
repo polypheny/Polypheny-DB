@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util.FoundOne;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.Util.FoundOne;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

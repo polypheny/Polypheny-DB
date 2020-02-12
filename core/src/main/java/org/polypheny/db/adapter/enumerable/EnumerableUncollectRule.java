@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Uncollect;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Uncollect;
 
 
 /**
- * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Uncollect} to an {@link EnumerableUncollect}.
+ * Rule to convert an {@link org.polypheny.db.rel.core.Uncollect} to an {@link EnumerableUncollect}.
  */
 class EnumerableUncollectRule extends ConverterRule {
 

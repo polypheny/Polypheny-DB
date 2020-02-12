@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableRel;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Node;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.interpreter.BindableRel;
+import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +61,8 @@ import org.apache.calcite.linq4j.Enumerator;
 /**
  * Relational expression that converts an enumerable input to interpretable calling convention.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention
- * @see ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention
+ * @see org.polypheny.db.adapter.enumerable.EnumerableConvention
+ * @see org.polypheny.db.interpreter.BindableConvention
  */
 public class EnumerableBindable extends ConverterImpl implements BindableRel {
 

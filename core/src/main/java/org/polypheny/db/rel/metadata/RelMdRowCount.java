@@ -31,33 +31,33 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableLimit;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.NumberUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.enumerable.EnumerableLimit;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Util;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -79,7 +79,7 @@ public class RelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     /**
      * Catch-all implementation for {@link BuiltInMetadata.RowCount#getRowCount()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getRowCount(RelNode)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#getRowCount(RelNode)
      */
     public Double getRowCount( RelNode rel, RelMetadataQuery mq ) {
         return rel.estimateRowCount( mq );

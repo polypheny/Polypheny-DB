@@ -31,37 +31,37 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+package org.polypheny.db.plan.hep;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.AbstractRelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.CommonRelSubExprRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.Converter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.TraitMatchingRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.BreadthFirstIterator;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.CycleDetector;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultDirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultEdge;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DepthFirstIterator;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.Graphs;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.TopologicalOrderIterator;
+import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.CommonRelSubExprRule;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptCostFactory;
+import org.polypheny.db.plan.RelOptCostImpl;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.Converter;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.convert.TraitMatchingRule;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.graph.BreadthFirstIterator;
+import org.polypheny.db.util.graph.CycleDetector;
+import org.polypheny.db.util.graph.DefaultDirectedGraph;
+import org.polypheny.db.util.graph.DefaultEdge;
+import org.polypheny.db.util.graph.DepthFirstIterator;
+import org.polypheny.db.util.graph.DirectedGraph;
+import org.polypheny.db.util.graph.Graphs;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;

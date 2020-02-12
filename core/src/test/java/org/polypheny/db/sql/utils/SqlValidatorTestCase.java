@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
+package org.polypheny.db.sql.utils;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation.Coercibility;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
-import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReaderExtended;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCollation.Coercibility;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
 import java.nio.charset.Charset;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;

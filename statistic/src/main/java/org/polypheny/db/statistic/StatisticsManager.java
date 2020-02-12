@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.statistic;
+package org.polypheny.db.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.Config;
-import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

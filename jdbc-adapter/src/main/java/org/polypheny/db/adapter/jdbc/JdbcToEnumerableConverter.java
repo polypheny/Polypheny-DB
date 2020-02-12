@@ -31,36 +31,36 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection.ConnectionHandler;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect.CalendarPolicy;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableRel;
+import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.adapter.enumerable.PhysType;
+import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.util.BuiltInMethod;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;

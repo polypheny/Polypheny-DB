@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.tree.Expression;
 

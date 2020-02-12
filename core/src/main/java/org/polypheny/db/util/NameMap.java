@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.CaseInsensitiveComparator.COMPARATOR;
+import static org.polypheny.db.util.CaseInsensitiveComparator.COMPARATOR;
 
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.Collections;

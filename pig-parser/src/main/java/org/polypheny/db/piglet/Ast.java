@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.piglet;
+package org.polypheny.db.piglet;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
@@ -247,7 +247,7 @@ public class Ast {
      * alias = FOREACH alias GENERATE expression [, expression]... [ AS schema ];
      * </code>
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.piglet.Ast.ForeachNestedStmt
+     * @see org.polypheny.db.piglet.Ast.ForeachNestedStmt
      */
     public static class ForeachStmt extends Assignment1 {
 
@@ -276,7 +276,7 @@ public class Ast {
      * nested_op ::= DISTINCT, FILTER, LIMIT, ORDER, SAMPLE
      * </code>
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.piglet.Ast.ForeachStmt
+     * @see org.polypheny.db.piglet.Ast.ForeachStmt
      */
     public static class ForeachNestedStmt extends Assignment1 {
 

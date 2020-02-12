@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
 import org.apache.calcite.avatica.util.PositionedCursor;
@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.Enumerator;
  * Implementation of {@link org.apache.calcite.avatica.util.Cursor} on top of an {@link org.apache.calcite.linq4j.Enumerator} that returns a record for each row. The returned record is cached to avoid
  * multiple computations of current row.
  *
- * For instance, {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableCalc} computes result just in {@code current()} method, thus it makes sense to cache the result and make it available for all the accessors.
+ * For instance, {@link org.polypheny.db.adapter.enumerable.EnumerableCalc} computes result just in {@code current()} method, thus it makes sense to cache the result and make it available for all the accessors.
  *
  * @param <T> Element type
  */

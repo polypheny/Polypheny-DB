@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.util.SqlString;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
 

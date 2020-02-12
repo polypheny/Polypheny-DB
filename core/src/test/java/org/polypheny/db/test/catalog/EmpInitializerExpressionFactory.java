@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.catalog;
+package org.polypheny.db.test.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerContext;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql2rel.InitializerContext;
+import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import java.math.BigDecimal;
 
 

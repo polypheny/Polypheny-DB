@@ -31,35 +31,35 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultDirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultEdge;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.TopologicalOrderIterator;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.graph.DefaultDirectedGraph;
+import org.polypheny.db.util.graph.DefaultEdge;
+import org.polypheny.db.util.graph.DirectedGraph;
+import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import java.io.PrintWriter;

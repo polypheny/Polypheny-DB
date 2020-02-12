@@ -31,40 +31,40 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.SUBSTRING;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
+import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
+import static org.polypheny.db.sql.fun.SqlStdOperatorTable.SUBSTRING;
+import static org.polypheny.db.sql.fun.SqlStdOperatorTable.UPPER;
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ControlFlowException;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ControlFlowException;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
@@ -701,7 +701,7 @@ public class RexToLixTranslator {
     /**
      * Translates a literal.
      *
-     * @throws AlwaysNull if literal is null but {@code nullAs} is {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.NullAs#NOT_POSSIBLE}.
+     * @throws AlwaysNull if literal is null but {@code nullAs} is {@link org.polypheny.db.adapter.enumerable.RexImpTable.NullAs#NOT_POSSIBLE}.
      */
     public static Expression translateLiteral( RexLiteral literal, RelDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
         if ( literal.isNull() ) {
@@ -804,7 +804,7 @@ public class RexToLixTranslator {
 
     /**
      * Translates the list of {@code RexNode}, using the default output types. This might be suboptimal in terms of additional box-unbox when you use the translation later.
-     * If you know the java class that will be used to store the results, use {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator#translateList(java.util.List, java.util.List)} version.
+     * If you know the java class that will be used to store the results, use {@link org.polypheny.db.adapter.enumerable.RexToLixTranslator#translateList(java.util.List, java.util.List)} version.
      *
      * @param operandList list of RexNodes to translate
      * @return translated expressions

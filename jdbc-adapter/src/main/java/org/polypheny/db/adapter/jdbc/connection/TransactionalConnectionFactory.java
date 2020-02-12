@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.connection;
+package org.polypheny.db.adapter.jdbc.connection;
 
 
 import java.sql.Connection;

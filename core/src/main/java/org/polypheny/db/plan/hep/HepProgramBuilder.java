@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+package org.polypheny.db.plan.hep;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.CommonRelSubExprRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
+import org.polypheny.db.plan.CommonRelSubExprRule;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -160,7 +160,7 @@ public class HepProgramBuilder {
 
 
     /**
-     * Adds an instruction to attempt to match instances of {@link ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule}, but only where a conversion is actually required.
+     * Adds an instruction to attempt to match instances of {@link org.polypheny.db.rel.convert.ConverterRule}, but only where a conversion is actually required.
      *
      * @param guaranteed if true, use only guaranteed converters; if false, use only non-guaranteed converters
      */

@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
 
 
 /**
  * Calling convention that returns results as an {@link org.apache.calcite.linq4j.Enumerable} of object arrays.
  *
- * The relational expression needs to implement {@link ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable}. Unlike {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention}, no code generation is required.
+ * The relational expression needs to implement {@link org.polypheny.db.runtime.ArrayBindable}. Unlike {@link org.polypheny.db.adapter.enumerable.EnumerableConvention}, no code generation is required.
  */
 public enum BindableConvention implements Convention {
     INSTANCE;

@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
 import java.util.Objects;
 import java.util.Set;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.Join}.
  */
 public class MutableJoin extends MutableBiRel {
 

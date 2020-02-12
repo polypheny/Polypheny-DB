@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
+package org.polypheny.db.adapter.druid;
 
 
 import javax.annotation.Nullable;

@@ -31,43 +31,43 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
 
 /**
  * Planner rule that pushes
- * a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin} down in a tree past
- * a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Project}.
+ * a {@link org.polypheny.db.rel.core.SemiJoin} down in a tree past
+ * a {@link org.polypheny.db.rel.core.Project}.
  *
  * The intention is to trigger other rules that will convert {@code SemiJoin}s.
  *
  * SemiJoin(LogicalProject(X), Y) &rarr; LogicalProject(SemiJoin(X, Y))
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.rules.SemiJoinFilterTransposeRule
+ * @see org.polypheny.db.rel.rules.SemiJoinFilterTransposeRule
  */
 public class SemiJoinProjectTransposeRule extends RelOptRule {
 

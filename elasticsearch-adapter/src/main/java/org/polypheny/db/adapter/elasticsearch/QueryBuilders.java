@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.elasticsearch;
+package org.polypheny.db.adapter.elasticsearch;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;

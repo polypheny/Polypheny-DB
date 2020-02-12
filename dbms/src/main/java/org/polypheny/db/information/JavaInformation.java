@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package org.polypheny.db.information;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTaskManager;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 import java.util.Arrays;
 
 

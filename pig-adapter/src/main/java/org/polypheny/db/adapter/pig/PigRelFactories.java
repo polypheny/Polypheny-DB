@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
@@ -64,7 +64,7 @@ public class PigRelFactories {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.TableScanFactory} that returns a {@link PigTableScan}.
+     * Implementation of {@link org.polypheny.db.rel.core.RelFactories.TableScanFactory} that returns a {@link PigTableScan}.
      */
     public static class PigTableScanFactory implements RelFactories.TableScanFactory {
 
@@ -79,7 +79,7 @@ public class PigRelFactories {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.FilterFactory} that returns a {@link PigFilter}.
+     * Implementation of {@link org.polypheny.db.rel.core.RelFactories.FilterFactory} that returns a {@link PigFilter}.
      */
     public static class PigFilterFactory implements RelFactories.FilterFactory {
 
@@ -94,7 +94,7 @@ public class PigRelFactories {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.AggregateFactory} that returns a {@link PigAggregate}.
+     * Implementation of {@link org.polypheny.db.rel.core.RelFactories.AggregateFactory} that returns a {@link PigAggregate}.
      */
     public static class PigAggregateFactory implements RelFactories.AggregateFactory {
 
@@ -109,7 +109,7 @@ public class PigRelFactories {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.JoinFactory} that returns a {@link PigJoin}.
+     * Implementation of {@link org.polypheny.db.rel.core.RelFactories.JoinFactory} that returns a {@link PigJoin}.
      */
     public static class PigJoinFactory implements RelFactories.JoinFactory {
 

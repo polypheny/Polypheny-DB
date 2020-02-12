@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.util.Pair;
 import java.util.List;
 
 
@@ -49,7 +49,7 @@ import java.util.List;
  * Other examples of namespaces include a table in the from list (the namespace contains the constituent columns) and a sub-query (the namespace contains the columns in the SELECT clause of the sub-query).
  *
  * These various kinds of namespace are implemented by classes {@link IdentifierNamespace} for table names, {@link SelectNamespace} for SELECT queries, {@link SetopNamespace} for UNION, EXCEPT and INTERSECT, and so forth.
- * But if you are looking at a SELECT query and call {@link SqlValidator#getNamespace(ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode)}, you may not get a SelectNamespace. Why? Because the validator is allowed to wrap namespaces in other objects which implement {@link SqlValidatorNamespace}.
+ * But if you are looking at a SELECT query and call {@link SqlValidator#getNamespace(org.polypheny.db.sql.SqlNode)}, you may not get a SelectNamespace. Why? Because the validator is allowed to wrap namespaces in other objects which implement {@link SqlValidatorNamespace}.
  * Your SelectNamespace will be there somewhere, but might be one or two levels deep.  Don't try to cast the namespace or use <code>instanceof</code>; use {@link SqlValidatorNamespace#unwrap(Class)} and {@link SqlValidatorNamespace#isWrapperFor(Class)} instead.
  *
  * @see SqlValidator

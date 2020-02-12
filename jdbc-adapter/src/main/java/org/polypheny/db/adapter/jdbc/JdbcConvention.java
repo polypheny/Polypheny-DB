@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterSetOpTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectRemoveRule;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.rel.rules.FilterSetOpTransposeRule;
+import org.polypheny.db.rel.rules.ProjectRemoveRule;
+import org.polypheny.db.sql.SqlDialect;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;

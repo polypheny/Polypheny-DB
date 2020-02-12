@@ -31,23 +31,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataType;
 import java.util.Objects;
 
 
 /**
  * Reference to a range of columns.
  *
- * This construct is used only during the process of translating a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode SQL} tree to a {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode rel}/{@link RexNode rex} tree.
+ * This construct is used only during the process of translating a {@link org.polypheny.db.sql.SqlNode SQL} tree to a {@link org.polypheny.db.rel.RelNode rel}/{@link RexNode rex} tree.
  * <em>Regular {@link RexNode rex} trees do not contain this construct.</em>
  *
  * While translating a join of EMP(EMPNO, ENAME, DEPTNO) to DEPT(DEPTNO2, DNAME) we create <code>RexRangeRef(DeptType,3)</code> to represent the pair of columns (DEPTNO2, DNAME) which came from DEPT.
  * The type has 2 columns, and therefore the range represents columns {3, 4} of the input.
  *
- * Suppose we later create a reference to the DNAME field of this RexRangeRef; it will return a <code>{@link RexInputRef}(5,Integer)</code>, and the {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexRangeRef} will disappear.
+ * Suppose we later create a reference to the DNAME field of this RexRangeRef; it will return a <code>{@link RexInputRef}(5,Integer)</code>, and the {@link org.polypheny.db.rex.RexRangeRef} will disappear.
  */
 public class RexRangeRef extends RexNode {
 

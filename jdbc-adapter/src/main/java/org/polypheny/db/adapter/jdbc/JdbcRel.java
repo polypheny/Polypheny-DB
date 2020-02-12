@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

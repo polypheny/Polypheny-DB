@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.HashSet;

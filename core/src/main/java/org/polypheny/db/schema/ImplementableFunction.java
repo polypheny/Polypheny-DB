@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor;
+import org.polypheny.db.adapter.enumerable.CallImplementor;
 
 
 /**

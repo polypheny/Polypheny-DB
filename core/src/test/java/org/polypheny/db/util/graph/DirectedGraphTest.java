@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.graph;
+package org.polypheny.db.util.graph;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -223,7 +223,7 @@ public class DirectedGraphTest {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.graph.Graphs.FrozenGraph}.
+     * Unit test for {@link org.polypheny.db.util.graph.Graphs.FrozenGraph}.
      */
     @Test
     public void testPaths() {
@@ -257,7 +257,7 @@ public class DirectedGraphTest {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.graph.CycleDetector}.
+     * Unit test for {@link org.polypheny.db.util.graph.CycleDetector}.
      */
     @Test
     public void testCycleDetection() {
@@ -332,7 +332,7 @@ public class DirectedGraphTest {
 
 
     /**
-     * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.graph.BreadthFirstIterator}.
+     * Unit test for {@link org.polypheny.db.util.graph.BreadthFirstIterator}.
      */
     @Test
     public void testBreadthFirstIterator() {

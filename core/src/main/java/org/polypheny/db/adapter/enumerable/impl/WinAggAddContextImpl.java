@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl;
+package org.polypheny.db.adapter.enumerable.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.WinAggAddContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.WinAggFrameResultContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.WinAggImplementor;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.adapter.enumerable.WinAggAddContext;
+import org.polypheny.db.adapter.enumerable.WinAggFrameResultContext;
+import org.polypheny.db.adapter.enumerable.WinAggImplementor;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -46,7 +46,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.WinAggAddContext}.
+ * Implementation of {@link org.polypheny.db.adapter.enumerable.WinAggAddContext}.
  */
 public abstract class WinAggAddContextImpl extends WinAggResultContextImpl implements WinAggAddContext {
 

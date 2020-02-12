@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMultisetQueryConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMultisetValueConstructor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
+import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.type.SqlTypeUtil;
 import java.util.List;
 
 

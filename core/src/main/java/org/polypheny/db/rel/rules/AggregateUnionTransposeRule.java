@@ -31,31 +31,31 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlAnyValueAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlBitOpAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlCountAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlMinMaxAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.metadata.RelMdUtil;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.fun.SqlAnyValueAggFunction;
+import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
+import org.polypheny.db.sql.fun.SqlCountAggFunction;
+import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.fun.SqlSumAggFunction;
+import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -65,7 +65,7 @@ import org.apache.calcite.linq4j.Ord;
 
 
 /**
- * Planner rule that pushes an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} past a non-distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}.
+ * Planner rule that pushes an {@link org.polypheny.db.rel.core.Aggregate} past a non-distinct {@link org.polypheny.db.rel.core.Union}.
  */
 public class AggregateUnionTransposeRule extends RelOptRule {
 

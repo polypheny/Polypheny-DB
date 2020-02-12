@@ -31,30 +31,30 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.GoodSingleRule;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.NoneLeafRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.NoneSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PhysLeafRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.PhysSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.TestSingleRel;
-import static ch.unibas.dmi.dbis.polyphenydb.plan.volcano.PlannerTests.newCluster;
+import static org.polypheny.db.plan.volcano.PlannerTests.GoodSingleRule;
+import static org.polypheny.db.plan.volcano.PlannerTests.NoneLeafRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.NoneSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
+import static org.polypheny.db.plan.volcano.PlannerTests.PhysLeafRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.PhysSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.TestSingleRel;
+import static org.polypheny.db.plan.volcano.PlannerTests.newCluster;
 import static org.junit.Assert.assertTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

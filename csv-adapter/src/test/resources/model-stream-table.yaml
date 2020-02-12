@@ -5,7 +5,7 @@ schemas:
         tables:
             -   name: DEPTS
                 type: custom
-                factory: ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStreamTableFactory
+                factory: org.polypheny.db.adapter.csv.CsvStreamTableFactory
                 stream:
                     stream: true
                 operand:

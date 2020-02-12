@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.util;
+package org.polypheny.db.sql.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlDynamicParam;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -119,7 +119,7 @@ public class SqlShuttle extends SqlBasicVisitor<SqlNode> {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBasicVisitor.ArgHandler} that deep-copies {@link SqlCall}s and their operands.
+     * Implementation of {@link org.polypheny.db.sql.util.SqlBasicVisitor.ArgHandler} that deep-copies {@link SqlCall}s and their operands.
      */
     protected class CallCopyingArgHandler implements ArgHandler<SqlNode> {
 

@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -90,7 +90,7 @@ public interface SqlValidatorScope {
     /**
      * Finds all table aliases which are implicitly qualifying an unqualified column name.
      *
-     * This method is only implemented in scopes (such as {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SelectScope}) which can be the context for name-resolution. In scopes such as {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.IdentifierNamespace}, it throws {@link UnsupportedOperationException}.
+     * This method is only implemented in scopes (such as {@link org.polypheny.db.sql.validate.SelectScope}) which can be the context for name-resolution. In scopes such as {@link org.polypheny.db.sql.validate.IdentifierNamespace}, it throws {@link UnsupportedOperationException}.
      *
      * @param columnName Column name
      * @param ctx Validation context, to appear in any error thrown
@@ -311,7 +311,7 @@ public interface SqlValidatorScope {
 
 
     /**
-     * Default implementation of {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope.Resolved}.
+     * Default implementation of {@link org.polypheny.db.sql.validate.SqlValidatorScope.Resolved}.
      */
     class ResolvedImpl implements Resolved {
 

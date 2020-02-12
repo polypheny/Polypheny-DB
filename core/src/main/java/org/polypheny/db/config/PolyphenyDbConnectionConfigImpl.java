@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.ChainedSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Properties;

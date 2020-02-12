@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
+package org.polypheny.db.catalog.entity.combined;
 
 
 import java.io.Serializable;

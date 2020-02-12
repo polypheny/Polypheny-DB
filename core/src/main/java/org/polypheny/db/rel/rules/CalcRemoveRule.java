@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Planner rule that removes a trivial {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc}.
+ * Planner rule that removes a trivial {@link org.polypheny.db.rel.logical.LogicalCalc}.
  *
- * A {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc} is trivial if it projects its input fields in their original order, and it does not filter.
+ * A {@link org.polypheny.db.rel.logical.LogicalCalc} is trivial if it projects its input fields in their original order, and it does not filter.
  *
  * @see ProjectRemoveRule
  */

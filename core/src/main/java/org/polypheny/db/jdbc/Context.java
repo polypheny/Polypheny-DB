@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.SparkHandler;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import java.util.List;
 
 

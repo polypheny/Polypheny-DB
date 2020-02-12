@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalWindow;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.logical.LogicalWindow;
 
 
 /**
- * Rule to convert a {@link LogicalWindow} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableWindow}.
+ * Rule to convert a {@link LogicalWindow} to an {@link org.polypheny.db.adapter.enumerable.EnumerableWindow}.
  */
 class EnumerableWindowRule extends ConverterRule {
 

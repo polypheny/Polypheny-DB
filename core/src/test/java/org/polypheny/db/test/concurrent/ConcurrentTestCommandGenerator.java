@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.concurrent;
+package org.polypheny.db.test.concurrent;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.SqlTimeoutException;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.jdbc.SqlTimeoutException;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintStream;
 import java.math.BigDecimal;

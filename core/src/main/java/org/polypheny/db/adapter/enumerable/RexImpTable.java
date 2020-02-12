@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
@@ -50,32 +50,32 @@ import static org.apache.calcite.linq4j.tree.ExpressionType.OrElse;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
 import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ImplementableAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ImplementableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AggregateFunctionImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.OracleSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlJsonArrayAggAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlJsonObjectAggAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlTrimFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlTrimFunction.Flag;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedFunction;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.schema.ImplementableAggFunction;
+import org.polypheny.db.schema.ImplementableFunction;
+import org.polypheny.db.schema.impl.AggregateFunctionImpl;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
+import org.polypheny.db.sql.fun.SqlJsonObjectAggAggFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.fun.SqlTrimFunction;
+import org.polypheny.db.sql.fun.SqlTrimFunction.Flag;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;
+import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Constructor;
@@ -538,7 +538,7 @@ public class RexImpTable {
 
     public CallImplementor get( final SqlOperator operator ) {
         if ( operator instanceof SqlUserDefinedFunction ) {
-            ch.unibas.dmi.dbis.polyphenydb.schema.Function udf = ((SqlUserDefinedFunction) operator).getFunction();
+            org.polypheny.db.schema.Function udf = ((SqlUserDefinedFunction) operator).getFunction();
             if ( !(udf instanceof ImplementableFunction) ) {
                 throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
             }

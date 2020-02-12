@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
 /**
@@ -41,9 +41,9 @@ package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
  * This interface does not define new methods: window-specific sub-interfaces are passed when implementing window aggregate.
  *
  * @see StrictWinAggImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.FirstLastValueImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.RankImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.RowNumberImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.FirstLastValueImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.RankImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.RowNumberImplementor
  */
 public interface WinAggImplementor extends AggImplementor {
 

@@ -31,39 +31,39 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ViewExpanders;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCorrelate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalExchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMatch;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalSort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalSortExchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SemiJoinType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.ViewExpanders;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalSortExchange;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.sql.SemiJoinType;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +128,7 @@ public class RelFactories {
 
 
     /**
-     * Can create a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} of the appropriate type for this rule's calling convention.
+     * Can create a {@link org.polypheny.db.rel.logical.LogicalProject} of the appropriate type for this rule's calling convention.
      */
     public interface ProjectFactory {
 
@@ -141,7 +141,7 @@ public class RelFactories {
 
     /**
      * Implementation of {@link ProjectFactory} that returns a vanilla
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}.
+     * {@link org.polypheny.db.rel.logical.LogicalProject}.
      */
     private static class ProjectFactoryImpl implements ProjectFactory {
 
@@ -178,7 +178,7 @@ public class RelFactories {
 
 
     /**
-     * Can create a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange} of the appropriate type for a rule's calling convention.
+     * Can create a {@link org.polypheny.db.rel.core.Exchange} of the appropriate type for a rule's calling convention.
      */
     public interface ExchangeFactory {
 
@@ -329,7 +329,7 @@ public class RelFactories {
 
 
     /**
-     * Implementation of {@link JoinFactory} that returns a vanilla {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin}.
+     * Implementation of {@link JoinFactory} that returns a vanilla {@link org.polypheny.db.rel.logical.LogicalJoin}.
      */
     private static class JoinFactoryImpl implements JoinFactory {
 
@@ -361,7 +361,7 @@ public class RelFactories {
 
 
     /**
-     * Implementation of {@link CorrelateFactory} that returns a vanilla {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCorrelate}.
+     * Implementation of {@link CorrelateFactory} that returns a vanilla {@link org.polypheny.db.rel.logical.LogicalCorrelate}.
      */
     private static class CorrelateFactoryImpl implements CorrelateFactory {
 
@@ -467,7 +467,7 @@ public class RelFactories {
 
 
     /**
-     * Creates a {@link TableScanFactory} that uses a {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander} to handle {@link TranslatableTable} instances,
+     * Creates a {@link TableScanFactory} that uses a {@link org.polypheny.db.plan.RelOptTable.ViewExpander} to handle {@link TranslatableTable} instances,
      * and falls back to a default factory for other tables.
      *
      * @param viewExpander View expander

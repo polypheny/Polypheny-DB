@@ -31,29 +31,29 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypePrecedenceList;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBasicVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.util.BarfingInvocationHandler;
-import ch.unibas.dmi.dbis.polyphenydb.util.ConversionUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.util.BarfingInvocationHandler;
+import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.base.Predicates;
 import com.google.common.base.Utf8;
 import com.google.common.collect.ImmutableList;
@@ -726,7 +726,7 @@ public abstract class SqlUtil {
 
 
     /**
-     * Creates the type of an {@link ch.unibas.dmi.dbis.polyphenydb.util.NlsString}.
+     * Creates the type of an {@link org.polypheny.db.util.NlsString}.
      *
      * The type inherits the NlsString's {@link Charset} and {@link SqlCollation}, if they are set, otherwise it gets the system defaults.
      *
@@ -845,7 +845,7 @@ public abstract class SqlUtil {
 
     /**
      * Handles particular {@link DatabaseMetaData} methods; invocations of other methods will fall through to the base class,
-     * {@link ch.unibas.dmi.dbis.polyphenydb.util.BarfingInvocationHandler}, which will throw an error.
+     * {@link org.polypheny.db.util.BarfingInvocationHandler}, which will throw an error.
      */
     public static class DatabaseMetaDataInvocationHandler extends BarfingInvocationHandler {
 
@@ -871,7 +871,7 @@ public abstract class SqlUtil {
 
 
     /**
-     * Walks over a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode} tree and returns the ancestry stack when it finds a given node.
+     * Walks over a {@link org.polypheny.db.sql.SqlNode} tree and returns the ancestry stack when it finds a given node.
      */
     private static class Genealogist extends SqlBasicVisitor<Void> {
 

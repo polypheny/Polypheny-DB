@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.rel.RelNode;
 import java.sql.PreparedStatement;
 
 

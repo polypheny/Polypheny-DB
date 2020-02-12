@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.pig;
+package org.polypheny.db.adapter.pig;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join} in
+ * Implementation of {@link org.polypheny.db.rel.core.Join} in
  * {@link PigRel#CONVENTION Pig calling convention}.
  */
 public class PigJoin extends Join implements PigRel {

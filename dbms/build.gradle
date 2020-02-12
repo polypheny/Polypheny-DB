@@ -1,5 +1,5 @@
 
-group "ch.unibas.dmi.dbis.polyphenydb"
+group "org.polypheny"
 
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -139,7 +139,7 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
-        attributes "Main-Class": "ch.unibas.dmi.dbis.polyphenydb.PolyphenyDb"
+        attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {

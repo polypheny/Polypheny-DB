@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -40,8 +40,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.test.SlowTests;
+import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.test.SlowTests;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;

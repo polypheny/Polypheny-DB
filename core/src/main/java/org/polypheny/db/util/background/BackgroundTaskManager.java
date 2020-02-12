@@ -1,12 +1,12 @@
-package ch.unibas.dmi.dbis.polyphenydb.util.background;
+package org.polypheny.db.util.background;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;

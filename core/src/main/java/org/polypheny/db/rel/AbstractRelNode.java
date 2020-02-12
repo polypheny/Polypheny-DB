@@ -31,31 +31,31 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.Metadata;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.externalize.RelWriterImpl;
+import org.polypheny.db.rel.metadata.Metadata;
+import org.polypheny.db.rel.metadata.MetadataFactory;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.PrintWriter;
@@ -320,7 +320,7 @@ public abstract class AbstractRelNode implements RelNode {
 
     /**
      * Describes the inputs and attributes of this relational expression.
-     * Each node should call {@code super.explainTerms}, then call the {@link ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl#input(String, RelNode)} and {@link ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl#item(String, Object)}
+     * Each node should call {@code super.explainTerms}, then call the {@link org.polypheny.db.rel.externalize.RelWriterImpl#input(String, RelNode)} and {@link org.polypheny.db.rel.externalize.RelWriterImpl#item(String, Object)}
      * methods for each input and attribute.
      *
      * @param pw Plan writer

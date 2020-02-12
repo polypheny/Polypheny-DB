@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.validate.SqlConformance;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;

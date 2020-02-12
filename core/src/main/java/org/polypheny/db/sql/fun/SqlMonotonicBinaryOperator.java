@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlOperandTypeInference;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
 import java.math.BigDecimal;
 
 

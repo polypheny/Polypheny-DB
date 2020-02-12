@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Rule to convert an {@link LogicalJoin inner join} to a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter filter} on top of a {@link LogicalJoin cartesian inner join}.
+ * Rule to convert an {@link LogicalJoin inner join} to a {@link org.polypheny.db.rel.logical.LogicalFilter filter} on top of a {@link LogicalJoin cartesian inner join}.
  *
  * One benefit of this transformation is that after it, the join condition can be combined with conditions and expressions above the join. It also makes the <code>FennelCartesianJoinRule</code> applicable.
  *

@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
+package org.polypheny.db.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util.CassandraUtils;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.adapter.cassandra.CassandraConvention;
+import org.polypheny.db.adapter.cassandra.CassandraFilter;
+import org.polypheny.db.adapter.cassandra.CassandraTable;
+import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Pair;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
+ * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
  */
 @Slf4j
 public class CassandraFilterRule extends CassandraConverterRule {

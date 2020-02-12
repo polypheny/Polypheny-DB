@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
 import java.lang.reflect.Type;

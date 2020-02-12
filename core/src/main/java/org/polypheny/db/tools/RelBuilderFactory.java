@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.rel.core.RelFactories;
 
 
 /**

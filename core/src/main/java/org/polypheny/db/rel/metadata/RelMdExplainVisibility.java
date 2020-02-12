@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
@@ -60,7 +60,7 @@ public class RelMdExplainVisibility implements MetadataHandler<BuiltInMetadata.E
     /**
      * Catch-all implementation for {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(SqlExplainLevel)}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#isVisibleInExplain(RelNode, SqlExplainLevel)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#isVisibleInExplain(RelNode, SqlExplainLevel)
      */
     public Boolean isVisibleInExplain( RelNode rel, RelMetadataQuery mq, SqlExplainLevel explainLevel ) {
         // no information available

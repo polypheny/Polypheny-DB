@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
  * Strategy to transform one type to another. The transformation is dependent on the implemented strategy object and in the general case is a function of the type and the other operands.
  * Can not be used by itself. Must be used in an object of type {@link SqlTypeTransformCascade}.
  *
- * This class is an example of the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#STRATEGY_PATTERN strategy pattern}.
+ * This class is an example of the {@link org.polypheny.db.util.Glossary#STRATEGY_PATTERN strategy pattern}.
  */
 public interface SqlTypeTransform {
 

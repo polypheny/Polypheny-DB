@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelMultipleTrait;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.plan.RelMultipleTrait;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import java.util.List;
 import javax.annotation.Nonnull;
 

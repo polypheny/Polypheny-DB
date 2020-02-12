@@ -31,37 +31,37 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.Converter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinInfo;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.Converter;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinInfo;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -106,7 +106,7 @@ public class RelMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
      * @param columns column mask representing the subset of columns for which uniqueness will be determined
      * @param ignoreNulls if true, ignore null values when determining column uniqueness
      * @return whether the columns are unique, or null if not enough information is available to make that determination
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet, boolean)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#areColumnsUnique(RelNode, ImmutableBitSet, boolean)
      */
     public Boolean areColumnsUnique( RelNode rel, RelMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         // no information available

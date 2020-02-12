@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
+import org.polypheny.db.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 
 

@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.util.ImmutableNullableList;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -91,12 +91,12 @@ public class SqlSetOption extends SqlAlter {
             };
 
     /**
-     * Name of the option as an {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier} with one or more parts.
+     * Name of the option as an {@link org.polypheny.db.sql.SqlIdentifier} with one or more parts.
      */
     SqlIdentifier name;
 
     /**
-     * Value of the option. May be a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral} or a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier} with one part.
+     * Value of the option. May be a {@link org.polypheny.db.sql.SqlLiteral} or a {@link org.polypheny.db.sql.SqlIdentifier} with one part.
      * Reserved words (currently just 'ON') are converted to identifiers by the parser.
      */
     SqlNode value;

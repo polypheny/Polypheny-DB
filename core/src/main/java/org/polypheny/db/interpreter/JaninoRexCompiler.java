@@ -31,31 +31,31 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationCode;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.StringReader;

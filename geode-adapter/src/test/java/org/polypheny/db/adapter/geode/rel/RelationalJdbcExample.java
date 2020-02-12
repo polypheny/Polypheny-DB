@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
+package org.polypheny.db.adapter.geode.rel;
 
 
 import java.sql.Connection;
@@ -73,18 +73,18 @@ public class RelationalJdbcExample {
                 + "     {\n"
                 + "       type: 'custom',\n"
                 + "       name: 'TEST',\n"
-                + "       factory: 'ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel.GeodeSchemaFactory',\n"
+                + "       factory: 'org.polypheny.db.adapter.geode.rel.GeodeSchemaFactory',\n"
                 + "       operand: {\n"
                 + "         locatorHost: 'localhost', \n"
                 + "         locatorPort: '10334', \n"
                 + "         regions: 'BookMaster,BookCustomer,BookInventory,BookOrder', \n"
-                + "         pdxSerializablePackagePath: 'ch.unibas.dmi.dbis.polyphenydb.adapter.geode.domain.*' \n"
+                + "         pdxSerializablePackagePath: 'org.polypheny.db.adapter.geode.domain.*' \n"
                 + "       }\n"
                 + "     }\n"
                 + "   ]\n"
                 + "}";
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
+        Class.forName( "org.polypheny.db.jdbc.embedded.EmbeddedDriver" );
 
         Properties info = new Properties();
         info.put( "model", geodeModelJson );

@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.ArrayList;
 import java.util.List;
 
 
 /**
  * Planner rule that pushes a
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join}
- * past a non-distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}.
+ * {@link org.polypheny.db.rel.core.Join}
+ * past a non-distinct {@link org.polypheny.db.rel.core.Union}.
  */
 public class JoinUnionTransposeRule extends RelOptRule {
 

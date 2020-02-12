@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAccessType;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlAccessType;
 import java.util.List;
 
 
 /**
- * Implements {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorTable} by delegating to a parent table.
+ * Implements {@link org.polypheny.db.sql.validate.SqlValidatorTable} by delegating to a parent table.
  */
 public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
 

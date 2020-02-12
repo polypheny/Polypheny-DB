@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.piglet.Handler;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
+import org.polypheny.db.piglet.Handler;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.tools.PigRelBuilder;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Array;

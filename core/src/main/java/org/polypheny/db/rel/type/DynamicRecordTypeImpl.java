@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeExplicitPrecedenceList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.sql.type.SqlTypeExplicitPrecedenceList;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

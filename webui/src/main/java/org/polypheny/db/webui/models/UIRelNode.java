@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package org.polypheny.db.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.JoinRelType;
 
 
 /**

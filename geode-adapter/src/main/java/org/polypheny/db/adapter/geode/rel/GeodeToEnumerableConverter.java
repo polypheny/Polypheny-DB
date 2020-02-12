@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
+package org.polypheny.db.adapter.geode.rel;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel.GeodeRules.geodeFieldNames;
+import static org.polypheny.db.adapter.geode.rel.GeodeRules.geodeFieldNames;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.JavaRowFormat;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel.GeodeRel.GeodeImplementContext;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.adapter.enumerable.EnumerableRel;
+import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.adapter.enumerable.PhysType;
+import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
+import org.polypheny.db.adapter.geode.rel.GeodeRel.GeodeImplementContext;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Method;
 import java.util.AbstractList;

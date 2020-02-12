@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.util.NameMap;
-import ch.unibas.dmi.dbis.polyphenydb.util.NameMultimap;
-import ch.unibas.dmi.dbis.polyphenydb.util.NameSet;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.util.NameMap;
+import org.polypheny.db.util.NameMultimap;
+import org.polypheny.db.util.NameSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;

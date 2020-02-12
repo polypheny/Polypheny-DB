@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFieldImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelRecordType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Unit;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.IntervalSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.JavaToSqlTypeConversionRules;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.java.Array;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.runtime.GeoFunctions;
+import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.IntervalSqlType;
+import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -113,7 +113,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
         if ( array != null ) {
             return new Types.ArrayType( array.component(), array.componentIsNullable(), array.maximumCardinality() );
         }
-        final ch.unibas.dmi.dbis.polyphenydb.adapter.java.Map map = field.getAnnotation( ch.unibas.dmi.dbis.polyphenydb.adapter.java.Map.class );
+        final org.polypheny.db.adapter.java.Map map = field.getAnnotation( org.polypheny.db.adapter.java.Map.class );
         if ( map != null ) {
             return new Types.MapType( map.key(), map.keyIsNullable(), map.value(), map.valueIsNullable() );
         }

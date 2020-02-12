@@ -31,23 +31,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexOver;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.function.Predicate;
 
 
@@ -57,9 +57,9 @@ import java.util.function.Predicate;
 public class FilterProjectTransposeRule extends RelOptRule {
 
     /**
-     * The default instance of {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterProjectTransposeRule}.
+     * The default instance of {@link org.polypheny.db.rel.rules.FilterProjectTransposeRule}.
      *
-     * It matches any kind of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join} or {@link Filter}, and generates the same kind of Join and Filter.
+     * It matches any kind of {@link org.polypheny.db.rel.core.Join} or {@link Filter}, and generates the same kind of Join and Filter.
      *
      * It does not allow a Filter to be pushed past the Project if {@link RexUtil#containsCorrelation there is a correlation condition}) anywhere in the Filter, since in some cases it can
      * prevent a {@link Correlate} from being de-correlated.

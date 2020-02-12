@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
+package org.polypheny.db.catalog.entity.combined;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;

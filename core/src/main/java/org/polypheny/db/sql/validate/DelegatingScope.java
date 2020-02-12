@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.DynamicRecordType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
-import ch.unibas.dmi.dbis.polyphenydb.schema.CustomColumnResolvingTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.type.DynamicRecordType;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.schema.CustomColumnResolvingTable;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.rel;
+package org.polypheny.db.adapter.geode.rel;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +55,7 @@ import org.apache.geode.pdx.PdxInstanceFactory;
  */
 class JsonLoader {
 
-    private static final String ROOT_PACKATE = "ch.unibas.dmi.dbis.polyphenydb.adapter.geode";
+    private static final String ROOT_PACKATE = "org.polypheny.db.adapter.geode";
 
     private final String rootPackage;
     private final Region region;

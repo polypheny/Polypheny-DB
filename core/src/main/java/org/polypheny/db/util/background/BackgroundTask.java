@@ -1,4 +1,4 @@
-package ch.unibas.dmi.dbis.polyphenydb.util.background;
+package org.polypheny.db.util.background;
 
 
 import lombok.Getter;

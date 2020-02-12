@@ -31,34 +31,34 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.BuiltInMetadata.Size;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.BuiltInMetadata.Size;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,7 +102,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Size#averageRowSize()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getAverageRowSize
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#getAverageRowSize
      */
     public Double averageRowSize( RelNode rel, RelMetadataQuery mq ) {
         final List<Double> averageColumnSizes = mq.getAverageColumnSizes( rel );
@@ -125,7 +125,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Size#averageColumnSizes()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getAverageColumnSizes
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#getAverageColumnSizes
      */
     public List<Double> averageColumnSizes( RelNode rel, RelMetadataQuery mq ) {
         return null; // absolutely no idea

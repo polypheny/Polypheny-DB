@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
+package org.polypheny.db.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify.Operation;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.adapter.cassandra.CassandraConvention;
+import org.polypheny.db.adapter.cassandra.CassandraTableModify;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.tools.RelBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 
 

@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.java;
+package org.polypheny.db.adapter.java;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.AbstractTable;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.impl.AbstractTable;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
- * Abstract base class for implementing {@link ch.unibas.dmi.dbis.polyphenydb.schema.Table}.
+ * Abstract base class for implementing {@link org.polypheny.db.schema.Table}.
  */
 public abstract class AbstractQueryableTable extends AbstractTable implements QueryableTable {
 

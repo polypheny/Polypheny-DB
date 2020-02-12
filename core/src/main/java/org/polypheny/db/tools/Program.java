@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
 
 
 /**
  * Program that transforms a relational expression into another relational expression.
  *
  * A planner is a sequence of programs, each of which is sometimes called a "phase".
- * The most typical program is an invocation of the volcano planner with a particular {@link ch.unibas.dmi.dbis.polyphenydb.tools.RuleSet}.</p>
+ * The most typical program is an invocation of the volcano planner with a particular {@link org.polypheny.db.tools.RuleSet}.</p>
  */
 public interface Program {
 

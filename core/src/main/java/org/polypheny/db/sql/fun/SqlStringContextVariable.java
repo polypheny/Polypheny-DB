@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.type.ReturnTypes;
 
 
 /**

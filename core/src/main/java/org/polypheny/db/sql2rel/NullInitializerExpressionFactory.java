@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql2rel;
+package org.polypheny.db.sql2rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.sql.SqlFunction;
 import java.util.List;
 
 

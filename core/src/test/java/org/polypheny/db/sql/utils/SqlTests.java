@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
+package org.polypheny.db.sql.utils;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -24,17 +24,17 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil.StringAndPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester.ParameterChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester.ResultChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester.TypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.utils.SqlTester.ParameterChecker;
+import org.polypheny.db.sql.utils.SqlTester.ResultChecker;
+import org.polypheny.db.sql.utils.SqlTester.TypeChecker;
+import org.polypheny.db.util.TestUtil;
+import org.polypheny.db.util.Util;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.Arrays;

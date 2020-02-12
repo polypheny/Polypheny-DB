@@ -31,35 +31,35 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionProperty;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCostFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable.ViewExpander;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PlannerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.schema.AbstractPolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlRexConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCostFactory;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.RelOptTable.ViewExpander;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.prepare.PlannerImpl;
+import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql2rel.SqlRexConvertletTable;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.sql2rel.StandardConvertletTable;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
@@ -238,7 +238,7 @@ public class Frameworks {
         private RelOptCostFactory costFactory;
         private RelDataTypeSystem typeSystem;
         private ViewExpander viewExpander;
-        private ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
+        private org.polypheny.db.jdbc.Context prepareContext;
 
 
         /**
@@ -389,7 +389,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder prepareContext( ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext ) {
+        public ConfigBuilder prepareContext( org.polypheny.db.jdbc.Context prepareContext ) {
             this.prepareContext = prepareContext;
             return this;
         }
@@ -413,7 +413,7 @@ public class Frameworks {
         private final RelDataTypeSystem typeSystem;
         private final RexExecutor executor;
         private final ViewExpander viewExpander;
-        private final ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext;
+        private final org.polypheny.db.jdbc.Context prepareContext;
 
 
         StdFrameworkConfig(
@@ -429,7 +429,7 @@ public class Frameworks {
                 RelDataTypeSystem typeSystem,
                 RexExecutor executor,
                 ViewExpander viewExpander,
-                ch.unibas.dmi.dbis.polyphenydb.jdbc.Context prepareContext ) {
+                org.polypheny.db.jdbc.Context prepareContext ) {
             this.context = context;
             this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
@@ -519,7 +519,7 @@ public class Frameworks {
 
 
         @Override
-        public ch.unibas.dmi.dbis.polyphenydb.jdbc.Context getPrepareContext() {
+        public org.polypheny.db.jdbc.Context getPrepareContext() {
             return prepareContext;
         }
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package org.polypheny.db.processing;
 
 
 import java.lang.reflect.Type;

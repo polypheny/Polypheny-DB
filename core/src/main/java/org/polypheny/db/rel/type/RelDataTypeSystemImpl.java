@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**
- * Default implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem}, providing parameters from the SQL standard.
+ * Default implementation of {@link org.polypheny.db.rel.type.RelDataTypeSystem}, providing parameters from the SQL standard.
  *
  * To implement other type systems, create a derived class and override values as needed.
  *

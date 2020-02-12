@@ -31,36 +31,36 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexTableInputRef.RelTableRef;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.ControlFlowException;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util.FoundOne;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.ControlFlowException;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.Util.FoundOne;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -937,7 +937,7 @@ public class RexUtil {
      * @param type Type
      * @param litmus What to do if an error is detected (there is a mismatch)
      * @return Whether every expression has the same type as the corresponding member of the struct type
-     * @see RelOptUtil#eq(String, RelDataType, String, RelDataType, ch.unibas.dmi.dbis.polyphenydb.util.Litmus)
+     * @see RelOptUtil#eq(String, RelDataType, String, RelDataType, org.polypheny.db.util.Litmus)
      */
     public static boolean compatibleTypes( List<RexNode> exprs, RelDataType type, Litmus litmus ) {
         final List<RelDataTypeField> fields = type.getFieldList();
@@ -2089,7 +2089,7 @@ public class RexUtil {
 
 
     /**
-     * Helps {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil#toCnf}.
+     * Helps {@link org.polypheny.db.rex.RexUtil#toCnf}.
      */
     private static class CnfHelper {
 
@@ -2280,7 +2280,7 @@ public class RexUtil {
 
 
     /**
-     * Helps {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil#toDnf}.
+     * Helps {@link org.polypheny.db.rex.RexUtil#toDnf}.
      */
     private static class DnfHelper {
 

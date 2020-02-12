@@ -18,10 +18,10 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package org.polypheny.db.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;

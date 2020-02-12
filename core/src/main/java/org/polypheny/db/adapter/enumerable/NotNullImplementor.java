@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
+import org.polypheny.db.rex.RexCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
- * Simplified version of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor} that does not know about null semantics.
+ * Simplified version of {@link org.polypheny.db.adapter.enumerable.CallImplementor} that does not know about null semantics.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable
+ * @see org.polypheny.db.adapter.enumerable.CallImplementor
  */
 public interface NotNullImplementor {
 

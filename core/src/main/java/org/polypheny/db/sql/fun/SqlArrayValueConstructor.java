@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.type.SqlTypeUtil;
 
 
 /**

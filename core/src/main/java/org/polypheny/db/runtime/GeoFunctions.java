@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.util.Util;
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.GeometryEngine;
@@ -64,7 +64,7 @@ import org.apache.calcite.linq4j.function.Strict;
  * Remaining tasks:
  *
  * <ul>
- * <li>Determine type code for {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.ExtraSqlTypes#GEOMETRY}</li>
+ * <li>Determine type code for {@link org.polypheny.db.sql.type.ExtraSqlTypes#GEOMETRY}</li>
  * <li>Should we create aliases for functions in upper-case? Without ST_ prefix?</li>
  * <li>Consider adding spatial literals, e.g. `GEOMETRY 'POINT (30 10)'`</li>
  * <li>Integer arguments, e.g. SELECT ST_MakePoint(1, 2, 1.5), ST_MakePoint(1, 2)</li>

@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationCode;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGroup;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationCode;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -165,7 +165,7 @@ public class RexExecutorImpl implements RexExecutor {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator.InputGetter} that reads the values of input fields by calling
+     * Implementation of {@link org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter} that reads the values of input fields by calling
      * <code>{@link DataContext#get}("inputRecord")</code>.
      */
     private static class DataContextInputGetter implements InputGetter {

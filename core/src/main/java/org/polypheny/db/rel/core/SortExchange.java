@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
 import java.util.Objects;
 
 
 /**
  * Relational expression that performs {@link Exchange} and {@link Sort} simultaneously.
  *
- * Whereas a Sort produces output with a particular {@link RelCollation} and an Exchange produces output with a particular {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution},
+ * Whereas a Sort produces output with a particular {@link RelCollation} and an Exchange produces output with a particular {@link org.polypheny.db.rel.RelDistribution},
  * the output of a SortExchange has both the required collation and distribution.
  *
  * Several implementations of SortExchange are possible; the purpose of this base class allows rules to be written that apply to all of those implementations.
@@ -97,9 +97,9 @@ public abstract class SortExchange extends Exchange {
 
 
     /**
-     * Returns the array of {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation}s asked for by the sort specification, from most significant to least significant.
+     * Returns the array of {@link org.polypheny.db.rel.RelFieldCollation}s asked for by the sort specification, from most significant to least significant.
      *
-     * See also {@link ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#collations(RelNode)}, which lists all known collations. For example,
+     * See also {@link org.polypheny.db.rel.metadata.RelMetadataQuery#collations(RelNode)}, which lists all known collations. For example,
      * <code>ORDER BY time_id</code> might also be sorted by
      * <code>the_year, the_month</code> because of a known monotonicity constraint among the columns. {@code getCollation} would return
      * <code>[time_id]</code> and {@code collations} would return

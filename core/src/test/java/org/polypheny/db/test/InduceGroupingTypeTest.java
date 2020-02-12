@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate.Group;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Aggregate.Group;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;

@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package org.polypheny.db.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.QueryProcessor;
-import ch.unibas.dmi.dbis.polyphenydb.SqlProcessor;
-import ch.unibas.dmi.dbis.polyphenydb.Store;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.TransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolySchemaBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.statistic.StatisticsManager;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.PolyXid;
+import org.polypheny.db.QueryProcessor;
+import org.polypheny.db.SqlProcessor;
+import org.polypheny.db.Store;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.TransactionException;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.schema.PolySchemaBuilder;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.statistic.StatisticsManager;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.BaseMessage;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.ExInst;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.ExInstWithCause;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.Inst;
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.Property;
+import static org.polypheny.db.runtime.Resources.BaseMessage;
+import static org.polypheny.db.runtime.Resources.ExInst;
+import static org.polypheny.db.runtime.Resources.ExInstWithCause;
+import static org.polypheny.db.runtime.Resources.Inst;
+import static org.polypheny.db.runtime.Resources.Property;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorException;
+import org.polypheny.db.sql.validate.SqlValidatorException;
 
 
 /**

@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelColumnMapping;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.TableFunctionImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rel.metadata.RelColumnMapping;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.impl.TableFunctionImpl;
+import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -55,7 +55,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.rel.core.TableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableFunctionScan extends TableFunctionScan implements EnumerableRel {
 

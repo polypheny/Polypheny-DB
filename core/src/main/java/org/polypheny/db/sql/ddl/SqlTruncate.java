@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
+package org.polypheny.db.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.StoreManager;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDdl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import org.polypheny.db.StoreManager;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.sql.SqlDdl;
+import org.polypheny.db.sql.SqlExecutableStatement;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

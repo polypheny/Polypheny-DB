@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package org.polypheny.db.sql.test;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -23,45 +23,45 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Strong;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Strong.Policy;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook.Closeable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJdbcFunctionCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.AbstractSqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlRuntimeTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester.VmName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTests;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.test.PolyphenyDbAssert;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.plan.Strong.Policy;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Hook.Closeable;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlJdbcFunctionCall;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.utils.AbstractSqlTester;
+import org.polypheny.db.sql.utils.SqlRuntimeTester;
+import org.polypheny.db.sql.utils.SqlTester;
+import org.polypheny.db.sql.utils.SqlTester.VmName;
+import org.polypheny.db.sql.utils.SqlTests;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
 import com.google.common.base.Throwables;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -98,7 +98,7 @@ import org.junit.Test;
  * <li>Analyze which operators are adequately tested.
  * </ul>
  *
- * A typical method will be named after the operator it is testing (say <code>testSubstringFunc</code>). It first calls {@link SqlTester#setFor(ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator, VmName...)}
+ * A typical method will be named after the operator it is testing (say <code>testSubstringFunc</code>). It first calls {@link SqlTester#setFor(org.polypheny.db.sql.SqlOperator, VmName...)}
  * to declare which operator it is testing.
  *
  * <code>

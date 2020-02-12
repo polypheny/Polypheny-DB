@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
+package org.polypheny.db.sql.parser;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.junit.Test;
 
 
@@ -171,13 +171,13 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testCreateOrReplaceFunction() {
         final String sql = "create or replace function if not exists x.udf\n"
-                + " as 'ch.unibas.dmi.dbis.polyphenydb.udf.TableFun.demoUdf'\n"
+                + " as 'org.polypheny.db.udf.TableFun.demoUdf'\n"
                 + "using jar 'file:/path/udf/udf-0.0.1-SNAPSHOT.jar',\n"
                 + " jar 'file:/path/udf/udf2-0.0.1-SNAPSHOT.jar',\n"
                 + " file 'file:/path/udf/logback.xml'";
         final String expected = "CREATE OR REPLACE FUNCTION"
                 + " IF NOT EXISTS `X`.`UDF`"
-                + " AS 'ch.unibas.dmi.dbis.polyphenydb.udf.TableFun.demoUdf'"
+                + " AS 'org.polypheny.db.udf.TableFun.demoUdf'"
                 + " USING JAR 'file:/path/udf/udf-0.0.1-SNAPSHOT.jar',"
                 + " JAR 'file:/path/udf/udf2-0.0.1-SNAPSHOT.jar',"
                 + " FILE 'file:/path/udf/logback.xml'";
@@ -188,9 +188,9 @@ public class DdlParserTest extends SqlParserTest {
     @Test
     public void testCreateOrReplaceFunction2() {
         final String sql = "create function \"my Udf\"\n"
-                + " as 'ch.unibas.dmi.dbis.polyphenydb.udf.TableFun.demoUdf'";
+                + " as 'org.polypheny.db.udf.TableFun.demoUdf'";
         final String expected = "CREATE FUNCTION `my Udf`"
-                + " AS 'ch.unibas.dmi.dbis.polyphenydb.udf.TableFun.demoUdf'";
+                + " AS 'org.polypheny.db.udf.TableFun.demoUdf'";
         sql( sql ).ok( expected );
     }
 

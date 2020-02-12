@@ -31,27 +31,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.CompositeList;
-import ch.unibas.dmi.dbis.polyphenydb.util.ConversionUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.DateString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.NlsString;
-import ch.unibas.dmi.dbis.polyphenydb.util.SaffronProperties;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimeString;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.CompositeList;
+import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;

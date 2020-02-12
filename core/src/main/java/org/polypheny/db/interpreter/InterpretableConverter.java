@@ -31,23 +31,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.runtime.ArrayBindable;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 
 
 /**
- * Relational expression that converts any relational expression input to {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.InterpretableConvention}, by wrapping it in an interpreter.
+ * Relational expression that converts any relational expression input to {@link org.polypheny.db.interpreter.InterpretableConvention}, by wrapping it in an interpreter.
  */
 public class InterpretableConverter extends ConverterImpl implements ArrayBindable {
 

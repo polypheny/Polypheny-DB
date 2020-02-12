@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.statistic;
+package org.polypheny.db.statistic;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.config.RuntimeConfig;
 import com.google.gson.annotations.Expose;
 import lombok.extern.slf4j.Slf4j;
 

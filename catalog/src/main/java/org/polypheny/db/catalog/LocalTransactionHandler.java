@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package org.polypheny.db.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogConnectionException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.CatalogTransactionException;
+import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Queue;

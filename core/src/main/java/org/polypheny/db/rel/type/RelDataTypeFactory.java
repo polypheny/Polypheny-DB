@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Glossary;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -255,7 +255,7 @@ public interface RelDataTypeFactory {
     RelDataType createDecimalQuotient( RelDataType type1, RelDataType type2 );
 
     /**
-     * Creates a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder} is deprecated, we recommend that you use
+     * Creates a {@link org.polypheny.db.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder} is deprecated, we recommend that you use
      * its base class {@link Builder}, which is not deprecated.
      */
     FieldInfoBuilder builder();
@@ -450,7 +450,7 @@ public interface RelDataTypeFactory {
 
 
         /**
-         * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName)}.
          */
         public Builder add( String name, String physicalName, SqlTypeName typeName ) {
             add( name, physicalName, typeFactory.createSqlType( typeName ) );
@@ -459,7 +459,7 @@ public interface RelDataTypeFactory {
 
 
         /**
-         * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int)}.
          */
         public Builder add( String name, String physicalName, SqlTypeName typeName, int precision ) {
             add( name, physicalName, typeFactory.createSqlType( typeName, precision ) );
@@ -468,7 +468,7 @@ public interface RelDataTypeFactory {
 
 
         /**
-         * Adds a field with a type created using {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int, int)}.
          */
         public Builder add( String name, String physicalName, SqlTypeName typeName, int precision, int scale ) {
             add( name, physicalName, typeFactory.createSqlType( typeName, precision, scale ) );

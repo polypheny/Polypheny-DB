@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
+package org.polypheny.db.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
+import org.polypheny.db.util.Source;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;

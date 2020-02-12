@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
 import static spark.Service.ignite;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.Config;
-import ch.unibas.dmi.dbis.polyphenydb.config.Config.ConfigListener;
-import ch.unibas.dmi.dbis.polyphenydb.config.ConfigManager;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;

@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.piglet.Ast;
-import ch.unibas.dmi.dbis.polyphenydb.piglet.Ast.Program;
-import ch.unibas.dmi.dbis.polyphenydb.piglet.Handler;
-import ch.unibas.dmi.dbis.polyphenydb.piglet.parser.ParseException;
-import ch.unibas.dmi.dbis.polyphenydb.piglet.parser.PigletParser;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.tools.PigRelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.piglet.Ast;
+import org.polypheny.db.piglet.Ast.Program;
+import org.polypheny.db.piglet.Handler;
+import org.polypheny.db.piglet.parser.ParseException;
+import org.polypheny.db.piglet.parser.PigletParser;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.tools.PigRelBuilder;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.Ordering;
 import java.io.StringReader;
 import java.io.StringWriter;

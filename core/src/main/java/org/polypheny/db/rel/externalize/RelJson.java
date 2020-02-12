@@ -31,38 +31,38 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
+package org.polypheny.db.rel.externalize;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributions;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSlot;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.JsonBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationImpl;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributions;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSlot;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.JsonBuilder;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -84,14 +84,14 @@ public class RelJson {
 
     public static final List<String> PACKAGES =
             ImmutableList.of(
-                    "ch.unibas.dmi.dbis.polyphenydb.rel.",
-                    "ch.unibas.dmi.dbis.polyphenydb.rel.core.",
-                    "ch.unibas.dmi.dbis.polyphenydb.rel.logical.",
-                    "ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.",
-                    "ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.",
-                    "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.",
-                    "ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules$",
-                    "ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables$" );
+                    "org.polypheny.db.rel.",
+                    "org.polypheny.db.rel.core.",
+                    "org.polypheny.db.rel.logical.",
+                    "org.polypheny.db.adapter.cassandra.",
+                    "org.polypheny.db.adapter.enumerable.",
+                    "org.polypheny.db.adapter.jdbc.",
+                    "org.polypheny.db.adapter.jdbc.JdbcRules$",
+                    "org.polypheny.db.interpreter.Bindables$" );
 
 
     public RelJson( JsonBuilder jsonBuilder ) {
@@ -127,7 +127,7 @@ public class RelJson {
 
 
     /**
-     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}.class.
+     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link org.polypheny.db.rel.logical.LogicalProject}.class.
      */
     public Class typeNameToClass( String type ) {
         if ( !type.contains( "." ) ) {

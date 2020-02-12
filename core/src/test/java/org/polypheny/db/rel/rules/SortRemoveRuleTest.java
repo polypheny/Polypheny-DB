@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -39,33 +39,33 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext.SlimDataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRules;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.ContextImpl;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.ConventionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schemas.HrClusteredSchema;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Planner;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Programs;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RuleSet;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RuleSets;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schemas.HrClusteredSchema;
+import org.polypheny.db.sql.SqlExplainFormat;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.tools.FrameworkConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.Planner;
+import org.polypheny.db.tools.Programs;
+import org.polypheny.db.tools.RuleSet;
+import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.util.Util;
 import java.util.Arrays;
 import org.junit.Test;
 

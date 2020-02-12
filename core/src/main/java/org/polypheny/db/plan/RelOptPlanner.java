@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.CachingRelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.metadata.CachingRelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -271,7 +271,7 @@ public interface RelOptPlanner {
     void onCopy( RelNode rel, RelNode newRel );
 
     /**
-     * Thrown by {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#findBestExp()}.
+     * Thrown by {@link org.polypheny.db.plan.RelOptPlanner#findBestExp()}.
      */
     class CannotPlanException extends RuntimeException {
 
