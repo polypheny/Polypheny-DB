@@ -3,5 +3,5 @@
  * Provides utility classes.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 

@@ -3,5 +3,5 @@
  * SQL type system.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 

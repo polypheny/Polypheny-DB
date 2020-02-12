@@ -3,5 +3,5 @@
  * SQL unparsers for JDBC dialects.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.dialect;
+package org.polypheny.db.sql.dialect;
 
