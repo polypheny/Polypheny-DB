@@ -17,6 +17,9 @@
 package org.polypheny.db.processing;
 
 
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.polypheny.db.PUID;
 import org.polypheny.db.PUID.ConnectionId;
 import org.polypheny.db.PUID.NodeId;
@@ -43,9 +46,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 
 public class TransactionManagerImpl implements TransactionManager {

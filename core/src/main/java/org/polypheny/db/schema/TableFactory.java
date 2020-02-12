@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.Map;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.rel.type;
 
 
+import java.nio.charset.Charset;
+import java.util.List;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.type.SqlTypeName;
-import java.nio.charset.Charset;
-import java.util.List;
 
 
 /**

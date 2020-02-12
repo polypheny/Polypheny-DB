@@ -34,6 +34,10 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.rel.metadata.RelColumnMapping;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -41,10 +45,6 @@ import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Static;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

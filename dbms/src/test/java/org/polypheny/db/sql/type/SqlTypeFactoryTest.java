@@ -38,9 +38,9 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.collect.Lists;
 import org.junit.Test;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

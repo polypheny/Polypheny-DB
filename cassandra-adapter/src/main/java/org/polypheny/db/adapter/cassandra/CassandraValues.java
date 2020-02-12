@@ -17,20 +17,6 @@
 package org.polypheny.db.adapter.cassandra;
 
 
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.IntervalSqlType;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.google.common.collect.ImmutableList;
@@ -46,6 +32,20 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.IntervalSqlType;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
 
 
 @Slf4j

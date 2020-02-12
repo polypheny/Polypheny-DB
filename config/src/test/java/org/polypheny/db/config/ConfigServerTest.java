@@ -17,10 +17,10 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.webui.ConfigServer;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.polypheny.db.webui.ConfigServer;
 
 
 public class ConfigServerTest {

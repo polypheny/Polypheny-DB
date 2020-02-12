@@ -34,6 +34,13 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.plan.Convention;
@@ -87,13 +94,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.slf4j.Logger;
 
 

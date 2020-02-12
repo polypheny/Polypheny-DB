@@ -17,9 +17,9 @@
 package org.polypheny.db.config;
 
 
+import java.math.BigDecimal;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.util.background.BackgroundTask;
-import java.math.BigDecimal;
 
 
 public enum RuntimeConfig {

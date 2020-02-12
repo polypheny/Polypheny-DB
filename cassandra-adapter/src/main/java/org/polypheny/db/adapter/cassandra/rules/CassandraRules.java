@@ -17,6 +17,11 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
@@ -51,11 +56,6 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.collect.ImmutableList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 
 

@@ -36,6 +36,12 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.math.BigDecimal;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -46,12 +52,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
-import java.math.BigDecimal;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

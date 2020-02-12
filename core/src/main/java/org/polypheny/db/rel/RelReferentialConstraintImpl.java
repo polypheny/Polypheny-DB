@@ -34,9 +34,9 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.util.mapping.IntPair;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.util.mapping.IntPair;
 
 
 /**

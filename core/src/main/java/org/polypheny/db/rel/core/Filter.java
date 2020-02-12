@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -50,8 +52,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.util.Litmus;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

@@ -17,11 +17,11 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import java.util.List;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import java.util.List;
 
 
 public class CassandraPhysicalNameProvider {

@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import java.nio.charset.Charset;
+import java.util.Objects;
+import java.util.TimeZone;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -46,9 +49,6 @@ import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import java.nio.charset.Charset;
-import java.util.Objects;
-import java.util.TimeZone;
 
 
 /**

@@ -36,6 +36,9 @@ package org.polypheny.db.sql.validate;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -47,9 +50,6 @@ import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.util.Litmus;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
 
 
 /**

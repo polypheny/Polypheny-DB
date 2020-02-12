@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.geode.simple;
 
 
-import org.polypheny.db.adapter.geode.util.GeodeUtils;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
+import org.polypheny.db.adapter.geode.util.GeodeUtils;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
 
 
 /**

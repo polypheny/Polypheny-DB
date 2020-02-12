@@ -1,11 +1,6 @@
 package org.polypheny.db;
 
 
-import org.polypheny.db.Store.AdapterSetting;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogStore;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Constructor;
@@ -17,6 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.AllArgsConstructor;
+import org.polypheny.db.Store.AdapterSetting;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogStore;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.reflections.Reflections;
 
 

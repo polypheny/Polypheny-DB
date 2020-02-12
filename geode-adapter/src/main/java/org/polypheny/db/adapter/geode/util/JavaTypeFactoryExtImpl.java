@@ -34,13 +34,6 @@
 package org.polypheny.db.adapter.geode.util;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.jdbc.JavaRecordType;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.RelRecordType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -48,6 +41,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.geode.pdx.PdxInstance;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.jdbc.JavaRecordType;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.RelRecordType;
 
 
 /**

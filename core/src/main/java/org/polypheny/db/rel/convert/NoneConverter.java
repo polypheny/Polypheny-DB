@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.convert;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -42,7 +43,6 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Util;
-import java.util.List;
 
 
 /**

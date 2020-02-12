@@ -34,6 +34,11 @@
 package org.polypheny.db.plan.volcano;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptListener;
 import org.polypheny.db.plan.RelOptUtil;
@@ -44,11 +49,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 
 

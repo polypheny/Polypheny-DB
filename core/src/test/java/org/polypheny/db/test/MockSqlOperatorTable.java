@@ -34,6 +34,7 @@
 package org.polypheny.db.test;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
@@ -46,7 +47,6 @@ import org.polypheny.db.sql.type.OperandTypes;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.util.ListSqlOperatorTable;
-import com.google.common.collect.ImmutableList;
 
 
 /**

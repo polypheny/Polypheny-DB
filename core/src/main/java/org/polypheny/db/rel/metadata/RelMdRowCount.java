@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.metadata;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableLimit;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -58,7 +59,6 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Util;
-import lombok.extern.slf4j.Slf4j;
 
 
 /**

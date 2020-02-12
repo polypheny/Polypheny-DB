@@ -34,11 +34,11 @@
 package org.polypheny.db.sql;
 
 
+import java.util.List;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
-import java.util.List;
 
 
 /**

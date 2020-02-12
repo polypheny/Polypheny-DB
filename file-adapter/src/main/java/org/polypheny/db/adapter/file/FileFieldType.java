@@ -34,11 +34,11 @@
 package org.polypheny.db.adapter.file;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

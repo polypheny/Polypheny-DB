@@ -17,12 +17,12 @@
 package org.polypheny.db.adapter.cassandra.util;
 
 
+import java.util.List;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
-import java.util.List;
 
 
 public class CassandraUtils {

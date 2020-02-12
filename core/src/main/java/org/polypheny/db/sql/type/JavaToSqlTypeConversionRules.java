@@ -34,7 +34,6 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.runtime.GeoFunctions;
 import com.google.common.collect.ImmutableMap;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -44,6 +43,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.util.ArrayImpl;
+import org.polypheny.db.runtime.GeoFunctions;
 
 
 /**

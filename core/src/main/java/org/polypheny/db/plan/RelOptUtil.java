@@ -34,6 +34,30 @@
 package org.polypheny.db.plan;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelHomogeneousShuttle;
 import org.polypheny.db.rel.RelNode;
@@ -117,30 +141,6 @@ import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.AvaticaConnection;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -45,8 +47,6 @@ import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexBuilder;
-import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**

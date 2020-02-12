@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelNode;
@@ -41,8 +43,6 @@ import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.Join;
 import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.util.BuiltInMethod;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

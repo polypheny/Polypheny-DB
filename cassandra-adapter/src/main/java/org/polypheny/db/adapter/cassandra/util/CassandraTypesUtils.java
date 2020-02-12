@@ -17,11 +17,11 @@
 package org.polypheny.db.adapter.cassandra.util;
 
 
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 @Slf4j

@@ -38,6 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import org.junit.Test;
 import org.polypheny.db.plan.RelOptListener;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -56,7 +57,6 @@ import org.polypheny.db.rel.rules.ProjectRemoveRule;
 import org.polypheny.db.rel.rules.ProjectToCalcRule;
 import org.polypheny.db.rel.rules.ReduceExpressionsRule;
 import org.polypheny.db.rel.rules.UnionToDistinctRule;
-import org.junit.Test;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.plan.hep;
 
 
-import org.polypheny.db.plan.CommonRelSubExprRule;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.plan.CommonRelSubExprRule;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
 
 
 /**

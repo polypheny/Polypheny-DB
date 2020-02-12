@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.java;
 
 
+import java.lang.reflect.Type;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractTable;
-import java.lang.reflect.Type;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

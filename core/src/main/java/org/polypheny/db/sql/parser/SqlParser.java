@@ -34,6 +34,11 @@
 package org.polypheny.db.sql.parser;
 
 
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Objects;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.Lex;
 import org.polypheny.db.sql.SqlNode;
@@ -42,11 +47,6 @@ import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.SourceStringReader;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Objects;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 
 
 /**

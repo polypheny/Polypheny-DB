@@ -17,11 +17,11 @@
 package org.polypheny.db.sql.utils;
 
 
-import org.polypheny.db.sql.Lex;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.polypheny.db.sql.Lex;
 
 
 /**

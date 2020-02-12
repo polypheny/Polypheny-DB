@@ -34,14 +34,14 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.util.concurrent.ExecutionException;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 
 
 /**

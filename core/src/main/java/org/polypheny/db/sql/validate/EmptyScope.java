@@ -34,6 +34,12 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -53,12 +59,6 @@ import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 
 /**

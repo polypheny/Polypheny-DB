@@ -3,5 +3,5 @@
  * Tracing services.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.trace;
+package org.polypheny.db.util.trace;
 

@@ -37,12 +37,6 @@ package org.polypheny.db.rel.rules;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.test.RexImplicationCheckerTest.Fixture;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.Calendar;
@@ -51,6 +45,12 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Test;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.test.RexImplicationCheckerTest.Fixture;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
 
 
 /**

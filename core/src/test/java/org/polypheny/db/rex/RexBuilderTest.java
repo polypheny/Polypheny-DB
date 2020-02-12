@@ -43,6 +43,12 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
+import java.util.TimeZone;
+import org.apache.calcite.avatica.util.ByteString;
+import org.junit.Test;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -55,12 +61,6 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Util;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
-import java.util.TimeZone;
-import org.apache.calcite.avatica.util.ByteString;
-import org.junit.Test;
 
 
 /**

@@ -36,6 +36,20 @@ package org.polypheny.db.sql.parser;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.base.Preconditions;
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.StringTokenizer;
+import java.util.function.Predicate;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlBinaryOperator;
@@ -63,20 +77,6 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.base.Preconditions;
-import java.math.BigDecimal;
-import java.nio.charset.Charset;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.StringTokenizer;
-import java.util.function.Predicate;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.slf4j.Logger;
 
 

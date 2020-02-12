@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -41,7 +42,6 @@ import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
 
 
 /**

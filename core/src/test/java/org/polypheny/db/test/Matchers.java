@@ -34,9 +34,6 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import java.sql.ResultSet;
@@ -55,6 +52,9 @@ import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.hamcrest.core.Is;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Util;
 
 
 /**

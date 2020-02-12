@@ -34,6 +34,15 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rel.RelNode;
@@ -55,15 +64,6 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Predicate;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -34,8 +34,8 @@
 package org.polypheny.db.sql.util;
 
 
-import org.polypheny.db.sql.SqlDialect;
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.sql.SqlDialect;
 
 
 /**

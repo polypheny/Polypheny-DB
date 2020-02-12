@@ -17,6 +17,8 @@
 package org.polypheny.db.webui;
 
 
+import java.util.ArrayList;
+import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
@@ -27,8 +29,6 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.models.SortDirection;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.UIRelNode;
-import java.util.ArrayList;
-import org.apache.commons.lang.math.NumberUtils;
 
 
 public class QueryPlanBuilder {

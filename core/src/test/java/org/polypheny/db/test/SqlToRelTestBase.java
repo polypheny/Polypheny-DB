@@ -20,6 +20,13 @@ package org.polypheny.db.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -67,13 +74,6 @@ import org.polypheny.db.test.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

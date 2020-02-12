@@ -34,12 +34,12 @@
 package org.polypheny.db.sql2rel;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlFunction;
-import java.util.List;
 
 
 /**

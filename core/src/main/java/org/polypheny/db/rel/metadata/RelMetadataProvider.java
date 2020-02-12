@@ -34,9 +34,9 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.rel.RelNode;
 import com.google.common.collect.Multimap;
 import java.lang.reflect.Method;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

@@ -36,6 +36,7 @@ package org.polypheny.db.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCallBinding;
@@ -44,7 +45,6 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import java.util.List;
 
 
 /**

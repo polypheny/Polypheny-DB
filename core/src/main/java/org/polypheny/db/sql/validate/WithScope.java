@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.List;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWithItem;
-import java.util.List;
 
 
 /**

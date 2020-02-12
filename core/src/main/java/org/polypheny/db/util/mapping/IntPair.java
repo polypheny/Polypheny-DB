@@ -34,7 +34,6 @@
 package org.polypheny.db.util.mapping;
 
 
-import org.polypheny.db.runtime.Utilities;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -42,6 +41,7 @@ import java.util.AbstractList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.runtime.Utilities;
 
 
 /**

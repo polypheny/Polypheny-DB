@@ -34,6 +34,10 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Type;
+import java.util.List;
+import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.plan.RelOptTable;
@@ -50,10 +54,6 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Type;
-import java.util.List;
-import org.apache.calcite.linq4j.Queryable;
 
 
 /**

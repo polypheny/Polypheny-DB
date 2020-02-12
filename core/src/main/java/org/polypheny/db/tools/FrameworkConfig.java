@@ -34,6 +34,7 @@
 package org.polypheny.db.tools;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCostFactory;
 import org.polypheny.db.plan.RelOptTable;
@@ -45,7 +46,6 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.sql2rel.SqlRexConvertletTable;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
-import com.google.common.collect.ImmutableList;
 
 
 /**

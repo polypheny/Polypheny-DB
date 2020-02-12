@@ -34,14 +34,14 @@
 package org.polypheny.db.sql.util;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSyntax;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

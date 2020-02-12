@@ -34,10 +34,6 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.util.ImmutableIntList;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.HashSet;
@@ -45,6 +41,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
 /**

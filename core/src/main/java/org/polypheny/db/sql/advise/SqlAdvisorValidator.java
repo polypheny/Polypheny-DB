@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.advise;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -52,8 +54,6 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Util;
-import java.util.HashSet;
-import java.util.Set;
 
 
 /**

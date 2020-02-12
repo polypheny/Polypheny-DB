@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.util;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDynamicParam;
@@ -42,8 +44,6 @@ import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

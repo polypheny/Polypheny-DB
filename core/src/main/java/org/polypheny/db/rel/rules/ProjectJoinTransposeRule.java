@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -44,8 +46,6 @@ import org.polypheny.db.rel.core.SemiJoin;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

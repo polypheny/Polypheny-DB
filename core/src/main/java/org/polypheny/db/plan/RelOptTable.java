@@ -34,6 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelNode;
@@ -46,8 +48,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

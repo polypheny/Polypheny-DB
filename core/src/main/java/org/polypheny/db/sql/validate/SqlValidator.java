@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -62,8 +64,6 @@ import org.polypheny.db.sql.SqlWith;
 import org.polypheny.db.sql.SqlWithItem;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
-import java.util.List;
-import java.util.Map;
 
 
 /**

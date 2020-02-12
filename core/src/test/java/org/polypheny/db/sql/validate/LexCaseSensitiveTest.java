@@ -22,6 +22,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.List;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
@@ -48,8 +50,6 @@ import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.ValidationException;
-import java.util.List;
-import org.junit.Test;
 
 
 /**

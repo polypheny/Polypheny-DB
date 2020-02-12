@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -49,7 +50,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.util.Litmus;
-import java.util.List;
 
 
 /**

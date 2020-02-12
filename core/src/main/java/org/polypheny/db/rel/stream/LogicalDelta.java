@@ -34,13 +34,13 @@
 package org.polypheny.db.rel.stream;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
-import java.util.List;
 
 
 /**

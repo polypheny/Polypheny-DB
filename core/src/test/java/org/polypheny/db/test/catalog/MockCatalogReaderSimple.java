@@ -34,6 +34,10 @@
 package org.polypheny.db.test.catalog;
 
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -49,10 +53,6 @@ import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**

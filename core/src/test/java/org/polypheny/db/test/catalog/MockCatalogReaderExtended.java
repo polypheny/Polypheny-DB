@@ -34,13 +34,13 @@
 package org.polypheny.db.test.catalog;
 
 
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
 
 
 /**

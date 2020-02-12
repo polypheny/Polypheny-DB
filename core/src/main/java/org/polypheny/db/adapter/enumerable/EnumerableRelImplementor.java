@@ -34,14 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
-import org.polypheny.db.plan.RelImplementor;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -80,6 +72,14 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
+import org.polypheny.db.plan.RelImplementor;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**

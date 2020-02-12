@@ -34,6 +34,15 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitSet;
@@ -60,15 +69,6 @@ import org.polypheny.db.util.graph.DefaultDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
 import org.polypheny.db.util.graph.DirectedGraph;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
-import com.google.common.base.Preconditions;
-import com.google.common.primitives.Ints;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 
 

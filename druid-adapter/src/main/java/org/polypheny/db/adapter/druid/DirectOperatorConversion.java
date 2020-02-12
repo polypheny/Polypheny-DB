@@ -34,11 +34,11 @@
 package org.polypheny.db.adapter.druid;
 
 
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
-import java.util.List;
 
 
 /**

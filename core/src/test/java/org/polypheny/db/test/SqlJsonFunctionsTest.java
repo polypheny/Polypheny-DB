@@ -39,13 +39,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -63,6 +56,13 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 
 
 /**

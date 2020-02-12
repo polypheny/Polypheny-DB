@@ -34,6 +34,11 @@
 package org.polypheny.db.plan;
 
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -49,11 +54,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlCastFunction;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.QueryProvider;
 
 
 /**

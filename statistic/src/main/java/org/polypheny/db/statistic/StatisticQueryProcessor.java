@@ -17,6 +17,15 @@
 package org.polypheny.db.statistic;
 
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.Authenticator;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
@@ -44,15 +53,6 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.linq4j.Enumerable;
 
 
 @Slf4j

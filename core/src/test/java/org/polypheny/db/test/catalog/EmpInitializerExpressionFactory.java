@@ -34,6 +34,7 @@
 package org.polypheny.db.test.catalog;
 
 
+import java.math.BigDecimal;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,7 +43,6 @@ import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql2rel.InitializerContext;
 import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
-import java.math.BigDecimal;
 
 
 /**

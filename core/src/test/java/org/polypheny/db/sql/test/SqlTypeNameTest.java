@@ -37,10 +37,10 @@ package org.polypheny.db.sql.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import org.polypheny.db.sql.type.ExtraSqlTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import java.sql.Types;
 import org.junit.Test;
+import org.polypheny.db.sql.type.ExtraSqlTypes;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

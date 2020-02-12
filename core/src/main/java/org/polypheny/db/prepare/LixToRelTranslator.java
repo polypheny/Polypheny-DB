@@ -34,18 +34,6 @@
 package org.polypheny.db.prepare;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.plan.ViewExpanders;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +46,18 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable.ToRelContext;
+import org.polypheny.db.plan.RelOptTable.ViewExpander;
+import org.polypheny.db.plan.ViewExpanders;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**

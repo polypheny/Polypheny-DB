@@ -34,6 +34,12 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -57,12 +63,6 @@ import org.polypheny.db.util.Permutation;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

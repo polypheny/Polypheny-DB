@@ -34,6 +34,12 @@
 package org.polypheny.db.rel.externalize;
 
 
+import com.google.common.collect.ImmutableList;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.avatica.util.Spacer;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
@@ -41,12 +47,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.avatica.util.Spacer;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

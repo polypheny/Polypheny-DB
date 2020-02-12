@@ -36,11 +36,11 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.runtime.PolyphenyDbResource;
-import org.polypheny.db.util.Static;
 import java.util.Map;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.polypheny.db.runtime.PolyphenyDbResource;
+import org.polypheny.db.util.Static;
 
 
 /**

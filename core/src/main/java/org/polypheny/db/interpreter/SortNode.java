@@ -34,14 +34,14 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rex.RexLiteral;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rex.RexLiteral;
 
 
 /**

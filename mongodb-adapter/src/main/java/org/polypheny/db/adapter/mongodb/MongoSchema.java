@@ -34,8 +34,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.MongoClient;
@@ -46,6 +44,8 @@ import com.mongodb.client.MongoDatabase;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
 
 
 /**

@@ -17,6 +17,11 @@
 package org.polypheny.db.jdbc;
 
 
+import java.util.Objects;
+import org.apache.calcite.avatica.ConnectionPropertiesImpl;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.ConnectionHandle;
+import org.apache.calcite.avatica.Meta.ConnectionProperties;
 import org.polypheny.db.PUID.ConnectionId;
 import org.polypheny.db.PUID.UserId;
 import org.polypheny.db.Transaction;
@@ -24,11 +29,6 @@ import org.polypheny.db.TransactionManager;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import java.util.Objects;
-import org.apache.calcite.avatica.ConnectionPropertiesImpl;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.Meta.ConnectionHandle;
-import org.apache.calcite.avatica.Meta.ConnectionProperties;
 
 
 /**

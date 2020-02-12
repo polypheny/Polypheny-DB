@@ -21,12 +21,12 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 
 
 /**

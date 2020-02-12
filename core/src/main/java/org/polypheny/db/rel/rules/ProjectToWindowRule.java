@@ -34,6 +34,16 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -63,16 +73,6 @@ import org.polypheny.db.util.graph.DefaultDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
 import org.polypheny.db.util.graph.DirectedGraph;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

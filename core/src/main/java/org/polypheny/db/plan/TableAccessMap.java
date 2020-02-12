@@ -34,14 +34,14 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelVisitor;
-import org.polypheny.db.rel.core.TableModify;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.core.TableModify;
 
 // TODO jvs 9-Mar-2006:  move this class to another package; it doesn't really belong here.  Also, use a proper class for table names instead of List<String>.
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.logical;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -45,7 +46,6 @@ import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.List;
 
 
 /**

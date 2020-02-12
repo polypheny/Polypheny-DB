@@ -34,29 +34,6 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgram;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelVisitor;
-import org.polypheny.db.rel.rules.CalcSplitRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.ProjectTableScanRule;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitDispatcher;
-import org.polypheny.db.util.ReflectiveVisitor;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -82,6 +59,29 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.rules.CalcSplitRule;
+import org.polypheny.db.rel.rules.FilterTableScanRule;
+import org.polypheny.db.rel.rules.ProjectTableScanRule;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ReflectUtil;
+import org.polypheny.db.util.ReflectiveVisitDispatcher;
+import org.polypheny.db.util.ReflectiveVisitor;
+import org.polypheny.db.util.Util;
 
 
 /**

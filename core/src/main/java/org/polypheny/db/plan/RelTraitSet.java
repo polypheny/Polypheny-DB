@@ -34,8 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -43,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.util.Pair;
 
 
 /**

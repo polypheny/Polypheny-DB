@@ -34,10 +34,10 @@
 package org.polypheny.db.plan.volcano;
 
 
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleOperand;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleOperand;
 
 
 /**

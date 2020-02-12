@@ -1,6 +1,11 @@
 package org.polypheny.db.adapter.csv;
 
 
+import com.google.common.collect.ImmutableList;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyXid;
 import org.polypheny.db.Store;
 import org.polypheny.db.Transaction;
@@ -11,11 +16,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
-import com.google.common.collect.ImmutableList;
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
@@ -84,20 +84,20 @@ public class CsvStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.warn( "CSV Store does not support prepare()." );
+        log.debug( "CSV Store does not support prepare()." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.warn( "CSV Store does not support commit()." );
+        log.debug( "CSV Store does not support commit()." );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        log.warn( "CSV Store does not support rollback()." );
+        log.debug( "CSV Store does not support rollback()." );
     }
 
 

@@ -34,8 +34,6 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -50,6 +48,8 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.util.mapping.Mappings;
 
 
 /**

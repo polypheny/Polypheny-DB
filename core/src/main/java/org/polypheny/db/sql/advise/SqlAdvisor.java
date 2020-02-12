@@ -34,6 +34,18 @@
 package org.polypheny.db.sql.advise;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -52,18 +64,6 @@ import org.polypheny.db.sql.validate.SqlMonikerType;
 import org.polypheny.db.sql.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
-import org.apache.calcite.avatica.util.Casing;
 import org.slf4j.Logger;
 
 

@@ -34,12 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Unit;
-import org.polypheny.db.util.BuiltInMethod;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -48,6 +42,12 @@ import org.apache.calcite.linq4j.tree.IndexExpression;
 import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**

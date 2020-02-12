@@ -41,6 +41,17 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Function;
+import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.junit.Assert;
+import org.junit.Test;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.Transaction;
@@ -68,17 +79,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.function.Function;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.Assert;
-import org.junit.Test;
 
 
 /**

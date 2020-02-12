@@ -34,10 +34,10 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptCostFactory;
 import org.polypheny.db.plan.RelOptUtil;
-import java.util.Objects;
 
 
 /**

@@ -43,14 +43,14 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
+import org.junit.Test;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.collect.ImmutableList;
-import org.junit.Test;
 
 
 /**

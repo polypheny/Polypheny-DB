@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.ddl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.sql.SqlDrop;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -41,8 +43,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

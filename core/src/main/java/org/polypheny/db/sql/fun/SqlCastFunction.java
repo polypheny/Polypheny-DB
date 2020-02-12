@@ -36,6 +36,8 @@ package org.polypheny.db.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.sql.SqlCall;
@@ -58,9 +60,6 @@ import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-import org.polypheny.db.util.Static;
 
 
 /**

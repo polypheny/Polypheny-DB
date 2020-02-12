@@ -34,13 +34,13 @@
 package org.polypheny.db.schema;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelDistributionTraitDef;
 import org.polypheny.db.rel.RelReferentialConstraint;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

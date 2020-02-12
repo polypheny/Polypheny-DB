@@ -19,6 +19,9 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertSame;
 
+import com.google.common.collect.Lists;
+import org.junit.Before;
+import org.junit.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
@@ -36,9 +39,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.Test;
 
 
 /**

@@ -34,11 +34,11 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.core.SemiJoin;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableIntList;
-import java.util.Objects;
 
 
 /**

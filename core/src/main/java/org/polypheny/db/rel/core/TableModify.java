@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.base.Preconditions;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -50,9 +53,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import com.google.common.base.Preconditions;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

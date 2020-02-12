@@ -17,12 +17,12 @@
 package org.polypheny.db.catalog.entity.combined;
 
 
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogUser;
 
 
 public class CatalogCombinedDatabase implements CatalogCombinedEntity {

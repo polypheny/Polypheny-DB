@@ -34,6 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.rel.type.DynamicRecordType;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
@@ -43,10 +47,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

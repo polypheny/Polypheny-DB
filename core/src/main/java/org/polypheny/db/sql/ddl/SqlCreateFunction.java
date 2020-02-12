@@ -34,6 +34,10 @@
 package org.polypheny.db.sql.ddl;
 
 
+import com.google.common.base.Preconditions;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -46,10 +50,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Preconditions;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

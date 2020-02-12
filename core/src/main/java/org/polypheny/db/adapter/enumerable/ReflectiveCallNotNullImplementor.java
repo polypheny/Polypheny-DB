@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.rex.RexCall;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.rex.RexCall;
 
 
 /**

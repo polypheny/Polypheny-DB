@@ -34,14 +34,14 @@
 package org.polypheny.db.rel.mutable;
 
 
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.metadata.RelColumnMapping;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexNode;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.rel.metadata.RelColumnMapping;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

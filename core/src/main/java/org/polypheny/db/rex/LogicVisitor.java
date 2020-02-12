@@ -34,13 +34,13 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.plan.RelOptUtil.Logic;
 import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.plan.RelOptUtil.Logic;
 
 
 /**

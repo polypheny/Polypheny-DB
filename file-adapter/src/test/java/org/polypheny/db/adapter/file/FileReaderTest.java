@@ -41,9 +41,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.util.Source;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.TestUtil;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.sql.Connection;
@@ -56,6 +53,9 @@ import org.jsoup.select.Elements;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.util.Source;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.TestUtil;
 
 
 /**

@@ -17,9 +17,9 @@
 package org.polypheny.db.catalog.entity;
 
 
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import java.io.Serializable;
 import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
 public class CatalogColumnPlacement implements CatalogEntity {

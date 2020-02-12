@@ -17,8 +17,8 @@
 package org.polypheny.db.statistic;
 
 
-import org.polypheny.db.PolySqlType;
 import lombok.Getter;
+import org.polypheny.db.PolySqlType;
 
 
 /**

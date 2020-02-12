@@ -34,10 +34,10 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import java.lang.reflect.Type;
 import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 
 
 /**

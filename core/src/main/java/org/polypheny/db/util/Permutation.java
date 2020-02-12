@@ -34,13 +34,13 @@
 package org.polypheny.db.util;
 
 
+import java.util.Arrays;
+import java.util.Iterator;
 import org.polypheny.db.util.mapping.IntPair;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings.NoElementException;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import java.util.Arrays;
-import java.util.Iterator;
 
 
 /**

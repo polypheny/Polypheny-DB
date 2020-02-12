@@ -34,6 +34,11 @@
 package org.polypheny.db.adapter.pig;
 
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.pig.scripting.Pig;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
@@ -42,11 +47,6 @@ import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.apache.pig.scripting.Pig;
 
 
 /**

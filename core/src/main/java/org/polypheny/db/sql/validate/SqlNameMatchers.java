@@ -34,16 +34,16 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlVisitor;
@@ -43,9 +46,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 
 /**

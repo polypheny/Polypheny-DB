@@ -34,18 +34,18 @@
 package org.polypheny.db.adapter.geode.rel;
 
 
-import org.polypheny.db.adapter.geode.util.GeodeUtils;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.geode.cache.query.SelectResults;
+import org.polypheny.db.adapter.geode.util.GeodeUtils;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
 
 
 /**

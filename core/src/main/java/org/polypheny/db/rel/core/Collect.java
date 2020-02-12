@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,7 +47,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
 import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import java.util.List;
 
 
 /**

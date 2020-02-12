@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCall;
@@ -48,7 +49,6 @@ import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.type.SqlOperandCountRanges;
 import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import com.google.common.collect.ImmutableList;
 
 
 /**

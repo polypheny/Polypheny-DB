@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.metadata;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -48,8 +50,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

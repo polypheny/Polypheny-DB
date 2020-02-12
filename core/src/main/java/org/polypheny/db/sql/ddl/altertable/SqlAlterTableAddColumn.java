@@ -19,6 +19,8 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.StoreManager;
 import org.polypheny.db.Transaction;
@@ -39,8 +41,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

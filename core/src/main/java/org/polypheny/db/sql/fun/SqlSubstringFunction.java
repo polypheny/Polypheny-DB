@@ -34,6 +34,10 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
@@ -53,10 +57,6 @@ import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

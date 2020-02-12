@@ -1,6 +1,14 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
+import com.google.common.collect.ImmutableList;
+import java.io.File;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.PUID;
 import org.polypheny.db.PUID.Type;
 import org.polypheny.db.PolySqlType;
@@ -13,14 +21,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
-import com.google.common.collect.ImmutableList;
-import java.io.File;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.dbcp2.BasicDataSource;
 
 
 @Slf4j

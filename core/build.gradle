@@ -1,4 +1,4 @@
-import ca.coglinc.gradle.plugins.javacc.*
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 
 group "org.polypheny"
 
@@ -25,7 +25,7 @@ buildscript {
         // Fmpp
         classpath group: "net.sourceforge.fmpp", name: "fmpp", version: "0.9.16"
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
     }
     ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
@@ -151,7 +151,7 @@ task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
     inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/javacc")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/ch/unibas/dmi/dbis/polyphenydb/sql/parser/impl")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/sql/parser/impl")
 }
 task generateJdbcVersionProperties(type: Copy) {
     from "src/main/resources/version"

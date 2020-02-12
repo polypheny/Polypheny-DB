@@ -34,15 +34,15 @@
 package org.polypheny.db.schema.impl;
 
 
-import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.util.Static;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.util.Static;
 
 
 /**

@@ -34,9 +34,6 @@
 package org.polypheny.db.test.concurrent;
 
 
-import org.polypheny.db.jdbc.SqlTimeoutException;
-import org.polypheny.db.util.Unsafe;
-import org.polypheny.db.util.Util;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -73,6 +70,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.polypheny.db.jdbc.SqlTimeoutException;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 import org.slf4j.Logger;
 
 

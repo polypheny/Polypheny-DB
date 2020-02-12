@@ -34,8 +34,8 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.sql.SqlOperandCountRange;
 import com.google.common.base.Preconditions;
+import org.polypheny.db.sql.SqlOperandCountRange;
 
 
 /**

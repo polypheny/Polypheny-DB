@@ -34,25 +34,6 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
-import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.ParseResult;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -73,6 +54,25 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
+import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.ParseResult;
+import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
 
 
 /**

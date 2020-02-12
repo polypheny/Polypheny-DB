@@ -17,16 +17,6 @@
 package org.polypheny.db.adapter.cassandra;
 
 
-import org.polypheny.db.PolyXid;
-import org.polypheny.db.Store;
-import org.polypheny.db.Transaction;
-import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -41,6 +31,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyXid;
+import org.polypheny.db.Store;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Table;
 
 
 @Slf4j

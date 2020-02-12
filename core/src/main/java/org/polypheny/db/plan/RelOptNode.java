@@ -34,8 +34,8 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

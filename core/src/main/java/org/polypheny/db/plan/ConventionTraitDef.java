@@ -34,6 +34,12 @@
 package org.polypheny.db.plan;
 
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import java.util.List;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
@@ -43,12 +49,6 @@ import org.polypheny.db.util.graph.DefaultEdge;
 import org.polypheny.db.util.graph.DirectedGraph;
 import org.polypheny.db.util.graph.Graphs;
 import org.polypheny.db.util.graph.Graphs.FrozenGraph;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import java.util.List;
 
 
 /**

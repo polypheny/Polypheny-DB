@@ -34,18 +34,6 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -70,6 +58,18 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

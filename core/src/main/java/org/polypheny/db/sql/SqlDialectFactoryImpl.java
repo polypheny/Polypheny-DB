@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.util.Locale;
 import org.polypheny.db.sql.dialect.AccessSqlDialect;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.dialect.BigQuerySqlDialect;
@@ -62,9 +65,6 @@ import org.polypheny.db.sql.dialect.RedshiftSqlDialect;
 import org.polypheny.db.sql.dialect.SybaseSqlDialect;
 import org.polypheny.db.sql.dialect.TeradataSqlDialect;
 import org.polypheny.db.sql.dialect.VerticaSqlDialect;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.util.Locale;
 
 
 /**

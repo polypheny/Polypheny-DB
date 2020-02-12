@@ -34,14 +34,14 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

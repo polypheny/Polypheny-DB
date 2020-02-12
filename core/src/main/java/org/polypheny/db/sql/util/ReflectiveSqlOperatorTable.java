@@ -34,6 +34,13 @@
 package org.polypheny.db.sql.util;
 
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -42,13 +49,6 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
 
 
 /**

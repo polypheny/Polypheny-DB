@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.geode.rel;
 
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.geode.rel.GeodeRules.RexToGeodeTranslator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -45,9 +48,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**

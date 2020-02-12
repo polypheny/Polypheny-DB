@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.logical;
 
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -47,9 +50,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.List;
 
 
 /**

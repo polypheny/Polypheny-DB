@@ -34,15 +34,15 @@
 package org.polypheny.db.plan.volcano;
 
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import java.lang.reflect.Method;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.MetadataDef;
 import org.polypheny.db.rel.metadata.MetadataHandler;
 import org.polypheny.db.rel.metadata.RelMetadataProvider;
 import org.polypheny.db.rel.metadata.UnboundMetadata;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-import java.lang.reflect.Method;
 
 
 /**

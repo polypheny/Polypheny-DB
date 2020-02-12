@@ -34,9 +34,9 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.TableFunction;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

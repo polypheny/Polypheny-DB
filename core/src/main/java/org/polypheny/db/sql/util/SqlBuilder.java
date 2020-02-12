@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.util;
 
 
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.util.UnmodifiableArrayList;
 import java.sql.Timestamp;
 import java.util.List;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.util.UnmodifiableArrayList;
 
 
 /**

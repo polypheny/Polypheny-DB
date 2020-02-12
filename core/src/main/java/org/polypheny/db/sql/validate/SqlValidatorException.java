@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.validate;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.util.PolyphenyDbValidatorException;
-import lombok.extern.slf4j.Slf4j;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
 

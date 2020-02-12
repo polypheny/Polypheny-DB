@@ -34,11 +34,11 @@
 package org.polypheny.db.rel.type;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.sql.type.SqlTypeExplicitPrecedenceList;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

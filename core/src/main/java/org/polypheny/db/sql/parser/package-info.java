@@ -3,5 +3,5 @@
  * Provides a SQL parser.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
+package org.polypheny.db.sql.parser;
 

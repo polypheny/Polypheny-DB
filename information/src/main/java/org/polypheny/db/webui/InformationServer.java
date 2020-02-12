@@ -19,12 +19,12 @@ package org.polypheny.db.webui;
 
 import static spark.Service.ignite;
 
+import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
-import java.io.IOException;
-import lombok.extern.slf4j.Slf4j;
 import spark.Service;
 
 

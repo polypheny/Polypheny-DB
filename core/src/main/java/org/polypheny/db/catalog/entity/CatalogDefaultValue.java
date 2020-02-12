@@ -17,9 +17,9 @@
 package org.polypheny.db.catalog.entity;
 
 
-import org.polypheny.db.PolySqlType;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import org.polypheny.db.PolySqlType;
 
 
 /**

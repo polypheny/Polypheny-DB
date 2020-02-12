@@ -34,10 +34,10 @@
 package org.polypheny.db.adapter.pig;
 
 
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
 
 
 /**

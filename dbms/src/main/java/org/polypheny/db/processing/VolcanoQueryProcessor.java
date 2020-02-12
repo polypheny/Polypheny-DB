@@ -17,6 +17,9 @@
 package org.polypheny.db.processing;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
@@ -57,9 +60,6 @@ import org.polypheny.db.rel.rules.TableScanRule;
 import org.polypheny.db.rel.rules.ValuesReduceRule;
 import org.polypheny.db.rel.stream.StreamRules;
 import org.polypheny.db.rex.RexExecutorImpl;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import lombok.Getter;
 
 
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {

@@ -34,10 +34,10 @@
 package org.polypheny.db.plan.hep;
 
 
-import org.polypheny.db.plan.RelOptRule;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.polypheny.db.plan.RelOptRule;
 
 
 /**

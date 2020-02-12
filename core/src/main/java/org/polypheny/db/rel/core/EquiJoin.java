@@ -34,13 +34,13 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.Objects;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableIntList;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**

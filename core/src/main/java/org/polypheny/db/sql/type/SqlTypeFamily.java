@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
 
 
 /**

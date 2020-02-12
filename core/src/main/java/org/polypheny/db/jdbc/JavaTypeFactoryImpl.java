@@ -34,6 +34,21 @@
 package org.polypheny.db.jdbc;
 
 
+import com.google.common.collect.Lists;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
@@ -51,21 +66,6 @@ import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.Lists;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

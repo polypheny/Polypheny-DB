@@ -34,10 +34,10 @@
 package org.polypheny.db.jdbc;
 
 
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelRecordType;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelRecordType;
 
 
 /**

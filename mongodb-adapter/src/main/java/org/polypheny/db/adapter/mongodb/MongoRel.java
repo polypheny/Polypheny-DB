@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

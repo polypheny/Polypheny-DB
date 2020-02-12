@@ -34,12 +34,12 @@
 package org.polypheny.db.test.concurrent;
 
 
-import org.polypheny.db.util.Unsafe;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Properties;
+import org.polypheny.db.util.Unsafe;
 
 
 /**

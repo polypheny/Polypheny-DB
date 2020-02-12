@@ -34,13 +34,13 @@
 package org.polypheny.db.runtime;
 
 
-import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
-import org.polypheny.db.util.Holder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
+import org.polypheny.db.util.Holder;
 
 
 /**

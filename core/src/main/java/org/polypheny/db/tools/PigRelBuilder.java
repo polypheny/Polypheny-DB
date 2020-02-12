@@ -34,6 +34,10 @@
 package org.polypheny.db.tools;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -44,10 +48,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

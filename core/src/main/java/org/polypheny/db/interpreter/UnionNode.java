@@ -34,10 +34,10 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.core.Union;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.Set;
+import org.polypheny.db.rel.core.Union;
 
 
 /**

@@ -34,10 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

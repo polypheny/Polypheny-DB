@@ -20,6 +20,11 @@ package org.polypheny.db.adapter.jdbc.rel2sql;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.function.Function;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
@@ -66,11 +71,6 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.function.Function;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

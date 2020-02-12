@@ -34,6 +34,11 @@
 package org.polypheny.db.plan.volcano;
 
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.polypheny.db.plan.volcano.PlannerTests.GoodSingleRule;
 import static org.polypheny.db.plan.volcano.PlannerTests.NoneLeafRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.NoneSingleRel;
@@ -44,12 +49,13 @@ import static org.polypheny.db.plan.volcano.PlannerTests.PhysSingleRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.TestSingleRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.newCluster;
 import static org.polypheny.db.test.Matchers.isLinux;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.plan.Convention;
@@ -70,12 +76,6 @@ import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.rules.ProjectRemoveRule;
 import org.polypheny.db.tools.RelBuilder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

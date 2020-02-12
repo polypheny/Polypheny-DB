@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
-import org.polypheny.db.sql.SqlKind;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
+import org.polypheny.db.sql.SqlKind;
 
 
 /**

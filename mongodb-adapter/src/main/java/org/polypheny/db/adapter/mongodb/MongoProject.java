@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -46,8 +48,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

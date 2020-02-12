@@ -34,6 +34,19 @@
 package org.polypheny.db.sql2rel;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.SortedSetMultimap;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelCollation;
@@ -91,19 +104,6 @@ import org.polypheny.db.util.ReflectiveVisitDispatcher;
 import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.SortedSetMultimap;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import org.apache.calcite.linq4j.Ord;
 
 // TODO jvs 10-Feb-2005:  factor out generic rewrite helper, with the ability to map between old and new rels and field ordinals.  Also, for now need to prohibit queries which return UDT instances.
 

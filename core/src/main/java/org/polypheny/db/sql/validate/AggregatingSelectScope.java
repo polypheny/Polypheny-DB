@@ -34,15 +34,6 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.Pair;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -54,6 +45,15 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
 
 
 /**

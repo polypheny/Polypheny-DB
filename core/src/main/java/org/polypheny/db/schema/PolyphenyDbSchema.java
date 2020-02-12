@@ -17,10 +17,6 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +26,10 @@ import java.util.Objects;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 public interface PolyphenyDbSchema {

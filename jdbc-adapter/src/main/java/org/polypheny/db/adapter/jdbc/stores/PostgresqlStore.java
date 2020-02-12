@@ -17,6 +17,12 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
+import com.google.common.collect.ImmutableList;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -24,12 +30,6 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
-import com.google.common.collect.ImmutableList;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.dbcp2.BasicDataSource;
 
 // TODO(jan): General PostgresqlStore todo list:
 //   - Implement better logging.

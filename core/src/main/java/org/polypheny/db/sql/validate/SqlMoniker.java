@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.sql.SqlIdentifier;
 import com.google.common.collect.Ordering;
 import java.util.Comparator;
 import java.util.List;
+import org.polypheny.db.sql.SqlIdentifier;
 
 
 /**

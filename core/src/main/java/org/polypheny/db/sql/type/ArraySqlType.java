@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
-import java.util.Objects;
 
 
 /**

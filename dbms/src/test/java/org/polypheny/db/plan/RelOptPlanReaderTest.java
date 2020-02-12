@@ -40,11 +40,11 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import org.junit.Test;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.externalize.RelJson;
 import org.polypheny.db.rel.logical.LogicalProject;
-import org.junit.Test;
 
 
 /**

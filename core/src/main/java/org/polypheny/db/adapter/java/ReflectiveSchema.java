@@ -34,25 +34,6 @@
 package org.polypheny.db.adapter.java;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.schema.Function;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
-import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -74,6 +55,25 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.Statistic;
+import org.polypheny.db.schema.Statistics;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Util;
 
 
 /**

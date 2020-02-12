@@ -34,11 +34,11 @@
 package org.polypheny.db.sql;
 
 
+import java.util.List;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Util;
-import java.util.List;
 
 
 /**

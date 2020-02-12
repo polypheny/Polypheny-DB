@@ -34,6 +34,11 @@
 package org.polypheny.db.rel;
 
 
+import com.google.common.collect.Ordering;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import org.polypheny.db.plan.RelMultipleTrait;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTrait;
@@ -41,11 +46,6 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.Ordering;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 
 /**

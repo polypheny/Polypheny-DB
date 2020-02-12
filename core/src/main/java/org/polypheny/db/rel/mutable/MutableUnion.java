@@ -34,9 +34,9 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.type.RelDataType;
-import java.util.List;
 
 
 /**

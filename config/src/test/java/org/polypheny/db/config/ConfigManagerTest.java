@@ -17,7 +17,6 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.Config.ConfigListener;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import java.math.BigDecimal;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.config.Config.ConfigListener;
 
 
 public class ConfigManagerTest implements ConfigListener {

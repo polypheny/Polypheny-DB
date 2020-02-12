@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.csv;
 
 
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -41,9 +44,6 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Source;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 
 
 /**

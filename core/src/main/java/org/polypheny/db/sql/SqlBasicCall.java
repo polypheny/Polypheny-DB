@@ -34,10 +34,10 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.util.UnmodifiableArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.util.UnmodifiableArrayList;
 
 
 /**

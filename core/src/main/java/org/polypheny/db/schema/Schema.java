@@ -34,10 +34,10 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelProtoDataType;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.rel.type.RelProtoDataType;
 
 
 /**

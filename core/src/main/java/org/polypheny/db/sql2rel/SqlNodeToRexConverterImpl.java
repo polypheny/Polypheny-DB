@@ -34,6 +34,9 @@
 package org.polypheny.db.sql2rel;
 
 
+import com.google.common.base.Preconditions;
+import java.math.BigDecimal;
+import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -53,9 +56,6 @@ import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Preconditions;
-import java.math.BigDecimal;
-import org.apache.calcite.avatica.util.ByteString;
 
 
 /**

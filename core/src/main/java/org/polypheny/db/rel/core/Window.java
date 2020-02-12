@@ -34,6 +34,11 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.AbstractList;
+import java.util.List;
+import java.util.Objects;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -60,11 +65,6 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.AbstractList;
-import java.util.List;
-import java.util.Objects;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

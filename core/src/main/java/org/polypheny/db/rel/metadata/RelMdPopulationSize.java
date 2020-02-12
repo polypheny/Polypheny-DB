@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.metadata;
 
 
+import java.util.List;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.Exchange;
@@ -47,7 +48,6 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.List;
 
 
 /**

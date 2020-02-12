@@ -36,6 +36,16 @@ package org.polypheny.db.adapter.elasticsearch;
 
 import static java.lang.String.format;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import java.util.ArrayList;
+import java.util.GregorianCalendar;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
@@ -53,16 +63,6 @@ import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import java.util.ArrayList;
-import java.util.GregorianCalendar;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 
 /**

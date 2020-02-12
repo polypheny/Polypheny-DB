@@ -34,11 +34,11 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

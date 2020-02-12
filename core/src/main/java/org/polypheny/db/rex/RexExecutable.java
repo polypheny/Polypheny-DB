@@ -34,10 +34,6 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.util.Pair;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
@@ -49,6 +45,10 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ClassBodyEvaluator;
 import org.codehaus.janino.Scanner;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.util.Pair;
 
 
 /**

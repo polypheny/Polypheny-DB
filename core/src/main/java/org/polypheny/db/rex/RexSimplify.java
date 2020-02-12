@@ -37,20 +37,6 @@ package org.polypheny.db.rex;
 import static org.polypheny.db.rex.RexUnknownAs.FALSE;
 import static org.polypheny.db.rex.RexUnknownAs.UNKNOWN;
 
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.Strong;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.metadata.NullSentinel;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.util.Bug;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
@@ -72,6 +58,20 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 
 
 /**

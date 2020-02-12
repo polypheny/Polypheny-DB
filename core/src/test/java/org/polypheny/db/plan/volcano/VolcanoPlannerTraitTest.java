@@ -36,6 +36,12 @@ package org.polypheny.db.plan.volcano;
 
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import java.util.List;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
@@ -60,12 +66,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import java.util.List;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

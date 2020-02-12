@@ -17,6 +17,11 @@
 package org.polypheny.db.catalog;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.PolyXid;
 import org.polypheny.db.UnknownTypeException;
@@ -52,11 +57,6 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 
 public abstract class Catalog {

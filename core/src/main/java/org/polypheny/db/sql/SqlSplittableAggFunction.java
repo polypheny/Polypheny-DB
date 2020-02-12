@@ -34,6 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.type.RelDataType;
@@ -47,10 +51,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

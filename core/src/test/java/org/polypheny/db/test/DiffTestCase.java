@@ -34,8 +34,6 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.Util;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,6 +55,8 @@ import org.incava.diff.Difference;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.polypheny.db.util.ReflectUtil;
+import org.polypheny.db.util.Util;
 
 
 /**

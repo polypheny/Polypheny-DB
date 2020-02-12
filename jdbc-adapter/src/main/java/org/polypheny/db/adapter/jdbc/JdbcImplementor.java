@@ -34,14 +34,14 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

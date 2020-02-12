@@ -34,9 +34,9 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

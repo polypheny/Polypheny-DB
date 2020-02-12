@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.Objects;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelect;
-import java.util.Objects;
 
 
 /**

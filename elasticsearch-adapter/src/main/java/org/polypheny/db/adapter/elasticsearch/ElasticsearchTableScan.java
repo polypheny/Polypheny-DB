@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -45,8 +47,6 @@ import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.rel.type.RelDataType;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

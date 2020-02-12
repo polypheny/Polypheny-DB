@@ -37,6 +37,17 @@ package org.polypheny.db.test;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import org.apache.hadoop.fs.Path;
+import org.apache.pig.pigunit.Cluster;
+import org.apache.pig.pigunit.PigTest;
+import org.apache.pig.pigunit.pig.PigServer;
+import org.apache.pig.test.Util;
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.adapter.pig.PigAggregate;
 import org.polypheny.db.adapter.pig.PigFilter;
 import org.polypheny.db.adapter.pig.PigRel;
@@ -57,17 +68,6 @@ import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.io.File;
-import org.apache.hadoop.fs.Path;
-import org.apache.pig.pigunit.Cluster;
-import org.apache.pig.pigunit.PigTest;
-import org.apache.pig.pigunit.pig.PigServer;
-import org.apache.pig.test.Util;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

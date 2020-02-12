@@ -1,8 +1,6 @@
 package org.polypheny.db.util.background;
 
 
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Executors;
@@ -11,6 +9,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.apache.commons.lang.time.StopWatch;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 class BackgroundTaskHandle implements Runnable {
@@ -79,7 +79,7 @@ class BackgroundTaskHandle implements Runnable {
     // https://stackoverflow.com/a/19922501
     private static class MovingAverage {
 
-        private final Queue<Long> window = new LinkedList<Long>();
+        private final Queue<Long> window = new LinkedList<>();
         private final int period;
         private long sum = 0;
 

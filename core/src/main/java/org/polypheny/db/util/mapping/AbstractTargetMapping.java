@@ -34,8 +34,8 @@
 package org.polypheny.db.util.mapping;
 
 
-import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import java.util.Iterator;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
 /**

@@ -17,15 +17,15 @@
 package org.polypheny.db.information;
 
 
-import org.polypheny.db.information.InformationGraph.GraphData;
-import org.polypheny.db.information.InformationGraph.GraphType;
-import org.polypheny.db.webui.InformationServer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.webui.InformationServer;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OSProcess;

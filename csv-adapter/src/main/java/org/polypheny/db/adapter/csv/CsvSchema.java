@@ -34,6 +34,11 @@
 package org.polypheny.db.adapter.csv;
 
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
@@ -49,11 +54,6 @@ import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
-import java.io.File;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 
 /**

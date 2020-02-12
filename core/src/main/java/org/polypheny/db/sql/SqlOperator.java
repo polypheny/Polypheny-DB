@@ -34,6 +34,11 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlBetweenOperator;
@@ -52,11 +57,6 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

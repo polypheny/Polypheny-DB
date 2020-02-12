@@ -34,8 +34,6 @@
 package org.polypheny.db.test.concurrent;
 
 
-import org.polypheny.db.jdbc.SqlTimeoutException;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintStream;
 import java.math.BigDecimal;
@@ -54,6 +52,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import org.polypheny.db.jdbc.SqlTimeoutException;
+import org.polypheny.db.util.Util;
 
 
 /**

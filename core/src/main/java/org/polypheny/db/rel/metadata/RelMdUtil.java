@@ -34,6 +34,13 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
@@ -63,13 +70,6 @@ import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.NumberUtil;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

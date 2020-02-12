@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.pig;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.pig.data.DataType;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -44,9 +47,6 @@ import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.pig.data.DataType;
 
 
 /**

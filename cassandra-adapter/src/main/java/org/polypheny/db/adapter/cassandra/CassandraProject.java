@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -47,9 +50,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
-import com.datastax.oss.driver.api.querybuilder.select.Selector;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

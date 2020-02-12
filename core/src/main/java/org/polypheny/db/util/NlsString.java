@@ -34,9 +34,6 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlUtil;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -51,6 +48,9 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlUtil;
 
 
 /**

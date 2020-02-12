@@ -34,14 +34,6 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectiveVisitor;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -60,6 +52,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ReflectiveVisitor;
+import org.polypheny.db.util.Util;
 
 
 /**

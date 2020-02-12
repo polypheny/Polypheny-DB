@@ -17,11 +17,11 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 public class CassandraConvention extends Convention.Impl {

@@ -1,7 +1,7 @@
 
 /**
- * Facilities to externalize {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode}s to and from XML and JSON format.
+ * Facilities to externalize {@link org.polypheny.db.rel.RelNode}s to and from XML and JSON format.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
+package org.polypheny.db.rel.externalize;
 

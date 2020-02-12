@@ -19,9 +19,6 @@ package org.polypheny.db.webui;
 
 import static spark.Service.ignite;
 
-import org.polypheny.db.config.Config;
-import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
@@ -29,6 +26,9 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigManager;
 import spark.Service;
 
 

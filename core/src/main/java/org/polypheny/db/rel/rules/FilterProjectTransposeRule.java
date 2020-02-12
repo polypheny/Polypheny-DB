@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;
@@ -48,7 +49,6 @@ import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
 
 
 /**

@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.logical;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -42,7 +43,6 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rex.RexNode;
-import java.util.List;
 
 
 /**

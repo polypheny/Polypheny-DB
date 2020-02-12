@@ -241,13 +241,13 @@ windowSpec:
 In *insert*, if the INSERT or UPSERT statement does not specify a
 list of target columns, the query must have the same number of
 columns as the target table, except in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isInsertSubsetColumnsAllowed--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isInsertSubsetColumnsAllowed--).
 
 In *merge*, at least one of the WHEN MATCHED and WHEN NOT MATCHED clauses must
 be present.
 
 *tablePrimary* may only contain an EXTEND clause in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#allowExtend--);
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#allowExtend--);
 in those same conformance levels, any *column* in *insert* may be replaced by
 *columnDecl*, which has a similar effect to including it in an EXTEND clause.
 
@@ -280,18 +280,18 @@ may refer to tables in the FROM clause of an enclosing query.
 
 *selectWithoutFrom* is equivalent to VALUES,
 but is not standard SQL and is only allowed in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isFromRequired--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isFromRequired--).
 
 MINUS is equivalent to EXCEPT,
 but is not standard SQL and is only allowed in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isMinusAllowed--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isMinusAllowed--).
 
 CROSS APPLY and OUTER APPLY are only allowed in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isApplyAllowed--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isApplyAllowed--).
 
 "LIMIT start, count" is equivalent to "LIMIT count OFFSET start"
 but is only allowed in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isLimitStartCountAllowed--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isLimitStartCountAllowed--).
 
 ## Keywords
 
@@ -1039,7 +1039,7 @@ Note:
   TIMESTAMP WITH LOCAL TIME ZONE does not store the time zone internally, but
   it will rely on the supplied time zone to provide correct semantics.
 * GEOMETRY is allowed only in certain
-  [conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#allowGeometry--).
+  [conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#allowGeometry--).
 
 ### Non-scalar types
 
@@ -1162,7 +1162,7 @@ comp:
 | numeric1 - numeric2       | Returns *numeric1* minus *numeric2*
 | numeric1 * numeric2       | Returns *numeric1* multiplied by *numeric2*
 | numeric1 / numeric2       | Returns *numeric1* divided by *numeric2*
-| numeric1 % numeric2       | As *MOD(numeric1, numeric2)* (only in certain [conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#isPercentRemainderAllowed--))
+| numeric1 % numeric2       | As *MOD(numeric1, numeric2)* (only in certain [conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isPercentRemainderAllowed--))
 | POWER(numeric1, numeric2) | Returns *numeric1* raised to the power of *numeric2*
 | ABS(numeric)              | Returns the absolute value of *numeric*
 | MOD(numeric1, numeric2)   | Returns the remainder (modulus) of *numeric1* divided by *numeric2*. The result is negative only if *numeric1* is negative
@@ -1250,7 +1250,7 @@ Not implemented:
 
 Calls to niladic functions such as `CURRENT_DATE` do not accept parentheses in
 standard SQL. Calls with parentheses, such as `CURRENT_DATE()` are accepted in certain
-[conformance levels]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/validate/SqlConformance.html#allowNiladicParentheses--).
+[conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#allowNiladicParentheses--).
 
 Not implemented:
 
@@ -2026,36 +2026,36 @@ To implement an *aggregate function*, there are 2 options:
 
 Optionally, add a public `merge` method to the class; this allows Polypheny-DB to generate code that merges sub-totals.
 
-Optionally, make your class implement the [SqlSplittableAggFunction]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/sql/SqlSplittableAggFunction.html) interface; this allows Polypheny-DB to decompose the function across several stages of aggregation, roll up from summary tables, and push it through joins.
+Optionally, make your class implement the [SqlSplittableAggFunction]({{ site.apiRoot }}/org/polypheny/db/sql/SqlSplittableAggFunction.html) interface; this allows Polypheny-DB to decompose the function across several stages of aggregation, roll up from summary tables, and push it through joins.
 
 To implement a *table function*, there are 3 options:
 
 * Create a class with a static `eval` method that returns
-  [ScannableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/ScannableTable.html)
+  [ScannableTable]({{ site.apiRoot }}/org/polypheny/db/schema/ScannableTable.html)
   or
-  [QueryableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/QueryableTable.html),
+  [QueryableTable]({{ site.apiRoot }}/org/polypheny/db/schema/QueryableTable.html),
   and register the class;
 * Create a class with a non-static `eval` method that returns
-  [ScannableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/ScannableTable.html)
+  [ScannableTable]({{ site.apiRoot }}/org/polypheny/db/schema/ScannableTable.html)
   or
-  [QueryableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/QueryableTable.html),
+  [QueryableTable]({{ site.apiRoot }}/org/polypheny/db/schema/QueryableTable.html),
   and register the class;
 * Create a class with one or more public static methods that return
-  [ScannableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/ScannableTable.html)
+  [ScannableTable]({{ site.apiRoot }}/org/polypheny/db/schema/ScannableTable.html)
   or
-  [QueryableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/QueryableTable.html),
+  [QueryableTable]({{ site.apiRoot }}/org/polypheny/db/schema/QueryableTable.html),
   and register each class/method combination.
 
 To implement a *table macro*, there are 3 options:
 
 * Create a class with a static `eval` method that returns
-  [TranslatableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/TranslatableTable.html),
+  [TranslatableTable]({{ site.apiRoot }}/org/polypheny/db/schema/TranslatableTable.html),
   and register the class;
 * Create a class with a non-static `eval` method that returns
-  [TranslatableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/TranslatableTable.html),
+  [TranslatableTable]({{ site.apiRoot }}/org/polypheny/db/schema/TranslatableTable.html),
   and register the class;
 * Create a class with one or more public static methods that return
-  [TranslatableTable]({{ site.apiRoot }}/ch/unibas/dmi/dbis/polyphenydb/schema/TranslatableTable.html),
+  [TranslatableTable]({{ site.apiRoot }}/org/polypheny/db/schema/TranslatableTable.html),
   and register each class/method combination.
 
 Polypheny-DB deduces the parameter types and result type of a function from the parameter and return types of the Java method that implements it. Further, you can specify the name and optionality of each parameter using the [Parameter]({{ site.apiRoot }}/org/apache/calcite/linq4j/function/Parameter.html) annotation.

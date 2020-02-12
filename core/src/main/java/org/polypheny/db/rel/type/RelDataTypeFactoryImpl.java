@@ -34,13 +34,6 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.util.Glossary;
-import org.polypheny.db.util.Util;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -58,6 +51,13 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.Util;
 
 
 /**

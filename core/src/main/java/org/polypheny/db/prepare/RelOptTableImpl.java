@@ -34,6 +34,14 @@
 package org.polypheny.db.prepare;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.AbstractList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -75,14 +83,6 @@ import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.AbstractList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

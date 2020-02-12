@@ -17,11 +17,6 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.util.NameMap;
-import org.polypheny.db.util.NameMultimap;
-import org.polypheny.db.util.NameSet;
-import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -38,6 +33,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.util.NameMap;
+import org.polypheny.db.util.NameMultimap;
+import org.polypheny.db.util.NameSet;
+import org.polypheny.db.util.Pair;
 
 
 /**

@@ -34,6 +34,10 @@
 package org.polypheny.db.plan;
 
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
@@ -44,10 +48,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**

@@ -34,6 +34,12 @@
 package org.polypheny.db.tools;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
@@ -79,12 +85,6 @@ import org.polypheny.db.rel.rules.TableScanRule;
 import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.sql2rel.RelFieldTrimmer;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**

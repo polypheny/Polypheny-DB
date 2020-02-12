@@ -34,11 +34,6 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.rel.metadata.NullSentinel;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -48,6 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 
 
 /**

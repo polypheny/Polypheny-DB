@@ -34,6 +34,13 @@
 package org.polypheny.db.interpreter;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.enumerable.AggImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
@@ -87,13 +94,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Predicate;
-import org.apache.calcite.linq4j.Enumerable;
 
 
 /**

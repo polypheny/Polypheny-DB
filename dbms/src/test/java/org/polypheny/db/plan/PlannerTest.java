@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import static org.polypheny.db.plan.RelOptRule.operand;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -42,7 +41,15 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.polypheny.db.plan.RelOptRule.operand;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import org.hamcrest.Matcher;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
@@ -112,13 +119,6 @@ import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.core.Window.Group;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexWindowBound;
@@ -51,9 +54,6 @@ import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

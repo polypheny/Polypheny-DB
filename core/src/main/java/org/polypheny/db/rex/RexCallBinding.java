@@ -34,6 +34,8 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
@@ -47,8 +49,6 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorException;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

@@ -34,8 +34,8 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.core.Filter;
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.rel.core.Filter;
 
 
 /**

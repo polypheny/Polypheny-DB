@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataTypeField;
 import java.util.List;
+import org.polypheny.db.rel.type.RelDataTypeField;
 
 
 /**

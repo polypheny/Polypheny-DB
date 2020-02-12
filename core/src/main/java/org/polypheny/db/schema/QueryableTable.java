@@ -34,10 +34,10 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.DataContext;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.DataContext;
 
 
 /**

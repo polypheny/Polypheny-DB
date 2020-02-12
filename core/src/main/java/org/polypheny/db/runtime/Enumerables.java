@@ -34,10 +34,10 @@
 package org.polypheny.db.runtime;
 
 
-import org.polypheny.db.interpreter.Row;
 import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
+import org.polypheny.db.interpreter.Row;
 
 
 /**

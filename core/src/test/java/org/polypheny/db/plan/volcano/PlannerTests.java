@@ -34,6 +34,7 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -50,7 +51,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import java.util.List;
 
 
 /**

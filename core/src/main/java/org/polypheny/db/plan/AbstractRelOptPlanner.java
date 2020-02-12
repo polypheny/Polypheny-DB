@@ -34,14 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.util.CancelFlag;
-import org.polypheny.db.util.Static;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -51,6 +43,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.util.CancelFlag;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.Util;
 
 
 /**

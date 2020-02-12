@@ -34,16 +34,16 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 

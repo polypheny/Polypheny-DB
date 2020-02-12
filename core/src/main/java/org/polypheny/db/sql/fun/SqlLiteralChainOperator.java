@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
@@ -58,8 +60,6 @@ import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -34,6 +34,13 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import javax.annotation.Nonnull;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -42,13 +49,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Litmus;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import javax.annotation.Nonnull;
 
 
 /**

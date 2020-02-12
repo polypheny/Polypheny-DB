@@ -34,12 +34,12 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.Objects;
 
 
 /**

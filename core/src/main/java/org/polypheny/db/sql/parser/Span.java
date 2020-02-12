@@ -34,10 +34,10 @@
 package org.polypheny.db.sql.parser;
 
 
-import org.polypheny.db.sql.SqlNode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

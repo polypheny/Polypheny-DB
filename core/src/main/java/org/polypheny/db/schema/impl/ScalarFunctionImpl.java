@@ -34,6 +34,11 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableMultimap;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import org.apache.calcite.linq4j.function.SemiStrict;
+import org.apache.calcite.linq4j.function.Strict;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
@@ -44,11 +49,6 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.ScalarFunction;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableMultimap;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import org.apache.calcite.linq4j.function.SemiStrict;
-import org.apache.calcite.linq4j.function.Strict;
 
 
 /**

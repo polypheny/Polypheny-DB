@@ -34,12 +34,14 @@
 package org.polypheny.db.plan.volcano;
 
 
+import static org.junit.Assert.assertTrue;
 import static org.polypheny.db.plan.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
 import static org.polypheny.db.plan.volcano.PlannerTests.TestLeafRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.TestSingleRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.newCluster;
-import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+import org.junit.Test;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -53,8 +55,6 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import java.util.List;
-import org.junit.Test;
 
 
 /**

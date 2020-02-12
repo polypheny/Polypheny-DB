@@ -34,6 +34,15 @@
 package org.polypheny.db.test;
 
 
+import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.AnyOf.anyOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.polypheny.db.runtime.SqlFunctions.addMonths;
 import static org.polypheny.db.runtime.SqlFunctions.charLength;
 import static org.polypheny.db.runtime.SqlFunctions.concat;
@@ -46,19 +55,7 @@ import static org.polypheny.db.runtime.SqlFunctions.rtrim;
 import static org.polypheny.db.runtime.SqlFunctions.subtractMonths;
 import static org.polypheny.db.runtime.SqlFunctions.trim;
 import static org.polypheny.db.runtime.SqlFunctions.upper;
-import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.runtime.Utilities;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +64,9 @@ import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.Test;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Utilities;
 
 
 /**

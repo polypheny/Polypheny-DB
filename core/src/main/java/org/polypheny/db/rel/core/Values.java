@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -50,10 +54,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 
 /**

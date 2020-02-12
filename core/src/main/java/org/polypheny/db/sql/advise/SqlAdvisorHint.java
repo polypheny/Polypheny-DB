@@ -34,8 +34,8 @@
 package org.polypheny.db.sql.advise;
 
 
-import org.polypheny.db.sql.validate.SqlMoniker;
 import java.util.List;
+import org.polypheny.db.sql.validate.SqlMoniker;
 
 
 /**

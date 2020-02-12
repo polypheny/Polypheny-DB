@@ -34,11 +34,11 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 
 
 /**

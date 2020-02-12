@@ -34,10 +34,10 @@
 package org.polypheny.db.adapter.druid;
 
 
+import javax.annotation.Nullable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
-import javax.annotation.Nullable;
 
 
 /**

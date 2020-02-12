@@ -34,10 +34,10 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
 
 
 /**

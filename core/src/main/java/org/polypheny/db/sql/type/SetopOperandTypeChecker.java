@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.AbstractList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCallBinding;
@@ -44,8 +46,6 @@ import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.util.Static;
-import java.util.AbstractList;
-import java.util.List;
 
 
 /**

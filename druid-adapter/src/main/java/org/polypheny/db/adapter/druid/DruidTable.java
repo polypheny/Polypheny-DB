@@ -34,6 +34,18 @@
 package org.polypheny.db.adapter.druid;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import org.joda.time.DateTime;
+import org.joda.time.Interval;
+import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -54,18 +66,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelectKeyword;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import org.joda.time.DateTime;
-import org.joda.time.Interval;
-import org.joda.time.chrono.ISOChronology;
 
 
 /**

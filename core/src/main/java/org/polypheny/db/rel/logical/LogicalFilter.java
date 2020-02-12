@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.logical;
 
 
+import com.google.common.collect.ImmutableSet;
+import java.util.Objects;
+import java.util.Set;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -50,9 +53,6 @@ import org.polypheny.db.rel.metadata.RelMdDistribution;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Litmus;
-import com.google.common.collect.ImmutableSet;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**

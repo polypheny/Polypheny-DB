@@ -34,17 +34,6 @@
 package org.polypheny.db.sql.parser;
 
 
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlFunctionCategory;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.SqlUnresolvedFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.util.Glossary;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -59,6 +48,17 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSyntax;
+import org.polypheny.db.sql.SqlUnresolvedFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.util.Glossary;
 
 
 /**
@@ -329,7 +329,7 @@ public abstract class SqlAbstractParserImpl {
         /**
          * Accept only CURSOR constructors, parenthesized queries, or non-query expressions in this context.
          */
-        ACCEPT_CURSOR;
+        ACCEPT_CURSOR
     }
 
 

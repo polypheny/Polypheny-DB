@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.function.Predicate;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
@@ -42,8 +44,6 @@ import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

@@ -34,6 +34,19 @@
 package org.polypheny.db.plan.hep;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.calcite.linq4j.function.Function2;
+import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.CommonRelSubExprRule;
 import org.polypheny.db.plan.Context;
@@ -62,19 +75,6 @@ import org.polypheny.db.util.graph.DepthFirstIterator;
 import org.polypheny.db.util.graph.DirectedGraph;
 import org.polypheny.db.util.graph.Graphs;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.calcite.linq4j.function.Function2;
-import org.apache.calcite.linq4j.function.Functions;
 
 
 /**

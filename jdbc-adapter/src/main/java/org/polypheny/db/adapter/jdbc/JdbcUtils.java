@@ -34,10 +34,6 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlDialectFactory;
-import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.util.Pair;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -63,6 +59,10 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlDialectFactory;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Pair;
 
 
 /**

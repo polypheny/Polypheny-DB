@@ -34,6 +34,12 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nullable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlCall;
@@ -43,12 +49,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nullable;
 
 
 /**

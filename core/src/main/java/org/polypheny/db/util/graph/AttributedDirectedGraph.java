@@ -34,8 +34,8 @@
 package org.polypheny.db.util.graph;
 
 
-import org.polypheny.db.util.Util;
 import java.util.List;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,8 +34,8 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.sql.validate.SqlMonotonicity;
 import java.util.Objects;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
 
 
 /**

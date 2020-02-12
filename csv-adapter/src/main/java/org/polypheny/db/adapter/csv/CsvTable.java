@@ -34,14 +34,14 @@
 package org.polypheny.db.adapter.csv;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Source;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

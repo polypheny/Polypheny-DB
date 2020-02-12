@@ -34,8 +34,6 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -45,6 +43,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Util;
 
 
 /**

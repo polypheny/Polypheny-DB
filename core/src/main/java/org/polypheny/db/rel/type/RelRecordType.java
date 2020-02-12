@@ -34,11 +34,11 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.type.SqlTypeName;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

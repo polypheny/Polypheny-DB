@@ -38,7 +38,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.util.Util;
 import com.google.common.collect.Ordering;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -56,6 +55,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.util.Util;
 
 
 /**

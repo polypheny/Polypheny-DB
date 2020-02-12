@@ -34,6 +34,11 @@
 package org.polypheny.db.rel;
 
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
@@ -48,11 +53,6 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.AbstractList;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

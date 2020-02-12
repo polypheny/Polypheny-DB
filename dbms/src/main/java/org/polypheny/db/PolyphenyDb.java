@@ -17,6 +17,8 @@
 package org.polypheny.db;
 
 
+import java.io.Serializable;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -34,8 +36,6 @@ import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
-import java.io.Serializable;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

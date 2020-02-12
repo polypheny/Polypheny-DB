@@ -34,10 +34,6 @@
 package org.polypheny.db.schema.impl;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.SchemaPlus;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import org.apache.calcite.linq4j.AbstractQueryable;
@@ -45,6 +41,10 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.SchemaPlus;
 
 
 /**

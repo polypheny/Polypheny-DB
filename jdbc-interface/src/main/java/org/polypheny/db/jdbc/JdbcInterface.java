@@ -17,10 +17,6 @@
 package org.polypheny.db.jdbc;
 
 
-import org.polypheny.db.Authenticator;
-import org.polypheny.db.QueryInterface;
-import org.polypheny.db.TransactionManager;
-import org.polypheny.db.config.RuntimeConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
@@ -29,6 +25,10 @@ import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
+import org.polypheny.db.Authenticator;
+import org.polypheny.db.QueryInterface;
+import org.polypheny.db.TransactionManager;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 @Slf4j

@@ -34,6 +34,10 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.plan.RelOptCluster;
@@ -46,10 +50,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.util.BuiltInMethod;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

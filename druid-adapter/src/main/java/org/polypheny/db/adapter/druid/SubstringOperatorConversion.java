@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.druid;
 
 
+import javax.annotation.Nullable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -41,7 +42,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import javax.annotation.Nullable;
 
 
 /**

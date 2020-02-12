@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.ExplicitOperatorBinding;
@@ -59,7 +60,6 @@ import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import java.util.List;
 
 
 /**

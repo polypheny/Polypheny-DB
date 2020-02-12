@@ -34,10 +34,10 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptPlanner;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.RelOptPlanner;
 
 
 /**

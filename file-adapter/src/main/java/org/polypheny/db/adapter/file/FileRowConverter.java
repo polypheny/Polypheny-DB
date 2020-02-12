@@ -34,9 +34,6 @@
 package org.polypheny.db.adapter.file;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.util.Pair;
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 import java.text.NumberFormat;
@@ -53,6 +50,9 @@ import java.util.regex.Pattern;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.util.Pair;
 
 
 /**

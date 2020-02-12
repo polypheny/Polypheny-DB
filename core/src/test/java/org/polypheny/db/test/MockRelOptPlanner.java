@@ -17,6 +17,11 @@
 package org.polypheny.db.test;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCostImpl;
@@ -29,11 +34,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 
 /**

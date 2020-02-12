@@ -34,6 +34,14 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.sql.SqlCall;
@@ -43,14 +51,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 
 /**

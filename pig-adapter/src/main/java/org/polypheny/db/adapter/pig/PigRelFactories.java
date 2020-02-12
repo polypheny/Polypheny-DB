@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.pig;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -45,9 +48,6 @@ import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Set;
 
 
 /**

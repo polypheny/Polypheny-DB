@@ -34,6 +34,9 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlTrimFunction;
@@ -44,9 +47,6 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import java.util.Objects;
 
 
 /**

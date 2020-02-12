@@ -34,6 +34,12 @@
 package org.polypheny.db.prepare;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.plan.Convention;
@@ -76,12 +82,6 @@ import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.TryThreadLocal;
 import org.polypheny.db.util.trace.PolyphenyDbTimingTracer;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import org.apache.calcite.avatica.Meta;
 import org.slf4j.Logger;
 
 

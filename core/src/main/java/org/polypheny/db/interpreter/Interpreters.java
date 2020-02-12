@@ -34,11 +34,11 @@
 package org.polypheny.db.interpreter;
 
 
+import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
-import org.apache.calcite.linq4j.Enumerable;
 
 
 /**

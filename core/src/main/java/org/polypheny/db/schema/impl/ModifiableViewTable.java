@@ -34,6 +34,13 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.type.RelDataType;
@@ -55,13 +62,6 @@ import org.polypheny.db.sql2rel.InitializerContext;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableIntList;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**

@@ -34,9 +34,9 @@
 package org.polypheny.db.tools;
 
 
-import org.polypheny.db.plan.RelOptRule;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
+import org.polypheny.db.plan.RelOptRule;
 
 
 /**

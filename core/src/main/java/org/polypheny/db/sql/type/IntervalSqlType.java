@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.Objects;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -43,8 +45,6 @@ import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
-import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnit;
 
 
 /**

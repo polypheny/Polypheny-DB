@@ -34,6 +34,15 @@
 package org.polypheny.db.schemas;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
@@ -46,15 +55,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 
 
 /**

@@ -34,10 +34,10 @@
 package org.polypheny.db.util;
 
 
+import java.util.List;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.PolyphenyDbResource;
 import org.polypheny.db.runtime.Resources;
-import java.util.List;
 
 
 /**

@@ -34,14 +34,14 @@
 package org.polypheny.db.rex;
 
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 
 /**

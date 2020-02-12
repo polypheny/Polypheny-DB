@@ -34,10 +34,10 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.List;
 import javax.annotation.Nonnull;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

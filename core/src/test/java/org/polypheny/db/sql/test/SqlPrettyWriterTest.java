@@ -19,6 +19,10 @@ package org.polypheny.db.sql.test;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
@@ -28,10 +32,6 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.util.Litmus;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

@@ -17,9 +17,9 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigLong extends ConfigScalar {

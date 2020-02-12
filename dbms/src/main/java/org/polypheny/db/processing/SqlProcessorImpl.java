@@ -19,6 +19,14 @@ package org.polypheny.db.processing;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaSeverity;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -72,14 +80,6 @@ import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
-import org.apache.commons.lang3.time.StopWatch;
 
 
 @Slf4j
@@ -151,7 +151,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
-            log.debug( "Validated query: [{}]", validated );
+            log.trace( "Validated query: [{}]", validated );
         }
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
@@ -205,7 +205,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
 
         if ( log.isTraceEnabled() ) {
-            log.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {

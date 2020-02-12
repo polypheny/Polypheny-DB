@@ -36,10 +36,6 @@ package org.polypheny.db.config;
 
 import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
 
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.util.Bug;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -49,6 +45,10 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.ConnectionProperty;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.Bug;
 
 
 /**

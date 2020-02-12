@@ -34,6 +34,9 @@
 package org.polypheny.db.rex;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -45,9 +48,6 @@ import org.polypheny.db.sql.fun.SqlCaseOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**

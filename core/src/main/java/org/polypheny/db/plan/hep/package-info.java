@@ -1,7 +1,7 @@
 
 /**
- * Provides a heuristic planner implementation for the interfaces in {@code ch.unibas.dmi.dbis.polyphenydb.plan}.
+ * Provides a heuristic planner implementation for the interfaces in {@code org.polypheny.db.plan}.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.hep;
+package org.polypheny.db.plan.hep;
 

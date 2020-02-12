@@ -34,6 +34,20 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.List;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.BlockStatement;
+import org.apache.calcite.linq4j.tree.Blocks;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.MemberDeclaration;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -54,20 +68,6 @@ import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.BlockStatement;
-import org.apache.calcite.linq4j.tree.Blocks;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MemberDeclaration;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

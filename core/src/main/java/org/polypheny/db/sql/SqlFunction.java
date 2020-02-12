@@ -34,6 +34,11 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
@@ -42,11 +47,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
-import org.apache.calcite.linq4j.function.Functions;
 
 
 /**
