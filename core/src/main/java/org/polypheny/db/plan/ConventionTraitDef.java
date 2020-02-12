@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultDirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DefaultEdge;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.DirectedGraph;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.Graphs;
-import ch.unibas.dmi.dbis.polyphenydb.util.graph.Graphs.FrozenGraph;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.graph.DefaultDirectedGraph;
+import org.polypheny.db.util.graph.DefaultEdge;
+import org.polypheny.db.util.graph.DirectedGraph;
+import org.polypheny.db.util.graph.Graphs;
+import org.polypheny.db.util.graph.Graphs.FrozenGraph;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;

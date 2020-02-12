@@ -14,59 +14,59 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Context;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Contexts;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchemaWithSampling;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributions;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelFieldTrimmer;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.StandardConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReaderDynamic;
-import ch.unibas.dmi.dbis.polyphenydb.test.catalog.MockCatalogReaderSimple;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.RelOptSchemaWithSampling;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributions;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParser;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorCatalogReader;
+import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.validate.SqlValidatorTable;
+import org.polypheny.db.sql2rel.RelFieldTrimmer;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.sql2rel.StandardConvertletTable;
+import org.polypheny.db.test.catalog.MockCatalogReader;
+import org.polypheny.db.test.catalog.MockCatalogReaderDynamic;
+import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
@@ -219,7 +219,7 @@ public abstract class SqlToRelTestBase {
         Tester withLateDecorrelation( boolean enable );
 
         /**
-         * Returns a tester that optionally expands sub-queries. If {@code expand} is false, the plan contains a {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexSubQuery} for each sub-query.
+         * Returns a tester that optionally expands sub-queries. If {@code expand} is false, the plan contains a {@link org.polypheny.db.rex.RexSubQuery} for each sub-query.
          *
          * @see Prepare#THREAD_EXPAND
          */

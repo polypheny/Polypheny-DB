@@ -31,37 +31,37 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
-import ch.unibas.dmi.dbis.polyphenydb.sql.NullCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDataTypeSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDelete;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDynamicParam;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlInsert;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMatchRecognize;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMerge;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNodeList;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUpdate;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWith;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWithItem;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlDelete;
+import org.polypheny.db.sql.SqlDynamicParam;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlInsert;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.SqlMerge;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.SqlUpdate;
+import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.sql.SqlWith;
+import org.polypheny.db.sql.SqlWithItem;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.Util;
 import java.util.List;
 import java.util.Map;
 

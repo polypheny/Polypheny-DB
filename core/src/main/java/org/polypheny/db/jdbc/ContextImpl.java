@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.db.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfigImpl;
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.schema.PolyphenyDbSchema;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;

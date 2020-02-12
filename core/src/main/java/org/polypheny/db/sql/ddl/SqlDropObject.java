@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.ddl;
+package org.polypheny.db.sql.ddl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDrop;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExecutableStatement;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.SqlDrop;
+import org.polypheny.db.sql.SqlExecutableStatement;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.parser.SqlParserPos;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

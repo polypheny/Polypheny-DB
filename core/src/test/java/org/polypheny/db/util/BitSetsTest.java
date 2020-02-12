@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -50,12 +50,12 @@ import org.junit.Test;
 
 
 /**
- * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets}.
+ * Unit test for {@link org.polypheny.db.util.BitSets}.
  */
 public class BitSetsTest {
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#toIter(java.util.BitSet)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#toIter(java.util.BitSet)}.
      */
     @Test
     public void testToIterBitSet() {
@@ -91,7 +91,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#toList(java.util.BitSet)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#toList(java.util.BitSet)}.
      */
     @Test
     public void testToListBitSet() {
@@ -105,7 +105,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#of(int...)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#of(int...)}.
      */
     @Test
     public void testBitSetOf() {
@@ -119,7 +119,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#range(int, int)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#range(int, int)}.
      */
     @Test
     public void testBitSetsRange() {
@@ -136,7 +136,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#toArray(java.util.BitSet)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#toArray(java.util.BitSet)}.
      */
     @Test
     public void testBitSetsToArray() {
@@ -148,7 +148,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#union(java.util.BitSet, java.util.BitSet...)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#union(java.util.BitSet, java.util.BitSet...)}.
      */
     @Test
     public void testBitSetsUnion() {
@@ -165,7 +165,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#contains(java.util.BitSet, java.util.BitSet)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#contains(java.util.BitSet, java.util.BitSet)}.
      */
     @Test
     public void testBitSetsContains() {
@@ -184,7 +184,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#of(ImmutableIntList)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#of(ImmutableIntList)}.
      */
     @Test
     public void testBitSetOfImmutableIntList() {
@@ -197,7 +197,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link ch.unibas.dmi.dbis.polyphenydb.util.BitSets#previousClearBit(java.util.BitSet, int)}.
+     * Tests the method {@link org.polypheny.db.util.BitSets#previousClearBit(java.util.BitSet, int)}.
      */
     @Test
     public void testPreviousClearBit() {

@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptListener;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -244,7 +244,7 @@ class RelSet {
 
 
     /**
-     * Adds an expression <code>rel</code> to this set, without creating a {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset}. (Called only from {@link ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset#add}.
+     * Adds an expression <code>rel</code> to this set, without creating a {@link org.polypheny.db.plan.volcano.RelSubset}. (Called only from {@link org.polypheny.db.plan.volcano.RelSubset#add}.
      *
      * @param rel Relational expression
      */

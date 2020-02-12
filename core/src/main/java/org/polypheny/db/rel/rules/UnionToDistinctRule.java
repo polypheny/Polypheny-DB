@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Planner rule that translates a distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} (<code>all</code> = <code>false</code>) into an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate}
- * on top of a non-distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} (<code>all</code> = <code>true</code>).
+ * Planner rule that translates a distinct {@link org.polypheny.db.rel.core.Union} (<code>all</code> = <code>false</code>) into an {@link org.polypheny.db.rel.core.Aggregate}
+ * on top of a non-distinct {@link org.polypheny.db.rel.core.Union} (<code>all</code> = <code>true</code>).
  */
 public class UnionToDistinctRule extends RelOptRule {
 

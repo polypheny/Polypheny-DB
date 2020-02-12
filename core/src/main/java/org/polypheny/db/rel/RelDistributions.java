@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelMultipleTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelMultipleTrait;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.Ordering;
 import java.util.Collection;
 import java.util.List;
@@ -49,7 +49,7 @@ import javax.annotation.Nonnull;
 
 
 /**
- * Utilities concerning {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution}.
+ * Utilities concerning {@link org.polypheny.db.rel.RelDistribution}.
  */
 public class RelDistributions {
 
@@ -106,7 +106,7 @@ public class RelDistributions {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution}.
+     * Implementation of {@link org.polypheny.db.rel.RelDistribution}.
      */
     private static class RelDistributionImpl implements RelDistribution {
 

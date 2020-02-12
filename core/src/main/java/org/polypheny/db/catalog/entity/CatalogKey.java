@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package org.polypheny.db.catalog.entity;
 
 
 import java.util.List;

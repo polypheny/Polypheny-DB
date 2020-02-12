@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.convert;
+package org.polypheny.db.rel.convert;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
 
 
 /**
@@ -51,7 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
  * logically equivalent but have different physical traits into groups called <code>RelSet</code>s.
  *
  * In principle one could devise converters which change multiple traits simultaneously (say change the sort-order and the physical location of a relational expression).
- * In which case, the method {@link #getInputTraits()} would return a {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet}. But for simplicity, this class only allows one trait to
+ * In which case, the method {@link #getInputTraits()} would return a {@link org.polypheny.db.plan.RelTraitSet}. But for simplicity, this class only allows one trait to
  * be converted at a time; all other traits are assumed to be preserved.
  */
 public interface Converter extends RelNode {

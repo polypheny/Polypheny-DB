@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.concurrent;
+package org.polypheny.db.test.concurrent;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.SqlTimeoutException;
-import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.jdbc.SqlTimeoutException;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;

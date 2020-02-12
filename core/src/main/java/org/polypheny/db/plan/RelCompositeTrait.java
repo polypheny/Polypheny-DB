@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
 import com.google.common.collect.ImmutableList;
@@ -44,7 +44,7 @@ import java.util.Objects;
 /**
  * A trait that consists of a list of traits, all of the same type.
  *
- * It exists so that multiple traits of the same type ({@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef}) can be stored in the same {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet}.
+ * It exists so that multiple traits of the same type ({@link org.polypheny.db.plan.RelTraitDef}) can be stored in the same {@link org.polypheny.db.plan.RelTraitSet}.
  *
  * @param <T> Member trait
  */

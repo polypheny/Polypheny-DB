@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 /**
- * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.druid} package.
+ * Tests for the {@code org.polypheny.db.adapter.druid} package.
  *
  * Before calling this test, you need to populate Druid, as follows:
  *

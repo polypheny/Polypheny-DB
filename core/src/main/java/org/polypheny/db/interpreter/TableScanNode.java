@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Enumerables;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ProjectableFilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.runtime.Enumerables;
+import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -71,7 +71,7 @@ import org.apache.calcite.linq4j.function.Function1;
 
 
 /**
- * Interpreter node that implements a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan}.
+ * Interpreter node that implements a {@link org.polypheny.db.rel.core.TableScan}.
  */
 public class TableScanNode implements Node {
 

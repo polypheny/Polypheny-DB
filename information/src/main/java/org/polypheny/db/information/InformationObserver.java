@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package org.polypheny.db.information;
 
 
 public interface InformationObserver {

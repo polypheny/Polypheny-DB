@@ -1,16 +1,16 @@
-package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
+package org.polypheny.db.adapter.csv;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.PolyXid;
-import ch.unibas.dmi.dbis.polyphenydb.Store;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTable.Flavor;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined.CatalogCombinedTable;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
+import org.polypheny.db.PolyXid;
+import org.polypheny.db.Store;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.csv.CsvTable.Flavor;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Table;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.util.List;

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -40,15 +40,15 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelJson;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
+import org.polypheny.db.adapter.jdbc.JdbcRules;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.externalize.RelJson;
+import org.polypheny.db.rel.logical.LogicalProject;
 import org.junit.Test;
 
 
 /**
- * Unit test for {@link ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelJson}.
+ * Unit test for {@link org.polypheny.db.rel.externalize.RelJson}.
  */
 public class RelOptPlanReaderTest {
 
@@ -56,11 +56,11 @@ public class RelOptPlanReaderTest {
     public void testTypeToClass() {
         RelJson relJson = new RelJson( null );
 
-        // in ch.unibas.dmi.dbis.polyphenydb.rel package
+        // in org.polypheny.db.rel package
         assertThat( relJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
         assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
 
-        // in ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules outer class
+        // in org.polypheny.db.adapter.jdbc.JdbcRules outer class
         assertThat( relJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
         assertThat( relJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
 
@@ -71,14 +71,14 @@ public class RelOptPlanReaderTest {
             assertThat( e.getMessage(), is( "unknown type NonExistentRel" ) );
         }
         try {
-            Class clazz = relJson.typeNameToClass( "ch.unibas.dmi.dbis.polyphenydb.rel.NonExistentRel" );
+            Class clazz = relJson.typeNameToClass( "org.polypheny.db.rel.NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
-            assertThat( e.getMessage(), is( "unknown type ch.unibas.dmi.dbis.polyphenydb.rel.NonExistentRel" ) );
+            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.rel.NonExistentRel" ) );
         }
 
         // In this class; no special treatment. Note: '$MyRel' not '.MyRel'.
-        assertThat( relJson.classToTypeName( MyRel.class ), is( "ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest$MyRel" ) );
+        assertThat( relJson.classToTypeName( MyRel.class ), is( "org.polypheny.db.plan.RelOptPlanReaderTest$MyRel" ) );
         assertThat( relJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
 
         // Using canonical name (with '$'), not found
@@ -86,7 +86,7 @@ public class RelOptPlanReaderTest {
             Class clazz = relJson.typeNameToClass( MyRel.class.getCanonicalName() );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
-            assertThat( e.getMessage(), is( "unknown type ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanReaderTest.MyRel" ) );
+            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.plan.RelOptPlanReaderTest.MyRel" ) );
         }
     }
 

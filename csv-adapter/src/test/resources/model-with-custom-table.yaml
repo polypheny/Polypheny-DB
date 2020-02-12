@@ -5,7 +5,7 @@ schemas:
         tables:
             -   name: EMPS
                 type: custom
-                factory: ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvTableFactory
+                factory: org.polypheny.db.adapter.csv.CsvTableFactory
                 operand:
                     file: sales/EMPS.csv.gz
                     flavor: scannable

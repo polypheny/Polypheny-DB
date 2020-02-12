@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.logical;
+package org.polypheny.db.rel.logical;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterCalcMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterToCalcRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToCalcRule;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.metadata.RelMdCollation;
+import org.polypheny.db.rel.metadata.RelMdDistribution;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.rules.FilterCalcMergeRule;
+import org.polypheny.db.rel.rules.FilterToCalcRule;
+import org.polypheny.db.rel.rules.ProjectToCalcRule;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
 import java.util.Set;
 
 
@@ -66,8 +66,8 @@ import java.util.Set;
  * <li>{@link FilterToCalcRule} creates this from a {@link LogicalFilter}</li>
  * <li>{@link ProjectToCalcRule} creates this from a {@link LogicalFilter}</li>
  * <li>{@link FilterCalcMergeRule} merges this with a {@link LogicalFilter}</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectCalcMergeRule} merges this with a {@link LogicalProject}</li>
- * <li>{@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcMergeRule} merges two {@code LogicalCalc}s</li>
+ * <li>{@link org.polypheny.db.rel.rules.ProjectCalcMergeRule} merges this with a {@link LogicalProject}</li>
+ * <li>{@link org.polypheny.db.rel.rules.CalcMergeRule} merges two {@code LogicalCalc}s</li>
  * </ul>
  */
 public final class LogicalCalc extends Calc {

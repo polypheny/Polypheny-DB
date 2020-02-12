@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
 import java.lang.reflect.Type;
@@ -42,9 +42,9 @@ import org.apache.calcite.linq4j.tree.Expression;
 /**
  * The base implementation of strict window aggregate function.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.FirstLastValueImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.RankImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable.RowNumberImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.FirstLastValueImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.RankImplementor
+ * @see org.polypheny.db.adapter.enumerable.RexImpTable.RowNumberImplementor
  */
 public abstract class StrictWinAggImplementor extends StrictAggImplementor implements WinAggImplementor {
 

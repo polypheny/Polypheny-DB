@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.BooleanProp;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.Default;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.IntProp;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.Resource;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.StringProp;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.Resources.BooleanProp;
+import org.polypheny.db.runtime.Resources.Default;
+import org.polypheny.db.runtime.Resources.IntProp;
+import org.polypheny.db.runtime.Resources.Resource;
+import org.polypheny.db.runtime.Resources.StringProp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.AccessControlException;
@@ -58,7 +58,7 @@ import java.util.Properties;
  *
  * <p>Every property used in saffron code must have a method in this interface.
  * The method must return a sub-class of
- * {@link ch.unibas.dmi.dbis.polyphenydb.runtime.Resources.Prop}. The javadoc
+ * {@link org.polypheny.db.runtime.Resources.Prop}. The javadoc
  * comment must describe the name of the property (for example,
  * "net.sf.saffron.connection.PoolSize") and the default value, if any. <em>
  * Developers, please make sure that this remains so!</em>
@@ -78,7 +78,7 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.charset" is the name of the default
      * character set. The default is "ISO-8859-1". It is used in
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator}.
+     * {@link org.polypheny.db.sql.validate.SqlValidator}.
      */
     @Resource("saffron.default.charset")
     @Default("ISO-8859-1")
@@ -89,7 +89,7 @@ public interface SaffronProperties {
      * default national character set which is used with the N'string' construct
      * which may or may not be different from the {@link #defaultCharset}. The
      * default is "ISO-8859-1". It is used in
-     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.nationalcharset")
     @Default("ISO-8859-1")
@@ -98,8 +98,8 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.collation.name" is the name of the
      * default collation. The default is "ISO-8859-1$en_US". Used in
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation} and
-     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@link org.polypheny.db.sql.SqlCollation} and
+     * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.name")
     @Default("ISO-8859-1$en_US")
@@ -108,8 +108,8 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.collation.strength" is the strength
      * of the default collation. The default is "primary". Used in
-     * {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation} and
-     * {@code ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral#SqlLiteral}
+     * {@link org.polypheny.db.sql.SqlCollation} and
+     * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.strength")
     @Default("primary")

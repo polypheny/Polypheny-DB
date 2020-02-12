@@ -31,27 +31,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Util;
 import java.math.BigDecimal;
 
 
 /**
- * Planner rule that translates a distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} (<code>all</code> = <code>false</code>) into a group of operators composed of
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}, {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate}, etc.
+ * Planner rule that translates a distinct {@link org.polypheny.db.rel.core.Intersect} (<code>all</code> = <code>false</code>) into a group of operators composed of
+ * {@link org.polypheny.db.rel.core.Union}, {@link org.polypheny.db.rel.core.Aggregate}, etc.
  *
  * Rewrite: (GB-Union All-GB)-GB-UDTF (on all attributes)
  *
@@ -78,7 +78,7 @@ import java.math.BigDecimal;
  *
  * <code>R6 = Proj(R5 on all attributes)</code>
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionToDistinctRule
+ * @see org.polypheny.db.rel.rules.UnionToDistinctRule
  */
 public class IntersectToDistinctRule extends RelOptRule {
 

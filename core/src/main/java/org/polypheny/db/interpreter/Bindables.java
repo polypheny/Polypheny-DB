@@ -31,62 +31,62 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollationTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalWindow;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ProjectableFilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.AggImplementor;
+import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.InvalidRelException;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.logical.LogicalWindow;
+import org.polypheny.db.rel.metadata.RelMdCollation;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -151,7 +151,7 @@ public class Bindables {
 
 
     /**
-     * Rule that converts a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan} to bindable convention.
+     * Rule that converts a {@link org.polypheny.db.rel.core.TableScan} to bindable convention.
      */
     public static class BindableTableScanRule extends RelOptRule {
 
@@ -307,7 +307,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter} in bindable convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Filter} in bindable convention.
      */
     public static class BindableFilter extends Filter implements BindableRel {
 
@@ -354,7 +354,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to a {@link BindableProject}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link BindableProject}.
      */
     public static class BindableProjectRule extends ConverterRule {
 
@@ -382,7 +382,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Project} in bindable calling convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Project} in bindable calling convention.
      */
     public static class BindableProject extends Project implements BindableRel {
 
@@ -418,7 +418,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert an {@link Sort} to a {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.Bindables.BindableSort}.
+     * Rule to convert an {@link Sort} to a {@link org.polypheny.db.interpreter.Bindables.BindableSort}.
      */
     public static class BindableSortRule extends ConverterRule {
 
@@ -479,7 +479,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin} to a {@link BindableJoin}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalJoin} to a {@link BindableJoin}.
      */
     public static class BindableJoinRule extends ConverterRule {
 
@@ -511,7 +511,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join} in bindable calling convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Join} in bindable calling convention.
      */
     public static class BindableJoin extends Join implements BindableRel {
 
@@ -574,7 +574,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} in bindable calling convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Union} in bindable calling convention.
      */
     public static class BindableUnion extends Union implements BindableRel {
 
@@ -609,7 +609,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Values} in bindable calling convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Values} in bindable calling convention.
      */
     public static class BindableValues extends Values implements BindableRel {
 
@@ -668,7 +668,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} in bindable calling convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Aggregate} in bindable calling convention.
      */
     public static class BindableAggregate extends Aggregate implements BindableRel {
 
@@ -748,7 +748,7 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Window} in bindable convention.
+     * Implementation of {@link org.polypheny.db.rel.core.Window} in bindable convention.
      */
     public static class BindableWindow extends Window implements BindableRel {
 
@@ -792,7 +792,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalWindow} to a {@link BindableWindow}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalWindow} to a {@link BindableWindow}.
      */
     public static class BindableWindowRule extends ConverterRule {
 

@@ -31,24 +31,24 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.metadata.RelMdUtil;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.ArrayList;
 import java.util.List;
 
 
 /**
- * Planner rule that pushes a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort} past a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}.
+ * Planner rule that pushes a {@link org.polypheny.db.rel.core.Sort} past a {@link org.polypheny.db.rel.core.Union}.
  */
 public class SortUnionTransposeRule extends RelOptRule {
 

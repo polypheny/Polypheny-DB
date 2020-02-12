@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
 public class UnknownTypeException extends Exception {

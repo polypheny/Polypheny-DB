@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;

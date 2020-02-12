@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.sql.util.SqlVisitor;
+import org.polypheny.db.sql.validate.SqlMoniker;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Util;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;

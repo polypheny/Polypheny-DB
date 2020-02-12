@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import org.polypheny.db.config.RuntimeConfig;
 import lombok.extern.slf4j.Slf4j;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.

@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.externalize;
+package org.polypheny.db.rel.externalize;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.XmlOutput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.XmlOutput;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;

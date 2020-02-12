@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.util;
+package org.polypheny.db.adapter.cassandra.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableModify;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.adapter.cassandra.CassandraTable;
+import org.polypheny.db.adapter.cassandra.CassandraTableModify;
+import org.polypheny.db.adapter.cassandra.CassandraTableScan;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
 import java.util.List;
 
 

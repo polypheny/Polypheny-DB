@@ -31,40 +31,40 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window.Group;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window.RexWinAggCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalWindow;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.BitSets;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Window.Group;
+import org.polypheny.db.rel.core.Window.RexWinAggCall;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalWindow;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.BitSets;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.ArrayList;
 import java.util.List;
 
 
 /**
- * Planner rule that pushes a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} past a {@link LogicalWindow}.
+ * Planner rule that pushes a {@link org.polypheny.db.rel.logical.LogicalProject} past a {@link LogicalWindow}.
  */
 public class ProjectWindowTransposeRule extends RelOptRule {
 
     /**
-     * The default instance of {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectWindowTransposeRule}.
+     * The default instance of {@link org.polypheny.db.rel.rules.ProjectWindowTransposeRule}.
      */
     public static final ProjectWindowTransposeRule INSTANCE = new ProjectWindowTransposeRule( RelFactories.LOGICAL_BUILDER );
 

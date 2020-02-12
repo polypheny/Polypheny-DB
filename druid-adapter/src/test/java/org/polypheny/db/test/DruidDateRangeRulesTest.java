@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidDateTimeUtils;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRules;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.test.RexImplicationCheckerTest.Fixture;
-import ch.unibas.dmi.dbis.polyphenydb.util.TimestampString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
+import org.polypheny.db.rel.rules.DateRangeRules;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.test.RexImplicationCheckerTest.Fixture;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.Calendar;
 import java.util.List;

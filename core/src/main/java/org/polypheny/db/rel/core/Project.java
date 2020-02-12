@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelInput;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexChecker;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Permutation;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelInput;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexChecker;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Permutation;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.MappingType;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.HashSet;
@@ -68,7 +68,7 @@ import org.apache.calcite.linq4j.Ord;
 /**
  * Relational expression that computes a set of 'select expressions' from its input relational expression.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject
+ * @see org.polypheny.db.rel.logical.LogicalProject
  */
 public abstract class Project extends SingleRel {
 
@@ -237,7 +237,7 @@ public abstract class Project extends SingleRel {
      *
      * The mapping is an inverse surjection.
      * Every target has a source field, but a source field may appear as zero, one, or more target fields.
-     * Thus you can safely call {@link ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping#getTarget(int)}.
+     * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
      *
      * @param inputFieldCount Number of input fields
      * @param projects Project expressions

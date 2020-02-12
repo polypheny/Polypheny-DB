@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.rules;
+package org.polypheny.db.adapter.cassandra.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraConvention;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraFilter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraSort;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.adapter.cassandra.CassandraConvention;
+import org.polypheny.db.adapter.cassandra.CassandraFilter;
+import org.polypheny.db.adapter.cassandra.CassandraSort;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.List;
 
 

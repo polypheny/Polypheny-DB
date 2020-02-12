@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIntervalQualifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.BasicSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.io.Serializable;
@@ -358,7 +358,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     /**
-     * Returns a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType} that will create a type {@code typeName}.
+     * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName}.
      *
      * For example, {@code proto(SqlTypeName.DATE), false} will create {@code DATE NOT NULL}.
      *
@@ -376,7 +376,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     /**
-     * Returns a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType} that will create a type {@code typeName(precision)}.
+     * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName(precision)}.
      *
      * For example, {@code proto(SqlTypeName.VARCHAR, 100, false)} will create {@code VARCHAR(100) NOT NULL}.
      *
@@ -395,7 +395,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     /**
-     * Returns a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType} that will create a type {@code typeName(precision, scale)}.
+     * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName(precision, scale)}.
      *
      * For example, {@code proto(SqlTypeName.DECIMAL, 7, 2, false)} will create {@code DECIMAL(7, 2) NOT NULL}.
      *

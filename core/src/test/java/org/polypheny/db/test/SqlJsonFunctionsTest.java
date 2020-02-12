@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -39,13 +39,13 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbException;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.SqlFunctions;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonConstructorNullClause;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonExistsErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonQueryWrapperBehavior;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.PathNotFoundException;

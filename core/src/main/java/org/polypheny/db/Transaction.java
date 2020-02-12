@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb;
+package org.polypheny.db;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.Context;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbCatalogReader;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 

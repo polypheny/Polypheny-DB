@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -46,8 +46,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet.Builder;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.util.ImmutableBitSet.Builder;
 import com.google.common.collect.Iterables;
 import java.nio.LongBuffer;
 import java.util.Arrays;

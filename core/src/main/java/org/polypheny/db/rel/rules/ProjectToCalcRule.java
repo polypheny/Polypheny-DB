@@ -31,27 +31,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
  * Rule to convert a
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to a
+ * {@link org.polypheny.db.rel.logical.LogicalProject} to a
  * {@link LogicalCalc}
  *
  * The rule does not fire if the child is a
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject},
+ * {@link org.polypheny.db.rel.logical.LogicalProject},
  * {@link LogicalFilter} or
  * {@link LogicalCalc}. If it did, then the same
  * {@link LogicalCalc} would be formed via

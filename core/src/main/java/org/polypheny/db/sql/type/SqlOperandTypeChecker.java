@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
 
 
 /**
  * Strategy interface to check for allowed operand types of an operator call.
  *
- * This interface is an example of the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#STRATEGY_PATTERN strategy pattern}.
+ * This interface is an example of the {@link org.polypheny.db.util.Glossary#STRATEGY_PATTERN strategy pattern}.
  */
 public interface SqlOperandTypeChecker {
 

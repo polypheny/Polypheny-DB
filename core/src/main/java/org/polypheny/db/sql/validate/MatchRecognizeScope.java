@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.StructKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlMatchRecognize;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.SqlNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

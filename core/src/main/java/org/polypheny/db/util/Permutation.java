@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.IntPair;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.NoElementException;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.util.mapping.IntPair;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.MappingType;
+import org.polypheny.db.util.mapping.Mappings.NoElementException;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import java.util.Arrays;
 import java.util.Iterator;
 

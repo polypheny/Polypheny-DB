@@ -1,8 +1,8 @@
-package ch.unibas.dmi.dbis.polyphenydb.util.background;
+package org.polypheny.db.util.background;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskPriority;
-import ch.unibas.dmi.dbis.polyphenydb.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Executors;

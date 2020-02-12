@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import java.util.List;
 
 
@@ -46,7 +46,7 @@ import java.util.List;
  *
  * If the table implements extended interfaces such as
  * {@link ScannableTable},
- * {@link ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable} or
+ * {@link org.polypheny.db.schema.FilterableTable} or
  * {@link ProjectableFilterableTable}, you may wish
  * to make the table returned from {@link #extend} implement these interfaces as well.
  */

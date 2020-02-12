@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigFilter;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRel;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigRules;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.pig.PigTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule.FilterIntoJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.FrameworkConfig;
-import ch.unibas.dmi.dbis.polyphenydb.tools.Frameworks;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.adapter.pig.PigAggregate;
+import org.polypheny.db.adapter.pig.PigFilter;
+import org.polypheny.db.adapter.pig.PigRel;
+import org.polypheny.db.adapter.pig.PigRelFactories;
+import org.polypheny.db.adapter.pig.PigRules;
+import org.polypheny.db.adapter.pig.PigTable;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.rules.FilterAggregateTransposeRule;
+import org.polypheny.db.rel.rules.FilterJoinRule;
+import org.polypheny.db.rel.rules.FilterJoinRule.FilterIntoJoinRule;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.tools.FrameworkConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.io.File;
 import org.apache.hadoop.fs.Path;
 import org.apache.pig.pigunit.Cluster;
@@ -71,7 +71,7 @@ import org.junit.Test;
 
 
 /**
- * Tests for the {@code ch.unibas.dmi.dbis.polyphenydb.adapter.pig} package that tests the building of {@link PigRel} relational expressions using {@link RelBuilder} and associated factories in {@link PigRelFactories}.
+ * Tests for the {@code org.polypheny.db.adapter.pig} package that tests the building of {@link PigRel} relational expressions using {@link RelBuilder} and associated factories in {@link PigRelFactories}.
  */
 @Ignore
 public class PigRelBuilderStyleTest extends AbstractPigTest {

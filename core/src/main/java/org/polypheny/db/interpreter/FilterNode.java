@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
+import org.polypheny.db.rel.core.Filter;
 import com.google.common.collect.ImmutableList;
 
 
 /**
- * Interpreter node that implements a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter}.
+ * Interpreter node that implements a {@link org.polypheny.db.rel.core.Filter}.
  */
 public class FilterNode extends AbstractSingleNode<Filter> {
 

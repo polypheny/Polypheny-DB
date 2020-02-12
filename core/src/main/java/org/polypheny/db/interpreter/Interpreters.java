@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Bindable;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.runtime.ArrayBindable;
+import org.polypheny.db.runtime.Bindable;
 import org.apache.calcite.linq4j.Enumerable;
 
 
 /**
- * Utilities relating to {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.Interpreter} and {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.InterpretableConvention}.
+ * Utilities relating to {@link org.polypheny.db.interpreter.Interpreter} and {@link org.polypheny.db.interpreter.InterpretableConvention}.
  */
 public class Interpreters {
 

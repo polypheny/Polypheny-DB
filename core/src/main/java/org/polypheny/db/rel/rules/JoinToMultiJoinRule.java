@@ -31,27 +31,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +60,7 @@ import java.util.Map;
 
 
 /**
- * Planner rule to flatten a tree of {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin}s into a single {@link MultiJoin} with N inputs.
+ * Planner rule to flatten a tree of {@link org.polypheny.db.rel.logical.LogicalJoin}s into a single {@link MultiJoin} with N inputs.
  *
  * An input is not flattened if the input is a null generating input in an outer join, i.e., either input in a full outer join, the right hand side of a left outer join, or the left hand
  * side of a right outer join.
@@ -86,9 +86,9 @@ import java.util.Map;
  * <li>(A LEFT JOIN B) FULL JOIN (C RIGHT JOIN D) &rarr; MJ[full](MJ(A, B), MJ(C, D)), left outer join on input #1 in the first inner MultiJoin and right outer join on input#0 in the second inner MultiJoin</li>
  * </ul>
  *
- * The constructor is parameterized to allow any sub-class of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join}, not just {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.rel.core.Join}, not just {@link org.polypheny.db.rel.logical.LogicalJoin}.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterMultiJoinMergeRule
+ * @see org.polypheny.db.rel.rules.FilterMultiJoinMergeRule
  * @see ProjectMultiJoinMergeRule
  */
 public class JoinToMultiJoinRule extends RelOptRule {

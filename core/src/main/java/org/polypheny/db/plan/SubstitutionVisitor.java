@@ -31,53 +31,53 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil.andNot;
-import static ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil.removeAll;
+import static org.polypheny.db.rex.RexUtil.andNot;
+import static org.polypheny.db.rex.RexUtil.removeAll;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.Holder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableRelVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableRels;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.ControlFlowException;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.mutable.Holder;
+import org.polypheny.db.rel.mutable.MutableAggregate;
+import org.polypheny.db.rel.mutable.MutableFilter;
+import org.polypheny.db.rel.mutable.MutableProject;
+import org.polypheny.db.rel.mutable.MutableRel;
+import org.polypheny.db.rel.mutable.MutableRelVisitor;
+import org.polypheny.db.rel.mutable.MutableRels;
+import org.polypheny.db.rel.mutable.MutableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexExecutorImpl;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.ControlFlowException;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.Mappings;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
@@ -116,12 +116,12 @@ import org.slf4j.Logger;
  * Uses a bottom-up matching algorithm. Nodes do not need to be identical. At each level, returns the residue.
  *
  * The inputs must only include the core relational operators:
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan},
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter},
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject},
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin},
+ * {@link org.polypheny.db.rel.logical.LogicalTableScan},
+ * {@link org.polypheny.db.rel.logical.LogicalFilter},
+ * {@link org.polypheny.db.rel.logical.LogicalProject},
+ * {@link org.polypheny.db.rel.logical.LogicalJoin},
  * {@link LogicalUnion},
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate}.
+ * {@link org.polypheny.db.rel.logical.LogicalAggregate}.
  */
 public class SubstitutionVisitor {
 
@@ -945,7 +945,7 @@ public class SubstitutionVisitor {
     /**
      * Implementation of {@link UnifyRule} that matches if the query is already equal to the target.
      *
-     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan} instance.
+     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link org.polypheny.db.rel.logical.LogicalTableScan} instance.
      */
     private static class TrivialRule extends AbstractUnifyRule {
 
@@ -968,7 +968,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan}.
+     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.rel.logical.LogicalTableScan}.
      */
     private static class ScanToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -1004,7 +1004,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}.
+     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.rel.logical.LogicalProject}.
      */
     private static class ProjectToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -1195,7 +1195,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate} to a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate},
+     * Implementation of {@link UnifyRule} that matches a {@link org.polypheny.db.rel.logical.LogicalAggregate} to a {@link org.polypheny.db.rel.logical.LogicalAggregate},
      * provided that they have the same child.
      */
     private static class AggregateToAggregateUnifyRule extends AbstractUnifyRule {
@@ -1594,7 +1594,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Rule that converts a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} on top of a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}
+     * Rule that converts a {@link org.polypheny.db.rel.logical.LogicalFilter} on top of a {@link org.polypheny.db.rel.logical.LogicalProject}
      * into a trivial filter (on a boolean column).
      */
     public static class FilterOnProjectRule extends RelOptRule {

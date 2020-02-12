@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity;
+package org.polypheny.db.catalog.entity;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;

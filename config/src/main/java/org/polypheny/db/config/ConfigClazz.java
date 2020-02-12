@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.exception.ConfigRuntimeException;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
@@ -42,7 +42,7 @@ public class ConfigClazz extends Config {
 
     public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
         super( key );
-        Reflections reflections = new Reflections( "ch.unibas.dmi.dbis.polyphenydb" );
+        Reflections reflections = new Reflections( "org.polypheny.db" );
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         setClazz( defaultValue );

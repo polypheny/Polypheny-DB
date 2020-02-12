@@ -1,4 +1,4 @@
-group "ch.unibas.dmi.dbis.polyphenydb"
+group "org.polypheny"
 
 
 version = versionMajor + "." + versionMinor + versionQualifier

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.graph;
+package org.polypheny.db.util.graph;
 
 
 import com.google.common.collect.Ordering;

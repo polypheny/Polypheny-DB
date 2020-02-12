@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.entity.combined;
+package org.polypheny.db.catalog.entity.combined;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.catalog.Catalog.ConstraintType;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogColumn;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogDatabase;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogForeignKey;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogIndex;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogKey;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogSchema;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;

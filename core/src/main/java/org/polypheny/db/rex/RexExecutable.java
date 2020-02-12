@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.util.Pair;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;

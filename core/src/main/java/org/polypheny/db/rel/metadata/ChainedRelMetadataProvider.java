@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -48,7 +48,7 @@ import java.util.List;
 
 
 /**
- * Implementation of the {@link RelMetadataProvider} interface via the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#CHAIN_OF_RESPONSIBILITY_PATTERN}.
+ * Implementation of the {@link RelMetadataProvider} interface via the {@link org.polypheny.db.util.Glossary#CHAIN_OF_RESPONSIBILITY_PATTERN}.
  *
  * When a consumer calls the {@link #apply} method to ask for a provider for a particular type of {@link RelNode} and {@link Metadata}, scans the list of underlying providers.
  */

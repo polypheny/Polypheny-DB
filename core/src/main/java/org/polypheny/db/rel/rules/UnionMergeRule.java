@@ -31,27 +31,27 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Util;
 
 
 /**
- * UnionMergeRule implements the rule for combining two non-distinct {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp}s into a single {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp}.
+ * UnionMergeRule implements the rule for combining two non-distinct {@link org.polypheny.db.rel.core.SetOp}s into a single {@link org.polypheny.db.rel.core.SetOp}.
  *
  * Originally written for {@link Union} (hence the name), but now also applies to {@link Intersect}.
  */

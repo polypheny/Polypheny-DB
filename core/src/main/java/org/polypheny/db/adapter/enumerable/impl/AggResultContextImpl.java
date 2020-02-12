@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.impl;
+package org.polypheny.db.adapter.enumerable.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggResultContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.PhysType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
+import org.polypheny.db.adapter.enumerable.AggResultContext;
+import org.polypheny.db.adapter.enumerable.PhysType;
+import org.polypheny.db.rel.core.AggregateCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -44,7 +44,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggResultContext}
+ * Implementation of {@link org.polypheny.db.adapter.enumerable.AggResultContext}
  */
 public class AggResultContextImpl extends AggResetContextImpl implements AggResultContext {
 

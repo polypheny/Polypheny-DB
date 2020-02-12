@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlValuesOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlRowOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBasicVisitor;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlValuesOperator;
+import org.polypheny.db.sql.fun.SqlRowOperator;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

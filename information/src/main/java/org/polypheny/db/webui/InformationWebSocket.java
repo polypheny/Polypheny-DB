@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
 import java.io.IOException;

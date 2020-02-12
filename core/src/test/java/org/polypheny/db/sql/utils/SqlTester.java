@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.utils;
+package org.polypheny.db.sql.utils;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase.Tester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.test.SqlTestFactory;
 import java.sql.ResultSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;

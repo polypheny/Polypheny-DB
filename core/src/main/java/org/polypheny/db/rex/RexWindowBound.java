@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWindow;
 
 
 /**
@@ -125,7 +125,7 @@ public abstract class RexWindowBound {
 
 
     /**
-     * Transforms the bound via {@link ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitor}.
+     * Transforms the bound via {@link org.polypheny.db.rex.RexVisitor}.
      *
      * @param visitor visitor to accept
      * @param <R> return type of the visitor

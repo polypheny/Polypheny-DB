@@ -31,30 +31,30 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ExtensibleTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableView;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Path;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerContext;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableIntList;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeImpl;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.ExtensibleTable;
+import org.polypheny.db.schema.ModifiableView;
+import org.polypheny.db.schema.Path;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql2rel.InitializerContext;
+import org.polypheny.db.sql2rel.InitializerExpressionFactory;
+import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
+import org.polypheny.db.util.ImmutableIntList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;

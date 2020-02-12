@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -74,7 +74,7 @@ public class MetadataDef<M extends Metadata> {
 
 
     /**
-     * Creates a {@link ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataDef}.
+     * Creates a {@link org.polypheny.db.rel.metadata.MetadataDef}.
      */
     public static <M extends Metadata> MetadataDef<M> of( Class<M> metadataClass, Class<? extends MetadataHandler<M>> handlerClass, Method... methods ) {
         return new MetadataDef<>( metadataClass, handlerClass, methods );

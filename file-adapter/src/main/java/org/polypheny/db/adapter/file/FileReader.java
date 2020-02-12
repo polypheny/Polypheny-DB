@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
+package org.polypheny.db.adapter.file;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
+import org.polypheny.db.util.Source;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

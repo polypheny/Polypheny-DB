@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package org.polypheny.db.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.AuthenticationException;
-import ch.unibas.dmi.dbis.polyphenydb.Authenticator;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.CatalogManagerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.entity.CatalogUser;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.GenericCatalogException;
-import ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.AuthenticationException;
+import org.polypheny.db.Authenticator;
+import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 
 
 /**

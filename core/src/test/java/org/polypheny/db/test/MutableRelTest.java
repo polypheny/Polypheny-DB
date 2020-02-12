@@ -31,28 +31,28 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgram;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.mutable.MutableRels;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterProjectTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterToCalcRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToWindowRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SemiJoinRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.RelDecorrelator;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.mutable.MutableRel;
+import org.polypheny.db.rel.mutable.MutableRels;
+import org.polypheny.db.rel.rules.FilterJoinRule;
+import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
+import org.polypheny.db.rel.rules.FilterToCalcRule;
+import org.polypheny.db.rel.rules.ProjectMergeRule;
+import org.polypheny.db.rel.rules.ProjectToWindowRule;
+import org.polypheny.db.rel.rules.SemiJoinRule;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql2rel.RelDecorrelator;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.Litmus;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Assert;

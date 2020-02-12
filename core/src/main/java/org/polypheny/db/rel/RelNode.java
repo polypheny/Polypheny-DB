@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptNode;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Correlate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.Metadata;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelImplementor;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptNode;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.core.Correlate;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.metadata.Metadata;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.Litmus;
 import java.util.List;
 import java.util.Set;
 
@@ -59,7 +59,7 @@ import java.util.Set;
  *
  * Relational expressions process data, so their names are typically verbs: Sort, Join, Project, Filter, Scan, Sample.
  *
- * A relational expression is not a scalar expression; see {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode} and {@link RexNode}.
+ * A relational expression is not a scalar expression; see {@link org.polypheny.db.sql.SqlNode} and {@link RexNode}.
  *
  * If this type of relational expression has some particular planner rules, it should implement the <em>public static</em> method {@link AbstractRelNode#register}.
  *
@@ -69,9 +69,9 @@ import java.util.Set;
  * their trait set (beyond those traits configured by the RelNode itself).
  *
  * For each calling-convention, there is a corresponding sub-interface of RelNode. For example,
- * {@code ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel}
+ * {@code org.polypheny.db.adapter.enumerable.EnumerableRel}
  * has operations to manage the conversion to a graph of
- * {@code ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention}
+ * {@code org.polypheny.db.adapter.enumerable.EnumerableConvention}
  * calling-convention, and it interacts with a
  * {@code EnumerableRelImplementor}.
  *
@@ -89,7 +89,7 @@ public interface RelNode extends RelOptNode, Cloneable {
      *
      * @return List of this relational expression's child expressions
      * @see #accept(RexShuttle)
-     * @deprecated use #accept(ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle)
+     * @deprecated use #accept(org.polypheny.db.rex.RexShuttle)
      */
     @Deprecated
     // to be removed before 2.0
@@ -219,9 +219,9 @@ public interface RelNode extends RelOptNode, Cloneable {
     /**
      * Describes the inputs and attributes of this relational expression.
      * Each node should call {@code super.explain}, then call the
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl#input(String, RelNode)}
+     * {@link org.polypheny.db.rel.externalize.RelWriterImpl#input(String, RelNode)}
      * and
-     * {@link ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl#item(String, Object)}
+     * {@link org.polypheny.db.rel.externalize.RelWriterImpl#item(String, Object)}
      * methods for each input and attribute.
      *
      * @param pw Plan writer
@@ -260,7 +260,7 @@ public interface RelNode extends RelOptNode, Cloneable {
 
     /**
      * Returns the name of this relational expression's class, sans package name, for use in explain. For example, for a
-     * <code> ch.unibas.dmi.dbis.polyphenydb.rel.ArrayRel.ArrayReader</code>, this method returns "ArrayReader".
+     * <code> org.polypheny.db.rel.ArrayRel.ArrayReader</code>, this method returns "ArrayReader".
      *
      * @return Name of this relational expression's class, sans package name, for use in explain
      */
@@ -298,7 +298,7 @@ public interface RelNode extends RelOptNode, Cloneable {
     /**
      * Registers any special rules specific to this kind of relational expression.
      *
-     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner#addRule} for each rule,
+     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link org.polypheny.db.plan.RelOptPlanner#addRule} for each rule,
      * and then call {@code super.register}.
      *
      * @param planner Planner to be used to register additional relational expressions

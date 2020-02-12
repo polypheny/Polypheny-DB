@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.runtime;
+package org.polypheny.db.runtime;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbPrepare.Query;
-import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
+import org.polypheny.db.util.Holder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -77,7 +77,7 @@ public enum Hook {
     PARSE_TREE,
 
     /**
-     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode} query
+     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link org.polypheny.db.rel.RelNode} query
      * plan in the JDBC driver rather than the usual SQL string.
      */
     STRING_TO_QUERY,

@@ -31,29 +31,29 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.rel.BiRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributions;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SetOp;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.rel.BiRel;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributions;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SetOp;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
@@ -160,7 +160,7 @@ public class RelMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     /**
-     * Helper method to determine a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc}'s distribution.
+     * Helper method to determine a {@link org.polypheny.db.rel.core.Calc}'s distribution.
      */
     public static RelDistribution calc( RelMetadataQuery mq, RelNode input, RexProgram program ) {
         throw new AssertionError(); // TODO:
@@ -186,7 +186,7 @@ public class RelMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     /**
-     * Helper method to determine an {@link Exchange}'s or {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SortExchange}'s distribution.
+     * Helper method to determine an {@link Exchange}'s or {@link org.polypheny.db.rel.core.SortExchange}'s distribution.
      */
     public static RelDistribution exchange( RelDistribution distribution ) {
         return distribution;

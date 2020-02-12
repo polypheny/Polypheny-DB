@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.lang.reflect.Type;
 import java.util.List;
 
@@ -54,8 +54,8 @@ public interface AggContext {
     SqlAggFunction aggregation();
 
     /**
-     * Returns the return type of the aggregate as {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType}.
-     * This can be helpful to test {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType#isNullable()}.
+     * Returns the return type of the aggregate as {@link org.polypheny.db.rel.type.RelDataType}.
+     * This can be helpful to test {@link org.polypheny.db.rel.type.RelDataType#isNullable()}.
      *
      * @return return type of the aggregate
      */
@@ -69,8 +69,8 @@ public interface AggContext {
     Type returnType();
 
     /**
-     * Returns the parameter types of the aggregate as {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType}.
-     * This can be helpful to test {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType#isNullable()}.
+     * Returns the parameter types of the aggregate as {@link org.polypheny.db.rel.type.RelDataType}.
+     * This can be helpful to test {@link org.polypheny.db.rel.type.RelDataType#isNullable()}.
      *
      * @return Parameter types of the aggregate
      */
@@ -89,7 +89,7 @@ public interface AggContext {
     List<Integer> keyOrdinals();
 
     /**
-     * Returns the types of the group key as {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType}.
+     * Returns the types of the group key as {@link org.polypheny.db.rel.type.RelDataType}.
      */
     List<? extends RelDataType> keyRelTypes();
 

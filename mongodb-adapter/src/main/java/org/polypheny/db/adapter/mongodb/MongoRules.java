@@ -31,38 +31,38 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.InvalidRelException;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -314,7 +314,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -336,7 +336,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -396,7 +396,7 @@ public class MongoRules {
     private final RexProgram program;
 
     /**
-     * Values defined in {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Project.Flags}.
+     * Values defined in {@link org.polypheny.db.rel.core.Project.Flags}.
      o/
     protected int flags;
 
@@ -527,7 +527,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate}
+     * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {
@@ -564,7 +564,7 @@ public class MongoRules {
 
 /*
   /**
-   * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.Union} to a
+   * Rule to convert an {@link org.polypheny.db.rel.logical.Union} to a
    * {@link MongoUnionRel}.
    o/
   private static class MongoUnionRule
@@ -629,7 +629,7 @@ public class MongoRules {
   }
 
   /**
-   * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect}
+   * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalIntersect}
    * to an {@link MongoIntersectRel}.
    o/
   private static class MongoIntersectRule
@@ -680,7 +680,7 @@ public class MongoRules {
   }
 
   /**
-   * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus}
+   * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalMinus}
    * to an {@link MongoMinusRel}.
    o/
   private static class MongoMinusRule

@@ -31,22 +31,22 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.ExplicitOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCollation;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Glossary;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.sql.ExplicitOperatorBinding;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.Static;
 import com.google.common.base.Preconditions;
 import java.util.AbstractList;
 import java.util.List;
@@ -355,7 +355,7 @@ public abstract class ReturnTypes {
         return typeFactory.createDecimalProduct( type1, type2 );
     };
     /**
-     * Same as {@link #DECIMAL_PRODUCT} but returns with nullability if any of the operands is nullable by using {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_NULLABLE}
+     * Same as {@link #DECIMAL_PRODUCT} but returns with nullability if any of the operands is nullable by using {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_NULLABLE}
      */
     public static final SqlReturnTypeInference DECIMAL_PRODUCT_NULLABLE = cascade( DECIMAL_PRODUCT, SqlTypeTransforms.TO_NULLABLE );
 
@@ -375,7 +375,7 @@ public abstract class ReturnTypes {
         return typeFactory.createDecimalQuotient( type1, type2 );
     };
     /**
-     * Same as {@link #DECIMAL_QUOTIENT} but returns with nullability if any of the operands is nullable by using {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_NULLABLE}
+     * Same as {@link #DECIMAL_QUOTIENT} but returns with nullability if any of the operands is nullable by using {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_NULLABLE}
      */
     public static final SqlReturnTypeInference DECIMAL_QUOTIENT_NULLABLE = cascade( DECIMAL_QUOTIENT, SqlTypeTransforms.TO_NULLABLE );
 
@@ -421,7 +421,7 @@ public abstract class ReturnTypes {
         return null;
     };
     /**
-     * Same as {@link #DECIMAL_SUM} but returns with nullability if any of the operands is nullable by using {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_NULLABLE}.
+     * Same as {@link #DECIMAL_SUM} but returns with nullability if any of the operands is nullable by using {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_NULLABLE}.
      */
     public static final SqlReturnTypeInference DECIMAL_SUM_NULLABLE = cascade( DECIMAL_SUM, SqlTypeTransforms.TO_NULLABLE );
 
@@ -502,17 +502,17 @@ public abstract class ReturnTypes {
             };
 
     /**
-     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_NULLABLE}, {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_VARYING}.
+     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_NULLABLE}, {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_VARYING}.
      */
     public static final SqlReturnTypeInference DYADIC_STRING_SUM_PRECISION_NULLABLE_VARYING = cascade( DYADIC_STRING_SUM_PRECISION, SqlTypeTransforms.TO_NULLABLE, SqlTypeTransforms.TO_VARYING );
 
     /**
-     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeTransforms#TO_NULLABLE}
+     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link org.polypheny.db.sql.type.SqlTypeTransforms#TO_NULLABLE}
      */
     public static final SqlReturnTypeInference DYADIC_STRING_SUM_PRECISION_NULLABLE = cascade( DYADIC_STRING_SUM_PRECISION, SqlTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy where the expression is assumed to be registered as a {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of that namespace.
+     * Type-inference strategy where the expression is assumed to be registered as a {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of that namespace.
      */
     public static final SqlReturnTypeInference SCOPE = opBinding -> {
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;

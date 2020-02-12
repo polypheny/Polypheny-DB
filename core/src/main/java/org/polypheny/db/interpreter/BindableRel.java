@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.ArrayBindable;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.runtime.ArrayBindable;
 
 
 /**

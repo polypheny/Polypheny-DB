@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 import java.util.Objects;
 
 

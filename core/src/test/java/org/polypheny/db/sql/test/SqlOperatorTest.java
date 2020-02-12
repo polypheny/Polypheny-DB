@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package org.polypheny.db.sql.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTestCase;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
+import org.polypheny.db.sql.utils.SqlTester;
+import org.polypheny.db.sql.utils.SqlValidatorTestCase;
+import org.polypheny.db.sql.validate.SqlValidator;
 
 
 /**

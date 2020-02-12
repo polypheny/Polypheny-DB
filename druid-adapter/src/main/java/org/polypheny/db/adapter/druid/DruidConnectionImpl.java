@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
+package org.polypheny.db.adapter.druid;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.runtime.HttpUtils.post;
+import static org.polypheny.db.runtime.HttpUtils.post;
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Row.RowBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.Sink;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.interpreter.Row.RowBuilder;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.Util;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;

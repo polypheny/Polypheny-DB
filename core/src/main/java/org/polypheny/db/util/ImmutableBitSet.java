@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Utilities;
+import org.polypheny.db.runtime.Utilities;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
@@ -1213,7 +1213,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
 
     /**
-     * Refinement of {@link Builder} that remembers its original {@link ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet} and tries to use it
+     * Refinement of {@link Builder} that remembers its original {@link org.polypheny.db.util.ImmutableBitSet} and tries to use it
      * when {@link #build} is called.
      */
     private static class Rebuilder extends Builder {

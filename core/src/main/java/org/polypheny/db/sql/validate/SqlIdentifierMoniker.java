@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlIdentifier;
 import java.util.List;
 import java.util.Objects;
 

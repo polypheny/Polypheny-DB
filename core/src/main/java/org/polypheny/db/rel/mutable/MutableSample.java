@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSamplingParameters;
+import org.polypheny.db.plan.RelOptSamplingParameters;
 import java.util.Objects;
 
 
 /**
- * Mutable equivalent of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Sample}.
+ * Mutable equivalent of {@link org.polypheny.db.rel.core.Sample}.
  */
 public class MutableSample extends MutableSingleRel {
 

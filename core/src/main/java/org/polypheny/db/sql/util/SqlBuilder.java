@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.util;
+package org.polypheny.db.sql.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.util.UnmodifiableArrayList;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.util.UnmodifiableArrayList;
 import java.sql.Timestamp;
 import java.util.List;
 

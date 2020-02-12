@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 import org.slf4j.helpers.MessageFormatter;
@@ -43,7 +43,7 @@ import org.slf4j.helpers.MessageFormatter;
 public interface Litmus {
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that throws an {@link java.lang.AssertionError} on failure.
+     * Implementation of {@link org.polypheny.db.util.Litmus} that throws an {@link java.lang.AssertionError} on failure.
      */
     Litmus THROW = new Litmus() {
         @Override
@@ -70,7 +70,7 @@ public interface Litmus {
     };
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.util.Litmus} that returns a status code but does not throw.
+     * Implementation of {@link org.polypheny.db.util.Litmus} that returns a status code but does not throw.
      */
     Litmus IGNORE = new Litmus() {
         @Override

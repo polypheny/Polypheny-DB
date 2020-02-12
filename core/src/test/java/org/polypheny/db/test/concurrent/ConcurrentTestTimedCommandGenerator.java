@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test.concurrent;
+package org.polypheny.db.test.concurrent;
 
 
 import com.google.common.collect.ImmutableList;

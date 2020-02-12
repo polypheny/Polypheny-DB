@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Planner rule that matches {@link Aggregate}s beneath a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} and pulls them up, so that a single
+ * Planner rule that matches {@link Aggregate}s beneath a {@link org.polypheny.db.rel.core.Union} and pulls them up, so that a single
  * {@link Aggregate} removes duplicates.
  *
- * This rule only handles cases where the {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}s still have only two inputs.
+ * This rule only handles cases where the {@link org.polypheny.db.rel.core.Union}s still have only two inputs.
  */
 public class AggregateUnionAggregateRule extends RelOptRule {
 

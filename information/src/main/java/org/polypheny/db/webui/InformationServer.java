@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
 import static spark.Service.ignite;
 
-import ch.unibas.dmi.dbis.polyphenydb.information.Information;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationManager;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationObserver;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationPage;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationObserver;
+import org.polypheny.db.information.InformationPage;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import spark.Service;

@@ -31,62 +31,62 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.SqlImplementor.Result;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.rel.AbstractRelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.InvalidRelException;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.SingleRel;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Minus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableModify;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Values;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMdUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexMultisetUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexOver;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.InvalidRelException;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.RelMdUtil;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexMultisetUtil;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -313,7 +313,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Calc} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcCalc}.
+     * Rule to convert a {@link Calc} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcCalc}.
      */
     private static class JdbcCalcRule extends JdbcConverterRule {
 
@@ -396,7 +396,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Project} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcProject}.
+     * Rule to convert a {@link Project} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject}.
      */
     public static class JdbcProjectRule extends JdbcConverterRule {
 
@@ -469,7 +469,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Filter} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcFilter}.
+     * Rule to convert a {@link Filter} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcFilter}.
      */
     public static class JdbcFilterRule extends JdbcConverterRule {
 
@@ -529,8 +529,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} to a
-     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcAggregate}.
+     * Rule to convert a {@link org.polypheny.db.rel.core.Aggregate} to a
+     * {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcAggregate}.
      */
     public static class JdbcAggregateRule extends JdbcConverterRule {
 
@@ -628,7 +628,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Sort} to an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcSort}.
+     * Rule to convert a {@link Sort} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcSort}.
      */
     public static class JdbcSortRule extends JdbcConverterRule {
 
@@ -695,8 +695,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} to a
-     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcUnion}.
+     * Rule to convert an {@link org.polypheny.db.rel.core.Union} to a
+     * {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcUnion}.
      */
     public static class JdbcUnionRule extends JdbcConverterRule {
 
@@ -747,8 +747,8 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Intersect} to a
-     * {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcIntersect}.
+     * Rule to convert a {@link org.polypheny.db.rel.core.Intersect} to a
+     * {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcIntersect}.
      */
     public static class JdbcIntersectRule extends JdbcConverterRule {
 
@@ -797,7 +797,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Minus} to a {@link ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.JdbcRules.JdbcMinus}.
+     * Rule to convert a {@link Minus} to a {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcMinus}.
      */
     public static class JdbcMinusRule extends JdbcConverterRule {
 

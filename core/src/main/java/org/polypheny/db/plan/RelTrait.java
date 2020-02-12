@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
 /**
@@ -70,7 +70,7 @@ public interface RelTrait {
      * A trait's {@code satisfies} relation must be a partial order (reflexive, anti-symmetric, transitive). Many traits cannot be "loosened"; their {@code satisfies} is
      * an equivalence relation, where only X satisfies X.
      *
-     * If a trait has multiple values (see {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelCompositeTrait}) a collection (T0, T1, ...) satisfies T if any Ti satisfies T.
+     * If a trait has multiple values (see {@link org.polypheny.db.plan.RelCompositeTrait}) a collection (T0, T1, ...) satisfies T if any Ti satisfies T.
      *
      * @param trait Given trait
      * @return Whether this trait subsumes a given trait

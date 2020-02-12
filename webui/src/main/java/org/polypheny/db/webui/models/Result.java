@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package org.polypheny.db.webui.models;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.requests.UIRequest;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import lombok.Getter;

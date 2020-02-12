@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.AggregateCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 

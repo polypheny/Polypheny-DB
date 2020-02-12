@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.util.Pair;
 import java.util.List;
 import java.util.RandomAccess;
 

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.test;
+package org.polypheny.db.sql.test;
 
 
 import static org.junit.Assert.assertTrue;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
-import ch.unibas.dmi.dbis.polyphenydb.sql.pretty.SqlPrettyWriter;
-import ch.unibas.dmi.dbis.polyphenydb.test.DiffRepository;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.sql.parser.SqlParser;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.test.DiffRepository;
+import org.polypheny.db.util.Litmus;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.Ignore;

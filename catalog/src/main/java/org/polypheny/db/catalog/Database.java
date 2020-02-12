@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog;
+package org.polypheny.db.catalog;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
+import org.polypheny.db.config.RuntimeConfig;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;

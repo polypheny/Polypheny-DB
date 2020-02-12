@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCallBinding;
 import com.google.common.collect.ImmutableList;
 
 
@@ -48,7 +48,7 @@ public class ExplicitOperandTypeInference implements SqlOperandTypeInference {
 
 
     /**
-     * Use {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes#explicit(java.util.List)}.
+     * Use {@link org.polypheny.db.sql.type.InferTypes#explicit(java.util.List)}.
      */
     ExplicitOperandTypeInference( ImmutableList<RelDataType> paramTypes ) {
         this.paramTypes = paramTypes;

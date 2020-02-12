@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.AggImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.StrictWinAggImplementor;
+import org.polypheny.db.adapter.enumerable.AggImplementor;
+import org.polypheny.db.adapter.enumerable.StrictWinAggImplementor;
 
 
 /**
  * Function that can be translated to java code.
  *
  * @see AggImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.WinAggImplementor
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.StrictAggImplementor
+ * @see org.polypheny.db.adapter.enumerable.WinAggImplementor
+ * @see org.polypheny.db.adapter.enumerable.StrictAggImplementor
  * @see StrictWinAggImplementor
  */
 public interface ImplementableAggFunction extends AggregateFunction {

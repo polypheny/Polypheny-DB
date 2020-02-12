@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelMultipleTrait;
+import org.polypheny.db.plan.RelMultipleTrait;
 import java.util.List;
 
 

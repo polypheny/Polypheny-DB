@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.util.PrecedenceClimbingParser;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.sql.type.SqlOperandTypeInference;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.util.PrecedenceClimbingParser;
+import org.polypheny.db.util.Util;
 import java.util.function.Predicate;
 
 
@@ -83,7 +83,7 @@ public class SqlSpecialOperator extends SqlOperator {
      * The default implementation throws {@link UnsupportedOperationException}.
      *
      * @param ordinal indicating the ordinal of the current operator in the list on which a possible reduction can be made
-     * @param list List of alternating {@link ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserUtil.ToTreeListItem} and {@link SqlNode}
+     * @param list List of alternating {@link org.polypheny.db.sql.parser.SqlParserUtil.ToTreeListItem} and {@link SqlNode}
      * @return ordinal of the node which replaced the expression
      */
     public ReduceResult reduceExpr( int ordinal, TokenSequence list ) {
@@ -116,7 +116,7 @@ public class SqlSpecialOperator extends SqlOperator {
 
 
     /**
-     * Result of applying {@link ch.unibas.dmi.dbis.polyphenydb.util.PrecedenceClimbingParser.Special#apply}.
+     * Result of applying {@link org.polypheny.db.util.PrecedenceClimbingParser.Special#apply}.
      * Tells the caller which range of tokens to replace, and with what.
      */
     public class ReduceResult {

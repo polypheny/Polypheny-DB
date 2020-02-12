@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 
 
 /**
- * A relational expression of one of the {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableConvention} calling conventions.
+ * A relational expression of one of the {@link org.polypheny.db.adapter.enumerable.EnumerableConvention} calling conventions.
  */
 public interface EnumerableRel extends RelNode {
 

@@ -31,26 +31,26 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.NullPolicy;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.ReflectiveCallNotNullImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexToLixTranslator;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ImplementableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.CallImplementor;
+import org.polypheny.db.adapter.enumerable.NullPolicy;
+import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
+import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.schema.ImplementableFunction;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Static;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

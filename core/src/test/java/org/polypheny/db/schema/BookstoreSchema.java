@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
 import java.math.BigDecimal;
@@ -47,7 +47,7 @@ import java.util.List;
  *
  * New authors can be added but attention should be made to update appropriately tests that might fail.
  *
- * The Schema is meant to be used with {@link ch.unibas.dmi.dbis.polyphenydb.adapter.java.ReflectiveSchema} thus all fields, and methods, should be public.
+ * The Schema is meant to be used with {@link org.polypheny.db.adapter.java.ReflectiveSchema} thus all fields, and methods, should be public.
  */
 public final class BookstoreSchema {
 
@@ -92,7 +92,7 @@ public final class BookstoreSchema {
         public final int aid;
         public final String name;
         public final Place birthPlace;
-        @ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array(component = Book.class)
+        @org.polypheny.db.adapter.java.Array(component = Book.class)
         public final List<Book> books;
 
 
@@ -147,7 +147,7 @@ public final class BookstoreSchema {
 
         public final String title;
         public final int publishYear;
-        @ch.unibas.dmi.dbis.polyphenydb.adapter.java.Array(component = Page.class)
+        @org.polypheny.db.adapter.java.Array(component = Page.class)
         public final List<Page> pages;
 
 

@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory.Property.FUNCTION;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory.Property.SPECIFIC;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory.Property.TABLE_FUNCTION;
-import static ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory.Property.USER_DEFINED;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.FUNCTION;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.SPECIFIC;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.TABLE_FUNCTION;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.USER_DEFINED;
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.util.Util;
 import java.util.Arrays;
 import java.util.EnumSet;
 

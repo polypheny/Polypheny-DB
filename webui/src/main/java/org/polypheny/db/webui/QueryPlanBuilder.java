@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui;
+package org.polypheny.db.webui;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortDirection;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.SortState;
-import ch.unibas.dmi.dbis.polyphenydb.webui.models.UIRelNode;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.webui.models.SortDirection;
+import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.UIRelNode;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
 

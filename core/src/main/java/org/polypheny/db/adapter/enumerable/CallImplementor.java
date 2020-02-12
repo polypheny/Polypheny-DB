@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.schema.TableFunction;
 import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
  * Implements a call via given translator.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction
+ * @see org.polypheny.db.schema.ScalarFunction
  * @see TableFunction
  * @see RexImpTable
  */

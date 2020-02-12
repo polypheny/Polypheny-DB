@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 /**
@@ -163,7 +163,7 @@ public abstract class Bug {
      *
      * <p>Now that [POLYPHENYDB-461] is fixed, the tracking bug is
      * <a href="https://issues.apache.org/jira/browse/CALCITE-574">[POLYPHENYDB-574]
-     * Remove ch.unibas.dmi.dbis.polyphenydb.util.Bug.CALCITE_461_FIXED</a>.
+     * Remove org.polypheny.db.util.Bug.CALCITE_461_FIXED</a>.
      */
     public static final boolean CALCITE_461_FIXED = false;
 

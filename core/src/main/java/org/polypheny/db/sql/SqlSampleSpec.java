@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 
 
 /**
@@ -49,7 +49,7 @@ import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
  * declares a sample which is created using {@link #createNamed}.
  *
  * A sample is not a {@link SqlNode}. To include it in a parse tree, wrap it as a literal, viz:
- * {@link SqlLiteral#createSample(SqlSampleSpec, ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos)}.
+ * {@link SqlLiteral#createSample(SqlSampleSpec, org.polypheny.db.sql.parser.SqlParserPos)}.
  */
 public abstract class SqlSampleSpec {
 

@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.SourceStringReader;
 import java.io.Reader;
 
 
@@ -94,11 +94,11 @@ public interface Planner extends AutoCloseable {
     /**
      * Converts a SQL parse tree into a tree of relational expressions.
      *
-     * You must call {@link #validate(ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode)} first.
+     * You must call {@link #validate(org.polypheny.db.sql.SqlNode)} first.
      *
      * @param sql The root node of the SQL parse tree.
      * @return The root node of the newly generated RelNode tree.
-     * @throws ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException if the node cannot be converted or has not been validated
+     * @throws org.polypheny.db.tools.RelConversionException if the node cannot be converted or has not been validated
      */
     RelRoot rel( SqlNode sql ) throws RelConversionException;
 
@@ -114,7 +114,7 @@ public interface Planner extends AutoCloseable {
      * @param requiredOutputTraits The set of RelTraits required of the root node at the termination of the planning cycle.
      * @param rel The root of the RelNode tree to convert.
      * @return The root of the new RelNode tree.
-     * @throws ch.unibas.dmi.dbis.polyphenydb.tools.RelConversionException on conversion error
+     * @throws org.polypheny.db.tools.RelConversionException on conversion error
      */
     RelNode transform( int ruleSetIndex, RelTraitSet requiredOutputTraits, RelNode rel ) throws RelConversionException;
 

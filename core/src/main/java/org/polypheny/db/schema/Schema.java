@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
+import org.polypheny.db.rel.type.RelProtoDataType;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -47,7 +47,7 @@ import org.apache.calcite.linq4j.tree.Expression;
  * or two levels ("database" and "catalog").
  *
  * There may be multiple overloaded functions with the same name but different numbers or types of parameters.
- * For this reason, {@link #getFunctions} returns a list of all members with the same name. Polypheny-DB will call {@link Schemas#resolve(ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory, String, java.util.Collection, java.util.List)}
+ * For this reason, {@link #getFunctions} returns a list of all members with the same name. Polypheny-DB will call {@link Schemas#resolve(org.polypheny.db.rel.type.RelDataTypeFactory, String, java.util.Collection, java.util.List)}
  * to choose the appropriate one.
  *
  * The most common and important type of member is the one with no arguments and a result type that is a collection of records. This is called a <dfn>relation</dfn>. It is equivalent to a table in a relational database.

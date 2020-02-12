@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.GeoFunctions;
+import org.polypheny.db.runtime.GeoFunctions;
 import com.google.common.collect.ImmutableMap;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -93,7 +93,7 @@ public class JavaToSqlTypeConversionRules {
 
 
     /**
-     * Returns the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#SINGLETON_PATTERN singleton} instance.
+     * Returns the {@link org.polypheny.db.util.Glossary#SINGLETON_PATTERN singleton} instance.
      */
     public static JavaToSqlTypeConversionRules instance() {
         return INSTANCE;

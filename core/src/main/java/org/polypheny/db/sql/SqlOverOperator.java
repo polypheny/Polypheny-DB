@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBasicVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorScope;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.sql.util.SqlVisitor;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.apache.calcite.linq4j.Ord;
 
 
@@ -53,8 +53,8 @@ import org.apache.calcite.linq4j.Ord;
  * Operands are as follows:
  *
  * <ul>
- * <li>0: name of window function ({@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall})</li>
- * <li>1: window name ({@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral}) or window in-line specification ({@link SqlWindow})</li>
+ * <li>0: name of window function ({@link org.polypheny.db.sql.SqlCall})</li>
+ * <li>1: window name ({@link org.polypheny.db.sql.SqlLiteral}) or window in-line specification ({@link SqlWindow})</li>
  * </ul>
  */
 public class SqlOverOperator extends SqlBinaryOperator {

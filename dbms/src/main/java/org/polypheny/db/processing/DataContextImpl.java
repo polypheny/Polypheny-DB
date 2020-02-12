@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package org.polypheny.db.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Holder;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.util.Holder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -119,7 +119,7 @@ public class DataContextImpl implements DataContext {
                         SqlStdOperatorTable.instance(),
                         new PolyphenyDbCatalogReader( rootSchema, schemaPath, typeFactory ), typeFactory, SqlConformanceEnum.DEFAULT );
         final PolyphenyDbConnectionConfig config = con.config();
-        // This duplicates ch.unibas.dmi.dbis.polyphenydb.prepare.PolyphenyDbPrepareImpl.prepare2_
+        // This duplicates org.polypheny.db.prepare.PolyphenyDbPrepareImpl.prepare2_
         final Config parserConfig = SqlParser.configBuilder()
                 .setQuotedCasing( config.quotedCasing() )
                 .setUnquotedCasing( config.unquotedCasing() )

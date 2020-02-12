@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.file;
+package org.polypheny.db.adapter.file;
 
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -41,9 +41,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.TestUtil;
+import org.polypheny.db.util.Source;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.TestUtil;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.sql.Connection;
@@ -271,7 +271,7 @@ public class FileReaderTest {
                 + "    {\n"
                 + "      \"name\": \"FILES\",\n"
                 + "      \"type\": \"custom\",\n"
-                + "      \"factory\": \"ch.unibas.dmi.dbis.polyphenydb.adapter.file.FileSchemaFactory\",\n"
+                + "      \"factory\": \"org.polypheny.db.adapter.file.FileSchemaFactory\",\n"
                 + "      \"operand\": {\n"
                 + "        \"directory\": " + TestUtil.escapeString( path ) + "\n"
                 + "      }\n"

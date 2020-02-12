@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.Convention;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.logical.LogicalIntersect;
 
 
 /**
- * Rule to convert a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect} to an {@link EnumerableIntersect}.
+ * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalIntersect} to an {@link EnumerableIntersect}.
  */
 class EnumerableIntersectRule extends ConverterRule {
 

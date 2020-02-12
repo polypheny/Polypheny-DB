@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParseException;
+import org.polypheny.db.sql.parser.SqlParseException;
 
 
 /**

@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.mutable;
+package org.polypheny.db.rel.mutable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Window.Group;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
+import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.rel.core.Window.Group;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexLiteral;
 import java.util.List;
 import java.util.Objects;
 

@@ -31,92 +31,92 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelHomogeneousShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Calc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.CorrelationId;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories.FilterFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelJsonWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelWriterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.externalize.RelXmlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateProjectPullUpConstantsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.DateRangeRules;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.IntersectToDistinctRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.MultiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectToWindowRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.PruneEmptyRules;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionMergeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.UnionPullUpConstantsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFieldImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeSystem;
-import ch.unibas.dmi.dbis.polyphenydb.rex.LogicVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCorrelVariable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexFieldAccess;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLocalRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexMultisetUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexOver;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSqlStandardConvertletTable;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSubQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexToSqlNodeConverter;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexToSqlNodeConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableView;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainFormat;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.MultisetSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Permutation;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelHomogeneousShuttle;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.RelVisitor;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.Calc;
+import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.RelFactories.FilterFactory;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.externalize.RelJsonWriter;
+import org.polypheny.db.rel.externalize.RelWriterImpl;
+import org.polypheny.db.rel.externalize.RelXmlWriter;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.rules.AggregateProjectPullUpConstantsRule;
+import org.polypheny.db.rel.rules.DateRangeRules;
+import org.polypheny.db.rel.rules.FilterMergeRule;
+import org.polypheny.db.rel.rules.IntersectToDistinctRule;
+import org.polypheny.db.rel.rules.MultiJoin;
+import org.polypheny.db.rel.rules.ProjectToWindowRule;
+import org.polypheny.db.rel.rules.PruneEmptyRules;
+import org.polypheny.db.rel.rules.UnionMergeRule;
+import org.polypheny.db.rel.rules.UnionPullUpConstantsRule;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rex.LogicVisitor;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexExecutorImpl;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexMultisetUtil;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSqlStandardConvertletTable;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexToSqlNodeConverter;
+import org.polypheny.db.rex.RexToSqlNodeConverterImpl;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.schema.ModifiableView;
+import org.polypheny.db.sql.SqlExplainFormat;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.MultisetSqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Permutation;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.MappingType;
+import org.polypheny.db.util.mapping.Mappings;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
@@ -460,7 +460,7 @@ public abstract class RelOptUtil {
      * @param notIn Whether the operator is NOT IN
      * @param relBuilder Builder for relational expressions
      * @return A pair of a relational expression which outer joins a boolean condition column, and a numeric offset. The offset is 2 if column 0 is the number of rows and column 1 is the number of rows with not-null keys; 0 otherwise.
-     * //@see ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter#convertExists
+     * //@see org.polypheny.db.sql2rel.SqlToRelConverter#convertExists
      */
     public static Exists createExistsPlan( RelNode seekRel, SubQueryType subQueryType, Logic logic, boolean notIn, RelBuilder relBuilder ) {
         if ( subQueryType == SubQueryType.SCALAR ) {
@@ -2096,7 +2096,7 @@ public abstract class RelOptUtil {
 
 
     /**
-     * Creates a new {@link MultiJoin} to reflect projection references from a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject}
+     * Creates a new {@link MultiJoin} to reflect projection references from a {@link org.polypheny.db.rel.logical.LogicalProject}
      * that is on top of the {@link MultiJoin}.
      *
      * @param multiJoin the original MultiJoin
@@ -2164,7 +2164,7 @@ public abstract class RelOptUtil {
 
 
     /**
-     * Creates a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} that projects particular fields of its input, according to a mapping.
+     * Creates a {@link org.polypheny.db.rel.logical.LogicalProject} that projects particular fields of its input, according to a mapping.
      */
     public static RelNode createProject( RelNode child, Mappings.TargetMapping mapping ) {
         return createProject( child, Mappings.asList( mapping.inverse() ) );
@@ -2345,7 +2345,7 @@ public abstract class RelOptUtil {
      * Optimizations:
      *
      * <ul>
-     * <li>If the relational expression is a {@link LogicalCalc} or {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} that is already acting as a permutation, combines the new permutation with the old;</li>
+     * <li>If the relational expression is a {@link LogicalCalc} or {@link org.polypheny.db.rel.logical.LogicalProject} that is already acting as a permutation, combines the new permutation with the old;</li>
      * <li>If the permutation is the identity, returns the original relational expression.</li>
      * </ul>
      *
@@ -3141,7 +3141,7 @@ public abstract class RelOptUtil {
 
 
     /**
-     * Result of calling {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil#createExistsPlan}
+     * Result of calling {@link org.polypheny.db.plan.RelOptUtil#createExistsPlan}
      */
     public static class Exists {
 

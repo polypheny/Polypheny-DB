@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.FlatLists;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableNullableList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.ReflectiveVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ReflectiveVisitor;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -103,7 +103,7 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
      *   public Double getSelectivity(Filter rel, RexNode predicate) { }
      * </code></pre></blockquote>
      *
-     * provides implementations of selectivity for relational expressions that extend {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union} or {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter}.
+     * provides implementations of selectivity for relational expressions that extend {@link org.polypheny.db.rel.core.Union} or {@link org.polypheny.db.rel.core.Filter}.
      */
     public static RelMetadataProvider reflectiveSource( Method method, MetadataHandler target ) {
         return reflectiveSource( target, ImmutableList.of( method ) );
@@ -122,7 +122,7 @@ public class ReflectiveRelMetadataProvider implements RelMetadataProvider, Refle
         final Space2 space = Space2.create( target, methods );
 
         // This needs to be a concurrent map since RelMetadataProvider are cached in static fields, thus the map is subject to concurrent modifications later.
-        // See map.put in ch.unibas.dmi.dbis.polyphenydb.rel.metadata.ReflectiveRelMetadataProvider.apply(java.lang.Class<? extends ch.unibas.dmi.dbis.polyphenydb.rel.RelNode>)
+        // See map.put in org.polypheny.db.rel.metadata.ReflectiveRelMetadataProvider.apply(java.lang.Class<? extends org.polypheny.db.rel.RelNode>)
         final ConcurrentMap<Class<RelNode>, UnboundMetadata> methodsMap = new ConcurrentHashMap<>();
         for ( Class<RelNode> key : space.classes ) {
             ImmutableNullableList.Builder<Method> builder = ImmutableNullableList.builder();

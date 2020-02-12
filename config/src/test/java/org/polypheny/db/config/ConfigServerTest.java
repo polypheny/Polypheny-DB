@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.config;
+package org.polypheny.db.config;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.webui.ConfigServer;
+import org.polypheny.db.webui.ConfigServer;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;

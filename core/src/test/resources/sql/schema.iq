@@ -66,7 +66,7 @@ create schema if not exists s;
 
 # Bad library
 create foreign schema fs library 'com.example.BadSchemaFactory';
-Property 'com.example.BadSchemaFactory' not valid for plugin type ch.unibas.dmi.dbis.polyphenydb.schema.SchemaFactory
+Property 'com.example.BadSchemaFactory' not valid for plugin type org.polypheny.db.schema.SchemaFactory
 !error
 
 # Bad type
@@ -77,7 +77,7 @@ Invalid schema type 'bad'; valid values: [MAP, JDBC, CUSTOM]
 # Can not specify both type and library
 create foreign schema fs
   type 'jdbc'
-  library 'ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest.MySchemaFactory';
+  library 'org.polypheny.db.test.JdbcTest.MySchemaFactory';
 Encountered "library" at line 3, column 3.
 !error
 
@@ -86,7 +86,7 @@ create schema fs type 'jdbc';
 Encountered "type" at line 1, column 18.
 !error
 
-create schema fs library 'ch.unibas.dmi.dbis.polyphenydb.test.JdbcTest.MySchemaFactory';
+create schema fs library 'org.polypheny.db.test.JdbcTest.MySchemaFactory';
 Encountered "library" at line 1, column 18.
 !error
 

@@ -31,37 +31,37 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AccessSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.BigQuerySqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.Db2SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.DerbySqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.FirebirdSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.H2SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HiveSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.HsqldbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.InfobrightSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.InformixSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.IngresSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.InterbaseSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.JethroDataSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.LucidDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.MssqlSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.MysqlSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.NeoviewSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.NetezzaSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.OracleSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.ParaccelSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PhoenixSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PolyphenyDbSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.PostgresqlSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.RedshiftSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.SybaseSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.TeradataSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.VerticaSqlDialect;
+import org.polypheny.db.sql.dialect.AccessSqlDialect;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.dialect.BigQuerySqlDialect;
+import org.polypheny.db.sql.dialect.Db2SqlDialect;
+import org.polypheny.db.sql.dialect.DerbySqlDialect;
+import org.polypheny.db.sql.dialect.FirebirdSqlDialect;
+import org.polypheny.db.sql.dialect.H2SqlDialect;
+import org.polypheny.db.sql.dialect.HiveSqlDialect;
+import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.sql.dialect.InfobrightSqlDialect;
+import org.polypheny.db.sql.dialect.InformixSqlDialect;
+import org.polypheny.db.sql.dialect.IngresSqlDialect;
+import org.polypheny.db.sql.dialect.InterbaseSqlDialect;
+import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
+import org.polypheny.db.sql.dialect.LucidDbSqlDialect;
+import org.polypheny.db.sql.dialect.MssqlSqlDialect;
+import org.polypheny.db.sql.dialect.MysqlSqlDialect;
+import org.polypheny.db.sql.dialect.NeoviewSqlDialect;
+import org.polypheny.db.sql.dialect.NetezzaSqlDialect;
+import org.polypheny.db.sql.dialect.OracleSqlDialect;
+import org.polypheny.db.sql.dialect.ParaccelSqlDialect;
+import org.polypheny.db.sql.dialect.PhoenixSqlDialect;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.dialect.RedshiftSqlDialect;
+import org.polypheny.db.sql.dialect.SybaseSqlDialect;
+import org.polypheny.db.sql.dialect.TeradataSqlDialect;
+import org.polypheny.db.sql.dialect.VerticaSqlDialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;

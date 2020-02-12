@@ -31,32 +31,32 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCalc;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgram;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} to a {@link LogicalCalc}.
+ * Planner rule that converts a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link LogicalCalc}.
  *
  * The rule does <em>NOT</em> fire if the child is a
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} or a
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject} (we assume they they
+ * {@link org.polypheny.db.rel.logical.LogicalFilter} or a
+ * {@link org.polypheny.db.rel.logical.LogicalProject} (we assume they they
  * will be converted using {@link FilterToCalcRule} or
  * {@link ProjectToCalcRule}) or a
  * {@link LogicalCalc}. This
- * {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter} will eventually be
+ * {@link org.polypheny.db.rel.logical.LogicalFilter} will eventually be
  * converted by {@link FilterCalcMergeRule}.
  */
 public class FilterToCalcRule extends RelOptRule {

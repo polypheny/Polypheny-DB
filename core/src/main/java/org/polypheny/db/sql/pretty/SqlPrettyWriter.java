@@ -31,16 +31,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.pretty;
+package org.polypheny.db.sql.pretty;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.dialect.AnsiSqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlString;
-import ch.unibas.dmi.dbis.polyphenydb.util.Unsafe;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
@@ -113,8 +113,8 @@ import org.apache.calcite.avatica.util.Spaces;
  * </tr>
  * <tr>
  * <td>{@link #setSubQueryStyle SubQueryStyle}</td>
- * <td>Style for formatting sub-queries. Values are: {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter.SubQueryStyle#HYDE Hyde}, {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter.SubQueryStyle#BLACK Black}.</td>
- * <td>{@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter.SubQueryStyle#HYDE Hyde}</td>
+ * <td>Style for formatting sub-queries. Values are: {@link org.polypheny.db.sql.SqlWriter.SubQueryStyle#HYDE Hyde}, {@link org.polypheny.db.sql.SqlWriter.SubQueryStyle#BLACK Black}.</td>
+ * <td>{@link org.polypheny.db.sql.SqlWriter.SubQueryStyle#HYDE Hyde}</td>
  * </tr>
  * <tr>
  * <td>{@link #setLineLength LineLength}</td>
@@ -192,7 +192,7 @@ public class SqlPrettyWriter implements SqlWriter {
 
 
     /**
-     * Sets the sub-query style. Default is {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter.SubQueryStyle#HYDE}.
+     * Sets the sub-query style. Default is {@link org.polypheny.db.sql.SqlWriter.SubQueryStyle#HYDE}.
      */
     public void setSubQueryStyle( SubQueryStyle subQueryStyle ) {
         this.subQueryStyle = subQueryStyle;
@@ -1036,7 +1036,7 @@ public class SqlPrettyWriter implements SqlWriter {
 
 
     /**
-     * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter.Frame}.
+     * Implementation of {@link org.polypheny.db.sql.SqlWriter.Frame}.
      */
     protected class FrameImpl implements Frame {
 

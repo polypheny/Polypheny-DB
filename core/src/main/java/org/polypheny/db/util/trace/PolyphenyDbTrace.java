@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.trace;
+package org.polypheny.db.util.trace;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParser;
+import org.polypheny.db.plan.RelImplementor;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.sql.parser.SqlParser;
 import java.io.File;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
@@ -46,11 +46,11 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Contains all of the {@link org.slf4j.Logger tracers} used within ch.unibas.dmi.dbis.polyphenydb.class libraries.
+ * Contains all of the {@link org.slf4j.Logger tracers} used within org.polypheny.db.class libraries.
  *
  * <h3>Note to developers</h3>
  *
- * Please ensure that every tracer used in ch.unibas.dmi.dbis.polyphenydb.is added to this class as a <em>public static final</em> member called <code><i>component</i>Tracer</code>. For example, {@link #getPlannerTracer} is the
+ * Please ensure that every tracer used in org.polypheny.db.is added to this class as a <em>public static final</em> member called <code><i>component</i>Tracer</code>. For example, {@link #getPlannerTracer} is the
  * tracer used by all classes which take part in the query planning process.
  *
  * The javadoc in this file is the primary source of information on what tracers are available, so the javadoc against each tracer member must be an up-to-date description of what that tracer does.
@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
 public abstract class PolyphenyDbTrace {
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.sql.parser" tracer reports parser events in {@link SqlParser} and other classes at DEBUG.
+     * The "org.polypheny.db.sql.parser" tracer reports parser events in {@link SqlParser} and other classes at DEBUG.
      */
     public static final Logger PARSER_LOGGER = getParserTracer();
 
@@ -68,7 +68,7 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner" tracer prints the query optimization process.
+     * The "org.polypheny.db.plan.RelOptPlanner" tracer prints the query optimization process.
      *
      * Levels:
      *
@@ -84,7 +84,7 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare" tracer prints the generated program at DEBUG (formerly, FINE)  or higher.
+     * The "org.polypheny.db.prepare.Prepare" tracer prints the generated program at DEBUG (formerly, FINE)  or higher.
      */
     public static Logger getStatementTracer() {
         return LoggerFactory.getLogger( Prepare.class.getName() );
@@ -92,7 +92,7 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.rel.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
+     * The "org.polypheny.db.rel.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
      */
     public static Logger getRelImplementorTracer() {
         return LoggerFactory.getLogger( RelImplementor.class );
@@ -100,28 +100,28 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The tracer "ch.unibas.dmi.dbis.polyphenydb.sql.timing" traces timing for various stages of query processing.
+     * The tracer "org.polypheny.db.sql.timing" traces timing for various stages of query processing.
      *
      * @see PolyphenyDbTimingTracer
      */
     public static Logger getSqlTimingTracer() {
-        return LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.sql.timing" );
+        return LoggerFactory.getLogger( "org.polypheny.db.sql.timing" );
     }
 
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.sql.parser" tracer reports parse events.
+     * The "org.polypheny.db.sql.parser" tracer reports parse events.
      */
     public static Logger getParserTracer() {
-        return LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.sql.parser" );
+        return LoggerFactory.getLogger( "org.polypheny.db.sql.parser" );
     }
 
 
     /**
-     * The "ch.unibas.dmi.dbis.polyphenydb.sql2rel" tracer reports parse events.
+     * The "org.polypheny.db.sql2rel" tracer reports parse events.
      */
     public static Logger getSqlToRelTracer() {
-        return LoggerFactory.getLogger( "ch.unibas.dmi.dbis.polyphenydb.sql2rel" );
+        return LoggerFactory.getLogger( "org.polypheny.db.sql2rel" );
     }
 
 

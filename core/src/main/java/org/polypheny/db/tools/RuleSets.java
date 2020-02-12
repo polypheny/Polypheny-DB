@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.tools;
+package org.polypheny.db.tools;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRule;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 

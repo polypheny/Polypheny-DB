@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.catalog.exceptions;
+package org.polypheny.db.catalog.exceptions;
 
 
 public class UnknownTableException extends CatalogException {

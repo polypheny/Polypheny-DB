@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperand;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNodes;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.util.ChunkList;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelNodes;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.util.ChunkList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -509,7 +509,7 @@ class RuleQueue {
      *
      * is a valid match.
      *
-     * @throws ch.unibas.dmi.dbis.polyphenydb.util.Util.FoundOne on match
+     * @throws org.polypheny.db.util.Util.FoundOne on match
      */
     private void checkDuplicateSubsets( Deque<RelSubset> subsets, RelOptRuleOperand operand, RelNode[] rels ) {
         final RelSubset subset = planner.getSubset( rels[operand.ordinalInRule] );

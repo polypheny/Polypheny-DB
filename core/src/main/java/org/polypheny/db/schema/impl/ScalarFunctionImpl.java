@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema.impl;
+package org.polypheny.db.schema.impl;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.NullPolicy;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.ReflectiveCallNotNullImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ImplementableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.adapter.enumerable.CallImplementor;
+import org.polypheny.db.adapter.enumerable.NullPolicy;
+import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
+import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.ImplementableFunction;
+import org.polypheny.db.schema.ScalarFunction;
+import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.util.Static;
 import com.google.common.collect.ImmutableMultimap;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -52,7 +52,7 @@ import org.apache.calcite.linq4j.function.Strict;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction}.
+ * Implementation of {@link org.polypheny.db.schema.ScalarFunction}.
  */
 public class ScalarFunctionImpl extends ReflectiveFunctionBase implements ScalarFunction, ImplementableFunction {
 
@@ -69,7 +69,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
 
 
     /**
-     * Creates {@link ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction} for each method in a given class.
+     * Creates {@link org.polypheny.db.schema.ScalarFunction} for each method in a given class.
      */
     public static ImmutableMultimap<String, ScalarFunction> createAll( Class<?> clazz ) {
         final ImmutableMultimap.Builder<String, ScalarFunction> builder = ImmutableMultimap.builder();
@@ -88,7 +88,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
 
 
     /**
-     * Creates {@link ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction} from given class.
+     * Creates {@link org.polypheny.db.schema.ScalarFunction} from given class.
      *
      * If a method of the given name is not found or it does not suit, returns {@code null}.
      *
@@ -106,7 +106,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
 
 
     /**
-     * Creates {@link ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction} from given method.
+     * Creates {@link org.polypheny.db.schema.ScalarFunction} from given method.
      * When {@code eval} method does not suit, {@code null} is returned.
      *
      * @param method method that is used to implement the function

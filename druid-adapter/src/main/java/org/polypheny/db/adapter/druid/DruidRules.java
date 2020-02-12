@@ -31,48 +31,48 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
+package org.polypheny.db.adapter.druid;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.PolyphenyDbConnectionConfig;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.AggregateCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateExtractProjectRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateFilterTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterAggregateTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterProjectTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectFilterTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectSortTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.SortProjectTransposeRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.rules.AggregateExtractProjectRule;
+import org.polypheny.db.rel.rules.AggregateFilterTransposeRule;
+import org.polypheny.db.rel.rules.FilterAggregateTransposeRule;
+import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
+import org.polypheny.db.rel.rules.ProjectFilterTransposeRule;
+import org.polypheny.db.rel.rules.ProjectSortTransposeRule;
+import org.polypheny.db.rel.rules.SortProjectTransposeRule;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -411,7 +411,7 @@ public class DruidRules {
 
 
     /**
-     * Rule to push an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} into a {@link DruidQuery}.
+     * Rule to push an {@link org.polypheny.db.rel.core.Aggregate} into a {@link DruidQuery}.
      */
     public static class DruidAggregateRule extends RelOptRule {
 
@@ -452,7 +452,7 @@ public class DruidRules {
 
 
     /**
-     * Rule to push an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} and {@link Project} into a {@link DruidQuery}.
+     * Rule to push an {@link org.polypheny.db.rel.core.Aggregate} and {@link Project} into a {@link DruidQuery}.
      */
     public static class DruidAggregateProjectRule extends RelOptRule {
 
@@ -771,7 +771,7 @@ public class DruidRules {
 
 
     /**
-     * Rule to push an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} past a {@link Filter} when {@code Filter} is on top of a {@link DruidQuery}.
+     * Rule to push an {@link org.polypheny.db.rel.core.Aggregate} past a {@link Filter} when {@code Filter} is on top of a {@link DruidQuery}.
      */
     public static class DruidAggregateFilterTransposeRule extends AggregateFilterTransposeRule {
 
@@ -787,7 +787,7 @@ public class DruidRules {
 
 
     /**
-     * Rule to push an {@link Filter} past an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} when {@code Aggregate} is on top of a {@link DruidQuery}.
+     * Rule to push an {@link Filter} past an {@link org.polypheny.db.rel.core.Aggregate} when {@code Aggregate} is on top of a {@link DruidQuery}.
      */
     public static class DruidFilterAggregateTransposeRule extends FilterAggregateTransposeRule {
 
@@ -803,7 +803,7 @@ public class DruidRules {
 
 
     /**
-     * Rule to extract a {@link Project} from {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate} on top of {@link DruidQuery} based on the fields used in the aggregate.
+     * Rule to extract a {@link Project} from {@link org.polypheny.db.rel.core.Aggregate} on top of {@link DruidQuery} based on the fields used in the aggregate.
      */
     public static class DruidAggregateExtractProjectRule extends AggregateExtractProjectRule {
 

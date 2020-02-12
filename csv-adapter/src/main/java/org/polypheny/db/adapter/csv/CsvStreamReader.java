@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.csv;
+package org.polypheny.db.adapter.csv;
 
 
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
-import ch.unibas.dmi.dbis.polyphenydb.util.Source;
+import org.polypheny.db.util.Source;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;

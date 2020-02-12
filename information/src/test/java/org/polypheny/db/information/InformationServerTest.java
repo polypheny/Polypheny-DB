@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.information;
+package org.polypheny.db.information;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphData;
-import ch.unibas.dmi.dbis.polyphenydb.information.InformationGraph.GraphType;
-import ch.unibas.dmi.dbis.polyphenydb.webui.InformationServer;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.webui.InformationServer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.Metadata;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.MetadataHandler;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataProvider;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.UnboundMetadata;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.metadata.Metadata;
+import org.polypheny.db.rel.metadata.MetadataDef;
+import org.polypheny.db.rel.metadata.MetadataHandler;
+import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.rel.metadata.UnboundMetadata;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import java.lang.reflect.Method;

@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
@@ -141,10 +141,10 @@ public abstract class RelOptRuleCall {
     /**
      * Returns the children of a given relational expression node matched in a rule.
      *
-     * If the policy of the operand which caused the match is not {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperandChildPolicy#ANY}, the children will have their
+     * If the policy of the operand which caused the match is not {@link org.polypheny.db.plan.RelOptRuleOperandChildPolicy#ANY}, the children will have their
      * own operands and therefore be easily available in the array returned by the {@link #getRelList()} method, so this method returns null.
      *
-     * This method is for {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleOperandChildPolicy#ANY}, which is generally used when a node can have a variable number of
+     * This method is for {@link org.polypheny.db.plan.RelOptRuleOperandChildPolicy#ANY}, which is generally used when a node can have a variable number of
      * children, and hence where the matched children are not retrievable by any other means.
      *
      * @param rel Relational expression

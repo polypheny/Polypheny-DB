@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexTableInputRef.RelTableRef;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlExplainLevel;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
+import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.util.ImmutableBitSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -64,7 +64,7 @@ import java.util.Set;
  *
  * <ol>
  * <li>Add a static method <code>getXyz</code> specification to this class.</li>
- * <li>Add unit tests to {@code ch.unibas.dmi.dbis.polyphenydb.test.RelMetadataTest}.</li>
+ * <li>Add unit tests to {@code org.polypheny.db.test.RelMetadataTest}.</li>
  * <li>Write a new provider class <code>RelMdXyz</code> in this package. Follow the pattern from an existing class such as {@link RelMdColumnOrigins}, overloading on all of the logical relational expressions to which the query applies.</li>
  * <li>Add a {@code SOURCE} static member, similar to {@link RelMdColumnOrigins#SOURCE}.</li>
  * <li>Register the {@code SOURCE} object in {@link DefaultRelMetadataProvider}.</li>

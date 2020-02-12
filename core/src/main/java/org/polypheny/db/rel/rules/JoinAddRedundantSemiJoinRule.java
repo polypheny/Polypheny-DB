@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinInfo;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinInfo;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**
@@ -51,7 +51,7 @@ import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
  *
  * LogicalJoin(X, Y) &rarr; LogicalJoin(SemiJoin(X, Y), Y)
  *
- * The constructor is parameterized to allow any sub-class of {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join}, not just {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.rel.core.Join}, not just {@link org.polypheny.db.rel.logical.LogicalJoin}.
  */
 public class JoinAddRedundantSemiJoinRule extends RelOptRule {
 

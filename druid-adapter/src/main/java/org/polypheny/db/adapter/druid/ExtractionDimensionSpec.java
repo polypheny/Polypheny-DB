@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.druid;
+package org.polypheny.db.adapter.druid;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeField;
-import static ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidQuery.writeFieldIf;
+import static org.polypheny.db.adapter.druid.DruidQuery.writeField;
+import static org.polypheny.db.adapter.druid.DruidQuery.writeFieldIf;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.IOException;

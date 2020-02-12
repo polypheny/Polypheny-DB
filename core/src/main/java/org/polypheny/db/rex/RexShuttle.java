@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
 import com.google.common.collect.ImmutableList;
@@ -43,7 +43,7 @@ import java.util.List;
 /**
  * Passes over a row-expression, calling a handler method for each node, appropriate to the type of the node.
  *
- * Like {@link RexVisitor}, this is an instance of the {@link ch.unibas.dmi.dbis.polyphenydb.util.Glossary#VISITOR_PATTERN Visitor Pattern}. Use <code> RexShuttle</code> if you would like your methods to
+ * Like {@link RexVisitor}, this is an instance of the {@link org.polypheny.db.util.Glossary#VISITOR_PATTERN Visitor Pattern}. Use <code> RexShuttle</code> if you would like your methods to
  * return a value.
  */
 public class RexShuttle implements RexVisitor<RexNode> {

@@ -31,49 +31,49 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.prepare;
+package org.polypheny.db.prepare;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.config.RuntimeConfig;
-import ch.unibas.dmi.dbis.polyphenydb.jdbc.JavaTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactoryImpl;
-import ch.unibas.dmi.dbis.polyphenydb.schema.AggregateFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Function;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScalarFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ScalarFunctionImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.FamilyOperandTypeChecker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlReturnTypeInference;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeFamily;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonikerType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlNameMatcher;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlNameMatchers;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedTableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlUserDefinedTableMacro;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.schema.AggregateFunction;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.ScalarFunction;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.schema.impl.ScalarFunctionImpl;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.SqlSyntax;
+import org.polypheny.db.sql.type.FamilyOperandTypeChecker;
+import org.polypheny.db.sql.type.InferTypes;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.validate.SqlMoniker;
+import org.polypheny.db.sql.validate.SqlMonikerImpl;
+import org.polypheny.db.sql.validate.SqlMonikerType;
+import org.polypheny.db.sql.validate.SqlNameMatcher;
+import org.polypheny.db.sql.validate.SqlNameMatchers;
+import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;
+import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
+import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.sql.validate.SqlUserDefinedTableMacro;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Optionality;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -88,7 +88,7 @@ import java.util.function.Predicate;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.prepare.Prepare.CatalogReader} and also {@link SqlOperatorTable} based on tables and functions defined schemas.
+ * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {@link SqlOperatorTable} based on tables and functions defined schemas.
  */
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
@@ -269,7 +269,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     /**
-     * Converts a function to a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator}.
+     * Converts a function to a {@link org.polypheny.db.sql.SqlOperator}.
      *
      * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
      */

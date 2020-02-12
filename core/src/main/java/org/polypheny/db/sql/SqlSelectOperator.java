@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlBasicVisitor;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.SqlVisitor;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.sql.util.SqlVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +104,7 @@ public class SqlSelectOperator extends SqlOperator {
      * @param orderBy The ORDER BY clause, or null if not present
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
-     * @param pos The parser position, or {@link ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos#ZERO} if not specified; must not be null.
+     * @param pos The parser position, or {@link org.polypheny.db.sql.parser.SqlParserPos#ZERO} if not specified; must not be null.
      * @return A {@link SqlSelect}, never null
      */
     public SqlSelect createCall(

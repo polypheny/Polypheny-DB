@@ -31,15 +31,15 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc;
+package org.polypheny.db.adapter.jdbc;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.rel2sql.RelToSqlConverter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlDialect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

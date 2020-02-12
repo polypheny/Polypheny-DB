@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
+package org.polypheny.db.adapter.geode.simple;
 
 
 import java.util.Iterator;

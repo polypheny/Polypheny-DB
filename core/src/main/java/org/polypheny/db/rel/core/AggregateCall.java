@@ -31,25 +31,25 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.core;
+package org.polypheny.db.rel.core;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollations;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 
 
 /**
- * Call to an aggregate function within an {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate}.
+ * Call to an aggregate function within an {@link org.polypheny.db.rel.core.Aggregate}.
  */
 public class AggregateCall {
 
@@ -255,7 +255,7 @@ public class AggregateCall {
 
 
     /**
-     * Creates a binding of this call in the context of an {@link ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate}, which can then be used to infer the return type.
+     * Creates a binding of this call in the context of an {@link org.polypheny.db.rel.logical.LogicalAggregate}, which can then be used to infer the return type.
      */
     public Aggregate.AggCallBinding createBinding( Aggregate aggregateRelBase ) {
         final RelDataType rowType = aggregateRelBase.getInput().getRowType();

@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql2rel;
+package org.polypheny.db.sql2rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexRangeRef;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidator;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.validate.SqlValidator;
 
 
 /**
@@ -67,7 +67,7 @@ public interface SqlRexContext {
      * Returns -1 if the query is not an aggregate query.
      *
      * @return 0 if the query is implicitly GROUP BY (), -1 if the query is not and aggregate query
-     * @see ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorBinding#getGroupCount()
+     * @see org.polypheny.db.sql.SqlOperatorBinding#getGroupCount()
      */
     int getGroupCount();
 

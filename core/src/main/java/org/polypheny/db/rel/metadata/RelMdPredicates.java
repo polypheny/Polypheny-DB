@@ -31,47 +31,47 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.metadata;
+package org.polypheny.db.rel.metadata;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPredicateList;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptUtil;
-import ch.unibas.dmi.dbis.polyphenydb.plan.Strong;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepRelVertex;
-import ch.unibas.dmi.dbis.polyphenydb.plan.volcano.RelSubset;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Aggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Exchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Filter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.JoinRelType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Project;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Sort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexExecutor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexInputRef;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexPermuteInputsShuttle;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexSimplify;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexUtil;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexVisitorImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.fun.SqlStdOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.util.BitSets;
-import ch.unibas.dmi.dbis.polyphenydb.util.Bug;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mapping;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.MappingType;
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPredicateList;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.plan.hep.HepRelVertex;
+import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Aggregate;
+import org.polypheny.db.rel.core.Exchange;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.SemiJoin;
+import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexPermuteInputsShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.BitSets;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.mapping.Mapping;
+import org.polypheny.db.util.mapping.MappingType;
+import org.polypheny.db.util.mapping.Mappings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
@@ -95,7 +95,7 @@ import org.apache.calcite.linq4j.Ord;
 /**
  * Utility to infer Predicates that are applicable above a RelNode.
  *
- * This is currently used by {@link ch.unibas.dmi.dbis.polyphenydb.rel.rules.JoinPushTransitivePredicatesRule} to infer <em>Predicates</em> that can be inferred from one side of a Join
+ * This is currently used by {@link org.polypheny.db.rel.rules.JoinPushTransitivePredicatesRule} to infer <em>Predicates</em> that can be inferred from one side of a Join
  * to the other.
  *
  * The PullUp Strategy is sound but not complete. Here are some of the limitations:
@@ -140,7 +140,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
     /**
      * Catch-all implementation for {@link BuiltInMetadata.Predicates#getPredicates()}, invoked using reflection.
      *
-     * @see ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery#getPulledUpPredicates(RelNode)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#getPulledUpPredicates(RelNode)
      */
     public RelOptPredicateList getPredicates( RelNode rel, RelMetadataQuery mq ) {
         return RelOptPredicateList.EMPTY;
@@ -274,7 +274,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
     /**
-     * Infers predicates for a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join} (including {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.SemiJoin}).
+     * Infers predicates for a {@link org.polypheny.db.rel.core.Join} (including {@link org.polypheny.db.rel.core.SemiJoin}).
      */
     public RelOptPredicateList getPredicates( Join join, RelMetadataQuery mq ) {
         RelOptCluster cluster = join.getCluster();
@@ -433,7 +433,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
      * Contract is:
      *
      * <ul>
-     * <li>initialize with a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Join} and optional predicates applicable on its left and right subtrees.</li>
+     * <li>initialize with a {@link org.polypheny.db.rel.core.Join} and optional predicates applicable on its left and right subtrees.</li>
      * <li>you can then ask it for equivalentPredicate(s) given a predicate.</li>
      * </ul>
      *

@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.parser;
+package org.polypheny.db.sql.parser;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.Lex;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSelect;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.impl.SqlParserImpl;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformanceEnum;
-import ch.unibas.dmi.dbis.polyphenydb.util.SourceStringReader;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlSelect;
+import org.polypheny.db.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.util.SourceStringReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Objects;
@@ -145,7 +145,7 @@ public class SqlParser {
     /**
      * Parses a <code>SELECT</code> statement.
      *
-     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
+     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link org.polypheny.db.sql.SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
      * @throws SqlParseException if there is a parse error
      */
     public SqlNode parseQuery() throws SqlParseException {
@@ -167,7 +167,7 @@ public class SqlParser {
      * Parses a <code>SELECT</code> statement and reuses parser.
      *
      * @param sql sql to parse
-     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
+     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link org.polypheny.db.sql.SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
      * @throws SqlParseException if there is a parse error
      */
     public SqlNode parseQuery( String sql ) throws SqlParseException {

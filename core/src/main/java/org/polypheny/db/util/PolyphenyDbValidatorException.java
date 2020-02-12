@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 /**
- * Tagging interface to allow a {@link ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlValidatorException} to be identified without
+ * Tagging interface to allow a {@link org.polypheny.db.sql.validate.SqlValidatorException} to be identified without
  * adding a dependency on it from client-side code.
  */
 public interface PolyphenyDbValidatorException {

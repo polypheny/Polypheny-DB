@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexNode;
+import org.polypheny.db.rex.RexNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +46,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 /**
  * Allows to build nested code blocks with tracking of current context and the nullability of particular {@link RexNode} expressions.
  *
- * @see ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.StrictAggImplementor#implementAdd(AggContext, AggAddContext)
+ * @see org.polypheny.db.adapter.enumerable.StrictAggImplementor#implementAdd(AggContext, AggAddContext)
  */
 public class NestedBlockBuilderImpl implements NestedBlockBuilder {
 

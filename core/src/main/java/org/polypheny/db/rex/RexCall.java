@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rex;
+package org.polypheny.db.rex;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSyntax;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSyntax;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Litmus;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.EnumSet;
@@ -55,7 +55,7 @@ import javax.annotation.Nonnull;
  * An expression formed by a call to an operator with zero or more expressions as operands.
  *
  * Operators may be binary, unary, functions, special syntactic constructs like <code>CASE ... WHEN ... END</code>, or even internally generated constructs like implicit type conversions. The syntax of the operator is
- * really irrelevant, because row-expressions (unlike {@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode SQL expressions}) do not directly represent a piece of source code.
+ * really irrelevant, because row-expressions (unlike {@link org.polypheny.db.sql.SqlNode SQL expressions}) do not directly represent a piece of source code.
  *
  * It's not often necessary to sub-class this class. The smarts should be in the operator, rather than the call. Any extra information about the call can often be encoded as extra arguments. (These don't need to be hidden,
  * because no one is going to be generating source code from this tree.)
@@ -123,7 +123,7 @@ public class RexCall extends RexNode {
 
 
     /**
-     * This is a poorman's {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeUtil#equalSansNullability(RelDataTypeFactory, RelDataType, RelDataType)}
+     * This is a poorman's {@link org.polypheny.db.sql.type.SqlTypeUtil#equalSansNullability(RelDataTypeFactory, RelDataType, RelDataType)}
      * {@code SqlTypeUtil} requires {@link RelDataTypeFactory} which we haven't, so we assume that "not null" is represented in the type's digest as a trailing "NOT NULL" (case sensitive)
      *
      * @param a first type

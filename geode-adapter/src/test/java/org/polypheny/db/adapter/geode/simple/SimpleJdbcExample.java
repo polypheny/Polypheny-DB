@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple;
+package org.polypheny.db.adapter.geode.simple;
 
 
 import java.sql.Connection;
@@ -62,19 +62,19 @@ public class SimpleJdbcExample {
                 + "     {\n"
                 + "       type: 'custom',\n"
                 + "       name: 'TEST',\n"
-                + "       factory: 'ch.unibas.dmi.dbis.polyphenydb.adapter.geode.simple.GeodeSimpleSchemaFactory',\n"
+                + "       factory: 'org.polypheny.db.adapter.geode.simple.GeodeSimpleSchemaFactory',\n"
                 + "       operand: {\n"
                 + "         locatorHost: 'localhost',\n"
                 + "         locatorPort: '10334',\n"
                 + "         regions: 'BookMaster',\n"
-                + "         pdxSerializablePackagePath: 'ch.unibas.dmi.dbis.polyphenydb.adapter.geode.domain.*'\n"
+                + "         pdxSerializablePackagePath: 'org.polypheny.db.adapter.geode.domain.*'\n"
                 + "       }\n"
                 + "     }\n"
                 + "  ]\n"
                 + "}";
         info.put( "model", model );
 
-        Class.forName( "ch.unibas.dmi.dbis.polyphenydb.jdbc.embedded.EmbeddedDriver" );
+        Class.forName( "org.polypheny.db.jdbc.embedded.EmbeddedDriver" );
 
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         Statement statement = connection.createStatement();

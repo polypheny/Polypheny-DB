@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.graph;
+package org.polypheny.db.util.graph;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Static;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Static;
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.ArrayList;

@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.interpreter;
+package org.polypheny.db.interpreter;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Union;
+import org.polypheny.db.rel.core.Union;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.Set;
 
 
 /**
- * Interpreter node that implements a {@link ch.unibas.dmi.dbis.polyphenydb.rel.core.Union}.
+ * Interpreter node that implements a {@link org.polypheny.db.rel.core.Union}.
  */
 public class UnionNode implements Node {
 

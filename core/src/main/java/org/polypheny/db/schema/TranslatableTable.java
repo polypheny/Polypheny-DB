@@ -31,17 +31,17 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.schema;
+package org.polypheny.db.schema;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
 
 
 /**
- * Extension to {@link Table} that specifies how it is to be translated to a {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode relational expression}.
+ * Extension to {@link Table} that specifies how it is to be translated to a {@link org.polypheny.db.rel.RelNode relational expression}.
  *
- * It is optional for a Table to implement this interface. If Table does not implement this interface, it will be converted to a  {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan}.
+ * It is optional for a Table to implement this interface. If Table does not implement this interface, it will be converted to a  {@link org.polypheny.db.adapter.enumerable.EnumerableTableScan}.
  * Generally a Table will implement this interface to create a particular subclass of RelNode, and also register rules that act on that particular subclass of RelNode.
  */
 public interface TranslatableTable extends Table {

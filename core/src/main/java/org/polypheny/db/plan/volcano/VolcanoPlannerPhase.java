@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
 /**
- * VolcanoPlannerPhase represents the phases of operation that the {@link VolcanoPlanner} passes through during optimization of a tree of {@link ch.unibas.dmi.dbis.polyphenydb.rel.RelNode} objects.
+ * VolcanoPlannerPhase represents the phases of operation that the {@link VolcanoPlanner} passes through during optimization of a tree of {@link org.polypheny.db.rel.RelNode} objects.
  */
 public enum VolcanoPlannerPhase {
     PRE_PROCESS_MDR, PRE_PROCESS, OPTIMIZE, CLEANUP,

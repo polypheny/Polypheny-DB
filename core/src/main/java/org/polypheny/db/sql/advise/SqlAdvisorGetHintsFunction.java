@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.advise;
+package org.polypheny.db.sql.advise;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.CallImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.NullPolicy;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.RexImpTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FunctionParameter;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ImplementableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TableFunction;
-import ch.unibas.dmi.dbis.polyphenydb.schema.impl.ReflectiveFunctionBase;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMoniker;
-import ch.unibas.dmi.dbis.polyphenydb.util.BuiltInMethod;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.CallImplementor;
+import org.polypheny.db.adapter.enumerable.NullPolicy;
+import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.schema.ImplementableFunction;
+import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
+import org.polypheny.db.sql.validate.SqlMoniker;
+import org.polypheny.db.util.BuiltInMethod;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;

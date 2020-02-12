@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.piglet.parser.ParseException;
+import org.polypheny.db.piglet.parser.ParseException;
 import org.junit.Ignore;
 import org.junit.Test;
 

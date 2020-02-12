@@ -31,18 +31,18 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql;
+package org.polypheny.db.sql;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ArraySqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.MapSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.MultisetSqlType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandCountRanges;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.type.ArraySqlType;
+import org.polypheny.db.sql.type.MapSqlType;
+import org.polypheny.db.sql.type.MultisetSqlType;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Util;
 
 
 /**

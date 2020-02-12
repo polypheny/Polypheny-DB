@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.mapping;
+package org.polypheny.db.util.mapping;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.util.mapping.Mappings.TargetMapping;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import java.util.Iterator;
 
 

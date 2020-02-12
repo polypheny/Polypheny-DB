@@ -18,11 +18,11 @@
         <logger name="ch" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>
-        <!-- <logger name="ch.unibas.dmi.dbis.polyphenydb.jdbc" level="TRACE">
+        <!-- <logger name="org.polypheny.db.jdbc" level="TRACE">
         </logger> -->
-        <!--<logger name="ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner" level="DEBUG">
+        <!--<logger name="org.polypheny.db.plan.RelOptPlanner" level="DEBUG">
         </logger> -->
-        <!-- <logger name="ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner" level="TRACE">
+        <!-- <logger name="org.polypheny.db.plan.hep.HepPlanner" level="TRACE">
         </logger> -->
         <Root level="error"/>
     </Loggers>

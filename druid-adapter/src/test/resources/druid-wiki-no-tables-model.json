@@ -5,7 +5,7 @@
     {
       "type": "custom",
       "name": "wiki",
-      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchemaFactory",
+      "factory": "org.polypheny.db.adapter.druid.DruidSchemaFactory",
       "operand": {
         "url": "http://localhost:8082",
         "coordinatorUrl": "http://localhost:8081"

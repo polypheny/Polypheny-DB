@@ -31,21 +31,21 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan;
+package org.polypheny.db.plan;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelRoot;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.ImmutableBitSet;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 
@@ -80,7 +80,7 @@ public interface RelOptTable extends Wrapper {
     /**
      * Converts this table into a {@link RelNode relational expression}.
      *
-     * The {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner planner} calls this method to convert a table into an initial relational expression, generally something abstract, such as a
+     * The {@link org.polypheny.db.plan.RelOptPlanner planner} calls this method to convert a table into an initial relational expression, generally something abstract, such as a
      * {@link LogicalTableScan}, then optimizes this expression by applying {@link RelOptRule rules} to transform it
      * into more efficient access methods for this table.
      */

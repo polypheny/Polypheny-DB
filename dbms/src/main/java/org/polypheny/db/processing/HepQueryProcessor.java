@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.processing;
+package org.polypheny.db.processing;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.Transaction;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.hep.HepProgramBuilder;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.AggregateReduceFunctionsRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.CalcSplitRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.FilterTableScanRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.rules.ProjectTableScanRule;
+import org.polypheny.db.Transaction;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.rel.rules.CalcSplitRule;
+import org.polypheny.db.rel.rules.FilterTableScanRule;
+import org.polypheny.db.rel.rules.ProjectTableScanRule;
 import lombok.Getter;
 
 

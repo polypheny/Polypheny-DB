@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexCall;
+import org.polypheny.db.rex.RexCall;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;

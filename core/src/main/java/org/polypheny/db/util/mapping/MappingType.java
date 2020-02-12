@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util.mapping;
+package org.polypheny.db.util.mapping;
 
 
 /**

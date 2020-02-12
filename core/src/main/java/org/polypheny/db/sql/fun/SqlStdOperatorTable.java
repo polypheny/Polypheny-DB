@@ -31,54 +31,54 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.fun;
+package org.polypheny.db.sql.fun;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAggFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAsOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBasicCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlBinaryOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCall;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFilterOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlFunctionCategory;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlGroupedWindowFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlInternalOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJsonConstructorNullClause;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlKind;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLateralOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNumericLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOverOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlPostfixOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlPrefixOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlProcedureCallOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlRankFunction;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSampleSpec;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSetOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlSpecialOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUnnestOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlValuesOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWithinGroupOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWriter;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.OperandTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlOperandCountRanges;
-import ch.unibas.dmi.dbis.polyphenydb.sql.type.SqlTypeName;
-import ch.unibas.dmi.dbis.polyphenydb.sql.util.ReflectiveSqlOperatorTable;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlConformance;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlModality;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.AuxiliaryConverter;
-import ch.unibas.dmi.dbis.polyphenydb.util.Litmus;
-import ch.unibas.dmi.dbis.polyphenydb.util.Optionality;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlAsOperator;
+import org.polypheny.db.sql.SqlBasicCall;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlFilterOperator;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlFunctionCategory;
+import org.polypheny.db.sql.SqlGroupedWindowFunction;
+import org.polypheny.db.sql.SqlInternalOperator;
+import org.polypheny.db.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLateralOperator;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNumericLiteral;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlOperatorTable;
+import org.polypheny.db.sql.SqlOverOperator;
+import org.polypheny.db.sql.SqlPostfixOperator;
+import org.polypheny.db.sql.SqlPrefixOperator;
+import org.polypheny.db.sql.SqlProcedureCallOperator;
+import org.polypheny.db.sql.SqlRankFunction;
+import org.polypheny.db.sql.SqlSampleSpec;
+import org.polypheny.db.sql.SqlSetOperator;
+import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUnnestOperator;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.SqlValuesOperator;
+import org.polypheny.db.sql.SqlWindow;
+import org.polypheny.db.sql.SqlWithinGroupOperator;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.type.InferTypes;
+import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlModality;
+import org.polypheny.db.sql2rel.AuxiliaryConverter;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Optionality;
+import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -1247,7 +1247,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      *
      * <ol>
      * <li>name of window function ({@link SqlCall})</li>
-     * <li>window name ({@link ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral}) or window in-line specification (@link SqlWindowOperator})</li>
+     * <li>window name ({@link org.polypheny.db.sql.SqlLiteral}) or window in-line specification (@link SqlWindowOperator})</li>
      * </ol>
      */
     public static final SqlBinaryOperator OVER = new SqlOverOperator();

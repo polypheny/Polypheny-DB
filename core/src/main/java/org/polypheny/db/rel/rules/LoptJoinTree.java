@@ -31,11 +31,11 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.rules;
+package org.polypheny.db.rel.rules;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.Join;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

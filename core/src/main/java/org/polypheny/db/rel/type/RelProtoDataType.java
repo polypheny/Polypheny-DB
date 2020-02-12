@@ -31,14 +31,14 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel.type;
+package org.polypheny.db.rel.type;
 
 
 import org.apache.calcite.linq4j.function.Function1;
 
 
 /**
- * Can be converted into a {@link RelDataType} given a {@link ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory}.
+ * Can be converted into a {@link RelDataType} given a {@link org.polypheny.db.rel.type.RelDataTypeFactory}.
  *
  * @see RelDataTypeImpl#proto
  */

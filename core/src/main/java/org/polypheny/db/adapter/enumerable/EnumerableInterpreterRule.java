@@ -31,20 +31,20 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableConvention;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterRule;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.function.Predicate;
 
 
 /**
- * Planner rule that converts {@link ch.unibas.dmi.dbis.polyphenydb.interpreter.BindableRel} to {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableRel} by creating
- * an {@link ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableInterpreter}.
+ * Planner rule that converts {@link org.polypheny.db.interpreter.BindableRel} to {@link org.polypheny.db.adapter.enumerable.EnumerableRel} by creating
+ * an {@link org.polypheny.db.adapter.enumerable.EnumerableInterpreter}.
  */
 public class EnumerableInterpreterRule extends ConverterRule {
 

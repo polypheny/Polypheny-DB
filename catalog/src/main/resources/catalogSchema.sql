@@ -356,8 +356,8 @@ ALTER TABLE "column"
 -- store
 --
 INSERT INTO "store" ( "id", "unique_name", "adapter", "settings" )
-VALUES ( 0, 'hsqldb', 'ch.unibas.dmi.dbis.polyphenydb.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": "","maxConnections": "25","trxControlMode": "mvcc","trxIsolationLevel": "read_committed"}' ),
-       ( 1, 'csv', 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvStore', '{"directory": "testTestCsv"}' );
+VALUES ( 0, 'hsqldb', 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": "","maxConnections": "25","trxControlMode": "mvcc","trxIsolationLevel": "read_committed"}' ),
+       ( 1, 'csv', 'org.polypheny.db.adapter.csv.CsvStore', '{"directory": "testTestCsv"}' );
 
 ALTER TABLE "store"
     ALTER COLUMN "id"

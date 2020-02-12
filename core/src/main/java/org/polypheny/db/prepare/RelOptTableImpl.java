@@ -31,50 +31,50 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.prepare;
+package org.polypheny.db.prepare;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable.EnumerableTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptSchema;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistribution;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelDistributionTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelFieldCollation;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelReferentialConstraint;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalTableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeField;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelProtoDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelRecordType;
-import ch.unibas.dmi.dbis.polyphenydb.runtime.Hook;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ColumnStrategy;
-import ch.unibas.dmi.dbis.polyphenydb.schema.FilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ModifiableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Path;
-import ch.unibas.dmi.dbis.polyphenydb.schema.PolyphenyDbSchema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ProjectableFilterableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.QueryableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.ScannableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schema;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaPlus;
-import ch.unibas.dmi.dbis.polyphenydb.schema.SchemaVersion;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Schemas;
-import ch.unibas.dmi.dbis.polyphenydb.schema.StreamableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Table;
-import ch.unibas.dmi.dbis.polyphenydb.schema.TranslatableTable;
-import ch.unibas.dmi.dbis.polyphenydb.schema.Wrapper;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlAccessType;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlModality;
-import ch.unibas.dmi.dbis.polyphenydb.sql.validate.SqlMonotonicity;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.InitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.NullInitializerExpressionFactory;
-import ch.unibas.dmi.dbis.polyphenydb.util.ImmutableBitSet;
-import ch.unibas.dmi.dbis.polyphenydb.util.Pair;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelDistribution;
+import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.Path;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.SchemaVersion;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.StreamableTable;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.sql.SqlAccessType;
+import org.polypheny.db.sql.validate.SqlModality;
+import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.sql2rel.InitializerExpressionFactory;
+import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.Collection;
@@ -86,7 +86,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**
- * Implementation of {@link ch.unibas.dmi.dbis.polyphenydb.plan.RelOptTable}.
+ * Implementation of {@link org.polypheny.db.plan.RelOptTable}.
  */
 public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
@@ -505,7 +505,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
         @Override
-        public void add( String name, ch.unibas.dmi.dbis.polyphenydb.schema.Function function ) {
+        public void add( String name, org.polypheny.db.schema.Function function ) {
             throw new UnsupportedOperationException();
         }
 
@@ -571,7 +571,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
         @Override
-        public Collection<ch.unibas.dmi.dbis.polyphenydb.schema.Function>
+        public Collection<org.polypheny.db.schema.Function>
         getFunctions( String name ) {
             return schema.getFunctions( name );
         }

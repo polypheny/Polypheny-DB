@@ -31,30 +31,30 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.plan.volcano;
+package org.polypheny.db.plan.volcano;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCluster;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptCost;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptPlanner;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRule;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelOptRuleCall;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTrait;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitDef;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelNode;
-import ch.unibas.dmi.dbis.polyphenydb.rel.RelWriter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.convert.ConverterImpl;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.RelFactories;
-import ch.unibas.dmi.dbis.polyphenydb.rel.metadata.RelMetadataQuery;
-import ch.unibas.dmi.dbis.polyphenydb.tools.RelBuilderFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelTrait;
+import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
+import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.tools.RelBuilderFactory;
 import java.util.List;
 
 
 /**
  * Converts a relational expression to any given output convention.
  *
- * Unlike most {@link ch.unibas.dmi.dbis.polyphenydb.rel.convert.Converter}s, an abstract converter is always abstract. You would typically create an <code>AbstractConverter</code> when it is necessary to transform a relational
+ * Unlike most {@link org.polypheny.db.rel.convert.Converter}s, an abstract converter is always abstract. You would typically create an <code>AbstractConverter</code> when it is necessary to transform a relational
  * expression immediately; later, rules will transform it into relational expressions which can be implemented.
  *
  * If an abstract converter cannot be satisfied immediately (because the source subset is abstract), the set is flagged, so this converter will be expanded as soon as a non-abstract relexp is added to the set.</p>

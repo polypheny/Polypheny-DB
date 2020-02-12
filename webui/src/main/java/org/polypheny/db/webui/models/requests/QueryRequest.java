@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models.requests;
+package org.polypheny.db.webui.models.requests;
 
 
 public class QueryRequest extends UIRequest {

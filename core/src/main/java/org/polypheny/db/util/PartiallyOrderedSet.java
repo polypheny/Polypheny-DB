@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.util;
+package org.polypheny.db.util;
 
 
 import com.google.common.collect.ImmutableList;
@@ -658,7 +658,7 @@ public class PartiallyOrderedSet<E> extends AbstractSet<E> {
 
 
     /**
-     * Returns a list, backed by a list of {@link ch.unibas.dmi.dbis.polyphenydb.util.PartiallyOrderedSet.Node}s, that strips
+     * Returns a list, backed by a list of {@link org.polypheny.db.util.PartiallyOrderedSet.Node}s, that strips
      * away the node and returns the element inside.
      *
      * @param <E> Element type

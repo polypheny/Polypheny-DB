@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet;
+import org.polypheny.db.plan.RelTraitSet;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 

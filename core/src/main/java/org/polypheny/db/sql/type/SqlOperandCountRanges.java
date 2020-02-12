@@ -31,10 +31,10 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperandCountRange;
 import com.google.common.base.Preconditions;
 
 

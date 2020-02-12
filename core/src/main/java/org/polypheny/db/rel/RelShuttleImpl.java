@@ -31,23 +31,23 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.rel;
+package org.polypheny.db.rel;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableFunctionScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.core.TableScan;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalAggregate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalCorrelate;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalExchange;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalFilter;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalIntersect;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalJoin;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMatch;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalMinus;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalProject;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalSort;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalUnion;
-import ch.unibas.dmi.dbis.polyphenydb.rel.logical.LogicalValues;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -56,7 +56,7 @@ import org.apache.calcite.linq4j.Ord;
 
 
 /**
- * Basic implementation of {@link RelShuttle} that calls {@link RelNode#accept(RelShuttle)} on each child, and {@link RelNode#copy(ch.unibas.dmi.dbis.polyphenydb.plan.RelTraitSet, java.util.List)} if
+ * Basic implementation of {@link RelShuttle} that calls {@link RelNode#accept(RelShuttle)} on each child, and {@link RelNode#copy(org.polypheny.db.plan.RelTraitSet, java.util.List)} if
  * any children change.
  */
 public class RelShuttleImpl implements RelShuttle {

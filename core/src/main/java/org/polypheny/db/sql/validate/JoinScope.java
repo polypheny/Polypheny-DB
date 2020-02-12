@@ -31,12 +31,12 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlJoin;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlWindow;
+import org.polypheny.db.sql.SqlJoin;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWindow;
 
 
 /**

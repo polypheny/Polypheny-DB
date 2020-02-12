@@ -4,7 +4,7 @@
  */
 
 @PackageMarker
-package ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb;
 
 
 import org.apache.calcite.avatica.util.PackageMarker;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.validate;
+package org.polypheny.db.sql.validate;
 
 
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -24,13 +24,13 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import ch.unibas.dmi.dbis.polyphenydb.runtime.PolyphenyDbContextException;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlIdentifier;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.parser.SqlParserPos;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlTester;
-import ch.unibas.dmi.dbis.polyphenydb.sql.utils.SqlValidatorTester;
-import ch.unibas.dmi.dbis.polyphenydb.test.SqlTestFactory;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.utils.SqlTester;
+import org.polypheny.db.sql.utils.SqlValidatorTester;
+import org.polypheny.db.test.SqlTestFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;

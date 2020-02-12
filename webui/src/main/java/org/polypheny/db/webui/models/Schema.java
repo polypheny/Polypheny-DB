@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.webui.models;
+package org.polypheny.db.webui.models;
 
 
 import lombok.Getter;

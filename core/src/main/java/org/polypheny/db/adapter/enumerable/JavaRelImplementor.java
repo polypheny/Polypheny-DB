@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.adapter.enumerable;
+package org.polypheny.db.adapter.enumerable;
 
 
-import ch.unibas.dmi.dbis.polyphenydb.DataContext;
-import ch.unibas.dmi.dbis.polyphenydb.adapter.java.JavaTypeFactory;
-import ch.unibas.dmi.dbis.polyphenydb.plan.RelImplementor;
-import ch.unibas.dmi.dbis.polyphenydb.rex.RexBuilder;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelImplementor;
+import org.polypheny.db.rex.RexBuilder;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 

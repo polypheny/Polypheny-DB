@@ -31,19 +31,19 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.sql.type;
+package org.polypheny.db.sql.type;
 
 
-import static ch.unibas.dmi.dbis.polyphenydb.util.Static.RESOURCE;
+import static org.polypheny.db.util.Static.RESOURCE;
 
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataType;
-import ch.unibas.dmi.dbis.polyphenydb.rel.type.RelDataTypeComparability;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlCallBinding;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlLiteral;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlNode;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperandCountRange;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlOperator;
-import ch.unibas.dmi.dbis.polyphenydb.sql.SqlUtil;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeComparability;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlUtil;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
@@ -53,15 +53,15 @@ import java.util.function.Predicate;
 /**
  * Strategies for checking operand types.
  *
- * This class defines singleton instances of strategy objects for operand type checking. {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes} and {@link ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes} provide similar strategies
+ * This class defines singleton instances of strategy objects for operand type checking. {@link org.polypheny.db.sql.type.ReturnTypes} and {@link org.polypheny.db.sql.type.InferTypes} provide similar strategies
  * for operand type inference and operator return type inference.
  *
  * Note to developers: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else belongs in a reusable top-level class. If you find yourself copying and pasting an existing strategy's
  * anonymous inner class, you're making a mistake.
  *
  * @see SqlOperandTypeChecker
- * @see ch.unibas.dmi.dbis.polyphenydb.sql.type.ReturnTypes
- * @see ch.unibas.dmi.dbis.polyphenydb.sql.type.InferTypes
+ * @see org.polypheny.db.sql.type.ReturnTypes
+ * @see org.polypheny.db.sql.type.InferTypes
  */
 public abstract class OperandTypes {
 

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.test;
+package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,9 +39,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertThat;
 
-import ch.unibas.dmi.dbis.polyphenydb.sql2rel.SqlToRelConverter;
-import ch.unibas.dmi.dbis.polyphenydb.util.Sources;
-import ch.unibas.dmi.dbis.polyphenydb.util.Util;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
 import com.google.common.collect.Ordering;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -221,7 +221,7 @@ public class CsvTest {
                         + "     {\n"
                         + "       type: 'custom',\n"
                         + "       name: 'bad',\n"
-                        + "       factory: 'ch.unibas.dmi.dbis.polyphenydb.adapter.csv.CsvSchemaFactory',\n"
+                        + "       factory: 'org.polypheny.db.adapter.csv.CsvSchemaFactory',\n"
                         + "       operand: {\n"
                         + "         directory: '/does/not/exist'\n"
                         + "       }\n"
