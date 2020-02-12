@@ -79,7 +79,7 @@ class BackgroundTaskHandle implements Runnable {
     // https://stackoverflow.com/a/19922501
     private static class MovingAverage {
 
-        private final Queue<Long> window = new LinkedList<Long>();
+        private final Queue<Long> window = new LinkedList<>();
         private final int period;
         private long sum = 0;
 

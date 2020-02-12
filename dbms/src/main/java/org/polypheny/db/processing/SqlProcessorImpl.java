@@ -151,7 +151,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
-            log.debug( "Validated query: [{}]", validated );
+            log.trace( "Validated query: [{}]", validated );
         }
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SELECT Statement ... done. [{}]", stopWatch );
@@ -205,7 +205,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
 
         if ( log.isTraceEnabled() ) {
-            log.debug( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {

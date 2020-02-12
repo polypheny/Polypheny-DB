@@ -329,7 +329,7 @@ public abstract class SqlAbstractParserImpl {
         /**
          * Accept only CURSOR constructors, parenthesized queries, or non-query expressions in this context.
          */
-        ACCEPT_CURSOR;
+        ACCEPT_CURSOR
     }
 
 
