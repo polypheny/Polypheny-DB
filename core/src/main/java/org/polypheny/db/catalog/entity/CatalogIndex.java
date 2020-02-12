@@ -17,13 +17,13 @@
 package org.polypheny.db.catalog.entity;
 
 
-import org.polypheny.db.catalog.Catalog.IndexType;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.Catalog.IndexType;
 
 
 /**

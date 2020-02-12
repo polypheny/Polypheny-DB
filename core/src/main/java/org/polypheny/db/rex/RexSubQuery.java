@@ -34,6 +34,9 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import javax.annotation.Nonnull;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -44,9 +47,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlQuantifyOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import javax.annotation.Nonnull;
 
 
 /**

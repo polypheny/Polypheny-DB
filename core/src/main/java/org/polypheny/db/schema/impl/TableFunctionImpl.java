@@ -34,6 +34,15 @@
 package org.polypheny.db.schema.impl;
 
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
@@ -51,15 +60,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Static;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

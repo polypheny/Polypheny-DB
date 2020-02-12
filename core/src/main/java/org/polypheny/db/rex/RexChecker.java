@@ -34,12 +34,12 @@
 package org.polypheny.db.rex;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.util.Litmus;
-import java.util.List;
 
 
 /**

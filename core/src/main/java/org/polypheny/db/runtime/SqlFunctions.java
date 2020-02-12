@@ -34,20 +34,6 @@
 package org.polypheny.db.runtime;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.enumerable.JavaRowFormat;
-import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.runtime.FlatLists.ComparableList;
-import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.util.Bug;
-import org.polypheny.db.util.NumberUtil;
-import org.polypheny.db.util.Static;
-import org.polypheny.db.util.TimeWithTimeZoneString;
-import org.polypheny.db.util.TimestampWithTimeZoneString;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -96,6 +82,20 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.enumerable.JavaRowFormat;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.sql.SqlJsonConstructorNullClause;
+import org.polypheny.db.sql.SqlJsonExistsErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
+import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Static;
+import org.polypheny.db.util.TimeWithTimeZoneString;
+import org.polypheny.db.util.TimestampWithTimeZoneString;
 
 
 /**

@@ -34,10 +34,6 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.XmlOutput;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -52,6 +48,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.calcite.avatica.util.Spaces;
 import org.junit.Assert;
 import org.junit.ComparisonFailure;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.XmlOutput;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;

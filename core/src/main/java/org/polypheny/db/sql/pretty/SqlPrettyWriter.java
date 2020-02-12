@@ -34,13 +34,6 @@
 package org.polypheny.db.sql.pretty;
 
 
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.util.SqlString;
-import org.polypheny.db.util.Unsafe;
-import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
@@ -58,6 +51,13 @@ import java.util.Properties;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 
 
 /**

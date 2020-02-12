@@ -17,12 +17,12 @@
 package org.polypheny.db.statistic;
 
 
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.config.RuntimeConfig;
 import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 /**

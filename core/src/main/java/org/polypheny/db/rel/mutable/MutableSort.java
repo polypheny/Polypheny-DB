@@ -34,10 +34,10 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rex.RexNode;
-import java.util.Objects;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlFunction;
@@ -51,9 +54,6 @@ import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.type.SqlTypeTransformCascade;
 import org.polypheny.db.sql.type.SqlTypeTransforms;
 import org.polypheny.db.sql.type.SqlTypeUtil;
-import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**

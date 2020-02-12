@@ -34,10 +34,10 @@
 package org.polypheny.db.rel.mutable;
 
 
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

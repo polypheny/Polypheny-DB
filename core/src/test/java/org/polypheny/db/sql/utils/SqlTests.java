@@ -24,6 +24,15 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.sql.ResultSet;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.parser.SqlParseException;
@@ -35,15 +44,6 @@ import org.polypheny.db.sql.utils.SqlTester.ResultChecker;
 import org.polypheny.db.sql.utils.SqlTester.TypeChecker;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
-import java.sql.ResultSet;
-import java.sql.Types;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.calcite.avatica.ColumnMetaData;
 
 
 /**

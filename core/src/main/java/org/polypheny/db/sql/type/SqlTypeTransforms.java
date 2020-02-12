@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Util;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

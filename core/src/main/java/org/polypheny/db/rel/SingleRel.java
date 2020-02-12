@@ -34,12 +34,12 @@
 package org.polypheny.db.rel;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

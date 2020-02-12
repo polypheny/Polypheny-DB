@@ -34,6 +34,24 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import javax.annotation.Nonnull;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
@@ -72,24 +90,6 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import javax.annotation.Nonnull;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

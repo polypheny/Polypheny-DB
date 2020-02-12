@@ -34,15 +34,6 @@
 package org.polypheny.db.prepare;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -68,6 +59,15 @@ import org.apache.calcite.linq4j.function.NullableLongFunction1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.QueryableTable;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
 
 
 /**

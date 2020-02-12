@@ -34,6 +34,20 @@
 package org.polypheny.db.interpreter;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.enumerable.AggAddContext;
 import org.polypheny.db.adapter.enumerable.AggImpState;
@@ -55,20 +69,6 @@ import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**

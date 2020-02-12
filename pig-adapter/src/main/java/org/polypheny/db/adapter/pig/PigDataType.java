@@ -36,8 +36,8 @@ package org.polypheny.db.adapter.pig;
 
 import static org.polypheny.db.sql.type.SqlTypeName.VARCHAR;
 
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.apache.pig.data.DataType;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

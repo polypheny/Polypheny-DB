@@ -17,6 +17,14 @@
 package org.polypheny.db.test;
 
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.DelegatingTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -35,14 +43,6 @@ import org.polypheny.db.sql.validate.SqlValidatorWithHints;
 import org.polypheny.db.test.catalog.MockCatalogReader;
 import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.util.SourceStringReader;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
-import java.util.Map;
-import java.util.Objects;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 
 
 /**

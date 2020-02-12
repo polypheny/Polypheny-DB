@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSamplingParameters;
@@ -42,7 +43,6 @@ import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.SingleRel;
-import java.util.List;
 
 
 /**

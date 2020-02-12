@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

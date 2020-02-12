@@ -34,16 +34,6 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
-import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.sql.util.SqlBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
@@ -61,6 +51,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
+import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.util.SqlBuilder;
 
 
 /**

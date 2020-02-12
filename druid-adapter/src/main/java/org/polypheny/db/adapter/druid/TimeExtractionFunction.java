@@ -34,11 +34,6 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -48,6 +43,11 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

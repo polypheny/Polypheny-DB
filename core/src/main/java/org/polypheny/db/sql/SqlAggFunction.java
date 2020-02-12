@@ -34,6 +34,8 @@
 package org.polypheny.db.sql;
 
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
@@ -41,8 +43,6 @@ import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Optionality;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 
 /**

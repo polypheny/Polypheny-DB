@@ -39,9 +39,9 @@ import static org.polypheny.db.sql.SqlFunctionCategory.Property.SPECIFIC;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.TABLE_FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.USER_DEFINED;
 
-import org.polypheny.db.util.Util;
 import java.util.Arrays;
 import java.util.EnumSet;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,14 +34,14 @@
 package org.polypheny.db.adapter.enumerable.impl;
 
 
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
-import org.polypheny.db.adapter.enumerable.WinAggFrameResultContext;
-import org.polypheny.db.adapter.enumerable.WinAggImplementor;
-import org.polypheny.db.adapter.enumerable.WinAggResultContext;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
+import org.polypheny.db.adapter.enumerable.WinAggFrameResultContext;
+import org.polypheny.db.adapter.enumerable.WinAggImplementor;
+import org.polypheny.db.adapter.enumerable.WinAggResultContext;
 
 
 /**

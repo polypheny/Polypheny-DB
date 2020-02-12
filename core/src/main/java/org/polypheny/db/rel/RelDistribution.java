@@ -34,10 +34,10 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.plan.RelMultipleTrait;
-import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 import java.util.List;
 import javax.annotation.Nonnull;
+import org.polypheny.db.plan.RelMultipleTrait;
+import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
 /**

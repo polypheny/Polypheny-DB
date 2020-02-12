@@ -36,6 +36,9 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.util.Locale;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.PolyphenyDbResource;
 import org.polypheny.db.sql.parser.SqlParserUtil;
@@ -43,9 +46,6 @@ import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.SerializableCharset;
 import org.polypheny.db.util.Util;
-import java.io.Serializable;
-import java.nio.charset.Charset;
-import java.util.Locale;
 
 
 /**

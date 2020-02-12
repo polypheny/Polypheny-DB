@@ -34,6 +34,13 @@
 package org.polypheny.db.adapter.jdbc.rel2sql;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.junit.Test;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelReferentialConstraint;
@@ -52,13 +59,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.junit.Test;
 
 
 /**

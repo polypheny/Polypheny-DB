@@ -34,9 +34,9 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.util.Pair;
 import java.util.List;
 import java.util.RandomAccess;
+import org.polypheny.db.util.Pair;
 
 
 /**

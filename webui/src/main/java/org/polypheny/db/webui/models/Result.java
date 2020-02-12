@@ -17,10 +17,10 @@
 package org.polypheny.db.webui.models;
 
 
-import org.polypheny.db.webui.models.requests.UIRequest;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import lombok.Getter;
+import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 /**

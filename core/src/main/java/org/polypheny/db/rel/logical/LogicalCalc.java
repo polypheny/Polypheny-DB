@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.logical;
 
 
+import java.util.Set;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptUtil;
@@ -51,7 +52,6 @@ import org.polypheny.db.rel.rules.FilterToCalcRule;
 import org.polypheny.db.rel.rules.ProjectToCalcRule;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import java.util.Set;
 
 
 /**

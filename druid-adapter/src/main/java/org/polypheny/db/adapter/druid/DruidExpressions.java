@@ -34,15 +34,6 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
@@ -54,6 +45,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 import javax.annotation.Nullable;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

@@ -40,8 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.test.SlowTests;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,6 +53,8 @@ import java.util.function.Function;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.test.SlowTests;
 
 
 /**

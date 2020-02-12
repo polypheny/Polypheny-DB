@@ -17,13 +17,13 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelTrait;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
 
 
 /**

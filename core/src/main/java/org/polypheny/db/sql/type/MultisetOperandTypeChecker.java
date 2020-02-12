@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.type;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableList;
 
 
 /**

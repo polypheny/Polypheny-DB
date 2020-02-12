@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.math.BigDecimal;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
@@ -41,7 +42,6 @@ import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import java.math.BigDecimal;
 
 
 /**

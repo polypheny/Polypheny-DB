@@ -34,11 +34,11 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**

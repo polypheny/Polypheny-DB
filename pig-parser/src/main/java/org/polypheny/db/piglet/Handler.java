@@ -34,6 +34,11 @@
 package org.polypheny.db.piglet;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -47,11 +52,6 @@ import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**

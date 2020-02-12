@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
@@ -42,7 +43,6 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.UnmodifiableArrayList;
-import java.util.List;
 
 
 /**

@@ -34,6 +34,12 @@
 package org.polypheny.db.adapter.file;
 
 
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
@@ -50,12 +56,6 @@ import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.util.Source;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
 
 
 /**

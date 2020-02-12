@@ -34,14 +34,14 @@
 package org.polypheny.db.rel.mutable;
 
 
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Spaces;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

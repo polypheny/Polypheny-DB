@@ -17,11 +17,11 @@
 package org.polypheny.db.information;
 
 
-import org.polypheny.db.information.exception.InformationRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 /**

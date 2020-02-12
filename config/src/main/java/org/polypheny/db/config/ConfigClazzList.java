@@ -17,8 +17,6 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.ConfigClazz.ClassesAdapter;
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.TypeAdapter;
@@ -31,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.ConfigClazz.ClassesAdapter;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 import org.reflections.Reflections;
 
 

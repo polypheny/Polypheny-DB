@@ -34,6 +34,12 @@
 package org.polypheny.db.rel.type;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
@@ -42,12 +48,6 @@ import org.polypheny.db.sql.type.BasicSqlType;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.io.Serializable;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

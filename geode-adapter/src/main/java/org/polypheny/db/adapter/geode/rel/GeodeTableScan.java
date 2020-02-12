@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.geode.rel;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
@@ -42,7 +43,6 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.type.RelDataType;
-import java.util.List;
 
 
 /**

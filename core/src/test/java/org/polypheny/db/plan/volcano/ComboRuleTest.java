@@ -34,6 +34,7 @@
 package org.polypheny.db.plan.volcano;
 
 
+import static org.junit.Assert.assertTrue;
 import static org.polypheny.db.plan.volcano.PlannerTests.GoodSingleRule;
 import static org.polypheny.db.plan.volcano.PlannerTests.NoneLeafRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.NoneSingleRel;
@@ -42,8 +43,10 @@ import static org.polypheny.db.plan.volcano.PlannerTests.PhysLeafRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.PhysSingleRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.TestSingleRel;
 import static org.polypheny.db.plan.volcano.PlannerTests.newCluster;
-import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.junit.Test;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -55,9 +58,6 @@ import org.polypheny.db.plan.RelOptRuleOperand;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.junit.Test;
 
 
 /**

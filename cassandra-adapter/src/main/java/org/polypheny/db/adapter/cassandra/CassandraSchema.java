@@ -34,21 +34,6 @@
 package org.polypheny.db.adapter.cassandra;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
@@ -68,6 +53,21 @@ import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeImpl;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 

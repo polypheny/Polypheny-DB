@@ -34,10 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor;
-import org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexNode;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,6 +47,10 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor;
+import org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

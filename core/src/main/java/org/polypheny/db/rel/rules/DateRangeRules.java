@@ -34,29 +34,6 @@
 package org.polypheny.db.rel.rules;
 
 
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelBuilderFactory;
-import org.polypheny.db.util.Bug;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.TimestampWithTimeZoneString;
-import org.polypheny.db.util.Util;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
@@ -82,6 +59,29 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.TimestampWithTimeZoneString;
+import org.polypheny.db.util.Util;
 
 
 /**

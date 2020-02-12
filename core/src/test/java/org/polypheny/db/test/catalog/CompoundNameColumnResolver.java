@@ -34,12 +34,6 @@
 package org.polypheny.db.test.catalog;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.StructKind;
-import org.polypheny.db.util.Pair;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.util.Pair;
 
 
 /**

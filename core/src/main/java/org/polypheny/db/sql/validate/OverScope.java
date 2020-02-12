@@ -34,11 +34,11 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
-import java.util.List;
 
 
 /**

@@ -34,6 +34,14 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -54,14 +62,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Pair;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.Relation;
-import com.datastax.oss.driver.api.querybuilder.term.Term;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

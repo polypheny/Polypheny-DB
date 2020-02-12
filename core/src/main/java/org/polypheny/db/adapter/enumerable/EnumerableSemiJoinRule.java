@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.SemiJoin;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

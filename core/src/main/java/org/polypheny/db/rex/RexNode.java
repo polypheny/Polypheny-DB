@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
+import java.util.Collection;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
-import java.util.Collection;
 
 
 /**

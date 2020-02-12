@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.enumerable.impl;
 
 
-import org.polypheny.db.adapter.enumerable.AggResultContext;
-import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.rel.core.AggregateCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.enumerable.AggResultContext;
+import org.polypheny.db.adapter.enumerable.PhysType;
+import org.polypheny.db.rel.core.AggregateCall;
 
 
 /**

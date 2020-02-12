@@ -20,6 +20,10 @@ package org.polypheny.db.sql.utils;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.nio.charset.Charset;
+import org.junit.rules.MethodRule;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCollation.Coercibility;
 import org.polypheny.db.sql.SqlNode;
@@ -31,10 +35,6 @@ import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.test.SqlTestFactory;
 import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
-import java.nio.charset.Charset;
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
 
 
 /**

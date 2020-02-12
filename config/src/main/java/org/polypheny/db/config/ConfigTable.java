@@ -17,8 +17,8 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import java.math.BigDecimal;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigTable extends Config {

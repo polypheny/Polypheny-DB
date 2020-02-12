@@ -34,12 +34,12 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.util.SerializableCharset;
 import com.google.common.base.Preconditions;
 import java.nio.charset.Charset;
 import java.util.Objects;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.util.SerializableCharset;
 
 
 /**

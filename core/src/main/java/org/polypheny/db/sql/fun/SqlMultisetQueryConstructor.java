@@ -36,6 +36,7 @@ package org.polypheny.db.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCall;
@@ -51,7 +52,6 @@ import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
-import java.util.List;
 
 
 /**

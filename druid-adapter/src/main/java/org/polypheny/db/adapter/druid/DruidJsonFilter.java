@@ -34,14 +34,6 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Pair;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +46,14 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
 
 
 /**

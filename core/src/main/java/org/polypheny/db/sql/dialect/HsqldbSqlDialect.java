@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.dialect;
 
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlDialect;
@@ -45,8 +47,6 @@ import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

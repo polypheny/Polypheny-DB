@@ -34,6 +34,11 @@
 package org.polypheny.db.adapter.druid;
 
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import java.util.TimeZone;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -41,11 +46,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -53,10 +57,6 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 
 
 /**

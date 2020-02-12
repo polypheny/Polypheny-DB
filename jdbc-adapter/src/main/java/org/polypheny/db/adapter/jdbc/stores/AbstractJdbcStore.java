@@ -17,6 +17,14 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.PolyXid;
 import org.polypheny.db.Store;
@@ -44,14 +52,6 @@ import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

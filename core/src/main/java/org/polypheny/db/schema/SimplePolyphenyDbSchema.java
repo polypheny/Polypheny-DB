@@ -17,15 +17,15 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.util.NameMap;
-import org.polypheny.db.util.NameMultimap;
-import org.polypheny.db.util.NameSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.util.NameMap;
+import org.polypheny.db.util.NameMultimap;
+import org.polypheny.db.util.NameSet;
 
 
 /**

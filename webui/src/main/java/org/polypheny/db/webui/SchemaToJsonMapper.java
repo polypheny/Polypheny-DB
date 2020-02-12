@@ -17,13 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import com.google.gson.Gson;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -31,6 +24,13 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 
 
 public class SchemaToJsonMapper {

@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -50,9 +53,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.util.BuiltInMethod;
-import com.google.common.collect.ImmutableSet;
-import java.util.HashSet;
-import java.util.Set;
 
 
 /**

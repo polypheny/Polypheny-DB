@@ -34,6 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import java.util.List;
+import java.util.regex.Pattern;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.metadata.CachingRelMetadataProvider;
@@ -41,8 +43,6 @@ import org.polypheny.db.rel.metadata.RelMetadataProvider;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import java.util.List;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 
 

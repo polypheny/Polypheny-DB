@@ -34,6 +34,12 @@
 package org.polypheny.db.config;
 
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Properties;
+import org.apache.calcite.avatica.ConnectionConfigImpl;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.sql.Lex;
 import org.polypheny.db.sql.NullCollation;
 import org.polypheny.db.sql.SqlOperatorTable;
@@ -42,12 +48,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Properties;
-import org.apache.calcite.avatica.ConnectionConfigImpl;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 
 
 /**

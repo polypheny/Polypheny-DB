@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.dialect;
 
 
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.sql.SqlCall;
@@ -49,7 +50,6 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.ReturnTypes;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

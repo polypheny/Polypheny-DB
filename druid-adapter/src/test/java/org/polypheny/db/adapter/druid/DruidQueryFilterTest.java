@@ -36,14 +36,6 @@ package org.polypheny.db.adapter.druid;
 
 import static org.hamcrest.core.Is.is;
 
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableList;
@@ -56,6 +48,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

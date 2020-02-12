@@ -34,6 +34,16 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -64,16 +74,6 @@ import org.polypheny.db.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.Lists;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

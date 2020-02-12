@@ -34,6 +34,13 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.google.common.collect.Lists;
+import java.util.AbstractList;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
@@ -52,13 +59,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.Lists;
-import java.util.AbstractList;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
 
 
 /**

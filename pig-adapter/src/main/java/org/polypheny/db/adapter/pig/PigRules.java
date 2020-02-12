@@ -34,6 +34,8 @@
 package org.polypheny.db.adapter.pig;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelTraitSet;
@@ -44,8 +46,6 @@ import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

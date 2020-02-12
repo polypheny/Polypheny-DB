@@ -34,10 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import java.util.Collections;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
-import java.util.Collections;
 
 
 /**

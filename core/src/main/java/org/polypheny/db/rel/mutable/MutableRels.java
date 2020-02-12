@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.mutable;
 
 
+import com.google.common.collect.Lists;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.hep.HepRelVertex;
 import org.polypheny.db.plan.volcano.RelSubset;
@@ -73,10 +77,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.Lists;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

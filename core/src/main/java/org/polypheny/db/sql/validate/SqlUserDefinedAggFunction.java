@@ -34,6 +34,10 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -50,10 +54,6 @@ import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.linq4j.function.Experimental;
 
 
 /**

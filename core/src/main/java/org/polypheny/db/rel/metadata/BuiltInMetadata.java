@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.rel.RelCollation;
@@ -45,10 +49,6 @@ import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import java.util.List;
-import java.util.Set;
 
 
 /**

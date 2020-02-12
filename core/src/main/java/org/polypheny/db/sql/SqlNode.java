@@ -34,6 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
@@ -45,10 +49,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**

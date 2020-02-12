@@ -17,7 +17,6 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 import org.reflections.Reflections;
 
 

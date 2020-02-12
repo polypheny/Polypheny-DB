@@ -34,15 +34,15 @@
 package org.polypheny.db.adapter.csv;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.util.Source;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.util.Source;
 
 
 /**

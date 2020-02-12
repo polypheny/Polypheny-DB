@@ -34,6 +34,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,12 +52,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.impl.TableFunctionImpl;
 import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.csv;
 
 
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 /**

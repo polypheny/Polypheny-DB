@@ -20,6 +20,12 @@ package org.polypheny.db.plan;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -39,12 +45,6 @@ import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

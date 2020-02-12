@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -59,9 +62,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

@@ -37,9 +37,9 @@ package org.polypheny.db.rel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.plan.RelTraitSet;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+import org.polypheny.db.plan.RelTraitSet;
 
 
 /**

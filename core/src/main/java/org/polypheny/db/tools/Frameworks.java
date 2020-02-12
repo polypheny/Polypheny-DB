@@ -34,6 +34,10 @@
 package org.polypheny.db.tools;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -60,10 +64,6 @@ import org.polypheny.db.sql2rel.SqlRexConvertletTable;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
 
 
 /**

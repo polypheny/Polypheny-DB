@@ -34,8 +34,6 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -52,6 +50,8 @@ import java.util.Objects;
 import java.util.Set;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
 
 
 /**

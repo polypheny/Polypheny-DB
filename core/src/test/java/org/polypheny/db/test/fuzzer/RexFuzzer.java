@@ -34,6 +34,10 @@
 package org.polypheny.db.test.fuzzer;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Function;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,10 +46,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.test.RexProgramBuilderBase;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Function;
 
 
 /**

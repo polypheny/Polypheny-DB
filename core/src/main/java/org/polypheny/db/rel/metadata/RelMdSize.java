@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -59,10 +63,6 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
 
 
 /**

@@ -38,7 +38,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
-import org.polypheny.db.util.Util;
 import com.google.common.collect.Ordering;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -47,6 +46,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.polypheny.db.util.Util;
 
 
 /**

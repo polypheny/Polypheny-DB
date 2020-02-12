@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -44,7 +45,6 @@ import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import java.util.List;
 
 
 /**

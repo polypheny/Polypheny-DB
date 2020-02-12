@@ -34,8 +34,8 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.plan.RelMultipleTrait;
 import java.util.List;
+import org.polypheny.db.plan.RelMultipleTrait;
 
 
 /**

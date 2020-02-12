@@ -17,12 +17,12 @@
 package org.polypheny.db.catalog.entity;
 
 
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.catalog.Catalog.Collation;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.PolySqlType;
+import org.polypheny.db.catalog.Catalog.Collation;
 
 
 /**

@@ -17,6 +17,19 @@
 package org.polypheny.db.test.catalog;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
@@ -84,19 +97,6 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

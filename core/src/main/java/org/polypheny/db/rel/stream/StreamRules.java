@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.stream;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -61,9 +64,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

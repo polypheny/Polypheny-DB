@@ -34,15 +34,15 @@
 package org.polypheny.db.sql;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
-import java.util.ArrayList;
-import java.util.List;
-import lombok.Getter;
 
 
 /**

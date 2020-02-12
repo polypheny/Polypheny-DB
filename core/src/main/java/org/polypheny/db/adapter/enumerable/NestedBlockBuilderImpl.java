@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.rex.RexNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

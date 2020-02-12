@@ -46,8 +46,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.util.ImmutableBitSet.Builder;
 import com.google.common.collect.Iterables;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -59,6 +57,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.util.ImmutableBitSet.Builder;
 
 
 /**

@@ -34,9 +34,9 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.rex.RexNode;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

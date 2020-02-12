@@ -34,18 +34,18 @@
 package org.polypheny.db.sql2rel;
 
 
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import com.google.common.base.Preconditions;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**

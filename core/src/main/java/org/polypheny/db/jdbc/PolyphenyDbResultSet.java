@@ -34,8 +34,6 @@
 package org.polypheny.db.jdbc;
 
 
-import org.polypheny.db.runtime.ArrayEnumeratorCursor;
-import org.polypheny.db.runtime.ObjectEnumeratorCursor;
 import com.google.common.collect.ImmutableList;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -51,6 +49,8 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.runtime.ArrayEnumeratorCursor;
+import org.polypheny.db.runtime.ObjectEnumeratorCursor;
 
 
 /**

@@ -40,6 +40,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelOptUtil.Logic;
@@ -58,12 +64,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 
 /**

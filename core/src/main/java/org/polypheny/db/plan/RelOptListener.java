@@ -34,9 +34,9 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
 import java.util.EventListener;
 import java.util.EventObject;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

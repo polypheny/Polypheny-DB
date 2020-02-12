@@ -19,6 +19,16 @@ package org.polypheny.db.catalog;
 
 import static org.hsqldb.persist.HsqlProperties.indexName;
 
+import com.google.gson.Gson;
+import java.io.InputStreamReader;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -59,16 +69,6 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import com.google.gson.Gson;
-import java.io.InputStreamReader;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringEscapeUtils;
 
 
 /**

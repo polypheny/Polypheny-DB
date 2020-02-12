@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.logical;
 
 
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -48,7 +49,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import java.util.List;
 
 
 /**

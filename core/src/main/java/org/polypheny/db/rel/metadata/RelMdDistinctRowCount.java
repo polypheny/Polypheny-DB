@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.metadata;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -54,8 +56,6 @@ import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NumberUtil;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

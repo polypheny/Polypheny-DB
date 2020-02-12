@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.Locale;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
@@ -49,7 +50,6 @@ import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.type.SqlOperandCountRanges;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.validate.SqlValidator;
-import java.util.Locale;
 
 
 /**

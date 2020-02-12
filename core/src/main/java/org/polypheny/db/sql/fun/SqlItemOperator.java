@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.Arrays;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCall;
@@ -50,7 +51,6 @@ import org.polypheny.db.sql.type.SqlOperandCountRanges;
 import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.type.SqlTypeName;
-import java.util.Arrays;
 
 
 /**

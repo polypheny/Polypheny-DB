@@ -35,11 +35,6 @@ package org.polypheny.db.adapter.csv;
 
 
 import au.com.bytecode.opencsv.CSVReader;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Source;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -51,6 +46,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Source;
 
 
 /**

@@ -34,6 +34,8 @@
 package org.polypheny.db.sql;
 
 
+import java.util.AbstractList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -41,8 +43,6 @@ import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorException;
 import org.polypheny.db.util.NlsString;
-import java.util.AbstractList;
-import java.util.List;
 
 
 /**

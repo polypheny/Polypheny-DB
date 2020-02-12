@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelProtoDataType;
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.rel.type.RelProtoDataType;
 
 
 /**

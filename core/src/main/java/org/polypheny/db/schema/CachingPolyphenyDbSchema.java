@@ -17,10 +17,6 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.util.NameMap;
-import org.polypheny.db.util.NameMultimap;
-import org.polypheny.db.util.NameSet;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -30,6 +26,10 @@ import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.util.NameMap;
+import org.polypheny.db.util.NameMultimap;
+import org.polypheny.db.util.NameSet;
 
 
 /**

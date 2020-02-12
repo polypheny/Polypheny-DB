@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.ddl;
 
 
+import java.util.List;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -47,7 +48,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import java.util.List;
 
 
 /**

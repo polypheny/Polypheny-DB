@@ -34,9 +34,9 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.core.Calc;
 import org.polypheny.db.rex.RexProgram;
-import java.util.Objects;
 
 
 /**

@@ -37,6 +37,9 @@ package org.polypheny.db.adapter.pig;
 import static org.polypheny.db.sql.SqlKind.INPUT_REF;
 import static org.polypheny.db.sql.SqlKind.LITERAL;
 
+import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -47,9 +50,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import com.google.common.base.Preconditions;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

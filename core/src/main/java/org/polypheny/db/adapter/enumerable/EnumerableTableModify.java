@@ -34,16 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.util.BuiltInMethod;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -54,6 +44,16 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.util.BuiltInMethod;
 
 
 /**

@@ -36,6 +36,17 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.Store;
@@ -85,17 +96,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.util.ImmutableNullableList;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

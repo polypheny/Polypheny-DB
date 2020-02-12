@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.logical;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -43,8 +45,6 @@ import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.schema.Table;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

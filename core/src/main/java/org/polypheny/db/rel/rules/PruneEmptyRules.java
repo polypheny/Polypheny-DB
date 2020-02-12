@@ -41,6 +41,9 @@ import static org.polypheny.db.plan.RelOptRule.operandJ;
 import static org.polypheny.db.plan.RelOptRule.some;
 import static org.polypheny.db.plan.RelOptRule.unordered;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -61,9 +64,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
 
 
 /**

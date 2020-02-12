@@ -39,6 +39,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.hamcrest.core.Is;
+import org.junit.Test;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -74,14 +82,6 @@ import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.hamcrest.core.Is;
-import org.junit.Test;
 
 
 /**

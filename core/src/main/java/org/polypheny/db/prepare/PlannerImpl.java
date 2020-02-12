@@ -34,6 +34,9 @@
 package org.polypheny.db.prepare;
 
 
+import com.google.common.collect.ImmutableList;
+import java.io.Reader;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.plan.Context;
@@ -69,9 +72,6 @@ import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.io.Reader;
-import java.util.List;
 
 
 /**

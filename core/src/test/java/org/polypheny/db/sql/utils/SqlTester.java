@@ -17,6 +17,9 @@
 package org.polypheny.db.sql.utils;
 
 
+import java.sql.ResultSet;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.Lex;
 import org.polypheny.db.sql.SqlOperator;
@@ -25,9 +28,6 @@ import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.test.SqlTestFactory;
-import java.sql.ResultSet;
-import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.Quoting;
 
 
 /**

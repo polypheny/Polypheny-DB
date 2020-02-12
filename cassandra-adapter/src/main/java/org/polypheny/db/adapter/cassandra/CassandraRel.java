@@ -34,9 +34,6 @@
 package org.polypheny.db.adapter.cassandra;
 
 
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
@@ -46,6 +43,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

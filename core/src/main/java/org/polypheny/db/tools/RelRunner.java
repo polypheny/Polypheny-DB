@@ -17,8 +17,8 @@
 package org.polypheny.db.tools;
 
 
-import org.polypheny.db.rel.RelNode;
 import java.sql.PreparedStatement;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

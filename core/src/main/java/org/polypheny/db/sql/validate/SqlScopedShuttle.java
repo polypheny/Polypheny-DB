@@ -34,12 +34,12 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.util.SqlShuttle;
 import org.polypheny.db.sql.util.SqlVisitor;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 
 /**

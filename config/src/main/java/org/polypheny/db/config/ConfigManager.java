@@ -17,13 +17,13 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 /**

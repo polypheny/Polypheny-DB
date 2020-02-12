@@ -34,12 +34,12 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Objects;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 
 
 /**

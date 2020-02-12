@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCall;
@@ -47,7 +48,6 @@ import org.polypheny.db.sql.type.IntervalSqlType;
 import org.polypheny.db.sql.type.OperandTypes;
 import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.apache.calcite.avatica.util.TimeUnit;
 
 
 /**

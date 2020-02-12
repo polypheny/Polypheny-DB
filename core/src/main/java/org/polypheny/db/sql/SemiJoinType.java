@@ -34,10 +34,10 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import java.util.Locale;
 import org.apache.calcite.linq4j.CorrelateJoinType;
+import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**

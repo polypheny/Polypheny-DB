@@ -17,12 +17,12 @@
 package org.polypheny.db.processing;
 
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.Authenticator;
 import org.polypheny.db.QueryInterface;
 import org.polypheny.db.TransactionManager;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

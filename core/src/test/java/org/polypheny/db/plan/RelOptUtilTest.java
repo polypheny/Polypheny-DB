@@ -20,6 +20,12 @@ package org.polypheny.db.plan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
@@ -43,12 +49,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import org.junit.Test;
 
 
 /**

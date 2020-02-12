@@ -34,7 +34,6 @@
 package org.polypheny.db.runtime;
 
 
-import org.polypheny.db.util.ImmutableNullableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.AbstractList;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
+import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**

@@ -39,6 +39,13 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -58,13 +65,6 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Closer;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 /**

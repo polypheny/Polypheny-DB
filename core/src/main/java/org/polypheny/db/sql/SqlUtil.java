@@ -36,24 +36,6 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.sql.util.SqlBasicVisitor;
-import org.polypheny.db.util.BarfingInvocationHandler;
-import org.polypheny.db.util.ConversionUtil;
-import org.polypheny.db.util.Glossary;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import com.google.common.base.Predicates;
 import com.google.common.base.Utf8;
 import com.google.common.collect.ImmutableList;
@@ -77,6 +59,24 @@ import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.util.BarfingInvocationHandler;
+import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 
 
 /**

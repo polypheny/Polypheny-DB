@@ -34,15 +34,15 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.piglet.Handler;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.PigRelBuilder;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import org.polypheny.db.piglet.Handler;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.tools.PigRelBuilder;
 
 
 /**

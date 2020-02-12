@@ -34,8 +34,8 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.parser.SqlParserPos;
 import java.util.Locale;
+import org.polypheny.db.sql.parser.SqlParserPos;
 
 
 /**

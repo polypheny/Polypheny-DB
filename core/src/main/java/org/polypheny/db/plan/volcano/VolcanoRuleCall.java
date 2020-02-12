@@ -34,12 +34,6 @@
 package org.polypheny.db.plan.volcano;
 
 
-import org.polypheny.db.plan.RelOptListener;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelTraitPropagationVisitor;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -48,6 +42,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.RelOptRuleCall;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.RelTraitPropagationVisitor;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

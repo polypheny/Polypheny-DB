@@ -17,11 +17,11 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigException;
 import java.util.EnumSet;
 import java.util.Set;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigEnum extends Config {

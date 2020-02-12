@@ -34,6 +34,9 @@
 package org.polypheny.db.sql.dialect;
 
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.NullCollation;
@@ -57,9 +60,6 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.InferTypes;
 import org.polypheny.db.sql.type.OperandTypes;
 import org.polypheny.db.sql.type.ReturnTypes;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

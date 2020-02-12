@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.fun;
 
 
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlInternalOperator;
 import org.polypheny.db.sql.SqlKind;
@@ -41,7 +42,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

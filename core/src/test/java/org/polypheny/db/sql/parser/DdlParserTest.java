@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.parser;
 
 
-import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.junit.Test;
+import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 
 
 /**

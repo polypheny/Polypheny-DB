@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.pig;
 
 
+import org.apache.pig.data.DataType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptTable.ToRelContext;
@@ -42,7 +43,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.apache.pig.data.DataType;
 
 
 /**

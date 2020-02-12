@@ -34,6 +34,14 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptListener;
@@ -50,14 +58,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.Linq4j;
 import org.slf4j.Logger;
 
 

@@ -37,6 +37,13 @@ package org.polypheny.db.rel.rules;
 import static org.polypheny.db.rel.rules.LoptMultiJoin.Edge;
 import static org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
+import com.google.common.collect.ImmutableList;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -56,13 +63,6 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

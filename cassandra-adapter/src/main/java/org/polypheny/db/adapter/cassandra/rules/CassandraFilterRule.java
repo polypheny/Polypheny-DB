@@ -17,6 +17,10 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
@@ -34,10 +38,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
 
 
 /**

@@ -34,10 +34,10 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.base.Preconditions;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.TimestampString;
-import com.google.common.base.Preconditions;
 
 
 /**

@@ -34,6 +34,31 @@
 package org.polypheny.db.plan.volcano;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.Context;
@@ -73,31 +98,6 @@ import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.SetMultimap;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.calcite.avatica.util.Spaces;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

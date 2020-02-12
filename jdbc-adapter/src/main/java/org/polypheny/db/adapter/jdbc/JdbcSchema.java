@@ -34,6 +34,20 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.sql.DataSource;
+import lombok.Getter;
+import lombok.NonNull;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -58,20 +72,6 @@ import org.polypheny.db.sql.SqlDialectFactory;
 import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.sql.DataSource;
-import lombok.Getter;
-import lombok.NonNull;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

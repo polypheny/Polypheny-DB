@@ -34,16 +34,16 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperandCountRange;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlOperandCountRange;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.util.Util;
 
 
 /**

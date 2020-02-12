@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.polypheny.db.plan.hep.HepRelVertex;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -51,8 +53,6 @@ import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 
 /**

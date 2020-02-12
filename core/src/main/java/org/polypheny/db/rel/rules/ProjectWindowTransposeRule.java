@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -54,8 +56,6 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

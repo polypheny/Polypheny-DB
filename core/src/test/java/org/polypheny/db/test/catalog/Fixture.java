@@ -34,6 +34,7 @@
 package org.polypheny.db.test.catalog;
 
 
+import java.util.Arrays;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.ObjectSqlType;
 import org.polypheny.db.sql.type.SqlTypeName;
-import java.util.Arrays;
 
 
 /**

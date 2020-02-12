@@ -27,6 +27,19 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.calcite.avatica.util.ByteString;
+import org.junit.Before;
+import org.junit.Test;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -60,19 +73,6 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import org.apache.calcite.avatica.util.ByteString;
-import org.junit.Before;
-import org.junit.Test;
 
 
 /**

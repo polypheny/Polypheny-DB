@@ -34,9 +34,9 @@
 package org.polypheny.db.rel;
 
 
-import org.polypheny.db.runtime.Utilities;
 import com.google.common.collect.Ordering;
 import java.util.Comparator;
+import org.polypheny.db.runtime.Utilities;
 
 
 /**

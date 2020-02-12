@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.plan.Convention;
@@ -28,7 +29,6 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.tools.RelBuilderFactory;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

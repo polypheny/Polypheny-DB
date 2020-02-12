@@ -20,21 +20,6 @@ package org.polypheny.db.sql.test;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.advise.SqlAdvisor;
-import org.polypheny.db.sql.advise.SqlAdvisorValidator;
-import org.polypheny.db.sql.advise.SqlSimpleParser.Token;
-import org.polypheny.db.sql.advise.SqlSimpleParser.Tokenizer;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.sql.utils.SqlValidatorTester;
-import org.polypheny.db.sql.utils.WithLex;
-import org.polypheny.db.sql.validate.SqlMoniker;
-import org.polypheny.db.sql.validate.SqlMonikerType;
-import org.polypheny.db.test.SqlTestFactory;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +36,21 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.MethodRule;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.advise.SqlAdvisor;
+import org.polypheny.db.sql.advise.SqlAdvisorValidator;
+import org.polypheny.db.sql.advise.SqlSimpleParser.Token;
+import org.polypheny.db.sql.advise.SqlSimpleParser.Tokenizer;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.sql.utils.SqlTester;
+import org.polypheny.db.sql.utils.SqlValidatorTestCase;
+import org.polypheny.db.sql.utils.SqlValidatorTester;
+import org.polypheny.db.sql.utils.WithLex;
+import org.polypheny.db.sql.validate.SqlMoniker;
+import org.polypheny.db.sql.validate.SqlMonikerType;
+import org.polypheny.db.test.SqlTestFactory;
 
 
 /**

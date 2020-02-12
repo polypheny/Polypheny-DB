@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import java.util.List;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraSort;
@@ -29,7 +30,6 @@ import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.List;
 
 
 /**

@@ -36,6 +36,14 @@ package org.polypheny.db.sql.type;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+import java.nio.charset.Charset;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
@@ -55,14 +63,6 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
-import java.nio.charset.Charset;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

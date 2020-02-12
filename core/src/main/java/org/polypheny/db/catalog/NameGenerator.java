@@ -17,8 +17,8 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.config.RuntimeConfig;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 public class NameGenerator {

@@ -34,12 +34,12 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.Objects;
+import java.util.Set;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**

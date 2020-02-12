@@ -34,6 +34,12 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -56,12 +62,6 @@ import org.polypheny.db.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

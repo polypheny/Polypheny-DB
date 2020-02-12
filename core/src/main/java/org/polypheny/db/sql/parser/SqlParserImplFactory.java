@@ -34,8 +34,8 @@
 package org.polypheny.db.sql.parser;
 
 
-import org.polypheny.db.tools.Planner;
 import java.io.Reader;
+import org.polypheny.db.tools.Planner;
 
 
 /**

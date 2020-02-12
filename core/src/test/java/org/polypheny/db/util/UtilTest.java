@@ -34,7 +34,6 @@
 package org.polypheny.db.util;
 
 
-import static org.polypheny.db.test.Matchers.isLinux;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -49,17 +48,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.polypheny.db.test.Matchers.isLinux;
 
-import org.polypheny.db.runtime.ConsList;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.util.SqlBuilder;
-import org.polypheny.db.sql.util.SqlString;
-import org.polypheny.db.test.DiffTestCase;
-import org.polypheny.db.test.Matchers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Iterables;
@@ -114,6 +104,16 @@ import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.runtime.ConsList;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.util.SqlBuilder;
+import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.test.DiffTestCase;
+import org.polypheny.db.test.Matchers;
 
 
 /**

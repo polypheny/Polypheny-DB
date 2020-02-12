@@ -36,6 +36,8 @@ package org.polypheny.db.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.Lists;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
@@ -48,9 +50,6 @@ import org.polypheny.db.sql.validate.SqlValidatorException;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import com.google.common.collect.Lists;
-import java.util.List;
-import org.polypheny.db.util.Static;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.test;
 
 
+import java.io.IOException;
+import org.junit.After;
+import org.junit.Before;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -43,9 +46,6 @@ import org.polypheny.db.rel.externalize.RelJsonWriter;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.tools.Frameworks;
-import java.io.IOException;
-import org.junit.After;
-import org.junit.Before;
 
 
 /**

@@ -34,14 +34,14 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelFieldCollation.Direction;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelFieldCollation.Direction;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.util.Pair;
 
 
 /**

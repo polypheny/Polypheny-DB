@@ -34,14 +34,14 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.util.Pair;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.util.Pair;
 
 
 /**

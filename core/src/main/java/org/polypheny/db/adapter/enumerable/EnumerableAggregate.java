@@ -34,6 +34,22 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -55,22 +71,6 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.function.Function2;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

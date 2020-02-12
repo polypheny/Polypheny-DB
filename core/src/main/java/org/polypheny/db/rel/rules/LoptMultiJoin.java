@@ -34,6 +34,16 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.JoinRelType;
@@ -49,16 +59,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
 
 
 /**

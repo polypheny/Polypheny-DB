@@ -34,8 +34,8 @@
 package org.polypheny.db.util.trace;
 
 
-import org.polypheny.db.util.NumberUtil;
 import java.text.DecimalFormat;
+import org.polypheny.db.util.NumberUtil;
 import org.slf4j.Logger;
 
 

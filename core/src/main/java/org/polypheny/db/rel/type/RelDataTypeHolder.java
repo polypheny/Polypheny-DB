@@ -34,11 +34,11 @@
 package org.polypheny.db.rel.type;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

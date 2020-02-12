@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -47,8 +49,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 
 /**

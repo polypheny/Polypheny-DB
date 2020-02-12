@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.sql.SqlOperator;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.sql.SqlOperator;
 
 
 /**

@@ -34,6 +34,12 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -42,12 +48,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexNode;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UncheckedIOException;
-import java.util.Objects;
 
 
 /**

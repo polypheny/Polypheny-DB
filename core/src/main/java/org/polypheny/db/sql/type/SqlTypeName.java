@@ -34,12 +34,6 @@
 package org.polypheny.db.sql.type;
 
 
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -52,6 +46,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
 
 
 /**

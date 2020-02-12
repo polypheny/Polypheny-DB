@@ -34,6 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlAsOperator;
 import org.polypheny.db.sql.SqlBasicCall;
@@ -79,9 +82,6 @@ import org.polypheny.db.sql2rel.AuxiliaryConverter;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.apache.calcite.avatica.util.TimeUnit;
 
 
 /**

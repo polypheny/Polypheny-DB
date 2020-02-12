@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
 
 
 /**

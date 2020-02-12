@@ -34,13 +34,13 @@
 package org.polypheny.db.util.trace;
 
 
+import java.io.File;
+import org.apache.calcite.linq4j.function.Function2;
+import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.plan.RelImplementor;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.sql.parser.SqlParser;
-import java.io.File;
-import org.apache.calcite.linq4j.function.Function2;
-import org.apache.calcite.linq4j.function.Functions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -39,6 +39,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
+import java.util.Arrays;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
@@ -66,8 +68,6 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.util.Util;
-import java.util.Arrays;
-import org.junit.Test;
 
 
 /**

@@ -34,7 +34,6 @@
 package org.polypheny.db.sql.advise;
 
 
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -43,6 +42,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 
 /**

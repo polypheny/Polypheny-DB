@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -49,10 +53,6 @@ import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

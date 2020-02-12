@@ -34,16 +34,16 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.base.Preconditions;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
-import com.google.common.base.Preconditions;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 
 /**

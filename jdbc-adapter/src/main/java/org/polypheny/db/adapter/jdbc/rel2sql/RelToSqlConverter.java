@@ -34,6 +34,18 @@
 package org.polypheny.db.adapter.jdbc.rel2sql;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedSet;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -82,18 +94,6 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitor;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.SortedSet;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

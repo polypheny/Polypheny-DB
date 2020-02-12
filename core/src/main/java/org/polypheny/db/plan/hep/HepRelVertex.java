@@ -34,6 +34,7 @@
 package org.polypheny.db.plan.hep;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitSet;
@@ -42,7 +43,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
-import java.util.List;
 
 
 /**

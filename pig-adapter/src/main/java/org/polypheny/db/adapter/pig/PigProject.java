@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.pig;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
@@ -41,7 +42,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
-import java.util.List;
 
 
 /**

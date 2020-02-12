@@ -17,6 +17,14 @@
 package org.polypheny.db.processing;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.PolyXid;
@@ -41,14 +49,6 @@ import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticsManager;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

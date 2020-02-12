@@ -34,10 +34,10 @@
 package org.polypheny.db.rel;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.runtime.FlatLists;
-import java.util.List;
 
 
 /**

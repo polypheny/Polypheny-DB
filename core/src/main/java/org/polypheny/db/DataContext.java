@@ -34,9 +34,6 @@
 package org.polypheny.db;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.advise.SqlAdvisor;
 import com.google.common.base.CaseFormat;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,6 +45,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.advise.SqlAdvisor;
 
 
 /**

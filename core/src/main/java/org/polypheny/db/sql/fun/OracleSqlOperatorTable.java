@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
@@ -44,8 +46,6 @@ import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.type.SqlTypeTransforms;
 import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

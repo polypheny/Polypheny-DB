@@ -34,13 +34,13 @@
 package org.polypheny.db.rel.mutable;
 
 
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

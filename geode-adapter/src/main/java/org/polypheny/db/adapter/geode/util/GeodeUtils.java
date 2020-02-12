@@ -34,9 +34,6 @@
 package org.polypheny.db.adapter.geode.util;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.util.Util;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Date;
@@ -59,6 +56,9 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 import org.apache.geode.cache.query.Struct;
 import org.apache.geode.pdx.PdxInstance;
 import org.apache.geode.pdx.ReflectionBasedAutoSerializer;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.util.Util;
 
 
 /**

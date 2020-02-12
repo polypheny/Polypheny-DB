@@ -34,12 +34,12 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.util.Pair;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.util.Pair;
 
 
 /**

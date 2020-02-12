@@ -36,6 +36,17 @@ package org.polypheny.db.adapter.geode.rel;
 
 import static org.polypheny.db.adapter.geode.rel.GeodeRules.geodeFieldNames;
 
+import com.google.common.collect.Lists;
+import java.lang.reflect.Method;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.MethodCallExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
@@ -53,17 +64,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.Lists;
-import java.lang.reflect.Method;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

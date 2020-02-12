@@ -34,24 +34,6 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.CompositeList;
-import org.polypheny.db.util.ConversionUtil;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.SaffronProperties;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.Unsafe;
-import org.polypheny.db.util.Util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
@@ -70,6 +52,24 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.CompositeList;
+import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Unsafe;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import org.polypheny.db.test.MongoAssertions;
 import com.github.fakemongo.Fongo;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import java.util.Objects;
 import org.junit.rules.ExternalResource;
+import org.polypheny.db.test.MongoAssertions;
 
 
 /**

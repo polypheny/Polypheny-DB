@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.base.Preconditions;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.type.OperandTypes;
-import com.google.common.base.Preconditions;
 
 
 /**

@@ -34,16 +34,16 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.base.Preconditions;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Preconditions;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 
 /**

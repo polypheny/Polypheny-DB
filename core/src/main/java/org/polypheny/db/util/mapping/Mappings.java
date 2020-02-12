@@ -34,10 +34,6 @@
 package org.polypheny.db.util.mapping;
 
 
-import org.polypheny.db.util.BitSets;
-import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Permutation;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
@@ -49,6 +45,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
+import org.polypheny.db.util.BitSets;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Permutation;
+import org.polypheny.db.util.Util;
 
 
 /**

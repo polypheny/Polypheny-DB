@@ -34,6 +34,14 @@
 package org.polypheny.db.adapter.csv;
 
 
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
@@ -43,14 +51,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.util.Source;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
 
 
 /**

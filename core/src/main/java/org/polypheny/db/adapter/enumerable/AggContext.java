@@ -34,11 +34,11 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.lang.reflect.Type;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.lang.reflect.Type;
-import java.util.List;
 
 
 /**

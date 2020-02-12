@@ -34,18 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -63,6 +51,18 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,15 +34,15 @@
 package org.polypheny.db.sql.type;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.List;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.sql.Lex;
+import org.polypheny.db.sql.NullCollation;
+import org.polypheny.db.sql.validate.SqlConformance;
 
 
 /**

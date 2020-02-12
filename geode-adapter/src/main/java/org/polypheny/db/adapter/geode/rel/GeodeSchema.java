@@ -34,9 +34,6 @@
 package org.polypheny.db.adapter.geode.rel;
 
 
-import org.polypheny.db.adapter.geode.util.GeodeUtils;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -44,6 +41,9 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
+import org.polypheny.db.adapter.geode.util.GeodeUtils;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.impl.AbstractSchema;
 
 
 /**

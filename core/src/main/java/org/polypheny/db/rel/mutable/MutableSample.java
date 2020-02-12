@@ -34,8 +34,8 @@
 package org.polypheny.db.rel.mutable;
 
 
-import org.polypheny.db.plan.RelOptSamplingParameters;
 import java.util.Objects;
+import org.polypheny.db.plan.RelOptSamplingParameters;
 
 
 /**

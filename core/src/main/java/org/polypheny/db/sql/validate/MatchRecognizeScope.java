@@ -34,14 +34,14 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.StructKind;
-import org.polypheny.db.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.SqlNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

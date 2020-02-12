@@ -36,13 +36,6 @@ package org.polypheny.db.adapter.druid;
 
 import static org.polypheny.db.runtime.HttpUtils.post;
 
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.interpreter.Row.RowBuilder;
-import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Holder;
-import org.polypheny.db.util.Util;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -78,6 +71,13 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.joda.time.Interval;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.interpreter.Row.RowBuilder;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.Util;
 
 
 /**

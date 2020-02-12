@@ -34,6 +34,20 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.avatica.Helper;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.tree.ClassDeclaration;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IClassBodyEvaluator;
+import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.config.RuntimeConfig;
@@ -60,20 +74,6 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.Util;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.avatica.Helper;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.tree.ClassDeclaration;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.IClassBodyEvaluator;
-import org.codehaus.commons.compiler.ICompilerFactory;
 
 
 /**

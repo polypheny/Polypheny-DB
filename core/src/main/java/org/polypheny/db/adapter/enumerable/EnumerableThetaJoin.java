@@ -34,6 +34,13 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.Set;
+import org.apache.calcite.linq4j.function.Predicate2;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -50,13 +57,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.Set;
-import org.apache.calcite.linq4j.function.Predicate2;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
 
 
 /**

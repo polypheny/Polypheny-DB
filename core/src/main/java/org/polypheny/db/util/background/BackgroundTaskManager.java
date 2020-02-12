@@ -1,12 +1,6 @@
 package org.polypheny.db.util.background;
 
 
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
@@ -14,6 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 public class BackgroundTaskManager {

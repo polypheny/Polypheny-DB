@@ -34,13 +34,13 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.sql.SqlKind;
-import java.util.List;
 
 
 /**

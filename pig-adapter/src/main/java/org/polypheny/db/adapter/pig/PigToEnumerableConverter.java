@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.pig;
 
 
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
@@ -47,9 +50,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterImpl;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.util.BuiltInMethod;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

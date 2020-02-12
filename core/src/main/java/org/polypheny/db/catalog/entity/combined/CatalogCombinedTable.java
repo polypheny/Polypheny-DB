@@ -17,6 +17,10 @@
 package org.polypheny.db.catalog.entity.combined;
 
 
+import java.util.List;
+import java.util.Map;
+import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -24,10 +28,6 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import java.util.List;
-import java.util.Map;
-import lombok.Getter;
-import lombok.NonNull;
 
 
 public class CatalogCombinedTable implements CatalogCombinedEntity {

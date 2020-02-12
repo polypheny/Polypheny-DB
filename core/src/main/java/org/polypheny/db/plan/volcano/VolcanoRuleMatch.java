@@ -34,13 +34,13 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.plan.RelOptRuleOperand;
 import org.polypheny.db.plan.RelTrait;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Litmus;
-import java.util.List;
-import java.util.Map;
 
 
 /**

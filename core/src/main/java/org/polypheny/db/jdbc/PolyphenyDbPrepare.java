@@ -34,6 +34,17 @@
 package org.polypheny.db.jdbc;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
@@ -49,17 +60,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.validate.CyclicDefinitionException;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.util.ImmutableIntList;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.tree.ClassDeclaration;
 
 
 /**

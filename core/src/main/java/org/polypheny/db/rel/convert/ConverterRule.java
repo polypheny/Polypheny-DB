@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.convert;
 
 
+import java.util.Objects;
+import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -42,8 +44,6 @@ import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.Objects;
-import java.util.function.Predicate;
 
 
 /**

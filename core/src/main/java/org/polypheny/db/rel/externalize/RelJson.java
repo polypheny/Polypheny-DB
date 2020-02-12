@@ -34,6 +34,15 @@
 package org.polypheny.db.rel.externalize;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.avatica.AvaticaUtils;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationImpl;
@@ -63,15 +72,6 @@ import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.JsonBuilder;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.avatica.AvaticaUtils;
 
 
 /**

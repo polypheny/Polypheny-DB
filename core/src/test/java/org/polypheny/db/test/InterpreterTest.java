@@ -37,6 +37,15 @@ package org.polypheny.db.test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.Transaction;
@@ -55,15 +64,6 @@ import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 
 /**

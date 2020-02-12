@@ -17,6 +17,10 @@
 package org.polypheny.db.schema;
 
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.Store;
 import org.polypheny.db.StoreManager;
@@ -29,10 +33,6 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 public class PolySchemaBuilder {

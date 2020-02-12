@@ -34,18 +34,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Util;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -61,6 +49,18 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Util;
 
 
 /**

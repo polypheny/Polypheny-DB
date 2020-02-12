@@ -17,8 +17,6 @@
 package org.polypheny.db.jdbc;
 
 
-import org.polypheny.db.TestHelper;
-import org.polypheny.db.TestHelper.JdbcConnection;
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -30,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @SuppressWarnings("SqlDialectInspection")

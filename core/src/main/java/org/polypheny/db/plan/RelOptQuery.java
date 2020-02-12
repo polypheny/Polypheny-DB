@@ -34,10 +34,10 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.CorrelationId;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.CorrelationId;
 
 
 /**

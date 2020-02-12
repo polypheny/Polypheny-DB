@@ -17,11 +17,11 @@
 package org.polypheny.db.statistic;
 
 
-import org.polypheny.db.PolySqlType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.PolySqlType;
 
 
 /**

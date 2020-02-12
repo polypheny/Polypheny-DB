@@ -17,10 +17,10 @@
 package org.polypheny.db.information;
 
 
-import org.polypheny.db.information.InformationGraph.GraphData;
-import org.polypheny.db.information.InformationGraph.GraphType;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
 
 
 public class InformationManagerTest {

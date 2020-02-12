@@ -34,6 +34,7 @@
 package org.polypheny.db.sql2rel;
 
 
+import com.google.common.collect.ImmutableSet;
 import org.polypheny.db.rel.RelHomogeneousShuttle;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -42,7 +43,6 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
-import com.google.common.collect.ImmutableSet;
 
 
 /**

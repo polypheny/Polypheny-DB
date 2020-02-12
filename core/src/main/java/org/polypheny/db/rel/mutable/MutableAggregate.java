@@ -34,13 +34,13 @@
 package org.polypheny.db.rel.mutable;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

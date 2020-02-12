@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.Locale;
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlCall;
@@ -49,8 +51,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Optionality;
-import java.util.Locale;
-import java.util.Objects;
 
 
 /**

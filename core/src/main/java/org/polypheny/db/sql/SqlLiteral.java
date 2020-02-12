@@ -34,6 +34,12 @@
 package org.polypheny.db.sql;
 
 
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.Calendar;
+import java.util.Objects;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
@@ -55,12 +61,6 @@ import org.polypheny.db.util.Static;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
-import java.math.BigDecimal;
-import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
-import java.util.Calendar;
-import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 
 
 /**

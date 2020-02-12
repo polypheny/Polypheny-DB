@@ -34,6 +34,10 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -42,10 +46,6 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.TranslatableTable;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
 
 
 /**

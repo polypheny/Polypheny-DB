@@ -17,6 +17,12 @@
 package org.polypheny.db.catalog;
 
 
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.PolyXid;
 import org.polypheny.db.UnknownTypeException;
@@ -53,12 +59,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 
 @Slf4j

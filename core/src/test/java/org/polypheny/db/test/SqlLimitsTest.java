@@ -34,15 +34,6 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -55,6 +46,15 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.BasicSqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

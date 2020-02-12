@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.core.Calc;
@@ -44,7 +45,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
 
 
 /**

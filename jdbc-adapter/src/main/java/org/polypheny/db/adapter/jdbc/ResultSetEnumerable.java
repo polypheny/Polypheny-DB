@@ -34,9 +34,6 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
-import org.polypheny.db.util.Static;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Blob;
@@ -67,6 +64,9 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.util.Static;
 
 
 /**

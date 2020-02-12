@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -44,8 +46,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

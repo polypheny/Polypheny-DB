@@ -34,8 +34,6 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.rel.RelNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import java.lang.reflect.InvocationHandler;
@@ -46,6 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

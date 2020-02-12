@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.ddl;
 
 
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
-import java.util.List;
 
 
 /**

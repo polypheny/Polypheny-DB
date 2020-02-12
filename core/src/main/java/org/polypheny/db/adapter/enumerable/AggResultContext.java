@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.rel.core.AggregateCall;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.rel.core.AggregateCall;
 
 
 /**

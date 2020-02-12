@@ -34,6 +34,10 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;
@@ -49,10 +53,6 @@ import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.MappingType;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

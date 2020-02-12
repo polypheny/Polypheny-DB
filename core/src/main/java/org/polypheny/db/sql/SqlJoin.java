@@ -34,13 +34,13 @@
 package org.polypheny.db.sql;
 
 
+import com.google.common.base.Preconditions;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;
-import com.google.common.base.Preconditions;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

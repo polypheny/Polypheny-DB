@@ -34,6 +34,8 @@
 package org.polypheny.db.sql;
 
 
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
@@ -46,8 +48,6 @@ import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import java.math.BigDecimal;
-import java.nio.charset.Charset;
 
 
 /**

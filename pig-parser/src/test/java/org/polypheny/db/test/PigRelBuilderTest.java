@@ -20,6 +20,9 @@ package org.polypheny.db.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -35,9 +38,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Util;
-import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

@@ -34,13 +34,13 @@
 package org.polypheny.db.sql;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.Util;
-import java.util.function.Predicate;
 
 
 /**

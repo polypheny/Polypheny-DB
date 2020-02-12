@@ -34,6 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -55,9 +58,6 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

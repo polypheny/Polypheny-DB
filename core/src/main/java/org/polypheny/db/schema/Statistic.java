@@ -34,11 +34,11 @@
 package org.polypheny.db.schema;
 
 
+import java.util.List;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelReferentialConstraint;
 import org.polypheny.db.util.ImmutableBitSet;
-import java.util.List;
 
 
 /**

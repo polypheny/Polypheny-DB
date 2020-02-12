@@ -34,12 +34,6 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TableFactory;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +44,12 @@ import java.util.Map;
 import java.util.Set;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TableFactory;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.Util;
 
 
 /**

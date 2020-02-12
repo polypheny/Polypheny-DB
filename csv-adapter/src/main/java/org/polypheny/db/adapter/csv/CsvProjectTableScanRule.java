@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.csv;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.core.RelFactories;
@@ -41,7 +42,6 @@ import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.List;
 
 
 /**

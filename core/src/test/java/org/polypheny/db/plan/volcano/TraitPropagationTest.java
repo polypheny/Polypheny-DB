@@ -36,6 +36,14 @@ package org.polypheny.db.plan.volcano;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
@@ -90,14 +98,6 @@ import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

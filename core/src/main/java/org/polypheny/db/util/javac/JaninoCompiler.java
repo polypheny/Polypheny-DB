@@ -34,7 +34,6 @@
 package org.polypheny.db.util.javac;
 
 
-import org.polypheny.db.config.RuntimeConfig;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,6 +44,7 @@ import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.util.ClassFile;
 import org.codehaus.janino.util.resource.MapResourceFinder;
 import org.codehaus.janino.util.resource.ResourceFinder;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 /**

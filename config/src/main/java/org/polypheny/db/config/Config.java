@@ -17,7 +17,6 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
@@ -25,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 /**

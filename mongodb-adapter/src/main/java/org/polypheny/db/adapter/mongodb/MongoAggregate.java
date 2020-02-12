@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.InvalidRelException;
@@ -46,9 +49,6 @@ import org.polypheny.db.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -56,9 +59,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 
 
 /**

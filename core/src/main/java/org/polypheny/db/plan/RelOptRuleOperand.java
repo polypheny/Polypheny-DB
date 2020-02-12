@@ -34,11 +34,11 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.polypheny.db.rel.RelNode;
 
 
 /**

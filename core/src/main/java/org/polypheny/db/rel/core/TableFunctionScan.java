@@ -34,6 +34,13 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
@@ -47,13 +54,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

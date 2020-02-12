@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.sql.SqlNode;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.sql.SqlNode;
 
 
 /**

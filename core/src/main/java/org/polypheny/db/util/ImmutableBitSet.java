@@ -34,7 +34,6 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.runtime.Utilities;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
@@ -55,6 +54,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.runtime.Utilities;
 
 
 /**

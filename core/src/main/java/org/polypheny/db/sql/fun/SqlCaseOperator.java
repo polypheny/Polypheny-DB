@@ -36,6 +36,9 @@ package org.polypheny.db.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
@@ -59,9 +62,6 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

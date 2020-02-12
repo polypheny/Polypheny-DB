@@ -17,6 +17,23 @@
 package org.polypheny.db.processing;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.sql.DatabaseMetaData;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaParameter;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta.CursorFactory;
+import org.apache.calcite.avatica.Meta.StatementType;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.QueryProcessor;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
@@ -63,23 +80,6 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Type;
-import java.sql.DatabaseMetaData;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaParameter;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.Meta.StatementType;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.commons.lang3.time.StopWatch;
 
 
 @Slf4j

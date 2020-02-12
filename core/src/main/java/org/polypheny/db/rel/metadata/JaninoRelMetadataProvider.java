@@ -34,6 +34,33 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.util.concurrent.UncheckedExecutionException;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutionException;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.ICompilerFactory;
+import org.codehaus.commons.compiler.ISimpleCompiler;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableJoin;
@@ -70,33 +97,6 @@ import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.Util;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.util.concurrent.UncheckedExecutionException;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutionException;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.tree.Primitive;
-import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.ICompilerFactory;
-import org.codehaus.commons.compiler.ISimpleCompiler;
 
 
 /**

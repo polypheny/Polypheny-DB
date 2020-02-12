@@ -17,6 +17,7 @@
 package org.polypheny.db.test;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -27,7 +28,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.impl.AbstractTable;
-import java.util.List;
 
 
 /**

@@ -34,6 +34,17 @@
 package org.polypheny.db.prepare;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.function.Predicate;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -74,17 +85,6 @@ import org.polypheny.db.sql.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Objects;
-import java.util.function.Predicate;
 
 
 /**

@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlKind;
@@ -42,8 +44,6 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.fun.SqlAbstractGroupFunction;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

@@ -34,14 +34,14 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelCollations;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationTraitDef;
+import org.polypheny.db.rel.RelCollations;
 
 
 /**

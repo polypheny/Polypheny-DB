@@ -37,10 +37,10 @@ package org.polypheny.db.sql.type;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 
 
 /**

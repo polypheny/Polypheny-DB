@@ -34,6 +34,22 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import javax.annotation.Nonnull;
+import org.apache.calcite.linq4j.function.Predicate1;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -61,22 +77,6 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.Util.FoundOne;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import javax.annotation.Nonnull;
-import org.apache.calcite.linq4j.function.Predicate1;
 
 
 /**

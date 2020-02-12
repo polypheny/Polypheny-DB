@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.type;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCallBinding;
-import com.google.common.collect.ImmutableList;
 
 
 /**

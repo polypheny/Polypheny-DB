@@ -36,11 +36,11 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertEquals;
 
-import org.polypheny.db.util.Sources;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.Ignore;
+import org.polypheny.db.util.Sources;
 
 
 /**

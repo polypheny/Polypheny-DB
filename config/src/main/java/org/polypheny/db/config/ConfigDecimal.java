@@ -17,10 +17,10 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import java.math.BigDecimal;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigDecimal extends ConfigScalar {

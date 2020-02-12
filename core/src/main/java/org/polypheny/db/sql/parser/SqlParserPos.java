@@ -34,8 +34,6 @@
 package org.polypheny.db.sql.parser;
 
 
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.util.Static;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.io.Serializable;
@@ -44,6 +42,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.util.Static;
 
 
 /**

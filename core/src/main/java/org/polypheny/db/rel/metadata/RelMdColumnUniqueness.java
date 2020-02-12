@@ -34,6 +34,11 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.hep.HepRelVertex;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -62,11 +67,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

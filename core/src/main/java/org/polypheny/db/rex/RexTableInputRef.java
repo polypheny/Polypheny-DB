@@ -34,12 +34,12 @@
 package org.polypheny.db.rex;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.rel.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
-import java.util.List;
 
 
 /**

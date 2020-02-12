@@ -34,6 +34,11 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -63,11 +68,6 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 
 

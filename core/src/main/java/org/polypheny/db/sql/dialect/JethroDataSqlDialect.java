@@ -34,12 +34,6 @@
 package org.polypheny.db.sql.dialect;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.LinkedHashMultimap;
@@ -55,6 +49,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

@@ -17,6 +17,11 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.update.Assignment;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -31,11 +36,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.update.Assignment;
-import java.util.ArrayList;
-import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j

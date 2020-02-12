@@ -34,11 +34,11 @@
 package org.polypheny.db.rel.rules;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Join;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Join;
 
 
 /**

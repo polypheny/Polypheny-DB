@@ -34,6 +34,9 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
@@ -47,9 +50,6 @@ import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.type.SqlTypeTransform;
 import org.polypheny.db.sql.type.SqlTypeTransforms;
 import org.polypheny.db.util.Optionality;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

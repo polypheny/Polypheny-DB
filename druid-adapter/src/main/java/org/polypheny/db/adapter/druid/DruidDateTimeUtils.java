@@ -34,17 +34,6 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -57,6 +46,17 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.chrono.ISOChronology;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 

@@ -34,6 +34,11 @@
 package org.polypheny.db.rel.logical;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,11 +51,6 @@ import org.polypheny.db.rel.core.Join;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexNode;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**

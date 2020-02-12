@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.core;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -43,9 +46,6 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.AbstractList;
+import java.util.Map;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
@@ -45,8 +47,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.type.InferTypes;
 import org.polypheny.db.sql.type.OperandTypes;
 import org.polypheny.db.util.Pair;
-import java.util.AbstractList;
-import java.util.Map;
 
 
 /**

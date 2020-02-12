@@ -34,9 +34,9 @@
 package org.polypheny.db.sql.validate;
 
 
-import org.polypheny.db.sql.SqlIdentifier;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.sql.SqlIdentifier;
 
 
 /**

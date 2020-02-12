@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.core;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -52,9 +55,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 
 /**

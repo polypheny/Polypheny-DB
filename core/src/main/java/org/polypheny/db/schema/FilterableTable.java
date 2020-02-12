@@ -34,10 +34,10 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.DataContext;
-import org.polypheny.db.rex.RexNode;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.DataContext;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

@@ -17,6 +17,10 @@
 package org.polypheny.db.webui;
 
 
+import java.util.Arrays;
+import java.util.HashMap;
+import org.junit.Assert;
+import org.junit.Test;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -28,10 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import java.util.Arrays;
-import java.util.HashMap;
-import org.junit.Assert;
-import org.junit.Test;
 
 
 public class SchemaToJsonMapperTest {

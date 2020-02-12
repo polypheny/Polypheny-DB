@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.csv;
 
 
-import org.polypheny.db.util.Source;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.util.Source;
 
 
 /**

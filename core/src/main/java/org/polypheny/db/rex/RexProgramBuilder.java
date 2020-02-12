@@ -34,6 +34,11 @@
 package org.polypheny.db.rex;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.type.RelDataType;
@@ -41,11 +46,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 
 /**

@@ -17,6 +17,15 @@
 package org.polypheny.db.test;
 
 
+import com.google.common.collect.ImmutableSet;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Properties;
+import java.util.Set;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.plan.Contexts;
@@ -37,15 +46,6 @@ import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableSet;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Properties;
-import java.util.Set;
-import org.junit.Ignore;
-import org.junit.Test;
 
 
 /**

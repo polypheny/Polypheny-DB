@@ -34,6 +34,21 @@
 package org.polypheny.db.adapter.geode.rel;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.geode.cache.GemFireCache;
+import org.apache.geode.cache.Region;
+import org.apache.geode.cache.query.QueryService;
+import org.apache.geode.cache.query.SelectResults;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
 import org.polypheny.db.adapter.geode.util.JavaTypeFactoryExtImpl;
@@ -51,21 +66,6 @@ import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.geode.cache.GemFireCache;
-import org.apache.geode.cache.Region;
-import org.apache.geode.cache.query.QueryService;
-import org.apache.geode.cache.query.SelectResults;
 
 
 /**

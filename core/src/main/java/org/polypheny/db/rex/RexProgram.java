@@ -34,6 +34,17 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -49,17 +60,6 @@ import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 
 /**

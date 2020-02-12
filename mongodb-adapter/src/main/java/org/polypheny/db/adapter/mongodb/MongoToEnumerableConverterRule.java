@@ -34,13 +34,13 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.function.Predicate;
 
 
 /**

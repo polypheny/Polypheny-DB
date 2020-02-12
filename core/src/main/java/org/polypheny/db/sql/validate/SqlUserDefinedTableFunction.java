@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.validate;
 
 
+import java.lang.reflect.Type;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.TableFunction;
@@ -43,8 +45,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import java.lang.reflect.Type;
-import java.util.List;
 
 
 /**

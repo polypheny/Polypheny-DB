@@ -24,13 +24,6 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlValidatorTester;
-import org.polypheny.db.test.SqlTestFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -38,6 +31,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.junit.Test;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.utils.SqlTester;
+import org.polypheny.db.sql.utils.SqlValidatorTester;
+import org.polypheny.db.test.SqlTestFactory;
 
 
 /**

@@ -34,6 +34,9 @@
 package org.polypheny.db.rel.rules;
 
 
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.hep.HepRelVertex;
@@ -53,9 +56,6 @@ import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**

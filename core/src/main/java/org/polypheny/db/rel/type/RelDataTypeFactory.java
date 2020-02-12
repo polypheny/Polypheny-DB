@@ -34,18 +34,18 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.util.Glossary;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Glossary;
 
 
 /**

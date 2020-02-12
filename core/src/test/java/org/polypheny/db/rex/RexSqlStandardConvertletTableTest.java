@@ -36,6 +36,7 @@ package org.polypheny.db.rex;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Test;
 import org.polypheny.db.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.ContextImpl;
@@ -55,7 +56,6 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Closer;
-import org.junit.Test;
 
 
 /**

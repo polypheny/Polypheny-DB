@@ -34,6 +34,9 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,9 +49,6 @@ import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.JoinInfo;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.logical.LogicalJoin;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 
 
 /**

@@ -34,6 +34,17 @@
 package org.polypheny.db.sql.advise;
 
 
+import com.google.common.collect.Iterables;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.DataContext;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
@@ -46,17 +57,6 @@ import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
 import org.polypheny.db.sql.validate.SqlMoniker;
 import org.polypheny.db.util.BuiltInMethod;
-import com.google.common.collect.Iterables;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.Types;
 
 
 /**

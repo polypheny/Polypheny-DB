@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.validate;
 
 
+import com.google.common.collect.Lists;
+import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -45,8 +47,6 @@ import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.type.SqlOperandTypeInference;
 import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.Lists;
-import java.util.List;
 
 
 /**

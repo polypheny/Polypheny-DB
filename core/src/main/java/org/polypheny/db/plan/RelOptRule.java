@@ -34,17 +34,17 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.Converter;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.convert.Converter;
+import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.tools.RelBuilderFactory;
 
 
 /**

@@ -34,11 +34,11 @@
 package org.polypheny.db.sql.type;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperatorBinding;
-import java.util.Objects;
 
 
 /**

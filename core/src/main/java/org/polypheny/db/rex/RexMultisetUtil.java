@@ -34,12 +34,12 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**

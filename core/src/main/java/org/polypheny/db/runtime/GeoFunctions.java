@@ -34,7 +34,6 @@
 package org.polypheny.db.runtime;
 
 
-import org.polypheny.db.util.Util;
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.GeometryEngine;
@@ -56,6 +55,7 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
+import org.polypheny.db.util.Util;
 
 
 /**

@@ -34,6 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
+import com.google.common.collect.ImmutableList;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -46,7 +47,6 @@ import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.core.Window;
 import org.polypheny.db.rex.RexNode;
-import com.google.common.collect.ImmutableList;
 
 
 /**

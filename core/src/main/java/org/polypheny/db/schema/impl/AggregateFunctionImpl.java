@@ -34,6 +34,11 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.adapter.enumerable.AggImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable.UserDefinedAggReflectiveImplementor;
 import org.polypheny.db.rel.type.RelDataType;
@@ -43,11 +48,6 @@ import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.Static;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

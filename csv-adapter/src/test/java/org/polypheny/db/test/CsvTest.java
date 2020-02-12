@@ -39,9 +39,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertThat;
 
-import org.polypheny.db.sql2rel.SqlToRelConverter;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.Ordering;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -64,6 +61,9 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.Util;
 
 
 /**

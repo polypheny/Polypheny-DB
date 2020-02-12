@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import org.polypheny.db.runtime.Hook;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -67,6 +66,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.polypheny.db.runtime.Hook;
 
 
 /**

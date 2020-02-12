@@ -34,6 +34,12 @@
 package org.polypheny.db.adapter.file;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.net.MalformedURLException;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.adapter.csv.CsvFilterableTable;
 import org.polypheny.db.adapter.csv.JsonTable;
 import org.polypheny.db.schema.SchemaPlus;
@@ -42,12 +48,6 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.io.File;
-import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Map;
 
 
 /**

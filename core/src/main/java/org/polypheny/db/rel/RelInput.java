@@ -34,6 +34,8 @@
 package org.polypheny.db.rel;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
@@ -42,8 +44,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

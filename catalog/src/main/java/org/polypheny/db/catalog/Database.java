@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.config.RuntimeConfig;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,6 +27,7 @@ import org.hsqldb.Server;
 import org.hsqldb.jdbc.pool.JDBCXADataSource;
 import org.hsqldb.persist.HsqlProperties;
 import org.hsqldb.server.ServerAcl.AclFormatException;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 /**

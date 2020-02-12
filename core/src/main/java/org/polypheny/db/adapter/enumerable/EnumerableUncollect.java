@@ -34,6 +34,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import com.google.common.primitives.Ints;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -43,12 +49,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
 import org.polypheny.db.sql.type.MapSqlType;
 import org.polypheny.db.util.BuiltInMethod;
-import com.google.common.primitives.Ints;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 
 
 /**

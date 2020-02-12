@@ -34,17 +34,17 @@
 package org.polypheny.db.util;
 
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.AccessControlException;
+import java.util.Enumeration;
+import java.util.Properties;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.BooleanProp;
 import org.polypheny.db.runtime.Resources.Default;
 import org.polypheny.db.runtime.Resources.IntProp;
 import org.polypheny.db.runtime.Resources.Resource;
 import org.polypheny.db.runtime.Resources.StringProp;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.AccessControlException;
-import java.util.Enumeration;
-import java.util.Properties;
 
 
 /**

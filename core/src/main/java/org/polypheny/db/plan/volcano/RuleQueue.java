@@ -34,14 +34,6 @@
 package org.polypheny.db.plan.volcano;
 
 
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelNodes;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.util.ChunkList;
-import org.polypheny.db.util.Util;
-import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -60,6 +52,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelNodes;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.util.ChunkList;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 

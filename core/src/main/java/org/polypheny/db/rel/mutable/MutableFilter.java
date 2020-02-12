@@ -34,8 +34,8 @@
 package org.polypheny.db.rel.mutable;
 
 
-import org.polypheny.db.rex.RexNode;
 import java.util.Objects;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

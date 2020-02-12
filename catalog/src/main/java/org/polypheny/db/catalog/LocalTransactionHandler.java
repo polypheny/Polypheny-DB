@@ -17,13 +17,13 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 
 
 /**

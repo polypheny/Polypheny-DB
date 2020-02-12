@@ -34,6 +34,8 @@
 package org.polypheny.db.rel.rules;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Bindables.BindableTableScan;
@@ -51,8 +53,6 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

@@ -34,9 +34,9 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.RelFactories;
-import org.apache.calcite.linq4j.tree.BlockStatement;
 
 
 /**

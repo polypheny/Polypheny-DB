@@ -25,22 +25,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSetOption;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.parser.impl.SqlParserImpl;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.test.DiffTestCase;
-import org.polypheny.db.util.Bug;
-import org.polypheny.db.util.ConversionUtil;
-import org.polypheny.db.util.SourceStringReader;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.TestUtil;
-import org.polypheny.db.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -65,6 +49,22 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlSetOption;
+import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.utils.SqlValidatorTestCase;
+import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.test.DiffTestCase;
+import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.ConversionUtil;
+import org.polypheny.db.util.SourceStringReader;
+import org.polypheny.db.util.Sources;
+import org.polypheny.db.util.TestUtil;
+import org.polypheny.db.util.Util;
 
 
 /**

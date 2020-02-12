@@ -38,9 +38,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import org.junit.Test;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
-import org.junit.Test;
 
 
 /**

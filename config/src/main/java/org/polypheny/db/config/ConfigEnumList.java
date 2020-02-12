@@ -17,7 +17,6 @@
 package org.polypheny.db.config;
 
 
-import org.polypheny.db.config.exception.ConfigRuntimeException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigException;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigEnumList extends Config {

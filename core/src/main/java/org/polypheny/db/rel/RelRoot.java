@@ -34,6 +34,10 @@
 package org.polypheny.db.rel;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,10 +46,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 
 /**

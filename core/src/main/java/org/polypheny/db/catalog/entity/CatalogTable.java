@@ -17,11 +17,11 @@
 package org.polypheny.db.catalog.entity;
 
 
-import org.polypheny.db.catalog.Catalog.TableType;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.Catalog.TableType;
 
 
 /**

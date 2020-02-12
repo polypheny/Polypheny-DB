@@ -34,6 +34,12 @@
 package org.polypheny.db.rel.metadata;
 
 
+import com.google.common.collect.ImmutableSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.Correlate;
@@ -48,12 +54,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
-import com.google.common.collect.ImmutableSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 /**

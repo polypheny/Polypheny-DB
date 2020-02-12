@@ -34,6 +34,7 @@
 package org.polypheny.db.tools;
 
 
+import java.io.Reader;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -43,7 +44,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
-import java.io.Reader;
 
 
 /**

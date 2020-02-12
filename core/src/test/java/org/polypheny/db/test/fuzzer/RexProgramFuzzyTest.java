@@ -37,18 +37,6 @@ package org.polypheny.db.test.fuzzer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.polypheny.db.plan.Strong;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexSimplify;
-import org.polypheny.db.rex.RexUnknownAs;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.test.RexProgramBuilderBase;
-import org.polypheny.db.util.ImmutableBitSet;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -65,6 +53,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUnknownAs;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**

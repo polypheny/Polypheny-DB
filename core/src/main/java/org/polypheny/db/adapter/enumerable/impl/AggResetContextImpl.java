@@ -34,12 +34,12 @@
 package org.polypheny.db.adapter.enumerable.impl;
 
 
-import org.polypheny.db.adapter.enumerable.AggResetContext;
-import org.polypheny.db.adapter.enumerable.NestedBlockBuilderImpl;
-import org.polypheny.db.rel.core.AggregateCall;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.enumerable.AggResetContext;
+import org.polypheny.db.adapter.enumerable.NestedBlockBuilderImpl;
+import org.polypheny.db.rel.core.AggregateCall;
 
 
 /**

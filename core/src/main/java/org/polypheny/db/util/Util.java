@@ -34,14 +34,6 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlValuesOperator;
-import org.polypheny.db.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.util.SqlBasicVisitor;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -102,6 +94,14 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.sql.SqlAggFunction;
+import org.polypheny.db.sql.SqlCall;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlValuesOperator;
+import org.polypheny.db.sql.fun.SqlRowOperator;
+import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.slf4j.Logger;
 
 

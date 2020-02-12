@@ -19,6 +19,14 @@ package org.polypheny.db.processing;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaSeverity;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -72,14 +80,6 @@ import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
-import org.apache.commons.lang3.time.StopWatch;
 
 
 @Slf4j

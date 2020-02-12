@@ -34,6 +34,7 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.util.List;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -48,7 +49,6 @@ import org.polypheny.db.rel.convert.ConverterImpl;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.tools.RelBuilderFactory;
-import java.util.List;
 
 
 /**

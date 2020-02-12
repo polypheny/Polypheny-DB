@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.ddl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.StoreManager;
 import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
@@ -30,8 +32,6 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 
 
 /**

@@ -34,12 +34,12 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 
 
 /**
