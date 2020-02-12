@@ -15,7 +15,7 @@
         <logger name="org" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>  -->
-        <logger name="ch" level="INFO">
+        <logger name="org.polypheny" level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
         </logger>
         <!-- <logger name="org.polypheny.db.jdbc" level="TRACE">
