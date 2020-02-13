@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.transaction;
 
 
 import java.util.Arrays;
@@ -25,12 +25,7 @@ import org.polypheny.db.PUID.ConnectionId;
 import org.polypheny.db.PUID.NodeId;
 import org.polypheny.db.PUID.Type;
 import org.polypheny.db.PUID.UserId;
-import org.polypheny.db.PolyXid;
-import org.polypheny.db.Store;
-import org.polypheny.db.Transaction;
-import org.polypheny.db.TransactionException;
-import org.polypheny.db.TransactionManager;
-import org.polypheny.db.Utils;
+import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;

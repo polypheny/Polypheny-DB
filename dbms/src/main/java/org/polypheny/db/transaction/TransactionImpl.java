@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
@@ -25,14 +25,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.DataContext.SlimDataContext;
-import org.polypheny.db.PolyXid;
 import org.polypheny.db.QueryProcessor;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.Store;
-import org.polypheny.db.Transaction;
-import org.polypheny.db.TransactionException;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManagerImpl;
@@ -45,6 +42,10 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.DataContextImpl;
+import org.polypheny.db.processing.QueryProviderImpl;
+import org.polypheny.db.processing.SqlProcessorImpl;
+import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;

@@ -41,7 +41,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.plan.Convention;

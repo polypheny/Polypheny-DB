@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;

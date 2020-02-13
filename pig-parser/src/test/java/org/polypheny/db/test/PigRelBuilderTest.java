@@ -23,8 +23,7 @@ import static org.junit.Assert.assertThat;
 import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.DataContext.SlimDataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -37,6 +36,7 @@ import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.Programs;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Util;
 
 

@@ -19,7 +19,6 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -30,6 +29,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
 

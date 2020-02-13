@@ -48,8 +48,7 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
@@ -73,6 +72,7 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Util;
 
 

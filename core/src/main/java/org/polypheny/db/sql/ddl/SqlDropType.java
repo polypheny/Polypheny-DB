@@ -34,13 +34,13 @@
 package org.polypheny.db.sql.ddl;
 
 
-import org.polypheny.db.Transaction;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Transaction;
 
 
 /**

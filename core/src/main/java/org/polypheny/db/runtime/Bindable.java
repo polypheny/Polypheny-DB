@@ -35,7 +35,7 @@ package org.polypheny.db.runtime;
 
 
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 
 
 /**

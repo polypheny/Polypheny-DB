@@ -35,7 +35,7 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelImplementor;
 import org.polypheny.db.rex.RexBuilder;

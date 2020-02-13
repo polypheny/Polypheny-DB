@@ -49,7 +49,7 @@ import org.apache.geode.cache.GemFireCache;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.query.QueryService;
 import org.apache.geode.cache.query.SelectResults;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
 import org.polypheny.db.adapter.geode.util.JavaTypeFactoryExtImpl;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;

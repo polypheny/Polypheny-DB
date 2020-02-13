@@ -6,9 +6,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyXid;
-import org.polypheny.db.Store;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
@@ -16,6 +14,8 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Transaction;
 
 
 @Slf4j

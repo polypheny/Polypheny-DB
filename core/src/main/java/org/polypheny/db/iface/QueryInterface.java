@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.iface;
 
 
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.transaction.TransactionManager;
 
 
-/**
- *
- */
-public interface Authenticator {
+public abstract class QueryInterface implements Runnable {
 
-    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
+    protected final TransactionManager transactionManager;
+    protected final Authenticator authenticator;
+
+
+    public QueryInterface( TransactionManager transactionManager, Authenticator authenticator ) {
+        this.transactionManager = transactionManager;
+        this.authenticator = authenticator;
+    }
+
 }

@@ -21,10 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Store;
-import org.polypheny.db.StoreManager;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
@@ -32,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.BuiltInMethod;
 
 

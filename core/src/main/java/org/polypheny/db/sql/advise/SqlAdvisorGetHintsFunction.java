@@ -45,7 +45,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.RexImpTable;

@@ -19,10 +19,10 @@ package org.polypheny.db.processing;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.Authenticator;
-import org.polypheny.db.QueryInterface;
-import org.polypheny.db.TransactionManager;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
+import org.polypheny.db.transaction.TransactionManager;
 
 
 @Slf4j

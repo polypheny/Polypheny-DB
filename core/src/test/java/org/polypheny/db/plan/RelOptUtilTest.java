@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.jdbc.ContextImpl;

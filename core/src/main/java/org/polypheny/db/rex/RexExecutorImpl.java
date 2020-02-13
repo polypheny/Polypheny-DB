@@ -45,7 +45,7 @@ import org.apache.calcite.linq4j.tree.IndexExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;

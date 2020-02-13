@@ -17,12 +17,12 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.AuthenticationException;
-import org.polypheny.db.Authenticator;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.iface.AuthenticationException;
+import org.polypheny.db.iface.Authenticator;
 
 
 /**

@@ -48,7 +48,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggAddContext;
 import org.polypheny.db.adapter.enumerable.AggImpState;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;

@@ -33,10 +33,10 @@ import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.Authenticator;
-import org.polypheny.db.QueryInterface;
-import org.polypheny.db.TransactionManager;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.transaction.TransactionManager;
 import spark.Spark;
 
 

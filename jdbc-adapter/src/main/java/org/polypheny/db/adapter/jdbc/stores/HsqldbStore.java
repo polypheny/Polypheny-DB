@@ -12,7 +12,6 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.PUID;
 import org.polypheny.db.PUID.Type;
 import org.polypheny.db.PolySqlType;
-import org.polypheny.db.PolyXid;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -21,6 +20,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j

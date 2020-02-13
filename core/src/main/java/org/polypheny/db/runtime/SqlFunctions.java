@@ -82,7 +82,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;

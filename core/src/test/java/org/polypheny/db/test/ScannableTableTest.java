@@ -48,7 +48,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexCall;

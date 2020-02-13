@@ -20,12 +20,12 @@ package org.polypheny.db.catalog;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.PolyXid;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
 import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.transaction.PolyXid;
 
 
 /**

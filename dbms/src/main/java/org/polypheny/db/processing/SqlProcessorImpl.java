@@ -28,7 +28,6 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -78,6 +77,7 @@ import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 

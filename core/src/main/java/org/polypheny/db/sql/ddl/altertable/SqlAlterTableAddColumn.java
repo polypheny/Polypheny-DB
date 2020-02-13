@@ -22,9 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.PolySqlType;
-import org.polypheny.db.StoreManager;
-import org.polypheny.db.Transaction;
 import org.polypheny.db.UnknownTypeException;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -40,6 +39,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
 

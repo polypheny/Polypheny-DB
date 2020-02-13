@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;

@@ -71,7 +71,7 @@ import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;

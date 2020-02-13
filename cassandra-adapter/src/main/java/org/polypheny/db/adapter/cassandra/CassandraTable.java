@@ -52,7 +52,7 @@ import java.util.Map.Entry;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;

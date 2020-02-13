@@ -34,7 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 
 
 /**

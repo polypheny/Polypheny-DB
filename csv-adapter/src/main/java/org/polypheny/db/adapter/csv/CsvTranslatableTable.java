@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelProtoDataType;

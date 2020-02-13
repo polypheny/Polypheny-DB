@@ -48,7 +48,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;

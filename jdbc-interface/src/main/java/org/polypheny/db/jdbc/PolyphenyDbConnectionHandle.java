@@ -24,11 +24,11 @@ import org.apache.calcite.avatica.Meta.ConnectionHandle;
 import org.apache.calcite.avatica.Meta.ConnectionProperties;
 import org.polypheny.db.PUID.ConnectionId;
 import org.polypheny.db.PUID.UserId;
-import org.polypheny.db.Transaction;
-import org.polypheny.db.TransactionManager;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 
 
 /**
