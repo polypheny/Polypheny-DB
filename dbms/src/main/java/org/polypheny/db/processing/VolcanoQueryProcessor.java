@@ -125,7 +125,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AggregateValuesRule.INSTANCE );
 
 
-    protected VolcanoQueryProcessor( Transaction transaction ) {
+    public VolcanoQueryProcessor( Transaction transaction ) {
         super( transaction );
         planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( transaction.getPrepareContext().config() ) );
         planner.addRelTraitDef( ConventionTraitDef.INSTANCE );

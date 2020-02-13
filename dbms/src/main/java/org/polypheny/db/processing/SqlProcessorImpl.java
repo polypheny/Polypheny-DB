@@ -90,7 +90,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     private PolyphenyDbSqlValidator validator;
 
 
-    SqlProcessorImpl( Transaction transaction, SqlParserConfig parserConfig ) {
+    public SqlProcessorImpl( Transaction transaction, SqlParserConfig parserConfig ) {
         this.transaction = transaction;
         this.parserConfig = parserConfig;
     }

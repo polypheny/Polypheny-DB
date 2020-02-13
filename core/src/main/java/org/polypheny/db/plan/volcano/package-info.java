@@ -20,7 +20,7 @@
  * single calling convention by which it returns its results. Some examples:</p>
  *
  * <ul>
- * <li>{@link org.polypheny.db.adapter.jdbc.JdbcConvention} is a fairly conventional convention; the results are rows from a {@link java.sql.ResultSet JDBC result set}.</li>
+ * <li>{@code org.polypheny.db.adapter.jdbc.JdbcConvention} is a fairly conventional convention; the results are rows from a {@link java.sql.ResultSet JDBC result set}.</li>
  * <li>{@link org.polypheny.db.plan.Convention#NONE} means that a relational expression cannot be implemented; typically there are rules which can transform it to equivalent, implementable expressions.</li>
  * <li>{@link org.polypheny.db.adapter.enumerable.EnumerableConvention} implements the expression by generating Java code. The code places the current row in a Java variable, then calls the piece of code which implements the consuming relational expression.
  * For example, a Java array reader of the <code>names</code> array would generate the following code:
