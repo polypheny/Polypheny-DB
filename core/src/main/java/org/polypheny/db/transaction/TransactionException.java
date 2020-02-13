@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.transaction;
 
 
-public abstract class QueryInterface implements Runnable {
+public class TransactionException extends Throwable {
 
-    protected final TransactionManager transactionManager;
-    protected final Authenticator authenticator;
-
-
-    public QueryInterface( TransactionManager transactionManager, Authenticator authenticator ) {
-        this.transactionManager = transactionManager;
-        this.authenticator = authenticator;
+    public TransactionException( Exception e ) {
+        super( e );
     }
 
+
+    public TransactionException( String s ) {
+        super( s );
+    }
 }

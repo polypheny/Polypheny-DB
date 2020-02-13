@@ -25,7 +25,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.Bindable;

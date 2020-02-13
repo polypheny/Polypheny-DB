@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;

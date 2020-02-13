@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.BindableRel;
 import org.polypheny.db.interpreter.Node;

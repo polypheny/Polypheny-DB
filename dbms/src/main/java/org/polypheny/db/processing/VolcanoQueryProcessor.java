@@ -20,8 +20,7 @@ package org.polypheny.db.processing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
@@ -60,6 +59,7 @@ import org.polypheny.db.rel.rules.TableScanRule;
 import org.polypheny.db.rel.rules.ValuesReduceRule;
 import org.polypheny.db.rel.stream.StreamRules;
 import org.polypheny.db.rex.RexExecutorImpl;
+import org.polypheny.db.transaction.Transaction;
 
 
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
@@ -125,7 +125,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AggregateValuesRule.INSTANCE );
 
 
-    protected VolcanoQueryProcessor( Transaction transaction ) {
+    public VolcanoQueryProcessor( Transaction transaction ) {
         super( transaction );
         planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( transaction.getPrepareContext().config() ) );
         planner.addRelTraitDef( ConventionTraitDef.INSTANCE );

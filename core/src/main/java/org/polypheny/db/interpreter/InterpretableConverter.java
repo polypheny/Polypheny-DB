@@ -36,7 +36,7 @@ package org.polypheny.db.interpreter;
 
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

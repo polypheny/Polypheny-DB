@@ -47,11 +47,10 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.DataContext;
 import org.polypheny.db.PolySqlType;
-import org.polypheny.db.Store;
-import org.polypheny.db.StoreManager;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -95,6 +94,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
 

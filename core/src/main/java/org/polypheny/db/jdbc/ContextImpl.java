@@ -21,13 +21,13 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.transaction.Transaction;
 
 
 public class ContextImpl implements Context {

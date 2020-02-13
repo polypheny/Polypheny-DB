@@ -34,8 +34,8 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.Transaction;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.transaction.Transaction;
 
 
 /**

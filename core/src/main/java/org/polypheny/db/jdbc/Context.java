@@ -18,12 +18,12 @@ package org.polypheny.db.jdbc;
 
 
 import java.util.List;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.transaction.Transaction;
 
 
 /**

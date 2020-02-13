@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.PolyXid;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.transaction.PolyXid;
 
 
 public abstract class CatalogManager {

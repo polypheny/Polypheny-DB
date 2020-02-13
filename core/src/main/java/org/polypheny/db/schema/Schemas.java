@@ -54,8 +54,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
@@ -71,6 +70,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
 import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 

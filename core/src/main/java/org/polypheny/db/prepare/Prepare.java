@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;

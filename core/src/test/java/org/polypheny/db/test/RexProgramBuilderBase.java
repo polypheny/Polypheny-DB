@@ -41,8 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptPredicateList;
@@ -60,6 +59,7 @@ import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.transaction.Transaction;
 
 
 /**

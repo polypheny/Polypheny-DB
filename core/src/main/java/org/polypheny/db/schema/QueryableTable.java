@@ -37,7 +37,7 @@ package org.polypheny.db.schema;
 import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 
 
 /**

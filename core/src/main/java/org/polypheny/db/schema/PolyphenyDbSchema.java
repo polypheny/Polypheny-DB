@@ -26,7 +26,7 @@ import java.util.Objects;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;

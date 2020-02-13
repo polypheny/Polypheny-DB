@@ -39,8 +39,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -52,6 +51,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlCastFunction;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 

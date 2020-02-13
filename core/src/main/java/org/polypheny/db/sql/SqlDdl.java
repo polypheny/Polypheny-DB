@@ -37,7 +37,6 @@ package org.polypheny.db.sql;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.Objects;
-import org.polypheny.db.Transaction;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
@@ -50,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Transaction;
 
 
 /**

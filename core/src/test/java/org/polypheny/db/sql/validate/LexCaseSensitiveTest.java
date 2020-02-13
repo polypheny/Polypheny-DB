@@ -24,7 +24,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.java.JavaTypeFactory;

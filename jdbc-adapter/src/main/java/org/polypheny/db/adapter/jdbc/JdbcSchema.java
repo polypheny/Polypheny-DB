@@ -48,7 +48,7 @@ import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.DataContext;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;

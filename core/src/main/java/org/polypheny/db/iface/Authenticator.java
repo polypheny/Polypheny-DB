@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.iface;
 
 
-public class TransactionException extends Throwable {
-
-    public TransactionException( Exception e ) {
-        super( e );
-    }
+import org.polypheny.db.catalog.entity.CatalogUser;
 
 
-    public TransactionException( String s ) {
-        super( s );
-    }
+/**
+ *
+ */
+public interface Authenticator {
+
+    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
 }

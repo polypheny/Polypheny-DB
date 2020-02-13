@@ -23,12 +23,12 @@ import java.util.TimeZone;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.polypheny.db.DataContext;
-import org.polypheny.db.Transaction;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Holder;
 
 
