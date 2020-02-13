@@ -5,7 +5,7 @@
     {
       "type": "custom",
       "name": "mongo_raw",
-      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb.MongoSchemaFactory",
+      "factory": "org.polypheny.db.adapter.mongodb.MongoSchemaFactory",
       "operand": {
         "host": "localhost",
         "database": "test"
@@ -14,7 +14,7 @@
     {
       "type": "custom",
       "name": "_foodmart",
-      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.mongodb.MongoSchemaFactory",
+      "factory": "org.polypheny.db.adapter.mongodb.MongoSchemaFactory",
       "operand": {
         "host": "localhost",
         "database": "foodmart"

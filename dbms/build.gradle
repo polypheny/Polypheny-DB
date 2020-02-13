@@ -1,5 +1,5 @@
 
-group "ch.unibas.dmi.dbis.polyphenydb"
+group "org.polypheny"
 
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -15,7 +15,7 @@ buildscript {
     }
     dependencies {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
         classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
@@ -139,7 +139,7 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
-        attributes "Main-Class": "ch.unibas.dmi.dbis.polyphenydb.PolyphenyDb"
+        attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {

@@ -18,7 +18,7 @@
   }, {
     "type": "custom",
     "name": "FOODMART_CLONE",
-    "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema$Factory",
+    "factory": "org.polypheny.db.adapter.clone.CloneSchema$Factory",
     "operand": {
       "jdbcUser": "FOODMART",
       "jdbcPassword": "FOODMART",
@@ -28,7 +28,7 @@
   }, {
     "type": "custom",
     "name": "SCOTT_CLONE",
-    "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.clone.CloneSchema$Factory",
+    "factory": "org.polypheny.db.adapter.clone.CloneSchema$Factory",
     "operand": {
       "jdbcUser": "SA",
       "jdbcPassword": "",

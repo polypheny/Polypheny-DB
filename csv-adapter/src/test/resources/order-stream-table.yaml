@@ -7,11 +7,11 @@ schemas:
                 name: ORDERS
                 stream:
                     stream: true
-                factory: ch.unibas.dmi.dbis.polyphenydb.test.StreamTest$OrdersStreamTableFactory
+                factory: org.polypheny.db.test.StreamTest$OrdersStreamTableFactory
     -   name: INFINITE_STREAMS
         tables:
             -   type: custom
                 name: ORDERS
                 stream:
                     stream: true
-                factory: ch.unibas.dmi.dbis.polyphenydb.test.StreamTest$InfiniteOrdersStreamTableFactory
+                factory: org.polypheny.db.test.StreamTest$InfiniteOrdersStreamTableFactory

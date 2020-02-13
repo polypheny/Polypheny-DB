@@ -24,7 +24,7 @@
     {
       "name": "WIKI",
       "type": "custom",
-      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.file.FileSchemaFactory",
+      "factory": "org.polypheny.db.adapter.file.FileSchemaFactory",
       "operand": {
         "tables": [
           {

@@ -1,6 +1,6 @@
-import ca.coglinc.gradle.plugins.javacc.*
+import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 
-group 'ch.unibas.dmi.dbis.polyphenydb'
+group "org.polypheny"
 
 
 version = versionMajor + '.' + versionMinor + versionQualifier
@@ -23,7 +23,7 @@ buildscript {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: 'ca.coglinc2.javacc', name: 'ca.coglinc2.javacc.gradle.plugin', version: '3.0.0'
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
     }
 }
 
@@ -108,7 +108,7 @@ task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: 'false', lookahead: '2']
     inputDirectory = file('src/main/codegen/javacc')
-    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/ch/unibas/dmi/dbis/polyphenydb/piglet/parser')
+    outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/piglet/parser')
 }
 compileJava {
     dependsOn("generateParser")

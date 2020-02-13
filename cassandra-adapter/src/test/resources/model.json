@@ -5,7 +5,7 @@
         {
             "name": "twissandra",
             "type": "custom",
-            "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.cassandra.CassandraSchemaFactory",
+            "factory": "org.polypheny.db.adapter.cassandra.CassandraSchemaFactory",
             "operand": {
                 "host": "localhost",
                 "port": 9142,

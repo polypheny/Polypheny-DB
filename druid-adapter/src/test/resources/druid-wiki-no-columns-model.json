@@ -5,7 +5,7 @@
     {
       "type": "custom",
       "name": "wiki",
-      "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidSchemaFactory",
+      "factory": "org.polypheny.db.adapter.druid.DruidSchemaFactory",
       "operand": {
         "url": "http://localhost:8082",
         "coordinatorUrl": "http://localhost:8081"
@@ -13,7 +13,7 @@
       "tables": [
         {
           "name": "wiki",
-          "factory": "ch.unibas.dmi.dbis.polyphenydb.adapter.druid.DruidTableFactory",
+          "factory": "org.polypheny.db.adapter.druid.DruidTableFactory",
           "operand": {
             "dataSource": "wikiticker",
             "interval": "1900-01-09T00:00:00.000Z/2992-01-10T00:00:00.000Z",

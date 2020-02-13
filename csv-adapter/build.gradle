@@ -1,5 +1,5 @@
 
-group "ch.unibas.dmi.dbis.polyphenydb"
+group "org.polypheny"
 
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -15,7 +15,7 @@ buildscript {
     }
     dependencies {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "3.6.6"
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
     }
 }
 
