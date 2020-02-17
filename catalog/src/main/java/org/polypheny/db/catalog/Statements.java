@@ -54,6 +54,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -1204,6 +1205,18 @@ final class Statements {
     static List<CatalogColumnPlacement> getColumnPlacementsOnStore( XATransactionHandler transactionHandler, long storeId ) throws GenericCatalogException {
         String filter = " AND st.\"id\" = " + storeId;
         return columnPlacementFilter( transactionHandler, filter );
+    }
+
+
+    static CatalogColumnPlacement getColumnPlacement( XATransactionHandler transactionHandler, long storeId, long columnId ) throws GenericCatalogException, UnknownColumnPlacementException {
+        String filter = " AND c.\"id\" = " + columnId + " AND st.\"id\" = " + storeId;
+        List<CatalogColumnPlacement> list = columnPlacementFilter( transactionHandler, filter );
+        if ( list.size() > 1 ) {
+            throw new GenericCatalogException( "More than one result. The combination (storeId, columnId): (" + storeId + "," + columnId + ") should be unique but isn't." );
+        } else if ( list.size() == 0 ) {
+            throw new UnknownColumnPlacementException( storeId, columnId );
+        }
+        return list.get( 0 );
     }
 
 
