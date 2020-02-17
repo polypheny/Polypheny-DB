@@ -90,7 +90,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         Pair<List<String>, List<String>> keyFields = table.getKeyFields();
         Set<String> partitionKeys = new HashSet<>( keyFields.left );
-        List<String> fieldNames = CassandraRules.cassandraFieldNames( filter.getInput().getRowType() );
+        List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
 
         // Check that all conjunctions are primary key equalities
         condition = disjunctions.get( 0 );

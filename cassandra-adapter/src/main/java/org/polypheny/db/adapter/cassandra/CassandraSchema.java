@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -76,6 +78,8 @@ import org.slf4j.Logger;
  */
 @Slf4j
 public class CassandraSchema extends AbstractSchema {
+
+    private final static Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
 
     @Getter
     final CqlSession session;
@@ -124,6 +128,19 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
+    private String logicalColumnFromPhysical( String physicalColumnName ) {
+        Matcher m = columnIdPattern.matcher( physicalColumnName );
+        Long columnId;
+        if ( m.find() ) {
+            columnId = Long.valueOf( m.group( 1 ) );
+        } else {
+            throw new RuntimeException( "Unable to find column id in physical column name: " + physicalColumnName );
+        }
+
+        return convention.physicalNameProvider.getLogicalColumnName( columnId );
+    }
+
+
     RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( this.name );
@@ -139,16 +156,26 @@ public class CassandraSchema extends AbstractSchema {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+//        Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
+
         for ( Entry<CqlIdentifier, ColumnMetadata> column : columns.entrySet() ) {
-            final String columnName = column.getKey().toString();
+            final String physicalColumnName = column.getKey().toString();
             final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
             SqlTypeName typeName = CassandraTypesUtils.getSqlTypeName( type );
 
             // TODO (PCP)
-            String physicalColumnName = columnName;
-            fieldInfo.add( columnName, physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            /*Matcher m = columnIdPattern.matcher( physicalColumnName );
+            Long columnId;
+            if ( m.find() ) {
+                columnId = Long.valueOf( m.group( 1 ) );
+            } else {
+                throw new RuntimeException( "Unable to find column id in physical column name: " + physicalColumnName );
+            }
+            String logicalColumnName = convention.physicalNameProvider.getLogicalColumnName( columnId );*/
+            String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
+            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
         }
 
         return RelDataTypeImpl.proto( fieldInfo.build() );
@@ -175,12 +202,49 @@ public class CassandraSchema extends AbstractSchema {
         List<ColumnMetadata> partitionKey = relation.getPartitionKey();
         List<String> pKeyFields = new ArrayList<>();
         for ( ColumnMetadata column : partitionKey ) {
-            pKeyFields.add( column.getName().toString() );
+            pKeyFields.add( this.logicalColumnFromPhysical( column.getName().toString() ) );
+//            pKeyFields.add(  column.getName().toString() );
         }
 
         Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
         List<String> cKeyFields = new ArrayList<>();
         for ( Entry<ColumnMetadata, ClusteringOrder> column : clusteringKey.entrySet() ) {
+            cKeyFields.add( this.logicalColumnFromPhysical( column.getKey().toString() ) );
+//            cKeyFields.add( column.getKey().toString() );
+        }
+
+        return Pair.of( ImmutableList.copyOf( pKeyFields ), ImmutableList.copyOf( cKeyFields ) );
+    }
+
+
+    /**
+     * Get all primary key columns from the underlying CQL table
+     *
+     * @return A list of field names that are part of the partition and clustering keys
+     */
+    Pair<List<String>, List<String>> getPhysicalKeyFields( String columnFamily, boolean view ) {
+        RelationMetadata relation;
+        List<String> qualifiedNames = new LinkedList<>();
+        qualifiedNames.add( this.name );
+        qualifiedNames.add( columnFamily );
+        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        if ( view ) {
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
+        } else {
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
+        }
+
+        List<ColumnMetadata> partitionKey = relation.getPartitionKey();
+        List<String> pKeyFields = new ArrayList<>();
+        for ( ColumnMetadata column : partitionKey ) {
+//            pKeyFields.add( this.logicalColumnFromPhysical( column.getName().toString() ) );
+            pKeyFields.add(  column.getName().toString() );
+        }
+
+        Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
+        List<String> cKeyFields = new ArrayList<>();
+        for ( Entry<ColumnMetadata, ClusteringOrder> column : clusteringKey.entrySet() ) {
+//            cKeyFields.add( this.logicalColumnFromPhysical( column.getKey().toString() ) );
             cKeyFields.add( column.getKey().toString() );
         }
 
@@ -229,6 +293,7 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
+    // FIXME JS: Do not regenerate TableMap every time we call this!
     @Override
     protected Map<String, Table> getTableMap() {
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();

@@ -81,11 +81,16 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     RelProtoDataType protoRowType;
     Pair<List<String>, List<String>> keyFields;
+    Pair<List<String>, List<String>> physicalKeyFields;
     List<RelFieldCollation> clusteringOrder;
     private final CassandraSchema cassandraSchema;
     private final String columnFamily;
     private final String physicalName;
     private final boolean view;
+
+//    private final String physicalTableName;
+
+//    private final String logicalTableName;
 
 
     public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, boolean view ) {
@@ -125,6 +130,14 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
             keyFields = cassandraSchema.getKeyFields( columnFamily, view );
         }
         return keyFields;
+    }
+
+
+    public Pair<List<String>, List<String>> getPhysicalKeyFields() {
+        if ( physicalKeyFields == null ) {
+            physicalKeyFields = cassandraSchema.getPhysicalKeyFields( columnFamily, view );
+        }
+        return physicalKeyFields;
     }
 
 

@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -122,9 +123,9 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
         context.filterCollation = this.getImplicitCollation();
 
-        final Pair<List<String>, List<String>> keyFields = context.cassandraTable.getKeyFields();
+        final Pair<List<String>, List<String>> keyFields = context.cassandraTable.getPhysicalKeyFields();
 
-        Translator translator = new Translator( getRowType(), keyFields.left, keyFields.right, context.cassandraTable.getClusteringOrder() );
+        Translator translator = new Translator( context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ), keyFields.left, keyFields.right, context.cassandraTable.getClusteringOrder() );
 
         List<Relation> match = translator.translateMatch( condition );
 
@@ -167,7 +168,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
 
         Translator( RelDataType rowType, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
             this.rowType = rowType;
-            this.fieldNames = CassandraRules.cassandraFieldNames( rowType );
+            this.fieldNames = CassandraRules.cassandraPhysicalFieldNames( rowType );
             this.partitionKeys = new HashSet<>( partitionKeys );
             this.clusteringKeys = clusteringKeys;
             this.restrictedClusteringKeys = 0;

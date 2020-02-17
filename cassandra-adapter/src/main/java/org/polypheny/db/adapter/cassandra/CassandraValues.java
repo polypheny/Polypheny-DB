@@ -32,6 +32,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -164,13 +165,15 @@ public class CassandraValues extends Values implements CassandraRel {
     public void implement( CassandraImplementContext context ) {
 
         List<Map<String, Term>> items = new LinkedList<>();
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+        final List<RelDataTypeField> fields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+//        final List<RelDataTypeField> fields = rowType.getFieldList();
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
             Map<String, Term> oneInsert = new LinkedHashMap<>();
             for ( Pair<RelDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
                 try {
-                    oneInsert.put( pair.left.getName(), QueryBuilder.literal( literalValue( pair.right ) ) );
+                    oneInsert.put( pair.left.getPhysicalName(), QueryBuilder.literal( literalValue( pair.right ) ) );
+//                    oneInsert.put( pair.left.getName(), QueryBuilder.literal( literalValue( pair.right ) ) );
                 } catch ( Exception e ) {
                     log.error( "Something broke while parsing cql values.", e );
                     throw new RuntimeException( e );

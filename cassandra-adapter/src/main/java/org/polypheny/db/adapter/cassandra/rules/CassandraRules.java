@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
@@ -46,6 +47,7 @@ import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -90,8 +92,14 @@ public class CassandraRules {
     }
 
 
-    public static List<String> cassandraFieldNames( final RelDataType rowType ) {
+    public static List<String> cassandraLogicalFieldNames( final RelDataType rowType ) {
         return SqlValidatorUtil.uniquify( rowType.getFieldNames(), SqlValidatorUtil.EXPR_SUGGESTER, true );
+    }
+
+
+    public static List<String> cassandraPhysicalFieldNames( final RelDataType rowType ) {
+        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList()), rowType.getFieldNames() );
+        return pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList());
     }
 
 
@@ -146,7 +154,7 @@ public class CassandraRules {
             CassandraTableScan scan = call.rel( 1 );
             Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             Set<String> partitionKeys = new HashSet<>( keyFields.left );
-            List<String> fieldNames = CassandraRules.cassandraFieldNames( filter.getInput().getRowType() );
+            List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
 
             List<RexNode> disjunctions = RelOptUtil.disjunctions( condition );
             if ( disjunctions.size() != 1 ) {

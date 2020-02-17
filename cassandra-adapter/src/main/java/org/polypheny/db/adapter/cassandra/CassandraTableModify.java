@@ -126,7 +126,9 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                     if ( !(entry.right instanceof RexLiteral) ) {
                         throw new RuntimeException( "Non literal values are not yet supported." );
                     }
-                    setAssignments.add( Assignment.setColumn( entry.left, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );
+
+                    String physicalColumnName = ((CassandraConvention) getConvention()).physicalNameProvider.getPhysicalColumnName( cassandraTable.getColumnFamily(), entry.left );
+                    setAssignments.add( Assignment.setColumn( physicalColumnName, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );
                 }
 
                 context.addAssignments( setAssignments );
