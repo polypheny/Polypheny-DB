@@ -1371,6 +1371,30 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Add or drop a data placement
+     * Parameter of type models.Index:
+     * index name corresponds to storeUniqueName
+     * index method: either 'ADD' or 'DROP'
+     */
+    Result addDropPlacement( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
+        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+            return new Result( "Invalid request" );
+        }
+        String query = String.format( "ALTER TABLE %s.%s %s PLACEMENT %s", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        Transaction transaction = getTransaction();
+        int affectedRows = 0;
+        try {
+            affectedRows = executeSqlUpdate( transaction, query );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            return new Result( e );
+        }
+        return new Result( new Debug().setAffectedRows( affectedRows ) );
+    }
+
+
+    /**
      * Get current stores
      */
     String getStores( final Request req, final Response res ) {

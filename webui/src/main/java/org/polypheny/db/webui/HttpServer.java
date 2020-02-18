@@ -140,6 +140,8 @@ public class HttpServer extends QueryInterface {
 
         post( "/getPlacements", crud::getPlacements, gson::toJson );
 
+        post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
+
         post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
         post( "/closeAnalyzer", crud::closeAnalyzer );
