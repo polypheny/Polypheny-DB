@@ -36,7 +36,12 @@ public class CsvStore extends Store {
 
     public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings );
-        csvDir = new File( settings.get( "directory" ) );
+        String dir = settings.get( "directory" );
+        if ( dir.startsWith( "classpath://" ) ) {
+            csvDir = new File( getClass().getResource( "/" + dir.replace( "classpath://", "" ) ).getFile() );
+        } else {
+            csvDir = new File( dir );
+        }
     }
 
 
