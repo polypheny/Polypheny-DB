@@ -52,27 +52,30 @@ public class InformationServerTest {
         HardwareAbstractionLayer hal = si.getHardware();
         OperatingSystem os = si.getOperatingSystem();
 
-        InformationPage p = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
-        im.addPage( p );
+        InformationPage systemPage = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
+        im.addPage( systemPage );
 
-        InformationGroup g1 = new InformationGroup( p, "System" ).setOrder( 1 );
-        im.addGroup( g1 );
+        InformationGroup systemGroup = new InformationGroup( systemPage, "System" ).setOrder( 1 );
+        im.addGroup( systemGroup );
 
         String family = os.getFamily();
         String manufacturer = os.getManufacturer();
         String version = os.getVersion().toString();
-        Information i1 = new InformationHtml( "os", "System", "<ul>"
+        Information i1 = new InformationHtml( "os", systemGroup.getId(), "<ul>"
                 + "<li>family: " + family + "</li>"
                 + "<li>manufacturer: " + manufacturer + "</li>"
                 + "<li>version: " + version + "</li>"
-                + "</ul>" );
+                + "</ul>" ).setOrder( 1 );
         im.registerInformation( i1 );
 
-        InformationGroup g2 = new InformationGroup( p, "cpu" ).setOrder( 2 );
-        im.addGroup( g2 );
+        Information iAction = new InformationAction( systemGroup, "executeAction", () -> "Executed action" ).setOrder( 2 );
+        im.registerInformation( iAction );
+
+        InformationGroup cpuGroup = new InformationGroup( systemPage, "cpu" ).setOrder( 2 );
+        im.addGroup( cpuGroup );
 
         int cpuLoad = (int) Math.round( hal.getProcessor().getSystemCpuLoad() * 100 );
-        InformationProgress i2 = new InformationProgress( "mem", "cpu", "cpu load", cpuLoad );
+        InformationProgress i2 = new InformationProgress( "mem", cpuGroup.getId(), "cpu load", cpuLoad );
         im.registerInformation( i2 );
 
         Timer t1 = new Timer();
@@ -84,8 +87,8 @@ public class InformationServerTest {
             }
         }, 5000, 5000 );
 
-        InformationGroup g3 = new InformationGroup( p.getId(), "processes" );
-        im.addGroup( g3 );
+        InformationGroup processesGroup = new InformationGroup( systemPage.getId(), "processes" );
+        im.addGroup( processesGroup );
 
         List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
 
@@ -104,7 +107,7 @@ public class InformationServerTest {
         }
 
         GraphData<Double> data = new GraphData<Double>( "processes", procPerc.toArray( new Double[0] ) );
-        InformationGraph graph = new InformationGraph( "proc-graph", "processes", GraphType.POLARAREA, procNames.toArray( new String[0] ), data );
+        InformationGraph graph = new InformationGraph( "proc-graph", processesGroup.getId(), GraphType.POLARAREA, procNames.toArray( new String[0] ), data );
         im.registerInformation( graph );
 
         Timer t2 = new Timer();
@@ -142,13 +145,13 @@ public class InformationServerTest {
             randomData2[i] = r.nextInt( 100 );
             randomData3[i] = r.nextInt( 100 );
         }
-        InformationGroup randomGroup = new InformationGroup( p, "random data" ).setOrder( 4 );
+        InformationGroup randomGroup = new InformationGroup( systemPage, "random data" ).setOrder( 4 );
         im.addGroup( randomGroup );
         String[] randomLabels = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
         GraphData randomGraphData1 = new GraphData<Integer>( "x", randomData1 );
         GraphData randomGraphData2 = new GraphData<Integer>( "y", randomData2 );
         //GraphData randomGraphData3 = new GraphData<Integer>( "z", randomData3);
-        InformationGraph randomGraph = new InformationGraph( "random.graph", "random data", GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
+        InformationGraph randomGraph = new InformationGraph( "random.graph", randomGroup.getId(), GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
         im.registerInformation( randomGraph );
 
         Timer t3 = new Timer();

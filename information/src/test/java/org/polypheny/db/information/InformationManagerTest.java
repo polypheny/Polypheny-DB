@@ -90,4 +90,15 @@ public class InformationManagerTest {
         i1.updateType( GraphType.RADAR );
     }
 
+    @Test
+    public void informationAction() {
+        final int[] a = { 1 };
+        InformationAction action = new InformationAction( g, "btnLabel", () -> {
+            a[0]++;
+            return String.valueOf( a[0] );
+        } );
+        action.executeAction();
+        Assert.assertEquals( a[0], 2 );
+    }
+
 }
