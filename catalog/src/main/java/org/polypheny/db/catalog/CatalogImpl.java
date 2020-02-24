@@ -17,12 +17,20 @@
 package org.polypheny.db.catalog;
 
 
+import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.mapdb.DB;
+import org.mapdb.DB.AtomicLongMaker;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -65,8 +73,57 @@ import org.polypheny.db.transaction.PolyXid;
 public class CatalogImpl extends Catalog {
 
 
+    private static final String FILE_PATH = "mapDB";
+    private static DB db;
+
+    private static HTreeMap<Long, CatalogUser> users;
+    private static HTreeMap<Long, CatalogDatabase> databases;
+    private static HTreeMap<Long, CatalogSchema> schemas;
+    private static HTreeMap<Long, CatalogTable> tables;
+    private static HTreeMap<Long, CatalogColumn> columns;
+
+    private static HTreeMap<Long, ImmutableList<Integer>> databaseChildren;
+    private static HTreeMap<Long, ImmutableList<Integer>> schemaChildren;
+    //private static NavigableSet<Object[]> schemaChildren;
+    private static HTreeMap<Long, ImmutableList<Integer>> tableChildren;
+
+    private static final AtomicLong schemaIdBuilder = new AtomicLong();
+    private static final AtomicLong databaseIdBuilder = new AtomicLong();
+    private static final AtomicLong tableIdBuilder = new AtomicLong();
+    private static final AtomicLong columnIdBuilder = new AtomicLong();
+
+
     CatalogImpl( PolyXid xid ) {
         super( xid );
+        db = DBMaker
+                .fileDB( FILE_PATH )
+                .fileMmapEnable()
+                .fileMmapEnableIfSupported()
+                .fileMmapPreclearDisable()
+                .closeOnJvmShutdown()
+                .make();
+
+        initDBLayout( db );
+    }
+
+
+    private void initDBLayout( DB db ) {
+        users = db.hashMap( "users", Serializer.LONG, new GenericSerializer<CatalogUser>() ).createOrOpen();
+
+        databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
+
+        schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
+
+        tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
+
+        columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
+
+        databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Integer>>() ).createOrOpen();
+
+        schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Integer>>() ).createOrOpen();
+
+        tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Integer>>() ).createOrOpen();
+
     }
 
 
@@ -215,6 +272,10 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
+
+            long id = schemaIdBuilder.incrementAndGet();
+            schemas.put( id, new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType ) );
+
             return Statements.addSchema( transactionHandler, name, database.id, owner.id, schemaType );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownDatabaseException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
