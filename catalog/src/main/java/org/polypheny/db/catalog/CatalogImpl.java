@@ -18,7 +18,6 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.DB;
-import org.mapdb.DB.AtomicLongMaker;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
@@ -95,6 +93,14 @@ public class CatalogImpl extends Catalog {
 
     CatalogImpl( PolyXid xid ) {
         super( xid );
+        System.out.println( "open catalog" );
+
+        if ( db != null && !db.isClosed() ) {
+            return;
+        } else if ( db != null ) {
+            db.close();
+        }
+
         db = DBMaker
                 .fileDB( FILE_PATH )
                 .fileMmapEnable()
@@ -124,6 +130,10 @@ public class CatalogImpl extends Catalog {
 
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Integer>>() ).createOrOpen();
 
+    }
+
+    public void close() {
+        db.close();
     }
 
 
@@ -494,6 +504,10 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
+
+            long id = tableIdBuilder.getAndIncrement();
+            tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null) );
+
             return Statements.addTable( transactionHandler, name, schema.id, owner.id, tableType, definition );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
             throw new GenericCatalogException( e );
