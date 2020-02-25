@@ -23,6 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import jdk.internal.jline.internal.ShutdownHooks;
+import jdk.internal.jline.internal.ShutdownHooks.Task;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.DB;
@@ -93,7 +95,7 @@ public class CatalogImpl extends Catalog {
 
     CatalogImpl( PolyXid xid ) {
         super( xid );
-        System.out.println( "open catalog" );
+        System.out.println( "open catalog " + xid.toString() );
 
         if ( db != null && !db.isClosed() ) {
             return;
@@ -103,10 +105,10 @@ public class CatalogImpl extends Catalog {
 
         db = DBMaker
                 .fileDB( FILE_PATH )
+                .closeOnJvmShutdown()
                 .fileMmapEnable()
                 .fileMmapEnableIfSupported()
                 .fileMmapPreclearDisable()
-                .closeOnJvmShutdown()
                 .make();
 
         initDBLayout( db );
@@ -131,6 +133,7 @@ public class CatalogImpl extends Catalog {
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Integer>>() ).createOrOpen();
 
     }
+
 
     public void close() {
         db.close();
@@ -506,7 +509,7 @@ public class CatalogImpl extends Catalog {
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
 
             long id = tableIdBuilder.getAndIncrement();
-            tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null) );
+            tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null ) );
 
             return Statements.addTable( transactionHandler, name, schema.id, owner.id, tableType, definition );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
@@ -805,6 +808,10 @@ public class CatalogImpl extends Catalog {
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
+
+            long id = columnIdBuilder.getAndIncrement();
+            columns.put( id, new CatalogColumn( id, name, tableId, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null ) );
+
             return Statements.addColumn( transactionHandler, name, table.id, position, type, length, scale, nullable, collation );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
