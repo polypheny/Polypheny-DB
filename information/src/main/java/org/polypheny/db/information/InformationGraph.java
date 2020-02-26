@@ -17,17 +17,39 @@
 package org.polypheny.db.information;
 
 
+import com.google.gson.annotations.SerializedName;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.UUID;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 
 /**
  * An information object that contains data for a graph that will be displayed in the UI.
  */
+@Accessors(chain = true, fluent = true)
 public class InformationGraph extends Information {
 
-    private GraphData[] data;
+    private HashMap<String, GraphData> data = new HashMap<>();
     private String[] labels;
     private GraphType graphType;
+    /**
+     * Suggested min value of the y axis in the UI
+     * Default: 0
+     * see https://www.chartjs.org/docs/latest/axes/cartesian/linear.html#axis-range-settings
+     */
+    @Setter
+    @SerializedName("min")
+    private int minY = 0;
+    /**
+     * Suggested max value of the y axis in the UI
+     * see https://www.chartjs.org/docs/latest/axes/cartesian/linear.html#axis-range-settings
+     */
+    @Setter
+    @SerializedName("max")
+    private int maxY;
 
 
     /**
@@ -65,9 +87,11 @@ public class InformationGraph extends Information {
     public InformationGraph( final String id, final String groupId, GraphType type, final String[] labels, final GraphData... data ) {
         super( id, groupId );
 
-        this.data = data;
+        for ( GraphData d : data ) {
+            this.data.put( d.label, d );
+        }
 
-        if ( this.data.length > 1 ) {
+        if ( this.data.size() > 1 ) {
             if ( type == GraphType.PIE || type == GraphType.DOUGHNUT || type == GraphType.POLARAREA ) {
                 throw new RuntimeException( "Graph of type " + type + " can only accept one GraphData object" );
             }
@@ -87,7 +111,7 @@ public class InformationGraph extends Information {
     public InformationGraph updateType( final GraphType type ) {
 
         if ( type == GraphType.PIE || type == GraphType.DOUGHNUT || type == GraphType.POLARAREA ) {
-            if ( this.data.length > 1 ) {
+            if ( this.data.size() > 1 ) {
                 throw new RuntimeException( "Graph cannot be converted to type " + type + " because this type supports only one GraphData object and this graph currently has more that one GraphData object" );
             }
         }
@@ -123,8 +147,23 @@ public class InformationGraph extends Information {
         }
 
         this.labels = labels;
-        this.data = data;
+        this.data.clear();
+        for ( GraphData d : data ) {
+            this.data.put( d.label, d );
+        }
         notifyManager();
+    }
+
+
+    /**
+     * Add data to a graph
+     *
+     * @param label The label of the data you want to update
+     */
+    public InformationGraph addData( final String label, final Number... data ) {
+        this.data.get( label ).addData( data );
+        notifyManager();
+        return this;
     }
 
 
@@ -147,6 +186,10 @@ public class InformationGraph extends Information {
         POLARAREA;
     }
 
+    // -----------------------------------------------------------------------
+    //                                GraphData class
+    // -----------------------------------------------------------------------
+
 
     /**
      * The data in a graph, e.g. a line in the line-graph, with its label.
@@ -157,7 +200,8 @@ public class InformationGraph extends Information {
         /**
          * Data for the graph, e.g. a line in the line-graph.
          */
-        private final T[] data;
+        // Choice of CircularFifoQueue: https://stackoverflow.com/questions/5498865/size-limited-queue-that-holds-last-n-elements-in-java
+        private final CircularFifoQueue<T> data;
 
 
         /**
@@ -165,17 +209,46 @@ public class InformationGraph extends Information {
          */
         private final String label;
 
+        /**
+         * The maximum number of elements that should be stored
+         */
+        private final static int DEFAULT_MAX_LENGTH = 128;
+
+
+        /**
+         * GraphData constructor
+         *
+         * @param label The label that describes the data
+         * @param data Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
+         */
+        public GraphData( final String label, final T[] data ) {
+            this( label, data, DEFAULT_MAX_LENGTH );
+        }
+
 
         /**
          * GraphData constructor
          *
          * @param label The label that describes the data
          * @param data Data for the graph, e.g. a line in the line-graph
+         * @param maxLength Maximal number of data points that should be stored.
          */
-        public GraphData( final String label, final T[] data ) {
+        public GraphData( final String label, final T[] data, final int maxLength ) {
             this.label = label;
-            this.data = data;
+            this.data = new CircularFifoQueue<T>( maxLength );
+            this.data.addAll( Arrays.asList( data ) );
         }
+
+
+        /**
+         * Add data to the graph
+         */
+        private void addData( final Number... data ) {
+            for ( Number d : data ) {
+                this.data.add( (T) d );
+            }
+        }
+
     }
 
 }

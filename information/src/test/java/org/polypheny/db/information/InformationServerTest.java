@@ -154,6 +154,20 @@ public class InformationServerTest {
         InformationGraph randomGraph = new InformationGraph( "random.graph", randomGroup.getId(), GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
         im.registerInformation( randomGraph );
 
+        InformationGroup collectingGroup = new InformationGroup( systemPage, "collecting data" ).setOrder( 5 );
+        im.addGroup( collectingGroup );
+        GraphData<Integer> dynamicData = new GraphData<>( "dynamic", new Integer[]{ 1, 2, 3 }, 10 );
+        GraphData<Integer> staticData = new GraphData<>( "static", new Integer[]{ 2, 4, 6, 8, 10, 9, 7, 5, 3, 1 } );
+        InformationGraph collectingGraph = new InformationGraph( "collectingGraph", collectingGroup.getId(), GraphType.BAR, null, new GraphData[]{ dynamicData, staticData } ).maxY( 10 );
+        im.registerInformation( collectingGraph );
+        Timer collectingTimer = new Timer();
+        collectingTimer.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                collectingGraph.addData( "dynamic", (int) (Math.random() * 10) );
+            }
+        }, 5000, 5000 );
+
         Timer t3 = new Timer();
         t3.scheduleAtFixedRate( new TimerTask() {
             @Override
