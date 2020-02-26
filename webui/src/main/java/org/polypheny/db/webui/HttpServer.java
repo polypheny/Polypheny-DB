@@ -120,6 +120,8 @@ public class HttpServer extends QueryInterface {
 
         post( "/createTable", crud::createTable, gson::toJson );
 
+        get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
+
         post( "/getConstraints", crud::getConstraints, gson::toJson );
 
         post( "/dropConstraint", crud::dropConstraint, gson::toJson );

@@ -85,6 +85,7 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -1037,6 +1038,18 @@ public class Crud implements InformationObserver {
 			}
 		}
 		return result;
+	}
+
+
+	/**
+	 * Get artificially generated index/foreign key/constraint names for placeholders in the UI
+	 */
+	Result getGeneratedNames( final Request req, final Response res ) {
+		String[] data = new String[3];
+		data[0] = NameGenerator.generateConstraintName();
+		data[1] = NameGenerator.generateForeignKeyName();
+		data[2] = NameGenerator.generateIndexName();
+		return new Result( new DbColumn[0], new String[][]{ data } );
 	}
 
 
