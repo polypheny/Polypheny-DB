@@ -108,4 +108,17 @@ public final class CatalogTable implements CatalogEntity {
     }
 
 
+    public static CatalogTable rename( CatalogTable table, String name ) {
+        return new CatalogTable( table.id, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
+    }
+
+
+    public static CatalogTable replaceOwner( CatalogTable table, int ownerId ) {
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
+    }
+
+    public static CatalogTable replacePrimary( CatalogTable table, Long keyId ) {
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId );
+    }
+
 }

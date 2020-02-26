@@ -67,7 +67,7 @@ dependencies {
 
     api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
 
-    compile group: 'org.mapdb', name: 'mapdb', version: '3.0.4'
+    compile group: 'org.mapdb', name: 'mapdb', version: '3.0.8'
     
     api group: "com.google.guava", name: "guava", version: guava_version
     api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version

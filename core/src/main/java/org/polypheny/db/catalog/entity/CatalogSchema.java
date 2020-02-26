@@ -74,4 +74,19 @@ public final class CatalogSchema implements CatalogEntity {
         public final String owner;
         public final String schemaType;
     }
+
+
+    /**
+     * Rebuilds a new CatalogSchema with a different name
+     * @param old CatalogSchema which should be replaced
+     * @param name of the new CatalogSchema
+     * @return the new CatalogSchema
+     */
+    public static CatalogSchema rename( CatalogSchema old, String name ) {
+        return new CatalogSchema( old.id, name, old.databaseId, old.databaseName, old.ownerId, old.ownerName, old.schemaType );
+    }
+
+    public static CatalogSchema changeOwner( CatalogSchema old, int ownerId ) {
+        return new CatalogSchema( old.id, old.name, old.databaseId, old.databaseName, ownerId, old.ownerName, old.schemaType );
+    }
 }
