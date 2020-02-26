@@ -26,10 +26,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import org.mapdb.serializer.GroupSerializer;
+import org.mapdb.serializer.SerializerJava;
+import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -77,15 +81,16 @@ public class CatalogImpl extends Catalog {
 
     private static HTreeMap<Long, CatalogUser> users;
     private static HTreeMap<Long, CatalogDatabase> databases;
-    private HTreeMap<String, Long> databaseNames;
+    private static HTreeMap<String, Long> databaseNames;
     private static HTreeMap<Long, CatalogSchema> schemas;
     private static HTreeMap<Long, CatalogTable> tables;
     private static HTreeMap<Long, CatalogColumn> columns;
+    private static HTreeMap<Long, CatalogStore> stores;
 
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
-    //private static NavigableSet<Object[]> schemaChildren;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
+
 
     private static final AtomicLong schemaIdBuilder = new AtomicLong();
     private static final AtomicLong databaseIdBuilder = new AtomicLong();
@@ -93,9 +98,10 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong columnIdBuilder = new AtomicLong();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
-    private HTreeMap<String, Long> schemaNames;
-    private HTreeMap<String, Long> tableNames;
-    private HTreeMap<String, Long> columnNames;
+    private static HTreeMap<String, Long> schemaNames;
+    private static HTreeMap<String, Long> tableNames;
+    private static HTreeMap<String, Long> columnNames;
+    private static BTreeMap columnPlacement;
 
 
     /**
@@ -143,6 +149,7 @@ public class CatalogImpl extends Catalog {
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
         columnNames = db.hashMap( "columnNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
+        columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA).createOrOpen();
     }
 
 
@@ -751,6 +758,12 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
+        /*
+        CatalogColumn column = columns.get( columnId );
+        CatalogStore store = stores.get( storeId );
+
+        columnPlacement.put( new long[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+        */
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogStore store = Statements.getStore( transactionHandler, storeId );
@@ -770,6 +783,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
+        columnPlacement.get( new long[]{storeId, columnId} );
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
@@ -787,6 +801,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException {
+
+        // return columnPlacement.prefixSubMap( new long[]{storeId} );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumnPlacementsOnStore( transactionHandler, storeId );
