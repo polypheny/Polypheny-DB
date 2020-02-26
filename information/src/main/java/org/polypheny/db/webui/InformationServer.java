@@ -87,6 +87,16 @@ public class InformationServer implements InformationObserver {
                 return new InformationResponse().error( errorMsg );
             }
         }, gson::toJson );
+
+        http.post( "/refreshPage", ( req, res ) -> {
+            im.getPage( req.body() ).refresh();
+            return "";
+        } );
+
+        http.post( "/refreshGroup", ( req, res ) -> {
+            im.getGroup( req.body() ).refresh();
+            return "";
+        } );
     }
 
 

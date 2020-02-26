@@ -27,7 +27,7 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 /**
  * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI.
  */
-public class InformationPage {
+public class InformationPage extends Refreshable {
 
 
     /**

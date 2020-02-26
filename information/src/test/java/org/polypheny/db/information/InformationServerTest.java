@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.webui.InformationServer;
@@ -33,6 +34,7 @@ import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystem.ProcessSort;
 
 
+@Slf4j
 public class InformationServerTest {
 
 
@@ -54,6 +56,9 @@ public class InformationServerTest {
 
         InformationPage systemPage = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
         im.addPage( systemPage );
+        systemPage.setRefresh( () -> {
+            log.debug( "refreshing page" );
+        } );
 
         InformationGroup systemGroup = new InformationGroup( systemPage, "System" ).setOrder( 1 );
         im.addGroup( systemGroup );
@@ -155,6 +160,9 @@ public class InformationServerTest {
         im.registerInformation( randomGraph );
 
         InformationGroup collectingGroup = new InformationGroup( systemPage, "collecting data" ).setOrder( 5 );
+        collectingGroup.setRefresh( () -> {
+            im.getInformation( "collectingGraph" ).unwrap( InformationGraph.class ).addData( "dynamic", (int) (Math.random() * 10) );
+        } );
         im.addGroup( collectingGroup );
         GraphData<Integer> dynamicData = new GraphData<>( "dynamic", new Integer[]{ 1, 2, 3 }, 10 );
         GraphData<Integer> staticData = new GraphData<>( "static", new Integer[]{ 2, 4, 6, 8, 10, 9, 7, 5, 3, 1 } );
