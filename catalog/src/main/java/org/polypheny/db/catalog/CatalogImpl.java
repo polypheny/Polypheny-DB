@@ -19,11 +19,15 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
@@ -98,8 +102,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong columnIdBuilder = new AtomicLong();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
-    private static HTreeMap<Object[], Long> schemaNames;
-    private static HTreeMap<Object[], Long> tableNames;
+    private static BTreeMap<Object[], Long> schemaNames;
+    private static BTreeMap<Object[], Long> tableNames;
     private static BTreeMap<Object[], Long> columnNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
 
@@ -151,11 +155,12 @@ public class CatalogImpl extends Catalog {
      * "columns" holds all CatalogColumn objects, access by id
      * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
      * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
+     *
      * @param db the mapdb Object on which the maps are generated from
      */
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
-        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING, Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
         columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
     }
 
@@ -163,14 +168,14 @@ public class CatalogImpl extends Catalog {
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        tableNames = db.hashMap( "tableNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        tableNames = db.treeMap( "tableNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
     }
 
 
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        schemaNames = db.hashMap( "schemaNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
     }
 
 
@@ -195,7 +200,12 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogDatabase> getDatabases( Pattern pattern ) throws GenericCatalogException {
         // TODO: pattern not needed atm, possible refactor
-        // return new ArrayList<>( databases.values() );
+        /*if ( pattern.pattern == null ) {
+            return new ArrayList<>( databases.values() );
+        } else {
+            return Collections.singletonList( databases.get( databaseNames.get( pattern.pattern ) ) );
+        }
+         */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -261,7 +271,8 @@ public class CatalogImpl extends Catalog {
         // TODO refactor to separate methods
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
             // ugly fix TODO one-many getter
-           return Collections.singletonList( schemas.get( schemaNames.get( databaseNamePattern.pattern + "." + schemaNamePattern.pattern ) ) );
+            long databaseId = databaseNames.get(databasenamePattern.pattern);
+           return Collections.singletonList( schemas.get( schemaNames.get( new Object[]{id, schemaNamePattern.pattern }) ) );
 
         } else if ( databaseNamePattern != null ) {
             long id = databaseNames.get( databaseNamePattern.pattern );
@@ -272,7 +283,7 @@ public class CatalogImpl extends Catalog {
 
             return schemas.values().stream().filter(e -> e.name.equals( schemaNamePattern.pattern ) ).collect( Collectors.toList());
         } else {
-            return new ArrayList<CatalogSchema>( schemas.values() );
+            return new ArrayList<>( schemas.values() );
         }*/
 
         try {
@@ -315,7 +326,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws GenericCatalogException, UnknownSchemaException {
-        // return schemas.get( schemaNames.get( databaseName + "." + schemaName ) );
+        //return schemas.get( schemaNames.get( new Object[]{ databaseNames.get(databaseName), schemaName } ) );
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -336,7 +347,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws GenericCatalogException, UnknownSchemaException {
-        //return databaseChildren.get( databaseId ).stream().filter( s -> schemas.get( s ).name.equals( schemaName ) );
+        // return schemas.get( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getSchema( transactionHandler, databaseId, schemaName );
@@ -365,6 +376,7 @@ public class CatalogImpl extends Catalog {
 
             long id = schemaIdBuilder.incrementAndGet();
             schemas.put( id, new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType ) );
+            schemaNames.put( new Object[]{ databaseId, name }, id );
 
             return Statements.addSchema( transactionHandler, name, database.id, owner.id, schemaType );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownDatabaseException | UnknownUserException e ) {
@@ -383,7 +395,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsSchema( long databaseId, String schemaName ) throws GenericCatalogException {
-        // return schemaNames.get( databaseNames.get( databaseId ) + "." + schemaName ) != null;
+        // return schemaNames.get( new Object[]{ databaseId, schemaName } ) != null;
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -407,14 +419,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
-        /*
+
         CatalogSchema old = schemas.get( schemaId );
-        CatalogSchema schema = CatalogSchema.rename(old, name);
+        CatalogSchema schema = CatalogSchema.rename( old, name );
 
         schemas.replace( schemaId, schema );
-        schemaNames.remove( old.name );
-        schemaNames.put( old.databaseName + "." + name, schemaId );
-         */
+        schemaNames.remove( new Object[]{ old.databaseId, old.name } );
+        schemaNames.put( new Object[]{ old.databaseId, name }, schemaId );
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -455,15 +466,14 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteSchema( long schemaId ) throws GenericCatalogException {
-        /*
+
         CatalogSchema schema = schemas.get( schemaId );
-        schemaNames.remove( schema.databaseName + "." + schema.name );
+        schemaNames.remove( new Object[]{ schema.databaseId, schema.name } );
         List<Long> oldChildren = new ArrayList<>( databaseChildren.get( schema.id ) );
         oldChildren.remove( schemaId );
-        databaseChildren.replace(schema.databaseId, ImmutableList.copyOf( oldChildren ));
+        databaseChildren.replace( schema.databaseId, ImmutableList.copyOf( oldChildren ) );
         schemaChildren.remove( schemaId );
         schemas.remove( schemaId );
-         */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -484,8 +494,15 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) throws GenericCatalogException {
-
+        /*
         //TODO refactor call
+        CatalogSchema schema = schemas.get( schemaId );
+        if ( tableNamePattern != null ) {
+            return Collections.singletonList( tables.get( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableNamePattern.pattern } ) ) );
+        } else {
+            return Collections.singletonList( tables.get( tableNames.get( new Object[]{ schema.databaseId, schemaId } ) ) );
+        }
+         */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -532,6 +549,25 @@ public class CatalogImpl extends Catalog {
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException {
 
         // TODO refactor call
+        /*
+        if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
+            return Collections.singletonList( tables.get( tableId ) );
+        }
+        if ( databaseNamePattern != null && schemaNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        }
+        if ( databaseNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        }
+
+        return tables.values().stream().collect( Collectors.toList());
+        */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -552,8 +588,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException, GenericCatalogException {
-        // CatalogSchema schema = schemas.get( schemaId );
-        // return tables.get(tableNames.get( schema.databaseName + "." + schema.name + "." + tableName ));
+        // return tables.get( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -575,7 +610,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException {
-        // return tables.get( tableNames.get(databases.get( databaseId ).name + "." + schemaName + "." + tableName) );
+        /*
+        long schemaId = schemaNames.get( new Object[]{databaseId, schemaName} );
+        return tables.get( tableNames.get( new Object[]{databaseId, schemaId, tableName} ) );
+         */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -597,7 +635,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException {
-        // return tables.get( tableNames.get( databaseName + "." + schemaName + "." + tableName ) );
+        /*
+        long databaseId = databaseNames.get( databaseName );
+        long schemaId = schemaNames.get( new Object[]{databaseId, schemaName} );
+        return tables.get( tableNames.get( new Object[]{databaseId, schemaId, tableName} ) );
+         */
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -621,13 +663,23 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
+        /*
+        long id = tableIdBuilder.getAndIncrement();
+        CatalogSchema schema = schemas.get( schemaId );
+        CatalogUser owner = users.get( (long) ownerId );
+        tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null ) );
+        // add null instead of empty list? needs check anyway
+        tableChildren.put( id, ImmutableList.<Long>builder().build() );
+        tableNames.put( new Object[]{schema.databaseId, schemaId, name}, id );
+        List<Long> children = new ArrayList<>( schemaChildren.get( schema.name ) );
+        children.add( id );
+        schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
             CatalogUser owner = Statements.getUser( transactionHandler, ownerId );
-
-            long id = tableIdBuilder.getAndIncrement();
-            tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null ) );
 
             return Statements.addTable( transactionHandler, name, schema.id, owner.id, tableType, definition );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownUserException | UnknownSchemaTypeException | UnknownSchemaException e ) {
@@ -647,7 +699,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException {
 
-        // refactor call
+        // return tableNames.get( new Object[]{schemaId, tableName} ) != null;
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -674,7 +726,6 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table = tables.get( tableId );
         tables.replace( tableId, CatalogTable.rename( table, name ) );
-        tableChildren.remove( tableId );
         tableNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
         tableNames.put( new String[]{ table.databaseName, table.schemaName, name }, tableId );
 
@@ -699,7 +750,6 @@ public class CatalogImpl extends Catalog {
         children.remove( tableId );
         schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
         schemas.remove( tableId );
-        // TODO below will not work fix
         schemaNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
 
         try {
@@ -791,6 +841,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
         columnPlacement.remove( new long[]{ storeId, columnId } );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
@@ -872,6 +923,33 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
+        /*
+        if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
+            long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnNamePattern } );
+            return Collections.singletonList( columns.get( columnId ) );
+        }
+        if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
+            return tableChildren.get( tableId ).stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        }
+        if ( databaseNamePattern != null && schemaNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        }
+        if ( databaseNamePattern != null ) {
+            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        }
+
+        return columns.values().stream().collect( Collectors.toList() );
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern, columnNamePattern );
@@ -890,6 +968,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException {
+        // return columns.get( columnId );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, columnId );
@@ -909,6 +989,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogColumn getColumn( long tableId, String columnName ) throws GenericCatalogException, UnknownColumnException {
+        /*
+        CatalogTable table = tables.get( tableId );
+        return columns.get(columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.name } ));
+         */
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, tableId, columnName );
@@ -930,6 +1014,14 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws GenericCatalogException, UnknownColumnException {
+
+        /*long databaseId = databaseNames.get( databaseName );
+        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
+        long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
+        long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, } );
+        return columns.get( columnId );
+         */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumn( transactionHandler, databaseName, schemaName, tableName, columnName );
@@ -954,6 +1046,16 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+        /*
+        CatalogTable table = tables.get( tableId );
+        long id = columnIdBuilder.getAndIncrement();
+        columns.put( id, new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null ) );
+        columnNames.put( new Object[]{table.databaseId, table.schemaId, name}, id );
+        List<Long> children = new ArrayList<>( tableChildren.get( tableId ) );
+        children.add( id );
+        tableChildren.replace( id, ImmutableList.copyOf( children ) );
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
