@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,6 +106,7 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong databaseIdBuilder = new AtomicLong();
     private static final AtomicLong tableIdBuilder = new AtomicLong();
     private static final AtomicLong columnIdBuilder = new AtomicLong();
+    private static final AtomicInteger userIdBuilder = new AtomicInteger();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
     private static BTreeMap<Object[], Long> schemaNames;
@@ -141,6 +143,9 @@ public class CatalogImpl extends Catalog {
                 .make();
 
         initDBLayout( db );
+
+        // mirrors default data from old sql
+        insertDefaultData();
     }
 
 
@@ -159,6 +164,14 @@ public class CatalogImpl extends Catalog {
 
         constraints = db.hashMap( "constraints", Serializer.LONG, Serializer.JAVA ).createOrOpen();
 
+    }
+
+
+    private void insertDefaultData() {
+
+        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "system", "" ) );
+        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "pa", "" ) );
+        addDatabase( new CatalogDatabase(databaseIdBuilder.getAndIncrement(), "APP", 0, "system", null, "") );
     }
 
 
@@ -203,8 +216,19 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public static void close() {
+    public void close() {
         db.close();
+    }
+
+
+    public void addDatabase( CatalogDatabase database ) {
+        databases.put( database.id, database );
+    }
+
+
+    public void addUser( CatalogUser user ) {
+        // TODO int for users?
+        users.put( (long) user.id, user );
     }
 
 
@@ -1506,7 +1530,6 @@ public class CatalogImpl extends Catalog {
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
         // TODO
-
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
