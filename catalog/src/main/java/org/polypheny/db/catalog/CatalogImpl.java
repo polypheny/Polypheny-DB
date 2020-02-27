@@ -31,8 +31,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
-import org.mapdb.serializer.GroupSerializer;
-import org.mapdb.serializer.SerializerJava;
+import org.mapdb.serializer.SerializerArrayTuple;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
@@ -88,6 +87,7 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogStore> stores;
 
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
+    // identifier is long array with databaseId, schemaId etc. -> faster lookup
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
 
@@ -98,10 +98,10 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong columnIdBuilder = new AtomicLong();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
-    private static HTreeMap<String, Long> schemaNames;
-    private static HTreeMap<String, Long> tableNames;
-    private static HTreeMap<String, Long> columnNames;
-    private static BTreeMap columnPlacement;
+    private static HTreeMap<Object[], Long> schemaNames;
+    private static HTreeMap<Object[], Long> tableNames;
+    private static BTreeMap<Object[], Long> columnNames;
+    private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
 
 
     /**
@@ -146,24 +146,31 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * initialize the column maps
+     * "columns" holds all CatalogColumn objects, access by id
+     * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
+     * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
+     * @param db the mapdb Object on which the maps are generated from
+     */
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
-        columnNames = db.hashMap( "columnNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
-        columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA).createOrOpen();
+        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING, Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
     }
 
 
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        tableNames = db.hashMap( "tableNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
+        tableNames = db.hashMap( "tableNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
     }
 
 
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        schemaNames = db.hashMap( "schemaNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
+        schemaNames = db.hashMap( "schemaNames", new SerializerArrayTuple( Serializer.STRING, Serializer.STRING ), Serializer.LONG ).createOrOpen();
     }
 
 
@@ -668,8 +675,8 @@ public class CatalogImpl extends Catalog {
         CatalogTable table = tables.get( tableId );
         tables.replace( tableId, CatalogTable.rename( table, name ) );
         tableChildren.remove( tableId );
-        tableNames.remove( table.databaseName + "." + table.schemaName + "." + table.name );
-        tableNames.put( table.databaseName + "." + table.schemaName + "." + name, tableId );
+        tableNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
+        tableNames.put( new String[]{ table.databaseName, table.schemaName, name }, tableId );
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -693,7 +700,7 @@ public class CatalogImpl extends Catalog {
         schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
         schemas.remove( tableId );
         // TODO below will not work fix
-        schemaNames.remove( table.databaseName + "." + table.schemaName + "." + table.name );
+        schemaNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -783,7 +790,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
-        columnPlacement.get( new long[]{storeId, columnId} );
+        columnPlacement.remove( new long[]{ storeId, columnId } );
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
@@ -824,6 +831,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
+        columnPlacement.put( new long[]{ storeId, columnId }, CatalogColumnPlacement.replacePhysicalNames( columnPlacement.get( new long[]{ storeId, columnId } ), physicalSchemaName, physicalTableName, physicalColumnName ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.updateColumnPlacementPhysicalNames( transactionHandler, storeId, columnId, physicalSchemaName, physicalTableName, physicalColumnName );
@@ -841,6 +850,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
+        // return tableChildren.get( tableId ).stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList());
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumns( transactionHandler, tableId );
