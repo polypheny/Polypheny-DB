@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -43,6 +44,7 @@ public final class CatalogTable implements CatalogEntity {
     public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
+    public final ImmutableList<Long> foreignKeys;
 
 
     public CatalogTable(
@@ -56,7 +58,8 @@ public final class CatalogTable implements CatalogEntity {
             @NonNull final String ownerName,
             @NonNull final TableType type,
             final String definition,
-            final Long primaryKey ) {
+            final Long primaryKey,
+            final ImmutableList<Long> foreignKeys) {
         this.id = id;
         this.name = name;
         this.schemaId = schemaId;
@@ -68,6 +71,7 @@ public final class CatalogTable implements CatalogEntity {
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
+        this.foreignKeys = foreignKeys;
     }
 
 
@@ -105,20 +109,21 @@ public final class CatalogTable implements CatalogEntity {
         public final String refGeneration;
         public final String owner;
         public final String definition;
+        public final ImmutableList<String> foreignKes;
     }
 
 
     public static CatalogTable rename( CatalogTable table, String name ) {
-        return new CatalogTable( table.id, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
+        return new CatalogTable( table.id, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.foreignKeys );
     }
 
 
     public static CatalogTable replaceOwner( CatalogTable table, int ownerId ) {
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.foreignKeys );
     }
 
     public static CatalogTable replacePrimary( CatalogTable table, Long keyId ) {
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId );
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId, table.foreignKeys );
     }
 
 }

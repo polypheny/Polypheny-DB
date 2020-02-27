@@ -28,13 +28,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
+import org.mapdb.DB.HashMapMaker;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import org.mapdb.elsa.ElsaSerializerBase.Ser;
+import org.mapdb.serializer.SerializerArray;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
@@ -47,6 +51,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -106,6 +111,10 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], Long> tableNames;
     private static BTreeMap<Object[], Long> columnNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
+    private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
+    private static HTreeMap<Long, CatalogKey> keys;
+    private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
+    private static HTreeMap<Long, CatalogConstraint> constraints;
 
 
     /**
@@ -141,6 +150,14 @@ public class CatalogImpl extends Catalog {
         initSchemaInfo( db );
         initTableInfo( db );
         initColumnInfo( db );
+
+        keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
+
+        primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
+
+        foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+
+        constraints = db.hashMap( "constraints", Serializer.LONG, Serializer.JAVA ).createOrOpen();
 
     }
 
@@ -1085,6 +1102,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void renameColumn( long columnId, String name ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceName( column, name ) );
+        columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+        columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, columnId );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.renameColumn( transactionHandler, columnId, name );
@@ -1102,6 +1124,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setColumnPosition( long columnId, int position ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replacePosition( column, position ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.setColumnPosition( transactionHandler, columnId, position );
@@ -1119,6 +1144,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setColumnType( long columnId, PolySqlType type, Integer length, Integer scale ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             if ( scale != null && scale > length ) {
@@ -1140,6 +1168,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceNullable( column, nullable ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
 
@@ -1173,6 +1204,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setCollation( long columnId, Collation collation ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceCollation( column, collation ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
@@ -1196,6 +1230,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException {
+        /*
+        CatalogTable table = tables.get( tableId );
+        return columnNames.get( new Object[]{table.databaseId, table.schemaId, tableId, columnName } ) != null;
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
@@ -1216,6 +1255,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumn( long columnId ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+        List<Long> children = new ArrayList<>( tableChildren.get( column.tableId ) );
+        children.remove( columnId );
+        tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
+        columns.remove( columnId );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             deleteDefaultValue( columnId );
@@ -1237,6 +1283,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, type, defaultValue ) );
+
         try {
             deleteDefaultValue( columnId );
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1254,6 +1303,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteDefaultValue( long columnId ) throws GenericCatalogException {
+        CatalogColumn column = columns.get( columnId );
+        columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, column.type, null ) );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteDefaultValue( transactionHandler, columnId );
@@ -1271,6 +1323,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException {
+        // return primaryKeys.get( key );
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return new CatalogPrimaryKey( Statements.getPrimaryKey( transactionHandler, key ) );
@@ -1288,6 +1342,16 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+        /*
+        CatalogTable table = tables.get( tableId );
+        List<CatalogColumn> nullables = columnIds.stream().map( columns::get ).filter( c -> c.nullable).collect( Collectors.toList());
+        for( CatalogColumn col : nullables)
+            throw new GenericCatalogException( "Primary key is not allowed to contain null values but the column '" + col.name + "' is declared nullable." );
+        }
+
+        // TODO refactor
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
@@ -1329,6 +1393,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException {
+
+        /*
+        return tables.get( tableId ).foreignKeys.stream().map( foreignKeys::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getForeignKeys( transactionHandler, tableId );
@@ -1346,6 +1415,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getExportedKeys( long tableId ) throws GenericCatalogException {
+        /*
+        return foreignKeys.values().stream().filter( k -> k.referencedKeyTableId == tableId ).collect( Collectors.toList() );
+         */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getExportedKeys( transactionHandler, tableId );
@@ -1363,6 +1436,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException {
+        //return constraints.values().stream().filter( c -> keys.get( c.key ).tableId == tableId ).collect( Collectors.toList() );
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getConstraints( transactionHandler, tableId );
@@ -1381,6 +1455,15 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogConstraint getConstraint( long tableId, String constraintName ) throws GenericCatalogException, UnknownConstraintException {
+
+        /*
+        return keys.values().stream()
+                .filter( k -> k.tableId == tableId )
+                .map( k -> constraints.get( k.id ) )
+                .filter( c -> c.name.equals( constraintName ) ).findFirst().get();
+
+         */
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getConstraint( transactionHandler, tableId, constraintName );
@@ -1399,6 +1482,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException {
+        //return foreignKeys.values().stream().filter( f -> f.tableId == tableId && f.name.equals( foreignKeyName ) ).findFirst().get();
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getForeignKey( transactionHandler, tableId, foreignKeyName );
@@ -1420,6 +1505,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
+        // TODO
+
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             List<CatalogKey> keys = Statements.getKeys( transactionHandler, referencesTableId );
@@ -1457,6 +1545,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
+        // TODO
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
@@ -1484,6 +1574,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) throws GenericCatalogException {
+        // TODO
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getIndexes( transactionHandler, tableId, onlyUnique );
@@ -1502,6 +1594,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
+        // TODO
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getIndex( transactionHandler, tableId, indexName );

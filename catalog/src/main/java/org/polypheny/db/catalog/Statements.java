@@ -551,7 +551,8 @@ final class Statements {
                         rs.getString( 8 ),
                         TableType.getById( getInt( rs, 9 ) ),
                         rs.getString( 10 ),
-                        getLongOrNull( rs, 11 )
+                        getLongOrNull( rs, 11 ),
+                        null
                 ) );
             }
             return list;
