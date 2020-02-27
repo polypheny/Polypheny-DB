@@ -457,6 +457,9 @@ public class Crud implements InformationObserver {
 		}
 		query.append( colJoiner.toString() );
 		query.append( ")" );
+		if ( request.store != null && !request.store.equals( "" ) ) {
+			query.append( String.format( " ON STORE \"%s\"", request.store ) );
+		}
 
 		try {
 			int a = executeSqlUpdate( transaction, query.toString() );
