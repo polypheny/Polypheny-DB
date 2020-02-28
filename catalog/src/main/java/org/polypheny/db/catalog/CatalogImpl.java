@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -168,10 +169,34 @@ public class CatalogImpl extends Catalog {
 
 
     private void insertDefaultData() {
+        try {
+            addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "system", "" ) );
+            addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "pa", "" ) );
+            addDatabase( new CatalogDatabase( databaseIdBuilder.getAndIncrement(), "APP", 0, "system", null, "" ) );
+            // TODO check type
+            addSchema( "public", 0, 0, null );
 
-        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "system", "" ) );
-        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "pa", "" ) );
-        addDatabase( new CatalogDatabase(databaseIdBuilder.getAndIncrement(), "APP", 0, "system", null, "") );
+            addTable( "depts", 0, 0, null, null );
+            addTable( "emps", 0, 0, null, null );
+
+            // TODO refactor
+            Map<String, String> hsqldbSettings = new HashMap<>();
+            hsqldbSettings.put( "type", "Memory" );
+            hsqldbSettings.put( "path", "maxConnections" );
+            hsqldbSettings.put( "maxConnections", "25" );
+            hsqldbSettings.put( "trxControlMode", "mvcc" );
+            hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
+
+            addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
+
+            Map<String, String> csvSetttings = new HashMap<>();
+            csvSetttings.put( "directory", "classpath://hr" );
+
+            addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
+
+        } catch ( GenericCatalogException e ) {
+            e.printStackTrace();
+        }
     }
 
 
