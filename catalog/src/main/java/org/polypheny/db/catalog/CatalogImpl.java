@@ -362,6 +362,9 @@ public class CatalogImpl extends Catalog {
         }*/
     }
 
+
+
+
     // TODO remove? not used
 
 
@@ -448,7 +451,7 @@ public class CatalogImpl extends Catalog {
         schemaChildren.put( id, ImmutableList.<Long>builder().build() );
         List<Long> children = new ArrayList<>( databaseChildren.get( databaseId ) );
         children.add( id );
-        schemaChildren.replace( databaseId, ImmutableList.copyOf( children ) );
+        databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
         return id;
 
         /*
@@ -1880,6 +1883,7 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
+
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return getCombinedDatabase( transactionHandler, databaseId );

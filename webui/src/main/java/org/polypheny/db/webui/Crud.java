@@ -92,6 +92,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
@@ -301,38 +302,43 @@ public class Crud implements InformationObserver {
 
         Transaction transaction = getTransaction();
         try {
-
+            /*
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
             CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
-                SidebarElement schemaTree = new SidebarElement( combinedSchema.getSchema().name, combinedSchema.getSchema().name, "", "cui-layers" );
+            */
+            Catalog catalog = transaction.getCatalog();
+            List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+            for ( CatalogSchema schema: schemas ) {
+                SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
                 if ( request.depth > 1 ) {
                     ArrayList<SidebarElement> tables = new ArrayList<>();
                     ArrayList<SidebarElement> views = new ArrayList<>();
-                    for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                        SidebarElement table = new SidebarElement( combinedSchema.getSchema().name + "." + combinedTable.getTable().name, combinedTable.getTable().name, request.routerLinkRoot, "fa fa-table" );
+                    List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+                    for ( CatalogTable childTable : childTables ) {
+                        SidebarElement table = new SidebarElement( childTable.schemaName + "." + childTable.name, childTable.name, request.routerLinkRoot, "fa fa-table" );
 
                         if ( request.depth > 2 ) {
-                            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                                table.addChild( new SidebarElement( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name, catalogColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
+                            for ( CatalogColumn childColumn : childColumns ) {
+                                table.addChild( new SidebarElement( childColumn.schemaName + "." + childColumn + "." + childColumn.name, childColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( combinedTable.getTable().tableType == TableType.TABLE ) {
+                        if ( childTable.tableType == TableType.TABLE ) {
                             tables.add( table );
-                        } else if ( request.views && combinedTable.getTable().tableType == TableType.VIEW ) {
+                        } else if ( request.views && childTable.tableType == TableType.VIEW ) {
                             views.add( table );
                         }
                     }
-                    schemaTree.addChild( new SidebarElement( combinedSchema.getSchema().name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
                     if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( combinedSchema.getSchema().name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
+                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
                     }
                 }
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
