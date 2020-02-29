@@ -89,6 +89,7 @@ public class TransactionManagerImpl implements TransactionManager {
         // to get the actual information required for starting the actual transaction.
         Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
+        // TODO why ask for default schema?
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
         try {
             transaction.commit();
