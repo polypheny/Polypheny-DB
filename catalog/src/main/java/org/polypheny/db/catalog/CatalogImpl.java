@@ -574,6 +574,23 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Get all placements of a column
+     *
+     * @param columnId The id of the column
+     * @return List of placements
+     */
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacements( Long columnId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumnPlacements( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Get column placements on a store
      *
      * @param storeId The id of the store

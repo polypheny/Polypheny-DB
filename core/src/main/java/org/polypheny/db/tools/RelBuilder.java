@@ -320,7 +320,7 @@ public class RelBuilder {
     /**
      * Adds a rel node to the top of the stack while preserving the field names and aliases.
      */
-    private void replaceTop( RelNode node ) {
+    public void replaceTop( RelNode node ) {
         final Frame frame = stack.pop();
         stack.push( new Frame( node, frame.fields ) );
     }

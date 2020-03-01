@@ -73,10 +73,8 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.sql2rel.StandardConvertletTable;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
@@ -195,6 +193,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
+        /*
         logicalRoot = logicalRoot.withRel( sqlToRelConverter.flattenTypes( logicalRoot.rel, true ) );
         final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
         logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
@@ -202,7 +201,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         // Trim unused fields.
         if ( RuntimeConfig.TRIM_UNUSED_FIELDS.getBoolean() ) {
             logicalRoot = trimUnusedFields( logicalRoot, sqlToRelConverter );
-        }
+        }*/
 
         if ( log.isTraceEnabled() ) {
             log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );

@@ -66,6 +66,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -121,7 +122,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        RelRoot optimalRoot = optimize( logicalRoot, resultConvention );
+        // Route
+        RelRoot routedRoot = route( logicalRoot, transaction );
+
+        RelRoot optimalRoot = optimize( routedRoot, resultConvention );
 
         final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), logicalRoot.validatedRowType );
 
@@ -138,6 +142,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         return signature;
+    }
+
+
+    private RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
+        RelRoot routedRoot = RouterManager.getInstance().getRouter().route( logicalRoot, transaction );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            InformationPage page = new InformationPage( "informationPageRoutedQueryPlan", "Routed Query Plan" );
+            InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    group,
+                    RelOptUtil.dumpPlan( "Routed Query Plan", routedRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
+        return routedRoot;
     }
 
 
