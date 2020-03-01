@@ -86,6 +86,8 @@ dependencies {
 
     api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
     api group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
+
+    compile group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: '3.8.0'
     
 
     // --- Test Compile ---

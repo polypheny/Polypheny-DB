@@ -107,6 +107,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
@@ -156,6 +157,7 @@ import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
+import org.polypheny.db.webui.models.requests.ExploreByExample;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -699,6 +701,19 @@ public class Crud implements InformationObserver {
         } else {
             return new ConcurrentHashMap<>();
         }
+
+    }
+
+    String getInformationFromUser( Request req, Response res ) throws Exception {
+        ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
+
+
+        Explore e = Explore.getInstance();
+        e.setTest( explore.arr );
+        e.testing();
+
+
+        return "Testing new Methode";
 
     }
 
