@@ -28,13 +28,19 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
+import org.polypheny.db.UnknownTypeException;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -110,17 +116,20 @@ public class StatisticQueryProcessor {
         Transaction transaction = getTransaction();
 
         try {
+            Catalog catalog = transaction.getCatalog();
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             List<String> schemaTree = new ArrayList<>();
-            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+            List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
+            for ( CatalogSchema schema : schemas ) {
                 List<String> tables = new ArrayList<>();
-                for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+                for ( CatalogTable childTable : childTables ) {
                     List<String> table = new ArrayList<>();
-                    for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                        table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
+                    List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
+                    for ( CatalogColumn catalogColumn : childColumns ) {
+                        table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
                     }
-                    if ( combinedTable.getTable().tableType == TableType.TABLE ) {
+                    if ( childTable.tableType == TableType.TABLE ) {
                         tables.addAll( table );
                     }
                 }
@@ -128,7 +137,7 @@ public class StatisticQueryProcessor {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();

@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
@@ -338,6 +339,10 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
 
+    // TODO comment properly
+    public abstract List<CatalogColumnPlacement> getColumnPlacementByColumn( long columnId );
+
+    public abstract List<CatalogKey> getKeys();
 
     /**
      * Change physical names of a placement.

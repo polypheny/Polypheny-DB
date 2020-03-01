@@ -75,6 +75,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.PolyXid;
 
+// TODO remove from all substructures
 
 @Slf4j
 public class CatalogImpl extends Catalog {
@@ -961,6 +962,12 @@ public class CatalogImpl extends Catalog {
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }*/
+    }
+
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacementByColumn(long columnId) {
+        // todo
+        return null;
     }
 
 
@@ -2001,8 +2008,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteStore( int storeId ) throws GenericCatalogException {
+        // TODO remove database/schemas/... as well?
+        stores.remove( storeId );
 
-        // TODO
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteStore( transactionHandler, storeId );
@@ -2022,6 +2030,11 @@ public class CatalogImpl extends Catalog {
             throw new GenericCatalogException( e );
         }
 
+    }
+
+    // TODO move
+    public List<CatalogKey> getKeys(){
+        return keys.values().stream().collect( Collectors.toList());
     }
 
 
