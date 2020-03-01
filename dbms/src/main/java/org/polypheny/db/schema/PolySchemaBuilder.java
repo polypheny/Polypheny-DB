@@ -64,7 +64,7 @@ public class PolySchemaBuilder {
     }
 
 
-    public AbstractPolyphenyDbSchema update( Transaction transaction ) {
+    /*public AbstractPolyphenyDbSchema update( Transaction transaction ) {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
@@ -135,8 +135,55 @@ public class PolySchemaBuilder {
         polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.setSchema( StoreManager.getInstance().getStore( 0 ).getCurrentSchema() ) );
 
         return polyphenyDbSchema;
-    }
+    }*/
 
+    public AbstractPolyphenyDbSchema update( Transaction transaction ) {
+        final AbstractPolyphenyDbSchema polyphenyDbSchema;
+        final Schema schema = new RootSchema();
+        if ( false ) {
+            polyphenyDbSchema = new CachingPolyphenyDbSchema( null, schema, "" );
+        } else {
+            polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
+        }
+
+        SchemaPlus rootSchema = polyphenyDbSchema.plus();
+
+        // Build schema
+        CatalogCombinedDatabase combinedDatabase;
+        try {
+            combinedDatabase = transaction.getCatalog().getCombinedDatabase( 0 );
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException e ) {
+            throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
+        }
+
+        for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+            Map<String, Table> tableMap = new HashMap<>();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), combinedSchema.getSchema().name ).plus();
+            // Create schema on stores
+            for ( Store store : StoreManager.getInstance().getStores().values() ) {
+                store.createNewSchema( transaction, rootSchema, combinedSchema.getSchema().name );
+            }
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
+            //
+            for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                int storeId = combinedTable.getColumnPlacementsByStore().keySet().iterator().next(); // TODO MV: This looks inefficient
+                Store store = StoreManager.getInstance().getStore( storeId );
+                Table table = store.createTableSchema( combinedTable );
+                s.add( combinedTable.getTable().name, table );
+                tableMap.put( combinedTable.getTable().name, table );
+            }
+            rootSchema.add( combinedSchema.getSchema().name, s );
+            tableMap.forEach( rootSchema.getSubSchema( combinedSchema.getSchema().name )::add );
+            if ( combinedDatabase.getDefaultSchema() != null && combinedSchema.getSchema().id == combinedDatabase.getDefaultSchema().id ) {
+                tableMap.forEach( rootSchema::add );
+            }
+        }
+
+        polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.setSchema( StoreManager.getInstance().getStore( 0 ).getCurrentSchema() ) );
+
+        return polyphenyDbSchema;
+    }
 
     /**
      * Schema that has no parents.

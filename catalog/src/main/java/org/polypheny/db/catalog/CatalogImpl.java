@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.mapdb.serializer.SerializerArrayTuple;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -186,24 +188,30 @@ public class CatalogImpl extends Catalog {
         } catch ( GenericCatalogException e ) {
             e.printStackTrace();
         }
-        /*
-        addTable( "depts", 0, 0, null, null );
-        addTable( "emps", 0, 0, null, null );
 
-        // TODO refactor
-        Map<String, String> hsqldbSettings = new HashMap<>();
-        hsqldbSettings.put( "type", "Memory" );
-        hsqldbSettings.put( "path", "maxConnections" );
-        hsqldbSettings.put( "maxConnections", "25" );
-        hsqldbSettings.put( "trxControlMode", "mvcc" );
-        hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
+        try {
+            addTable( "depts", 0, 0, TableType.TABLE, null );
+            addTable( "emps", 0, 0, TableType.TABLE, null );
 
-        addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
 
-        Map<String, String> csvSetttings = new HashMap<>();
-        csvSetttings.put( "directory", "classpath://hr" );
 
-        addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );*/
+            // TODO refactor
+            Map<String, String> hsqldbSettings = new HashMap<>();
+            hsqldbSettings.put( "type", "Memory" );
+            hsqldbSettings.put( "path", "maxConnections" );
+            hsqldbSettings.put( "maxConnections", "25" );
+            hsqldbSettings.put( "trxControlMode", "mvcc" );
+            hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
+
+            addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
+
+            Map<String, String> csvSetttings = new HashMap<>();
+            csvSetttings.put( "directory", "classpath://hr" );
+
+            addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
+        } catch ( GenericCatalogException e ) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -452,7 +460,7 @@ public class CatalogImpl extends Catalog {
         CatalogDatabase database = databases.get( databaseId );
         // TODO long or int for user
         CatalogUser owner = users.get( (long) ownerId );
-        long id = schemaIdBuilder.incrementAndGet();
+        long id = schemaIdBuilder.getAndIncrement();
         schemas.put( id, new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType ) );
         schemaNames.put( new Object[]{ databaseId, name }, id );
         schemaChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -1985,6 +1993,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
         uniqueName = uniqueName.toLowerCase();
+
 
         int id = storeIdBuilder.getAndIncrement();
         stores.put( id, new CatalogStore( id, uniqueName, adapter, settings ) );
