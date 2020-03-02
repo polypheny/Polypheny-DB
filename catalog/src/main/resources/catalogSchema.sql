@@ -328,11 +328,12 @@ WHERE "id" = 0;
 --
 INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
 VALUES ( 0, 0, 'depts', 0, 1, NULL ),
-       ( 1, 0, 'emps', 0, 1, NULL );
+       ( 1, 0, 'emps', 0, 1, NULL ),
+       ( 2, 0, 'test', 0, 1, NULL );
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
-        RESTART WITH 2;
+        RESTART WITH 3;
 
 
 --
@@ -345,11 +346,15 @@ VALUES ( 0, 0, 'deptno', 1, 3, NULL, NULL, FALSE, NULL ),
        ( 3, 1, 'deptno', 2, 3, NULL, NULL, FALSE, NULL ),
        ( 4, 1, 'name', 3, 9, 20, NULL, FALSE, 2 ),
        ( 5, 1, 'salary', 4, 3, NULL, NULL, FALSE, NULL ),
-       ( 6, 1, 'commission', 5, 3, NULL, NULL, FALSE, NULL );
+       ( 6, 1, 'commission', 5, 3, NULL, NULL, FALSE, NULL ),
+       ( 7, 2, 'country', 1, 9, 20, NULL , FALSE, 2 ),
+       ( 8, 2, 'ttt', 2, 9, 20, NULL, FALSE, 2 ),
+       ( 9, 2, 'category', 3, 9, 20, NULL, FALSE, 2 ),
+       ( 10, 2, 'working', 4, 9, 20, NULL, FALSE, 2 );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
-        RESTART WITH 7;
+        RESTART WITH 11;
 
 
 --
@@ -374,5 +379,9 @@ VALUES ( 1, 0, 0, 2, null, 'depts', 'deptno' ),
     ( 1, 3, 1, 2, null, 'emps', 'deptno' ),
     ( 1, 4, 1, 2, null, 'emps', 'name' ),
     ( 1, 5, 1, 2, null, 'emps', 'salary' ),
-    ( 1, 6, 1, 2, null, 'emps', 'commission' );
+    ( 1, 6, 1, 2, null, 'emps', 'commission' ),
+    ( 1, 7, 2, 2, null, 'test', 'country' ),
+    ( 1, 8, 2, 2, null, 'test', 'ttt' ),
+    ( 1, 9, 2, 2, null, 'test', 'category' ),
+    ( 1, 10, 2, 2, null, 'test', 'working' );
 

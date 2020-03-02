@@ -1,7 +1,9 @@
 package org.polypheny.db.exploreByExample;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,18 +125,24 @@ public class Explore {
 
         System.out.println( data );
 
-        saveAsArff( data, "test.arff" );
-        trainData();
+        //saveAsArff( data, "test.arff" );
+        trainData(data);
+        //trainData();
     }
 
 
-    public void trainData() throws Exception {
-        Instances train = getDataSet( "explore-by-example/decision-train.arff" );
+    public void trainData(Instances data) throws Exception {
+        //Instances data = getDataSet( "explore-by-example/test.arff" );
 
+        data.setClassIndex( data.numAttributes() -1 );
         J48 tree = new J48();
-        tree.buildClassifier( train );
 
-        Instances unlabeled = new Instances( getDataSet( "explore-by-example/decision-test-unlabeled.arff" ) );
+        String[] options = {"-U"};
+        tree.setOptions( options );
+
+        tree.buildClassifier( data );
+
+        Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
 
@@ -146,7 +154,9 @@ public class Explore {
             System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
         }
 
+
         saveAsArff( labeled, "labeled-data.arff" );
+
     }
 
 
