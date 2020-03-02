@@ -40,6 +40,7 @@ public class CatalogManagerImpl extends CatalogManager {
 
     private final ConcurrentHashMap<PolyXid, CatalogImpl> catalogs = new ConcurrentHashMap<>();
 
+    private static CatalogImpl catalog = null;
 
     public static CatalogManagerImpl getInstance() {
         return INSTANCE;
@@ -88,19 +89,24 @@ public class CatalogManagerImpl extends CatalogManager {
 
     @Override
     public Catalog getCatalog( PolyXid xid ) {
-        if ( !catalogs.containsKey( xid ) ) {
+        if ( catalog == null ) {
+            catalog = new CatalogImpl( xid );
+        }
+        return catalog;
+        /*if ( !catalogs.containsKey( xid ) ) {
             catalogs.put( xid, new CatalogImpl( xid ) );
         }
-        return catalogs.get( xid );
+        return catalogs.get( xid );*/
     }
 
 
     void removeCatalog( PolyXid xid ) {
-        if ( !catalogs.containsKey( xid ) ) {
+        log.error( "removing store" );
+        /*if ( !catalogs.containsKey( xid ) ) {
             log.error( "There is no catalog instance associated with this transaction id." );
         } else {
             catalogs.remove( xid );
-        }
+        }*/
     }
 
 

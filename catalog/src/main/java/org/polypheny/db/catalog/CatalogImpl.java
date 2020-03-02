@@ -36,17 +36,15 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
-import org.mapdb.elsa.ElsaSerializerBase.Ser;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
-import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -66,18 +64,17 @@ import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.PolyXid;
 
 // TODO remove from all substructures
+
 
 @Slf4j
 public class CatalogImpl extends Catalog {
@@ -86,7 +83,7 @@ public class CatalogImpl extends Catalog {
     private static final String FILE_PATH = "mapDB";
     private static DB db;
 
-    private static HTreeMap<Long, CatalogUser> users;
+    private static HTreeMap<Integer, CatalogUser> users;
     private static HTreeMap<Long, CatalogDatabase> databases;
     private static HTreeMap<String, Long> databaseNames;
     private static HTreeMap<Long, CatalogSchema> schemas;
@@ -106,15 +103,15 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong columnIdBuilder = new AtomicLong();
     private static final AtomicInteger userIdBuilder = new AtomicInteger();
     private static final AtomicLong keyIdBuilder = new AtomicLong();
-    private static AtomicLong constraintIdBuilder = new AtomicLong();
-    private static AtomicLong indexIdBuilder = new AtomicLong();
-    private static AtomicInteger storeIdBuilder = new AtomicInteger();
+    private static final AtomicLong constraintIdBuilder = new AtomicLong();
+    private static final AtomicLong indexIdBuilder = new AtomicLong();
+    private static final AtomicInteger storeIdBuilder = new AtomicInteger();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
     private static BTreeMap<Object[], Long> schemaNames;
     private static BTreeMap<Object[], Long> tableNames;
     private static BTreeMap<Object[], Long> columnNames;
-    private static HTreeMap<String, Long> userNames;
+    private static HTreeMap<String, Integer> userNames;
     private static HTreeMap<String, Integer> storeNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
@@ -125,7 +122,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * MapDB Catalog idea is to only need a minimal amount( max 2-3 ) map lookups for each get
+     * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
     CatalogImpl( PolyXid xid ) {
@@ -137,20 +134,27 @@ public class CatalogImpl extends Catalog {
         } else if ( db != null ) {
             db.close();
         }
+        synchronized ( this ) {
 
-        db = DBMaker
-                .fileDB( FILE_PATH )
-                .closeOnJvmShutdown()
-                .checksumHeaderBypass() // TODO clean shutdown needed
-                .fileMmapEnable()
-                .fileMmapEnableIfSupported()
-                .fileMmapPreclearDisable()
-                .make();
+            db = DBMaker
+                    .fileDB( FILE_PATH )
+                    .closeOnJvmShutdown()
+                    .checksumHeaderBypass() // TODO clean shutdown needed
+                    .fileMmapEnable()
+                    .fileMmapEnableIfSupported()
+                    .fileMmapPreclearDisable()
+                    .make();
 
-        initDBLayout( db );
+            initDBLayout( db );
 
-        // mirrors default data from old sql
-        insertDefaultData();
+            // mirrors default data from old sql
+            try {
+                insertDefaultData();
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException e ) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
 
@@ -160,42 +164,110 @@ public class CatalogImpl extends Catalog {
         initSchemaInfo( db );
         initTableInfo( db );
         initColumnInfo( db );
+        initKeysAndConstraintsInfo( db );
+        initStoreInfo( db );
 
-        keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
-
-        primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
-
-        foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, new GenericSerializer<CatalogForeignKey>() ).createOrOpen();
-
-        constraints = db.hashMap( "constraints", Serializer.LONG, new GenericSerializer<CatalogConstraint>() ).createOrOpen();
-
-        indices = db.hashMap( "indices", Serializer.LONG, new GenericSerializer<CatalogIndex>() ).createOrOpen();
-
-        stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
-
-        storeNames = db.hashMap( "storeNames", Serializer.STRING, Serializer.INTEGER).createOrOpen();
+        initIdBuilder();
 
     }
 
 
-    private void insertDefaultData() {
-        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "system", "" ) );
-        addUser( new CatalogUser( userIdBuilder.getAndIncrement(), "pa", "" ) );
-        addDatabase( new CatalogDatabase( databaseIdBuilder.getAndIncrement(), "APP", 0, "system", 0L, "public" ) );
-        // TODO check type
-        try {
-            addSchema( "public", 0, 0, SchemaType.RELATIONAL );
-        } catch ( GenericCatalogException e ) {
-            e.printStackTrace();
+    private void restoreIdBuilder( Map<Integer, ?> map, AtomicInteger idBuilder ) {
+        if ( !map.isEmpty() ) {
+            idBuilder.set( Collections.max( map.keySet() ) + 1 );
+        }
+    }
+
+
+    private void restoreIdBuilder( Map<Long, ?> map, AtomicLong idBuilder ) {
+        if ( !map.isEmpty() ) {
+            idBuilder.set( Collections.max( map.keySet() ) + 1 );
+        }
+    }
+
+
+    private void initIdBuilder() {
+        restoreIdBuilder( schemas, schemaIdBuilder );
+        restoreIdBuilder( databases, databaseIdBuilder );
+        restoreIdBuilder( tables, tableIdBuilder );
+        restoreIdBuilder( columns, columnIdBuilder );
+        restoreIdBuilder( users, userIdBuilder );
+        restoreIdBuilder( keys, keyIdBuilder );
+        restoreIdBuilder( constraints, columnIdBuilder );
+        restoreIdBuilder( indices, indexIdBuilder );
+        restoreIdBuilder( stores, storeIdBuilder );
+
+    }
+
+
+    private void initStoreInfo( DB db ) {
+        stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
+        storeNames = db.hashMap( "storeNames", Serializer.STRING, Serializer.INTEGER ).createOrOpen();
+    }
+
+
+    private void initKeysAndConstraintsInfo( DB db ) {
+        keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
+        primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
+        foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, new GenericSerializer<CatalogForeignKey>() ).createOrOpen();
+        constraints = db.hashMap( "constraints", Serializer.LONG, new GenericSerializer<CatalogConstraint>() ).createOrOpen();
+        indices = db.hashMap( "indices", Serializer.LONG, new GenericSerializer<CatalogIndex>() ).createOrOpen();
+    }
+
+
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException {
+        //////////////
+        // init users
+        Integer systemId = null;
+        if ( !userNames.containsKey( "system" ) ) {
+            systemId = addUser( "system", "" );
         }
 
-        try {
+        if ( !userNames.containsKey( "pa" ) ) {
+            int ownerId = addUser( "pa", "" );
+        }
+
+        //////////////
+        // init database
+        Long databaseId = null;
+        if ( !databaseNames.containsKey( "APP" ) ) {
+            if ( systemId == null ) {
+                systemId = getUser( "system" ).id;
+            }
+
+            databaseId = addDatabase( "APP", systemId, "system", 0L, "public" );
+        }
+
+        if ( databaseId == null ) {
+            databaseId = getDatabase( "APP" ).id;
+        }
+
+        //////////////
+        // init schema
+
+        Long schemaId = null;
+        if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
+
+            schemaId = addSchema( "public", databaseId, 0, SchemaType.RELATIONAL );
+        }
+
+        if ( schemaId == null ) {
+            schemaId = getDatabase( "APP" ).id;
+        }
+
+        //////////////
+        // init schema
+        if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
             addTable( "depts", 0, 0, TableType.TABLE, null );
+        }
+        if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
             addTable( "emps", 0, 0, TableType.TABLE, null );
+        }
 
-
-
-            // TODO refactor
+        //////////////
+        // init store
+        // TODO refactor
+        if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
             hsqldbSettings.put( "path", "maxConnections" );
@@ -204,21 +276,20 @@ public class CatalogImpl extends Catalog {
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
 
             addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
+        }
 
+        if ( !storeNames.containsKey( "csv" ) ) {
             Map<String, String> csvSetttings = new HashMap<>();
             csvSetttings.put( "directory", "classpath://hr" );
 
             addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
-        } catch ( GenericCatalogException e ) {
-            e.printStackTrace();
         }
-
     }
 
 
     private void initUserInfo( DB db ) {
-        users = db.hashMap( "users", Serializer.LONG, new GenericSerializer<CatalogUser>() ).createOrOpen();
-        userNames = db.hashMap( "usersNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
+        users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
+        userNames = db.hashMap( "usersNames", Serializer.STRING, Serializer.INTEGER ).createOrOpen();
     }
 
 
@@ -228,7 +299,7 @@ public class CatalogImpl extends Catalog {
      * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
      * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
      *
-     * @param db the mapdb Object on which the maps are generated from
+     * @param db the mapdb database object on which the maps are generated from
      */
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
@@ -263,17 +334,20 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public void addDatabase( CatalogDatabase database ) {
-        databases.put( database.id, database );
-        databaseNames.put( database.name, database.id );
-        databaseChildren.put( database.id, ImmutableList.<Long>builder().build() );
+    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
+        long id = databaseIdBuilder.getAndIncrement();
+        databases.put( id, new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName ) );
+        databaseNames.put( name, id );
+        databaseChildren.put( id, ImmutableList.<Long>builder().build() );
+        return id;
     }
 
 
-    public void addUser( CatalogUser user ) {
-        // TODO int for users?
-        users.put( (long) user.id, user );
-        userNames.put( user.name, (long) user.id );
+    public int addUser( String name, String password ) {
+        CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password );
+        users.put( user.id, user );
+        userNames.put( user.name, user.id );
+        return user.id;
     }
 
 
@@ -459,7 +533,7 @@ public class CatalogImpl extends Catalog {
     public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException {
         CatalogDatabase database = databases.get( databaseId );
         // TODO long or int for user
-        CatalogUser owner = users.get( (long) ownerId );
+        CatalogUser owner = users.get( ownerId );
         long id = schemaIdBuilder.getAndIncrement();
         schemas.put( id, new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType ) );
         schemaNames.put( new Object[]{ databaseId, name }, id );
@@ -768,7 +842,7 @@ public class CatalogImpl extends Catalog {
 
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = schemas.get( schemaId );
-        CatalogUser owner = users.get( (long) ownerId );
+        CatalogUser owner = users.get( ownerId );
         tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null, null ) );
         // add null instead of empty list? needs check anyway
         tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -972,8 +1046,9 @@ public class CatalogImpl extends Catalog {
         }*/
     }
 
+
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementByColumn(long columnId) {
+    public List<CatalogColumnPlacement> getColumnPlacementByColumn( long columnId ) {
         // todo
         return null;
     }
@@ -1492,7 +1567,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException {
-
+        // TODO check list
         return tables.get( tableId ).foreignKeys.stream().map( foreignKeys::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         /*
 
@@ -1994,7 +2069,6 @@ public class CatalogImpl extends Catalog {
     public int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
         uniqueName = uniqueName.toLowerCase();
 
-
         int id = storeIdBuilder.getAndIncrement();
         stores.put( id, new CatalogStore( id, uniqueName, adapter, settings ) );
         storeNames.put( uniqueName, id );
@@ -2041,9 +2115,10 @@ public class CatalogImpl extends Catalog {
 
     }
 
+
     // TODO move
-    public List<CatalogKey> getKeys(){
-        return keys.values().stream().collect( Collectors.toList());
+    public List<CatalogKey> getKeys() {
+        return keys.values().stream().collect( Collectors.toList() );
     }
 
 
@@ -2213,6 +2288,7 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void commit() throws CatalogTransactionException {
+        /*
         val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
         if ( XATransactionHandler.hasTransactionHandler( xid ) ) {
             transactionHandler.commit();
@@ -2221,11 +2297,13 @@ public class CatalogImpl extends Catalog {
             log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
         }
         CatalogManagerImpl.getInstance().removeCatalog( xid );
+         */
     }
 
 
     @Override
     public void rollback() throws CatalogTransactionException {
+        /*
         val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
         if ( XATransactionHandler.hasTransactionHandler( xid ) ) {
             transactionHandler.rollback();
@@ -2234,6 +2312,7 @@ public class CatalogImpl extends Catalog {
             log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
         }
         CatalogManagerImpl.getInstance().removeCatalog( xid );
+         */
     }
 
 

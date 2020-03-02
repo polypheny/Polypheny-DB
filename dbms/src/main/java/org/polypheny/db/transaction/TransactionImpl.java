@@ -147,9 +147,9 @@ public class TransactionImpl implements Transaction {
         try {
             // Prepare to commit changes on all involved stores and the catalog
             boolean okToCommit = true;
-            if ( catalog != null ) {
+            /*if ( catalog != null ) {
                 okToCommit &= catalog.prepare();
-            }
+            }*/
             if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
                 for ( Store store : involvedStores ) {
                     okToCommit &= store.prepare( xid );
@@ -158,9 +158,11 @@ public class TransactionImpl implements Transaction {
 
             if ( okToCommit ) {
                 // Commit changes
+                /*
                 if ( catalog != null ) {
                     catalog.commit();
                 }
+                 */
                 for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
@@ -175,10 +177,6 @@ public class TransactionImpl implements Transaction {
                 throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
             }
             transactionManager.removeTransaction( xid );
-        } catch ( CatalogTransactionException e ) {
-            log.error( "Exception while committing changes. Execution rollback!" );
-            rollback();
-            throw new TransactionException( e );
         } finally {
             cachedSchema = null;
         }
@@ -194,6 +192,7 @@ public class TransactionImpl implements Transaction {
             store.rollback( xid );
         }
 
+        /*
         // Rollback changes to the catalog
         try {
             if ( catalog != null ) {
@@ -203,7 +202,7 @@ public class TransactionImpl implements Transaction {
             throw new TransactionException( e );
         } finally {
             cachedSchema = null;
-        }
+        }*/
     }
 
 
