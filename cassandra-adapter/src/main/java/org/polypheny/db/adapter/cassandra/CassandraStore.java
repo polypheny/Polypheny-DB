@@ -156,9 +156,7 @@ public class CassandraStore extends Store {
         for ( CatalogKey catalogKey: combinedTable.getKeys() ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
-//            if ( catalogKey instanceof CatalogPrimaryKey ) {
             if ( primaryKeyColumn == -1 ) {
-//                CatalogPrimaryKey catalogPrimaryKey = (CatalogPrimaryKey) catalogKey;
                 primaryKeyColumn = catalogKey.columnIds.get( 0 );
             }
         }
@@ -285,11 +283,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogCombinedTable table ) {
-//        List<String> qualifiedNames = new LinkedList<>();
-//        qualifiedNames.add( table.getSchema().name );
-//        qualifiedNames.add( table.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-//        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( table.getSchema().name, table.getTable().name );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
 
@@ -301,7 +295,6 @@ public class CassandraStore extends Store {
 
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-//        throw new RuntimeException( "Cassandra adapter does not support updating column types!" );
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
 
@@ -351,8 +344,6 @@ public class CassandraStore extends Store {
                     .set( Assignment.setColumn(
                             newPhysicalColumnName,
                             QueryBuilder.literal( converter.apply( oldValue ) ) ) )
-//                            converter.apply( r.get( catalogColumn.name, oldType.getTypeJavaClass() ) ) ) )
-//                            QueryBuilder.literal( r.get( catalogColumn.name, catalogColumn.type.getTypeJavaClass() ) ) ) )
                     .where( whereClause )
                     .build()
             );
@@ -361,12 +352,6 @@ public class CassandraStore extends Store {
         this.session.execute( builder.build() );
 
         physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
-
-//        session.execute(
-//                SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-//                        .dropColumn( physicalColumnName ).build() );
-//        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName ).renameColumn( catalogColumn.name + "_new", catalogColumn.name ).build() );
-
     }
 
 
