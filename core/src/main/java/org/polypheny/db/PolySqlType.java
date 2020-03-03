@@ -22,6 +22,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.function.Function;
 
 
 public enum PolySqlType {
@@ -182,10 +183,10 @@ public enum PolySqlType {
         return this == VARCHAR || this == TEXT;
     }
 
-    public boolean isNumericalType() {
-        return  this == INTEGER || this == BIGINT || this == REAL || this == DOUBLE || this == DECIMAL;
-    }
 
+    public boolean isNumericalType() {
+        return this == INTEGER || this == BIGINT || this == REAL || this == DOUBLE || this == DECIMAL;
+    }
 
 
     PolySqlType( final int javaSqlTypesConstant, final int typeCode, final Class... parameterTypes ) {
@@ -356,4 +357,229 @@ public enum PolySqlType {
                 throw new IllegalArgumentException( "PolySQL has no data type defined for java.sql.PolySqlType '" + javaSqlTypesConstant + "'" );
         }
     }
+
+
+    public static boolean canConvertFromTo( PolySqlType in, PolySqlType out ) {
+        switch ( in ) {
+            case BOOLEAN:
+                switch ( out ) {
+                    case BOOLEAN:
+                    case INTEGER:
+                    case TEXT:
+                    case VARCHAR:
+                        return true;
+                }
+                break;
+            case VARBINARY:
+                switch ( out ) {
+                    case VARBINARY:
+                    case VARCHAR:
+                    case TEXT:
+                        return true;
+                }
+                break;
+            case BIGINT:
+            case INTEGER:
+                switch ( out ) {
+                    case INTEGER:
+                    case BOOLEAN:
+                    case DOUBLE:
+                    case REAL:
+                    case BIGINT:
+                    case VARCHAR:
+                    case TEXT:
+                        return true;
+                }
+                break;
+            case REAL:
+            case DOUBLE:
+                switch ( out ) {
+                    case INTEGER:
+                    case DECIMAL:
+                    case REAL:
+                    case DOUBLE:
+                    case TEXT:
+                    case VARCHAR:
+                        return true;
+                }
+                break;
+            case DECIMAL:
+                switch ( out ) {
+                    case DECIMAL:
+                    case INTEGER:
+                    case BIGINT:
+                    case REAL:
+                    case DOUBLE:
+                    case TEXT:
+                    case VARCHAR:
+                        return true;
+                }
+                break;
+            case VARCHAR:
+            case TEXT:
+                switch ( out ) {
+                    case VARCHAR:
+                    case TEXT:
+                    case BOOLEAN:
+                    case BIGINT:
+                    case INTEGER:
+                    case DECIMAL:
+                    case VARBINARY:
+                    case DATE:
+                    case TIME:
+                    case TIMESTAMP:
+                    case REAL:
+                    case DOUBLE:
+                        return true;
+                }
+                break;
+            case DATE:
+            case TIMESTAMP:
+                switch ( out ) {
+                    case DATE:
+                    case TIME:
+                    case TIMESTAMP:
+                    case TEXT:
+                    case VARCHAR:
+                        return true;
+                }
+                break;
+            case TIME:
+                switch ( out ) {
+                    case TIME:
+                    case TEXT:
+                    case VARCHAR:
+                        return true;
+                }
+                break;
+        }
+        return false;
+    }
+
+
+    public static Function<Object, Object> convertFromTo( PolySqlType in, PolySqlType out ) {
+//        Function<Object, Object> converter = null;
+
+        switch ( in ) {
+            case BOOLEAN:
+                switch ( out ) {
+                    case BOOLEAN:
+                        return Function.identity();
+                    case INTEGER:
+                        return bool -> (((Boolean) bool) ? 1 : 0);
+                    case TEXT:
+                    case VARCHAR:
+                        return bool -> (((Boolean) bool) ? "true" : "false");
+//                        return null;
+                }
+                break;
+            case VARBINARY:
+                switch ( out ) {
+                    case VARBINARY:
+                        return Function.identity();
+                    case VARCHAR:
+                    case TEXT:
+                        // TODO JS: How are VARBINARY represented in java?
+                        break;
+                }
+                break;
+            case BIGINT:
+            case INTEGER:
+                switch ( out ) {
+                    case INTEGER:
+                    case BIGINT:
+                        return Function.identity();
+                    case BOOLEAN:
+                        return integer -> ((Integer) integer) != 0;
+                    case DOUBLE:
+                    case REAL:
+                        return integer -> ((Integer) integer).doubleValue();
+                    case VARCHAR:
+                    case TEXT:
+                        return integer -> ((Integer) integer).toString();
+                }
+                break;
+            case REAL:
+            case DOUBLE:
+                switch ( out ) {
+                    case REAL:
+                    case DOUBLE:
+                        return Function.identity();
+                    case INTEGER:
+                        return floating -> ((Double) floating).intValue();
+                    case DECIMAL:
+                        // TODO JS: Figure out how to convert this.
+                        break;
+                    case TEXT:
+                    case VARCHAR:
+                        return floating -> ((Double) floating).toString();
+                }
+                break;
+            case DECIMAL:
+                switch ( out ) {
+                    case DECIMAL:
+                        return Function.identity();
+                    case INTEGER:
+                    case BIGINT:
+                    case REAL:
+                    case DOUBLE:
+                    case TEXT:
+                    case VARCHAR:
+                        break;
+                }
+                break;
+            case VARCHAR:
+            case TEXT:
+                switch ( out ) {
+                    case VARCHAR:
+                    case TEXT:
+                        return Function.identity();
+                    case BOOLEAN:
+                        return boolString -> {
+                            String bString = (String) boolString;
+                            if ( bString.equalsIgnoreCase( "true" ) ) return true;
+                            if ( bString.equalsIgnoreCase( "false" ) ) return false;
+                            throw new RuntimeException( "Unable to converter string to boolean. Given string was: " + bString );
+                        };
+                    case BIGINT:
+                    case INTEGER:
+                        return intString -> Integer.valueOf( (String) intString );
+                    case REAL:
+                    case DOUBLE:
+                        return doubleString -> Double.valueOf( (String) doubleString );
+                    case DECIMAL:
+                    case VARBINARY:
+                    case DATE:
+                    case TIME:
+                    case TIMESTAMP:
+                        break;
+                }
+                break;
+            case DATE:
+            case TIMESTAMP:
+                switch ( out ) {
+                    case DATE:
+                    case TIMESTAMP:
+                        return Function.identity();
+                    case TIME:
+                    case TEXT:
+                    case VARCHAR:
+                        break;
+                }
+                break;
+            case TIME:
+                switch ( out ) {
+                    case TIME:
+                        return Function.identity();
+                    case TEXT:
+                    case VARCHAR:
+                        break;
+                }
+                break;
+        }
+
+        throw new RuntimeException( "Unable to convert from " + in.name() + " to " + out.name() );
+    }
+
 }
+

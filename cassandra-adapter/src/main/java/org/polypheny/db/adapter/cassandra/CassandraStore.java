@@ -19,18 +19,29 @@ package org.polypheny.db.adapter.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
+import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -223,12 +234,14 @@ public class CassandraStore extends Store {
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
+        String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
 
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .addColumn( catalogColumn.name, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();
+                .addColumn( physicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();
 
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
+        // TODO JS: Wrap with error handling to check whether successful, if not, try iterative revision names to find one that works.
         this.session.execute( addColumn );
     }
 
@@ -237,9 +250,10 @@ public class CassandraStore extends Store {
     public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
+        String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
 
         SimpleStatement dropColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .dropColumn( catalogColumn.name ).build();
+                .dropColumn( physicalColumnName ).build();
 
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
@@ -271,11 +285,12 @@ public class CassandraStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogCombinedTable table ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( table.getSchema().name );
-        qualifiedNames.add( table.getTable().name );
+//        List<String> qualifiedNames = new LinkedList<>();
+//        qualifiedNames.add( table.getSchema().name );
+//        qualifiedNames.add( table.getTable().name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+//        String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( table.getSchema().name, table.getTable().name );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
 
         // FIXME JS: Cassandra transaction hotfix
@@ -286,7 +301,72 @@ public class CassandraStore extends Store {
 
     @Override
     public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-        throw new RuntimeException( "Cassandra adapter does not support updating column types!" );
+//        throw new RuntimeException( "Cassandra adapter does not support updating column types!" );
+        // FIXME JS: Cassandra transaction hotfix
+        context.getTransaction().registerInvolvedStore( this );
+
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogColumn.schemaName, catalogColumn.tableName );
+
+        SimpleStatement selectData = QueryBuilder.selectFrom( this.dbKeyspace, physicalTableName ).all().build();
+        ResultSet rs = this.session.execute( selectData );
+
+        if ( ! rs.isFullyFetched() ) {
+            throw new RuntimeException( "Unable to convert column type..." );
+        }
+
+        String physicalColumnName = physicalNameProvider.getPhysicalColumnName( catalogColumn.id );
+
+        String newPhysicalColumnName = CassandraPhysicalNameProvider.incrementNameRevision( physicalColumnName );
+
+        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+                .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) )
+                .build() );
+
+        BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
+        RelationMetadata relationMetadata = session.getMetadata().getKeyspace( dbKeyspace ).get().getTable( physicalTableName ).get();
+        List<ColumnMetadata> primaryKeys = relationMetadata.getPrimaryKey();
+        ColumnMetadata oldColumn = relationMetadata.getColumn( physicalColumnName ).get();
+        PolySqlType oldType = CassandraTypesUtils.getPolySqlType( oldColumn.getType() );
+
+        Function<Object, Term> converter = CassandraTypesUtils.convertDataType( oldType, catalogColumn.type );
+
+        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+                .dropColumn( physicalColumnName ).build() );
+
+
+        for ( Row r: rs ) {
+            List<Relation> whereClause = new ArrayList<>();
+            for ( ColumnMetadata cm: primaryKeys ) {
+                Relation rl = Relation.column( cm.getName() ).isEqualTo(
+                        QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getPolySqlType( cm.getType() ).getTypeJavaClass() ) )
+                );
+                whereClause.add( rl );
+            }
+
+            Object oldFuckingValueFuckYou = r.get( physicalColumnName, oldType.getTypeJavaClass() );
+
+            builder.addStatement(
+                    QueryBuilder.update( this.dbKeyspace, physicalTableName )
+                    .set( Assignment.setColumn(
+                            newPhysicalColumnName,
+                            converter.apply( oldFuckingValueFuckYou ) ) )
+//                            converter.apply( r.get( catalogColumn.name, oldType.getTypeJavaClass() ) ) ) )
+//                            QueryBuilder.literal( r.get( catalogColumn.name, catalogColumn.type.getTypeJavaClass() ) ) ) )
+                    .where( whereClause )
+                    .build()
+            );
+        }
+
+        this.session.execute( builder.build() );
+
+        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
+
+//        session.execute(
+//                SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+//                        .dropColumn( physicalColumnName ).build() );
+//        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName ).renameColumn( catalogColumn.name + "_new", catalogColumn.name ).build() );
+
     }
 
 

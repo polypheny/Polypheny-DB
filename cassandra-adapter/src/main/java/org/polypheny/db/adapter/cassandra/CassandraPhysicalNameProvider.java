@@ -18,6 +18,8 @@ package org.polypheny.db.adapter.cassandra;
 
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -28,6 +30,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
 public class CassandraPhysicalNameProvider {
+
+    private final static Pattern idRevPattern = Pattern.compile( "^(col|tab|sch)([0-9]+)(?>r([0-9]+))?$" );
 
     private final Catalog catalog;
     private final int storeId;
@@ -154,6 +158,17 @@ public class CassandraPhysicalNameProvider {
     }
 
 
+    public void updatePhysicalColumnName( long columnId, String updatedName ) {
+        CatalogColumnPlacement placement;
+        try {
+            placement = this.catalog.getColumnPlacement( this.storeId, columnId );
+            this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     public String getPhysicalTableName( String schemaName, String tableName ) {
         return "tab" + tableId( schemaName, tableName );
     }
@@ -178,5 +193,27 @@ public class CassandraPhysicalNameProvider {
         }
 
         return getPhysicalTableName( schemaName, tableName );
+    }
+
+    public static String incrementNameRevision( String name ) {
+        Matcher m = idRevPattern.matcher( name );
+        Long id;
+        Long rev;
+        String type;
+        if ( m.find() ) {
+            type = m.group( 1 );
+            id = Long.valueOf( m.group( 2 ) );
+            if ( m.group( 3 ) == null ) {
+                rev = 0L;
+            } else {
+                rev = Long.valueOf( m.group( 3 ) );
+            }
+        } else {
+            throw new IllegalArgumentException( "Not a physical name!" );
+        }
+
+        rev += 1L;
+
+        return type + id + "r" + rev;
     }
 }
