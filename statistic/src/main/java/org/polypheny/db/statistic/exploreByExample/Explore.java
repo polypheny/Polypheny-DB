@@ -1,14 +1,28 @@
-package org.polypheny.db.exploreByExample;
+/*
+ * Copyright 2019-2020 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.statistic.exploreByExample;
 
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,9 +31,7 @@ import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
-import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.SparseInstance;
 import weka.core.converters.ArffLoader;
 import weka.core.converters.ArffSaver;
 
@@ -31,7 +43,13 @@ public class Explore {
 
     @Getter
     @Setter
-    private Object test;
+    private String[][] classifiedData;
+
+    @Setter
+    private String[] columnId;
+
+    @Setter
+    private String tableId;
 
 
     private Explore() {
@@ -47,15 +65,18 @@ public class Explore {
     }
 
 
-    public void testing() throws Exception {
+    public String testing() throws Exception {
         System.out.println( "testing my class" );
-        System.out.print( test );
-        prepareUserInput();
+        System.out.print( Arrays.deepToString( classifiedData ) );
+        System.out.println( tableId );
+        System.out.println( Arrays.toString( columnId ) );
+        return prepareUserInput();
     }
 
 
-    public void prepareUserInput() throws Exception {
-        String userInput = test.toString().replace( " ", ";" );
+    public String prepareUserInput() throws Exception {
+        /*
+        String userInput = classifiedData.toString().replace( " ", ";" );
         int countLines = userInput.length() - userInput.replace( "=", "" ).length();
 
         String[] userClassification = userInput.split( ";" );
@@ -75,16 +96,17 @@ public class Explore {
             answers.add( splited );
 
         }
+        */
 
         //System.out.println( Arrays.deepToString( answers.toArray( new String[0][0] ) ) );
-        String[][] rotated = rotate2dArray( answers.toArray( new String[0][0] ) );
+        String[][] rotated = rotate2dArray( classifiedData );
         //System.out.println( Arrays.deepToString( rotated ) );
 
-        convertToArff( rotated, dim, answers.toArray( new String[0][0] ) );
+        return convertToArff( rotated, classifiedData[0].length, classifiedData );
     }
 
 
-    public void convertToArff( String[][] rotated, int dimLength, String[][] answers ) throws Exception {
+    public String convertToArff( String[][] rotated, int dimLength, String[][] answers ) throws Exception {
 
         int numInstances = rotated[0].length;
         FastVector atts = new FastVector();
@@ -126,12 +148,12 @@ public class Explore {
         System.out.println( data );
 
         //saveAsArff( data, "test.arff" );
-        trainData(data);
+        return trainData(data);
         //trainData();
     }
 
 
-    public void trainData(Instances data) throws Exception {
+    public String trainData(Instances data) throws Exception {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
         data.setClassIndex( data.numAttributes() -1 );
@@ -142,12 +164,18 @@ public class Explore {
 
         tree.buildClassifier( data );
 
+        //StatisticsManager<?> stats = StatisticsManager.getInstance();
+        //List<String> qualifiedColumnNames = new ArrayList<>(  );
+
+        //stats.getAllUniqueValues(qualifiedColumnNames);
+
         Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
 
         Instances labeled = new Instances( unlabeled );
 
+        String labledData;
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
             double clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             labeled.instance( i ).setClassValue( clsLabel );
@@ -156,7 +184,8 @@ public class Explore {
 
 
         saveAsArff( labeled, "labeled-data.arff" );
-
+        labledData = String.valueOf( labeled );
+        return labledData;
     }
 
 

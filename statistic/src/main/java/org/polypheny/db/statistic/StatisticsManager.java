@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -360,6 +361,8 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
+
+
     /**
      * Gets the amount of entries for a column
      */
@@ -489,6 +492,19 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void applyTable( String changedQualifiedTable ) {
         this.reevaluateTable( changedQualifiedTable );
     }
+
+
+
+    /**
+     *
+     * @param qualifiedColumnNames
+     */
+    /*
+    public void getAllUniqueValues( List<String> qualifiedColumnNames ) {
+        return qualifiedColumnNames.stream().map( this::getUniqueValues ).collect( Collectors.toList() );
+
+    }
+    */
 
 
     /**

@@ -107,7 +107,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.exploreByExample.Explore;
+import org.polypheny.db.statistic.exploreByExample.Explore;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
@@ -707,13 +707,14 @@ public class Crud implements InformationObserver {
     String getInformationFromUser( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
 
-
         Explore e = Explore.getInstance();
-        e.setTest( explore.arr );
+        e.setClassifiedData( explore.data );
+        e.setColumnId( explore.columnInfo );
+        e.setTableId( explore.tableId );
+
         e.testing();
 
-
-        return "Testing new Methode";
+        return "TEST";
 
     }
 

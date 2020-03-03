@@ -19,6 +19,8 @@ package org.polypheny.db.webui.models.requests;
 
 public class ExploreByExample {
 
-    public Object arr;
+    public String tableId;
+    public String[] columnInfo;
+    public String[][] data;
 
 }
