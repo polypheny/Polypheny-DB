@@ -256,7 +256,7 @@ public class StatisticQueryProcessor {
     }
 
 
-    private StatisticResult executeSqlSelect( String query ) {
+    StatisticResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
         StatisticResult result = new StatisticResult();
         try {

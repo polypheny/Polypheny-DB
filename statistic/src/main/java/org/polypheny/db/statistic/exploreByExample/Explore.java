@@ -21,12 +21,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.statistic.StatisticQueryColumn;
+import org.polypheny.db.statistic.StatisticResult;
+import org.polypheny.db.statistic.StatisticsManager;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -51,6 +56,8 @@ public class Explore {
     @Setter
     private String tableId;
 
+    List<List<String>> allUniqueValues = new ArrayList<>(  );
+    List<List<String>> wholeTable = new ArrayList<>(  );
 
     private Explore() {
 
@@ -66,10 +73,7 @@ public class Explore {
 
 
     public String testing() throws Exception {
-        System.out.println( "testing my class" );
-        System.out.print( Arrays.deepToString( classifiedData ) );
-        System.out.println( tableId );
-        System.out.println( Arrays.toString( columnId ) );
+        getStatistics();
         return prepareUserInput();
     }
 
@@ -98,9 +102,8 @@ public class Explore {
         }
         */
 
-        //System.out.println( Arrays.deepToString( answers.toArray( new String[0][0] ) ) );
+
         String[][] rotated = rotate2dArray( classifiedData );
-        //System.out.println( Arrays.deepToString( rotated ) );
 
         return convertToArff( rotated, classifiedData[0].length, classifiedData );
     }
@@ -114,22 +117,31 @@ public class Explore {
         FastVector attValsEl[] = new FastVector[dimLength];
         Instances data;
         double[] vals;
-        String[] values = new String[numInstances];
-        Set<String> doublicates = new HashSet<>();
+        //String[] values = new String[numInstances];
+        //Set<String> doublicates = new HashSet<>();
 
         // attributes
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
+
+            for(int i = 0; i < allUniqueValues.get( dim ).size(); i++){
+                attVals.addElement( allUniqueValues.get( dim ).get( i ) );
+            }
+
+
+            /*
             for ( int obj = 0; obj < numInstances; obj++ ) {
                 values[obj] = rotated[dim][obj];
             }
+            //System.out.println( Arrays.toString( values ) );
+
             for ( String val : values ) {
                 if ( doublicates.add( val ) ) {
                     attVals.addElement( val );
                 }
             }
+             */
 
-            System.out.println( attVals );
             atts.addElement( new Attribute( "attr" + dim, attVals ) );
             attValsEl[dim] = attVals;
         }
@@ -164,10 +176,6 @@ public class Explore {
 
         tree.buildClassifier( data );
 
-        //StatisticsManager<?> stats = StatisticsManager.getInstance();
-        //List<String> qualifiedColumnNames = new ArrayList<>(  );
-
-        //stats.getAllUniqueValues(qualifiedColumnNames);
 
         Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
@@ -186,6 +194,26 @@ public class Explore {
         saveAsArff( labeled, "labeled-data.arff" );
         labledData = String.valueOf( labeled );
         return labledData;
+    }
+
+
+    private void getStatistics() {
+        StatisticsManager<?> stats = StatisticsManager.getInstance();
+        List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnId ), tableId);
+
+        for ( StatisticQueryColumn uniqueValue : uniqueValues ) {
+            allUniqueValues.add( Arrays.asList( uniqueValue.getData() ) );
+        }
+
+        List<String> trueFalse = new ArrayList<>(  );
+        trueFalse.add( "true" );
+        trueFalse.add("false");
+        allUniqueValues.add(trueFalse);
+        System.out.println( allUniqueValues );
+
+
+        StatisticResult statisticResult = stats.getTable(columnId , tableId);
+
     }
 
 

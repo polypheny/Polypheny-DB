@@ -361,8 +361,26 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
+    /**
+     * Gets all Unique Values for Classification
+     * TODO only working for one table
+     * @param qualifiedColumnNames all columns
+     */
 
+    public List<StatisticQueryColumn> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
+        return qualifiedColumnNames.stream().map( c -> getAllUniqueValuesMethod( c, qualifiedTableName ) ).collect( Collectors.toList() );
+    }
 
+    private StatisticQueryColumn getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
+        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 20";
+        return this.sqlQueryInterface.selectOneStat( query );
+    }
+
+    public StatisticResult getTable(String[] qualifiedColumn, String qualifiedTableName){
+        System.out.println( Arrays.toString( qualifiedColumn ).replace( "[", "" ).replace( "]", "" ) );
+        String query = "SELECT " + Arrays.toString( qualifiedColumn ).replace( "[", "" ).replace( "]", "" ) + " FROM " + qualifiedTableName + " LIMIT 20";
+        return this.sqlQueryInterface.executeSqlSelect(query);
+    }
     /**
      * Gets the amount of entries for a column
      */
@@ -492,20 +510,6 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void applyTable( String changedQualifiedTable ) {
         this.reevaluateTable( changedQualifiedTable );
     }
-
-
-
-    /**
-     *
-     * @param qualifiedColumnNames
-     */
-    /*
-    public void getAllUniqueValues( List<String> qualifiedColumnNames ) {
-        return qualifiedColumnNames.stream().map( this::getUniqueValues ).collect( Collectors.toList() );
-
-    }
-    */
-
 
     /**
      * This class reevaluates if background tracking should be stopped or restarted depending on the state of the ConfigManager

@@ -707,6 +707,7 @@ public class Crud implements InformationObserver {
     String getInformationFromUser( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
 
+        System.out.println( "test" );
         Explore e = Explore.getInstance();
         e.setClassifiedData( explore.data );
         e.setColumnId( explore.columnInfo );
