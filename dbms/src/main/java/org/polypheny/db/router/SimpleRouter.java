@@ -39,7 +39,7 @@ public class SimpleRouter extends AbstractRouter {
 
     @Override
     public RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
-        RelBuilder builder = RelBuilder.create( transaction );
+        RelBuilder builder = RelBuilder.create( transaction, logicalRoot.rel.getCluster() );
         builder = build( logicalRoot.rel, builder, transaction );
         return new RelRoot(
                 builder.build(),

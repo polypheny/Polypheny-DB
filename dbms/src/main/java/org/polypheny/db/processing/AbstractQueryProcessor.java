@@ -49,8 +49,10 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
@@ -75,8 +77,10 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.type.ExtraSqlTypes;
 import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -84,7 +88,7 @@ import org.polypheny.db.util.Util;
 
 
 @Slf4j
-public abstract class AbstractQueryProcessor implements QueryProcessor {
+public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpander {
 
     private final Transaction transaction;
     private final RexBuilder rexBuilder;
@@ -114,9 +118,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         stopWatch.start();
 
-        // Structured type flattening, view expansion, and plugging in physical storage.
-        //logicalRoot = logicalRoot.withRel( flattenTypes( logicalRoot.rel, true ) );
-
         final Convention resultConvention =
                 ENABLE_BINDABLE
                         ? BindableConvention.INSTANCE
@@ -124,6 +125,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Route
         RelRoot routedRoot = route( logicalRoot, transaction );
+
+        RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                RelBuilder.create( transaction, routedRoot.rel.getCluster() ),
+                rexBuilder,
+                ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                true );
+        routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
 
         RelRoot optimalRoot = optimize( routedRoot, resultConvention );
 
@@ -502,4 +510,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 avaticaType.columnClassName() );
     }
 
+
+    @Override
+    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
+        return null; // TODO
+    }
 }
