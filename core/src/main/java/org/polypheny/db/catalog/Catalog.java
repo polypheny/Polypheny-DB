@@ -233,9 +233,19 @@ public abstract class Catalog {
     public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException;
 
     /**
+     * Returns the table with the given id
+     *
+     * @param tableId The id of the table
+     * @return The table
+     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
+     */
+    public abstract CatalogTable getTable( long tableId ) throws UnknownTableException, GenericCatalogException;
+
+
+    /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId The id of the schema
+     * @param schemaId  The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
@@ -347,6 +357,16 @@ public abstract class Catalog {
      * @return List of column placements on this store
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
+
+
+    /**
+     * Get column placements in a specific schema on a specific store
+     *
+     * @param storeId  The id of the store
+     * @param schemaId The id of the schema
+     * @return List of column placements on this store and schema
+     */
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException;
 
 
     /**

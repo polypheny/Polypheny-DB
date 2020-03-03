@@ -117,31 +117,38 @@ public class PolySchemaBuilder {
         }
 
         //
-        // Build physical schema
+        // Build store schema
         try {
             List<CatalogStore> stores = transaction.getCatalog().getStores();
-            for ( CatalogStore catalogStore : stores ) {
-                // Get list of tables on this store
-                Set<Long> tableIds = new HashSet<>();
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacementsOnStore( catalogStore.id ) ) {
-                    tableIds.add( placement.tableId );
-                }
+            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+                for ( CatalogStore catalogStore : stores ) {
+                    // Get list of tables on this store
+                    Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
+                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
+                    for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacementsOnStoreAndSchema( catalogStore.id, combinedSchema.getSchema().id ) ) {
+                        tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
+                        tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
+                    }
 
-                Map<String, Table> physicalTables = new HashMap<>();
-                Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                store.createNewSchema( transaction, rootSchema, catalogStore.uniqueName );
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, store.getCurrentSchema(), catalogStore.uniqueName ).plus();
-                for ( long tableId : tableIds ) {
-                    CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
-                    Table table = store.createTableSchema( combinedTable );
-                    physicalTables.put( combinedTable.getTable().name, table );
-                    s.add( combinedTable.getTable().name, table );
+                    for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
+                        Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
+                        Map<String, Table> physicalTables = new HashMap<>();
+                        Store store = StoreManager.getInstance().getStore( catalogStore.id );
+                        final String schemaName = buildStoreSchemaName( catalogStore.uniqueName, combinedSchema.getSchema().name, physicalSchemaName );
+                        store.createNewSchema( transaction, rootSchema, schemaName );
+                        SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, store.getCurrentSchema(), schemaName ).plus();
+                        for ( long tableId : tableIds ) {
+                            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
+                            Table table = store.createTableSchema( combinedTable );
+                            physicalTables.put( combinedTable.getTable().name, table );
+                            s.add( combinedTable.getTable().name, table );
+                        }
+                        rootSchema.add( schemaName, s );
+                        physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                        rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( store.getCurrentSchema() );
+                    }
                 }
-                rootSchema.add( catalogStore.uniqueName, s );
-                physicalTables.forEach( rootSchema.getSubSchema( catalogStore.uniqueName )::add );
-                rootSchema.getSubSchema( store.getUniqueName() ).polyphenyDbSchema().setSchema( store.getCurrentSchema() );
             }
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
@@ -161,6 +168,11 @@ public class PolySchemaBuilder {
             assert sqlTypeName.allowsNoPrecNoScale();
             return typeFactory.createSqlType( sqlTypeName );
         }
+    }
+
+
+    public static String buildStoreSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
+        return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
 
 

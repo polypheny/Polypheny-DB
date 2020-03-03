@@ -19,7 +19,9 @@ package org.polypheny.db.router;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -31,6 +33,7 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
@@ -68,8 +71,13 @@ public class SimpleRouter extends AbstractRouter {
                     throw new RuntimeException( e );
                 }
                 // Take first
-                String storeName = placements.get( 0 ).storeUniqueName;
-                return builder.scan( ImmutableList.of( storeName, ((LogicalTable) table.getTable()).getLogicalTableName() ) );
+                CatalogColumnPlacement placement = placements.get( 0 );
+                return builder.scan( ImmutableList.of(
+                        PolySchemaBuilder.buildStoreSchemaName(
+                                placement.storeUniqueName,
+                                ((LogicalTable) table.getTable()).getLogicalSchemaName(),
+                                placement.physicalSchemaName ),
+                        ((LogicalTable) table.getTable()).getLogicalTableName() ) );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -90,7 +98,19 @@ public class SimpleRouter extends AbstractRouter {
                 // Execute on all placements
                 for ( CatalogColumnPlacement placement : placements ) {
                     CatalogReader catalogReader = transaction.getCatalogReader();
-                    List<String> tableNames = ImmutableList.of( placement.storeUniqueName, t.getLogicalTableName() );
+                    CatalogTable catalogTable;
+                    try {
+                        catalogTable = transaction.getCatalog().getTable( placement.tableId );
+                    } catch ( UnknownTableException | GenericCatalogException e ) {
+                        // This should not happen
+                        throw new RuntimeException( e );
+                    }
+                    List<String> tableNames = ImmutableList.of(
+                            PolySchemaBuilder.buildStoreSchemaName(
+                                    placement.storeUniqueName,
+                                    catalogTable.schemaName,
+                                    placement.physicalSchemaName ),
+                            t.getLogicalTableName() );
                     RelOptTable physical = catalogReader.getTableForMember( tableNames );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
                     TableModify modify;
