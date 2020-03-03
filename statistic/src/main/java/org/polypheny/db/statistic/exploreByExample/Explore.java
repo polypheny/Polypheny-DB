@@ -72,53 +72,32 @@ public class Explore {
     }
 
 
-    public String testing() throws Exception {
+    public String classificationProcess() throws Exception {
         getStatistics();
         return prepareUserInput();
     }
 
-
     public String prepareUserInput() throws Exception {
-        /*
-        String userInput = classifiedData.toString().replace( " ", ";" );
-        int countLines = userInput.length() - userInput.replace( "=", "" ).length();
-
-        String[] userClassification = userInput.split( ";" );
-
-        System.out.println( Arrays.toString( userClassification ) );
-        System.out.println( userClassification.length );
-
-        List<String[]> answers = new ArrayList<>();
-
-        int dim = 0;
-        for ( int i = 0; i < userClassification.length; i++ ) {
-            String[] splited = userClassification[i].replace( "{", "" ).replace( "}", "" ).split( "[,=]" );
-
-            System.out.println( Arrays.toString( splited ) );
-            dim = splited.length;
-            System.out.println( dim );
-            answers.add( splited );
-
-        }
-        */
-
 
         String[][] rotated = rotate2dArray( classifiedData );
 
-        return convertToArff( rotated, classifiedData[0].length, classifiedData );
+        return convertToArff( rotated, classifiedData );
     }
 
-
-    public String convertToArff( String[][] rotated, int dimLength, String[][] answers ) throws Exception {
+    /**
+     * Converts Data to "arff format" in order to use Weka for classification
+     * @param rotated rotated userClassification
+     * @param userClassification classified data form user
+     */
+    public String convertToArff( String[][] rotated, String[][] userClassification ) throws Exception {
 
         int numInstances = rotated[0].length;
+        int dimLength = classifiedData[0].length;
         FastVector atts = new FastVector();
         FastVector attVals;
         FastVector attValsEl[] = new FastVector[dimLength];
         Instances data;
         double[] vals;
-        //String[] values = new String[numInstances];
-        //Set<String> doublicates = new HashSet<>();
 
         // attributes
         for ( int dim = 0; dim < dimLength; dim++ ) {
@@ -127,20 +106,6 @@ public class Explore {
             for(int i = 0; i < allUniqueValues.get( dim ).size(); i++){
                 attVals.addElement( allUniqueValues.get( dim ).get( i ) );
             }
-
-
-            /*
-            for ( int obj = 0; obj < numInstances; obj++ ) {
-                values[obj] = rotated[dim][obj];
-            }
-            //System.out.println( Arrays.toString( values ) );
-
-            for ( String val : values ) {
-                if ( doublicates.add( val ) ) {
-                    attVals.addElement( val );
-                }
-            }
-             */
 
             atts.addElement( new Attribute( "attr" + dim, attVals ) );
             attValsEl[dim] = attVals;
@@ -152,7 +117,7 @@ public class Explore {
         for ( int obj = 0; obj < numInstances; obj++ ) {
             vals = new double[data.numAttributes()];
             for ( int dim = 0; dim < dimLength; dim++ ) {
-                vals[dim] = attValsEl[dim].indexOf( answers[obj][dim] );
+                vals[dim] = attValsEl[dim].indexOf( userClassification[obj][dim] );
             }
             data.add( new DenseInstance( 1.0, vals ) );
         }
@@ -165,16 +130,21 @@ public class Explore {
     }
 
 
-    public String trainData(Instances data) throws Exception {
+    /**
+     * TODO get data from Polypheny and not form arff file
+     * Train table with the classified dataset
+     * @param classifiedData prepared classifiedData
+     */
+    public String trainData(Instances classifiedData) throws Exception {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
-        data.setClassIndex( data.numAttributes() -1 );
+        classifiedData.setClassIndex( classifiedData.numAttributes() -1 );
         J48 tree = new J48();
 
         String[] options = {"-U"};
         tree.setOptions( options );
 
-        tree.buildClassifier( data );
+        tree.buildClassifier( classifiedData );
 
 
         Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
@@ -197,6 +167,12 @@ public class Explore {
     }
 
 
+    /**
+     * gets all UniqueValues for "arff file"
+     *
+     * gets whole dataset
+     * TODO process whole dataset to be able to train it
+     */
     private void getStatistics() {
         StatisticsManager<?> stats = StatisticsManager.getInstance();
         List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnId ), tableId);
@@ -215,7 +191,6 @@ public class Explore {
         StatisticResult statisticResult = stats.getTable(columnId , tableId);
 
     }
-
 
     public Instances getDataSet( String fileName ) throws IOException {
 

@@ -704,18 +704,22 @@ public class Crud implements InformationObserver {
 
     }
 
-    String getInformationFromUser( Request req, Response res ) throws Exception {
+
+    /**
+     * Gets the classified Data from User
+     * return possibly interesting Data to User
+     *
+     */
+
+    String classifyData( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
 
-        System.out.println( "test" );
         Explore e = Explore.getInstance();
         e.setClassifiedData( explore.data );
         e.setColumnId( explore.columnInfo );
         e.setTableId( explore.tableId );
 
-        e.testing();
-
-        return "TEST";
+        return e.classificationProcess();
 
     }
 
