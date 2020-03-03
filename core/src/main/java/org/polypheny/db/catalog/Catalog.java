@@ -700,6 +700,10 @@ public abstract class Catalog {
 
     public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
+    public abstract void close();
+
+    public abstract void clear();
+
 
     public enum TableType {
         TABLE( 1 ),

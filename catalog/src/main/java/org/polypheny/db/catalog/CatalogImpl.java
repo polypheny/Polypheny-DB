@@ -81,7 +81,7 @@ public class CatalogImpl extends Catalog {
 
     private static HTreeMap<Integer, CatalogUser> users;
     private static HTreeMap<Long, CatalogDatabase> databases;
-    private static HTreeMap<String, Long> databaseNames;
+    private static HTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, CatalogSchema> schemas;
     private static HTreeMap<Long, CatalogTable> tables;
     private static HTreeMap<Long, CatalogColumn> columns;
@@ -104,10 +104,10 @@ public class CatalogImpl extends Catalog {
     private static final AtomicInteger storeIdBuilder = new AtomicInteger();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
-    private static BTreeMap<Object[], Long> schemaNames;
+    private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static BTreeMap<Object[], Long> tableNames;
     private static BTreeMap<Object[], Long> columnNames;
-    private static HTreeMap<String, Integer> userNames;
+    private static HTreeMap<String, CatalogUser> userNames;
     private static HTreeMap<String, Integer> storeNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
@@ -117,11 +117,16 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogIndex> indices;
 
 
+    public CatalogImpl() {
+        this( FILE_PATH );
+    }
+
+
     /**
      * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
-    CatalogImpl() {
+    public CatalogImpl( String path ) {
         super();
 
         if ( db != null && !db.isClosed() ) {
@@ -132,7 +137,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
 
             db = DBMaker
-                    .fileDB( FILE_PATH )
+                    .fileDB( path )
                     .closeOnJvmShutdown()
                     .checksumHeaderBypass() // TODO clean shutdown needed
                     .fileMmapEnable()
@@ -291,7 +296,7 @@ public class CatalogImpl extends Catalog {
 
     private void initUserInfo( DB db ) {
         users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
-        userNames = db.hashMap( "usersNames", Serializer.STRING, Serializer.INTEGER ).createOrOpen();
+        userNames = db.hashMap( "usersNames", Serializer.STRING, new GenericSerializer<CatalogUser>() ).createOrOpen();
     }
 
 
@@ -321,19 +326,25 @@ public class CatalogImpl extends Catalog {
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
     }
 
 
     private void initDatabaseInfo( DB db ) {
         databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
-        databaseNames = db.hashMap( "databaseNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
+        databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
         databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
     }
 
 
+    @Override
     public void close() {
         db.close();
+    }
+
+    @Override
+    public void clear(){
+        db.getAll().clear();
     }
 
 
@@ -345,17 +356,26 @@ public class CatalogImpl extends Catalog {
      */
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
         long id = databaseIdBuilder.getAndIncrement();
-        databases.put( id, new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName ) );
-        databaseNames.put( name, id );
+        CatalogDatabase database = new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName );
+        databases.put( id, database );
+        databaseNames.put( name, database );
         databaseChildren.put( id, ImmutableList.<Long>builder().build() );
         return id;
     }
 
 
+    /**
+     * Inserts a new user,
+     * if a user with the same name already exists, it throws an error // TODO should it?
+     *
+     * @param name of the user
+     * @param password of the user
+     * @return the id of the created user
+     */
     public int addUser( String name, String password ) {
         CatalogUser user = new CatalogUser( userIdBuilder.getAndIncrement(), name, password );
         users.put( user.id, user );
-        userNames.put( user.name, user.id );
+        userNames.put( user.name, user );
         return user.id;
     }
 
@@ -368,7 +388,7 @@ public class CatalogImpl extends Catalog {
      * @return List of databases
      */
     @Override
-    public List<CatalogDatabase> getDatabases( Pattern pattern ) throws GenericCatalogException {
+    public List<CatalogDatabase> getDatabases( Pattern pattern ) {
 
         if ( pattern == null ) {
             return new ArrayList<>( databases.values() );
