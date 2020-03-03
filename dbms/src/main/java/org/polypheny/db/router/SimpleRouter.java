@@ -17,6 +17,8 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -28,6 +30,7 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
@@ -96,6 +99,7 @@ public class SimpleRouter extends AbstractRouter {
                 }
 
                 // Execute on all placements
+                List<TableModify> modifies = new ArrayList<>( placements.size() );
                 for ( CatalogColumnPlacement placement : placements ) {
                     CatalogReader catalogReader = transaction.getCatalogReader();
                     CatalogTable catalogTable;
@@ -119,7 +123,7 @@ public class SimpleRouter extends AbstractRouter {
                                 builder.peek().getCluster(),
                                 physical,
                                 catalogReader,
-                                builder.peek(),
+                                recursiveCopy( builder.peek() ),
                                 ((LogicalTableModify) node).getOperation(),
                                 ((LogicalTableModify) node).getUpdateColumnList(),
                                 ((LogicalTableModify) node).getSourceExpressionList(),
@@ -129,14 +133,25 @@ public class SimpleRouter extends AbstractRouter {
                         modify = LogicalTableModify.create(
                                 physical,
                                 catalogReader,
-                                builder.peek(),
+                                recursiveCopy( builder.peek() ),
                                 ((LogicalTableModify) node).getOperation(),
                                 ((LogicalTableModify) node).getUpdateColumnList(),
                                 ((LogicalTableModify) node).getSourceExpressionList(),
                                 ((LogicalTableModify) node).isFlattened()
                         );
                     }
-                    builder.replaceTop( modify );
+                    modifies.add( modify );
+                }
+                for ( int i = 0; i < modifies.size(); i++ ) {
+                    if ( i == 0 ) {
+                        builder.replaceTop( modifies.get( i ) );
+                    } else {
+                        builder.replaceTop( new LogicalModifyCollect(
+                                builder.peek().getCluster(),
+                                builder.peek().getTraitSet(),
+                                ImmutableList.of( builder.peek(), modifies.get( i ) ),
+                                true ) );
+                    }
                 }
                 return builder;
             } else {
@@ -154,6 +169,17 @@ public class SimpleRouter extends AbstractRouter {
             }
             return builder;
         }
+    }
+
+
+    private RelNode recursiveCopy( RelNode node ) {
+        List<RelNode> inputs = new LinkedList<>();
+        if ( node.getInputs() != null && node.getInputs().size() > 0 ) {
+            for ( RelNode input : node.getInputs() ) {
+                inputs.add( recursiveCopy( input ) );
+            }
+        }
+        return node.copy( node.getTraitSet(), inputs );
     }
 
 }

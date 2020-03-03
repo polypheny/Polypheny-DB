@@ -67,6 +67,7 @@ import org.polypheny.db.rel.logical.LogicalIntersect;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalMatch;
 import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
@@ -456,6 +457,11 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteRel( LogicalUnion rel ) {
+        rewriteGeneric( rel );
+    }
+
+
+    public void rewriteRel( LogicalModifyCollect rel ) {
         rewriteGeneric( rel );
     }
 
