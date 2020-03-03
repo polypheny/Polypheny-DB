@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.codehaus.commons.nullanalysis.NotNull;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -70,10 +71,14 @@ public abstract class Catalog {
         this.xid = xid;
     }
 
-    public Catalog(){
+
+    public Catalog() {
         // TODO DL change this
         this.xid = null;
-    };
+    }
+
+
+    ;
 
 
     protected final boolean isValidIdentifier( final String str ) {
@@ -694,25 +699,6 @@ public abstract class Catalog {
     public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
     public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
-
-
-
-    /*
-     *
-     */
-
-
-    public abstract boolean prepare() throws CatalogTransactionException;
-
-    public abstract void commit() throws CatalogTransactionException;
-
-    public abstract void rollback() throws CatalogTransactionException;
-
-
-
-    /*
-     *
-     */
 
 
     public enum TableType {

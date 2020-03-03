@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ObjectUtils.Null;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -68,11 +65,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.transaction.PolyXid;
 
 // TODO remove from all substructures
 
@@ -311,6 +306,7 @@ public class CatalogImpl extends Catalog {
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+
         columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
     }
 
@@ -428,32 +424,55 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-
-        // TODO not "the java way" but try-fetch-and-throw approach is faster
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
             try {
-                long databaseId = databaseNames.get( databaseNamePattern.pattern );
-                return Collections.singletonList( schemas.get( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) ) );
-            } catch ( NullPointerException e ) {
-                // throw new UnknownSchemaException( databaseNamePattern.pattern, schemaNamePattern.pattern );
-                return new ArrayList<>();
+                CatalogSchema schema = getSchema( databaseNamePattern.pattern, schemaNamePattern.pattern );
+                return Collections.singletonList( schema );
+
+            } catch ( UnknownSchemaException e ) {
+                log.error( Arrays.toString( e.getStackTrace() ) );
             }
+
+            return new ArrayList<>();
 
         } else if ( databaseNamePattern != null ) {
             try {
-                long id = databaseNames.get( databaseNamePattern.pattern );
-                ImmutableList<Long> children = databaseChildren.get( id );
+                if ( databaseNames.containsKey( databaseNamePattern.pattern ) ) {
+                    long id = databaseNames.get( databaseNamePattern.pattern );
+                    return getSchemas( id );
+                }
 
-                return children.stream().map( schemas::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
-            } catch ( NullPointerException e ) {
-                // throw new UnknownSchemaException( databaseNamePattern.pattern, null );
-                return new ArrayList<>();
+
+            } catch ( UnknownSchemaException e ) {
+                e.printStackTrace();
             }
+            return new ArrayList<>();
+
         } else if ( schemaNamePattern != null ) {
             return schemas.values().stream().filter( e -> e.name.equals( schemaNamePattern.pattern ) ).collect( Collectors.toList() );
         } else {
             return new ArrayList<>( schemas.values() );
         }
+    }
+
+
+    public List<CatalogSchema> getSchemas( long databaseId ) throws UnknownSchemaException {
+        if ( schemaChildren.containsKey( databaseId ) ) {
+            List<Long> children = databaseChildren.get( databaseId );
+            if ( children != null ) {
+
+                List<CatalogSchema> list = new ArrayList<>();
+                for ( Long child : children ) {
+                    CatalogSchema schema = getSchema( child );
+                    if ( schema != null ) {
+                        list.add( schema );
+                    }
+                }
+                return list;
+            }
+        }
+        throw new UnknownSchemaException( databaseId );
+
     }
 
     // TODO remove? not used
@@ -470,18 +489,16 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws UnknownSchemaException {
         if ( schemaNamePattern != null ) {
-            try {
-                return Collections.singletonList( schemas.get( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) ) );
-            } catch ( NullPointerException e ) {
-                return new ArrayList<>();
+
+            Long id = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            if ( id != null && schemas.containsKey( id ) ) {
+                return Collections.singletonList( schemas.get( id ) );
             }
-        } else {
-            try {
-                return schemaNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( schemas::get ).collect( Collectors.toList() );
-            } catch ( NullPointerException e ) {
-                throw new UnknownSchemaException( databaseId, null );
-            }
+            throw new UnknownSchemaException( databaseId );
+
         }
+        return schemaNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( schemas::get ).collect( Collectors.toList() );
+
     }
 
 
@@ -495,11 +512,17 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException {
-        try {
-            return schemas.get( schemaNames.get( new Object[]{ databaseNames.get( databaseName ), schemaName } ) );
-        } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( databaseName, schemaName );
+        if ( databaseNames.containsKey( databaseName ) ) {
+            Long databaseId = databaseNames.get( databaseName );
+            if ( databaseId != null ) {
+
+                Long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
+                if ( schemaId != null && schemas.containsKey( schemaId ) ) {
+                    return schemas.get( schemaId );
+                }
+            }
         }
+        throw new UnknownSchemaException( databaseName, schemaName );
     }
 
 
@@ -525,6 +548,14 @@ public class CatalogImpl extends Catalog {
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownSchemaTypeException e ) {
             throw new GenericCatalogException( e );
         }*/
+    }
+
+
+    public CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException {
+        if ( schemas.containsKey( schemaId ) ) {
+            return schemas.get( schemaId );
+        }
+        throw new UnknownSchemaException( schemaId );
     }
 
 
@@ -2267,49 +2298,6 @@ public class CatalogImpl extends Catalog {
         }
 
         return count;
-    }
-
-
-    @Override
-    public boolean prepare() throws CatalogTransactionException {
-        val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
-        if ( XATransactionHandler.hasTransactionHandler( xid ) ) {
-            return transactionHandler.prepare();
-        } else {
-            // e.g. SELECT 1; commit;
-            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
-            return true;
-        }
-    }
-
-
-    @Override
-    public void commit() throws CatalogTransactionException {
-        /*
-        val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
-        if ( XATransactionHandler.hasTransactionHandler( xid ) ) {
-            transactionHandler.commit();
-        } else {
-            // e.g. SELECT 1; commit;
-            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
-        }
-        CatalogManagerImpl.getInstance().removeCatalog( xid );
-         */
-    }
-
-
-    @Override
-    public void rollback() throws CatalogTransactionException {
-        /*
-        val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
-        if ( XATransactionHandler.hasTransactionHandler( xid ) ) {
-            transactionHandler.rollback();
-        } else {
-            // e.g. SELECT 1; commit;
-            log.debug( "Unknown transaction handler. This is not necessarily a problem as long as the query has not initiated any catalog lookups." );
-        }
-        CatalogManagerImpl.getInstance().removeCatalog( xid );
-         */
     }
 
 
