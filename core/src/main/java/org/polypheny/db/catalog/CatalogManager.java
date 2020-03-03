@@ -35,4 +35,6 @@ public abstract class CatalogManager {
     public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
 
     public abstract Catalog getCatalog( PolyXid xid );
+
+    public abstract Catalog getCatalog();
 }

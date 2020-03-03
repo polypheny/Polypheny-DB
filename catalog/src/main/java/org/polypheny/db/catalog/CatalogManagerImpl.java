@@ -36,18 +36,23 @@ public class CatalogManagerImpl extends CatalogManager {
 
     private static final boolean CREATE_SCHEMA = true;
 
-    private static final CatalogManagerImpl INSTANCE = new CatalogManagerImpl();
+    private static CatalogManagerImpl INSTANCE = null;
 
     private final ConcurrentHashMap<PolyXid, CatalogImpl> catalogs = new ConcurrentHashMap<>();
 
     private static CatalogImpl catalog = null;
 
+
     public static CatalogManagerImpl getInstance() {
+        if ( INSTANCE == null ) {
+            INSTANCE = new CatalogManagerImpl();
+        }
         return INSTANCE;
     }
 
 
     private CatalogManagerImpl() {
+        /*
         if ( CREATE_SCHEMA ) {
             LocalTransactionHandler transactionHandler = null;
             try {
@@ -65,7 +70,8 @@ public class CatalogManagerImpl extends CatalogManager {
                     log.error( "Exception while rollback", e );
                 }
             }
-        }
+        }*/
+        catalog = new CatalogImpl();
     }
 
 
@@ -77,26 +83,31 @@ public class CatalogManagerImpl extends CatalogManager {
      * @throws UnknownUserException If there is no user with this name.
      */
     @Override
-    public CatalogUser getUser( String username ) throws UnknownUserException, GenericCatalogException {
-        try {
+    public CatalogUser getUser( String username ) throws UnknownUserException {
+        return catalog.getUser( username );
+        /*try {
             val transactionHandler = LocalTransactionHandler.getTransactionHandler();
             return Statements.getUser( transactionHandler, username );
         } catch ( CatalogConnectionException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
-        }
+        }*/
     }
 
 
     @Override
     public Catalog getCatalog( PolyXid xid ) {
-        if ( catalog == null ) {
-            catalog = new CatalogImpl( xid );
-        }
+
         return catalog;
         /*if ( !catalogs.containsKey( xid ) ) {
             catalogs.put( xid, new CatalogImpl( xid ) );
         }
         return catalogs.get( xid );*/
+    }
+
+
+    @Override
+    public Catalog getCatalog() {
+        return catalog;
     }
 
 

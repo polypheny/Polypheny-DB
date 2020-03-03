@@ -26,6 +26,7 @@ import org.polypheny.db.PUID.NodeId;
 import org.polypheny.db.PUID.Type;
 import org.polypheny.db.PUID.UserId;
 import org.polypheny.db.adapter.Store;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -82,20 +83,13 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
+        // TODO DL change
+        Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
+        CatalogUser catalogUser = catalog.getUser( user );
 
-        // TODO MV: This is not nice and should be replaced
-        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first  need to create a "dummy" transaction for accessing the catalog
-        // to get the actual information required for starting the actual transaction.
-        Transaction transaction = startTransaction( catalogUser, null, null, false );
-        CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
+        CatalogDatabase catalogDatabase = catalog.getDatabase( database );
         // TODO why ask for default schema?
-        CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
 
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
     }

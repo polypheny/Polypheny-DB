@@ -70,6 +70,11 @@ public abstract class Catalog {
         this.xid = xid;
     }
 
+    public Catalog(){
+        // TODO DL change this
+        this.xid = null;
+    };
+
 
     protected final boolean isValidIdentifier( final String str ) {
         return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
@@ -110,7 +115,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException;
+    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Get all schemas of the specified database which fit to the specified filter pattern.
@@ -120,7 +125,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException;
+    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Returns the schema with the given name in the specified database.

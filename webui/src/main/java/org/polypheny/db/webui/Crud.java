@@ -323,7 +323,7 @@ public class Crud implements InformationObserver {
                         if ( request.depth > 2 ) {
                             List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
                             for ( CatalogColumn childColumn : childColumns ) {
-                                table.addChild( new SidebarElement( childColumn.schemaName + "." + childColumn + "." + childColumn.name, childColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                                table.addChild( new SidebarElement( childColumn.schemaName + "." + childColumn.tableName + "." + childColumn.name, childColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
                         if ( childTable.tableType == TableType.TABLE ) {
@@ -340,7 +340,7 @@ public class Crud implements InformationObserver {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();

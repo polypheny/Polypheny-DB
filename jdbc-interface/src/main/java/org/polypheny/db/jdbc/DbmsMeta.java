@@ -375,7 +375,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "OWNER",
                     "SCHEMA_TYPE"
             );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
             throw propagate( e );
         }
     }

@@ -39,7 +39,7 @@ public class AuthenticatorImpl implements Authenticator {
             } else {
                 throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
             }
-        } catch ( UnknownUserException | GenericCatalogException e ) {
+        } catch ( UnknownUserException e ) {
             throw new AuthenticationException( e );
         }
     }
