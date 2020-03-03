@@ -480,7 +480,7 @@ public class CatalogImpl extends Catalog {
 
     public List<CatalogSchema> getSchemas( long databaseId ) throws UnknownSchemaException {
         try {
-            return Objects.requireNonNull( schemaChildren.get( databaseId ) ).stream().map( schemas::get ).collect( Collectors.toList() );
+            return Objects.requireNonNull( databaseChildren.get( databaseId ) ).stream().map( schemas::get ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId );
         }
