@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang.ObjectUtils.Null;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -342,8 +343,9 @@ public class CatalogImpl extends Catalog {
         db.close();
     }
 
+
     @Override
-    public void clear(){
+    public void clear() {
         db.getAll().clear();
     }
 
@@ -393,10 +395,12 @@ public class CatalogImpl extends Catalog {
         if ( pattern == null ) {
             return new ArrayList<>( databases.values() );
         } else {
-            if ( databaseNames.containsKey( pattern.pattern ) ) {
-                return Collections.singletonList( databases.get( databaseNames.get( pattern.pattern ) ) );
+            try {
+                return Collections.singletonList( databaseNames.get( pattern.pattern ) );
+            } catch ( NullPointerException e ) {
+                return new ArrayList<>();
             }
-            return new ArrayList<>();
+
         }
     }
 
@@ -410,10 +414,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
-        if ( databaseNames.containsKey( databaseName ) ) {
-            return databases.get( databaseNames.get( databaseName ) );
+        try {
+            return databaseNames.get( databaseName );
+        } catch ( NullPointerException e ) {
+            throw new UnknownDatabaseException( databaseName );
         }
-        throw new UnknownDatabaseException( databaseName );
     }
 
 
@@ -426,11 +431,11 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogDatabase getDatabase( long databaseId ) throws UnknownDatabaseException {
-        if ( databases.containsKey( databaseId ) ) {
+        try {
             return databases.get( databaseId );
+        } catch ( NullPointerException e ) {
+            throw new UnknownDatabaseException( databaseId );
         }
-        throw new UnknownDatabaseException( databaseId );
-
     }
 
 
@@ -457,13 +462,10 @@ public class CatalogImpl extends Catalog {
 
         } else if ( databaseNamePattern != null ) {
             try {
-                if ( databaseNames.containsKey( databaseNamePattern.pattern ) ) {
-                    long id = databaseNames.get( databaseNamePattern.pattern );
-                    return getSchemas( id );
-                }
 
+                return getSchemas( Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) ).id );
 
-            } catch ( UnknownSchemaException e ) {
+            } catch ( NullPointerException | UnknownSchemaException e ) {
                 e.printStackTrace();
             }
             return new ArrayList<>();
@@ -477,22 +479,11 @@ public class CatalogImpl extends Catalog {
 
 
     public List<CatalogSchema> getSchemas( long databaseId ) throws UnknownSchemaException {
-        if ( schemaChildren.containsKey( databaseId ) ) {
-            List<Long> children = databaseChildren.get( databaseId );
-            if ( children != null ) {
-
-                List<CatalogSchema> list = new ArrayList<>();
-                for ( Long child : children ) {
-                    CatalogSchema schema = getSchema( child );
-                    if ( schema != null ) {
-                        list.add( schema );
-                    }
-                }
-                return list;
-            }
+        try {
+            return Objects.requireNonNull( schemaChildren.get( databaseId ) ).stream().map( schemas::get ).collect( Collectors.toList() );
+        } catch ( NullPointerException e ) {
+            throw new UnknownSchemaException( databaseId );
         }
-        throw new UnknownSchemaException( databaseId );
-
     }
 
     // TODO remove? not used
@@ -509,16 +500,14 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws UnknownSchemaException {
         if ( schemaNamePattern != null ) {
-
-            Long id = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
-            if ( id != null && schemas.containsKey( id ) ) {
-                return Collections.singletonList( schemas.get( id ) );
+            try {
+                return Collections.singletonList( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) );
+            }catch ( NullPointerException e ){
+                throw new UnknownSchemaException( databaseId );
             }
-            throw new UnknownSchemaException( databaseId );
-
         }
-        return schemaNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( schemas::get ).collect( Collectors.toList() );
 
+        return new ArrayList<>( schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() );
     }
 
 
@@ -532,17 +521,12 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException {
-        if ( databaseNames.containsKey( databaseName ) ) {
-            Long databaseId = databaseNames.get( databaseName );
-            if ( databaseId != null ) {
-
-                Long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
-                if ( schemaId != null && schemas.containsKey( schemaId ) ) {
-                    return schemas.get( schemaId );
-                }
-            }
+        try {
+            return schemaNames.get( new Object[]{ Objects.requireNonNull( databaseNames.get( databaseName ) ).id, schemaName } ) ;
+        }catch ( NullPointerException e ) {
+            throw new UnknownSchemaException( databaseName, schemaName );
         }
-        throw new UnknownSchemaException( databaseName, schemaName );
+
     }
 
 
@@ -557,7 +541,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         try {
-            return schemas.get( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
+            return schemaNames.get( new Object[]{ databaseId, schemaName } );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId, schemaName );
         }
@@ -595,8 +579,9 @@ public class CatalogImpl extends Catalog {
         // TODO long or int for user
         CatalogUser owner = users.get( ownerId );
         long id = schemaIdBuilder.getAndIncrement();
-        schemas.put( id, new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType ) );
-        schemaNames.put( new Object[]{ databaseId, name }, id );
+        CatalogSchema schema = new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType );
+        schemas.put( id, schema);
+        schemaNames.put( new Object[]{ databaseId, name }, schema );
         schemaChildren.put( id, ImmutableList.<Long>builder().build() );
         List<Long> children = new ArrayList<>( databaseChildren.get( databaseId ) );
         children.add( id );
@@ -656,7 +641,7 @@ public class CatalogImpl extends Catalog {
 
         schemas.replace( schemaId, schema );
         schemaNames.remove( new Object[]{ old.databaseId, old.name } );
-        schemaNames.put( new Object[]{ old.databaseId, name }, schemaId );
+        schemaNames.put( new Object[]{ old.databaseId, name }, schema );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -786,18 +771,18 @@ public class CatalogImpl extends Catalog {
         // TODO refactor call
 
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
             long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
             return Collections.singletonList( tables.get( tableId ) );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
             return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         }
         if ( databaseNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         }
 
@@ -847,7 +832,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException {
 
-        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
+        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
         return tables.get( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
         /*
 
@@ -872,8 +857,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, GenericCatalogException {
 
-        long databaseId = databaseNames.get( databaseName );
-        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
+        long databaseId = databaseNames.get( databaseName ).id;
+        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
         return tables.get( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
 
         /*
@@ -1169,25 +1154,25 @@ public class CatalogImpl extends Catalog {
     public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
 
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
             long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
             long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnNamePattern } );
             return Collections.singletonList( columns.get( columnId ) );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
             long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
             return tableChildren.get( tableId ).stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
+            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
             return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         }
         if ( databaseNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern );
+            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
         }
 
@@ -1259,8 +1244,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws GenericCatalogException, UnknownColumnException {
 
-        long databaseId = databaseNames.get( databaseName );
-        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } );
+        long databaseId = databaseNames.get( databaseName ).id;
+        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
         long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
         long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, } );
         return columns.get( columnId );
