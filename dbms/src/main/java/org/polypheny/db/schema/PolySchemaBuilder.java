@@ -152,7 +152,7 @@ public class PolySchemaBuilder {
         CatalogCombinedDatabase combinedDatabase;
         try {
             combinedDatabase = transaction.getCatalog().getCombinedDatabase( 0 );
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException | UnknownDatabaseException | UnknownUserException e ) {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }
 

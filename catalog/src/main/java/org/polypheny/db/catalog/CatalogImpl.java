@@ -1043,7 +1043,7 @@ public class CatalogImpl extends Catalog {
      * @return List of column placements on this store
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) {
 
         return new ArrayList<>( columnPlacement.prefixSubMap( new long[]{ storeId } ).values() );
         /*
@@ -2033,6 +2033,15 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    public CatalogUser getUser( int userId ) throws UnknownUserException {
+        try {
+            return users.get( userId );
+        } catch ( NullPointerException e ) {
+            throw new UnknownUserException( userId );
+        }
+    }
+
+
     /**
      * Get list of all stores
      *
@@ -2117,9 +2126,36 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Builds a complex/expensive combined database object
+     *
+     * @param databaseId the id of the database
+     * @return the combined database object
+     * @throws UnknownDatabaseException if databaseId does not exist in catalog
+     */
     @Override
-    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
-        return null;
+    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownUserException, UnknownTableException {
+        try {
+            CatalogDatabase database = databases.get( databaseId );
+            List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
+            for ( Long aLong : databaseChildren.get( databaseId ) ) {
+                CatalogCombinedSchema combinedSchema = getCombinedSchema( aLong );
+                if ( combinedSchema != null ) {
+                    childSchemas.add( combinedSchema );
+                }
+            }
+
+            CatalogSchema defaultSchema = null;
+            if ( database.defaultSchemaId != null ) {
+                defaultSchema = schemas.get( database.defaultSchemaId );
+            }
+
+            CatalogUser user = users.get( database.ownerId );
+            return new CatalogCombinedDatabase( database, childSchemas, defaultSchema, user );
+        } catch ( NullPointerException e ) {
+            throw new UnknownDatabaseException( databaseId );
+        }
+
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -2133,148 +2169,80 @@ public class CatalogImpl extends Catalog {
 
     // TODO move
     public List<CatalogKey> getKeys() {
-        return keys.values().stream().collect( Collectors.toList() );
-    }
-
-
-    private CatalogCombinedDatabase getCombinedDatabase( XATransactionHandler transactionHandler, long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
-        return null;
-        /*
-        try {
-            CatalogDatabase database = Statements.getDatabase( transactionHandler, databaseId );
-            List<CatalogSchema> schemas = Statements.getSchemas( transactionHandler, databaseId, null );
-            List<CatalogCombinedSchema> combinedSchemas = new LinkedList<>();
-            for ( CatalogSchema schema : schemas ) {
-                combinedSchemas.add( getCombinedSchema( transactionHandler, schema.id ) );
-            }
-            CatalogSchema defaultSchema = null;
-            if ( database.defaultSchemaId != null ) {
-                defaultSchema = Statements.getSchema( transactionHandler, database.defaultSchemaId );
-            }
-            CatalogUser owner = Statements.getUser( transactionHandler, database.ownerId );
-            return new CatalogCombinedDatabase( database, combinedSchemas, defaultSchema, owner );
-        } catch ( UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+        return new ArrayList<>( keys.values() );
     }
 
 
     @Override
-    public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
-        return null;
-        /*
+    public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws UnknownSchemaException, UnknownDatabaseException, UnknownTableException, UnknownUserException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return getCombinedSchema( transactionHandler, schemaId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
-
-    }
-
-
-    private CatalogCombinedSchema getCombinedSchema( XATransactionHandler transactionHandler, long schemaId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException {
-        return null;
-        /*
-        try {
-            CatalogSchema schema = Statements.getSchema( transactionHandler, schemaId );
-            List<CatalogTable> tables = Statements.getTables( transactionHandler, schemaId, null );
-            List<CatalogCombinedTable> combinedTables = new LinkedList<>();
-            for ( CatalogTable table : tables ) {
-                combinedTables.add( getCombinedTable( transactionHandler, table.id ) );
-            }
-            CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
-            CatalogUser owner = Statements.getUser( transactionHandler, schema.ownerId );
-            return new CatalogCombinedSchema( schema, combinedTables, database, owner );
-        } catch ( UnknownTableTypeException | UnknownSchemaTypeException | UnknownDatabaseException | UnknownUserException e ) {
-            throw new GenericCatalogException( e );
-        }*/
-    }
-
-
-    @Override
-    public CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException {
-        return null;
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return getCombinedTable( transactionHandler, tableId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
-    }
-
-
-    private CatalogCombinedTable getCombinedTable( XATransactionHandler transactionHandler, long tableId ) throws GenericCatalogException, UnknownTableException {
-        return null;
-        /*
-        try {
-            CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            List<CatalogColumn> columns = Statements.getColumns( transactionHandler, tableId );
-            CatalogSchema schema = Statements.getSchema( transactionHandler, table.schemaId );
-            CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
-            CatalogUser owner = Statements.getUser( transactionHandler, table.ownerId );
-
-            Map<Integer, List<CatalogColumnPlacement>> columnPlacementsByStore = new LinkedHashMap<>();
-            Map<Long, List<CatalogColumnPlacement>> columnPlacementsByColumn = new LinkedHashMap<>();
-            // We know the columns
-            for ( CatalogColumn catalogColumn : columns ) {
-                columnPlacementsByColumn.put( catalogColumn.id, new LinkedList<>() );
-            }
-            for ( CatalogColumnPlacement p : Statements.getColumnPlacementsOfTable( transactionHandler, tableId ) ) {
-                columnPlacementsByColumn.get( p.columnId ).add( p );
-                if ( !columnPlacementsByStore.containsKey( p.storeId ) ) {
-                    columnPlacementsByStore.put( p.storeId, new LinkedList<>() );
+            CatalogSchema schema = schemas.get( schemaId );
+            List<CatalogCombinedTable> childTables = new ArrayList<>();
+            for ( Long aLong : schemaChildren.get( schemaId ) ) {
+                CatalogCombinedTable combinedTable = getCombinedTable( aLong );
+                if ( combinedTable != null ) {
+                    childTables.add( combinedTable );
                 }
-                columnPlacementsByStore.get( p.storeId ).add( p );
             }
+            CatalogDatabase database = getDatabase( schema.databaseId );
+            CatalogUser owner = getUser( schema.ownerId );
 
-            List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
-            return new CatalogCombinedTable( table, columns, schema, database, owner, columnPlacementsByStore, columnPlacementsByColumn, keys );
-        } catch ( UnknownCollationException | UnknownTypeException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownUserException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return new CatalogCombinedSchema( schema, childTables, database, owner );
+        } catch ( NullPointerException e ) {
+            throw new UnknownSchemaException( schemaId );
+        }
+
     }
 
 
     @Override
-    public CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException {
-        return null;
-        /*
+    public CatalogCombinedTable getCombinedTable( long tableId ) throws UnknownTableException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return getCombinedKey( transactionHandler, keyId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogTable table = tables.get( tableId );
+            List<CatalogColumn> childColumns = tableChildren.get( tableId ).stream().map( columns::get ).collect( Collectors.toList() );
+            CatalogSchema schema = schemas.get( table.schemaId );
+            CatalogDatabase database = databases.get( table.databaseId );
+            CatalogUser user = users.get( table.ownerId );
+
+            Map<Integer, List<CatalogColumnPlacement>> columnPlacementByStore = new HashMap<>();
+            stores.keySet().forEach( id -> {
+                // TODO empty list, no entry when empty?
+                columnPlacementByStore.put( id, getColumnPlacementsOnStore( id ) );
+            } );
+
+            Map<Long, List<CatalogColumnPlacement>> columnPlacementByColumn = new HashMap<>();
+
+            tableChildren.get( tableId ).forEach( id -> {
+                columnPlacementByColumn.put( id, getColumnPlacementByColumn( id ) );
+            } );
+
+            List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+
+            return new CatalogCombinedTable( table, childColumns, schema, database, user, columnPlacementByStore, columnPlacementByColumn, tableKeys );
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableException( tableId );
+        }
+
     }
 
 
-    private CatalogCombinedKey getCombinedKey( XATransactionHandler transactionHandler, long keyId ) throws GenericCatalogException, UnknownKeyException {
-        return null;
-        /*
+    @Override
+    public CatalogCombinedKey getCombinedKey( long keyId ) throws UnknownKeyException {
         try {
-            CatalogKey key = Statements.getKey( transactionHandler, keyId );
 
-            List<CatalogColumn> columns = new LinkedList<>();
-            for ( long columnId : key.columnIds ) {
-                columns.add( Statements.getColumn( transactionHandler, columnId ) );
-            }
+            CatalogKey key = keys.get( keyId );
+            List<CatalogColumn> childColumns = key.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            CatalogTable table = tables.get( key.tableId );
+            CatalogSchema schema = schemas.get( key.tableId );
+            CatalogDatabase database = databases.get( key.databaseId );
+            List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == keyId ).collect( Collectors.toList() );
+            List<CatalogIndex> childIndices = indices.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() );
+            List<CatalogConstraint> childConstraints = constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() );
 
-            CatalogTable table = Statements.getTable( transactionHandler, key.tableId );
-            CatalogSchema schema = Statements.getSchema( transactionHandler, table.schemaId );
-            CatalogDatabase database = Statements.getDatabase( transactionHandler, schema.databaseId );
-
-            List<CatalogForeignKey> foreignKeys = Statements.getForeignKeysByReference( transactionHandler, keyId );
-            List<CatalogIndex> indexes = Statements.getIndexesByKey( transactionHandler, keyId );
-            List<CatalogConstraint> constraints = Statements.getConstraintsByKey( transactionHandler, keyId );
-
-            List<CatalogForeignKey> referencedBy = Statements.getForeignKeysByReference( transactionHandler, keyId );
-
-            return new CatalogCombinedKey( key, columns, table, schema, database, foreignKeys, indexes, constraints, referencedBy );
-        } catch ( UnknownCollationException | UnknownTypeException | UnknownTableTypeException | UnknownSchemaTypeException | UnknownSchemaException | UnknownDatabaseException | UnknownColumnException | UnknownTableException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return new CatalogCombinedKey( key, childColumns, table, schema, database, childForeignKeys, childIndices, childConstraints, childForeignKeys );
+        } catch ( NullPointerException e ) {
+            throw new UnknownKeyException( keyId );
+        }
     }
 
     // TODO move to right location, here for now

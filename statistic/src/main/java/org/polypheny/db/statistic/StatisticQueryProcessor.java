@@ -168,7 +168,7 @@ public class StatisticQueryProcessor {
                 }
             }
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -215,7 +215,7 @@ public class StatisticQueryProcessor {
             }
             transaction.commit();
 
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -253,7 +253,7 @@ public class StatisticQueryProcessor {
                     .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findFirst().get()
                     .getColumns().stream().filter( c -> c.name.equals( column ) ).findFirst().get().type;
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
