@@ -329,7 +329,7 @@ public class CassandraStore extends Store {
         ColumnMetadata oldColumn = relationMetadata.getColumn( physicalColumnName ).get();
         PolySqlType oldType = CassandraTypesUtils.getPolySqlType( oldColumn.getType() );
 
-        Function<Object, Term> converter = CassandraTypesUtils.convertDataType( oldType, catalogColumn.type );
+        Function<Object, Object> converter = PolySqlType.convertFromTo( oldType, catalogColumn.type );
 
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build() );
@@ -344,13 +344,13 @@ public class CassandraStore extends Store {
                 whereClause.add( rl );
             }
 
-            Object oldFuckingValueFuckYou = r.get( physicalColumnName, oldType.getTypeJavaClass() );
+            Object oldValue = r.get( physicalColumnName, oldType.getTypeJavaClass() );
 
             builder.addStatement(
                     QueryBuilder.update( this.dbKeyspace, physicalTableName )
                     .set( Assignment.setColumn(
                             newPhysicalColumnName,
-                            converter.apply( oldFuckingValueFuckYou ) ) )
+                            QueryBuilder.literal( converter.apply( oldValue ) ) ) )
 //                            converter.apply( r.get( catalogColumn.name, oldType.getTypeJavaClass() ) ) ) )
 //                            QueryBuilder.literal( r.get( catalogColumn.name, catalogColumn.type.getTypeJavaClass() ) ) ) )
                     .where( whereClause )
