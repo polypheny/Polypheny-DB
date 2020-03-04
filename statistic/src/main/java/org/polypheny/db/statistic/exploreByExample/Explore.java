@@ -62,11 +62,12 @@ public class Explore {
     @Setter
     private String tableId;
 
-    List<List<String>> allUniqueValues = new ArrayList<>(  );
-    List<List<String>> allUniqueValuesTF = new ArrayList<>(  );
+    List<List<String>> allUniqueValues = new ArrayList<>();
+    List<List<String>> allUniqueValuesTF = new ArrayList<>();
 
-    String[][]  wholeTable;
+    String[][] wholeTable;
     String[][] wholeTableRotated;
+
 
     private Explore() {
 
@@ -86,6 +87,7 @@ public class Explore {
         return prepareUserInput();
     }
 
+
     public String prepareUserInput() throws Exception {
 
         String[][] rotated = rotate2dArray( classifiedData );
@@ -93,8 +95,10 @@ public class Explore {
         return convertToArff( rotated, classifiedData, wholeTableRotated, wholeTable );
     }
 
+
     /**
      * Converts Data to "arff format" in order to use Weka for classification
+     *
      * @param rotated rotated userClassification
      * @param userClassification classified data form user
      */
@@ -113,7 +117,7 @@ public class Explore {
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
 
-            for(int i = 0; i < allUniqueValues.get( dim ).size(); i++){
+            for ( int i = 0; i < allUniqueValues.get( dim ).size(); i++ ) {
                 attVals.addElement( allUniqueValues.get( dim ).get( i ) );
             }
 
@@ -130,7 +134,7 @@ public class Explore {
             for ( int dim = 0; dim < dimLength; dim++ ) {
                 vals[dim] = attValsEl[dim].indexOf( userClassification[obj][dim] );
             }
-            classifiedData.add( new DenseInstance(1.0, vals ) );
+            classifiedData.add( new DenseInstance( 1.0, vals ) );
         }
 
         //fill all data for classification
@@ -147,10 +151,8 @@ public class Explore {
         System.out.println( classifiedData );
         System.out.println( allData );
 
-
-
         //saveAsArff( data, "test.arff" );
-        return trainData(classifiedData, allData);
+        return trainData( classifiedData, allData );
         //trainData();
     }
 
@@ -158,15 +160,15 @@ public class Explore {
     /**
      * Removes last value from dataset
      */
-    private Instances prepareData( Instances allData) throws Exception {
+    private Instances prepareData( Instances allData ) throws Exception {
         String[] options = new String[2];
         options[0] = "-R";
         options[1] = "last";
 
         Remove remove = new Remove();
-        remove.setOptions(options);
-        remove.setInputFormat(allData);
-        Instances preparedData = Filter.useFilter(allData, remove);
+        remove.setOptions( options );
+        remove.setInputFormat( allData );
+        Instances preparedData = Filter.useFilter( allData, remove );
 
         return preparedData;
     }
@@ -174,19 +176,19 @@ public class Explore {
 
     /**
      * Train table with the classified dataset
+     *
      * @param classifiedData prepared classifiedData
      */
-    public String trainData(Instances classifiedData, Instances unlabeled) throws Exception {
+    public String trainData( Instances classifiedData, Instances unlabeled ) throws Exception {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
-        classifiedData.setClassIndex( classifiedData.numAttributes() -1 );
+        classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
         J48 tree = new J48();
 
-        String[] options = {"-U"};
+        String[] options = { "-U" };
         tree.setOptions( options );
 
         tree.buildClassifier( classifiedData );
-
 
         //Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
@@ -194,7 +196,7 @@ public class Explore {
 
         Evaluation evaluation = new Evaluation( classifiedData );
         evaluation.evaluateModel( tree, unlabeled );
-        System.out.println(evaluation.toSummaryString());
+        System.out.println( evaluation.toSummaryString() );
 
         Instances labeled = new Instances( unlabeled );
 
@@ -204,7 +206,6 @@ public class Explore {
             labeled.instance( i ).setClassValue( clsLabel );
             System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
         }
-
 
         saveAsArff( labeled, "labeled-data.arff" );
         labledData = String.valueOf( labeled );
@@ -219,22 +220,21 @@ public class Explore {
      */
     private void getStatistics() {
         StatisticsManager<?> stats = StatisticsManager.getInstance();
-        List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnId ), tableId);
+        List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnId ), tableId );
 
         for ( StatisticQueryColumn uniqueValue : uniqueValues ) {
             allUniqueValues.add( Arrays.asList( uniqueValue.getData() ) );
         }
 
-        List<String> trueFalse = new ArrayList<>(  );
+        List<String> trueFalse = new ArrayList<>();
         trueFalse.add( "true" );
-        trueFalse.add("false");
-        allUniqueValues.add(trueFalse);
+        trueFalse.add( "false" );
+        allUniqueValues.add( trueFalse );
 
-
-        StatisticResult statisticResult = stats.getTable(columnId , tableId);
+        StatisticResult statisticResult = stats.getTable( columnId, tableId );
         StatisticQueryColumn[] columns = statisticResult.getColumns();
         wholeTable = new String[columns.length][];
-        for (int i = 0; i < columns.length; i++){
+        for ( int i = 0; i < columns.length; i++ ) {
             wholeTable[i] = columns[i].getData();
         }
 
@@ -242,6 +242,7 @@ public class Explore {
 
 
     }
+
 
     public Instances getDataSet( String fileName ) throws IOException {
 
