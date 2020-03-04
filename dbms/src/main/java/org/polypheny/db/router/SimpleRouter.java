@@ -45,10 +45,16 @@ public class SimpleRouter extends AbstractRouter {
 
     @Override
     public RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
-        RelBuilder builder = RelBuilder.create( transaction, logicalRoot.rel.getCluster() );
-        builder = build( logicalRoot.rel, builder, transaction );
+        RelNode routed;
+        if ( logicalRoot.rel instanceof LogicalTableModify ) {
+            routed = handleDml( logicalRoot.rel, transaction );
+        } else {
+            RelBuilder builder = RelBuilder.create( transaction, logicalRoot.rel.getCluster() );
+            builder = buildSelect( logicalRoot.rel, builder, transaction );
+            routed = builder.build();
+        }
         return new RelRoot(
-                builder.build(),
+                routed,
                 logicalRoot.validatedRowType,
                 logicalRoot.kind,
                 logicalRoot.fields,
@@ -56,35 +62,8 @@ public class SimpleRouter extends AbstractRouter {
     }
 
 
-    private RelBuilder build( RelNode node, RelBuilder builder, Transaction transaction ) {
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            build( node.getInput( i ), builder, transaction );
-        }
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
-            if ( table.getTable() instanceof LogicalTable ) {
-                LogicalTable t = ((LogicalTable) table.getTable());
-                // Get placements of this table
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                List<CatalogColumnPlacement> placements;
-                try {
-                    placements = transaction.getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
-                } catch ( GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
-                // Take first
-                CatalogColumnPlacement placement = placements.get( 0 );
-                return builder.scan( ImmutableList.of(
-                        PolySchemaBuilder.buildStoreSchemaName(
-                                placement.storeUniqueName,
-                                ((LogicalTable) table.getTable()).getLogicalSchemaName(),
-                                placement.physicalSchemaName ),
-                        ((LogicalTable) table.getTable()).getLogicalTableName() ) );
-            } else {
-                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
-            }
-        } else if ( node instanceof LogicalTableModify && node.getTable() != null ) {
+    private RelNode handleDml( RelNode node, Transaction transaction ) {
+        if ( node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
@@ -101,6 +80,7 @@ public class SimpleRouter extends AbstractRouter {
                 // Execute on all placements
                 List<TableModify> modifies = new ArrayList<>( placements.size() );
                 for ( CatalogColumnPlacement placement : placements ) {
+
                     CatalogReader catalogReader = transaction.getCatalogReader();
                     CatalogTable catalogTable;
                     try {
@@ -118,12 +98,16 @@ public class SimpleRouter extends AbstractRouter {
                     RelOptTable physical = catalogReader.getTableForMember( tableNames );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
                     TableModify modify;
+                    RelNode input = buildDml(
+                            recursiveCopy( node.getInput( 0 ) ),
+                            RelBuilder.create( transaction, node.getCluster() ),
+                            placement ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
-                                builder.peek().getCluster(),
+                                node.getCluster(),
                                 physical,
                                 catalogReader,
-                                recursiveCopy( builder.peek() ),
+                                input,
                                 ((LogicalTableModify) node).getOperation(),
                                 ((LogicalTableModify) node).getUpdateColumnList(),
                                 ((LogicalTableModify) node).getSourceExpressionList(),
@@ -133,7 +117,7 @@ public class SimpleRouter extends AbstractRouter {
                         modify = LogicalTableModify.create(
                                 physical,
                                 catalogReader,
-                                recursiveCopy( builder.peek() ),
+                                input,
                                 ((LogicalTableModify) node).getOperation(),
                                 ((LogicalTableModify) node).getUpdateColumnList(),
                                 ((LogicalTableModify) node).getSourceExpressionList(),
@@ -142,33 +126,105 @@ public class SimpleRouter extends AbstractRouter {
                     }
                     modifies.add( modify );
                 }
-                for ( int i = 0; i < modifies.size(); i++ ) {
-                    if ( i == 0 ) {
-                        builder.replaceTop( modifies.get( i ) );
-                    } else {
-                        builder.replaceTop( new LogicalModifyCollect(
-                                builder.peek().getCluster(),
-                                builder.peek().getTraitSet(),
-                                ImmutableList.of( builder.peek(), modifies.get( i ) ),
-                                true ) );
+                if ( modifies.size() == 1 ) {
+                    return modifies.get( 0 );
+                } else {
+                    RelBuilder builder = RelBuilder.create( transaction, node.getCluster() );
+                    for ( int i = 0; i < modifies.size(); i++ ) {
+                        if ( i == 0 ) {
+                            builder.push( modifies.get( i ) );
+                        } else {
+                            builder.replaceTop( new LogicalModifyCollect(
+                                    builder.peek().getCluster(),
+                                    builder.peek().getTraitSet(),
+                                    ImmutableList.of( builder.peek(), modifies.get( i ) ),
+                                    true ) );
+                        }
                     }
+                    return builder.build();
                 }
-                return builder;
+            } else {
+                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+            }
+        }
+        throw new RuntimeException( "Unexpected operator!" );
+    }
+
+
+    private RelBuilder buildSelect( RelNode node, RelBuilder builder, Transaction transaction ) {
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            buildSelect( node.getInput( i ), builder, transaction );
+        }
+        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            if ( table.getTable() instanceof LogicalTable ) {
+                LogicalTable t = ((LogicalTable) table.getTable());
+                // Get placements of this table
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
+                List<CatalogColumnPlacement> placements;
+                try {
+                    placements = transaction.getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
+                } catch ( GenericCatalogException e ) {
+                    throw new RuntimeException( e );
+                }
+                // Take first
+                CatalogColumnPlacement placement = placements.get( 0 );
+                return handleTableScan( builder, table, placement );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
-            return builder.values( ((LogicalValues) node).tuples, node.getRowType() );
+            return handleValues( (LogicalValues) node, builder );
         } else {
-            if ( node.getInputs().size() == 1 ) {
-                builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
-            } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
-                builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) );
-            } else {
-                throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
-            }
-            return builder;
+            return handleGeneric( node, builder );
         }
+    }
+
+
+    private RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogColumnPlacement placement ) {
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            buildDml( node.getInput( i ), builder, placement );
+        }
+        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            if ( table.getTable() instanceof LogicalTable ) {
+                return handleTableScan( builder, table, placement );
+            } else {
+                throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+            }
+        } else if ( node instanceof LogicalValues ) {
+            return handleValues( (LogicalValues) node, builder );
+        } else {
+            return handleGeneric( node, builder );
+        }
+    }
+
+
+    private RelBuilder handleTableScan( RelBuilder builder, RelOptTableImpl table, CatalogColumnPlacement placement ) {
+        return builder.scan( ImmutableList.of(
+                PolySchemaBuilder.buildStoreSchemaName(
+                        placement.storeUniqueName,
+                        ((LogicalTable) table.getTable()).getLogicalSchemaName(),
+                        placement.physicalSchemaName ),
+                ((LogicalTable) table.getTable()).getLogicalTableName() ) );
+    }
+
+
+    private RelBuilder handleValues( LogicalValues node, RelBuilder builder ) {
+        return builder.values( node.tuples, node.getRowType() );
+    }
+
+
+    private RelBuilder handleGeneric( RelNode node, RelBuilder builder ) {
+        if ( node.getInputs().size() == 1 ) {
+            builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
+        } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations
+            builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ) );
+        } else {
+            throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
+        }
+        return builder;
     }
 
 
