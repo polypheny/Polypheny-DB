@@ -133,7 +133,8 @@ public class CassandraStore extends Store {
 
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, false );
+        String physicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( combinedTable.getTable().id );
+        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, physicalTableName,false );
     }
 
 

@@ -106,6 +106,15 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, String physicalName, boolean view ) {
+        super( Object[].class );
+        this.cassandraSchema = cassandraSchema;
+        this.columnFamily = columnFamily;
+        this.view = view;
+        this.physicalName = physicalName;
+    }
+
+
     public CassandraTable( CassandraSchema cassandraSchema, String columnFamily ) {
         this( cassandraSchema, columnFamily, false );
     }
@@ -119,7 +128,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
-            protoRowType = cassandraSchema.getRelDataType( columnFamily, view );
+            protoRowType = cassandraSchema.getRelDataType( physicalName, view );
         }
         return protoRowType.apply( typeFactory );
     }

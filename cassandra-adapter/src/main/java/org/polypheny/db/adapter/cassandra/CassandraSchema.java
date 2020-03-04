@@ -141,11 +141,7 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
-    RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( this.name );
-        qualifiedNames.add( columnFamily );
-        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+    RelProtoDataType getRelDataType( String physicalTableName, boolean view ) {
         Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
             throw new RuntimeException( "Views are currently broken." );
