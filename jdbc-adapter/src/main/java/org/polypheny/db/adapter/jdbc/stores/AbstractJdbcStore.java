@@ -117,7 +117,7 @@ public abstract class AbstractJdbcStore extends Store {
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
         // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, null, this );
+        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
     }
 
 
