@@ -32,13 +32,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.statistic.StatisticQueryColumn;
 import org.polypheny.db.statistic.StatisticResult;
 import org.polypheny.db.statistic.StatisticsManager;
+import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instances;
+import weka.core.SparseInstance;
+import weka.core.Utils;
 import weka.core.converters.ArffLoader;
 import weka.core.converters.ArffSaver;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
+import weka.filters.unsupervised.attribute.ReplaceMissingWithUserConstant;
 
 
 @Slf4j
@@ -57,7 +63,10 @@ public class Explore {
     private String tableId;
 
     List<List<String>> allUniqueValues = new ArrayList<>(  );
-    List<List<String>> wholeTable = new ArrayList<>(  );
+    List<List<String>> allUniqueValuesTF = new ArrayList<>(  );
+
+    String[][]  wholeTable;
+    String[][] wholeTableRotated;
 
     private Explore() {
 
@@ -81,7 +90,7 @@ public class Explore {
 
         String[][] rotated = rotate2dArray( classifiedData );
 
-        return convertToArff( rotated, classifiedData );
+        return convertToArff( rotated, classifiedData, wholeTableRotated, wholeTable );
     }
 
     /**
@@ -89,14 +98,15 @@ public class Explore {
      * @param rotated rotated userClassification
      * @param userClassification classified data form user
      */
-    public String convertToArff( String[][] rotated, String[][] userClassification ) throws Exception {
+    public String convertToArff( String[][] rotated, String[][] userClassification, String[][] wholeTableRotated, String[][] wholeTable ) throws Exception {
 
         int numInstances = rotated[0].length;
         int dimLength = classifiedData[0].length;
         FastVector atts = new FastVector();
         FastVector attVals;
         FastVector attValsEl[] = new FastVector[dimLength];
-        Instances data;
+        Instances classifiedData;
+        Instances allData;
         double[] vals;
 
         // attributes
@@ -111,31 +121,62 @@ public class Explore {
             attValsEl[dim] = attVals;
         }
         // instances object
-        data = new Instances( "Dataset", atts, 0 );
+        classifiedData = new Instances( "ClassifiedData", atts, 0 );
+        allData = new Instances( "allData", atts, 0 );
 
-        // fill data
+        // fill data classified
         for ( int obj = 0; obj < numInstances; obj++ ) {
-            vals = new double[data.numAttributes()];
+            vals = new double[classifiedData.numAttributes()];
             for ( int dim = 0; dim < dimLength; dim++ ) {
                 vals[dim] = attValsEl[dim].indexOf( userClassification[obj][dim] );
             }
-            data.add( new DenseInstance( 1.0, vals ) );
+            classifiedData.add( new DenseInstance(1.0, vals ) );
         }
 
-        System.out.println( data );
+        //fill all data for classification
+
+        for ( int obj = 0; obj < wholeTable[0].length; obj++ ) {
+            vals = new double[allData.numAttributes()];
+            for ( int dim = 0; dim < wholeTableRotated[0].length; dim++ ) {
+                vals[dim] = attValsEl[dim].indexOf( wholeTableRotated[obj][dim] );
+            }
+            vals[wholeTableRotated[0].length] = Utils.missingValue();
+            allData.add( new DenseInstance( 1, vals ) );
+        }
+
+        System.out.println( classifiedData );
+        System.out.println( allData );
+
+
 
         //saveAsArff( data, "test.arff" );
-        return trainData(data);
+        return trainData(classifiedData, allData);
         //trainData();
     }
 
 
     /**
-     * TODO get data from Polypheny and not form arff file
+     * Removes last value from dataset
+     */
+    private Instances prepareData( Instances allData) throws Exception {
+        String[] options = new String[2];
+        options[0] = "-R";
+        options[1] = "last";
+
+        Remove remove = new Remove();
+        remove.setOptions(options);
+        remove.setInputFormat(allData);
+        Instances preparedData = Filter.useFilter(allData, remove);
+
+        return preparedData;
+    }
+
+
+    /**
      * Train table with the classified dataset
      * @param classifiedData prepared classifiedData
      */
-    public String trainData(Instances classifiedData) throws Exception {
+    public String trainData(Instances classifiedData, Instances unlabeled) throws Exception {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
         classifiedData.setClassIndex( classifiedData.numAttributes() -1 );
@@ -147,9 +188,13 @@ public class Explore {
         tree.buildClassifier( classifiedData );
 
 
-        Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
+        //Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
+
+        Evaluation evaluation = new Evaluation( classifiedData );
+        evaluation.evaluateModel( tree, unlabeled );
+        System.out.println(evaluation.toSummaryString());
 
         Instances labeled = new Instances( unlabeled );
 
@@ -171,7 +216,6 @@ public class Explore {
      * gets all UniqueValues for "arff file"
      *
      * gets whole dataset
-     * TODO process whole dataset to be able to train it
      */
     private void getStatistics() {
         StatisticsManager<?> stats = StatisticsManager.getInstance();
@@ -185,10 +229,17 @@ public class Explore {
         trueFalse.add( "true" );
         trueFalse.add("false");
         allUniqueValues.add(trueFalse);
-        System.out.println( allUniqueValues );
 
 
         StatisticResult statisticResult = stats.getTable(columnId , tableId);
+        StatisticQueryColumn[] columns = statisticResult.getColumns();
+        wholeTable = new String[columns.length][];
+        for (int i = 0; i < columns.length; i++){
+            wholeTable[i] = columns[i].getData();
+        }
+
+        wholeTableRotated = rotate2dArray( wholeTable );
+
 
     }
 
