@@ -48,6 +48,7 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTrait;
 import org.polypheny.db.plan.RelTraitSet;
@@ -855,6 +856,19 @@ public class JdbcRules {
          */
         private JdbcTableModificationRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
             super( TableModify.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcTableModificationRule" );
+        }
+
+
+        @Override
+        public boolean matches( RelOptRuleCall call ) {
+            final TableModify tableModify = call.rel( 0 );
+            if ( tableModify.getTable().unwrap( JdbcTable.class ) != null ) {
+                JdbcTable table = tableModify.getTable().unwrap( JdbcTable.class );
+                if ( out.getJdbcSchema() == table.getSchema() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 

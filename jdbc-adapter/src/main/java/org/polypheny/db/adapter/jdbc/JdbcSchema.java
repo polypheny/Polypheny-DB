@@ -66,7 +66,6 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialectFactory;
 import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
@@ -257,7 +256,7 @@ public class JdbcSchema implements Schema {
 
 
     @Override
-    public Table getTable( String name ) {
+    public JdbcTable getTable( String name ) {
         return getTableMap().get( name );
     }
 
