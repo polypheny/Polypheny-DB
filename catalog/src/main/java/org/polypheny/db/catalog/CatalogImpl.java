@@ -25,18 +25,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang.ObjectUtils.Null;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
+import org.mapdb.elsa.ElsaSerializerBase.Ser;
 import org.mapdb.serializer.SerializerArrayTuple;
+import org.mapdb.serializer.SerializerJava;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
@@ -106,8 +108,8 @@ public class CatalogImpl extends Catalog {
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
-    private static BTreeMap<Object[], Long> tableNames;
-    private static BTreeMap<Object[], Long> columnNames;
+    private static BTreeMap<Object[], CatalogTable> tableNames;
+    private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static HTreeMap<String, CatalogUser> userNames;
     private static HTreeMap<String, Integer> storeNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
@@ -311,7 +313,7 @@ public class CatalogImpl extends Catalog {
      */
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
-        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
 
         columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
     }
@@ -320,7 +322,10 @@ public class CatalogImpl extends Catalog {
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        tableNames = db.treeMap( "tableNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.LONG ).createOrOpen();
+        tableNames = db.treeMap( "tableNames" )
+                .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
+                .valueSerializer( Serializer.JAVA )
+                .createOrOpen();
     }
 
 
@@ -480,7 +485,7 @@ public class CatalogImpl extends Catalog {
 
     public List<CatalogSchema> getSchemas( long databaseId ) throws UnknownSchemaException {
         try {
-            return Objects.requireNonNull( databaseChildren.get( databaseId ) ).stream().map( schemas::get ).collect( Collectors.toList() );
+            return new ArrayList<>( schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId );
         }
@@ -502,7 +507,7 @@ public class CatalogImpl extends Catalog {
         if ( schemaNamePattern != null ) {
             try {
                 return Collections.singletonList( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) );
-            }catch ( NullPointerException e ){
+            } catch ( NullPointerException e ) {
                 throw new UnknownSchemaException( databaseId );
             }
         }
@@ -522,8 +527,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException {
         try {
-            return schemaNames.get( new Object[]{ Objects.requireNonNull( databaseNames.get( databaseName ) ).id, schemaName } ) ;
-        }catch ( NullPointerException e ) {
+            return schemaNames.get( new Object[]{ Objects.requireNonNull( databaseNames.get( databaseName ) ).id, schemaName } );
+        } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseName, schemaName );
         }
 
@@ -580,7 +585,7 @@ public class CatalogImpl extends Catalog {
         CatalogUser owner = users.get( ownerId );
         long id = schemaIdBuilder.getAndIncrement();
         CatalogSchema schema = new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType );
-        schemas.put( id, schema);
+        schemas.put( id, schema );
         schemaNames.put( new Object[]{ databaseId, name }, schema );
         schemaChildren.put( id, ImmutableList.<Long>builder().build() );
         List<Long> children = new ArrayList<>( databaseChildren.get( databaseId ) );
@@ -715,11 +720,10 @@ public class CatalogImpl extends Catalog {
         //TODO refactor call
         CatalogSchema schema = schemas.get( schemaId );
         if ( tableNamePattern != null ) {
-            long id = tableNames.get( new Object[]{ schema.databaseId, schemaId, tableNamePattern.pattern } );
-            return Collections.singletonList( tables.get( id ) );
+            return Collections.singletonList( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableNamePattern.pattern } ) );
         } else {
-            List<Long> children = new ArrayList<>( tableNames.prefixSubMap( new Object[]{ schema.databaseId, schemaId } ).values() );
-            return children.stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+
+            return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ schema.databaseId, schemaId } ).values() );
         }
 
 
@@ -773,20 +777,19 @@ public class CatalogImpl extends Catalog {
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
-            return Collections.singletonList( tables.get( tableId ) );
+            return Collections.singletonList( tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ) );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values() );
         }
         if ( databaseNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( tables::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId } ).values() );
         }
 
-        return tables.values().stream().collect( Collectors.toList() );
+        return new ArrayList<>( tables.values() );
 
         /*
         try {
@@ -859,7 +862,7 @@ public class CatalogImpl extends Catalog {
 
         long databaseId = databaseNames.get( databaseName ).id;
         long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
-        return tables.get( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
+        return tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
 
         /*
         try {
@@ -888,10 +891,11 @@ public class CatalogImpl extends Catalog {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = schemas.get( schemaId );
         CatalogUser owner = users.get( ownerId );
-        tables.put( id, new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null, null ) );
+        CatalogTable table = new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null, null );
+        tables.put( id, table );
         // add null instead of empty list? needs check anyway
         tableChildren.put( id, ImmutableList.<Long>builder().build() );
-        tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, id );
+        tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
         List<Long> children = new ArrayList<>( schemaChildren.get( schemaId ) );
         children.add( id );
         schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
@@ -947,8 +951,8 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table = tables.get( tableId );
         tables.replace( tableId, CatalogTable.rename( table, name ) );
-        tableNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
-        tableNames.put( new String[]{ table.databaseName, table.schemaName, name }, tableId );
+        tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+        tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -971,7 +975,7 @@ public class CatalogImpl extends Catalog {
         children.remove( tableId );
         schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
         schemas.remove( tableId );
-        schemaNames.remove( new String[]{ table.databaseName, table.schemaName, table.name } );
+        schemaNames.remove( new Object[]{ table.databaseName, table.schemaName, table.name } );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1156,24 +1160,25 @@ public class CatalogImpl extends Catalog {
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
-            long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnNamePattern } );
-            return Collections.singletonList( columns.get( columnId ) );
+            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ).id;
+
+            return Collections.singletonList( columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnNamePattern } ) );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } );
-            return tableChildren.get( tableId ).stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ).id;
+
+            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId, schemaId, tableId } ).values() );
         }
         if ( databaseNamePattern != null && schemaNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
             long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            return tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values() );
         }
         if ( databaseNamePattern != null ) {
             long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            return tableNames.prefixSubMap( new Object[]{ databaseId } ).values().stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId } ).values() );
         }
 
         return columns.values().stream().collect( Collectors.toList() );
@@ -1246,9 +1251,8 @@ public class CatalogImpl extends Catalog {
 
         long databaseId = databaseNames.get( databaseName ).id;
         long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
-        long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
-        long columnId = columnNames.get( new Object[]{ databaseId, schemaId, tableId, } );
-        return columns.get( columnId );
+        long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableName } ).id;
+        return columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnName } );
         /*
 
         try {
@@ -1278,8 +1282,9 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table = tables.get( tableId );
         long id = columnIdBuilder.getAndIncrement();
-        columns.put( id, new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null ) );
-        columnNames.put( new Object[]{ table.databaseId, table.schemaId, name }, id );
+        CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
+        columns.put( id, column );
+        columnNames.put( new Object[]{ table.databaseId, table.schemaId, name }, column );
         List<Long> children = new ArrayList<>( tableChildren.get( tableId ) );
         children.add( id );
         tableChildren.replace( id, ImmutableList.copyOf( children ) );
@@ -1319,7 +1324,7 @@ public class CatalogImpl extends Catalog {
         CatalogColumn column = columns.get( columnId );
         columns.replace( columnId, CatalogColumn.replaceName( column, name ) );
         columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
-        columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, columnId );
+        columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1654,7 +1659,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException {
-        return constraints.values().stream().filter( c -> keys.get( c.key ).tableId == tableId ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> c.key.tableId == tableId ).collect( Collectors.toList() );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1743,7 +1748,11 @@ public class CatalogImpl extends Catalog {
                 final int unique = computeUniqueCount( tables.get( refKey.tableId ).primaryKey == refKey.id, consts, inds );
                 if ( unique > 0 ) {
                     long keyId = getOrAddKey( tableId, columnIds );
-                    foreignKeys.put( keyId, new CatalogForeignKey( keyId, constraintName, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, keyId, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, onUpdate, onDelete ) );
+                    CatalogForeignKey foreignKey = new CatalogForeignKey( keyId, constraintName, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, keyId, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, onUpdate, onDelete );
+                    foreignKeys.put( keyId, foreignKey );
+                    CatalogTable updatedTable = CatalogTable.addPrimaryKey( table, keyId );
+                    tables.replace( tableId, updatedTable );
+                    tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, updatedTable );
                     return;
                 }
 
@@ -2054,7 +2063,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogUser getUser( String userName ) throws UnknownUserException {
         try {
-            return users.get( userNames.get( userName ) );
+            return userNames.get( userName );
         } catch ( NullPointerException e ) {
             throw new UnknownUserException( userName );
         }
@@ -2380,7 +2389,8 @@ public class CatalogImpl extends Catalog {
     private long addKey( long tableId, List<Long> columnIds ) {
         CatalogTable table = tables.get( tableId );
         long id = keyIdBuilder.getAndIncrement();
-        keys.put( id, new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, columnIds.stream().map( i -> columns.get( i ).name ).collect( Collectors.toList() ) ) );
+        List<String> names = columnIds.stream().map( i -> columns.get( i ).name ).collect( Collectors.toList() );
+        keys.put( id, new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names ) );
         return id;
     }
 

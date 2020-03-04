@@ -363,7 +363,7 @@ public class Crud implements InformationObserver {
         Result result;
         try {
             Catalog catalog = transaction.getCatalog();
-            List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema.split( "." )[0] ), null );
+            List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
             ArrayList<String> tableNames = new ArrayList<>();
             for ( CatalogTable catalogTable : tables ) {
                 tableNames.add( catalogTable.name );
