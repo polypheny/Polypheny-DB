@@ -25,11 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
@@ -37,9 +35,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
-import org.mapdb.elsa.ElsaSerializerBase.Ser;
 import org.mapdb.serializer.SerializerArrayTuple;
-import org.mapdb.serializer.SerializerJava;
 import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
@@ -114,7 +110,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static HTreeMap<String, CatalogUser> userNames;
     private static HTreeMap<String, CatalogStore> storeNames;
-    private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
+    private static BTreeMap<long[], CatalogColumnPlacement> columnPlacements;
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogKey> keys;
     private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
@@ -154,8 +150,8 @@ public class CatalogImpl extends Catalog {
 
             // mirrors default data from old sql file
             try {
-                insertDefaultData();
                 restoreAllIdBuilders();
+                insertDefaultData();
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException e ) {
                 e.printStackTrace();
             }
@@ -234,6 +230,8 @@ public class CatalogImpl extends Catalog {
         Integer systemId = null;
         if ( !userNames.containsKey( "system" ) ) {
             systemId = addUser( "system", "" );
+        } else {
+            systemId = getUser( "system" ).id;
         }
 
         if ( !userNames.containsKey( "pa" ) ) {
@@ -244,14 +242,8 @@ public class CatalogImpl extends Catalog {
         // init database
         Long databaseId = null;
         if ( !databaseNames.containsKey( "APP" ) ) {
-            if ( systemId == null ) {
-                systemId = getUser( "system" ).id;
-            }
-
             databaseId = addDatabase( "APP", systemId, "system", 0L, "public" );
-        }
-
-        if ( databaseId == null ) {
+        } else {
             databaseId = getDatabase( "APP" ).id;
         }
 
@@ -260,12 +252,9 @@ public class CatalogImpl extends Catalog {
 
         Long schemaId = null;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-
             schemaId = addSchema( "public", databaseId, 0, SchemaType.RELATIONAL );
-        }
-
-        if ( schemaId == null ) {
-            schemaId = getDatabase( "APP" ).id;
+        } else {
+            schemaId = getSchema( "APP", "public" ).id;
         }
 
         //////////////
@@ -299,38 +288,44 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogStore csv = getStore( "csv" );
-        if ( columns.size() <= 8 ) {
+        // TODO temporary change
+        if ( columns.size() <= 7 ) {
             addDefaultCsvColumns( csv );
 
-
         }
+        System.out.println( columns );
+        System.out.println( columnNames );
+        System.out.println( columnPlacements );
+        System.out.println( tables );
+        System.out.println( schemas );
+        System.out.println( databases );
     }
 
 
     private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException {
-        CatalogSchema schema = getSchema( "APP", "public");
+        CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
         long colId = addColumn( "deptno", depts.id, 1, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, depts.schemaName, depts.name, "deptno");
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, depts.name, "deptno" );
 
         colId = addColumn( "name", depts.id, 2, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, depts.schemaName, depts.name, "name");
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, depts.name, "name" );
 
         CatalogTable emps = getTable( schema.id, "emps" );
-        colId = addColumn( "empid", depts.id, 1, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "empid");
+        colId = addColumn( "empid", emps.id, 1, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "empid" );
 
-        colId = addColumn( "deptno", depts.id, 2, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "deptno");
+        colId = addColumn( "deptno", emps.id, 2, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "deptno" );
 
-        colId = addColumn( "name", depts.id, 3, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "name");
+        colId = addColumn( "name", emps.id, 3, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "name" );
 
-        colId = addColumn( "salary", depts.id, 4, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "salary");
+        colId = addColumn( "salary", emps.id, 4, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "salary" );
 
-        colId = addColumn( "commission", depts.id, 5, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "commission");
+        colId = addColumn( "commission", emps.id, 5, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "commission" );
     }
 
 
@@ -352,7 +347,7 @@ public class CatalogImpl extends Catalog {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
 
-        columnPlacement = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
+        columnPlacements = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -849,7 +844,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException, GenericCatalogException {
         CatalogSchema schema = schemas.get( schemaId );
-        return tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) ;
+        return tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1081,7 +1076,7 @@ public class CatalogImpl extends Catalog {
         CatalogColumn column = columns.get( columnId );
         CatalogStore store = stores.get( storeId );
 
-        columnPlacement.put( new long[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+        columnPlacements.put( new long[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1102,7 +1097,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
-        columnPlacement.remove( new long[]{ storeId, columnId } );
+        columnPlacements.remove( new long[]{ storeId, columnId } );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1122,7 +1117,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) {
 
-        return new ArrayList<>( columnPlacement.prefixSubMap( new long[]{ storeId } ).values() );
+        return new ArrayList<>( columnPlacements.prefixSubMap( new long[]{ storeId } ).values() );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1151,7 +1146,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
-        columnPlacement.put( new long[]{ storeId, columnId }, CatalogColumnPlacement.replacePhysicalNames( columnPlacement.get( new long[]{ storeId, columnId } ), physicalSchemaName, physicalTableName, physicalColumnName ) );
+        columnPlacements.put( new long[]{ storeId, columnId }, CatalogColumnPlacement.replacePhysicalNames( columnPlacements.get( new long[]{ storeId, columnId } ), physicalSchemaName, physicalTableName, physicalColumnName ) );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -2227,11 +2222,9 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogDatabase database = databases.get( databaseId );
             List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
-            for ( Long aLong : databaseChildren.get( databaseId ) ) {
-                CatalogCombinedSchema combinedSchema = getCombinedSchema( aLong );
-                if ( combinedSchema != null ) {
-                    childSchemas.add( combinedSchema );
-                }
+            for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
+                CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );
+                childSchemas.add( combinedSchema );
             }
 
             CatalogSchema defaultSchema = null;
@@ -2288,21 +2281,23 @@ public class CatalogImpl extends Catalog {
     public CatalogCombinedTable getCombinedTable( long tableId ) throws UnknownTableException {
         try {
             CatalogTable table = tables.get( tableId );
-            List<CatalogColumn> childColumns = tableChildren.get( tableId ).stream().map( columns::get ).collect( Collectors.toList() );
+            List<CatalogColumn> childColumns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, tableId } ).values() );
             CatalogSchema schema = schemas.get( table.schemaId );
             CatalogDatabase database = databases.get( table.databaseId );
             CatalogUser user = users.get( table.ownerId );
 
             Map<Integer, List<CatalogColumnPlacement>> columnPlacementByStore = new HashMap<>();
             stores.keySet().forEach( id -> {
-                // TODO empty list, no entry when empty?
-                columnPlacementByStore.put( id, getColumnPlacementsOnStore( id ) );
+                List<CatalogColumnPlacement> placement = getColumnPlacementsOnStore( id );
+                if ( placement.size() > 0 ) {
+                    columnPlacementByStore.put( id, getColumnPlacementsOnStore( id ) );
+                }
             } );
 
             Map<Long, List<CatalogColumnPlacement>> columnPlacementByColumn = new HashMap<>();
 
-            tableChildren.get( tableId ).forEach( id -> {
-                columnPlacementByColumn.put( id, getColumnPlacementByColumn( id ) );
+            childColumns.forEach( c -> {
+                columnPlacementByColumn.put( c.id, getColumnPlacementByColumn( c.id ) );
             } );
 
             List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
