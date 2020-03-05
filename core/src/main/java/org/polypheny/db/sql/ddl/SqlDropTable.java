@@ -44,6 +44,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -166,7 +167,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete the table
         try {
             transaction.getCatalog().deleteTable( table.getTable().id );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }
     }

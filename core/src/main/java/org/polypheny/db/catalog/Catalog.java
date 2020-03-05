@@ -162,7 +162,7 @@ public abstract class Catalog {
      * @return The id of the inserted schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException;
+    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -181,7 +181,7 @@ public abstract class Catalog {
      * @param name New name of the schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException;
+    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Change owner of a schema
@@ -190,7 +190,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException;
+    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Delete a schema from the catalog
@@ -198,7 +198,7 @@ public abstract class Catalog {
      * @param schemaId The if of the schema to delete
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void deleteSchema( long schemaId ) throws GenericCatalogException;
+    public abstract void deleteSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
@@ -294,14 +294,14 @@ public abstract class Catalog {
      * @param name New name of the table
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameTable( long tableId, String name ) throws GenericCatalogException;
+    public abstract void renameTable( long tableId, String name ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Delete the specified table. Columns need to be deleted before.
      *
      * @param tableId The id of the table to delete
      */
-    public abstract void deleteTable( long tableId ) throws GenericCatalogException;
+    public abstract void deleteTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Change owner of a table
@@ -310,7 +310,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException;
+    public abstract void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Set the primary key of a table
@@ -318,7 +318,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
-    public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException;
+    public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Adds a placement for a column.

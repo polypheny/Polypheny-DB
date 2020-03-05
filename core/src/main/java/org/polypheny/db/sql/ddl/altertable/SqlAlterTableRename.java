@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -80,7 +81,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
                 throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newTableName ) );
             }
             transaction.getCatalog().renameTable( table.id, newTableName );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }
