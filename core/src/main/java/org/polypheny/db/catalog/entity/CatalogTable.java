@@ -48,7 +48,6 @@ public final class CatalogTable implements CatalogEntity {
     public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
-    public final ImmutableList<Long> foreignKeys;
 
 
     public CatalogTable(
@@ -62,8 +61,7 @@ public final class CatalogTable implements CatalogEntity {
             @NonNull final String ownerName,
             @NonNull final TableType type,
             final String definition,
-            final Long primaryKey,
-            final ImmutableList<Long> foreignKeys ) {
+            final Long primaryKey ) {
         this.id = id;
         this.name = name;
         this.schemaId = schemaId;
@@ -75,11 +73,6 @@ public final class CatalogTable implements CatalogEntity {
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
-        if ( foreignKeys != null ) {
-            this.foreignKeys = foreignKeys;
-        } else {
-            this.foreignKeys = ImmutableList.of();
-        }
 
     }
 
@@ -123,31 +116,18 @@ public final class CatalogTable implements CatalogEntity {
 
 
     public static CatalogTable rename( CatalogTable table, String name ) {
-        return new CatalogTable( table.id, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.foreignKeys );
+        return new CatalogTable( table.id, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
     }
 
 
     public static CatalogTable replaceOwner( CatalogTable table, int ownerId ) {
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.foreignKeys );
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey );
     }
 
 
     public static CatalogTable replacePrimary( CatalogTable table, Long keyId ) {
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId, table.foreignKeys );
+        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId );
     }
 
-
-    public static CatalogTable addPrimaryKey( CatalogTable table, Long foreignKey ) {
-        List<Long> foreignKeys = new ArrayList<>( table.foreignKeys );
-        foreignKeys.add( foreignKey );
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableList.copyOf( foreignKeys ) );
-    }
-
-
-    public static CatalogTable removePrimaryKey( CatalogTable table, Long foreignKey ) {
-        List<Long> foreignKeys = new ArrayList<>( table.foreignKeys );
-        foreignKeys.remove( foreignKey );
-        return new CatalogTable( table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableList.copyOf( foreignKeys ) );
-    }
 
 }

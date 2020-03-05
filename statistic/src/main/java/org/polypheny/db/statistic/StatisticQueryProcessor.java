@@ -396,7 +396,7 @@ public class StatisticQueryProcessor {
     public boolean hasData( String schema, String table, String column ) {
         String query = "SELECT * FROM " + buildQualifiedName( schema, table ) + " LIMIT 1";
         StatisticResult res = executeSqlSelect( query );
-        return res.getColumns().length > 0;
+        return res.getColumns() != null && res.getColumns().length > 0;
     }
 
 

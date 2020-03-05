@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mapdb.BTreeMap;
@@ -105,13 +106,14 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
     private static final AtomicLong indexIdBuilder = new AtomicLong();
     private static final AtomicInteger storeIdBuilder = new AtomicInteger();
+    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
 
     // qualified name with database prefixed e.g. [database].[schema].[table].[column]
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static BTreeMap<Object[], CatalogTable> tableNames;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static HTreeMap<String, CatalogUser> userNames;
-    private static HTreeMap<String, Integer> storeNames;
+    private static HTreeMap<String, CatalogStore> storeNames;
     private static BTreeMap<long[], CatalogColumnPlacement> columnPlacement;
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogKey> keys;
@@ -154,7 +156,7 @@ public class CatalogImpl extends Catalog {
             try {
                 insertDefaultData();
                 restoreAllIdBuilders();
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException e ) {
                 e.printStackTrace();
             }
 
@@ -203,13 +205,14 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( constraints, columnIdBuilder );
         restoreIdBuilder( indices, indexIdBuilder );
         restoreIdBuilder( stores, storeIdBuilder );
+        restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
 
     }
 
 
     private void initStoreInfo( DB db ) {
         stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
-        storeNames = db.hashMap( "storeNames", Serializer.STRING, Serializer.INTEGER ).createOrOpen();
+        storeNames = db.hashMap( "storeNames", Serializer.STRING, new GenericSerializer<CatalogStore>() ).createOrOpen();
     }
 
 
@@ -225,7 +228,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         //////////////
         // init users
         Integer systemId = null;
@@ -268,10 +271,10 @@ public class CatalogImpl extends Catalog {
         //////////////
         // init schema
         if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-            addTable( "depts", 0, 0, TableType.TABLE, null );
+            addTable( "depts", schemaId, systemId, TableType.TABLE, null );
         }
         if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-            addTable( "emps", 0, 0, TableType.TABLE, null );
+            addTable( "emps", schemaId, systemId, TableType.TABLE, null );
         }
 
         //////////////
@@ -294,6 +297,40 @@ public class CatalogImpl extends Catalog {
 
             addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
         }
+
+        CatalogStore csv = getStore( "csv" );
+        if ( columns.size() <= 8 ) {
+            addDefaultCsvColumns( csv );
+
+
+        }
+    }
+
+
+    private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException {
+        CatalogSchema schema = getSchema( "APP", "public");
+        CatalogTable depts = getTable( schema.id, "depts" );
+        long colId = addColumn( "deptno", depts.id, 1, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, depts.schemaName, depts.name, "deptno");
+
+        colId = addColumn( "name", depts.id, 2, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, depts.schemaName, depts.name, "name");
+
+        CatalogTable emps = getTable( schema.id, "emps" );
+        colId = addColumn( "empid", depts.id, 1, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "empid");
+
+        colId = addColumn( "deptno", depts.id, 2, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "deptno");
+
+        colId = addColumn( "name", depts.id, 3, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "name");
+
+        colId = addColumn( "salary", depts.id, 4, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "salary");
+
+        colId = addColumn( "commission", depts.id, 5, PolySqlType.INTEGER, null, null, false, null );
+        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, emps.schemaName, emps.name, "commission");
     }
 
 
@@ -812,7 +849,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException, GenericCatalogException {
         CatalogSchema schema = schemas.get( schemaId );
-        return tables.get( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
+        return tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) ;
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -891,7 +928,7 @@ public class CatalogImpl extends Catalog {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = schemas.get( schemaId );
         CatalogUser owner = users.get( ownerId );
-        CatalogTable table = new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null, null );
+        CatalogTable table = new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null );
         tables.put( id, table );
         // add null instead of empty list? needs check anyway
         tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -1284,7 +1321,7 @@ public class CatalogImpl extends Catalog {
         long id = columnIdBuilder.getAndIncrement();
         CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
         columns.put( id, column );
-        columnNames.put( new Object[]{ table.databaseId, table.schemaId, name }, column );
+        columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
         List<Long> children = new ArrayList<>( tableChildren.get( tableId ) );
         children.add( id );
         tableChildren.replace( id, ImmutableList.copyOf( children ) );
@@ -1618,7 +1655,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException {
         // TODO check list
-        return tables.get( tableId ).foreignKeys.stream().map( foreignKeys::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
         /*
 
         try {
@@ -1659,7 +1696,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException {
-        return constraints.values().stream().filter( c -> c.key.tableId == tableId ).collect( Collectors.toList() );
+        List<Long> keysOfTable = keys.values().stream().filter( k -> k.tableId == tableId ).map( k -> k.id ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -1683,7 +1721,9 @@ public class CatalogImpl extends Catalog {
         return keys.values().stream()
                 .filter( k -> k.tableId == tableId )
                 .map( k -> constraints.get( k.id ) )
-                .filter( c -> c.name.equals( constraintName ) ).findFirst().get();
+                .filter( c -> c.name.equals( constraintName ) )
+                .findFirst()
+                .get();
 
         /*
 
@@ -1729,40 +1769,43 @@ public class CatalogImpl extends Catalog {
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
         CatalogTable table = tables.get( tableId );
-        List<CatalogKey> childKeys = table.foreignKeys.stream().map( keys::get ).collect( Collectors.toList() );
+        List<CatalogKey> childKeys = keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
 
-        for ( CatalogKey refKey : childKeys ) {
-            if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
-                // TODO refactor
-                List<CatalogColumn> cols = refKey.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
-                int i = 0;
-                for ( CatalogColumn referencedColumn : cols ) {
-                    CatalogColumn referencingColumn = columns.get( referencedColumn.id );
-                    if ( referencedColumn.type != referencingColumn.type ) {
-                        throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
+        try {
+            for ( CatalogKey refKey : childKeys ) {
+                if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
+
+                    CatalogCombinedKey combinedKey = getCombinedKey( refKey.id );
+
+                    int i = 0;
+                    for ( CatalogColumn referencedColumn : combinedKey.getColumns() ) {
+                        CatalogColumn referencingColumn = columns.get( columnIds.get( i++ ) );
+                        if ( referencedColumn.type != referencingColumn.type ) {
+                            throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
+                        }
                     }
-                }
-                // TODO simplify constraintType tested twice atm
-                List<CatalogConstraint> consts = constraints.values().stream().filter( c -> c.keyId == refKey.id && c.type == ConstraintType.UNIQUE ).collect( Collectors.toList() );
-                List<CatalogIndex> inds = indices.values().stream().filter( in -> in.keyId == refKey.id ).collect( Collectors.toList() );
-                final int unique = computeUniqueCount( tables.get( refKey.tableId ).primaryKey == refKey.id, consts, inds );
-                if ( unique > 0 ) {
-                    long keyId = getOrAddKey( tableId, columnIds );
-                    CatalogForeignKey foreignKey = new CatalogForeignKey( keyId, constraintName, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, keyId, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, onUpdate, onDelete );
-                    foreignKeys.put( keyId, foreignKey );
-                    CatalogTable updatedTable = CatalogTable.addPrimaryKey( table, keyId );
-                    tables.replace( tableId, updatedTable );
-                    tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, updatedTable );
-                    return;
+                    // TODO same keys for key and foreignkey
+                    if ( combinedKey.getUniqueCount() > 0 ) {
+                        long keyId = getOrAddKey( tableId, columnIds );
+                        long id = foreignKeyIdBuilder.getAndIncrement();
+                        CatalogForeignKey key = new CatalogForeignKey( id, constraintName, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, refKey.id, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, onUpdate, onDelete );
+
+                        foreignKeys.put( id, key );
+                        return;
+                    }
+
                 }
 
             }
+        } catch ( UnknownKeyException e ) {
+            e.printStackTrace();
         }
         /*
 
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             List<CatalogKey> keys = Statements.getKeys( transactionHandler, referencesTableId );
+
             for ( CatalogKey refKey : keys ) {
                 if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
                     CatalogCombinedKey combinedKey = getCombinedKey( transactionHandler, refKey.id );
@@ -2114,7 +2157,7 @@ public class CatalogImpl extends Catalog {
     public CatalogStore getStore( String uniqueName ) throws GenericCatalogException {
         uniqueName = uniqueName.toLowerCase();
 
-        return stores.get( uniqueName );
+        return storeNames.get( uniqueName );
         /*
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
@@ -2138,8 +2181,9 @@ public class CatalogImpl extends Catalog {
         uniqueName = uniqueName.toLowerCase();
 
         int id = storeIdBuilder.getAndIncrement();
-        stores.put( id, new CatalogStore( id, uniqueName, adapter, settings ) );
-        storeNames.put( uniqueName, id );
+        CatalogStore store = new CatalogStore( id, uniqueName, adapter, settings );
+        stores.put( id, store );
+        storeNames.put( uniqueName, store );
         return id;
         /*
 
