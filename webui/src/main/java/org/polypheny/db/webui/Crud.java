@@ -709,17 +709,23 @@ public class Crud implements InformationObserver {
      * Gets the classified Data from User
      * return possibly interesting Data to User
      *
+     * @return
      */
 
-    String classifyData( Request req, Response res ) throws Exception {
+    Result classifyData( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
+        Result result;
 
         Explore e = Explore.getInstance();
         e.setClassifiedData( explore.data );
         e.setColumnId( explore.columnInfo );
         e.setTableId( explore.tableId );
 
-        return e.classificationProcess();
+        DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
+
+        result = new Result( header, e.classificationProcess() );
+
+        return result;
 
     }
 

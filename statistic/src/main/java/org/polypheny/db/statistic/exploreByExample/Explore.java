@@ -17,15 +17,11 @@
 package org.polypheny.db.statistic.exploreByExample;
 
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,13 +34,11 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instances;
-import weka.core.SparseInstance;
 import weka.core.Utils;
 import weka.core.converters.ArffLoader;
 import weka.core.converters.ArffSaver;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Remove;
-import weka.filters.unsupervised.attribute.ReplaceMissingWithUserConstant;
 
 
 @Slf4j
@@ -82,13 +76,13 @@ public class Explore {
     }
 
 
-    public String classificationProcess() throws Exception {
+    public String[][] classificationProcess() throws Exception {
         getStatistics();
         return prepareUserInput();
     }
 
 
-    public String prepareUserInput() throws Exception {
+    public String[][] prepareUserInput() throws Exception {
 
         String[][] rotated = rotate2dArray( classifiedData );
 
@@ -98,11 +92,11 @@ public class Explore {
 
     /**
      * Converts Data to "arff format" in order to use Weka for classification
-     *
-     * @param rotated rotated userClassification
+     *  @param rotated rotated userClassification
      * @param userClassification classified data form user
+     * @return
      */
-    public String convertToArff( String[][] rotated, String[][] userClassification, String[][] wholeTableRotated, String[][] wholeTable ) throws Exception {
+    public String[][] convertToArff( String[][] rotated, String[][] userClassification, String[][] wholeTableRotated, String[][] wholeTable ) throws Exception {
 
         int numInstances = rotated[0].length;
         int dimLength = classifiedData[0].length;
@@ -179,7 +173,7 @@ public class Explore {
      *
      * @param classifiedData prepared classifiedData
      */
-    public String trainData( Instances classifiedData, Instances unlabeled ) throws Exception {
+    public String[][] trainData( Instances classifiedData, Instances unlabeled ) throws Exception {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
         classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
@@ -200,15 +194,22 @@ public class Explore {
 
         Instances labeled = new Instances( unlabeled );
 
-        String labledData;
+        String[][] labledData = new String[unlabeled.numInstances()][];
+
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
             double clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
+            System.out.println( clsLabel );
+            System.out.println( labeled.instance( i ) );
             labeled.instance( i ).setClassValue( clsLabel );
+            if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ){
+                labledData[i] = Arrays.copyOf(labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length-1);
+            }
+            System.out.println( labeled.instance( i ) );
             System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
         }
 
         saveAsArff( labeled, "labeled-data.arff" );
-        labledData = String.valueOf( labeled );
+
         return labledData;
     }
 

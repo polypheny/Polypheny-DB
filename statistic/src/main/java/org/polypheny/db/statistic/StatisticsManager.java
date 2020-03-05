@@ -377,7 +377,6 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
     public StatisticResult getTable(String[] qualifiedColumn, String qualifiedTableName){
-        System.out.println( Arrays.toString( qualifiedColumn ).replace( "[", "" ).replace( "]", "" ) );
         String query = "SELECT " + Arrays.toString( qualifiedColumn ).replace( "[", "" ).replace( "]", "" ) + " FROM " + qualifiedTableName + " LIMIT 20";
         return this.sqlQueryInterface.executeSqlSelect(query);
     }
