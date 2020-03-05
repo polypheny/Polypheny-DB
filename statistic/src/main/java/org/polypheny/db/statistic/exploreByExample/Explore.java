@@ -51,13 +51,12 @@ public class Explore {
     private String[][] classifiedData;
 
     @Setter
-    private String[] columnId;
+    private String[] columnIds;
 
     @Setter
-    private String tableId;
+    private String query;
 
     List<List<String>> allUniqueValues = new ArrayList<>();
-    List<List<String>> allUniqueValuesTF = new ArrayList<>();
 
     String[][] wholeTable;
     String[][] wholeTableRotated;
@@ -221,7 +220,8 @@ public class Explore {
      */
     private void getStatistics() {
         StatisticsManager<?> stats = StatisticsManager.getInstance();
-        List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnId ), tableId );
+        //List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnIds ), tableId );
+        List<StatisticQueryColumn> uniqueValues = stats.getAllUniqueValues( Arrays.asList( columnIds ), query );
 
         for ( StatisticQueryColumn uniqueValue : uniqueValues ) {
             allUniqueValues.add( Arrays.asList( uniqueValue.getData() ) );
@@ -232,7 +232,8 @@ public class Explore {
         trueFalse.add( "false" );
         allUniqueValues.add( trueFalse );
 
-        StatisticResult statisticResult = stats.getTable( columnId, tableId );
+        //StatisticResult statisticResult = stats.getTable( columnIds, tableId );
+        StatisticResult statisticResult = stats.getTable( query );
         StatisticQueryColumn[] columns = statisticResult.getColumns();
         wholeTable = new String[columns.length][];
         for ( int i = 0; i < columns.length; i++ ) {

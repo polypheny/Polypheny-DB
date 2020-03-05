@@ -718,12 +718,11 @@ public class Crud implements InformationObserver {
 
         Explore e = Explore.getInstance();
         e.setClassifiedData( explore.data );
-        e.setColumnId( explore.columnInfo );
-        e.setTableId( explore.tableId );
+        e.setColumnIds( explore.columnInfo );
+        e.setQuery( explore.query );
 
-        DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
 
-        result = new Result( header, e.classificationProcess() );
+        result = new Result( explore.header, e.classificationProcess() );
 
         return result;
 

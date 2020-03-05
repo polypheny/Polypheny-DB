@@ -17,9 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import org.polypheny.db.webui.models.DbColumn;
+
+
 public class ExploreByExample {
 
-    public String tableId;
+    public DbColumn[] header;
+    public String query;
     public String[] columnInfo;
     public String[][] data;
 
