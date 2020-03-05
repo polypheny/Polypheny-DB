@@ -68,7 +68,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -154,7 +153,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
     private RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
-        RelRoot routedRoot = RouterManager.getInstance().getRouter().route( logicalRoot, transaction );
+        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction );
         if ( log.isTraceEnabled() ) {
             log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }

@@ -73,7 +73,7 @@ public abstract class AbstractJdbcStore extends Store {
             Map<String, String> settings,
             ConnectionFactory connectionFactory,
             SqlDialect dialect ) {
-        super( storeId, uniqueName, settings );
+        super( storeId, uniqueName, settings, false, false );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager

@@ -41,15 +41,27 @@ public abstract class Store {
     @Getter
     private final String uniqueName;
 
+    @Getter
+    private final boolean dataReadOnly;
+    @Getter
+    private final boolean schemaReadOnly;
+
     protected final Map<String, String> settings;
 
 
-    public Store( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public Store(
+            final int storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final boolean dataReadOnly,
+            final boolean schemaReadOnly ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
         this.settings = settings;
+        this.dataReadOnly = dataReadOnly;
+        this.schemaReadOnly = schemaReadOnly;
     }
 
 

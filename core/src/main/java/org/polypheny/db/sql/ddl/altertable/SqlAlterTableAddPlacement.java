@@ -100,6 +100,8 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             }
             // Fetch the table again to get the update list of placements
             storeInstance.createTable( context, transaction.getCatalog().getCombinedTable( combinedTable.getTable().id ) );
+            // !!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO: Now we should also copy the data
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }

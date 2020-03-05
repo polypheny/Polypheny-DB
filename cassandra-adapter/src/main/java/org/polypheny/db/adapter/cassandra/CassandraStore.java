@@ -72,7 +72,7 @@ public class CassandraStore extends Store {
 
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings );
+        super( storeId, uniqueName, settings, false, false );
 
         // Parse settings
         this.dbHostname = settings.get( "host" );

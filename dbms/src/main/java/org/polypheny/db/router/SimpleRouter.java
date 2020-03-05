@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -60,6 +63,18 @@ public class SimpleRouter extends AbstractRouter {
                 logicalRoot.kind,
                 logicalRoot.fields,
                 logicalRoot.collation );
+    }
+
+
+    @Override
+    public List<Store> createTable( long schemaId, Transaction transaction ) {
+        Map<String, Store> availableStores = StoreManager.getInstance().getStores();
+        for ( Store store : availableStores.values() ) {
+            if ( !store.isSchemaReadOnly() ) {
+                return ImmutableList.of( store );
+            }
+        }
+        throw new RuntimeException( "No suitable store found" );
     }
 
 

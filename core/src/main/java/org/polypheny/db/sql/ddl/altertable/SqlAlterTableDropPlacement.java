@@ -88,7 +88,9 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             // Check whether this placement exists
             for ( Map.Entry<Integer, List<CatalogColumnPlacement>> p : combinedTable.getColumnPlacementsByStore().entrySet() ) {
                 if ( p.getKey() == storeInstance.getStoreId() ) {
-                    // Delete placement
+                    // Physically delete the data from the store
+                    storeInstance.dropTable( context, combinedTable );
+                    // Delete placement in the catalog
                     for ( CatalogColumnPlacement cp : p.getValue() ) {
                         transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), cp.columnId );
                     }
