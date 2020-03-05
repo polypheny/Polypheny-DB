@@ -91,6 +91,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -345,7 +346,7 @@ public class DbmsMeta implements ProtobufMeta {
                     // Polypheny-DB specific extensions:
                     "COLLATION"
             );
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException | UnknownSchemaException e ) {
             throw propagate( e );
         }
     }

@@ -28,7 +28,9 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -118,7 +120,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, catalogTable, catalogColumn );
                 transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
             }
-        } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

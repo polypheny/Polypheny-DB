@@ -282,7 +282,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
             StoreManager.getInstance().getStore( storeId ).createTable( context, combinedTable );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -137,7 +137,7 @@ public class StatisticQueryProcessor {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException e ) {
+        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException | UnknownTableException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();

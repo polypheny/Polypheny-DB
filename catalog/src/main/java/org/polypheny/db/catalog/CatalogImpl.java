@@ -30,20 +30,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ObjectUtils.Null;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
-import org.mapdb.serializer.SerializerLongArray;
 import org.polypheny.db.PolySqlType;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -61,14 +59,15 @@ import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 
 // TODO remove from all substructures
 
@@ -111,7 +110,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static HTreeMap<String, CatalogUser> userNames;
     private static HTreeMap<String, CatalogStore> storeNames;
-    private static BTreeMap<long[], CatalogColumnPlacement> columnPlacements;
+    private static BTreeMap<Object[], CatalogColumnPlacement> columnPlacements;
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogKey> keys;
     private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
@@ -348,7 +347,7 @@ public class CatalogImpl extends Catalog {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
 
-        columnPlacements = db.treeMap( "columnPlacement", new SerializerLongArray(), Serializer.JAVA ).createOrOpen();
+        columnPlacements = db.treeMap( "columnPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -617,7 +616,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
-        return schemaNames.get( new Object[]{ databaseId, schemaName } ) != null;
+        return schemaNames.containsKey( new Object[]{ databaseId, schemaName } );
     }
 
 
@@ -885,8 +884,13 @@ public class CatalogImpl extends Catalog {
      * @return true if there is a table with this name, false if not.
      */
     @Override
-    public boolean checkIfExistsTable( long schemaId, String tableName ) {
-        return tableNames.get( new Object[]{ schemaId, tableName } ) != null;
+    public boolean checkIfExistsTable( long schemaId, String tableName ) throws UnknownSchemaException {
+        try {
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            return tableNames.containsKey( new Object[]{ schema.databaseId, schemaId, tableName } );
+        } catch ( NullPointerException e ) {
+            throw new UnknownSchemaException( schemaId );
+        }
     }
 
 
@@ -906,13 +910,6 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( tableId );
         }
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.renameTable( transactionHandler, tableId, name );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 
@@ -954,7 +951,9 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setTableOwner( long tableId, int ownerId ) throws UnknownTableException {
         try {
-            tables.replace( tableId, CatalogTable.replaceOwner( Objects.requireNonNull( tables.get( tableId ) ), ownerId ) );
+            CatalogTable table = CatalogTable.replaceOwner( Objects.requireNonNull( tables.get( tableId ) ), ownerId );
+            tables.replace( tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( tableId );
         }
@@ -970,7 +969,9 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) throws UnknownTableException {
         try {
-            tables.replace( tableId, CatalogTable.replacePrimary( Objects.requireNonNull( tables.get( tableId ) ), keyId ) );
+            CatalogTable table = CatalogTable.replacePrimary( Objects.requireNonNull( tables.get( tableId ) ), keyId );
+            tables.replace( tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( tableId );
         }
@@ -994,7 +995,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
 
-            columnPlacements.put( new long[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+            columnPlacements.put( new Object[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1008,15 +1009,8 @@ public class CatalogImpl extends Catalog {
      * @param columnId The id of the column
      */
     @Override
-    public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
-        columnPlacements.remove( new long[]{ storeId, columnId } );
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+    public void deleteColumnPlacement( int storeId, long columnId ) {
+        columnPlacements.remove( new Object[]{ storeId, columnId } );
     }
 
 
@@ -1029,21 +1023,19 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) {
 
-        return new ArrayList<>( columnPlacements.prefixSubMap( new long[]{ storeId } ).values() );
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumnPlacementsOnStore( transactionHandler, storeId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+        return new ArrayList<>( columnPlacements.prefixSubMap( new Object[]{ storeId } ).values() );
     }
 
 
+    /**
+     * Get column placements by a specific column
+     *
+     * @param columnId the id of the specific column
+     * @return List of column placements of specific column
+     */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementByColumn( long columnId ) {
-        // todo
-        return null;
+        return columnPlacements.values().stream().filter( p -> p.columnId == columnId ).collect( Collectors.toList() );
     }
 
 
@@ -1057,15 +1049,14 @@ public class CatalogImpl extends Catalog {
      * @param physicalColumnName The physical column name
      */
     @Override
-    public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
-        columnPlacements.put( new long[]{ storeId, columnId }, CatalogColumnPlacement.replacePhysicalNames( columnPlacements.get( new long[]{ storeId, columnId } ), physicalSchemaName, physicalTableName, physicalColumnName ) );
-        /*
+    public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.updateColumnPlacementPhysicalNames( transactionHandler, storeId, columnId, physicalSchemaName, physicalTableName, physicalColumnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+            CatalogColumnPlacement placement = CatalogColumnPlacement.replacePhysicalNames( old, physicalSchemaName, physicalTableName, physicalColumnName );
+            columnPlacements.put( new Object[]{ storeId, columnId }, placement );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnPlacementException( storeId, columnId );
+        }
     }
 
 
@@ -1076,15 +1067,13 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
-        return tableChildren.get( tableId ).stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
-        /*
+    public List<CatalogColumn> getColumns( long tableId ) throws UnknownTableException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumns( transactionHandler, tableId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableException( tableId );
+        }
     }
 
 
@@ -1099,41 +1088,31 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException {
-
-        if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ).id;
-
-            return Collections.singletonList( columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnNamePattern } ) );
-        }
-        if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ).id;
-
-            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId, schemaId, tableId } ).values() );
-        }
-        if ( databaseNamePattern != null && schemaNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            long schemaId = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ).id;
-            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values() );
-        }
-        if ( databaseNamePattern != null ) {
-            long databaseId = databaseNames.get( databaseNamePattern.pattern ).id;
-            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ databaseId } ).values() );
-        }
-
-        return columns.values().stream().collect( Collectors.toList() );
-        /*
-
+    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws UnknownTableException, UnknownSchemaException, GenericCatalogException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumns( transactionHandler, databaseNamePattern, schemaNamePattern, tableNamePattern, columnNamePattern );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
+                CatalogTable table = Objects.requireNonNull( getTable( databaseNamePattern.pattern, schemaNamePattern.pattern, tableNamePattern.pattern ) );
+                return Collections.singletonList( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnNamePattern.pattern } ) );
+            }
+            if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
+                CatalogTable table = getTable( databaseNamePattern.pattern, schemaNamePattern.pattern, tableNamePattern.pattern );
+
+                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
+            }
+            if ( databaseNamePattern != null && schemaNamePattern != null ) {
+                CatalogSchema schema = getSchema( databaseNamePattern.pattern, databaseNamePattern.pattern );
+
+                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ schema.databaseId, schema.id } ).values() );
+            }
+            if ( databaseNamePattern != null ) {
+                CatalogDatabase database = Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) );
+                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ database.id } ).values() );
+            }
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
+
+        return new ArrayList<>( columns.values() );
     }
 
 
@@ -1145,15 +1124,12 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownColumnException If there is no column with this id
      */
     @Override
-    public CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException {
-        return columns.get( columnId );
-        /*
+    public CatalogColumn getColumn( long columnId ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumn( transactionHandler, columnId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return Objects.requireNonNull( columns.get( columnId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
+        }
     }
 
 
@@ -1166,17 +1142,13 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
     @Override
-    public CatalogColumn getColumn( long tableId, String columnName ) throws GenericCatalogException, UnknownColumnException {
-
-        CatalogTable table = tables.get( tableId );
-        return columns.get( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.name } ) );
-        /*
+    public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumn( transactionHandler, tableId, columnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+            return columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( tableId, columnName );
+        }
     }
 
 
@@ -1191,20 +1163,14 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownColumnException If there is no column with this name in the specified table of the database and schema.
      */
     @Override
-    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws GenericCatalogException, UnknownColumnException {
-
-        long databaseId = databaseNames.get( databaseName ).id;
-        long schemaId = schemaNames.get( new Object[]{ databaseId, schemaName } ).id;
-        long tableId = tableNames.get( new Object[]{ databaseId, schemaId, tableName } ).id;
-        return columnNames.get( new Object[]{ databaseId, schemaId, tableId, columnName } );
-        /*
+    public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException {
 
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getColumn( transactionHandler, databaseName, schemaName, tableName, columnName );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogTable table = getTable( databaseName, schemaName, tableName );
+            return columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } );
+        } catch ( UnknownTableException | NullPointerException e ) {
+            throw new UnknownColumnException( databaseName, schemaName, tableName, columnName );
+        }
     }
 
 
@@ -1223,21 +1189,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
-
-        CatalogTable table = tables.get( tableId );
-        long id = columnIdBuilder.getAndIncrement();
-        CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
-        columns.put( id, column );
-        columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
-        List<Long> children = new ArrayList<>( tableChildren.get( tableId ) );
-        children.add( id );
-        tableChildren.replace( id, ImmutableList.copyOf( children ) );
-        return id;
-        /*
-
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogTable table = Statements.getTable( transactionHandler, tableId );
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+
             if ( type.isCharType() && collation == null ) {
                 throw new RuntimeException( "Collation is not allowed to be null for char types." );
             }
@@ -1246,13 +1200,16 @@ public class CatalogImpl extends Catalog {
             }
 
             long id = columnIdBuilder.getAndIncrement();
-            columns.put( id, new CatalogColumn( id, name, tableId, name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null ) );
-
-            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, scale, nullable, collation );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException e ) {
+            CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
+            columns.put( id, column );
+            columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
+            children.add( id );
+            tableChildren.replace( id, ImmutableList.copyOf( children ) );
+            return id;
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
-         */
     }
 
 
@@ -1261,21 +1218,17 @@ public class CatalogImpl extends Catalog {
      *
      * @param columnId The if of the column to rename
      * @param name New name of the column
-     * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public void renameColumn( long columnId, String name ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceName( column, name ) );
-        columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
-        columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
-        /*
+    public void renameColumn( long columnId, String name ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.renameColumn( transactionHandler, columnId, name );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            columns.replace( columnId, CatalogColumn.replaceName( column, name ) );
+            columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+            columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
+        }
     }
 
 
@@ -1286,16 +1239,15 @@ public class CatalogImpl extends Catalog {
      * @param position The new position of the column
      */
     @Override
-    public void setColumnPosition( long columnId, int position ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replacePosition( column, position ) );
-        /*
+    public void setColumnPosition( long columnId, int position ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.setColumnPosition( transactionHandler, columnId, position );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn column = CatalogColumn.replacePosition( old, position );
+            columns.replace( columnId, column );
+            columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
+        }
     }
 
 
@@ -1307,19 +1259,20 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setColumnType( long columnId, PolySqlType type, Integer length, Integer scale ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale ) );
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
             Collation collation = type.isCharType() ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
-            Statements.setColumnType( transactionHandler, columnId, type, length, scale, collation );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException e ) {
+
+            columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale, collation ) );
+
+        } catch ( NullPointerException | UnknownCollationException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1331,31 +1284,26 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceNullable( column, nullable ) );
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
             if ( nullable ) {
                 // Check if the column is part of a primary key (pk's are not allowed to contain null values)
-                CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
-                CatalogTable catalogTable = Statements.getTable( transactionHandler, catalogColumn.tableId );
-                if ( catalogTable.primaryKey != null ) {
-                    CatalogKey catalogKey = Statements.getPrimaryKey( transactionHandler, catalogTable.primaryKey );
+                CatalogTable table = Objects.requireNonNull( tables.get( column.tableId ) );
+                if ( table.primaryKey != null ) {
+                    CatalogKey catalogKey = getPrimaryKey( table.primaryKey );
                     if ( catalogKey.columnIds.contains( columnId ) ) {
                         throw new GenericCatalogException( "Unable to allow null values in a column that is part of the primary key." );
                     }
                 }
             } else {
                 // TODO: Check that the column does not contain any null values
+                getColumnPlacementByColumn( columnId );
             }
 
-            Statements.setNullable( transactionHandler, columnId, nullable );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTypeException | UnknownColumnException | UnknownTableTypeException | UnknownTableException | UnknownKeyException e ) {
+            columns.replace( columnId, CatalogColumn.replaceNullable( column, nullable ) );
+        } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
-         */
     }
 
 
@@ -1367,21 +1315,18 @@ public class CatalogImpl extends Catalog {
      * @param collation The collation to set
      */
     @Override
-    public void setCollation( long columnId, Collation collation ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceCollation( column, collation ) );
-
-        /*
+    public void setCollation( long columnId, Collation collation ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
-            if ( !catalogColumn.type.isCharType() ) {
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+
+            if ( !column.type.isCharType() ) {
                 throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
             }
-            Statements.setCollation( transactionHandler, columnId, collation );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownColumnException | UnknownTypeException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+
+            columns.replace( columnId, CatalogColumn.replaceCollation( column, collation ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
+        }
     }
 
 
@@ -1391,26 +1336,15 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table
      * @param columnName The name to check for
      * @return true if there is a column with this name, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException {
-        CatalogTable table = tables.get( tableId );
-        return columnNames.get( new Object[]{ table.databaseId, table.schemaId, tableId, columnName } ) != null;
-
-        /*
-
+    public boolean checkIfExistsColumn( long tableId, String columnName ) throws UnknownTableException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            Statements.getColumn( transactionHandler, table.id, columnName );
-            return true;
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException | UnknownTableTypeException | UnknownTableException | UnknownTypeException e ) {
-            throw new GenericCatalogException( e );
-        } catch ( UnknownColumnException e ) {
-            return false;
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+            return columnNames.containsKey( new Object[]{ table.databaseId, table.schemaId, tableId, columnName } );
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableException( tableId );
         }
-         */
     }
 
 
@@ -1421,21 +1355,21 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumn( long columnId ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
-        List<Long> children = new ArrayList<>( tableChildren.get( column.tableId ) );
-        children.remove( columnId );
-        tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
-        columns.remove( columnId );
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            //TODO also delete keys with that column?
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+
+            columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
+            children.remove( columnId );
+            tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
+            columns.remove( columnId );
+
             deleteDefaultValue( columnId );
-            Statements.deleteColumn( transactionHandler, columnId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            getColumnPlacementByColumn( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
+        } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
-         */
     }
 
     // TODO: String is only a temporary solution
@@ -1449,17 +1383,16 @@ public class CatalogImpl extends Catalog {
      * @param defaultValue The default value
      */
     @Override
-    public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, type, defaultValue ) );
-        /*
+    public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws UnknownColumnException {
         try {
-            deleteDefaultValue( columnId );
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.setDefaultValue( transactionHandler, columnId, type, defaultValue );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
+            // TODO DL also fix call
+            CatalogColumn column = CatalogColumn.replaceDefaultValue( old, new CatalogDefaultValue( columnId, type, null, null ) );
+            columns.replace( columnId, column );
+            columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
+        }
     }
 
 
@@ -1469,17 +1402,15 @@ public class CatalogImpl extends Catalog {
      * @param columnId The id of the column
      */
     @Override
-    public void deleteDefaultValue( long columnId ) throws GenericCatalogException {
-        CatalogColumn column = columns.get( columnId );
-        columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, column.type, null ) );
-        /*
+    public void deleteDefaultValue( long columnId ) throws UnknownColumnException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteDefaultValue( transactionHandler, columnId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
+            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            if ( column.defaultValue != null ) {
+                columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, null ) );
+            }
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnException( columnId );
         }
-         */
     }
 
 
@@ -1490,15 +1421,12 @@ public class CatalogImpl extends Catalog {
      * @return The primary key
      */
     @Override
-    public CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException {
-        return primaryKeys.get( key );
-        /*
+    public CatalogPrimaryKey getPrimaryKey( long key ) throws UnknownKeyException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return new CatalogPrimaryKey( Statements.getPrimaryKey( transactionHandler, key ) );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return primaryKeys.get( key );
+        } catch ( NullPointerException e ) {
+            throw new UnknownKeyException( key );
+        }
     }
 
 
@@ -1510,46 +1438,32 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
-
-        CatalogTable table = tables.get( tableId );
-        List<CatalogColumn> nullables = columnIds.stream().map( columns::get ).filter( c -> c.nullable ).collect( Collectors.toList() );
-        for ( CatalogColumn col : nullables ) {
-            throw new GenericCatalogException( "Primary key is not allowed to contain null values but the column '" + col.name + "' is declared nullable." );
-        }
-
-        // TODO refactor
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
-
             // Check if the columns are set 'not null'
-            for ( Long columnId : columnIds ) {
-                CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
-                if ( catalogColumn.nullable ) {
-                    throw new GenericCatalogException( "Primary key is not allowed to contain null values but the column '" + catalogColumn.name + "' is declared nullable." );
-                }
+            List<CatalogColumn> nullableColumns = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).filter( c -> c.nullable ).collect( Collectors.toList() );
+            for ( CatalogColumn col : nullableColumns ) {
+                throw new GenericCatalogException( "Primary key is not allowed to contain null values but the column '" + col.name + "' is declared nullable." );
             }
 
             // TODO: Check if the current values are unique
 
             // Check if there is already a primary key defined for this table and if so, delete it.
-            Long oldPrimaryKey = catalogTable.primaryKey;
-            if ( oldPrimaryKey != null ) {
-                CatalogCombinedKey combinedKey = getCombinedKey( oldPrimaryKey );
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+
+            if ( table.primaryKey != null ) {
+                CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
                 if ( combinedKey.getUniqueCount() == 1 && combinedKey.getReferencedBy().size() > 0 ) {
                     // This primary key is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
                 }
-                Statements.setPrimaryKey( transactionHandler, tableId, null );
-                deleteKeyIfNoLongerUsed( transactionHandler, oldPrimaryKey );
+                setPrimaryKey( tableId, null );
+                deleteKeyIfNoLongerUsed( table.primaryKey );
             }
-            long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
-            Statements.setPrimaryKey( transactionHandler, tableId, keyId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException | UnknownKeyException | UnknownCollationException | UnknownTypeException | UnknownColumnException e ) {
+            long keyId = getOrAddKey( tableId, columnIds );
+            setPrimaryKey( tableId, keyId );
+        } catch ( NullPointerException | UnknownTableException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
-        */
     }
 
 
@@ -1560,17 +1474,8 @@ public class CatalogImpl extends Catalog {
      * @return List of foreign keys
      */
     @Override
-    public List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException {
-        // TODO check list
+    public List<CatalogForeignKey> getForeignKeys( long tableId ) {
         return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
-        /*
-
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getForeignKeys( transactionHandler, tableId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 

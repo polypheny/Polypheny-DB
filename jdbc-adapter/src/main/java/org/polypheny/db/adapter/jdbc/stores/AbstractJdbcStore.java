@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -169,7 +170,7 @@ public abstract class AbstractJdbcStore extends Store {
                         "public", // TODO MV: physical schema name
                         physicalTableName,
                         getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException e ) {
+            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
                 throw new RuntimeException( e );
             }
         }

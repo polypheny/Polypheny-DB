@@ -27,6 +27,8 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -204,7 +206,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Unknown option" );
             }
-        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -23,7 +23,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.runtime.Resources.Default;
 
 
 /**
@@ -147,8 +146,8 @@ public final class CatalogColumn implements CatalogEntity {
     }
 
 
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolySqlType type, Integer length, Integer scale ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, length, scale, column.nullable, column.collation, column.defaultValue );
+    public static CatalogColumn replaceColumnType( CatalogColumn column, PolySqlType type, Integer length, Integer scale, Collation collation ) {
+        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, length, scale, column.nullable, collation, column.defaultValue );
     }
 
     public static CatalogColumn replaceNullable( CatalogColumn column, boolean nullable ) {
@@ -160,8 +159,8 @@ public final class CatalogColumn implements CatalogEntity {
     }
 
     // TODO: check defaultValue call
-    public static CatalogColumn replaceDefaultValue( CatalogColumn column, PolySqlType type, String defaultValue ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.length, column.scale, column.nullable, column.collation, null );
+    public static CatalogColumn replaceDefaultValue( CatalogColumn column, CatalogDefaultValue defaultValue ) {
+        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, column.type, column.length, column.scale, column.nullable, column.collation, defaultValue );
     }
 
 }

@@ -2306,7 +2306,7 @@ public class Crud implements InformationObserver {
                                 dbCol.defaultValue = catalogColumn.defaultValue.value;
                             }
                         }
-                    } catch ( UnknownColumnException | GenericCatalogException e ) {
+                    } catch ( UnknownColumnException | GenericCatalogException | UnknownTableException e ) {
                         log.error( "Caught exception", e );
                     }
                 }

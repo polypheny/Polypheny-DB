@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -171,7 +172,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
                 transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
             }
-        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
 

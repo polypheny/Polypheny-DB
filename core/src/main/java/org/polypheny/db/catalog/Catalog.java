@@ -45,6 +45,7 @@ import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -285,7 +286,7 @@ public abstract class Catalog {
      * @return true if there is a table with this name, false if not.
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException;
+    public abstract boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Renames a table
@@ -363,7 +364,7 @@ public abstract class Catalog {
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
      */
-    public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException;
+    public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException, UnknownColumnPlacementException;
 
 
     /**
@@ -372,7 +373,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException, UnknownTableException;
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -384,7 +385,7 @@ public abstract class Catalog {
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException, UnknownTableException, UnknownSchemaException;
 
     /**
      * Returns the column with the specified id.
@@ -439,7 +440,7 @@ public abstract class Catalog {
      * @param name New name of the column
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException;
+    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Change the position of the column.
@@ -447,7 +448,7 @@ public abstract class Catalog {
      * @param columnId The id of the column for which to change the position
      * @param position The new position of the column
      */
-    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException;
+    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Change the data type of an column.
@@ -472,7 +473,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param collation The collation to set
      */
-    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException;
+    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -482,7 +483,7 @@ public abstract class Catalog {
      * @return true if there is a column with this name, false if not.
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException;
+    public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Delete the specified column. This also deletes a default value in case there is one defined for this column.
@@ -498,14 +499,14 @@ public abstract class Catalog {
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException;
+    public abstract void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.
      *
      * @param columnId The id of the column
      */
-    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
+    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Returns a specified primary key
