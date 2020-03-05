@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -63,6 +64,7 @@ public class SimpleRouter extends AbstractRouter {
 
 
     private RelNode handleDml( RelNode node, Transaction transaction ) {
+        RelOptCluster cluster = node.getCluster();
         if ( node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
@@ -100,11 +102,11 @@ public class SimpleRouter extends AbstractRouter {
                     TableModify modify;
                     RelNode input = buildDml(
                             recursiveCopy( node.getInput( 0 ) ),
-                            RelBuilder.create( transaction, node.getCluster() ),
+                            RelBuilder.create( transaction, cluster ),
                             placement ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
-                                node.getCluster(),
+                                cluster,
                                 physical,
                                 catalogReader,
                                 input,
@@ -129,15 +131,14 @@ public class SimpleRouter extends AbstractRouter {
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
-                    RelBuilder builder = RelBuilder.create( transaction, node.getCluster() );
+                    RelBuilder builder = RelBuilder.create( transaction, cluster );
                     for ( int i = 0; i < modifies.size(); i++ ) {
                         if ( i == 0 ) {
                             builder.push( modifies.get( i ) );
                         } else {
-                            builder.replaceTop( new LogicalModifyCollect(
-                                    builder.peek().getCluster(),
-                                    builder.peek().getTraitSet(),
-                                    ImmutableList.of( builder.peek(), modifies.get( i ) ),
+                            builder.push( modifies.get( i ) );
+                            builder.replaceTop( LogicalModifyCollect.create(
+                                    ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ),
                                     true ) );
                         }
                     }

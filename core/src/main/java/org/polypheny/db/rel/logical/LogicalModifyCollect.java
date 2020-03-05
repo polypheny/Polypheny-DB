@@ -51,7 +51,7 @@ import org.polypheny.db.rel.core.Union;
 public final class LogicalModifyCollect extends ModifyCollect {
 
     /**
-     * Creates a LogicalUnion.
+     * Creates a LogicalModifyCollect.
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
@@ -69,7 +69,7 @@ public final class LogicalModifyCollect extends ModifyCollect {
 
 
     /**
-     * Creates a LogicalUnion.
+     * Creates a LogicalModifyCollect.
      */
     public static LogicalModifyCollect create( List<RelNode> inputs, boolean all ) {
         final RelOptCluster cluster = inputs.get( 0 ).getCluster();

@@ -169,7 +169,7 @@ public class JdbcRules {
                     Convention.NONE,
                     out,
                     relBuilderFactory,
-                    "JdbcJoinRule" );
+                    "JdbcJoinRule." + out );
         }
 
 
@@ -322,7 +322,7 @@ public class JdbcRules {
          * Creates a JdbcCalcRule.
          */
         private JdbcCalcRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Calc.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcCalcRule" );
+            super( Calc.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcCalcRule." + out );
         }
 
 
@@ -409,7 +409,7 @@ public class JdbcRules {
                             (out.dialect.supportsWindowFunctions()
                                     || !RexOver.containsOver( project.getProjects(), null ))
                                     && !userDefinedFunctionInProject( project ),
-                    Convention.NONE, out, relBuilderFactory, "JdbcProjectRule" );
+                    Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
 
 
@@ -481,7 +481,7 @@ public class JdbcRules {
         public JdbcFilterRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Filter.class,
                     (Predicate<Filter>) r -> !userDefinedFunctionInFilter( r ),
-                    Convention.NONE, out, relBuilderFactory, "JdbcFilterRule" );
+                    Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
 
 
@@ -539,7 +539,7 @@ public class JdbcRules {
          * Creates a JdbcAggregateRule.
          */
         public JdbcAggregateRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Aggregate.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcAggregateRule" );
+            super( Aggregate.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcAggregateRule." + out );
         }
 
 
@@ -637,7 +637,7 @@ public class JdbcRules {
          * Creates a JdbcSortRule.
          */
         public JdbcSortRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Sort.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcSortRule" );
+            super( Sort.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcSortRule." + out );
         }
 
 
@@ -705,7 +705,7 @@ public class JdbcRules {
          * Creates a JdbcUnionRule.
          */
         public JdbcUnionRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Union.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcUnionRule" );
+            super( Union.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcUnionRule." + out );
         }
 
 
@@ -757,7 +757,7 @@ public class JdbcRules {
          * Creates a JdbcIntersectRule.
          */
         private JdbcIntersectRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Intersect.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcIntersectRule" );
+            super( Intersect.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcIntersectRule." + out );
         }
 
 
@@ -806,7 +806,7 @@ public class JdbcRules {
          * Creates a JdbcMinusRule.
          */
         private JdbcMinusRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Minus.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcMinusRule" );
+            super( Minus.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcMinusRule." + out );
         }
 
 
@@ -855,7 +855,7 @@ public class JdbcRules {
          * Creates a JdbcTableModificationRule.
          */
         private JdbcTableModificationRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( TableModify.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcTableModificationRule" );
+            super( TableModify.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcTableModificationRule." + out );
         }
 
 
@@ -963,7 +963,7 @@ public class JdbcRules {
          * Creates a JdbcValuesRule.
          */
         private JdbcValuesRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Values.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcValuesRule" );
+            super( Values.class, (Predicate<RelNode>) r -> true, Convention.NONE, out, relBuilderFactory, "JdbcValuesRule." + out );
         }
 
 
