@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
@@ -564,7 +565,7 @@ public abstract class Catalog {
      * @param foreignKeyName The name of the foreign key
      * @return The foreign key
      */
-    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException;
+    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException, UnknownForeignKeyException;
 
     /**
      * Adds a unique foreign key constraint.
