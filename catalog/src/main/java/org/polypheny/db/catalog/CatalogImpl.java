@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.commons.lang3.ObjectUtils.Null;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -55,8 +53,6 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -67,11 +63,10 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-
-// TODO remove from all substructures
 
 
 @Slf4j
@@ -154,7 +149,7 @@ public class CatalogImpl extends Catalog {
             try {
                 restoreAllIdBuilders();
                 insertDefaultData();
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
                 e.printStackTrace();
             }
 
@@ -226,7 +221,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException {
         //////////////
         // init users
         int systemId;
@@ -970,6 +965,9 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) throws UnknownTableException {
+        if ( keyId == null ) {
+            keyId = keyIdBuilder.getAndIncrement();
+        }
         try {
             CatalogTable table = CatalogTable.replacePrimary( Objects.requireNonNull( tables.get( tableId ) ), keyId );
             tables.replace( tableId, table );
@@ -1026,6 +1024,11 @@ public class CatalogImpl extends Catalog {
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) {
 
         return new ArrayList<>( columnPlacements.prefixSubMap( new Object[]{ storeId } ).values() );
+    }
+
+
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId ) {
+        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).collect( Collectors.toList() );
     }
 
 
@@ -1609,7 +1612,7 @@ public class CatalogImpl extends Catalog {
             }
             long id = constraintIdBuilder.getAndIncrement();
             constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName ) );
-        } catch ( NullPointerException e ) {
+        } catch ( NullPointerException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1640,15 +1643,12 @@ public class CatalogImpl extends Catalog {
      * @return The Index
      */
     @Override
-    public CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException {
-        return indices.values().stream().filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) ).findFirst().get();
-        /*
+    public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getIndex( transactionHandler, tableId, indexName );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return indices.values().stream().filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) ).findFirst().orElseThrow( NullPointerException::new );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexException( tableId, indexName );
+        }
     }
 
 
@@ -1664,24 +1664,17 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
-        long keyId = getOrAddKey( tableId, columnIds );
-        if ( unique ) {
-            // TODO: Check if the current values are unique
-        }
-        long id = indexIdBuilder.getAndIncrement();
-        indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId ) );
-        return id;
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            long keyId = getOrAddKey( transactionHandler, tableId, columnIds );
+            long keyId = getOrAddKey( tableId, columnIds );
             if ( unique ) {
-                // TODO: Check if the current values are unique
+                // TODO DL: Check if the current values are unique
             }
-            return Statements.addIndex( transactionHandler, keyId, type, unique, null, indexName );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            long id = indexIdBuilder.getAndIncrement();
+            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId ) );
+            return id;
+        } catch ( UnknownTableException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1691,24 +1684,9 @@ public class CatalogImpl extends Catalog {
      * @param indexId The id of the index to drop
      */
     @Override
-    public void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException {
-        CatalogIndex index = indices.get( indexId );
-        if ( index.unique ) {
-            List<CatalogConstraint> consts = constraints.values().stream().filter( c -> c.keyId == index.key.id && c.type == ConstraintType.UNIQUE ).collect( Collectors.toList() );
-            List<CatalogIndex> inds = indices.values().stream().filter( in -> in.keyId == index.key.id ).collect( Collectors.toList() );
-            final int uniqueCount = computeUniqueCount( tables.get( index.key.tableId ).primaryKey == index.key.id, consts, inds );
-            final int referencedByCount = foreignKeys.values().stream().filter( f -> f.referencedKeyId == indexId ).collect( Collectors.toList() ).size();
-            if ( uniqueCount == 1 && referencedByCount > 0 ) {
-                // This unique index is the only constraint for the uniqueness of this key.
-                throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
-            }
-            indices.remove( indexId );
-            deleteKeyIfNoLongerUsed( index.key.id );
-        }
-        /*
+    public void deleteIndex( long indexId ) throws GenericCatalogException {
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogIndex index = Statements.getIndex( transactionHandler, indexId );
+            CatalogIndex index = Objects.requireNonNull( indices.get( indexId ) );
             if ( index.unique ) {
                 CatalogCombinedKey combinedKey = getCombinedKey( index.keyId );
                 if ( combinedKey.getUniqueCount() == 1 && combinedKey.getReferencedBy().size() > 0 ) {
@@ -1716,11 +1694,11 @@ public class CatalogImpl extends Catalog {
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
                 }
             }
-            Statements.deleteIndex( transactionHandler, index.id );
-            deleteKeyIfNoLongerUsed( transactionHandler, index.keyId );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException e ) {
+            indices.remove( indexId );
+            deleteKeyIfNoLongerUsed( index.keyId );
+        } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1732,50 +1710,25 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
-        CatalogTable table = tables.get( tableId );
-
-        // TODO: Check if the currently stored values are unique
-        if ( table.primaryKey != null ) {
-            CatalogKey key = keys.get( table.primaryKey );
-            //TODO move to method?
-            final long referencedCount = foreignKeys.values().stream().filter( f -> f.referencedKeyId == key.id ).count();
-            if ( referencedCount > 0 ) {
-                // TODO move to method
-                List<CatalogConstraint> consts = constraints.values().stream().filter( c -> c.keyId == key.id && c.type == ConstraintType.UNIQUE ).collect( Collectors.toList() );
-                List<CatalogIndex> inds = indices.values().stream().filter( in -> in.keyId == key.id ).collect( Collectors.toList() );
-                final int uniqueCount = computeUniqueCount( true, consts, inds );
-                if ( uniqueCount < 2 ) {
-                    throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create an unique constraint." );
-                }
-                try {
-                    setPrimaryKey( tableId, key.id );
-                } catch ( UnknownTableException e ) {
-                    e.printStackTrace();
-                }
-                deleteKeyIfNoLongerUsed( key.id );
-            }
-        }
-
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogTable catalogTable = Statements.getTable( transactionHandler, tableId );
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+
             // TODO: Check if the currently stored values are unique
-            if ( catalogTable.primaryKey != null ) {
+            if ( table.primaryKey != null ) {
                 // Check if this primary key is required to maintain to uniqueness
-                CatalogCombinedKey key = getCombinedKey( transactionHandler, catalogTable.primaryKey );
+                CatalogCombinedKey key = getCombinedKey( table.primaryKey );
                 if ( key.getReferencedBy().size() > 0 ) {
                     if ( key.getUniqueCount() < 2 ) {
                         throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create an unique constraint." );
                     }
                 }
 
-                Statements.setPrimaryKey( transactionHandler, tableId, null );
-                deleteKeyIfNoLongerUsed( catalogTable.primaryKey );
+                setPrimaryKey( tableId, null );
+                deleteKeyIfNoLongerUsed( table.primaryKey );
             }
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException | UnknownKeyException e ) {
+        } catch ( NullPointerException | UnknownKeyException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1786,19 +1739,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException {
-        CatalogForeignKey catalogForeignKey = foreignKeys.get( foreignKeyId );
-        foreignKeys.remove( catalogForeignKey.referencedKeyId );
-        deleteKeyIfNoLongerUsed( catalogForeignKey.referencedKeyId );
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogForeignKey catalogForeignKey = Statements.getForeignKey( transactionHandler, foreignKeyId );
-            CatalogCombinedKey key = getCombinedKey( transactionHandler, catalogForeignKey.id );
-            Statements.deleteForeignKey( transactionHandler, key.getKey().id );
-            deleteKeyIfNoLongerUsed( key.getKey().id );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException | UnknownForeignKeyException e ) {
+            CatalogForeignKey catalogForeignKey = Objects.requireNonNull( foreignKeys.get( foreignKeyId ) );
+            foreignKeys.remove( catalogForeignKey.referencedKeyId );
+            deleteKeyIfNoLongerUsed( catalogForeignKey.referencedKeyId );
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1810,33 +1757,20 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteConstraint( long constraintId ) throws GenericCatalogException {
-        CatalogConstraint constraint = constraints.get( constraintId );
-
-        List<CatalogConstraint> consts = constraints.values().stream().filter( c -> c.keyId == constraint.keyId && c.type == ConstraintType.UNIQUE ).collect( Collectors.toList() );
-        List<CatalogIndex> inds = indices.values().stream().filter( in -> in.keyId == constraint.keyId ).collect( Collectors.toList() );
-
-        final long referencedCount = foreignKeys.values().stream().filter( f -> f.referencedKeyId == constraint.keyId ).count();
-        if ( constraint.type == ConstraintType.UNIQUE && referencedCount > 0 ) {
-            final int uniqueCount = computeUniqueCount( true, consts, inds );
-            if ( uniqueCount < 2 ) {
-                throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
-            }
-        }
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            CatalogConstraint catalogConstraint = Statements.getConstraint( transactionHandler, constraintId );
-            CatalogCombinedKey key = getCombinedKey( transactionHandler, catalogConstraint.keyId );
+            CatalogConstraint catalogConstraint = Objects.requireNonNull( constraints.get( constraintId ) );
+
+            CatalogCombinedKey key = getCombinedKey( catalogConstraint.keyId );
             if ( catalogConstraint.type == ConstraintType.UNIQUE && key.getReferencedBy().size() > 0 ) {
                 if ( key.getUniqueCount() < 2 ) {
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
                 }
             }
-            Statements.deleteConstraint( transactionHandler, catalogConstraint.id );
+            constraints.remove( catalogConstraint.id );
             deleteKeyIfNoLongerUsed( key.getKey().id );
-        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownKeyException | UnknownConstraintException e ) {
+        } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
-        }*/
+        }
     }
 
 
@@ -1854,14 +1788,6 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownUserException( userName );
         }
-
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getTransactionHandler( xid );
-            return Statements.getUser( transactionHandler, userName );
-        } catch ( GenericCatalogException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 
@@ -1880,15 +1806,8 @@ public class CatalogImpl extends Catalog {
      * @return List of stores
      */
     @Override
-    public List<CatalogStore> getStores() throws GenericCatalogException {
+    public List<CatalogStore> getStores() {
         return new ArrayList<>( stores.values() );
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getStores( transactionHandler );
-        } catch ( GenericCatalogException | CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 
@@ -1898,17 +1817,13 @@ public class CatalogImpl extends Catalog {
      * @return List of stores
      */
     @Override
-    public CatalogStore getStore( String uniqueName ) throws GenericCatalogException {
+    public CatalogStore getStore( String uniqueName ) throws UnknownStoreException {
         uniqueName = uniqueName.toLowerCase();
-
-        return storeNames.get( uniqueName );
-        /*
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.getStore( transactionHandler, uniqueName );
-        } catch ( GenericCatalogException | UnknownStoreException | CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
+            return Objects.requireNonNull( storeNames.get( uniqueName ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownStoreException( uniqueName );
+        }
     }
 
 
@@ -1921,7 +1836,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the newly added store
      */
     @Override
-    public int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException {
+    public int addStore( String uniqueName, String adapter, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
         int id = storeIdBuilder.getAndIncrement();
@@ -1929,14 +1844,6 @@ public class CatalogImpl extends Catalog {
         stores.put( id, store );
         storeNames.put( uniqueName, store );
         return id;
-        /*
-
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return Statements.addStore( transactionHandler, uniqueName, adapter, settings );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 
@@ -1946,15 +1853,14 @@ public class CatalogImpl extends Catalog {
      * @param storeId The id of the store to delete
      */
     @Override
-    public void deleteStore( int storeId ) throws GenericCatalogException {
-        // TODO remove database/schemas/... as well?
-        stores.remove( storeId );
-
+    public void deleteStore( int storeId ) throws UnknownStoreException {
+        // TODO remove database/schemas/... as well? affectedRow?
         try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            Statements.deleteStore( transactionHandler, storeId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
+            CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
+            stores.remove( storeId );
+            storeNames.remove( store.uniqueName );
+        } catch ( NullPointerException e ) {
+            throw new UnknownStoreException( storeId );
         }
     }
 
@@ -1969,7 +1875,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownUserException, UnknownTableException {
         try {
-            CatalogDatabase database = databases.get( databaseId );
+            CatalogDatabase database = Objects.requireNonNull( databases.get( databaseId ) );
             List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
             for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
                 CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );
@@ -1986,15 +1892,6 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownDatabaseException( databaseId );
         }
-
-        /*
-        try {
-            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
-            return getCombinedDatabase( transactionHandler, databaseId );
-        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-            throw new GenericCatalogException( e );
-        }*/
-
     }
 
 
@@ -2007,10 +1904,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws UnknownSchemaException, UnknownDatabaseException, UnknownTableException, UnknownUserException {
         try {
-            CatalogSchema schema = schemas.get( schemaId );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             List<CatalogCombinedTable> childTables = new ArrayList<>();
-            for ( Long aLong : schemaChildren.get( schemaId ) ) {
-                CatalogCombinedTable combinedTable = getCombinedTable( aLong );
+
+            for ( long id : Objects.requireNonNull( schemaChildren.get( schemaId ) ) ) {
+                CatalogCombinedTable combinedTable = getCombinedTable( id );
                 if ( combinedTable != null ) {
                     childTables.add( combinedTable );
                 }
@@ -2029,7 +1927,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogCombinedTable getCombinedTable( long tableId ) throws UnknownTableException {
         try {
-            CatalogTable table = tables.get( tableId );
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             List<CatalogColumn> childColumns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, tableId } ).values() );
             CatalogSchema schema = schemas.get( table.schemaId );
             CatalogDatabase database = databases.get( table.databaseId );
@@ -2037,17 +1935,15 @@ public class CatalogImpl extends Catalog {
 
             Map<Integer, List<CatalogColumnPlacement>> columnPlacementByStore = new HashMap<>();
             stores.keySet().forEach( id -> {
-                List<CatalogColumnPlacement> placement = getColumnPlacementsOnStore( id );
+                List<CatalogColumnPlacement> placement = getColumnPlacementsOnStore( id, tableId );
                 if ( placement.size() > 0 ) {
-                    columnPlacementByStore.put( id, getColumnPlacementsOnStore( id ) );
+                    columnPlacementByStore.put( id, placement );
                 }
             } );
 
             Map<Long, List<CatalogColumnPlacement>> columnPlacementByColumn = new HashMap<>();
 
-            childColumns.forEach( c -> {
-                columnPlacementByColumn.put( c.id, getColumnPlacementByColumn( c.id ) );
-            } );
+            childColumns.forEach( c -> columnPlacementByColumn.put( c.id, getColumnPlacementByColumn( c.id ) ) );
 
             List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
 
@@ -2063,9 +1959,9 @@ public class CatalogImpl extends Catalog {
     public CatalogCombinedKey getCombinedKey( long keyId ) throws UnknownKeyException {
         try {
 
-            CatalogKey key = keys.get( keyId );
+            CatalogKey key = Objects.requireNonNull( keys.get( keyId ) );
             List<CatalogColumn> childColumns = key.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
-            CatalogTable table = tables.get( key.tableId );
+            CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
             CatalogSchema schema = schemas.get( key.tableId );
             CatalogDatabase database = databases.get( key.databaseId );
             List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == keyId ).collect( Collectors.toList() );
@@ -2078,71 +1974,33 @@ public class CatalogImpl extends Catalog {
         }
     }
 
-    // TODO move to right location, here for now
-
-
-    private int computeUniqueCount( boolean isPrimaryKey, List<CatalogConstraint> constraints, List<CatalogIndex> indexes ) {
-        int count = 0;
-        if ( isPrimaryKey ) {
-            count++;
-        }
-
-        for ( CatalogConstraint constraint : constraints ) {
-            if ( constraint.type == ConstraintType.UNIQUE ) {
-                count++;
-            }
-        }
-
-        for ( CatalogIndex index : indexes ) {
-            if ( index.unique ) {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
 
     // Check if the specified key is used as primary key, index or constraint. If so, this is a NoOp. If it is not used, the key is deleted.
     private void deleteKeyIfNoLongerUsed( Long keyId ) throws GenericCatalogException {
-        CatalogKey key = keys.get( keyId );
-        CatalogTable table = tables.get( key.tableId );
-        if ( table.primaryKey == keyId ) {
-            return;
+        try {
+            CatalogKey key = Objects.requireNonNull( keys.get( keyId ) );
+            CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
+            if ( table.primaryKey.equals( keyId ) ) {
+                return;
+            }
+            if ( constraints.values().stream().anyMatch( c -> c.keyId == keyId ) ) {
+                return;
+            }
+            if ( foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId ) ) {
+                return;
+            }
+            if ( indices.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
+                return;
+            }
+            keys.remove( keyId );
+        } catch ( NullPointerException e ) {
+            throw new GenericCatalogException( e );
         }
-        if ( constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() ).size() > 0 ) {
-            return;
-        }
-        if ( foreignKeys.values().stream().filter( f -> f.referencedKeyId == keyId ).collect( Collectors.toList() ).size() > 0 ) {
-            return;
-        }
-        if ( indices.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() ).size() > 0 ) {
-            return;
-        }
-        keys.remove( keyId );
-
-        /*
-        CatalogCombinedKey combinedKey = getCombinedKey( transactionHandler, keyId );
-        if ( combinedKey.isPrimaryKey() ) {
-            return;
-        }
-        if ( combinedKey.getConstraints().size() > 0 ) {
-            return;
-        }
-        if ( combinedKey.getForeignKeys().size() > 0 ) {
-            return;
-        }
-        if ( combinedKey.getIndexes().size() > 0 ) {
-            return;
-        }
-        // This key is not used anymore. Delete it.
-        Statements.deleteKey( transactionHandler, keyId );
-         */
     }
 
 
     // Returns the id of they defined by the specified column ids. If this key does not yet exist, create it.
-    private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
+    private long getOrAddKey( long tableId, List<Long> columnIds ) throws UnknownTableException {
         // TODO change to 0 when done, -1 cause 0 was unrecognizable
         long keyId = -1;
         List<CatalogKey> catalogKeys = keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
@@ -2155,31 +2013,19 @@ public class CatalogImpl extends Catalog {
             keyId = addKey( tableId, columnIds );
         }
         return keyId;
-
-
-        /*
-        long keyId = -1;
-        // Check if there is already a key
-        List<CatalogKey> keys = Statements.getKeys( transactionHandler, tableId );
-        for ( CatalogKey key : keys ) {
-            if ( key.columnIds.size() == columnIds.size() && key.columnIds.containsAll( columnIds ) && columnIds.containsAll( key.columnIds ) ) {
-                keyId = key.id;
-            }
-        }
-        if ( keyId == -1 ) {
-            // Key does not exist, create it
-            keyId = Statements.addKey( transactionHandler, tableId, columnIds );
-        }
-        return keyId;*/
     }
 
 
-    private long addKey( long tableId, List<Long> columnIds ) {
-        CatalogTable table = tables.get( tableId );
-        long id = keyIdBuilder.getAndIncrement();
-        List<String> names = columnIds.stream().map( i -> columns.get( i ).name ).collect( Collectors.toList() );
-        keys.put( id, new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names ) );
-        return id;
+    private long addKey( long tableId, List<Long> columnIds ) throws UnknownTableException {
+        try {
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+            long id = keyIdBuilder.getAndIncrement();
+            List<String> names = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).map( c -> c.name ).collect( Collectors.toList() );
+            keys.put( id, new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names ) );
+            return id;
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableException( tableId );
+        }
     }
 
 

@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -72,7 +73,7 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
         try {
             CatalogForeignKey foreignKey = transaction.getCatalog().getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
             transaction.getCatalog().deleteForeignKey( foreignKey.id );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownForeignKeyException e ) {
             throw new RuntimeException( e );
         }
     }

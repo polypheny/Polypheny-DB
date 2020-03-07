@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -669,7 +670,7 @@ public abstract class Catalog {
      *
      * @return List of stores
      */
-    public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException;
+    public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
      * Add a store
@@ -686,7 +687,7 @@ public abstract class Catalog {
      *
      * @param storeId The id of the store to delete
      */
-    public abstract void deleteStore( int storeId ) throws GenericCatalogException;
+    public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
 
     /*
