@@ -88,6 +88,12 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                             RESOURCE.placementAlreadyExists( storeName.getSimple(), combinedTable.getTable().name ) );
                 }
             }
+            // Check whether the store supports schema changes
+            if ( storeInstance.isSchemaReadOnly() ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+            }
             // Create column placements
             for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                 transaction.getCatalog().addColumnPlacement(

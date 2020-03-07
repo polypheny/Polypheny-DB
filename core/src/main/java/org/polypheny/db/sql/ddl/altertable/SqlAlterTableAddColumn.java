@@ -57,7 +57,15 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     private final SqlIdentifier afterColumnName; // Can be null
 
 
-    public SqlAlterTableAddColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier column, SqlDataTypeSpec type, boolean nullable, SqlNode defaultValue, SqlIdentifier beforeColumnName, SqlIdentifier afterColumnName ) {
+    public SqlAlterTableAddColumn(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier column,
+            SqlDataTypeSpec type,
+            boolean nullable,
+            SqlNode defaultValue,
+            SqlIdentifier beforeColumnName,
+            SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.column = Objects.requireNonNull( column );
@@ -127,6 +135,16 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.getTable().id, column.getSimple() ) ) {
                 throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
             }
+
+            // Check whether all stores support schema changes
+            for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
+                    throw SqlUtil.newContextException(
+                            SqlParserPos.ZERO,
+                            RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
+                }
+            }
+
             List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
             int position = columns.size() + 1;
             if ( beforeColumn != null || afterColumn != null ) {
@@ -163,7 +181,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             }
 
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO MV: Adding the column on all stares which have already a placement for columns of this table. We need a more sophisticated approach here.
+            // TODO MV: Adding the column on all stores which have already a placement for columns of this table. We need a more sophisticated approach here.
             //
 
             // Add column on underlying data stores

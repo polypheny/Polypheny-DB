@@ -85,6 +85,12 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                     throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                 }
             }
+            // Check whether the store supports schema changes
+            if ( storeInstance.isSchemaReadOnly() ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+            }
             // Check whether this placement exists
             for ( Map.Entry<Integer, List<CatalogColumnPlacement>> p : combinedTable.getColumnPlacementsByStore().entrySet() ) {
                 if ( p.getKey() == storeInstance.getStoreId() ) {

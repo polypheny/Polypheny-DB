@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.PolySqlType;
@@ -31,6 +33,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -138,6 +141,14 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
         try {
             if ( type != null ) {
+                // Check whether all stores support schema changes
+                for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                    if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
+                        throw SqlUtil.newContextException(
+                                SqlParserPos.ZERO,
+                                RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
+                    }
+                }
                 PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() );
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,

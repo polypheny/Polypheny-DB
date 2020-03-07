@@ -205,6 +205,12 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 if ( storeInstance == null ) {
                     throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
                 }
+                // Check whether the store supports schema changes
+                if ( storeInstance.isSchemaReadOnly() ) {
+                    throw SqlUtil.newContextException(
+                            store.getParserPosition(),
+                            RESOURCE.storeIsSchemaReadOnly( store.getSimple() ) );
+                }
                 stores = ImmutableList.of( storeInstance );
             } else {
                 // TODO: Ask router on which store(s) the table should be placed
