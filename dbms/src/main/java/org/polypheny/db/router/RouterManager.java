@@ -16,11 +16,13 @@
 
 package org.polypheny.db.router;
 
+import org.polypheny.db.routing.Router;
+
 public class RouterManager {
 
     private static final RouterManager INSTANCE = new RouterManager();
 
-    private AbstractRouter currentRouter = null;
+    private Router currentRouter = null;
 
 
     public static RouterManager getInstance() {
@@ -33,12 +35,12 @@ public class RouterManager {
     }
 
 
-    public void setCurrentRouter( AbstractRouter router ) {
+    public void setCurrentRouter( Router router ) {
         this.currentRouter = router;
     }
 
 
-    public AbstractRouter getRouter() {
+    public Router getRouter() {
         return currentRouter;
     }
 

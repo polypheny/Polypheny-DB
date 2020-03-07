@@ -106,30 +106,30 @@ import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
 
-// TODO jvs 10-Feb-2005:  factor out generic rewrite helper, with the ability to map between old and new rels and field ordinals.  Also, for now need to prohibit queries which return UDT instances.
+// TODO: Factor out generic rewrite helper, with the ability to map between old and new rels and field ordinals.
+//  Also, for now need to prohibit queries which return UDT instances.
 
 
 /**
- * RelStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via
- * normal optimizer rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
- *
- * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>, a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter executes, the
- * unflattened tree looks like:
+ * RelStructuredTypeFlattener removes all structured types from a tree of relational expressions. Because it must operate globally on the tree, it is implemented as an explicit self-contained rewrite operation instead of via normal optimizer rules. This approach has the benefit that real optimizer and codegen rules never have to deal with structured types.
+ * <p>
+ * As an example, suppose we have a structured type <code>ST(A1 smallint, A2 bigint)</code>, a table <code>T(c1 ST, c2 double)</code>, and a query <code>select t.c2, t.c1.a2 from t</code>. After SqlToRelConverter executes, the unflattened tree looks like:
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$1], A2=[$0.A2])
  *   LogicalTableScan(table=[T])
  * </code></pre></blockquote>
- *
+ * <p>
  * After flattening, the resulting tree looks like
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$3], A2=[$2])
  *   FtrsIndexScanRel(table=[T], index=[clustered])
  * </code></pre></blockquote>
- *
+ * <p>
  * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
- * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan, resulting in a final tree like
+ * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan,
+ * resulting in a final tree like
  *
  * <blockquote><pre><code>
  * FtrsIndexScanRel(table=[T], index=[clustered], projection=[3, 2])
@@ -149,7 +149,11 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
     private final RelOptTable.ToRelContext toRelContext;
 
 
-    public RelStructuredTypeFlattener( RelBuilder relBuilder, RexBuilder rexBuilder, RelOptTable.ToRelContext toRelContext, boolean restructure ) {
+    public RelStructuredTypeFlattener(
+            RelBuilder relBuilder,
+            RexBuilder rexBuilder,
+            RelOptTable.ToRelContext toRelContext,
+            boolean restructure ) {
         this.relBuilder = relBuilder;
         this.rexBuilder = rexBuilder;
         this.toRelContext = toRelContext;
@@ -271,7 +275,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     /**
-     * Maps the ordinal of a field pre-flattening to the ordinal of the corresponding field post-flattening, and also returns its type.
+     * Maps the ordinal of a field pre-flattening to the ordinal of the corresponding field post-flattening,
+     * and also returns its type.
      *
      * @param oldOrdinal Pre-flattening ordinal
      * @return Post-flattening ordinal and type
@@ -467,7 +472,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteRel( LogicalValues rel ) {
-        // NOTE jvs 30-Apr-2006:  UDT instances require invocation of a constructor method, which can't be represented by the tuples stored in a LogicalValues, so we don't have to worry about them here.
+        // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
+        // the tuples stored in a LogicalValues, so we don't have to worry about them here.
         rewriteGeneric( rel );
     }
 
@@ -490,7 +496,11 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 rel.getRowType().getFieldNames(),
                 "",
                 flattenedExpList );
-        relBuilder.push( getNewForOldRel( rel.getInput() ) ).projectNamed( Pair.left( flattenedExpList ), Pair.right( flattenedExpList ), true );
+        relBuilder.push( getNewForOldRel( rel.getInput() ) );
+        relBuilder.projectNamed(
+                Pair.left( flattenedExpList ),
+                Pair.right( flattenedExpList ),
+                true );
         setNewForOldRel( rel, relBuilder.build() );
     }
 
@@ -557,7 +567,12 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    private void flattenProjections( RewriteRexShuttle shuttle, List<? extends RexNode> exps, List<String> fieldNames, String prefix, List<Pair<RexNode, String>> flattenedExps ) {
+    private void flattenProjections(
+            RewriteRexShuttle shuttle,
+            List<? extends RexNode> exps,
+            List<String> fieldNames,
+            String prefix,
+            List<Pair<RexNode, String>> flattenedExps ) {
         for ( int i = 0; i < exps.size(); ++i ) {
             RexNode exp = exps.get( i );
             String fieldName =
@@ -598,7 +613,12 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                         return;
                     }
                 }
-                flattenProjections( new RewriteRexShuttle(), call.getOperands(), Collections.nCopies( call.getOperands().size(), null ), fieldName, flattenedExps );
+                flattenProjections(
+                        new RewriteRexShuttle(),
+                        call.getOperands(),
+                        Collections.nCopies( call.getOperands().size(), null ),
+                        fieldName,
+                        flattenedExps );
             } else if ( exp instanceof RexCall ) {
                 // NOTE jvs: This is a lame hack to keep special functions which return row types working.
 
@@ -777,7 +797,8 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 accessOrdinals.push( ordinal );
                 iInput += calculateFlattenedOffset( refExp.getType(), ordinal );
                 if ( refExp instanceof RexInputRef ) {
-                    // Consecutive field accesses over some input can be removed since by now the input is flattened (no struct types). We just have to create a new RexInputRef with the correct ordinal and type.
+                    // Consecutive field accesses over some input can be removed since by now the input is
+                    // flattened (no struct types). We just have to create a new RexInputRef with the correct ordinal and type.
                     RexInputRef inputRef = (RexInputRef) refExp;
                     final Ord<RelDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
                     iInput += newField.i;
@@ -815,11 +836,12 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             }
             RexNode lhs = rexCall.getOperands().get( 0 );
             if ( !lhs.getType().isStruct() ) {
-                // NOTE jvs 9-Mar-2005:  Calls like IS NULL operate on the representative null indicator.  Since it comes first, we don't have to do any special translation.
+                // NOTE: Calls like IS NULL operate on the representative null indicator.
+                // Since it comes first, we don't have to do any special translation.
                 return super.visitCall( rexCall );
             }
 
-            // NOTE jvs 22-Mar-2005:  Likewise, the null indicator takes care of comparison null semantics without any special casing.
+            // NOTE: Likewise, the null indicator takes care of comparison null semantics without any special casing.
             return flattenComparison( rexBuilder, rexCall.getOperator(), rexCall.getOperands() );
         }
 
@@ -847,11 +869,10 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             }
             RexNode conjunction = null;
             for ( int i = 0; i < n; ++i ) {
-                RexNode comparison =
-                        rexBuilder.makeCall(
-                                op,
-                                flattenedExps.get( i ).left,
-                                flattenedExps.get( i + n ).left );
+                RexNode comparison = rexBuilder.makeCall(
+                        op,
+                        flattenedExps.get( i ).left,
+                        flattenedExps.get( i + n ).left );
                 if ( conjunction == null ) {
                     conjunction = comparison;
                 } else {
