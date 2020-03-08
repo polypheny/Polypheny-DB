@@ -116,7 +116,7 @@ public class CatalogImpl extends Catalog {
 
 
     public CatalogImpl() {
-        this( FILE_PATH );
+        this( FILE_PATH, true );
     }
 
 
@@ -124,7 +124,7 @@ public class CatalogImpl extends Catalog {
      * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
-    public CatalogImpl( String path ) {
+    public CatalogImpl( String path, boolean doInitSchema ) {
         super();
 
         if ( db != null && !db.isClosed() ) {
@@ -148,7 +148,10 @@ public class CatalogImpl extends Catalog {
             // mirrors default data from old sql file
             try {
                 restoreAllIdBuilders();
-                insertDefaultData();
+                if ( doInitSchema ) {
+                    insertDefaultData();
+                }
+
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
                 e.printStackTrace();
             }
