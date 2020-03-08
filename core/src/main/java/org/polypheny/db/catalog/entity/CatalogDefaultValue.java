@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.polypheny.db.PolySqlType;
@@ -26,7 +27,7 @@ import org.polypheny.db.PolySqlType;
  *
  */
 @EqualsAndHashCode
-public class CatalogDefaultValue {
+public class CatalogDefaultValue implements Serializable {
 
     private static final long serialVersionUID = 6085682952587659184L;
 

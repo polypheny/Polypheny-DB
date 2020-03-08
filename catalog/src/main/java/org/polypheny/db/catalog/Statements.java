@@ -1358,7 +1358,8 @@ final class Statements {
                         rs.getBoolean( 3 ),
                         IndexType.getById( getInt( rs, 4 ) ),
                         getIntOrNull( rs, 5 ),
-                        getLong( rs, 6 )
+                        getLong( rs, 6 ),
+                        null
                 ) );
             }
         } catch ( SQLException | UnknownIndexTypeException e ) {
@@ -1497,7 +1498,7 @@ final class Statements {
         for ( CatalogKey key : keys ) {
             String constraintFilter = " co.\"key\" = " + key.id;
             List<CatalogConstraint> constraintsOfKey = constraintFilter( transactionHandler, constraintFilter );
-            constraintsOfKey.forEach( co -> co.key = key );
+            // constraintsOfKey.forEach( co -> co.key = key );
             constraints.addAll( constraintsOfKey );
         }
         return constraints;
@@ -1511,7 +1512,7 @@ final class Statements {
         for ( CatalogKey key : keys ) {
             String constraintFilter = " co.\"key\" = " + key.id;
             List<CatalogConstraint> constraintsOfKey = constraintFilter( transactionHandler, constraintFilter );
-            constraintsOfKey.forEach( co -> co.key = key );
+            // constraintsOfKey.forEach( co -> co.key = key );
             constraints.addAll( constraintsOfKey );
         }
         return constraints;
@@ -1527,7 +1528,7 @@ final class Statements {
             throw new UnknownConstraintException( constraintId );
         }
         CatalogConstraint constraint = constraints.get( 0 );
-        constraint.key = getKey( transactionHandler, constraint.keyId );
+        // constraint.key = getKey( transactionHandler, constraint.keyId );
         return constraint;
     }
 
@@ -1536,12 +1537,12 @@ final class Statements {
         String keyFilter = " AND k.\"table\" = " + tableId;
         List<CatalogKey> keys = keyFilter( transactionHandler, keyFilter, "" );
         List<CatalogConstraint> constraints = new LinkedList<>();
-        for ( CatalogKey key : keys ) {
+        /*for ( CatalogKey key : keys ) {
             String constraintFilter = " co.\"key\" = " + key.id + " AND co.\"name\" = " + quoteString( constraintName );
             List<CatalogConstraint> constraintOfKey = constraintFilter( transactionHandler, constraintFilter );
             constraintOfKey.forEach( i -> i.key = key );
             constraints.addAll( constraintOfKey );
-        }
+        }*/ // TODO DL
         if ( constraints.size() > 1 ) {
             throw new GenericCatalogException( "More than one result. This combination of parameters should be unique. But it seams, it is not..." );
         } else if ( constraints.size() == 0 ) {
@@ -1570,7 +1571,7 @@ final class Statements {
                 indexFilter += " AND i.\"unique\" = true";
             }
             List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
-            indexesOfKey.forEach( i -> i.key = key );
+            // indexesOfKey.forEach( i -> i.key = key );
             indexes.addAll( indexesOfKey );
         }
         return indexes;
@@ -1584,7 +1585,7 @@ final class Statements {
         for ( CatalogKey key : keys ) {
             String indexFilter = " i.\"key\" = " + key.id + " AND i.\"name\" = " + quoteString( indexName );
             List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
-            indexesOfKey.forEach( i -> i.key = key );
+            // indexesOfKey.forEach( i -> i.key = key );
             indexes.addAll( indexesOfKey );
         }
         if ( indexes.size() > 1 ) {
@@ -1613,7 +1614,7 @@ final class Statements {
         } else if ( indexes.size() == 0 ) {
             throw new UnknownIndexException( indexId );
         }
-        index.key = keys.get( 0 );
+        // index.key = keys.get( 0 );
         return index;
     }
 
@@ -1625,7 +1626,7 @@ final class Statements {
         for ( CatalogKey key : keys ) {
             String indexFilter = " i.\"key\" = " + key.id;
             List<CatalogIndex> indexesOfKey = indexFilter( transactionHandler, indexFilter );
-            indexesOfKey.forEach( i -> i.key = key );
+            // indexesOfKey.forEach( i -> i.key = key );
             indexes.addAll( indexesOfKey );
         }
         return indexes;

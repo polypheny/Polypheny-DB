@@ -338,12 +338,13 @@ public class CatalogImpl extends Catalog {
      * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
      * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
      *
-     * @param db the mapdb database object on which the maps are generated from
+     * @param db the MapDB database object on which the maps are generated from
      */
     private void initColumnInfo( DB db ) {
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
+        //noinspection unchecked
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
-
+        //noinspection unchecked
         columnPlacements = db.treeMap( "columnPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
     }
 
@@ -351,6 +352,7 @@ public class CatalogImpl extends Catalog {
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
+        //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
@@ -361,6 +363,7 @@ public class CatalogImpl extends Catalog {
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
+        //noinspection unchecked
         schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
     }
 
@@ -964,16 +967,18 @@ public class CatalogImpl extends Catalog {
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
     @Override
-    public void setPrimaryKey( long tableId, Long keyId ) throws UnknownTableException {
-        if ( keyId == null ) {
-            keyId = keyIdBuilder.getAndIncrement();
-        }
+    public void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException {
+
         try {
             CatalogTable table = CatalogTable.replacePrimary( Objects.requireNonNull( tables.get( tableId ) ), keyId );
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            if ( keyId != null ) {
+                primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
+            }
+
         } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -1227,9 +1232,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameColumn( long columnId, String name ) throws UnknownColumnException {
         try {
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
-            columns.replace( columnId, CatalogColumn.replaceName( column, name ) );
-            columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn column = CatalogColumn.replaceName( old, name );
+            columns.replace( columnId, column );
+            columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, old.name } );
             columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( columnId );
@@ -1290,10 +1296,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
         try {
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             if ( nullable ) {
                 // Check if the column is part of a primary key (pk's are not allowed to contain null values)
-                CatalogTable table = Objects.requireNonNull( tables.get( column.tableId ) );
+                CatalogTable table = Objects.requireNonNull( tables.get( old.tableId ) );
                 if ( table.primaryKey != null ) {
                     CatalogKey catalogKey = getPrimaryKey( table.primaryKey );
                     if ( catalogKey.columnIds.contains( columnId ) ) {
@@ -1304,8 +1310,9 @@ public class CatalogImpl extends Catalog {
                 // TODO: Check that the column does not contain any null values
                 getColumnPlacementByColumn( columnId );
             }
-
-            columns.replace( columnId, CatalogColumn.replaceNullable( column, nullable ) );
+            CatalogColumn column = CatalogColumn.replaceNullable( old, nullable );
+            columns.replace( columnId, column );
+            columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
         } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1392,7 +1399,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             // TODO DL also fix call
-            CatalogColumn column = CatalogColumn.replaceDefaultValue( old, new CatalogDefaultValue( columnId, type, null, null ) );
+            CatalogColumn column = CatalogColumn.replaceDefaultValue( old, new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) );
             columns.replace( columnId, column );
             columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
         } catch ( NullPointerException e ) {
@@ -1611,7 +1618,7 @@ public class CatalogImpl extends Catalog {
                 throw new GenericCatalogException( "There is already a unique constraint!" );
             }
             long id = constraintIdBuilder.getAndIncrement();
-            constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName ) );
+            constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
         } catch ( NullPointerException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1670,7 +1677,7 @@ public class CatalogImpl extends Catalog {
                 // TODO DL: Check if the current values are unique
             }
             long id = indexIdBuilder.getAndIncrement();
-            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId ) );
+            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
             return id;
         } catch ( UnknownTableException e ) {
             throw new GenericCatalogException( e );
@@ -1726,7 +1733,7 @@ public class CatalogImpl extends Catalog {
                 setPrimaryKey( tableId, null );
                 deleteKeyIfNoLongerUsed( table.primaryKey );
             }
-        } catch ( NullPointerException | UnknownKeyException | UnknownTableException e ) {
+        } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1977,10 +1984,13 @@ public class CatalogImpl extends Catalog {
 
     // Check if the specified key is used as primary key, index or constraint. If so, this is a NoOp. If it is not used, the key is deleted.
     private void deleteKeyIfNoLongerUsed( Long keyId ) throws GenericCatalogException {
+        if ( keyId == null ) {
+            return;
+        }
         try {
             CatalogKey key = Objects.requireNonNull( keys.get( keyId ) );
             CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
-            if ( table.primaryKey.equals( keyId ) ) {
+            if ( table.primaryKey != null && table.primaryKey.equals( keyId ) ) {
                 return;
             }
             if ( constraints.values().stream().anyMatch( c -> c.keyId == keyId ) ) {
