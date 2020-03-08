@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -94,7 +95,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         log.warn( "CSV adapter does not support dropping columns!" );
     }
 
@@ -125,7 +126,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
         throw new RuntimeException( "CSV adapter does not support updating column types!" );
     }
 

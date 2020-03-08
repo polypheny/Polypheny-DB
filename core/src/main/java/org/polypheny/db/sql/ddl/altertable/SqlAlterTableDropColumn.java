@@ -116,6 +116,13 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
+            // Delete column from underlying data stores
+            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+                StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
+                transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
+            }
+
+            // Delete from catalog
             List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
             transaction.getCatalog().deleteColumn( catalogColumn.id );
             if ( catalogColumn.position != columns.size() ) {
@@ -125,11 +132,6 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
-            // Delete column from underlying data stores
-            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
-                StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, catalogTable, catalogColumn );
-                transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
-            }
         } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }

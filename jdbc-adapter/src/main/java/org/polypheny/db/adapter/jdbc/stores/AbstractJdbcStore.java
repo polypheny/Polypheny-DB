@@ -181,8 +181,9 @@ public abstract class AbstractJdbcStore extends Store {
     public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
+        String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
         builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " ADD " ).append( dialect.quoteIdentifier( catalogColumn.name ) ).append( " " );
+        builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
         builder.append( catalogColumn.type.name() );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
@@ -202,16 +203,26 @@ public abstract class AbstractJdbcStore extends Store {
             builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
         executeUpdate( builder, context );
+        // Add physical name to placement
+        try {
+            context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                    getStoreId(),
+                    catalogColumn.id,
+                    "public", // TODO MV: physical schema name
+                    physicalTableName,
+                    physicalColumnName );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
-        builder.append( " TYPE " ).append( catalogColumn.type );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+        builder.append( " " ).append( catalogColumn.type );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
             builder.append( catalogColumn.length );
@@ -234,11 +245,10 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
-        builder.append( " DROP " ).append( dialect.quoteIdentifier( catalogColumn.name ) );
+        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
         executeUpdate( builder, context );
     }
 

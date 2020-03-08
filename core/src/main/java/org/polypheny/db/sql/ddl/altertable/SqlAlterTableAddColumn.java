@@ -186,8 +186,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
             // Add column on underlying data stores
             for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
-                StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
                 transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
+                StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
             }
         } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
