@@ -1220,6 +1220,12 @@ final class Statements {
     }
 
 
+    public static List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( XATransactionHandler transactionHandler, int storeId, long schemaId ) throws GenericCatalogException {
+        String filter = " AND st.\"id\" = " + storeId + " AND t.\"schema\" = " + schemaId;
+        return columnPlacementFilter( transactionHandler, filter );
+    }
+
+
     public static void updateColumnPlacementPhysicalNames( XATransactionHandler transactionHandler, int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "physical_schema", quoteString( physicalSchemaName ) );

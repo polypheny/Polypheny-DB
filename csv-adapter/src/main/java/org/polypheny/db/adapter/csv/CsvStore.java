@@ -3,12 +3,15 @@ package org.polypheny.db.adapter.csv;
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -30,13 +33,28 @@ public class CsvStore extends Store {
             new AdapterSettingString( "directory", false, true, true, "testTestCsv" )
     );
 
-    private File csvDir;
+    private URL csvDir;
     private CsvSchema currentSchema;
 
 
     public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings );
-        csvDir = new File( settings.get( "directory" ) );
+        super( storeId, uniqueName, settings, true, true );
+        setCsvDir( settings );
+    }
+
+
+    private void setCsvDir( Map<String, String> settings ) {
+        String dir = settings.get( "directory" );
+        if ( dir.startsWith( "classpath://" ) ) {
+            URL url = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+            csvDir = url;
+        } else {
+            try {
+                csvDir = new File( dir ).toURI().toURL();
+            } catch ( MalformedURLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
     }
 
 
@@ -77,7 +95,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         log.warn( "CSV adapter does not support dropping columns!" );
     }
 
@@ -108,7 +126,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
         throw new RuntimeException( "CSV adapter does not support updating column types!" );
     }
 
@@ -134,7 +152,7 @@ public class CsvStore extends Store {
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
-            csvDir = new File( this.settings.get( "directory" ) );
+            setCsvDir( settings );
         }
     }
 

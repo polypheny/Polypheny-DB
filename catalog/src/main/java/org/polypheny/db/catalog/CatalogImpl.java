@@ -358,10 +358,21 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public CatalogTable getTable( long tableId ) throws UnknownTableException, GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getTable( transactionHandler, tableId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
     /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId The id of the schema
+     * @param schemaId  The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
@@ -586,6 +597,23 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Get all placements of a column
+     *
+     * @param columnId The id of the column
+     * @return List of placements
+     */
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacements( Long columnId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumnPlacements( transactionHandler, columnId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    /**
      * Get column placements on a store
      *
      * @param storeId The id of the store
@@ -596,6 +624,17 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             return Statements.getColumnPlacementsOnStore( transactionHandler, storeId );
+        } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumnPlacementsOnStoreAndSchema( transactionHandler, storeId, schemaId );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
             throw new GenericCatalogException( e );
         }

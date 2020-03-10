@@ -111,7 +111,7 @@ public class TestHelper {
             try {
                 Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
-                log.error( "Polypheny-DB Driver not found", e );
+                log.error( "Polypheny JDBC Driver not found", e );
             }
             final String url = "jdbc:polypheny://" + dbHost + ":" + port;
             //String url = "jdbc:polypheny://" + dbHost + ":" + port + "/" + dbName + "?prepareThreshold=0";
@@ -121,7 +121,7 @@ public class TestHelper {
             props.setProperty( "user", "pa" );
             //props.setProperty( "password", password );
             //props.setProperty( "ssl", sslEnabled );
-            props.setProperty( "wire_protocol", "PROTO3" );
+            //props.setProperty( "serialization", "PROTOBUF" );
 
             conn = DriverManager.getConnection( url, props );
             //conn.setAutoCommit( false );

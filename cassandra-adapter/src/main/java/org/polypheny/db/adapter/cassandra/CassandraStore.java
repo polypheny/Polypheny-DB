@@ -31,12 +31,10 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
-import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -47,7 +45,6 @@ import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -88,7 +85,7 @@ public class CassandraStore extends Store {
 
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings );
+        super( storeId, uniqueName, settings, false, false );
 
         // Parse settings
         this.dbHostname = settings.get( "host" );
@@ -246,10 +243,11 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
-        String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
+    public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
+//        public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+//        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
+        String physicalTableName = columnPlacement.physicalTableName;
+        String physicalColumnName = columnPlacement.physicalColumnName;
 
         SimpleStatement dropColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build();
@@ -295,7 +293,8 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
+//    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
 

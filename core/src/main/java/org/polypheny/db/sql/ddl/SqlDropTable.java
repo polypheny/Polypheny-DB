@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
@@ -51,6 +53,7 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
 
@@ -103,6 +106,15 @@ public class SqlDropTable extends SqlDropObject {
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
+        }
+
+        // Check whether all stores support schema changes
+        for ( int storeId : table.getColumnPlacementsByStore().keySet() ) {
+            if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
+                throw SqlUtil.newContextException(
+                        SqlParserPos.ZERO,
+                        RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
+            }
         }
 
         // Delete data from the stores and remove the column placement

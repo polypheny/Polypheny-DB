@@ -195,7 +195,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
-        logicalRoot = logicalRoot.withRel( sqlToRelConverter.flattenTypes( logicalRoot.rel, true ) );
+        // Decorrelate
         final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
         logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
 

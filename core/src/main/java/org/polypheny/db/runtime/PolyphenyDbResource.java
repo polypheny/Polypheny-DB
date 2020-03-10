@@ -873,5 +873,8 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("There needs to be at least one placement per table")
     ExInst<PolyphenyDbException> onlyOnePlacementLeft();
+
+    @BaseMessage("The data store ''{0}'' does not support schema changes!")
+    ExInst<PolyphenyDbException> storeIsSchemaReadOnly( String storeName );
 }
 

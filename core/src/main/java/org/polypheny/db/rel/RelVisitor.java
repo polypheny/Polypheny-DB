@@ -39,6 +39,7 @@ import org.polypheny.db.util.Glossary;
 
 /**
  * A <code>RelVisitor</code> is a Visitor role in the {@link Glossary#VISITOR_PATTERN visitor pattern} and visits {@link RelNode} objects as the role of Element.
+ * <p>
  * Other components in the pattern: {@link RelNode#childrenAccept(RelVisitor)}.
  */
 public abstract class RelVisitor {
