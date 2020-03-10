@@ -50,6 +50,8 @@ public class InformationServerTest {
     private static void demoData() {
         InformationManager im = InformationManager.getInstance();
 
+        //SYSTEM GROUP
+
         SystemInfo si = new SystemInfo();
         HardwareAbstractionLayer hal = si.getHardware();
         OperatingSystem os = si.getOperatingSystem();
@@ -76,6 +78,8 @@ public class InformationServerTest {
         Information iAction = new InformationAction( systemGroup, "executeAction", () -> "Executed action" ).setOrder( 2 );
         im.registerInformation( iAction );
 
+        //CPU GROUP
+
         InformationGroup cpuGroup = new InformationGroup( systemPage, "cpu" ).setOrder( 2 );
         im.addGroup( cpuGroup );
 
@@ -91,6 +95,8 @@ public class InformationServerTest {
                 i2.updateProgress( cpuLoad );
             }
         }, 5000, 5000 );
+
+        //PROCESSES GROUP
 
         InformationGroup processesGroup = new InformationGroup( systemPage.getId(), "processes" );
         im.addGroup( processesGroup );
@@ -140,7 +146,8 @@ public class InformationServerTest {
             }
         }, 5000, 5000 );
 
-        //random data
+        //RANDOM DATA GROUP
+
         Integer[] randomData1 = new Integer[10];
         Integer[] randomData2 = new Integer[10];
         Integer[] randomData3 = new Integer[10];
@@ -158,6 +165,8 @@ public class InformationServerTest {
         //GraphData randomGraphData3 = new GraphData<Integer>( "z", randomData3);
         InformationGraph randomGraph = new InformationGraph( "random.graph", randomGroup.getId(), GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
         im.registerInformation( randomGraph );
+
+        //COLLECTING DATA GROUP
 
         InformationGroup collectingGroup = new InformationGroup( systemPage, "collecting data" ).setOrder( 5 );
         collectingGroup.setRefresh( () -> {
@@ -196,6 +205,62 @@ public class InformationServerTest {
             }
         }, 10000, 10000 );
 
+        //DURATION GROUP
+
+        InformationGroup durationGroup = new InformationGroup( systemPage, "durations" );
+        im.addGroup( durationGroup );
+        InformationDuration duration1 = new InformationDuration( durationGroup );
+        duration1.start( "Task1" ).setLimit( 50 );
+        sleep( 100 );
+        duration1.stop( "Task1" );
+        duration1.addNanoDuration( "TaskInBetween", 30_000_000L );
+        duration1.addMilliDuration( "TaskInBetween", 30L );
+        duration1.start( "Task2" ).setLimit( 1000 ).noProgressBar();
+        duration1.get( "Task2" ).start( "sub1" );
+        sleep( 150 );
+        duration1.get( "Task2" ).stop( "sub1" );
+        duration1.get( "Task2" ).start( "sub2" );
+        sleep( 50 );
+        duration1.get( "Task2" ).stop( "sub2" );
+        duration1.stop( "Task2" );
+        duration1.start( "Task3" );
+        sleep( 50 );
+        duration1.stop( "Task3" );
+        duration1.setOrder( 1 );
+        im.registerInformation( duration1 );
+
+        InformationDuration duration2 = new InformationDuration( durationGroup );
+        duration2.start( "group1" );
+        duration2.get( "group1" ).start( "sub1" );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).start( "subSub" ).setLimit( 50 );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).stop( "subSub" );
+        duration2.get( "group1" ).get( "sub1" ).get( "subSub" ).start( "s4" );
+        duration2.get( "group1" ).get( "sub1" ).start( "subSub2" );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).stop( "subSub2" );
+        duration2.get( "group1" ).stop( "sub1" );
+        duration2.stop( "group1" );
+        duration2.setOrder( 2 );
+        im.registerInformation( duration2 );
+
+        InformationDuration duration3 = new InformationDuration( durationGroup );
+        duration3.start( "test" );
+        duration3.stop( "test" );
+        duration3.setOrder( 3 );
+        im.registerInformation( duration3 );
+    }
+
+    /**
+     * Sleep method for testing
+     */
+    private static void sleep( long sleep ) {
+        try {
+            Thread.sleep( sleep );
+        } catch ( InterruptedException e ) {
+            e.printStackTrace();
+        }
     }
 
 

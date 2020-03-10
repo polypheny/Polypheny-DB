@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
@@ -183,7 +184,8 @@ public class InformationPage extends Refreshable {
      */
     public String asJson() {
         Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
+                .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
+                .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .disableHtmlEscaping()
                 .create();
         return gson.toJson( this );
