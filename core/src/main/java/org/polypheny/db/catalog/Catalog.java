@@ -997,9 +997,16 @@ public abstract class Catalog {
 
         public final String pattern;
 
+        public final boolean containsWildcards;
+
 
         public Pattern( String pattern ) {
             this.pattern = pattern;
+            containsWildcards = pattern.contains( "%" ) || pattern.contains( "_" );
+        }
+
+        public String toRegex() {
+            return pattern.replace( "_", "(.)" ).replace( "*", "(.*)" );
         }
 
 

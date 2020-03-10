@@ -19,15 +19,16 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
@@ -431,16 +432,19 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogDatabase> getDatabases( Pattern pattern ) {
-
-        if ( pattern == null ) {
-            return new ArrayList<>( databases.values() );
-        } else {
-            try {
-                return Collections.singletonList( databaseNames.get( pattern.pattern ) );
-            } catch ( NullPointerException e ) {
-                return new ArrayList<>();
+        try {
+            if ( pattern != null ) {
+                if ( pattern.containsWildcards ) {
+                    return databaseNames.entrySet().stream().filter( e -> e.getKey().matches( pattern.toRegex() ) ).map( Entry::getValue ).collect( Collectors.toList() );
+                } else {
+                    return Collections.singletonList( Objects.requireNonNull( databaseNames.get( pattern.pattern ) ) );
+                }
+            } else {
+                return new ArrayList<>( databases.values() );
             }
-
+        } catch ( NullPointerException e ) {
+            e.printStackTrace();
+            return new ArrayList<>();
         }
     }
 
@@ -489,32 +493,23 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-        if ( databaseNamePattern != null && schemaNamePattern != null ) {
-            try {
-                CatalogSchema schema = getSchema( databaseNamePattern.pattern, schemaNamePattern.pattern );
-                return Collections.singletonList( schema );
 
-            } catch ( UnknownSchemaException e ) {
-                log.error( Arrays.toString( e.getStackTrace() ) );
+        List<CatalogDatabase> catalogDatabases = getDatabases( databaseNamePattern );
+        try {
+            if ( catalogDatabases.size() > 0 ) {
+                Stream<CatalogSchema> catalogSchemas = catalogDatabases.stream().flatMap( d -> Objects.requireNonNull( databaseChildren.get( d.id ) ).stream() ).map( schemas::get );
+
+                if ( schemaNamePattern != null ) {
+                    catalogSchemas = catalogSchemas.filter( s -> s.name.matches( schemaNamePattern.toRegex() ) );
+                }
+                return catalogSchemas.collect( Collectors.toList() );
             }
+        } catch ( NullPointerException e ) {
+            e.printStackTrace();
 
-            return new ArrayList<>();
-
-        } else if ( databaseNamePattern != null ) {
-            try {
-                long id = getDatabase( databaseNamePattern.pattern ).id;
-                return new ArrayList<>( schemaNames.prefixSubMap( new Object[]{ id, null } ).values() );
-
-            } catch ( NullPointerException | UnknownDatabaseException e ) {
-                e.printStackTrace();
-            }
-            return new ArrayList<>();
-
-        } else if ( schemaNamePattern != null ) {
-            return schemas.values().stream().filter( e -> e.name.equals( schemaNamePattern.pattern ) ).collect( Collectors.toList() );
-        } else {
-            return new ArrayList<>( schemas.values() );
         }
+        return new ArrayList<>();
+
     }
 
     // TODO remove? not used
@@ -674,7 +669,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             schemaNames.remove( new Object[]{ schema.databaseId, schema.name } );
-            List<Long> oldChildren = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( schema.id ) ) );
+            List<Long> oldChildren = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( schema.databaseId ) ) );
             oldChildren.remove( schemaId );
             databaseChildren.replace( schema.databaseId, ImmutableList.copyOf( oldChildren ) );
 
@@ -761,28 +756,20 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-
+        List<CatalogSchema> catalogSchemas = getSchemas( databaseNamePattern, schemaNamePattern );
         try {
+            if ( catalogSchemas.size() > 0 ) {
+                Stream<CatalogTable> catalogTables = catalogSchemas.stream().flatMap( t -> Objects.requireNonNull( schemaChildren.get( t.id ) ).stream() ).map( tables::get );
 
-            if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
-                long databaseId = Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) ).id;
-                long schemaId = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) ).id;
-                return Collections.singletonList( tableNames.get( new Object[]{ databaseId, schemaId, tableNamePattern.pattern } ) );
-            }
-            if ( databaseNamePattern != null && schemaNamePattern != null ) {
-                long databaseId = Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) ).id;
-                long schemaId = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } ) ).id;
-                return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId, schemaId } ).values() );
-            }
-            if ( databaseNamePattern != null ) {
-                long databaseId = Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) ).id;
-                return new ArrayList<>( tableNames.prefixSubMap( new Object[]{ databaseId } ).values() );
+                if ( tableNamePattern != null ) {
+                    catalogTables = catalogTables.filter( t -> t.name.matches( tableNamePattern.toRegex() ) );
+                }
+                return catalogTables.collect( Collectors.toList() );
             }
         } catch ( NullPointerException e ) {
             e.printStackTrace();
         }
-
-        return new ArrayList<>( tables.values() );
+        return new ArrayList<>();
 
     }
 
@@ -927,6 +914,7 @@ public class CatalogImpl extends Catalog {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.schemaId ) ) );
             children.remove( tableId );
+            schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
             for ( Long columId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
                 try {
@@ -936,9 +924,9 @@ public class CatalogImpl extends Catalog {
                 }
             }
 
-            schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
-            schemas.remove( tableId );
-            schemaNames.remove( new Object[]{ table.databaseName, table.schemaName, table.name } );
+            tableChildren.remove( tableId );
+            tables.remove( tableId );
+            tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( tableId );
         }
@@ -1101,31 +1089,23 @@ public class CatalogImpl extends Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     @Override
-    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException {
+    public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
+
+        List<CatalogTable> catalogTables = getTables( databaseNamePattern, schemaNamePattern, tableNamePattern );
         try {
-            if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null && columnNamePattern != null ) {
-                CatalogTable table = Objects.requireNonNull( getTable( databaseNamePattern.pattern, schemaNamePattern.pattern, tableNamePattern.pattern ) );
-                return Collections.singletonList( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnNamePattern.pattern } ) );
-            }
-            if ( databaseNamePattern != null && schemaNamePattern != null && tableNamePattern != null ) {
-                CatalogTable table = getTable( databaseNamePattern.pattern, schemaNamePattern.pattern, tableNamePattern.pattern );
+            if ( catalogTables.size() > 0 ) {
+                Stream<CatalogColumn> catalogColumns = catalogTables.stream().flatMap( t -> Objects.requireNonNull( tableChildren.get( t.id ) ).stream() ).map( columns::get );
 
-                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
+                if ( columnNamePattern != null ) {
+                    catalogColumns = catalogColumns.filter( c -> c.name.matches( columnNamePattern.toRegex() ) );
+                }
+                return catalogColumns.collect( Collectors.toList() );
             }
-            if ( databaseNamePattern != null && schemaNamePattern != null ) {
-                CatalogSchema schema = getSchema( databaseNamePattern.pattern, databaseNamePattern.pattern );
+        } catch ( NullPointerException e ) {
+            e.printStackTrace();
 
-                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ schema.databaseId, schema.id } ).values() );
-            }
-            if ( databaseNamePattern != null ) {
-                CatalogDatabase database = Objects.requireNonNull( databaseNames.get( databaseNamePattern.pattern ) );
-                return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ database.id } ).values() );
-            }
-        } catch ( NullPointerException | UnknownTableException | UnknownSchemaException e ) {
-            throw new GenericCatalogException( e );
         }
-
-        return new ArrayList<>( columns.values() );
+        return new ArrayList<>();
     }
 
 
@@ -1378,10 +1358,11 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
             children.remove( columnId );
             tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
-            columns.remove( columnId );
 
             deleteDefaultValue( columnId );
             getColumnPlacementByColumn( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
+
+            columns.remove( columnId );
         } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1880,10 +1861,9 @@ public class CatalogImpl extends Catalog {
      *
      * @param databaseId the id of the database
      * @return the combined database object
-     * @throws UnknownDatabaseException if databaseId does not exist in catalog
      */
     @Override
-    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws UnknownDatabaseException, UnknownSchemaException, UnknownUserException, UnknownTableException {
+    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException {
         try {
             CatalogDatabase database = Objects.requireNonNull( databases.get( databaseId ) );
             List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
@@ -1899,8 +1879,8 @@ public class CatalogImpl extends Catalog {
 
             CatalogUser user = users.get( database.ownerId );
             return new CatalogCombinedDatabase( database, childSchemas, defaultSchema, user );
-        } catch ( NullPointerException e ) {
-            throw new UnknownDatabaseException( databaseId );
+        } catch ( NullPointerException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -1912,7 +1892,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws UnknownSchemaException, UnknownDatabaseException, UnknownTableException, UnknownUserException {
+    public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException {
         try {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             List<CatalogCombinedTable> childTables = new ArrayList<>();
@@ -1927,8 +1907,8 @@ public class CatalogImpl extends Catalog {
             CatalogUser owner = getUser( schema.ownerId );
 
             return new CatalogCombinedSchema( schema, childTables, database, owner );
-        } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( schemaId );
+        } catch ( NullPointerException | UnknownTableException | UnknownDatabaseException | UnknownUserException e ) {
+            throw new GenericCatalogException( e );
         }
 
     }
@@ -1972,8 +1952,8 @@ public class CatalogImpl extends Catalog {
             CatalogKey key = Objects.requireNonNull( keys.get( keyId ) );
             List<CatalogColumn> childColumns = key.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
             CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
-            CatalogSchema schema = schemas.get( key.tableId );
-            CatalogDatabase database = databases.get( key.databaseId );
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( key.schemaId ) );
+            CatalogDatabase database = Objects.requireNonNull( databases.get( key.databaseId ) );
             List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == keyId ).collect( Collectors.toList() );
             List<CatalogIndex> childIndices = indices.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() );
             List<CatalogConstraint> childConstraints = constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() );

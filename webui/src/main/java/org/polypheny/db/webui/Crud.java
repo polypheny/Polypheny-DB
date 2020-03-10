@@ -85,7 +85,6 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -93,7 +92,6 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
@@ -128,7 +126,6 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticColumn;
 import org.polypheny.db.statistic.StatisticsManager;
-import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -401,7 +398,6 @@ public class Crud implements InformationObserver {
         return result;
     }
 
-
     /**
      * Get all tables of a schema
      */
@@ -434,6 +430,7 @@ public class Crud implements InformationObserver {
         return result;
     }*/
 
+
     /**
      * Get all tables of a schema
      */
@@ -461,6 +458,7 @@ public class Crud implements InformationObserver {
         }
         return result;
     }
+
 
     /**
      * Drop or truncate a table
