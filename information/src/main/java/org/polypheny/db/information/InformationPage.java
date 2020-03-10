@@ -57,10 +57,14 @@ public class InformationPage extends Refreshable {
     private boolean implicit = false;
 
     /**
+     * All items on this page will be rendered in full width
+     */
+    private boolean fullWidth = false;
+
+    /**
      * Groups that belong to this page.
      */
     private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
-
 
 
     /**
@@ -161,12 +165,21 @@ public class InformationPage extends Refreshable {
 
 
     /**
+     * Display all InformationObjects withing this page with the full width in the UI
+     */
+    public InformationPage fullWidth() {
+        this.fullWidth = true;
+        return this;
+    }
+
+
+    /**
      * Override an implicit page with an explicit one
      */
     public void overrideWith( final InformationPage page ) {
-        if( ! this.implicit ){
+        if ( !this.implicit ) {
             throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
-        }else if( page.isImplicit() ){
+        } else if ( page.isImplicit() ) {
             throw new InformationRuntimeException( "A page cannot be overwritten by an implicitly created page." );
         }
         this.name = page.getName();
