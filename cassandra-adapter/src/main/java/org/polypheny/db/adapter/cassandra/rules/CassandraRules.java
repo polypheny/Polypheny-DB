@@ -288,14 +288,14 @@ public class CassandraRules {
      * Rule to convert a {@link Sort} to a
      * {@link CassandraSort}.
      */
-    private static class CassandraSortRule extends RelOptRule {
+    private static class CassandraSortRuleOld extends RelOptRule {
 
         private static final RelOptRuleOperand CASSANDRA_OP = operand( CassandraToEnumerableConverter.class, operandJ( CassandraFilter.class, null, CassandraFilter::isSinglePartition, any() ) ); // We can only use implicit sorting within a single partition
 
         protected final Convention out;
 
 
-        private CassandraSortRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        private CassandraSortRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
             super(
                     operandJ( Sort.class, null,
                             // Limits are handled by CassandraLimit

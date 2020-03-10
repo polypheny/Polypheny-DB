@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +26,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -32,6 +34,7 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -90,7 +93,21 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         Pair<List<String>, List<String>> keyFields = table.getKeyFields();
         Set<String> partitionKeys = new HashSet<>( keyFields.left );
-        List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
+        // TODO JS: Is this work around still needed with the fix in CassandraSchema?
+        final List<RelDataTypeField> physicalFields = table.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<RelDataTypeField> logicalFields = filter.getRowType().getFieldList();
+        final List<RelDataTypeField> fields = new ArrayList<>();
+        List<String> fieldNames = new ArrayList<>();
+        for ( RelDataTypeField field: logicalFields ) {
+            for ( RelDataTypeField physicalField: physicalFields ) {
+                if ( field.getName().equals( physicalField.getName() ) ) {
+                    fields.add( physicalField );
+                    fieldNames.add( field.getName() );
+                    break;
+                }
+            }
+        }
+//        List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
 
         // Check that all conjunctions are primary key equalities
         condition = disjunctions.get( 0 );

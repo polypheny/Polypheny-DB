@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.cassandra.util;
 
 
 import java.util.List;
+import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
@@ -40,9 +41,38 @@ public class CassandraUtils {
                 return ((CassandraTableScan) relNode).cassandraTable;
             } else if ( relNode instanceof CassandraTableModify ) {
                 return ((CassandraTableModify) relNode).cassandraTable;
+            } else {
+                for ( RelNode innerNode: relNode.getInputs() ) {
+                    if ( innerNode instanceof RelSubset ) {
+                        CassandraTable table = getUnderlyingTable( (RelSubset) innerNode );
+                        if ( table != null ) {
+                            return table;
+                        }
+                    }
+                }
             }
         }
 
         return null;
     }
+
+
+    /**
+     * Finds the underlying {@link CassandraFilter} of the subset.
+     *
+     * @param relSubset the subset.
+     * @return the {@link CassandraFilter} or <code>null</code> if not found.
+     */
+    public static CassandraFilter getUnderlyingFilter( RelSubset relSubset ) {
+        List<RelNode> rels = relSubset.getRelList();
+        for ( RelNode relNode : rels ) {
+            if ( relNode instanceof CassandraFilter ) {
+                return (CassandraFilter) relNode;
+            }
+        }
+
+        return null;
+    }
+
+
 }

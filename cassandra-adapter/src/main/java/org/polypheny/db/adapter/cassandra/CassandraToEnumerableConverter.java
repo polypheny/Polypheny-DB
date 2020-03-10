@@ -40,6 +40,7 @@ import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext;
+import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
@@ -111,10 +113,12 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 Select select;
                 // Construct the list of fields to project
                 if ( cassandraContext.selectFields.isEmpty() ) {
-                    select = selectFrom.all();
-                } else {
-                    select = selectFrom.selectors( cassandraContext.selectFields );
+                    List<String> physicalNames = CassandraRules.cassandraPhysicalFieldNames( getRowType() );
+                    for ( String physicalName: physicalNames ) {
+                        cassandraContext.selectFields.add( Selector.column( physicalName ) );
+                    }
                 }
+                select = selectFrom.selectors( cassandraContext.selectFields );
 
                 select = select.where( cassandraContext.whereClause );
                 // FIXME js: Horrible hack, but hopefully works for now till I understand everything better.

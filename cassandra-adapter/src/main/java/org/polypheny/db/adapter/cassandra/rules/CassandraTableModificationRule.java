@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
+import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
@@ -42,6 +43,9 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
     @Override
     public boolean matches( RelOptRuleCall call ) {
         final TableModify tableModify = call.rel( 0 );
+        if ( tableModify.getTable().unwrap( CassandraTable.class ) == null ) {
+            return false;
+        }
         return tableModify.getOperation() != Operation.MERGE;
     }
 
@@ -52,6 +56,9 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
         log.debug( "Converting to a {} CassandraTableModify", ((TableModify) rel).getOperation() );
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
+            return null;
+        }
+        if ( modify.getTable().unwrap( CassandraTable.class ) == null ) {
             return null;
         }
         final RelTraitSet traitSet = modify.getTraitSet().replace( out );

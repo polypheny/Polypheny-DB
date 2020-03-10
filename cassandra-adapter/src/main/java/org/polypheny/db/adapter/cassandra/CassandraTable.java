@@ -136,7 +136,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public Pair<List<String>, List<String>> getKeyFields() {
         if ( keyFields == null ) {
-            keyFields = cassandraSchema.getKeyFields( columnFamily, view );
+            keyFields = cassandraSchema.getKeyFields( physicalName, view );
         }
         return keyFields;
     }
@@ -144,7 +144,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public Pair<List<String>, List<String>> getPhysicalKeyFields() {
         if ( physicalKeyFields == null ) {
-            physicalKeyFields = cassandraSchema.getPhysicalKeyFields( columnFamily, view );
+            physicalKeyFields = cassandraSchema.getPhysicalKeyFields( physicalName, view );
         }
         return physicalKeyFields;
     }
@@ -152,7 +152,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public List<RelFieldCollation> getClusteringOrder() {
         if ( clusteringOrder == null ) {
-            clusteringOrder = cassandraSchema.getClusteringOrder( columnFamily, view );
+            clusteringOrder = cassandraSchema.getClusteringOrder( physicalName, view );
         }
         return clusteringOrder;
     }

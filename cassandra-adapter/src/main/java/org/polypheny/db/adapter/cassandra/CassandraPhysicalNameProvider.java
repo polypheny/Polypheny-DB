@@ -104,6 +104,19 @@ public class CassandraPhysicalNameProvider {
     }
 
 
+    public CatalogColumn getLogicalColumn( long columnId ) {
+        CatalogColumn catalogColumn;
+        try {
+            catalogColumn = catalog.getColumn( columnId );
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
+//            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+
+        return catalogColumn;
+    }
+
+
     private long tableId( String schemaName, String tableName ) {
         CatalogTable catalogTable;
         try {

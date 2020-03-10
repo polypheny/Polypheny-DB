@@ -52,8 +52,11 @@ import org.polypheny.db.util.TimeString;
 @Slf4j
 public class CassandraValues extends Values implements CassandraRel {
 
+    private final RelDataType logicalRowType;
+
     public CassandraValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
+        this.logicalRowType = rowType;
     }
 
 
@@ -165,7 +168,18 @@ public class CassandraValues extends Values implements CassandraRel {
     public void implement( CassandraImplementContext context ) {
 
         List<Map<String, Term>> items = new LinkedList<>();
-        final List<RelDataTypeField> fields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        // TODO JS: Is this work around still needed with the fix in CassandraSchema?
+        final List<RelDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<RelDataTypeField> logicalFields = rowType.getFieldList();
+        final List<RelDataTypeField> fields = new ArrayList<>();
+        for ( RelDataTypeField field: logicalFields ) {
+            for ( RelDataTypeField physicalField: physicalFields ) {
+                if ( field.getName().equals( physicalField.getName() ) ) {
+                    fields.add( physicalField );
+                    break;
+                }
+            }
+        }
 //        final List<RelDataTypeField> fields = rowType.getFieldList();
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
