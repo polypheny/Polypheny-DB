@@ -44,7 +44,7 @@ import org.polypheny.db.rel.type.RelDataType;
 
 /**
  * Abstract base class for relational expressions with a single input.
- *
+ * <p>
  * It is not required that single-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
  */
 public abstract class SingleRel extends AbstractRelNode {

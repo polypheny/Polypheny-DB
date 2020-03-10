@@ -83,7 +83,6 @@ import org.polypheny.db.util.Util;
 public class JdbcSchema implements Schema {
 
     final ConnectionFactory connectionFactory;
-    final String schema;
     public final SqlDialect dialect;
 
     @Getter
@@ -99,7 +98,6 @@ public class JdbcSchema implements Schema {
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            String schema,
             Map<String, JdbcTable> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
             AbstractJdbcStore jdbcStore ) {
@@ -107,7 +105,6 @@ public class JdbcSchema implements Schema {
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
-        this.schema = schema;
         this.tableMap = tableMap;
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.jdbcStore = jdbcStore;
@@ -120,20 +117,17 @@ public class JdbcSchema implements Schema {
      * @param connectionFactory Connection Factory
      * @param dialect SQL dialect
      * @param convention Calling convention
-     * @param schema Schema name pattern
      */
     public JdbcSchema(
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            String schema,
             AbstractJdbcStore jdbcStore ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         convention.setJdbcSchema( this );
         this.convention = convention;
-        this.schema = schema;
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
         this.jdbcStore = jdbcStore;
@@ -194,11 +188,10 @@ public class JdbcSchema implements Schema {
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
-            String schema,
             AbstractJdbcStore jdbcStore ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( connectionFactory, dialect, convention, schema, jdbcStore );
+        return new JdbcSchema( connectionFactory, dialect, convention, jdbcStore );
     }
 
 
@@ -222,7 +215,6 @@ public class JdbcSchema implements Schema {
                 connectionFactory,
                 dialect,
                 convention,
-                schema,
                 tableMap,
                 physicalToLogicalTableNameMap,
                 jdbcStore );

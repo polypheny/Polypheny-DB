@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
@@ -73,4 +74,5 @@ public interface Transaction {
 
     void addChangedTable( String qualifiedTableName );
 
+    Router getRouter();
 }
