@@ -171,9 +171,10 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
             final RexInputRef left1 = (RexInputRef) left;
-            return fieldNames.get( left1.getIndex() );
-        } else {
-            return null;
+            if ( left1.getIndex() < fieldNames.size() ) {
+                return fieldNames.get( left1.getIndex() );
+            }
         }
+        return null;
     }
 }
