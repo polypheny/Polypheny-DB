@@ -78,6 +78,40 @@ public final class CatalogForeignKey extends CatalogKey {
     }
 
 
+    public CatalogForeignKey(
+            final long id,
+            @NonNull final String name,
+            final long tableId,
+            @NonNull final String tableName,
+            final long schemaId,
+            @NonNull final String schemaName,
+            final long databaseId,
+            @NonNull final String databaseName,
+            final long referencedKeyId,
+            final long referencedKeyTableId,
+            @NonNull final String referencedKeyTableName,
+            final long referencedKeySchemaId,
+            @NonNull final String referencedKeySchemaName,
+            final long referencedKeyDatabaseId,
+            @NonNull final String referencedKeyDatabaseName,
+            final List<Long> columnIds,
+            final List<String> columnNames,
+            final ForeignKeyOption updateRule,
+            final ForeignKeyOption deleteRule ) {
+        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, columnIds, columnNames );
+        this.name = name;
+        this.referencedKeyId = referencedKeyId;
+        this.referencedKeyTableId = referencedKeyTableId;
+        this.referencedKeyTableName = referencedKeyTableName;
+        this.referencedKeySchemaId = referencedKeySchemaId;
+        this.referencedKeySchemaName = referencedKeySchemaName;
+        this.referencedKeyDatabaseId = referencedKeyDatabaseId;
+        this.referencedKeyDatabaseName = referencedKeyDatabaseName;
+        this.updateRule = updateRule;
+        this.deleteRule = deleteRule;
+    }
+
+
     // Used for creating ResultSets
     public List<CatalogForeignKeyColumn> getCatalogForeignKeyColumns() {
         int i = 1;

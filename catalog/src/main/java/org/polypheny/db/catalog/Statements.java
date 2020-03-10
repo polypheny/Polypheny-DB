@@ -305,6 +305,7 @@ final class Statements {
         }
     }
 
+
     /**
      * Get all databases which math the specified database name pattern.
      *
@@ -524,9 +525,6 @@ final class Statements {
             throw new GenericCatalogException( e );
         }
     }
-
-
-
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
@@ -753,7 +751,6 @@ final class Statements {
         where.put( "id", "" + tableId );
         updateHandler( transactionHandler, "table", data, where );
     }
-
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
@@ -1004,7 +1001,6 @@ final class Statements {
         }
     }
 
-
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //
     //                                                                     User
@@ -1141,7 +1137,7 @@ final class Statements {
         data.put( "unique_name", quoteString( unique_name ) );
         data.put( "adapter", quoteString( adapter ) );
         data.put( "settings", quoteString( StringEscapeUtils.escapeSql( gson.toJson( settings ) ) ) );
-        return Math.toIntExact(insertHandler( transactionHandler, "store", data ));
+        return Math.toIntExact( insertHandler( transactionHandler, "store", data ) );
     }
 
 
@@ -1702,7 +1698,6 @@ final class Statements {
             throw new GenericCatalogException( e );
         }
     }
-
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     //

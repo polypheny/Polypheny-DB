@@ -18,9 +18,12 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1471,6 +1474,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
+        System.out.println( foreignKeys );
         return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
     }
 
@@ -1551,7 +1555,7 @@ public class CatalogImpl extends Catalog {
 
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            List<CatalogKey> childKeys = keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+            List<CatalogKey> childKeys = keys.values().stream().filter( k -> k.tableId == referencesTableId ).collect( Collectors.toList() );
 
             for ( CatalogKey refKey : childKeys ) {
                 if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
@@ -1567,18 +1571,19 @@ public class CatalogImpl extends Catalog {
                     }
                     // TODO same keys for key and foreignkey
                     if ( combinedKey.getUniqueCount() > 0 ) {
-                        //long keyId = getOrAddKey( tableId, columnIds );
-                        long id = foreignKeyIdBuilder.getAndIncrement();
-                        CatalogForeignKey key = new CatalogForeignKey( id, constraintName, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, refKey.id, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, onUpdate, onDelete );
+                        long keyId = getOrAddKey( tableId, columnIds );
+                        List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
+                        CatalogForeignKey key = new CatalogForeignKey( keyId, constraintName, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, refKey.id, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, columnIds, keyColumnNames, onUpdate, onDelete );
 
-                        foreignKeys.put( id, key );
+                        foreignKeys.put( keyId, key );
+
                         return;
                     }
 
                 }
 
             }
-        } catch ( UnknownKeyException e ) {
+        } catch ( UnknownKeyException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1732,8 +1737,8 @@ public class CatalogImpl extends Catalog {
     public void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException {
         try {
             CatalogForeignKey catalogForeignKey = Objects.requireNonNull( foreignKeys.get( foreignKeyId ) );
-            foreignKeys.remove( catalogForeignKey.referencedKeyId );
-            deleteKeyIfNoLongerUsed( catalogForeignKey.referencedKeyId );
+            foreignKeys.remove( catalogForeignKey.id );
+            deleteKeyIfNoLongerUsed( catalogForeignKey.id );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }

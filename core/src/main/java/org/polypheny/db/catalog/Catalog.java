@@ -1006,7 +1006,7 @@ public abstract class Catalog {
         }
 
         public String toRegex() {
-            return pattern.replace( "_", "(.)" ).replace( "*", "(.*)" );
+            return pattern.replace( "_", "(.)" ).replace( "%", "(.*)" );
         }
 
 

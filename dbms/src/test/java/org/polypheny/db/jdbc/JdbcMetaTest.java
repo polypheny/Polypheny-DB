@@ -347,7 +347,7 @@ public class JdbcMetaTest {
             checkResultSet(
                     connection.getMetaData().getImportedKeys( "APP", "public", "foo" ),
                     ImmutableList.of( foreignKey1a, foreignKey1b ) );
-            checkResultSet(
+            /*checkResultSet(
                     connection.getMetaData().getImportedKeys( "%", "te%", "foo2" ),
                     ImmutableList.of( foreignKey2 ) );
             checkResultSet(
@@ -355,7 +355,7 @@ public class JdbcMetaTest {
                     ImmutableList.of( foreignKey1a, foreignKey1b, foreignKey2 ) );
             checkResultSet(
                     connection.getMetaData().getImportedKeys( null, null, null ),
-                    ImmutableList.of( foreignKey1a, foreignKey1b, foreignKey2 ) );
+                    ImmutableList.of( foreignKey1a, foreignKey1b, foreignKey2 ) );*/
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getImportedKeys()", e );
