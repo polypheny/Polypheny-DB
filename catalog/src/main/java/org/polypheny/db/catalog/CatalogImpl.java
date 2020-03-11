@@ -18,12 +18,9 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.beans.binding.ObjectBinding;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
@@ -1104,7 +1100,7 @@ public class CatalogImpl extends Catalog {
                     catalogColumns = catalogColumns.filter( c -> c.name.matches( columnNamePattern.toRegex() ) );
                 }
                 System.out.println( columns );
-                List<CatalogColumn> cols =  catalogColumns.collect( Collectors.toList() );
+                List<CatalogColumn> cols = catalogColumns.collect( Collectors.toList() );
                 return cols;
             }
         } catch ( NullPointerException e ) {
