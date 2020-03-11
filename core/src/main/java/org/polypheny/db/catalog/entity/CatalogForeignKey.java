@@ -96,6 +96,8 @@ public final class CatalogForeignKey extends CatalogKey {
             @NonNull final String referencedKeyDatabaseName,
             final List<Long> columnIds,
             final List<String> columnNames,
+            final List<Long> referencedKeyColumnIds,
+            final List<String> referencedKeyColumnNames,
             final ForeignKeyOption updateRule,
             final ForeignKeyOption deleteRule ) {
         super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, columnIds, columnNames );
@@ -107,6 +109,8 @@ public final class CatalogForeignKey extends CatalogKey {
         this.referencedKeySchemaName = referencedKeySchemaName;
         this.referencedKeyDatabaseId = referencedKeyDatabaseId;
         this.referencedKeyDatabaseName = referencedKeyDatabaseName;
+        this.referencedKeyColumnIds = referencedKeyColumnIds;
+        this.referencedKeyColumnNames = referencedKeyColumnNames;
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
     }

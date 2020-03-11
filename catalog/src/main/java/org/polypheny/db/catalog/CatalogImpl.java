@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.beans.binding.ObjectBinding;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
@@ -1102,7 +1103,9 @@ public class CatalogImpl extends Catalog {
                 if ( columnNamePattern != null ) {
                     catalogColumns = catalogColumns.filter( c -> c.name.matches( columnNamePattern.toRegex() ) );
                 }
-                return catalogColumns.collect( Collectors.toList() );
+                System.out.println( columns );
+                List<CatalogColumn> cols =  catalogColumns.collect( Collectors.toList() );
+                return cols;
             }
         } catch ( NullPointerException e ) {
             e.printStackTrace();
@@ -1201,7 +1204,7 @@ public class CatalogImpl extends Catalog {
             columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
             children.add( id );
-            tableChildren.replace( id, ImmutableList.copyOf( children ) );
+            tableChildren.replace( tableId, ImmutableList.copyOf( children ) );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1573,7 +1576,8 @@ public class CatalogImpl extends Catalog {
                     if ( combinedKey.getUniqueCount() > 0 ) {
                         long keyId = getOrAddKey( tableId, columnIds );
                         List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
-                        CatalogForeignKey key = new CatalogForeignKey( keyId, constraintName, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, refKey.id, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, columnIds, keyColumnNames, onUpdate, onDelete );
+                        List<String> referencesNames = referencesIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
+                        CatalogForeignKey key = new CatalogForeignKey( keyId, constraintName, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, refKey.id, refKey.tableId, refKey.tableName, refKey.schemaId, refKey.schemaName, refKey.databaseId, refKey.databaseName, columnIds, keyColumnNames, referencesIds, referencesNames, onUpdate, onDelete );
 
                         foreignKeys.put( keyId, key );
 
