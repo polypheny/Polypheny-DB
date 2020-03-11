@@ -36,7 +36,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 public class CassandraTableModificationRule extends CassandraConverterRule {
 
     CassandraTableModificationRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraTableModificationRule" );
+        super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
     }
 
 
@@ -44,6 +44,10 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
     public boolean matches( RelOptRuleCall call ) {
         final TableModify tableModify = call.rel( 0 );
         if ( tableModify.getTable().unwrap( CassandraTable.class ) == null ) {
+            return false;
+        }
+
+        if ( ! tableModify.getTable().unwrap( CassandraTable.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
         return tableModify.getOperation() != Operation.MERGE;

@@ -125,6 +125,11 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    public CassandraConvention getUnderlyingConvention() {
+        return this.cassandraSchema.getConvention();
+    }
+
+
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {

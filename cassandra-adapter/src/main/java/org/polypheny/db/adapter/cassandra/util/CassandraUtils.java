@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
 
@@ -38,12 +39,12 @@ public class CassandraUtils {
      * @param relSubset the subset.
      * @return the {@link CassandraTable} or <code>null</code> if not found.
      */
-    public static CassandraTable getUnderlyingTable( RelSubset relSubset ) {
-        return getUnderlyingTable( relSubset.getRelList() );
+    public static CassandraTable getUnderlyingTable( RelSubset relSubset, Convention targetConvention ) {
+        return getUnderlyingTable( relSubset.getRelList(), targetConvention );
     }
 
 
-    private static CassandraTable getUnderlyingTable( List<RelNode> rels ) {
+    private static CassandraTable getUnderlyingTable( List<RelNode> rels, Convention targetConvention ) {
         Set<RelNode> alreadyChecked = new HashSet<>();
         Deque<RelNode> innerLevel = new LinkedList<>();
 
@@ -53,9 +54,13 @@ public class CassandraUtils {
             RelNode relNode = innerLevel.pop();
             alreadyChecked.add( relNode );
             if ( relNode instanceof CassandraTableScan ) {
-                return ((CassandraTableScan) relNode).cassandraTable;
+                if ( relNode.getConvention().equals( targetConvention ) ) {
+                    return ((CassandraTableScan) relNode).cassandraTable;
+                }
             } else if ( relNode instanceof CassandraTableModify ) {
-                return ((CassandraTableModify) relNode).cassandraTable;
+                if ( relNode.getConvention().equals( targetConvention ) ) {
+                    return ((CassandraTableModify) relNode).cassandraTable;
+                }
             } else {
                 for ( RelNode innerNode: relNode.getInputs() ) {
                     if ( innerNode instanceof RelSubset ) {

@@ -50,7 +50,7 @@ import org.polypheny.db.util.Pair;
 public class CassandraFilterRule extends CassandraConverterRule {
 
     CassandraFilterRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRule" );
+        super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRule:" + out.getName() );
     }
 
 
@@ -83,7 +83,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
         // This is a copy in getRelList, so probably expensive!
         if ( filter.getInput() instanceof RelSubset ) {
             RelSubset subset = (RelSubset) filter.getInput();
-            table = CassandraUtils.getUnderlyingTable( subset );
+            table = CassandraUtils.getUnderlyingTable( subset, this.out );
         }
 
         if ( table == null ) {

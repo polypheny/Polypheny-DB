@@ -64,7 +64,7 @@ public class CassandraSortRule extends CassandraConverterRule {
         // This is a copy in getRelList, so probably expensive!
         if ( sort.getInput() instanceof RelSubset ) {
             RelSubset subset = (RelSubset) sort.getInput();
-            table = CassandraUtils.getUnderlyingTable( subset );
+//            table = CassandraUtils.getUnderlyingTable( subset );
         }
 
         if ( table == null ) {
