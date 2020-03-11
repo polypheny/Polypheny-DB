@@ -774,6 +774,16 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public CatalogTable getTable( long tableId ) throws UnknownTableException {
+        try {
+            return Objects.requireNonNull( tables.get( tableId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableException( tableId );
+        }
+    }
+
+
     /**
      * Returns the table with the given name in the specified schema.
      *
@@ -1029,14 +1039,24 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get column placements by a specific column
+     * Get all column placements of a column
      *
      * @param columnId the id of the specific column
      * @return List of column placements of specific column
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementByColumn( long columnId ) {
+    public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
         return columnPlacements.values().stream().filter( p -> p.columnId == columnId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException {
+        try {
+            return getColumnPlacementsOnStore( storeId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
+        } catch ( NullPointerException e ){
+            throw new GenericCatalogException( e );
+        }
     }
 
 
@@ -1293,7 +1313,7 @@ public class CatalogImpl extends Catalog {
                 }
             } else {
                 // TODO: Check that the column does not contain any null values
-                getColumnPlacementByColumn( columnId );
+                getColumnPlacements( columnId );
             }
             CatalogColumn column = CatalogColumn.replaceNullable( old, nullable );
             columns.replace( columnId, column );
@@ -1362,7 +1382,7 @@ public class CatalogImpl extends Catalog {
             tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
 
             deleteDefaultValue( columnId );
-            getColumnPlacementByColumn( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
+            getColumnPlacements( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
 
             columns.remove( columnId );
         } catch ( NullPointerException | UnknownColumnException e ) {
@@ -1938,7 +1958,7 @@ public class CatalogImpl extends Catalog {
 
             Map<Long, List<CatalogColumnPlacement>> columnPlacementByColumn = new HashMap<>();
 
-            childColumns.forEach( c -> columnPlacementByColumn.put( c.id, getColumnPlacementByColumn( c.id ) ) );
+            childColumns.forEach( c -> columnPlacementByColumn.put( c.id, getColumnPlacements( c.id ) ) );
 
             List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
 

@@ -604,7 +604,7 @@ public class Crud implements InformationObserver {
             rowsAffected = executeSqlUpdate( transaction, query.toString() );
             result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
             transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while inserting a row", e );
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
             try {
@@ -705,7 +705,7 @@ public class Crud implements InformationObserver {
                         transaction.commit();
                         transaction = getTransaction( request.analyze );
                     }
-                } catch ( QueryExecutionException | TransactionException e ) {
+                } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
@@ -727,7 +727,7 @@ public class Crud implements InformationObserver {
                         transaction.commit();
                         transaction = getTransaction( request.analyze );
                     }
-                } catch ( QueryExecutionException | TransactionException e ) {
+                } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
                     result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );

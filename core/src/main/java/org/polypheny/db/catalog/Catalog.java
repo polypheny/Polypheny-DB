@@ -247,9 +247,19 @@ public abstract class Catalog {
     public abstract List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) throws GenericCatalogException;
 
     /**
+     * Returns the table with the given id
+     *
+     * @param tableId The id of the table
+     * @return The table
+     * @throws UnknownTableException If there is no table with this name in the specified database and schema.
+     */
+    public abstract CatalogTable getTable( long tableId ) throws UnknownTableException, GenericCatalogException;
+
+
+    /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId The id of the schema
+     * @param schemaId  The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
@@ -339,10 +349,20 @@ public abstract class Catalog {
     /**
      * Deletes a column placement
      *
-     * @param storeId The id of the store
+     * @param storeId  The id of the store
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
+
+
+    /**
+     * Get all placements of a column
+     *
+     * @param columnId The id of the column
+     * @return List of placements
+     */
+    public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
+
 
     /**
      * Get column placements on a store
@@ -352,10 +372,18 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
 
-    // TODO comment properly
-    public abstract List<CatalogColumnPlacement> getColumnPlacementByColumn( long columnId );
 
     public abstract List<CatalogKey> getKeys();
+
+    /**
+     * Get column placements in a specific schema on a specific store
+     *
+     * @param storeId  The id of the store
+     * @param schemaId The id of the schema
+     * @return List of column placements on this store and schema
+     */
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException;
+
 
     /**
      * Change physical names of a placement.

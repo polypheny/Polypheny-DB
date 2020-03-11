@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.UnknownTypeException;
@@ -35,6 +37,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -89,6 +92,15 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, column );
         try {
+            // Check whether all stores support schema changes
+            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+                if ( StoreManager.getInstance().getStore( dp.storeId ).isSchemaReadOnly() ) {
+                    throw SqlUtil.newContextException(
+                            SqlParserPos.ZERO,
+                            RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( dp.storeId ).getUniqueName() ) );
+                }
+            }
+
             // Check if column is part of an key
             for ( CatalogKey key : catalogTable.getKeys() ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
@@ -106,6 +118,13 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
+            // Delete column from underlying data stores
+            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+                StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
+                transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
+            }
+
+            // Delete from catalog
             List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
             transaction.getCatalog().deleteColumn( catalogColumn.id );
             if ( catalogColumn.position != columns.size() ) {
@@ -115,11 +134,6 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
-            // Delete column from underlying data stores
-            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
-                StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, catalogTable, catalogColumn );
-                transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
-            }
         } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException | UnknownTableException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

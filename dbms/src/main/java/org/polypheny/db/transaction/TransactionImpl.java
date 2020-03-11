@@ -46,6 +46,8 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
+import org.polypheny.db.router.RouterManager;
+import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
@@ -270,6 +272,12 @@ public class TransactionImpl implements Transaction {
             log.debug( "Add changed table: {}", qualifiedTableName );
             this.changedTables.add( qualifiedTableName );
         }
+    }
+
+
+    @Override
+    public Router getRouter() {
+        return RouterManager.getInstance().getRouter();
     }
 
 }

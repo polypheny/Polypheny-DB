@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.plan.RelOptCluster;
@@ -92,6 +93,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
     private final RelOptSchema schema;
     private final RelDataType rowType;
+    @Getter
     private final Table table;
     private final Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
@@ -250,7 +252,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
     @Override
     public RelNode toRel( ToRelContext context ) {
-        // Make sure rowType's list is immutable. If rowType is DynamicRecordType, creates a new RelOptTable by replacing with immutable RelRecordType using the same field list.
+        // Make sure rowType's list is immutable. If rowType is DynamicRecordType, creates a new RelOptTable by replacing with
+        // immutable RelRecordType using the same field list.
         if ( this.getRowType().isDynamicStruct() ) {
             final RelDataType staticRowType = new RelRecordType( getRowType().getFieldList() );
             final RelOptTable relOptTable = this.copy( staticRowType );

@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.PolySqlType;
@@ -24,6 +26,7 @@ import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -33,6 +36,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -140,14 +144,25 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
         try {
             if ( type != null ) {
+                // Check whether all stores support schema changes
+                for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                    if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
+                        throw SqlUtil.newContextException(
+                                SqlParserPos.ZERO,
+                                RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
+                    }
+                }
                 PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() );
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
                         polySqlType,
                         type.getPrecision() == -1 ? null : type.getPrecision(),
                         type.getScale() == -1 ? null : type.getScale() );
-                for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
-                    StoreManager.getInstance().getStore( storeId ).updateColumnType( context, getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
+                for ( CatalogColumnPlacement placement : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+                    StoreManager.getInstance().getStore( placement.storeId ).updateColumnType(
+                            context,
+                            placement,
+                            getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
                 }
             } else if ( nullable != null ) {
                 transaction.getCatalog().setNullable( catalogColumn.id, nullable );

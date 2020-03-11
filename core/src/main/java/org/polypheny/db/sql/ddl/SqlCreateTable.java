@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -198,13 +199,22 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 throw SqlUtil.newContextException( SqlParserPos.ZERO, RESOURCE.createTableRequiresColumnList() );
             }
 
-            int storeId = context.getDefaultStore();
+            List<Store> stores;
             if ( this.store != null ) {
                 Store storeInstance = StoreManager.getInstance().getStore( this.store.getSimple() );
                 if ( storeInstance == null ) {
                     throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
                 }
-                storeId = storeInstance.getStoreId();
+                // Check whether the store supports schema changes
+                if ( storeInstance.isSchemaReadOnly() ) {
+                    throw SqlUtil.newContextException(
+                            store.getParserPosition(),
+                            RESOURCE.storeIsSchemaReadOnly( store.getSimple() ) );
+                }
+                stores = ImmutableList.of( storeInstance );
+            } else {
+                // TODO: Ask router on which store(s) the table should be placed
+                stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
             long tableId = transaction.getCatalog().addTable(
@@ -239,13 +249,15 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             collation
                     );
 
-                    transaction.getCatalog().addColumnPlacement(
-                            storeId,
-                            addedColumnId,
-                            PlacementType.AUTOMATIC,
-                            null,
-                            null,
-                            null );
+                    for ( Store s : stores ) {
+                        transaction.getCatalog().addColumnPlacement(
+                                s.getStoreId(),
+                                addedColumnId,
+                                store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL,
+                                null,
+                                null,
+                                null );
+                    }
 
                     // Add default value
                     if ( ((SqlColumnDeclaration) c.e).expression != null ) {
@@ -281,7 +293,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
-            StoreManager.getInstance().getStore( storeId ).createTable( context, combinedTable );
+            for ( Store store : stores ) {
+                store.createTable( context, combinedTable );
+            }
         } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
