@@ -88,13 +88,11 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -290,7 +288,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    /*ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
+    ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
         SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
 
@@ -303,7 +301,7 @@ public class Crud implements InformationObserver {
         try {
             Catalog catalog = transaction.getCatalog();
             List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
-            for ( CatalogSchema schema: schemas ) {
+            for ( CatalogSchema schema : schemas ) {
                 SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
                 if ( request.depth > 1 ) {
@@ -333,60 +331,7 @@ public class Crud implements InformationObserver {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException e ) {
-            log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        }
-
-        return result;
-    }*/
-    ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
-        SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
-        ArrayList<SidebarElement> result = new ArrayList<>();
-
-        if ( request.depth < 1 ) {
-            log.error( "Trying to fetch a schemaTree with depth < 1" );
-            return new ArrayList<>();
-        }
-
-        Transaction transaction = getTransaction();
-        try {
-
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
-                SidebarElement schemaTree = new SidebarElement( combinedSchema.getSchema().name, combinedSchema.getSchema().name, "", "cui-layers" );
-
-                if ( request.depth > 1 ) {
-                    ArrayList<SidebarElement> tables = new ArrayList<>();
-                    ArrayList<SidebarElement> views = new ArrayList<>();
-                    for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                        SidebarElement table = new SidebarElement( combinedSchema.getSchema().name + "." + combinedTable.getTable().name, combinedTable.getTable().name, request.routerLinkRoot, "fa fa-table" );
-
-                        if ( request.depth > 2 ) {
-                            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                                table.addChild( new SidebarElement( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name, catalogColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
-                            }
-                        }
-                        if ( combinedTable.getTable().tableType == TableType.TABLE ) {
-                            tables.add( table );
-                        } else if ( request.views && combinedTable.getTable().tableType == TableType.VIEW ) {
-                            views.add( table );
-                        }
-                    }
-                    schemaTree.addChild( new SidebarElement( combinedSchema.getSchema().name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                    if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( combinedSchema.getSchema().name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
-                    }
-                }
-                result.add( schemaTree );
-            }
-            transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException | UnknownTableException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -397,38 +342,6 @@ public class Crud implements InformationObserver {
 
         return result;
     }
-
-    /**
-     * Get all tables of a schema
-     */
-    /*Result getTables( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        Transaction transaction = getTransaction();
-
-        Result result;
-        try {
-            Catalog catalog = transaction.getCatalog();
-            System.out.println( "new" );
-            System.out.println( databaseName );
-            System.out.println( request.schema );
-            List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-            ArrayList<String> tableNames = new ArrayList<>();
-            for ( CatalogTable catalogTable : tables ) {
-                tableNames.add( catalogTable.name );
-            }
-            result = new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
-            transaction.commit();
-        } catch ( GenericCatalogException | TransactionException e ) {
-            log.error( "Caught exception while fetching tables", e );
-            result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        }
-        return result;
-    }*/
 
 
     /**

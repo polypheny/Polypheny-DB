@@ -747,7 +747,9 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Get all tables of the specified database which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
+     * <code>
+     *     ables(xid, databaseName, null, null, null)
+     * </code> returns all tables of the database.
      *
      * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
