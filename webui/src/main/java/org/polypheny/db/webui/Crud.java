@@ -712,7 +712,7 @@ public class Crud implements InformationObserver {
      * @return
      */
 
-    Result classifyData( Request req, Response res ) throws Exception {
+    String classifyData( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
         Result result;
 
@@ -724,7 +724,9 @@ public class Crud implements InformationObserver {
 
         result = new Result( explore.header, e.classificationProcess() );
 
-        return result;
+
+
+        return e.getBuildGraph();
 
     }
 

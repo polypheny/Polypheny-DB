@@ -19,6 +19,7 @@ package org.polypheny.db.statistic.exploreByExample;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +62,8 @@ public class Explore {
     String[][] wholeTable;
     String[][] wholeTableRotated;
 
+    @Getter
+    private  String buildGraph;
 
     private Explore() {
 
@@ -182,6 +185,10 @@ public class Explore {
         tree.setOptions( options );
 
         tree.buildClassifier( classifiedData );
+
+        buildGraph = tree.graph();
+
+
 
         //Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
 
