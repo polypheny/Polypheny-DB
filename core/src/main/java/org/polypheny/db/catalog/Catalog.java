@@ -17,12 +17,14 @@
 package org.polypheny.db.catalog;
 
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.codehaus.commons.nullanalysis.NotNull;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -41,7 +43,6 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -61,6 +62,7 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.runtime.Resources.Prop;
 import org.polypheny.db.transaction.PolyXid;
 
 
@@ -68,6 +70,7 @@ public abstract class Catalog {
 
 
     protected final PolyXid xid;
+    protected final PropertyChangeSupport observers = new PropertyChangeSupport( this );
 
 
     public Catalog( PolyXid xid ) {
@@ -81,7 +84,22 @@ public abstract class Catalog {
     }
 
 
-    ;
+    /**
+     * Adds a listener which gets notified on store update
+     * @param listener which gets added
+     */
+    public void addObserver( PropertyChangeListener listener ) {
+        observers.addPropertyChangeListener( listener );
+    }
+
+
+    /**
+     * Removes a registered observer
+     * @param listener which gets removed
+     */
+    public void removeObserver( PropertyChangeListener listener ) {
+        observers.removePropertyChangeListener( listener );
+    }
 
 
     protected final boolean isValidIdentifier( final String str ) {
@@ -259,7 +277,7 @@ public abstract class Catalog {
     /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId  The id of the schema
+     * @param schemaId The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
@@ -349,7 +367,7 @@ public abstract class Catalog {
     /**
      * Deletes a column placement
      *
-     * @param storeId  The id of the store
+     * @param storeId The id of the store
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
@@ -378,7 +396,7 @@ public abstract class Catalog {
     /**
      * Get column placements in a specific schema on a specific store
      *
-     * @param storeId  The id of the store
+     * @param storeId The id of the store
      * @param schemaId The id of the schema
      * @return List of column placements on this store and schema
      */
@@ -1032,6 +1050,7 @@ public abstract class Catalog {
             this.pattern = pattern;
             containsWildcards = pattern.contains( "%" ) || pattern.contains( "_" );
         }
+
 
         public String toRegex() {
             return pattern.replace( "_", "(.)" ).replace( "%", "(.*)" );

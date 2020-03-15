@@ -157,6 +157,8 @@ public class CatalogImpl extends Catalog {
                 e.printStackTrace();
             }
 
+            new CatalogInfoPage( this );
+
         }
     }
 
@@ -290,43 +292,33 @@ public class CatalogImpl extends Catalog {
 
         CatalogStore csv = getStore( "csv" );
         // TODO temporary change
-        if ( columns.size() <= 7 ) {
-            addDefaultCsvColumns( csv );
 
-        }
-        System.out.println( columns );
-        System.out.println( columnNames );
-        System.out.println( columnPlacements );
-        System.out.println( tables );
-        System.out.println( schemas );
-        System.out.println( databases );
+        addDefaultCsvColumns( csv );
+
     }
 
 
     private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
-        long colId = addColumn( "deptno", depts.id, 1, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, depts.name, "deptno" );
 
-        colId = addColumn( "name", depts.id, 2, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, depts.name, "name" );
+        addDefaultColumn( csv, depts, "deptno", PolySqlType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, depts, "name", PolySqlType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
         CatalogTable emps = getTable( schema.id, "emps" );
-        colId = addColumn( "empid", emps.id, 1, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "empid" );
+        addDefaultColumn( csv, emps, "empid", PolySqlType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, emps, "deptno", PolySqlType.INTEGER, null, 2, null );
+        addDefaultColumn( csv, emps, "name", PolySqlType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultColumn( csv, emps, "salary", PolySqlType.INTEGER, null, 4, null );
+        addDefaultColumn( csv, emps, "commission", PolySqlType.INTEGER, null, 5, null );
+    }
 
-        colId = addColumn( "deptno", emps.id, 2, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "deptno" );
 
-        colId = addColumn( "name", emps.id, 3, PolySqlType.VARCHAR, 20, null, false, Collation.CASE_INSENSITIVE );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "name" );
-
-        colId = addColumn( "salary", emps.id, 4, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "salary" );
-
-        colId = addColumn( "commission", emps.id, 5, PolySqlType.INTEGER, null, null, false, null );
-        addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, emps.name, "commission" );
+    private void addDefaultColumn( CatalogStore csv, CatalogTable table, String name, PolySqlType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
+        if ( !checkIfExistsColumn( table.id, name ) ) {
+            long colId = addColumn( name, table.id, position, type, length, null, false, collation );
+            addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
+        }
     }
 
 
@@ -403,6 +395,7 @@ public class CatalogImpl extends Catalog {
         databases.put( id, database );
         databaseNames.put( name, database );
         databaseChildren.put( id, ImmutableList.<Long>builder().build() );
+        observers.firePropertyChange( "database", null, database );
         return id;
     }
 
@@ -598,6 +591,7 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( databaseId ) ) );
             children.add( id );
             databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
+            observers.firePropertyChange( "schema", null, schema );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -748,7 +742,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Get all tables of the specified database which fit to the specified filters.
      * <code>
-     *     ables(xid, databaseName, null, null, null)
+     * ables(xid, databaseName, null, null, null)
      * </code> returns all tables of the database.
      *
      * @param databaseNamePattern Pattern for the database name. null returns all.
@@ -1056,7 +1050,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException {
         try {
             return getColumnPlacementsOnStore( storeId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
-        } catch ( NullPointerException e ){
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1121,9 +1115,7 @@ public class CatalogImpl extends Catalog {
                 if ( columnNamePattern != null ) {
                     catalogColumns = catalogColumns.filter( c -> c.name.matches( columnNamePattern.toRegex() ) );
                 }
-                System.out.println( columns );
-                List<CatalogColumn> cols = catalogColumns.collect( Collectors.toList() );
-                return cols;
+                return catalogColumns.collect( Collectors.toList() );
             }
         } catch ( NullPointerException e ) {
             e.printStackTrace();

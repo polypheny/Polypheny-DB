@@ -175,7 +175,7 @@ public class PolyphenyDb {
         }
 
         StatisticsManager store = StatisticsManager.getInstance();
-        //store.setSqlQueryInterface( statisticQueryProcessor );
+        store.setSqlQueryInterface( statisticQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
