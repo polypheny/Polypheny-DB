@@ -37,6 +37,8 @@ import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.PolySqlType;
+import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -68,6 +70,7 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.transaction.Transaction;
 
 
 @Slf4j
@@ -160,6 +163,61 @@ public class CatalogImpl extends Catalog {
             new CatalogInfoPage( this );
 
         }
+    }
+
+
+    /**
+     * Restores all columnPlacements in the dedicated store
+     */
+    public void restoreColumnPlacements( Transaction trx ) {
+        StoreManager manager = StoreManager.getInstance();
+
+        List<Long> restoredTables = new ArrayList<>();
+        List<Long> restoredSchemas = new ArrayList<>();
+
+        columns.values().forEach( c -> {
+            List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
+            if ( placements.size() == 0 ) {
+                // no placements shouldn't happen
+            } else if ( placements.size() == 1 ) {
+                Store store = manager.getStore( placements.get( 0 ).storeId );
+                if ( !store.isPersistent() ) {
+                    try {
+                        CatalogCombinedTable combinedTable = getCombinedTable( c.tableId );
+                        // TODO only full placements atm here
+                        if ( !restoredSchemas.contains( c.schemaId ) ) {
+                            store.createTableSchema( combinedTable );
+                            restoredSchemas.add( c.schemaId );
+                            restoredTables.add( c.tableId );
+
+                        } else if ( !restoredTables.contains( c.tableId ) ) {
+                            store.createTable( trx.getPrepareContext(), combinedTable );
+                            restoredTables.add( c.tableId );
+                        }
+                        store.addColumn( trx.getPrepareContext(), combinedTable, getColumn( c.id ) );
+                    } catch ( UnknownTableException | UnknownColumnException e ) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.storeId, p -> manager.getStore( p.storeId ).isPersistent() ) );
+                if ( !persistent.containsValue( true ) ) {
+                    // no persistent placement for this column
+                    try {
+                        CatalogCombinedTable table = getCombinedTable( c.tableId );
+                        for ( CatalogColumnPlacement p : placements ) {
+                            manager.getStore( p.storeId ).addColumn( null, table, getColumn( p.columnId ) );
+                        }
+                    } catch ( UnknownTableException | UnknownColumnException e ) {
+                        e.printStackTrace();
+                    }
+
+                } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
+                    // TODO DL change so column gets copied
+                    persistent.entrySet().stream().filter( p -> !p.getValue() ).forEach( p -> deleteColumnPlacement( p.getKey(), c.id ) );
+                }
+            }
+        } );
     }
 
 
@@ -286,6 +344,7 @@ public class CatalogImpl extends Catalog {
         if ( !storeNames.containsKey( "csv" ) ) {
             Map<String, String> csvSetttings = new HashMap<>();
             csvSetttings.put( "directory", "classpath://hr" );
+            csvSetttings.put( "persistent", "true" );
 
             addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
         }
@@ -865,6 +924,7 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
             children.add( id );
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+            observers.firePropertyChange( "table", null, table );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1215,6 +1275,7 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
             children.add( id );
             tableChildren.replace( tableId, ImmutableList.copyOf( children ) );
+            observers.firePropertyChange( "column", null, column );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );

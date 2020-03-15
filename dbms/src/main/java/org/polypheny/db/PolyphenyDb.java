@@ -77,7 +77,9 @@ public class PolyphenyDb {
             trx = transactionManager.startTransaction( "pa", "APP", false );
             catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
+            catalog.restoreColumnPlacements( trx );
             trx.commit();
+
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {
                 try {
@@ -175,7 +177,7 @@ public class PolyphenyDb {
         }
 
         StatisticsManager store = StatisticsManager.getInstance();
-        store.setSqlQueryInterface( statisticQueryProcessor );
+        // store.setSqlQueryInterface( statisticQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

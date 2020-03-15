@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -30,9 +31,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 public class CatalogInfoPage implements PropertyChangeListener {
@@ -52,59 +50,40 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "catalog", "Catalog" );
         infoManager.addPage( page );
 
-        InformationGroup catalogGroup = new InformationGroup( page, "catalog" );
+        this.databaseInformation = addCatalogInformationTable( page, "databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
+
+        this.schemaInformation = addCatalogInformationTable( page, "schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
+
+        this.tableInformation = addCatalogInformationTable( page, "tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
+
+        this.columnInformation = addCatalogInformationTable( page, "columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+
+        resetCatalogInformation();
+        catalog.addObserver( this );
+
+    }
+
+
+    private InformationTable addCatalogInformationTable( InformationPage page, String name, List<String> titles ) {
+        InformationGroup catalogGroup = new InformationGroup( page, name );
         infoManager.addGroup( catalogGroup );
-
-        this.databaseInformation = new InformationTable( catalogGroup, Arrays.asList( "ID", "Name", "Default SchemaID" ) );
-
-        infoManager.registerInformation( databaseInformation );
-
-        this.schemaInformation = new InformationTable( catalogGroup, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-
-        infoManager.registerInformation( schemaInformation );
-
-        this.tableInformation = new InformationTable( catalogGroup, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
-
-        infoManager.registerInformation( tableInformation );
-
-        this.columnInformation = new InformationTable( catalogGroup, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
-
-        infoManager.registerInformation( columnInformation );
-
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    databaseInformation.reset();
-                    schemaInformation.reset();
-                    tableInformation.reset();
-                    columnInformation.reset();
-                    try {
-                        catalog.getDatabases( null ).forEach( d -> {
-                            databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
-                        } );
-                        catalog.getSchemas( null, null ).forEach( s -> {
-                            schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
-                        } );
-                        catalog.getTables( null, null, null ).forEach( t -> {
-                            tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
-                        } );
-                        catalog.getColumns( null, null, null, null ).forEach( c -> {
-                            columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
-                        } );
-
-                    } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException e ) {
-                        e.printStackTrace();
-                    }
-                }, "Reset Min Max for all numericalColumns.",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
-
-
+        InformationTable table = new InformationTable( catalogGroup, titles );
+        infoManager.registerInformation( table );
+        return table;
     }
 
 
     @Override
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
+        resetCatalogInformation();
+    }
+
+
+    private void resetCatalogInformation() {
         databaseInformation.reset();
+        schemaInformation.reset();
+        tableInformation.reset();
+        columnInformation.reset();
         try {
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
@@ -112,8 +91,14 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getSchemas( null, null ).forEach( s -> {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
+            catalog.getTables( null, null, null ).forEach( t -> {
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
+            } );
+            catalog.getColumns( null, null, null, null ).forEach( c -> {
+                columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
+            } );
 
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException e ) {
             e.printStackTrace();
         }
     }

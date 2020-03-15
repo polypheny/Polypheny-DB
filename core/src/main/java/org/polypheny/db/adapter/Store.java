@@ -49,6 +49,9 @@ public abstract class Store {
 
     protected final Map<String, String> settings;
 
+    @Getter
+    private final boolean persistent;
+
 
     public Store(
             final int storeId,
@@ -63,6 +66,12 @@ public abstract class Store {
         this.settings = settings;
         this.dataReadOnly = dataReadOnly;
         this.schemaReadOnly = schemaReadOnly;
+
+        if ( settings.containsKey( "persistent" ) ) {
+            persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
+        }else {
+            persistent = false;
+        }
     }
 
 

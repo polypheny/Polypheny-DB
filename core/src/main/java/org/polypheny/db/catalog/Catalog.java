@@ -22,7 +22,6 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.PolySqlType;
@@ -62,8 +61,8 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.runtime.Resources.Prop;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Transaction;
 
 
 public abstract class Catalog {
@@ -86,6 +85,7 @@ public abstract class Catalog {
 
     /**
      * Adds a listener which gets notified on store update
+     *
      * @param listener which gets added
      */
     public void addObserver( PropertyChangeListener listener ) {
@@ -95,11 +95,19 @@ public abstract class Catalog {
 
     /**
      * Removes a registered observer
+     *
      * @param listener which gets removed
      */
     public void removeObserver( PropertyChangeListener listener ) {
         observers.removePropertyChangeListener( listener );
     }
+
+
+    /**
+     * Restores all columnPlacements in the dedicated store
+     * @param trx
+     */
+    public abstract void restoreColumnPlacements( Transaction trx );
 
 
     protected final boolean isValidIdentifier( final String str ) {
