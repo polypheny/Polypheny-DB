@@ -107,7 +107,6 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.statistic.exploreByExample.Explore;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
@@ -127,6 +126,7 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticColumn;
 import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.statistic.exploreByExample.ExploreManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -712,28 +712,21 @@ public class Crud implements InformationObserver {
      * @return
      */
 
-    String classifyData( Request req, Response res ) throws Exception {
+    Result classifyData( Request req, Response res ) throws Exception {
         ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
-        Result result;
 
-        Explore e = Explore.getInstance();
-        e.setClassifiedData( explore.data );
-        e.setColumnIds( explore.columnInfo );
-        e.setQuery( explore.query );
+
         String[] dataType = new String [explore.header.length + 1];
         for ( int i = 0; i < explore.header.length; i++ ){
-           dataType[i] = explore.header[i].dataType;
+            dataType[i] = explore.header[i].dataType;
         }
         dataType[explore.header.length] = "VARCHAR";
-        e.setDataType( dataType );
 
-        System.out.println( Arrays.toString( dataType ) );
+        ExploreManager e = ExploreManager.getInstance();
 
-        result = new Result( explore.header, e.classificationProcess() );
+         Result result = new Result( explore.header,  e.processUpdate(null, explore.data, explore.columnInfo, explore.query, dataType ));
 
-
-
-        return e.getBuildGraph();
+        return result;
 
     }
 
