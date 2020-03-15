@@ -720,7 +720,14 @@ public class Crud implements InformationObserver {
         e.setClassifiedData( explore.data );
         e.setColumnIds( explore.columnInfo );
         e.setQuery( explore.query );
+        String[] dataType = new String [explore.header.length + 1];
+        for ( int i = 0; i < explore.header.length; i++ ){
+           dataType[i] = explore.header[i].dataType;
+        }
+        dataType[explore.header.length] = "VARCHAR";
+        e.setDataType( dataType );
 
+        System.out.println( Arrays.toString( dataType ) );
 
         result = new Result( explore.header, e.classificationProcess() );
 

@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,8 @@ import org.polypheny.db.statistic.StatisticResult;
 import org.polypheny.db.statistic.StatisticsManager;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
+import weka.classifiers.trees.M5P;
+import weka.classifiers.trees.RandomTree;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.FastVector;
@@ -56,6 +59,9 @@ public class Explore {
 
     @Setter
     private String query;
+
+    @Setter
+    private String[] dataType;
 
     List<List<String>> allUniqueValues = new ArrayList<>();
 
@@ -113,12 +119,20 @@ public class Explore {
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
 
-            for ( int i = 0; i < allUniqueValues.get( dim ).size(); i++ ) {
-                attVals.addElement( allUniqueValues.get( dim ).get( i ) );
+            System.out.println( "dataType DIM " + dataType[dim] );
+
+            if ( dataType[dim].equals( "VARCHAR" ) ){
+                for ( int i = 0; i < allUniqueValues.get( dim ).size(); i++ ) {
+                    attVals.addElement( allUniqueValues.get( dim ).get( i ) );
+                }
+                atts.addElement( new Attribute( "attr" + dim, attVals ) );
+                attValsEl[dim] = attVals;
+            } else if (dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" )){
+                atts.addElement( new Attribute( "attr" + dim) );
             }
 
-            atts.addElement( new Attribute( "attr" + dim, attVals ) );
-            attValsEl[dim] = attVals;
+
+
         }
         // instances object
         classifiedData = new Instances( "ClassifiedData", atts, 0 );
@@ -127,9 +141,17 @@ public class Explore {
         // fill data classified
         for ( int obj = 0; obj < numInstances; obj++ ) {
             vals = new double[classifiedData.numAttributes()];
-            for ( int dim = 0; dim < dimLength; dim++ ) {
-                vals[dim] = attValsEl[dim].indexOf( userClassification[obj][dim] );
-            }
+            System.out.println( "dataType Object " + dataType[obj] );
+
+                for ( int dim = 0; dim < dimLength; dim++ ) {
+                    if ( dataType[dim].equals( "VARCHAR" ) ) {
+                        vals[dim] = attValsEl[dim].indexOf( userClassification[obj][dim] );
+                    }
+                    else if (dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" )) {
+                        vals[dim] = Double.parseDouble( userClassification[obj][dim] );
+                    }
+
+                }
             classifiedData.add( new DenseInstance( 1.0, vals ) );
         }
 
@@ -138,7 +160,11 @@ public class Explore {
         for ( int obj = 0; obj < wholeTable[0].length; obj++ ) {
             vals = new double[allData.numAttributes()];
             for ( int dim = 0; dim < wholeTableRotated[0].length; dim++ ) {
-                vals[dim] = attValsEl[dim].indexOf( wholeTableRotated[obj][dim] );
+                if ( dataType[dim].equals( "VARCHAR" ) ) {
+                    vals[dim] = attValsEl[dim].indexOf( wholeTableRotated[obj][dim] );
+                }  else if (dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" )) {
+                    vals[dim] = Double.parseDouble( userClassification[obj][dim] );
+                }
             }
             vals[wholeTableRotated[0].length] = Utils.missingValue();
             allData.add( new DenseInstance( 1, vals ) );
@@ -179,10 +205,13 @@ public class Explore {
         //Instances data = getDataSet( "explore-by-example/test.arff" );
 
         classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
+        //J48 tree = new J48();
         J48 tree = new J48();
 
+        /*
         String[] options = { "-U" };
         tree.setOptions( options );
+         */
 
         tree.buildClassifier( classifiedData );
 
@@ -195,6 +224,7 @@ public class Explore {
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
 
         Evaluation evaluation = new Evaluation( classifiedData );
+        evaluation.crossValidateModel( tree, classifiedData, 2, new Random( 1 ) );
         evaluation.evaluateModel( tree, unlabeled );
         System.out.println( evaluation.toSummaryString() );
 

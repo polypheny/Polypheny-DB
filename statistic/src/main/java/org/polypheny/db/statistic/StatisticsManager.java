@@ -390,7 +390,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
     private StatisticQueryColumn getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
-        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 20";
+        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 200";
         return this.sqlQueryInterface.selectOneStat( query );
     }
 
