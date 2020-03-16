@@ -41,7 +41,7 @@ public class CatalogTest {
 
     @Before
     public void setup() {
-        catalog = new CatalogImpl( "testDB", false );
+        catalog = new CatalogImpl( "testDB", false , false);
         catalog.clear();
     }
 

@@ -70,6 +70,7 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.schema.Schema;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -120,7 +121,7 @@ public class CatalogImpl extends Catalog {
 
 
     public CatalogImpl() {
-        this( FILE_PATH, true );
+        this( FILE_PATH, true, true );
     }
 
 
@@ -128,7 +129,7 @@ public class CatalogImpl extends Catalog {
      * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
-    public CatalogImpl( String path, boolean doInitSchema ) {
+    public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage ) {
         super();
 
         if ( db != null && !db.isClosed() ) {
@@ -159,8 +160,9 @@ public class CatalogImpl extends Catalog {
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
                 e.printStackTrace();
             }
-
-            new CatalogInfoPage( this );
+            if ( doInitInformationPage ){
+                new CatalogInfoPage( this );
+            }
 
         }
     }
@@ -185,17 +187,12 @@ public class CatalogImpl extends Catalog {
                     try {
                         CatalogCombinedTable combinedTable = getCombinedTable( c.tableId );
                         // TODO only full placements atm here
-                        if ( !restoredSchemas.contains( c.schemaId ) ) {
-                            store.createTableSchema( combinedTable );
-                            restoredSchemas.add( c.schemaId );
-                            restoredTables.add( c.tableId );
 
-                        } else if ( !restoredTables.contains( c.tableId ) ) {
+                        if ( !restoredTables.contains( c.tableId ) ) {
                             store.createTable( trx.getPrepareContext(), combinedTable );
                             restoredTables.add( c.tableId );
                         }
-                        store.addColumn( trx.getPrepareContext(), combinedTable, getColumn( c.id ) );
-                    } catch ( UnknownTableException | UnknownColumnException e ) {
+                    } catch ( UnknownTableException e ) {
                         e.printStackTrace();
                     }
                 }

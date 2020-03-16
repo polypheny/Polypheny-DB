@@ -77,8 +77,11 @@ public class PolyphenyDb {
             trx = transactionManager.startTransaction( "pa", "APP", false );
             catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
+            trx.commit();
+            trx = transactionManager.startTransaction( "pa", "APP", false );
             catalog.restoreColumnPlacements( trx );
             trx.commit();
+
 
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {
