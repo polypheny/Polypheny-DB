@@ -47,8 +47,6 @@ import org.polypheny.db.rex.RexNode;
 /**
  * A table that can be modified.
  *
- * NOTE: The current API is inefficient and experimental. It will change without notice.
- *
  * @see ModifiableView
  */
 public interface ModifiableTable extends QueryableTable {
@@ -62,6 +60,14 @@ public interface ModifiableTable extends QueryableTable {
     /**
      * Creates a relational expression that modifies this table.
      */
-    TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened );
+    TableModify toModificationRel(
+            RelOptCluster cluster,
+            RelOptTable table,
+            CatalogReader catalogReader,
+            RelNode child,
+            TableModify.Operation operation,
+            List<String> updateColumnList,
+            List<RexNode> sourceExpressionList,
+            boolean flattened );
 }
 

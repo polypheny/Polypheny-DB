@@ -518,21 +518,21 @@ public class Crud implements InformationObserver {
 		query.append( cols.toString() );
 		query.append( " VALUES " ).append( values.toString() );
 
-		try {
-			rowsAffected = executeSqlUpdate( transaction, query.toString() );
-			result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
-			transaction.commit();
-		} catch ( QueryExecutionException | TransactionException e ) {
-			log.error( "Caught exception while inserting a row", e );
-			result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
-			try {
-				transaction.rollback();
-			} catch ( TransactionException ex ) {
-				log.error( "Could not rollback", ex );
-			}
-		}
-		return result;
-	}
+        try {
+            rowsAffected = executeSqlUpdate( transaction, query.toString() );
+            result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+            log.error( "Caught exception while inserting a row", e );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+        return result;
+    }
 
 
 	/**
@@ -561,102 +561,102 @@ public class Crud implements InformationObserver {
 			autoCommit = false;
 		}
 
-		long executionTime = 0;
-		long temp = 0;
-		// remove all comments
-		String allQueries = request.query;
-		//remove comments
-		allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
-		allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
-		//remove whitespace at the end
-		allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-		String[] queries = allQueries.split( ";", 0 );
-		for ( String query : queries ) {
-			Result result;
-			if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
-				try {
-					temp = System.nanoTime();
-					transaction.commit();
-					executionTime += System.nanoTime() - temp;
-					transaction = getTransaction( request.analyze );
-					results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
-				} catch ( TransactionException e ) {
-					log.error( "Caught exception while committing a query from the console", e );
-					executionTime += System.nanoTime() - temp;
-					log.error( e.toString() );
-				}
-			} else if ( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
-				try {
-					temp = System.nanoTime();
-					transaction.rollback();
-					executionTime += System.nanoTime() - temp;
-					transaction = getTransaction( request.analyze );
-					results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
-				} catch ( TransactionException e ) {
-					log.error( "Caught exception while rolling back a query from the console", e );
-					executionTime += System.nanoTime() - temp;
-				}
-			} else if ( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
-				// Add limit if not specified
-				Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-				if ( !p2.matcher( query ).find() ) {
-					query = query + " LIMIT " + getPageSize();
-				}
-				// decrease limit if it is too large
-				else {
-					Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-					Matcher limitMatcher = pattern.matcher( query );
-					if ( limitMatcher.find() ) {
-						int limit = Integer.parseInt( limitMatcher.group( 2 ) );
-						if ( limit > getPageSize() ) {
-							// see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
-							query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
-						}
-					}
-				}
-				try {
-					temp = System.nanoTime();
-					result = executeSqlSelect( transaction, request, query ).setInfo( new Debug().setGeneratedQuery( query ) );
-					executionTime += System.nanoTime() - temp;
-					results.add( result );
-					if ( autoCommit ) {
-						transaction.commit();
-						transaction = getTransaction( request.analyze );
-					}
-				} catch ( QueryExecutionException | TransactionException e ) {
-					log.error( "Caught exception while executing a query from the console", e );
-					executionTime += System.nanoTime() - temp;
-					result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
-					results.add( result );
-					try {
-						transaction.rollback();
-					} catch ( TransactionException ex ) {
-						log.error( "Caught exception while rollback", e );
-					}
-				}
-			} else {
-				try {
-					temp = System.nanoTime();
-					int numOfRows = executeSqlUpdate( transaction, query );
-					executionTime += System.nanoTime() - temp;
-					result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
-					results.add( result );
-					if ( autoCommit ) {
-						transaction.commit();
-						transaction = getTransaction( request.analyze );
-					}
-				} catch ( QueryExecutionException | TransactionException e ) {
-					log.error( "Caught exception while executing a query from the console", e );
-					executionTime += System.nanoTime() - temp;
-					result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
-					results.add( result );
-					try {
-						transaction.rollback();
-					} catch ( TransactionException ex ) {
-						log.error( "Caught exception while rollback", e );
-					}
-				}
-			}
+        long executionTime = 0;
+        long temp = 0;
+        // remove all comments
+        String allQueries = request.query;
+        //remove comments
+        allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
+        allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
+        //remove whitespace at the end
+        allQueries = allQueries.replaceAll( "(\\s*)$", "" );
+        String[] queries = allQueries.split( ";", 0 );
+        for ( String query : queries ) {
+            Result result;
+            if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
+                try {
+                    temp = System.nanoTime();
+                    transaction.commit();
+                    executionTime += System.nanoTime() - temp;
+                    transaction = getTransaction( request.analyze );
+                    results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
+                } catch ( TransactionException e ) {
+                    log.error( "Caught exception while committing a query from the console", e );
+                    executionTime += System.nanoTime() - temp;
+                    log.error( e.toString() );
+                }
+            } else if ( Pattern.matches( "(?si:[\\s]*ROLLBACK.*)", query ) ) {
+                try {
+                    temp = System.nanoTime();
+                    transaction.rollback();
+                    executionTime += System.nanoTime() - temp;
+                    transaction = getTransaction( request.analyze );
+                    results.add( new Result( new Debug().setGeneratedQuery( query ) ) );
+                } catch ( TransactionException e ) {
+                    log.error( "Caught exception while rolling back a query from the console", e );
+                    executionTime += System.nanoTime() - temp;
+                }
+            } else if ( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
+                // Add limit if not specified
+                Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                if ( !p2.matcher( query ).find() ) {
+                    query = query + " LIMIT " + getPageSize();
+                }
+                // decrease limit if it is too large
+                else {
+                    Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                    Matcher limitMatcher = pattern.matcher( query );
+                    if ( limitMatcher.find() ) {
+                        int limit = Integer.parseInt( limitMatcher.group( 2 ) );
+                        if ( limit > getPageSize() ) {
+                            // see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
+                            query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
+                        }
+                    }
+                }
+                try {
+                    temp = System.nanoTime();
+                    result = executeSqlSelect( transaction, request, query ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    executionTime += System.nanoTime() - temp;
+                    results.add( result );
+                    if ( autoCommit ) {
+                        transaction.commit();
+                        transaction = getTransaction( request.analyze );
+                    }
+                } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+                    log.error( "Caught exception while executing a query from the console", e );
+                    executionTime += System.nanoTime() - temp;
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    results.add( result );
+                    try {
+                        transaction.rollback();
+                    } catch ( TransactionException ex ) {
+                        log.error( "Caught exception while rollback", e );
+                    }
+                }
+            } else {
+                try {
+                    temp = System.nanoTime();
+                    int numOfRows = executeSqlUpdate( transaction, query );
+                    executionTime += System.nanoTime() - temp;
+                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
+                    results.add( result );
+                    if ( autoCommit ) {
+                        transaction.commit();
+                        transaction = getTransaction( request.analyze );
+                    }
+                } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+                    log.error( "Caught exception while executing a query from the console", e );
+                    executionTime += System.nanoTime() - temp;
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    results.add( result );
+                    try {
+                        transaction.rollback();
+                    } catch ( TransactionException ex ) {
+                        log.error( "Caught exception while rollback", e );
+                    }
+                }
+            }
 
 		}
 

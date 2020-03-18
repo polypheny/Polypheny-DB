@@ -34,7 +34,8 @@
 package org.polypheny.db.adapter.csv;
 
 
-import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,7 +62,7 @@ import org.polypheny.db.util.Util;
  */
 public class CsvSchema extends AbstractSchema {
 
-    private final File directoryFile;
+    private final URL directoryUrl;
     private final CsvTable.Flavor flavor;
     private Map<String, CsvTable> tableMap = new HashMap<>();
 
@@ -69,12 +70,12 @@ public class CsvSchema extends AbstractSchema {
     /**
      * Creates a CSV schema.
      *
-     * @param directoryFile Directory that holds {@code .csv} files
+     * @param directoryUrl Directory that holds {@code .csv} files
      * @param flavor Whether to instantiate flavor tables that undergo query optimization
      */
-    public CsvSchema( File directoryFile, CsvTable.Flavor flavor ) {
+    public CsvSchema( URL directoryUrl, CsvTable.Flavor flavor ) {
         super();
-        this.directoryFile = directoryFile;
+        this.directoryUrl = directoryUrl;
         this.flavor = flavor;
     }
 
@@ -102,7 +103,13 @@ public class CsvSchema extends AbstractSchema {
         }
 
         // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        Source source = Sources.of( new File( directoryFile, combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv" ) );
+        String csvFileName = combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv";
+        Source source;
+        try {
+            source = Sources.of( new URL( directoryUrl, csvFileName ) );
+        } catch ( MalformedURLException e ) {
+            throw new RuntimeException( e );
+        }
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
         tableMap.put( combinedTable.getTable().name, table );
         return table;

@@ -25,6 +25,7 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -41,15 +42,27 @@ public abstract class Store {
     @Getter
     private final String uniqueName;
 
+    @Getter
+    private final boolean dataReadOnly;
+    @Getter
+    private final boolean schemaReadOnly;
+
     protected final Map<String, String> settings;
 
 
-    public Store( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public Store(
+            final int storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final boolean dataReadOnly,
+            final boolean schemaReadOnly ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
         this.settings = settings;
+        this.dataReadOnly = dataReadOnly;
+        this.schemaReadOnly = schemaReadOnly;
     }
 
 
@@ -65,7 +78,7 @@ public abstract class Store {
 
     public abstract void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
 
-    public abstract void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
     public abstract boolean prepare( PolyXid xid );
 
@@ -75,7 +88,7 @@ public abstract class Store {
 
     public abstract void truncate( Context context, CatalogCombinedTable table );
 
-    public abstract void updateColumnType( Context context, CatalogColumn catalogColumn );
+    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn );
 
     public abstract String getAdapterName();
 
