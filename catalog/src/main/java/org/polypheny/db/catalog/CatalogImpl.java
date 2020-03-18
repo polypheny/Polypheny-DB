@@ -70,7 +70,6 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.schema.Schema;
 import org.polypheny.db.transaction.Transaction;
 
 
@@ -82,42 +81,53 @@ public class CatalogImpl extends Catalog {
     private static DB db;
 
     private static HTreeMap<Integer, CatalogUser> users;
+    private static HTreeMap<String, CatalogUser> userNames;
+
     private static HTreeMap<Long, CatalogDatabase> databases;
     private static HTreeMap<String, CatalogDatabase> databaseNames;
-    private static HTreeMap<Long, CatalogSchema> schemas;
-    private static HTreeMap<Long, CatalogTable> tables;
-    private static HTreeMap<Long, CatalogColumn> columns;
-    private static HTreeMap<Integer, CatalogStore> stores;
-
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
-    // identifier is long array with databaseId, schemaId etc. -> faster lookup
-    private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
-    private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
+    private static HTreeMap<Long, CatalogCombinedDatabase> combinedDatabases;
 
 
-    private static final AtomicLong schemaIdBuilder = new AtomicLong();
-    private static final AtomicLong databaseIdBuilder = new AtomicLong();
-    private static final AtomicLong tableIdBuilder = new AtomicLong();
-    private static final AtomicLong columnIdBuilder = new AtomicLong();
-    private static final AtomicInteger userIdBuilder = new AtomicInteger();
-    private static final AtomicLong keyIdBuilder = new AtomicLong();
-    private static final AtomicLong constraintIdBuilder = new AtomicLong();
-    private static final AtomicLong indexIdBuilder = new AtomicLong();
-    private static final AtomicInteger storeIdBuilder = new AtomicInteger();
-    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
-
-    // qualified name with database prefixed e.g. [database].[schema].[table].[column]
+    private static HTreeMap<Long, CatalogSchema> schemas;
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
+    private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
+    private static HTreeMap<Long, CatalogCombinedSchema> combinedSchemas;
+
+
+    private static HTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
+    private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
+    private static HTreeMap<Long, CatalogCombinedTable> combinedTables;
+
+    private static HTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
-    private static HTreeMap<String, CatalogUser> userNames;
-    private static HTreeMap<String, CatalogStore> storeNames;
     private static BTreeMap<Object[], CatalogColumnPlacement> columnPlacements;
-    private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
+
+    private static HTreeMap<Integer, CatalogStore> stores;
+    private static HTreeMap<String, CatalogStore> storeNames;
+
     private static HTreeMap<Long, CatalogKey> keys;
+    private static HTreeMap<Long, CatalogCombinedKey> combinedKeys;
+
+    private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
     private static HTreeMap<Long, CatalogConstraint> constraints;
     private static HTreeMap<Long, CatalogIndex> indices;
+
+
+    private static final AtomicInteger storeIdBuilder = new AtomicInteger();
+    private static final AtomicInteger userIdBuilder = new AtomicInteger();
+
+    private static final AtomicLong databaseIdBuilder = new AtomicLong();
+    private static final AtomicLong schemaIdBuilder = new AtomicLong();
+    private static final AtomicLong tableIdBuilder = new AtomicLong();
+    private static final AtomicLong columnIdBuilder = new AtomicLong();
+
+    private static final AtomicLong keyIdBuilder = new AtomicLong();
+    private static final AtomicLong constraintIdBuilder = new AtomicLong();
+    private static final AtomicLong indexIdBuilder = new AtomicLong();
+    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
 
 
     public CatalogImpl() {
@@ -160,7 +170,7 @@ public class CatalogImpl extends Catalog {
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
                 e.printStackTrace();
             }
-            if ( doInitInformationPage ){
+            if ( doInitInformationPage ) {
                 new CatalogInfoPage( this );
             }
 
@@ -175,7 +185,6 @@ public class CatalogImpl extends Catalog {
         StoreManager manager = StoreManager.getInstance();
 
         List<Long> restoredTables = new ArrayList<>();
-        List<Long> restoredSchemas = new ArrayList<>();
 
         columns.values().forEach( c -> {
             List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
@@ -271,6 +280,7 @@ public class CatalogImpl extends Catalog {
 
 
     private void initKeysAndConstraintsInfo( DB db ) {
+        combinedKeys = db.hashMap( "combinedKeys", Serializer.LONG, new GenericSerializer<CatalogCombinedKey>() ).createOrOpen();
         keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
         primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
         foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, new GenericSerializer<CatalogForeignKey>() ).createOrOpen();
@@ -403,6 +413,7 @@ public class CatalogImpl extends Catalog {
 
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
+        combinedTables = db.hashMap( "combinedTables", Serializer.LONG, new GenericSerializer<CatalogCombinedTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
@@ -414,6 +425,7 @@ public class CatalogImpl extends Catalog {
 
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
+        combinedSchemas = db.hashMap( "combinedSchemas", Serializer.LONG, new GenericSerializer<CatalogCombinedSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
@@ -422,6 +434,7 @@ public class CatalogImpl extends Catalog {
 
     private void initDatabaseInfo( DB db ) {
         databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
+        combinedDatabases = db.hashMap( "combined", Serializer.LONG, new GenericSerializer<CatalogCombinedDatabase>() ).createOrOpen();
         databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
         databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
     }
@@ -445,12 +458,13 @@ public class CatalogImpl extends Catalog {
      *
      * @return the id of the newly inserted database
      */
-    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
+    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) throws GenericCatalogException {
         long id = databaseIdBuilder.getAndIncrement();
         CatalogDatabase database = new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName );
         databases.put( id, database );
         databaseNames.put( name, database );
         databaseChildren.put( id, ImmutableList.<Long>builder().build() );
+        combinedDatabases.put( id, buildCombinedDatabase( database ) );
         observers.firePropertyChange( "database", null, database );
         return id;
     }
@@ -606,6 +620,22 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the schema with the given id
+     *
+     * @param schemaId the schema id
+     * @return the catalogSchema
+     * @throws UnknownSchemaException if no schema with the given id exists
+     */
+    public CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException {
+        try {
+            return schemas.get( schemaId );
+        } catch ( NullPointerException e ) {
+            throw new UnknownSchemaException( schemaId );
+        }
+    }
+
+
+    /**
      * Returns the schema with the given name in the specified database.
      *
      * @param databaseId The id of the database
@@ -647,6 +677,9 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( databaseId ) ) );
             children.add( id );
             databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
+
+            combinedSchemas.put( id, buildCombinedSchema( schema, database ) );
+            combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
             observers.firePropertyChange( "schema", null, schema );
             return id;
         } catch ( NullPointerException e ) {
@@ -675,7 +708,7 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the schema
      */
     @Override
-    public void renameSchema( long schemaId, String name ) throws UnknownSchemaException {
+    public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = CatalogSchema.rename( old, name );
@@ -683,8 +716,21 @@ public class CatalogImpl extends Catalog {
             schemas.replace( schemaId, schema );
             schemaNames.remove( new Object[]{ old.databaseId, old.name } );
             schemaNames.put( new Object[]{ old.databaseId, name }, schema );
+
+            replaceCombinedSchema( schema );
         } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( schemaId );
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    private void replaceCombinedSchema( CatalogSchema schema ) throws GenericCatalogException {
+        try {
+            CatalogDatabase database = getDatabase( schema.databaseId );
+            combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
+            combinedDatabases.replace( schema.databaseId, buildCombinedDatabase( database ) );
+        } catch ( UnknownDatabaseException e ) {
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -696,14 +742,16 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setSchemaOwner( long schemaId, long ownerId ) throws UnknownSchemaException {
+    public void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = CatalogSchema.changeOwner( old, (int) ownerId );
             schemas.replace( schemaId, schema );
             schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
-        } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( schemaId );
+
+            replaceCombinedSchema( schema );
+        } catch ( NullPointerException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
         }
 
     }
@@ -715,7 +763,7 @@ public class CatalogImpl extends Catalog {
      * @param schemaId The if of the schema to delete
      */
     @Override
-    public void deleteSchema( long schemaId ) throws UnknownSchemaException {
+    public void deleteSchema( long schemaId ) throws GenericCatalogException {
         try {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             schemaNames.remove( new Object[]{ schema.databaseId, schema.name } );
@@ -724,17 +772,16 @@ public class CatalogImpl extends Catalog {
             databaseChildren.replace( schema.databaseId, ImmutableList.copyOf( oldChildren ) );
 
             for ( Long id : Objects.requireNonNull( schemaChildren.get( schemaId ) ) ) {
-                try {
-                    deleteTable( id );
-                } catch ( UnknownTableException e ) {
-                    e.printStackTrace();
-                }
+                deleteTable( id );
             }
 
             schemaChildren.remove( schemaId );
             schemas.remove( schemaId );
-        } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( schemaId );
+
+            combinedSchemas.remove( schemaId );
+            combinedDatabases.replace( schema.databaseId, buildCombinedDatabase( getDatabase( schema.databaseId ) ) );
+        } catch ( NullPointerException | UnknownDatabaseException e ) {
+            throw new GenericCatalogException( e );
         }
 
     }
@@ -912,8 +959,10 @@ public class CatalogImpl extends Catalog {
         try {
             long id = tableIdBuilder.getAndIncrement();
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogDatabase database = Objects.requireNonNull( databases.get( schema.databaseId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
             CatalogTable table = new CatalogTable( id, name, schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null );
+
             tables.put( id, table );
 
             tableChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -921,6 +970,11 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
             children.add( id );
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
+
+            combinedTables.put( id, buildCombinedTable( table, schema, database ) );
+            combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
+            combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
+
             observers.firePropertyChange( "table", null, table );
             return id;
         } catch ( NullPointerException e ) {
@@ -954,15 +1008,28 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the table
      */
     @Override
-    public void renameTable( long tableId, String name ) throws UnknownTableException {
+    public void renameTable( long tableId, String name ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             tables.replace( tableId, CatalogTable.rename( table, name ) );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+
+            replaceCombinedTable( table );
+
+        } catch ( NullPointerException | UnknownDatabaseException | GenericCatalogException | UnknownSchemaException e ) {
+            throw new GenericCatalogException( e );
         }
+    }
+
+
+    private void replaceCombinedTable( CatalogTable table ) throws UnknownDatabaseException, UnknownSchemaException, GenericCatalogException {
+        CatalogDatabase database = getDatabase( table.databaseId );
+        CatalogSchema schema = getSchema( table.id );
+
+        combinedTables.replace( table.id, buildCombinedTable( table, schema, database ) );
+        combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
+        combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
     }
 
 
@@ -972,7 +1039,7 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table to delete
      */
     @Override
-    public void deleteTable( long tableId ) throws UnknownTableException {
+    public void deleteTable( long tableId ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.schemaId ) ) );
@@ -990,8 +1057,16 @@ public class CatalogImpl extends Catalog {
             tableChildren.remove( tableId );
             tables.remove( tableId );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+
+            CatalogDatabase database = getDatabase( table.databaseId );
+            CatalogSchema schema = getSchema( table.schemaId );
+
+            combinedTables.remove( tableId );
+            combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
+            combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
+
+        } catch ( NullPointerException | UnknownSchemaException | UnknownDatabaseException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -1003,13 +1078,15 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setTableOwner( long tableId, int ownerId ) throws UnknownTableException {
+    public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
         try {
             CatalogTable table = CatalogTable.replaceOwner( Objects.requireNonNull( tables.get( tableId ) ), ownerId );
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+
+            replaceCombinedTable( table );
+        } catch ( NullPointerException | UnknownDatabaseException | UnknownSchemaException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -1031,7 +1108,24 @@ public class CatalogImpl extends Catalog {
                 primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
             }
 
-        } catch ( NullPointerException e ) {
+            replaceCombinedTable( table );
+
+        } catch ( NullPointerException | UnknownDatabaseException | UnknownSchemaException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    private void updateCombinedMaps( CatalogColumn column ) throws GenericCatalogException {
+        try {
+            CatalogDatabase database = getDatabase( column.databaseId );
+            CatalogSchema schema = getSchema( column.schemaId );
+            CatalogTable table = getTable( column.tableId );
+
+            combinedTables.replace( table.id, buildCombinedTable( table, schema, database ) );
+            combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
+            combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
+        } catch ( UnknownTableException | GenericCatalogException | UnknownSchemaException | UnknownDatabaseException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1055,6 +1149,8 @@ public class CatalogImpl extends Catalog {
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
 
             columnPlacements.put( new Object[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+
+            updateCombinedMaps( column );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1070,6 +1166,12 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteColumnPlacement( int storeId, long columnId ) {
         columnPlacements.remove( new Object[]{ storeId, columnId } );
+
+        try {
+            updateCombinedMaps( getColumn( columnId ) );
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -1128,7 +1230,9 @@ public class CatalogImpl extends Catalog {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
             CatalogColumnPlacement placement = CatalogColumnPlacement.replacePhysicalNames( old, physicalSchemaName, physicalTableName, physicalColumnName );
             columnPlacements.put( new Object[]{ storeId, columnId }, placement );
-        } catch ( NullPointerException e ) {
+
+            updateCombinedMaps( getColumn( placement.columnId ) );
+        } catch ( NullPointerException | UnknownColumnException | GenericCatalogException e ) {
             throw new UnknownColumnPlacementException( storeId, columnId );
         }
     }
@@ -1272,6 +1376,9 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
             children.add( id );
             tableChildren.replace( tableId, ImmutableList.copyOf( children ) );
+
+            updateCombinedMaps( column );
+
             observers.firePropertyChange( "column", null, column );
             return id;
         } catch ( NullPointerException e ) {
@@ -1287,15 +1394,17 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the column
      */
     @Override
-    public void renameColumn( long columnId, String name ) throws UnknownColumnException {
+    public void renameColumn( long columnId, String name ) throws GenericCatalogException {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             CatalogColumn column = CatalogColumn.replaceName( old, name );
             columns.replace( columnId, column );
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, old.name } );
             columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
+
+            updateCombinedMaps( column );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -1313,7 +1422,9 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replacePosition( old, position );
             columns.replace( columnId, column );
             columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
-        } catch ( NullPointerException e ) {
+
+            updateCombinedMaps( column );
+        } catch ( NullPointerException | GenericCatalogException e ) {
             throw new UnknownColumnException( columnId );
         }
     }
@@ -1337,6 +1448,8 @@ public class CatalogImpl extends Catalog {
             Collation collation = type.isCharType() ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
 
             columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale, collation ) );
+
+            updateCombinedMaps( column );
 
         } catch ( NullPointerException | UnknownCollationException e ) {
             throw new GenericCatalogException( e );
@@ -1370,6 +1483,8 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replaceNullable( old, nullable );
             columns.replace( columnId, column );
             columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
+
+            updateCombinedMaps( column );
         } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1393,7 +1508,9 @@ public class CatalogImpl extends Catalog {
             }
 
             columns.replace( columnId, CatalogColumn.replaceCollation( column, collation ) );
-        } catch ( NullPointerException e ) {
+
+            updateCombinedMaps( column );
+        } catch ( NullPointerException | GenericCatalogException e ) {
             throw new UnknownColumnException( columnId );
         }
     }
@@ -1437,6 +1554,8 @@ public class CatalogImpl extends Catalog {
             getColumnPlacements( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
 
             columns.remove( columnId );
+
+            updateCombinedMaps( column );
         } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1460,7 +1579,9 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replaceDefaultValue( old, new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) );
             columns.replace( columnId, column );
             columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
-        } catch ( NullPointerException e ) {
+
+            updateCombinedMaps( column );
+        } catch ( NullPointerException | GenericCatalogException e ) {
             throw new UnknownColumnException( columnId );
         }
     }
@@ -1477,8 +1598,9 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
             if ( column.defaultValue != null ) {
                 columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, null ) );
+                updateCombinedMaps( column );
             }
-        } catch ( NullPointerException e ) {
+        } catch ( NullPointerException | GenericCatalogException e ) {
             throw new UnknownColumnException( columnId );
         }
     }
@@ -1531,7 +1653,11 @@ public class CatalogImpl extends Catalog {
             }
             long keyId = getOrAddKey( tableId, columnIds );
             setPrimaryKey( tableId, keyId );
-        } catch ( NullPointerException | UnknownTableException | UnknownKeyException e ) {
+
+            for ( Long columnId : columnIds ) {
+                updateCombinedMaps( getColumn( columnId ) );
+            }
+        } catch ( NullPointerException | UnknownKeyException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1545,7 +1671,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
-        System.out.println( foreignKeys );
         return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
     }
 
@@ -1558,9 +1683,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogForeignKey> getExportedKeys( long tableId ) {
-
         return foreignKeys.values().stream().filter( k -> k.referencedKeyTableId == tableId ).collect( Collectors.toList() );
-
     }
 
 
@@ -1649,13 +1772,17 @@ public class CatalogImpl extends Catalog {
 
                         foreignKeys.put( keyId, key );
 
+                        for ( Long columnId : columnIds ) {
+                            updateCombinedMaps( getColumn( columnId ) );
+                        }
+
                         return;
                     }
 
                 }
 
             }
-        } catch ( UnknownKeyException | UnknownTableException e ) {
+        } catch ( UnknownKeyException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1680,7 +1807,11 @@ public class CatalogImpl extends Catalog {
             }
             long id = constraintIdBuilder.getAndIncrement();
             constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
-        } catch ( NullPointerException | UnknownTableException e ) {
+
+            for ( Long columnId : columnIds ) {
+                updateCombinedMaps( getColumn( columnId ) );
+            }
+        } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1732,17 +1863,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
-        try {
-            long keyId = getOrAddKey( tableId, columnIds );
-            if ( unique ) {
-                // TODO DL: Check if the current values are unique
-            }
-            long id = indexIdBuilder.getAndIncrement();
-            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
-            return id;
-        } catch ( UnknownTableException e ) {
-            throw new GenericCatalogException( e );
+        long keyId = getOrAddKey( tableId, columnIds );
+        if ( unique ) {
+            // TODO DL: Check if the current values are unique
         }
+        long id = indexIdBuilder.getAndIncrement();
+        indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
+        return id;
     }
 
 
@@ -1793,8 +1920,10 @@ public class CatalogImpl extends Catalog {
 
                 setPrimaryKey( tableId, null );
                 deleteKeyIfNoLongerUsed( table.primaryKey );
+
+                replaceCombinedTable( table );
             }
-        } catch ( NullPointerException | UnknownKeyException e ) {
+        } catch ( NullPointerException | UnknownKeyException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1933,32 +2062,32 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) {
+        return combinedDatabases.get( databaseId );
+    }
+
+
     /**
      * Builds a complex/expensive combined database object
      *
-     * @param databaseId the id of the database
+     * @param database the "simple" database object
      * @return the combined database object
      */
-    @Override
-    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException {
-        try {
-            CatalogDatabase database = Objects.requireNonNull( databases.get( databaseId ) );
-            List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
-            for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() ) {
-                CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );
-                childSchemas.add( combinedSchema );
-            }
-
-            CatalogSchema defaultSchema = null;
-            if ( database.defaultSchemaId != null ) {
-                defaultSchema = schemas.get( database.defaultSchemaId );
-            }
-
-            CatalogUser user = users.get( database.ownerId );
-            return new CatalogCombinedDatabase( database, childSchemas, defaultSchema, user );
-        } catch ( NullPointerException | GenericCatalogException e ) {
-            throw new GenericCatalogException( e );
+    private CatalogCombinedDatabase buildCombinedDatabase( CatalogDatabase database ) throws GenericCatalogException {
+        List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
+        for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ database.id } ).values() ) {
+            CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );
+            childSchemas.add( combinedSchema );
         }
+
+        CatalogSchema defaultSchema = null;
+        if ( database.defaultSchemaId != null ) {
+            defaultSchema = schemas.get( database.defaultSchemaId );
+        }
+
+        CatalogUser owner = users.get( database.ownerId );
+        return new CatalogCombinedDatabase( database, childSchemas, defaultSchema, owner );
     }
 
 
@@ -1989,20 +2118,47 @@ public class CatalogImpl extends Catalog {
         }
 
     }
+    /*
+    @Override
+    public CatalogCombinedSchema getCombinedSchema( long schemaId ) {
+        return combinedSchemas.get( schemaId );
+    }*/
+
+
+    private CatalogCombinedSchema buildCombinedSchema( CatalogSchema schema, CatalogDatabase database ) throws GenericCatalogException {
+        try {
+            List<CatalogCombinedTable> childTables = new ArrayList<>();
+
+            for ( long id : Objects.requireNonNull( schemaChildren.get( schema.databaseId ) ) ) {
+                CatalogCombinedTable combinedTable = getCombinedTable( id );
+                if ( combinedTable != null ) {
+                    childTables.add( combinedTable );
+                }
+            }
+
+            CatalogUser owner = getUser( schema.ownerId );
+
+            return new CatalogCombinedSchema( schema, childTables, database, owner );
+        } catch ( NullPointerException | UnknownTableException | UnknownUserException e ) {
+            throw new GenericCatalogException( e );
+        }
+
+    }
 
 
     @Override
     public CatalogCombinedTable getCombinedTable( long tableId ) throws UnknownTableException {
+        return combinedTables.get( tableId );
+    }
+
+
+    public CatalogCombinedTable buildCombinedTable( CatalogTable table, CatalogSchema schema, CatalogDatabase database ) throws GenericCatalogException {
         try {
-            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            List<CatalogColumn> childColumns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, tableId } ).values() );
-            CatalogSchema schema = schemas.get( table.schemaId );
-            CatalogDatabase database = databases.get( table.databaseId );
-            CatalogUser user = users.get( table.ownerId );
+            List<CatalogColumn> childColumns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
 
             Map<Integer, List<CatalogColumnPlacement>> columnPlacementByStore = new HashMap<>();
             stores.keySet().forEach( id -> {
-                List<CatalogColumnPlacement> placement = getColumnPlacementsOnStore( id, tableId );
+                List<CatalogColumnPlacement> placement = getColumnPlacementsOnStore( id, table.id );
                 if ( placement.size() > 0 ) {
                     columnPlacementByStore.put( id, placement );
                 }
@@ -2012,11 +2168,12 @@ public class CatalogImpl extends Catalog {
 
             childColumns.forEach( c -> columnPlacementByColumn.put( c.id, getColumnPlacements( c.id ) ) );
 
-            List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+            List<CatalogKey> tableKeys = getKeys().stream().filter( k -> k.tableId == table.id ).collect( Collectors.toList() );
+            CatalogUser owner = users.get( table.ownerId );
 
-            return new CatalogCombinedTable( table, childColumns, schema, database, user, columnPlacementByStore, columnPlacementByColumn, tableKeys );
+            return new CatalogCombinedTable( table, childColumns, schema, database, owner, columnPlacementByStore, columnPlacementByColumn, tableKeys );
         } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+            throw new GenericCatalogException( e );
         }
 
     }
@@ -2024,20 +2181,23 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public CatalogCombinedKey getCombinedKey( long keyId ) throws UnknownKeyException {
-        try {
+        return combinedKeys.get( keyId );
+    }
 
-            CatalogKey key = Objects.requireNonNull( keys.get( keyId ) );
+
+    private CatalogCombinedKey buildCombinedKey( CatalogKey key ) throws GenericCatalogException {
+        try {
             List<CatalogColumn> childColumns = key.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
             CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
             CatalogSchema schema = Objects.requireNonNull( schemas.get( key.schemaId ) );
             CatalogDatabase database = Objects.requireNonNull( databases.get( key.databaseId ) );
-            List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == keyId ).collect( Collectors.toList() );
-            List<CatalogIndex> childIndices = indices.values().stream().filter( i -> i.keyId == keyId ).collect( Collectors.toList() );
-            List<CatalogConstraint> childConstraints = constraints.values().stream().filter( c -> c.keyId == keyId ).collect( Collectors.toList() );
+            List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == key.id ).collect( Collectors.toList() );
+            List<CatalogIndex> childIndices = indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
+            List<CatalogConstraint> childConstraints = constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
 
             return new CatalogCombinedKey( key, childColumns, table, schema, database, childForeignKeys, childIndices, childConstraints, childForeignKeys );
         } catch ( NullPointerException e ) {
-            throw new UnknownKeyException( keyId );
+            throw new GenericCatalogException( e );
         }
     }
 
@@ -2070,7 +2230,7 @@ public class CatalogImpl extends Catalog {
 
 
     // Returns the id of they defined by the specified column ids. If this key does not yet exist, create it.
-    private long getOrAddKey( long tableId, List<Long> columnIds ) throws UnknownTableException {
+    private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
         // TODO change to 0 when done, -1 cause 0 was unrecognizable
         long keyId = -1;
         List<CatalogKey> catalogKeys = keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
@@ -2086,15 +2246,17 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private long addKey( long tableId, List<Long> columnIds ) throws UnknownTableException {
+    private long addKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
             List<String> names = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).map( c -> c.name ).collect( Collectors.toList() );
-            keys.put( id, new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names ) );
+            CatalogKey key = new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names );
+            keys.put( id, key );
+            combinedKeys.put( id, buildCombinedKey( key ) );
             return id;
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+        } catch ( NullPointerException | GenericCatalogException e ) {
+            throw new GenericCatalogException( e );
         }
     }
 

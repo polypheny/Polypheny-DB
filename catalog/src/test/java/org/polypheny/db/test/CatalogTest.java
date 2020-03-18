@@ -22,15 +22,23 @@ import static org.junit.Assert.assertEquals;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 
 
@@ -41,7 +49,7 @@ public class CatalogTest {
 
     @Before
     public void setup() {
-        catalog = new CatalogImpl( "testDB", false , false);
+        catalog = new CatalogImpl( "testDB", false, false );
         catalog.clear();
     }
 
@@ -49,12 +57,11 @@ public class CatalogTest {
     @Test
     public void testInit() {
         assert (catalog != null);
-
     }
 
 
     @Test
-    public void testLayout() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownSchemaException {
+    public void testLayout() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownSchemaException, UnknownTableException, UnknownColumnException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
         assertEquals( userId, user.id );
@@ -67,6 +74,26 @@ public class CatalogTest {
         long schemaId = catalog.addSchema( "test_schema", databaseId, userId, SchemaType.RELATIONAL );
         CatalogSchema schema = catalog.getSchema( databaseId, "test_schema" );
         assertEquals( schemaId, schema.id );
+
+        long tableId = catalog.addTable( "test_table", schemaId, userId, TableType.TABLE, null );
+        CatalogTable table = catalog.getTable( tableId, "test_table" );
+        assertEquals( tableId, table.id );
+
+        long columnId = catalog.addColumn( "test_column", tableId, 0, PolySqlType.BIGINT, null, null, false, null );
+        CatalogColumn column = catalog.getColumn( tableId, "test_column" );
+        assertEquals( columnId, column.id );
+    }
+
+
+    @Test
+    public void testCombinedMaps() throws UnknownUserException, UnknownSchemaException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownColumnException {
+        testLayout();
+        CatalogCombinedDatabase database = catalog.getCombinedDatabase( 0 );
+        assertEquals( database.getDatabase().name, "test_db" );
+
+        assertEquals( database.getSchemas().size(), 1 );
+        assertEquals( database.getSchemas().get( 0 ).getTables().size(), 1 );
+        assertEquals( database.getSchemas().get( 0 ).getTables().get( 0 ).getColumns().size(), 1 );
     }
 
 
