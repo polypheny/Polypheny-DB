@@ -1343,16 +1343,24 @@ public class Crud implements InformationObserver {
 			CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
 			CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
 			Map<Integer, List<CatalogColumnPlacement>> placementsByStore = combinedTable.getColumnPlacementsByStore();
-			DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Columns" ) };
+			DbColumn[] header = {
+					new DbColumn( "Store" ),
+					new DbColumn( "Adapter" ),
+					new DbColumn( "DataReadOnly" ),
+					new DbColumn( "SchemaReadOnly" ),
+					new DbColumn( "Columns" )
+			};
 
 			ArrayList<String[]> data = new ArrayList<>();
 			for ( Entry<Integer, List<CatalogColumnPlacement>> entrySet : placementsByStore.entrySet() ) {
 				Store store = StoreManager.getInstance().getStore( entrySet.getKey() );
 				List<CatalogColumnPlacement> placements = entrySet.getValue();
-				String[] arr = new String[3];
+				String[] arr = new String[5];
 				arr[0] = store.getUniqueName();
 				arr[1] = store.getAdapterName();
-				arr[2] = "";
+				arr[2] = String.valueOf( store.isDataReadOnly() );
+				arr[3] = String.valueOf( store.isSchemaReadOnly() );
+				arr[4] = "";
 				boolean first = true;
 				for ( CatalogColumnPlacement p : placements ) {
 					String prefix = ", ";
@@ -1365,13 +1373,13 @@ public class Crud implements InformationObserver {
 						prefix += "<b>";
 						suffix += "</b>";
 					}
-					arr[2] += prefix + p.columnName + suffix;
+					arr[4] += prefix + p.columnName + suffix;
 				}
 
 				data.add( arr );
 			}
 
-			result = new Result( header, data.toArray( new String[0][2] ) );
+			result = new Result( header, data.toArray( new String[0][4] ) );
 			transaction.commit();
 		} catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
 			log.error( "Caught exception while getting placements", e );
@@ -1432,6 +1440,8 @@ public class Crud implements InformationObserver {
 			jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
 			jsonStore.addProperty( "adapterName", src.getAdapterName() );
 			jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+			jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
+			jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
 			return jsonStore;
 		};
 		Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -1511,7 +1521,7 @@ public class Crud implements InformationObserver {
 	/**
 	 * Remove an existing store
 	 */
-	boolean removeStore( final Request req, final Response res ) {
+	Result removeStore( final Request req, final Response res ) {
 		String uniqueName = req.body();
 		Transaction trx = null;
 		try {
@@ -1527,9 +1537,9 @@ public class Crud implements InformationObserver {
 			} catch ( TransactionException ex ) {
 				log.error( "Error while rolling back the transaction", e );
 			}
-			return false;
+			return new Result( e );
 		}
-		return true;
+		return new Result( new Debug().setAffectedRows( 1 ) );
 	}
 
 
