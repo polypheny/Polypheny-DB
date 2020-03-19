@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity.combined;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -47,4 +48,9 @@ public class CatalogCombinedSchema implements CatalogCombinedEntity {
         this.owner = owner;
     }
 
+
+    @Override
+    public String toString() {
+        return "combinedSchema: [ id: " + schema.id + ", name: " + schema.name + ", tables: " + tables.stream().map( t -> t.getTable().id ).collect( Collectors.toList() ) + " ]";
+    }
 }

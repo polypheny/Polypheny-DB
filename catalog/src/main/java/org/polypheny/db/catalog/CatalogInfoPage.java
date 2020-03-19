@@ -22,11 +22,19 @@ import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.UnknownTypeException;
+import org.polypheny.db.adapter.java.Array;
+import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
+import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -41,6 +49,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable schemaInformation;
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
+    private final InformationTable combinedDatabaseInformation;
+    private final InformationTable combinedSchemaInformation;
+    private final InformationTable combinedKeyInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -57,6 +68,12 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.tableInformation = addCatalogInformationTable( page, "tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
 
         this.columnInformation = addCatalogInformationTable( page, "columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+
+        this.combinedDatabaseInformation = addCatalogInformationTable( page, "Combined Databases", Arrays.asList( "ID", "Name", "Schemas" ) );
+
+        this.combinedSchemaInformation = addCatalogInformationTable( page, "Combined Schemas", Arrays.asList( "ID", "Name", "Tables" ) );
+
+        this.combinedKeyInformation = addCatalogInformationTable( page, "Combined Keys", Arrays.asList( "ID", "Columns" ) );
 
         resetCatalogInformation();
         catalog.addObserver( this );
@@ -84,12 +101,28 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
+        combinedDatabaseInformation.reset();
+        combinedSchemaInformation.reset();
+        combinedKeyInformation.reset();
         try {
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
+                try {
+                    CatalogCombinedDatabase combinedDatabase = catalog.getCombinedDatabase( d.id );
+                    combinedDatabaseInformation.addRow( combinedDatabase.getDatabase().id, combinedDatabase.getDatabase().name, combinedDatabase.getSchemas().toString() );
+                } catch ( GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
+                    e.printStackTrace();
+                }
+
             } );
             catalog.getSchemas( null, null ).forEach( s -> {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
+                try {
+                    CatalogCombinedSchema combinedSchema = catalog.getCombinedSchema( s.id );
+                    combinedSchemaInformation.addRow( combinedSchema.getSchema().id, combinedSchema.getSchema().name, combinedSchema.getTables().toString() );
+                } catch ( GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
+                    e.printStackTrace();
+                }
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
                 tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
@@ -98,7 +131,13 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
 
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException e ) {
+            for ( CatalogKey k : catalog.getKeys() ) {
+                CatalogCombinedKey combinedKey = catalog.getCombinedKey( k.id );
+                combinedKeyInformation.addRow( combinedKey.getKey().id, combinedKey.toString() );
+            }
+
+
+        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException | UnknownKeyException e ) {
             e.printStackTrace();
         }
     }

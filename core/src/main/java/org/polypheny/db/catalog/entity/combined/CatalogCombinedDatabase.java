@@ -46,4 +46,9 @@ public class CatalogCombinedDatabase implements CatalogCombinedEntity {
         this.defaultSchema = defaultSchema;
     }
 
+
+    @Override
+    public String toString() {
+        return "[ id:" + database.id + ", name: " + database.name + ", schemas:" + schemas.toString() + "]";
+    }
 }

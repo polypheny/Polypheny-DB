@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.combined;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -71,5 +72,8 @@ public class CatalogCombinedTable implements CatalogCombinedEntity {
         this.keys = keys;
     }
 
-
+    @Override
+    public String toString() {
+        return "combinedTable: [ id: " + table.id + ", name: " + table.name + ", columns: " + columns.stream().map( t -> t.id ).collect( Collectors.toList() ) + " ]";
+    }
 }

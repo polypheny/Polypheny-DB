@@ -113,4 +113,9 @@ public class CatalogCombinedKey implements CatalogCombinedEntity {
         return count;
     }
 
+
+    @Override
+    public String toString() {
+        return "[ columns:" + columns.toString() + " ]";
+    }
 }
