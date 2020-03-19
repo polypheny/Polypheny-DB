@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.webui.models;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+public class ExploreResult {
+
+    private DbColumn[] header;
+    private String[] label;
+    private int exploreManagerId;
 
 
-public class ExploreByExample {
-
-    public DbColumn[] header;
-    public String query;
-    public String[] columnInfo;
-    public String[][] data;
+    public ExploreResult(final DbColumn[] header, final String[] label, final int exploreManagerId) {
+        this.header = header;
+        this.label = label;
+        this.exploreManagerId = exploreManagerId;
+    }
 
 }

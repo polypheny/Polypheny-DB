@@ -16,6 +16,7 @@
 
 package org.polypheny.db.statistic.exploreByExample;
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,11 +61,12 @@ public class ExploreProcess {
         getStatistics();
     }
 
-    public String[][] prepareUserInput() throws Exception {
+    public String prepareUserInput() throws Exception {
 
         String[][] rotated = rotate2dArray( classifiedData );
         //createInstanceAllData(wholeTableRotated, wholeTable);
-        return createInstanceForClassification( rotated, classifiedData, wholeTableRotated, wholeTable );
+
+        return createInstanceForClassification( rotated, classifiedData);
     }
 
 
@@ -82,7 +84,6 @@ public class ExploreProcess {
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
 
-
             if ( dataType[dim].equals( "VARCHAR" ) ) {
                 for ( int i = 0; i < allUniqueValues.get( dim ).size(); i++ ) {
                     attVals.addElement( allUniqueValues.get( dim ).get( i ) );
@@ -96,16 +97,30 @@ public class ExploreProcess {
         // instances object
         allData = new Instances( "allData", atts, 0 );
 
+        //fill all data for classification
+
+        for ( int obj = 0; obj < wholeTable[0].length; obj++ ) {
+            vals = new double[allData.numAttributes()];
+            for ( int dim = 0; dim < wholeTableRotated[0].length; dim++ ) {
+                if ( dataType[dim].equals( "VARCHAR" ) ) {
+                    vals[dim] = attValsEl[dim].indexOf( wholeTableRotated[obj][dim] );
+                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
+                    vals[dim] = Double.parseDouble( wholeTableRotated[obj][dim] );
+                }
+            }
+            vals[wholeTableRotated[0].length] = Utils.missingValue();
+            allData.add( new DenseInstance( 1, vals ) );
+        }
+
     }
 
 
     /**
-     * Converts Data to "arff format" in order to use Weka for classification
-     *
-     * @param rotated rotated userClassification
+     * Converts Data to Instnace in order to use Weka for classification
+     *  @param rotated rotated userClassification
      * @param userClassification classified data form user
      */
-    public String[][] createInstanceForClassification( String[][] rotated, String[][] userClassification, String[][] wholeTableRotated, String[][] wholeTable ) throws Exception {
+    public String createInstanceForClassification( String[][] rotated, String[][] userClassification) throws Exception {
 
         int numInstances = rotated[0].length;
         int dimLength = classifiedData[0].length;
@@ -120,7 +135,6 @@ public class ExploreProcess {
         for ( int dim = 0; dim < dimLength; dim++ ) {
             attVals = new FastVector();
 
-
             if ( dataType[dim].equals( "VARCHAR" ) ) {
                 for ( int i = 0; i < allUniqueValues.get( dim ).size(); i++ ) {
                     attVals.addElement( allUniqueValues.get( dim ).get( i ) );
@@ -133,7 +147,6 @@ public class ExploreProcess {
         }
         // instances object
         classifiedData = new Instances( "ClassifiedData", atts, 0 );
-        allData = new Instances( "allData", atts, 0 );
 
         // fill data classified
         for ( int obj = 0; obj < numInstances; obj++ ) {
@@ -149,60 +162,16 @@ public class ExploreProcess {
             classifiedData.add( new DenseInstance( 1.0, vals ) );
         }
 
-        //fill all data for classification
-
-        for ( int obj = 0; obj < wholeTable[0].length; obj++ ) {
-            vals = new double[allData.numAttributes()];
-            for ( int dim = 0; dim < wholeTableRotated[0].length; dim++ ) {
-                if ( dataType[dim].equals( "VARCHAR" ) ) {
-                    vals[dim] = attValsEl[dim].indexOf( wholeTableRotated[obj][dim] );
-                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
-                    vals[dim] = Double.parseDouble( userClassification[obj][dim] );
-                }
-            }
-            vals[wholeTableRotated[0].length] = Utils.missingValue();
-            allData.add( new DenseInstance( 1, vals ) );
-        }
-
         System.out.println( classifiedData );
-        System.out.println( allData );
 
-        //saveAsArff( data, "test.arff" );
-
-        return trainData( classifiedData, allData );
+        return trainData( classifiedData );
 
     }
 
-
-    /**
-     * Train table with the classified dataset
-     *
-     * @param classifiedData prepared classifiedData
-     */
-    public String[][] trainData( Instances classifiedData, Instances unlabeled ) throws Exception {
-        //Instances data = getDataSet( "explore-by-example/test.arff" );
-
-        classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
-        //J48 tree = new J48();
-        J48 tree = new J48();
-
-        /*
-        String[] options = { "-U" };
-        tree.setOptions( options );
-         */
-
-        tree.buildClassifier( classifiedData );
-
-        buildGraph = tree.graph();
-
-        //Instances unlabeled = new Instances(  new BufferedReader( new FileReader("explore-by-example/exploreExample.arff" ) ));
+/*
+    public String[][] classifyUnlabledData( Instances unlabeled ){
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
-
-        Evaluation evaluation = new Evaluation( classifiedData );
-        evaluation.crossValidateModel( tree, classifiedData, 2, new Random( 1 ) );
-        evaluation.evaluateModel( tree, unlabeled );
-        System.out.println( evaluation.toSummaryString() );
 
         Instances labeled = new Instances( unlabeled );
 
@@ -223,6 +192,38 @@ public class ExploreProcess {
         //saveAsArff( labeled, "labeled-data.arff" );
 
         return labledData;
+    }
+
+
+ */
+    /**
+     * Train table with the classified dataset
+     *
+     * @param classifiedData prepared classifiedData
+     * @return
+     */
+    public String trainData( Instances classifiedData) throws Exception {
+        //Instances data = getDataSet( "explore-by-example/test.arff" );
+
+        classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
+        //J48 tree = new J48();
+        J48 tree = new J48();
+
+        /*
+        String[] options = { "-U" };
+        tree.setOptions( options );
+         */
+
+        tree.buildClassifier( classifiedData );
+
+        buildGraph = tree.graph();
+
+        Evaluation evaluation = new Evaluation( classifiedData );
+        evaluation.crossValidateModel( tree, classifiedData, 2, new Random( 1 ) );
+        //evaluation.evaluateModel( tree, unlabeled );
+        System.out.println( evaluation.toSummaryString() );
+
+        return buildGraph;
     }
 
 
@@ -257,8 +258,6 @@ public class ExploreProcess {
 
 
     }
-
-
 
 
     private String[][] rotate2dArray( String[][] data ) {

@@ -17,15 +17,22 @@
 package org.polypheny.db.statistic.exploreByExample;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.statistic.StatisticQueryColumn;
+import org.polypheny.db.statistic.StatisticResult;
+import org.polypheny.db.statistic.StatisticsManager;
 
 
 public class ExploreManager {
 
     private static ExploreManager INSTANCE = null;
     private Map<Integer, ExploreProcess> processes = new HashMap<>(  );
+    private Map<Integer, Explore> explore = new HashMap<>(  );
     private final AtomicInteger atomicId = new AtomicInteger(  );
 
 
@@ -36,8 +43,8 @@ public class ExploreManager {
         return INSTANCE;
     }
 
-
-    public String[][] processUpdate(Integer id, String[][] data, String[] columnInfo, String query, String[] dataTyp ) throws Exception {
+/*
+    public String processUpdate(Integer id, String[][] data, String[] columnInfo, String query, String[] dataTyp ) throws Exception {
         if ( id != null && processes.containsKey( id ) ) {
             processes.get( id ).updateClassification(data, columnInfo, query, dataTyp);
         } else {
@@ -46,8 +53,45 @@ public class ExploreManager {
             return processes.get( identifier ).prepareUserInput();
         }
 
-        return data;
+        return "test";
     }
 
+ */
+
+
+    public Explore exploreData( Integer id, String[] columnInfo, String query, String[][] labeled, String[][] unlabeled, String[] dataType ) {
+
+        if ( id != null && explore.containsKey( id ) ) {
+            System.out.println( "inside if" );
+            explore.get( id ).updateExploration(labeled);
+            return explore.get( id );
+        } else {
+            int identifier = atomicId.getAndIncrement();
+            explore.put( identifier, new Explore(identifier, getStatistics(columnInfo, query), labeled, unlabeled, dataType) );
+            explore.get( identifier ).exploreUserInput();
+            return explore.get( identifier );
+        }
+
+    }
+
+    private List<List<String>> getStatistics(String[] columnInfo, String query) {
+        List<List<String>> uniqueValues = new ArrayList<>();
+        StatisticsManager<?> stats = StatisticsManager.getInstance();
+
+        List<StatisticQueryColumn> values = stats.getAllUniqueValues( Arrays.asList( columnInfo ), query );
+
+        for ( StatisticQueryColumn uniqueValue : values ) {
+            uniqueValues.add( Arrays.asList( uniqueValue.getData() ) );
+        }
+
+        List<String> trueFalse = new ArrayList<>();
+        trueFalse.add( "true" );
+        trueFalse.add( "false" );
+        uniqueValues.add( trueFalse );
+
+
+        return uniqueValues;
+
+    }
 
 }

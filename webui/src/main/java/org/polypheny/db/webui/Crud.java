@@ -126,6 +126,7 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticColumn;
 import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.statistic.exploreByExample.Explore;
 import org.polypheny.db.statistic.exploreByExample.ExploreManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -142,6 +143,7 @@ import org.polypheny.db.webui.models.Adapter;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
+import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
@@ -157,7 +159,8 @@ import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
-import org.polypheny.db.webui.models.requests.ExploreByExample;
+import org.polypheny.db.webui.models.requests.ClassifyAllData;
+import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -712,23 +715,51 @@ public class Crud implements InformationObserver {
      * @return
      */
 
-    Result classifyData( Request req, Response res ) throws Exception {
-        ExploreByExample explore = this.gson.fromJson( req.body(), ExploreByExample.class);
+    String classifyData( Request req, Response res ) throws Exception {
+        ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class);
 
 
-        String[] dataType = new String [explore.header.length + 1];
-        for ( int i = 0; i < explore.header.length; i++ ){
-            dataType[i] = explore.header[i].dataType;
+        String[] dataType = new String [classifyAllData.header.length + 1];
+        for ( int i = 0; i < classifyAllData.header.length; i++ ){
+            dataType[i] = classifyAllData.header[i].dataType;
         }
-        dataType[explore.header.length] = "VARCHAR";
+        dataType[classifyAllData.header.length] = "VARCHAR";
 
         ExploreManager e = ExploreManager.getInstance();
 
-         Result result = new Result( explore.header,  e.processUpdate(null, explore.data, explore.columnInfo, explore.query, dataType ));
+         //Result result = new Result( explore.header,  e.processUpdate(null, explore.data, explore.columnInfo, explore.query, dataType ), );
+        //e.processUpdate(null, classifyAllData.data, classifyAllData.columnInfo, classifyAllData.query, dataType )
 
-        return result;
+        return "test";
 
     }
+
+
+
+    public ExploreResult exploration( Request req, Response res ) {
+        System.out.println( req );
+        ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
+
+
+        String[] dataType = new String [exploreData.header.length + 1];
+        for ( int i = 0; i < exploreData.header.length; i++ ){
+            dataType[i] = exploreData.header[i].dataType;
+        }
+        dataType[exploreData.header.length] = "VARCHAR";
+
+        ExploreManager e = ExploreManager.getInstance();
+        Explore explore  = e.exploreData(exploreData.id, exploreData.columnInfo, exploreData.query, exploreData.labeled, exploreData.unlabeled, dataType);
+
+
+
+        ExploreResult exploreResult = new ExploreResult( exploreData.header, explore.getLabels(), explore.getId());
+
+
+
+
+        return exploreResult;
+    }
+
 
 
     /**
