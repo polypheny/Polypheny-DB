@@ -52,25 +52,6 @@ public class CatalogManagerImpl extends CatalogManager {
 
 
     private CatalogManagerImpl() {
-        /*
-        if ( CREATE_SCHEMA ) {
-            LocalTransactionHandler transactionHandler = null;
-            try {
-                transactionHandler = LocalTransactionHandler.getTransactionHandler();
-                Statements.dropSchema( transactionHandler );
-                Statements.createSchema( transactionHandler );
-                transactionHandler.commit();
-            } catch ( CatalogConnectionException | CatalogTransactionException e ) {
-                log.error( "Exception while creating catalog schema", e );
-                try {
-                    if ( transactionHandler != null ) {
-                        transactionHandler.rollback();
-                    }
-                } catch ( CatalogTransactionException e1 ) {
-                    log.error( "Exception while rollback", e );
-                }
-            }
-        }*/
         catalog = new CatalogImpl();
     }
 
@@ -85,23 +66,12 @@ public class CatalogManagerImpl extends CatalogManager {
     @Override
     public CatalogUser getUser( String username ) throws UnknownUserException {
         return catalog.getUser( username );
-        /*try {
-            val transactionHandler = LocalTransactionHandler.getTransactionHandler();
-            return Statements.getUser( transactionHandler, username );
-        } catch ( CatalogConnectionException | GenericCatalogException e ) {
-            throw new GenericCatalogException( e );
-        }*/
     }
 
 
     @Override
     public Catalog getCatalog( PolyXid xid ) {
-
         return catalog;
-        /*if ( !catalogs.containsKey( xid ) ) {
-            catalogs.put( xid, new CatalogImpl( xid ) );
-        }
-        return catalogs.get( xid );*/
     }
 
 
@@ -113,11 +83,6 @@ public class CatalogManagerImpl extends CatalogManager {
 
     void removeCatalog( PolyXid xid ) {
         log.error( "removing store" );
-        /*if ( !catalogs.containsKey( xid ) ) {
-            log.error( "There is no catalog instance associated with this transaction id." );
-        } else {
-            catalogs.remove( xid );
-        }*/
     }
 
 

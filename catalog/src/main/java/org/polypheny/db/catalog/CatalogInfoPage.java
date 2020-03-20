@@ -21,8 +21,8 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.UnknownTypeException;
-import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
@@ -40,7 +40,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 
-
+@Slf4j
 public class CatalogInfoPage implements PropertyChangeListener {
 
     private final InformationManager infoManager;
@@ -104,6 +104,10 @@ public class CatalogInfoPage implements PropertyChangeListener {
         combinedDatabaseInformation.reset();
         combinedSchemaInformation.reset();
         combinedKeyInformation.reset();
+        if( catalog == null ) {
+            log.error("Catalog not defined in the catalogInformationPage.");
+            return;
+        }
         try {
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );

@@ -18,6 +18,7 @@ package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -150,7 +151,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
 
             db = DBMaker
-                    .fileDB( path )
+                    .fileDB( new File( path ) )
                     .closeOnJvmShutdown()
                     .checksumHeaderBypass() // TODO clean shutdown needed
                     .fileMmapEnable()
@@ -193,17 +194,15 @@ public class CatalogImpl extends Catalog {
             } else if ( placements.size() == 1 ) {
                 Store store = manager.getStore( placements.get( 0 ).storeId );
                 if ( !store.isPersistent() ) {
-                    try {
-                        CatalogCombinedTable combinedTable = getCombinedTable( c.tableId );
-                        // TODO only full placements atm here
 
-                        if ( !restoredTables.contains( c.tableId ) ) {
-                            store.createTable( trx.getPrepareContext(), combinedTable );
-                            restoredTables.add( c.tableId );
-                        }
-                    } catch ( UnknownTableException e ) {
-                        e.printStackTrace();
+                    CatalogCombinedTable combinedTable = getCombinedTable( c.tableId );
+                    // TODO only full placements atm here
+
+                    if ( !restoredTables.contains( c.tableId ) ) {
+                        store.createTable( trx.getPrepareContext(), combinedTable );
+                        restoredTables.add( c.tableId );
                     }
+
                 }
             } else {
                 Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.storeId, p -> manager.getStore( p.storeId ).isPersistent() ) );
@@ -214,7 +213,7 @@ public class CatalogImpl extends Catalog {
                         for ( CatalogColumnPlacement p : placements ) {
                             manager.getStore( p.storeId ).addColumn( null, table, getColumn( p.columnId ) );
                         }
-                    } catch ( UnknownTableException | UnknownColumnException e ) {
+                    } catch ( UnknownColumnException e ) {
                         e.printStackTrace();
                     }
 
@@ -1681,7 +1680,7 @@ public class CatalogImpl extends Catalog {
             for ( Long columnId : columnIds ) {
                 updateCombinedMaps( getColumn( columnId ) );
             }
-        } catch ( NullPointerException | UnknownKeyException | UnknownColumnException e ) {
+        } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1805,7 +1804,7 @@ public class CatalogImpl extends Catalog {
                 }
 
             }
-        } catch ( UnknownKeyException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1916,7 +1915,7 @@ public class CatalogImpl extends Catalog {
             }
             indices.remove( indexId );
             deleteKeyIfNoLongerUsed( index.keyId );
-        } catch ( NullPointerException | UnknownKeyException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1948,7 +1947,7 @@ public class CatalogImpl extends Catalog {
 
                 replaceCombinedTable( table );
             }
-        } catch ( NullPointerException | UnknownKeyException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( NullPointerException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1990,7 +1989,7 @@ public class CatalogImpl extends Catalog {
             }
             constraints.remove( catalogConstraint.id );
             deleteKeyIfNoLongerUsed( key.getKey().id );
-        } catch ( NullPointerException | UnknownKeyException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -2088,8 +2087,13 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) {
-        return combinedDatabases.get( databaseId );
+    public CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException {
+        if ( combinedDatabases.containsKey( databaseId ) ) {
+            return combinedDatabases.get( databaseId );
+        } else {
+            throw new GenericCatalogException( "Combined database does not exist: " + databaseId );
+        }
+
     }
 
 
@@ -2142,7 +2146,7 @@ public class CatalogImpl extends Catalog {
             CatalogUser owner = getUser( schema.ownerId );
 
             return new CatalogCombinedSchema( schema, childTables, database, owner );
-        } catch ( NullPointerException | UnknownTableException | UnknownUserException e ) {
+        } catch ( NullPointerException | UnknownUserException e ) {
             throw new GenericCatalogException( e );
         }
 
@@ -2150,7 +2154,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogCombinedTable getCombinedTable( long tableId ) throws UnknownTableException {
+    public CatalogCombinedTable getCombinedTable( long tableId ) {
         return combinedTables.get( tableId );
     }
 
@@ -2183,7 +2187,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogCombinedKey getCombinedKey( long keyId ) throws UnknownKeyException {
+    public CatalogCombinedKey getCombinedKey( long keyId ) {
         return combinedKeys.get( keyId );
     }
 
