@@ -154,10 +154,10 @@ public class CatalogImpl extends Catalog {
                     // .fileDB( new File( path ) )
                     .memoryDB()
                     .closeOnJvmShutdown()
-                    .checksumHeaderBypass() // TODO clean shutdown needed
+                    /*.checksumHeaderBypass() // TODO clean shutdown needed
                     .fileMmapEnable()
                     .fileMmapEnableIfSupported()
-                    .fileMmapPreclearDisable()
+                    .fileMmapPreclearDisable()*/
                     .make();
 
             initDBLayout( db );
