@@ -151,7 +151,8 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
 
             db = DBMaker
-                    .fileDB( new File( path ) )
+                    // .fileDB( new File( path ) )
+                    .memoryDB()
                     .closeOnJvmShutdown()
                     .checksumHeaderBypass() // TODO clean shutdown needed
                     .fileMmapEnable()
