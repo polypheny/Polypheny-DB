@@ -44,7 +44,7 @@ public abstract class Refreshable {
         }
     }
 
-    interface RefreshFunction {
+    public interface RefreshFunction {
 
         void refresh();
     }
