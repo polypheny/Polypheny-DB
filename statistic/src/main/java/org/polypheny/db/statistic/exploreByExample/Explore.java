@@ -29,6 +29,7 @@ import weka.core.FastVector;
 import weka.core.Instances;
 import weka.core.Utils;
 
+
 @Slf4j
 public class Explore {
 
@@ -56,24 +57,20 @@ public class Explore {
     }
 
 
-    public void updateExploration( String[][] labeled) {
-        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+    public void updateExploration( String[][] labeled ) {
+        labels = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
     public void exploreUserInput() {
-        unlabledData = createInstance(rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues);
-        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+        unlabledData = createInstance( rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues );
+        labels = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
+
     public void classifyAllData( String[][] labeled, String[][] allData ) {
-        System.out.println( "show me all the data" + Arrays.deepToString( allData ) );
-        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues);
-
-        System.out.println( "shwo me the unlabled data " + unlabledData );
-
-        data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
-
+        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
+        data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
@@ -91,7 +88,8 @@ public class Explore {
         return rotatedTable;
     }
 
-    public Instances createInstance( String[][] rotatedTable, String[][] table, String[] dataType, List<List<String>> uniqueValues ){
+
+    public Instances createInstance( String[][] rotatedTable, String[][] table, String[] dataType, List<List<String>> uniqueValues ) {
 
         int numInstances = rotatedTable[0].length;
         int dimLength = table[0].length;
@@ -125,11 +123,10 @@ public class Explore {
 
             for ( int dim = 0; dim < dimLength; dim++ ) {
                 if ( dataType[dim].equals( "VARCHAR" ) ) {
-                    if (attValsEl[dim].contains( table[obj][dim] )){
+                    if ( attValsEl[dim].contains( table[obj][dim] ) ) {
                         vals[dim] = attValsEl[dim].indexOf( table[obj][dim] );
-                    }
-                    else {
-                        System.out.println("i'm not inside of this else right?");
+                    } else {
+                        System.out.println( "i'm not inside of this else right?" );
                         vals[dim] = Utils.missingValue();
                     }
                 } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
@@ -138,20 +135,14 @@ public class Explore {
             }
             classifiedData.add( new DenseInstance( 1.0, vals ) );
         }
-
-        System.out.println( "classified data" + classifiedData );
-
         return classifiedData;
-
     }
 
-    public J48 trainData( Instances classifiedData){
 
+    public J48 trainData( Instances classifiedData ) {
         classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
-
         J48 tree = new J48();
 
-        /*
         String[] options = { "-U" };
         try {
             tree.setOptions( options );
@@ -159,8 +150,6 @@ public class Explore {
 
             e.printStackTrace();
         }
-
-         */
 
         try {
             tree.buildClassifier( classifiedData );
@@ -177,13 +166,11 @@ public class Explore {
         return tree;
     }
 
-    public String[] classifyUnlabledData( J48 tree, Instances unlabeled ){
+
+    public String[] classifyUnlabledData( J48 tree, Instances unlabeled ) {
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
-
         Instances labeled = new Instances( unlabeled );
-
-        String[][] labledData = new String[unlabeled.numInstances()][];
         String[] label = new String[unlabeled.numInstances()];
 
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
@@ -196,28 +183,17 @@ public class Explore {
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
-
-            labledData[i] = ( labeled.instance( i ).toString().split( "," ));
-
-            /*if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ) {
-
-            }*/
-
-            System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
             label[i] = unlabeled.classAttribute().value( (int) clsLabel );
         }
 
         return label;
     }
 
-    public String[][] classifyData( J48 tree, Instances unlabeled ){
 
-        unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
-
-        Instances labeled = new Instances( unlabeled );
-
+    public String[][] classifyData( J48 tree, Instances unlabeled ) {
         List<String[]> labledData = new ArrayList<>();
-
+        unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
+        Instances labeled = new Instances( unlabeled );
 
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
             double clsLabel = 0;
@@ -229,19 +205,11 @@ public class Explore {
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
-            System.out.println("show me what the value is: " + labeled.classAttribute().value( (int) clsLabel ) ) ;
 
             if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ) {
-
-                 labledData.add(Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ));
-
+                labledData.add( Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ) );
             }
-            System.out.println( labeled.instance( i ) );
-            System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
-
         }
-
-        System.out.println( labledData );
         return labledData.toArray( new String[0][] );
     }
 

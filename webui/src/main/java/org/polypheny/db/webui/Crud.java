@@ -711,48 +711,31 @@ public class Crud implements InformationObserver {
     /**
      * Gets the classified Data from User
      * return possibly interesting Data to User
-     *
-     * @return
      */
 
-    Result classifyData( Request req, Response res ) throws Exception {
-        ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class);
-
-
-        String[] dataType = new String [classifyAllData.header.length + 1];
-        for ( int i = 0; i < classifyAllData.header.length; i++ ){
-            dataType[i] = classifyAllData.header[i].dataType;
-        }
-        dataType[classifyAllData.header.length] = "VARCHAR";
+    Result classifyData( Request req, Response res ) {
+        ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
 
         ExploreManager e = ExploreManager.getInstance();
-        Explore explor  = e.classifyData( classifyAllData.id, classifyAllData.query , classifyAllData.labeled);
-        Result result = new Result( classifyAllData.header, explor.getData() );
-        System.out.println( "All Data" + Arrays.deepToString( explor.getData() ) );
-
-        return result;
+        Explore explor = e.classifyData( classifyAllData.id, classifyAllData.query, classifyAllData.labeled );
+        return new Result( classifyAllData.header, explor.getData() );
     }
-
 
 
     public ExploreResult exploration( Request req, Response res ) {
         ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
 
-        String[] dataType = new String [exploreData.header.length + 1];
-        for ( int i = 0; i < exploreData.header.length; i++ ){
+        String[] dataType = new String[exploreData.header.length + 1];
+        for ( int i = 0; i < exploreData.header.length; i++ ) {
             dataType[i] = exploreData.header[i].dataType;
         }
         dataType[exploreData.header.length] = "VARCHAR";
 
         ExploreManager e = ExploreManager.getInstance();
-        Explore explore  = e.exploreData(exploreData.id, exploreData.columnInfo, exploreData.query, exploreData.labeled, exploreData.unlabeled, dataType);
+        Explore explore = e.exploreData( exploreData.id, exploreData.columnInfo, exploreData.query, exploreData.labeled, exploreData.unlabeled, dataType );
 
-        ExploreResult exploreResult = new ExploreResult( exploreData.header, explore.getLabels(), explore.getId(), explore.getBuildGraph());
-        System.out.println( explore.getBuildGraph() );
-
-        return exploreResult;
+        return new ExploreResult( exploreData.header, explore.getLabels(), explore.getId(), explore.getBuildGraph() );
     }
-
 
 
     /**
