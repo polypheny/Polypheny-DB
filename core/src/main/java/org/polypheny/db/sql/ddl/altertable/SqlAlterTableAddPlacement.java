@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -82,17 +83,32 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             // Check whether this placement already exists
             for ( int storeId : combinedTable.getColumnPlacementsByStore().keySet() ) {
                 if ( storeId == storeInstance.getStoreId() ) {
-                    throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementAlreadyExists( storeName.getSimple(), combinedTable.getTable().name ) );
+                    throw SqlUtil.newContextException(
+                            storeName.getParserPosition(),
+                            RESOURCE.placementAlreadyExists( storeName.getSimple(), combinedTable.getTable().name ) );
                 }
+            }
+            // Check whether the store supports schema changes
+            if ( storeInstance.isSchemaReadOnly() ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
             // Create column placements
             for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                transaction.getCatalog().addColumnPlacement( storeInstance.getStoreId(), catalogColumn.id, PlacementType.MANUAL, null, null, null );
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO MV: Now we need to actually create the placement on the store and get the physical schema, table and column name
-                //
+                transaction.getCatalog().addColumnPlacement(
+                        storeInstance.getStoreId(),
+                        catalogColumn.id,
+                        PlacementType.MANUAL,
+                        null,
+                        null,
+                        null );
             }
-        } catch ( GenericCatalogException e ) {
+            // Fetch the table again to get the update list of placements
+            storeInstance.createTable( context, transaction.getCatalog().getCombinedTable( combinedTable.getTable().id ) );
+            // !!!!!!!!!!!!!!!!!!!!!!!!
+            // TODO: Now we should also copy the data
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

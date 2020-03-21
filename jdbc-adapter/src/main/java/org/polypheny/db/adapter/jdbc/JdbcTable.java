@@ -241,6 +241,11 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    public JdbcSchema getSchema() {
+        return jdbcSchema;
+    }
+
+
     // For unit testing only
     public void setSchema( JdbcSchema jdbcSchema ) {
         this.jdbcSchema = jdbcSchema;

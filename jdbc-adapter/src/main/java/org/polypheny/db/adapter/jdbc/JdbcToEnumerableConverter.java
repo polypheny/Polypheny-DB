@@ -171,9 +171,19 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy );
             builder.add( Expressions.return_( null, value_ ) );
         } else {
-            final Expression values_ = builder.append( "values", Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+            final Expression values_ = builder.append(
+                    "values",
+                    Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
             for ( int i = 0; i < fieldCount; i++ ) {
-                generateGet( implementor, physType, builder, resultSet_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ), calendar_, calendarPolicy );
+                generateGet(
+                        implementor,
+                        physType,
+                        builder,
+                        resultSet_,
+                        i,
+                        Expressions.arrayIndex( values_, Expressions.constant( i ) ),
+                        calendar_,
+                        calendarPolicy );
             }
             builder.add( Expressions.return_( null, values_ ) );
         }
