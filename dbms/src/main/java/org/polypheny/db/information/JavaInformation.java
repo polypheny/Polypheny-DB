@@ -20,7 +20,6 @@ package org.polypheny.db.information;
 import java.util.Arrays;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
-import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -62,43 +61,46 @@ public class JavaInformation {
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( heapInfoTable );
 
-        JavaHeapInfo heapInfoRunnable = new JavaHeapInfo( heapInfoGraph, heapInfoTable );
-        BackgroundTaskManager.INSTANCE.registerTask( heapInfoRunnable, "Update Java runtime information", TaskPriority.LOW, TaskSchedulingType.EVERY_MINUTE );
-    }
-
-
-    static class JavaHeapInfo implements BackgroundTask {
-
-        private final InformationGraph graph;
-        private final InformationTable table;
-
-
-        JavaHeapInfo( InformationGraph graph, InformationTable table ) {
-            this.graph = graph;
-            this.table = table;
-        }
-
-
-        @Override
-        public void backgroundTask() {
+        groupHeap.setRefreshFunction( () -> {
             // from: https://stackoverflow.com/questions/2015463/how-to-view-the-current-heap-size-that-an-application-is-using
             // Get current size of heap in bytes
             long current = Runtime.getRuntime().totalMemory();
-            // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
+            // Get maximum size of heap in bytes. The heap cannot grow beyond this size. Any attempt will result in an OutOfMemoryException.
             long max = Runtime.getRuntime().maxMemory();
-            // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
+            // Get amount of free memory within the heap in bytes. This size will increase after garbage collection and decrease as new objects are created.
             long free = Runtime.getRuntime().freeMemory();
 
-            graph.updateGraph(
+            heapInfoGraph.updateGraph(
                     new String[]{ "Current", "Maximum", "Free" },
                     new GraphData<>( "heap-data", new Long[]{ current, max, free } )
             );
 
-            table.reset();
-            table.addRow( "Current", humanReadableByteCount( current, false ) );
-            table.addRow( "Free", humanReadableByteCount( free, false ) );
-            table.addRow( "Max", humanReadableByteCount( max, false ) );
-        }
+            heapInfoTable.reset();
+            heapInfoTable.addRow( "Current", humanReadableByteCount( current, false ) );
+            heapInfoTable.addRow( "Free", humanReadableByteCount( free, false ) );
+            heapInfoTable.addRow( "Max", humanReadableByteCount( max, false ) );
+        } );
+
+        // Heap over time info
+        InformationGroup groupHeapOverTime = new InformationGroup( page, "Last 15 minutes" ).setOrder( 3 );
+        im.addGroup( groupHeapOverTime );
+
+        InformationGraph heapOverTimeGraph = new InformationGraph(
+                groupHeapOverTime,
+                GraphType.LINE,
+                new String[]{ "Free" }
+        );
+        im.registerInformation( heapOverTimeGraph );
+
+        BackgroundTaskManager.INSTANCE.registerTask(
+                () -> {
+                    long current = Runtime.getRuntime().totalMemory();
+                    // TODO: Update the graph
+                },
+                "Update Java runtime information",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_MINUTE
+        );
     }
 
 
