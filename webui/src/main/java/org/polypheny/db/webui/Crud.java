@@ -545,7 +545,8 @@ public class Crud implements InformationObserver {
         ArrayList<Result> results = new ArrayList<>();
         boolean autoCommit = true;
 
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed and in case of auto commit of, the information is overwritten
+        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+        // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
         if ( request.analyze ) {
             queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
@@ -747,7 +748,8 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
                 transaction.rollback();
-                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
+                result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while deleting a row", e );
@@ -801,7 +803,8 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
                 transaction.rollback();
-                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." );
+                result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a row", e );
@@ -1392,7 +1395,9 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Add or drop a data placement Parameter of type models.Index: index name corresponds to storeUniqueName index method: either 'ADD' or 'DROP'
+     * Add or drop a data placement.
+     * Parameter of type models.Index: index name corresponds to storeUniqueName
+     * Index method: either 'ADD' or 'DROP'
      */
     Result addDropPlacement( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
@@ -1538,7 +1543,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get the required information for the uml view: Foreign keys Tables with its columns
+     * Get the required information for the uml view: Foreign keys, Tables with its columns
      */
     Uml getUml( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
@@ -2462,7 +2467,8 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Helper function to delete a directory from https://www.baeldung.com/java-delete-directory
+     * Helper function to delete a directory.
+     * Taken from https://www.baeldung.com/java-delete-directory
      */
     boolean deleteDirectory( final File directoryToBeDeleted ) {
         File[] allContents = directoryToBeDeleted.listFiles();
