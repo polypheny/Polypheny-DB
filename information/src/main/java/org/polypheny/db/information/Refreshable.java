@@ -22,12 +22,12 @@ public abstract class Refreshable {
     /**
      * Refresh function to load on demand
      */
-    private volatile transient RefreshFunction refreshFunction;
+    private transient RefreshFunction refreshFunction;
 
     /**
      * Indicates if the refreshFunction exists, needed for the UI
      */
-    private volatile boolean refreshable = false;
+    private boolean refreshable = false;
 
 
     /**
