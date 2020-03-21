@@ -20,8 +20,6 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import oshi.SystemInfo;
@@ -132,30 +130,22 @@ public class HostInformation {
         InformationGraph graph = new InformationGraph( processesGroup, GraphType.POLARAREA, new String[]{} );
         im.registerInformation( graph );
 
-        Timer t2 = new Timer();
-        t2.scheduleAtFixedRate( new TimerTask() {
-            @Override
-            public void run() {
-                List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+        processesGroup.setRefreshFunction( () -> {
+            List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
 
-                ArrayList<String> procNames = new ArrayList<>();
-                ArrayList<Double> procPerc = new ArrayList<>();
-                for ( int i = 0; i < procs.size() && i < 5; i++ ) {
-                    OSProcess proc = procs.get( i );
-                    double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();
-                    String name = proc.getName();
-                    //if( cpuPerc > 1){
-                    procNames.add( name );
-                    procPerc.add( Math.round( cpuPerc * 10.0 ) / 10.0 );
-                    //}else{
-                    //    break;
-                    //}
-                }
-
-                GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
-                graph.updateGraph( procNames.toArray( new String[0] ), data2 );
+            ArrayList<String> procNames = new ArrayList<>();
+            ArrayList<Double> procPerc = new ArrayList<>();
+            for ( int i = 0; i < procs.size() && i < 5; i++ ) {
+                OSProcess proc = procs.get( i );
+                double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();
+                String name = proc.getName();
+                procNames.add( name );
+                procPerc.add( Math.round( cpuPerc * 10.0 ) / 10.0 );
             }
-        }, 0, 5000 );
+
+            GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
+            graph.updateGraph( procNames.toArray( new String[0] ), data2 );
+        } );
 
 
     }
