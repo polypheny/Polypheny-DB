@@ -126,7 +126,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 try {
                     CatalogCombinedDatabase combinedDatabase = catalog.getCombinedDatabase( d.id );
                     combinedDatabaseInformation.addRow( combinedDatabase.getDatabase().id, combinedDatabase.getDatabase().name, combinedDatabase.getSchemas().toString() );
-                } catch ( GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
+                } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
                     e.printStackTrace();
                 }
 
@@ -136,7 +136,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 try {
                     CatalogCombinedSchema combinedSchema = catalog.getCombinedSchema( s.id );
                     combinedSchemaInformation.addRow( combinedSchema.getSchema().id, combinedSchema.getSchema().name, combinedSchema.getTables().toString() );
-                } catch ( GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
+                } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException | UnknownUserException | UnknownDatabaseException | UnknownTableException e ) {
                     e.printStackTrace();
                 }
             } );
@@ -153,7 +153,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
             }
 
 
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException | UnknownKeyException e ) {
+        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException | UnknownKeyException e ) {
             e.printStackTrace();
         }
     }

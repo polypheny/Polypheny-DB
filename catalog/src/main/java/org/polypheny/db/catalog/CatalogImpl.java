@@ -132,8 +132,6 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
 
 
-
-
     public CatalogImpl() {
         this( FILE_PATH, true, true );
     }
@@ -153,7 +151,7 @@ public class CatalogImpl extends Catalog {
         }
         synchronized ( this ) {
             isPersistent = isPersistent();
-            if( isPersistent ) {
+            if ( isPersistent ) {
                 db = DBMaker
                         .fileDB( new File( path ) )
                         .closeOnJvmShutdown()
@@ -162,11 +160,9 @@ public class CatalogImpl extends Catalog {
                         .fileMmapEnableIfSupported()
                         .fileMmapPreclearDisable()
                         .make();
-            }else {
+            } else {
                 db = DBMaker.memoryDB().closeOnJvmShutdown().make();
             }
-
-
 
             initDBLayout( db );
 
@@ -190,6 +186,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * checks if a file can be created on the system, accessed and changed
+     *
      * @return if it was possible
      */
     private boolean isPersistent() {
@@ -2136,8 +2133,14 @@ public class CatalogImpl extends Catalog {
     private CatalogCombinedDatabase buildCombinedDatabase( CatalogDatabase database ) {
         List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
         for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ database.id } ).values() ) {
-            CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );
-            childSchemas.add( combinedSchema );
+            CatalogCombinedSchema combinedSchema = null;
+            try {
+                combinedSchema = getCombinedSchema( s.id );
+                childSchemas.add( combinedSchema );
+            } catch ( GenericCatalogException e ) {
+                e.printStackTrace();
+            }
+
         }
 
         CatalogSchema defaultSchema = null;
@@ -2157,8 +2160,13 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogCombinedSchema getCombinedSchema( long schemaId ) {
-        return combinedSchemas.get( schemaId );
+    public CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException {
+        if ( combinedSchemas.containsKey( schemaId ) ) {
+            return combinedSchemas.get( schemaId );
+        } else {
+            throw new GenericCatalogException( "Combined schema does not exist: " + schemaId );
+        }
+
     }
 
 
