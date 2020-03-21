@@ -82,7 +82,7 @@ public class JavaInformation {
         } );
 
         // Heap over time info
-        InformationGroup groupHeapOverTime = new InformationGroup( page, "Last 15 minutes" ).setOrder( 3 );
+        InformationGroup groupHeapOverTime = new InformationGroup( page, "Heap over time" ).setOrder( 3 );
         im.addGroup( groupHeapOverTime );
 
         InformationGraph heapOverTimeGraph = new InformationGraph(
