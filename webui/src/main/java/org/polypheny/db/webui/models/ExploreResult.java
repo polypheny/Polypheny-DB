@@ -22,12 +22,14 @@ public class ExploreResult {
     private DbColumn[] header;
     private String[] label;
     private int exploreManagerId;
+    private String graph;
 
 
-    public ExploreResult(final DbColumn[] header, final String[] label, final int exploreManagerId) {
+    public ExploreResult(final DbColumn[] header, final String[] label, final int exploreManagerId, final String graph) {
         this.header = header;
         this.label = label;
         this.exploreManagerId = exploreManagerId;
+        this.graph = graph;
     }
 
 }

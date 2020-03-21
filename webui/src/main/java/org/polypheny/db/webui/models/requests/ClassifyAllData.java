@@ -22,9 +22,11 @@ import org.polypheny.db.webui.models.DbColumn;
 
 public class ClassifyAllData {
 
+    public Integer id;
     public DbColumn[] header;
     public String query;
     public String[] columnInfo;
-    public String[][] data;
+    public String[][] labeled;
+
 
 }

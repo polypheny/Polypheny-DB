@@ -17,6 +17,7 @@
 package org.polypheny.db.statistic.exploreByExample;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
@@ -40,8 +41,10 @@ public class Explore {
     @Getter
     private String[] labels;
     private Instances unlabledData;
-
-
+    @Getter
+    private String buildGraph;
+    @Getter
+    private String[][] data;
 
 
     public Explore( int identifier, List<List<String>> uniqueValues, String[][] labeled, String[][] unlabeled, String[] dataType ) {
@@ -53,14 +56,24 @@ public class Explore {
     }
 
 
-    public void updateExploration( String[][] labeledD) {
-        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeledD ), labeledD, dataType, uniqueValues)), unlabledData );
+    public void updateExploration( String[][] labeled) {
+        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
 
     public void exploreUserInput() {
         unlabledData = createInstance(rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues);
         labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+    }
+
+    public void classifyAllData( String[][] labeled, String[][] allData ) {
+        System.out.println( "show me all the data" + Arrays.deepToString( allData ) );
+        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues);
+
+        System.out.println( "shwo me the unlabled data " + unlabledData );
+
+        data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+
     }
 
 
@@ -116,6 +129,7 @@ public class Explore {
                         vals[dim] = attValsEl[dim].indexOf( table[obj][dim] );
                     }
                     else {
+                        System.out.println("i'm not inside of this else right?");
                         vals[dim] = Utils.missingValue();
                     }
                 } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
@@ -125,7 +139,7 @@ public class Explore {
             classifiedData.add( new DenseInstance( 1.0, vals ) );
         }
 
-        System.out.println( classifiedData );
+        System.out.println( "classified data" + classifiedData );
 
         return classifiedData;
 
@@ -154,7 +168,11 @@ public class Explore {
             e.printStackTrace();
         }
 
-        //buildGraph = tree.graph();
+        try {
+            this.buildGraph = tree.graph();
+        } catch ( Exception e ) {
+            e.printStackTrace();
+        }
 
         return tree;
     }
@@ -189,12 +207,42 @@ public class Explore {
             label[i] = unlabeled.classAttribute().value( (int) clsLabel );
         }
 
-        System.out.println("das ist the labledData " + Arrays.deepToString( labledData ) );
-      return label;
+        return label;
     }
 
+    public String[][] classifyData( J48 tree, Instances unlabeled ){
+
+        unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
+
+        Instances labeled = new Instances( unlabeled );
+
+        List<String[]> labledData = new ArrayList<>();
 
 
+        for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
+            double clsLabel = 0;
 
+            try {
+                clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
+            } catch ( Exception e ) {
+                e.printStackTrace();
+            }
+
+            labeled.instance( i ).setClassValue( clsLabel );
+            System.out.println("show me what the value is: " + labeled.classAttribute().value( (int) clsLabel ) ) ;
+
+            if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ) {
+
+                 labledData.add(Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ));
+
+            }
+            System.out.println( labeled.instance( i ) );
+            System.out.println( clsLabel + " -> " + unlabeled.classAttribute().value( (int) clsLabel ) );
+
+        }
+
+        System.out.println( labledData );
+        return labledData.toArray( new String[0][] );
+    }
 
 }

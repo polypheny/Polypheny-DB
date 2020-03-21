@@ -715,7 +715,7 @@ public class Crud implements InformationObserver {
      * @return
      */
 
-    String classifyData( Request req, Response res ) throws Exception {
+    Result classifyData( Request req, Response res ) throws Exception {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class);
 
 
@@ -726,20 +726,17 @@ public class Crud implements InformationObserver {
         dataType[classifyAllData.header.length] = "VARCHAR";
 
         ExploreManager e = ExploreManager.getInstance();
+        Explore explor  = e.classifyData( classifyAllData.id, classifyAllData.query , classifyAllData.labeled);
+        Result result = new Result( classifyAllData.header, explor.getData() );
+        System.out.println( "All Data" + Arrays.deepToString( explor.getData() ) );
 
-         //Result result = new Result( explore.header,  e.processUpdate(null, explore.data, explore.columnInfo, explore.query, dataType ), );
-        //e.processUpdate(null, classifyAllData.data, classifyAllData.columnInfo, classifyAllData.query, dataType )
-
-        return "test";
-
+        return result;
     }
 
 
 
     public ExploreResult exploration( Request req, Response res ) {
-        System.out.println( req );
         ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
-
 
         String[] dataType = new String [exploreData.header.length + 1];
         for ( int i = 0; i < exploreData.header.length; i++ ){
@@ -750,12 +747,8 @@ public class Crud implements InformationObserver {
         ExploreManager e = ExploreManager.getInstance();
         Explore explore  = e.exploreData(exploreData.id, exploreData.columnInfo, exploreData.query, exploreData.labeled, exploreData.unlabeled, dataType);
 
-
-
-        ExploreResult exploreResult = new ExploreResult( exploreData.header, explore.getLabels(), explore.getId());
-
-
-
+        ExploreResult exploreResult = new ExploreResult( exploreData.header, explore.getLabels(), explore.getId(), explore.getBuildGraph());
+        System.out.println( explore.getBuildGraph() );
 
         return exploreResult;
     }

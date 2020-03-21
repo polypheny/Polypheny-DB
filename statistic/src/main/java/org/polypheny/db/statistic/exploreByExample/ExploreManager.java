@@ -43,20 +43,19 @@ public class ExploreManager {
         return INSTANCE;
     }
 
-/*
-    public String processUpdate(Integer id, String[][] data, String[] columnInfo, String query, String[] dataTyp ) throws Exception {
-        if ( id != null && processes.containsKey( id ) ) {
-            processes.get( id ).updateClassification(data, columnInfo, query, dataTyp);
-        } else {
-            int identifier = atomicId.getAndIncrement();
-            processes.put( identifier, new ExploreProcess(identifier, data, columnInfo, query, dataTyp) );
-            return processes.get( identifier ).prepareUserInput();
-        }
 
-        return "test";
+    public Explore classifyData(Integer id, String query, String[][] labeled) {
+        if ( id != null && explore.containsKey( id ) ) {
+            System.out.println( Arrays.deepToString( getAllData( query ) ) );
+            explore.get( id ).classifyAllData(labeled, getAllData( query ));
+            return explore.get( id );
+        } else {
+           System.out.println( "Fehler" );
+           return null;
+        }
     }
 
- */
+
 
 
     public Explore exploreData( Integer id, String[] columnInfo, String query, String[][] labeled, String[][] unlabeled, String[] dataType ) {
@@ -91,6 +90,29 @@ public class ExploreManager {
 
 
         return uniqueValues;
+
+    }
+
+    private String[][] getAllData(String query){
+
+        StatisticsManager<?> stats = StatisticsManager.getInstance();
+
+        StatisticResult statisticResult = stats.getTable( query );
+        StatisticQueryColumn[] columns = statisticResult.getColumns();
+        String[][] allDataTable  = new String[columns.length + 1][];
+        int len = 0;
+        for ( int i = 0; i < columns.length; i++ ) {
+            allDataTable[i] = columns[i].getData();
+            len = columns[i].getData().length;
+        }
+        String[] questionMark = new String[len];
+        for ( int j = 0; j < len; j++){
+            questionMark[j] = "?";
+        }
+        allDataTable[columns.length] = questionMark;
+
+        System.out.println( Arrays.deepToString( allDataTable ) );
+        return allDataTable;
 
     }
 
