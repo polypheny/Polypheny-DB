@@ -152,6 +152,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             isPersistent = isPersistent();
             if ( isPersistent ) {
+                log.info( "Make the store persistent." );
                 db = DBMaker
                         .fileDB( new File( path ) )
                         .closeOnJvmShutdown()
@@ -161,6 +162,7 @@ public class CatalogImpl extends Catalog {
                         .fileMmapPreclearDisable()
                         .make();
             } else {
+                log.info( "Make the store not persistent." );
                 db = DBMaker.memoryDB().closeOnJvmShutdown().make();
             }
 
@@ -193,7 +195,10 @@ public class CatalogImpl extends Catalog {
         File file = new File( "testfile" );
         try {
             if ( !file.exists() ) {
-                file.createNewFile();
+                boolean res = file.createNewFile();
+                if ( !res ) {
+                    return false;
+                }
             }
         } catch ( IOException e ) {
             return false;
@@ -202,6 +207,7 @@ public class CatalogImpl extends Catalog {
             return false;
         }
         file.delete();
+
         return true;
     }
 
