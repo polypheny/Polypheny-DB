@@ -43,13 +43,14 @@ public class InformationDuration extends Information {
         super( UUID.randomUUID().toString(), group.getId() );
     }
 
-    Duration start( final String name ) {
+    public Duration start( final String name ) {
         Duration d = new Duration( name );
         this.children.put( name, d );
         return d;
     }
 
-    void stop( final String name ) {
+
+    public void stop( final String name ) {
         this.duration += this.children.get( name ).stop();
     }
 

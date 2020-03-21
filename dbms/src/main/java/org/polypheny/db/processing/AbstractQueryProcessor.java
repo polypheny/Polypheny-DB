@@ -110,8 +110,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         final StopWatch stopWatch = new StopWatch();
 
-        //
-        // Optimization
         if ( log.isDebugEnabled() ) {
             log.debug( "Preparing statement  ..." );
         }
@@ -123,6 +121,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         : EnumerableConvention.INSTANCE;
 
         // Route
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().start( "Routing" );
+        }
         RelRoot routedRoot = route( logicalRoot, transaction );
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
@@ -131,6 +132,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
                 true );
         routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+
+        //
+        // Optimization
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Routing" );
+            transaction.getDuration().start( "Optimization" );
+        }
 
         RelRoot optimalRoot = optimize( routedRoot, resultConvention );
 
@@ -141,7 +149,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
         //}
 
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Optimization" );
+            transaction.getDuration().start( "Implementation" );
+        }
+
         PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention );
+
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Implementation" );
+        }
 
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
