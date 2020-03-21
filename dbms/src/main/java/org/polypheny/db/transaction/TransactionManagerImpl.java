@@ -51,6 +51,7 @@ public class TransactionManagerImpl implements TransactionManager {
     public TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
         InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        page.fullWidth();
         im.addPage( page );
         InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
         im.addGroup( runningTransactionsGroup );

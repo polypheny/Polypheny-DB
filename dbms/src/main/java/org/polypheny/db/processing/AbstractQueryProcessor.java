@@ -160,6 +160,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
             InformationPage page = new InformationPage( "informationPageRoutedQueryPlan", "Routed Query Plan" );
+            page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
@@ -181,6 +182,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
             InformationPage page = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+            page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
