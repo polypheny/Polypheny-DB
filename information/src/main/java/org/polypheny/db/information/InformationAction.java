@@ -25,15 +25,17 @@ import java.util.UUID;
  */
 public class InformationAction extends Information {
 
-    String label;
-    Action action;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    private String label;
+    private Action action;
+
 
     /**
      * Constructor
      *
      * @param group The InformationGroup to which this information belongs
      */
-    InformationAction( final InformationGroup group, final String buttonLabel, final Action action ) {
+    public InformationAction( final InformationGroup group, final String buttonLabel, final Action action ) {
         super( UUID.randomUUID().toString(), group.getId() );
         this.action = action;
         this.label = buttonLabel;
@@ -44,10 +46,11 @@ public class InformationAction extends Information {
         return this.action.run();
     }
 
+
     /**
      * Action of an InformationAction that should be executed
      */
-    interface Action {
+    public interface Action {
 
         String run();
     }
