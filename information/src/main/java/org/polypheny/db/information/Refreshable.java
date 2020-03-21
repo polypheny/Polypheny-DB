@@ -22,17 +22,18 @@ public abstract class Refreshable {
     /**
      * Refresh function to load on demand
      */
-    private transient RefreshFunction refreshFunction;
+    private volatile transient RefreshFunction refreshFunction;
 
     /**
      * Indicates if the refreshFunction exists, needed for the UI
      */
-    private boolean refreshable = false;
+    private volatile boolean refreshable = false;
+
 
     /**
      * Set a refresh function, to load the InformationPage on demand
      */
-    public void setRefresh( final RefreshFunction refreshFunction ) {
+    public void setRefreshFunction( final RefreshFunction refreshFunction ) {
         this.refreshFunction = refreshFunction;
         this.refreshable = true;
     }

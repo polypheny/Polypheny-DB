@@ -58,7 +58,7 @@ public class InformationServerTest {
 
         InformationPage systemPage = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
         im.addPage( systemPage );
-        systemPage.setRefresh( () -> {
+        systemPage.setRefreshFunction( () -> {
             log.debug( "refreshing page" );
         } );
 
@@ -169,7 +169,7 @@ public class InformationServerTest {
         //COLLECTING DATA GROUP
 
         InformationGroup collectingGroup = new InformationGroup( systemPage, "collecting data" ).setOrder( 5 );
-        collectingGroup.setRefresh( () -> {
+        collectingGroup.setRefreshFunction( () -> {
             im.getInformation( "collectingGraph" ).unwrap( InformationGraph.class ).addData( "dynamic", (int) (Math.random() * 10) );
         } );
         im.addGroup( collectingGroup );

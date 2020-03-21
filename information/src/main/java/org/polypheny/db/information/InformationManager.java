@@ -254,6 +254,7 @@ public class InformationManager {
         }
 
         for ( InformationGroup g : this.groups.values() ) {
+            g.refresh();
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
