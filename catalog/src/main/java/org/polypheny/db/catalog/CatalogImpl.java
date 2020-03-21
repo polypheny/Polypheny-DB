@@ -498,6 +498,7 @@ public class CatalogImpl extends Catalog {
         databaseChildren.put( id, ImmutableList.<Long>builder().build() );
 
         combinedDatabases.put( id, buildCombinedDatabase( database ) );
+        log.info( "adding combined database" );
 
         observers.firePropertyChange( "database", null, database );
         return id;
