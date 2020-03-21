@@ -709,7 +709,9 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Delete a row from a table. The row is determined by the value of every column in that row (conjunction). The transaction is being rolled back, if more that one row would be deleted. TODO: This is not a nice solution
+     * Delete a row from a table. The row is determined by the value of every column in that row (conjunction).
+     * The transaction is being rolled back, if more that one row would be deleted.
+     * TODO: This is not a nice solution
      */
     Result deleteRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
