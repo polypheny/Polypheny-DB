@@ -19,6 +19,7 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -131,6 +132,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
 
 
+
+
     public CatalogImpl() {
         this( FILE_PATH, true, true );
     }
@@ -149,16 +152,21 @@ public class CatalogImpl extends Catalog {
             db.close();
         }
         synchronized ( this ) {
+            isPersistent = isPersistent();
+            if( isPersistent ) {
+                db = DBMaker
+                        .fileDB( new File( path ) )
+                        .closeOnJvmShutdown()
+                        .checksumHeaderBypass() // TODO clean shutdown needed
+                        .fileMmapEnable()
+                        .fileMmapEnableIfSupported()
+                        .fileMmapPreclearDisable()
+                        .make();
+            }else {
+                db = DBMaker.memoryDB().closeOnJvmShutdown().make();
+            }
 
-            db = DBMaker
-                    // .fileDB( new File( path ) )
-                    .memoryDB()
-                    .closeOnJvmShutdown()
-                    /*.checksumHeaderBypass() // TODO clean shutdown needed
-                    .fileMmapEnable()
-                    .fileMmapEnableIfSupported()
-                    .fileMmapPreclearDisable()*/
-                    .make();
+
 
             initDBLayout( db );
 
@@ -177,6 +185,27 @@ public class CatalogImpl extends Catalog {
             }
 
         }
+    }
+
+
+    /**
+     * checks if a file can be created on the system, accessed and changed
+     * @return if it was possible
+     */
+    private boolean isPersistent() {
+        File file = new File( "testfile" );
+        try {
+            if ( !file.exists() ) {
+                file.createNewFile();
+            }
+        } catch ( IOException e ) {
+            return false;
+        }
+        if ( !file.canRead() || !file.canWrite() ) {
+            return false;
+        }
+        file.delete();
+        return true;
     }
 
 
@@ -2104,7 +2133,7 @@ public class CatalogImpl extends Catalog {
      * @param database the "simple" database object
      * @return the combined database object
      */
-    private CatalogCombinedDatabase buildCombinedDatabase( CatalogDatabase database ) throws GenericCatalogException {
+    private CatalogCombinedDatabase buildCombinedDatabase( CatalogDatabase database ) {
         List<CatalogCombinedSchema> childSchemas = new ArrayList<>();
         for ( CatalogSchema s : schemaNames.prefixSubMap( new Object[]{ database.id } ).values() ) {
             CatalogCombinedSchema combinedSchema = getCombinedSchema( s.id );

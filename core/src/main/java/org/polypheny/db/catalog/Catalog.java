@@ -70,6 +70,7 @@ public abstract class Catalog {
 
     protected final PolyXid xid;
     protected final PropertyChangeSupport observers = new PropertyChangeSupport( this );
+    public boolean isPersistent = false;
 
 
     public Catalog( PolyXid xid ) {

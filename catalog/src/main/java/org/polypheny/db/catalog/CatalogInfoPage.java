@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.UnknownTypeException;
@@ -75,6 +76,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
         this.combinedKeyInformation = addCatalogInformationTable( page, "Combined Keys", Arrays.asList( "ID", "Columns" ) );
 
+        addPersistentInfo( page );
+
         resetCatalogInformation();
         catalog.addObserver( this );
 
@@ -86,6 +89,15 @@ public class CatalogInfoPage implements PropertyChangeListener {
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, titles );
         infoManager.registerInformation( table );
+        return table;
+    }
+
+    private InformationTable addPersistentInfo( InformationPage page ) {
+        InformationGroup catalogGroup = new InformationGroup( page, "Persistent");
+        infoManager.addGroup( catalogGroup );
+        InformationTable table = new InformationTable( catalogGroup, Collections.singletonList( "is persistent" ) );
+        infoManager.registerInformation( table );
+        table.addRow( catalog.isPersistent ? "✔️" : "❌" );
         return table;
     }
 
