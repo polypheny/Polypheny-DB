@@ -152,9 +152,9 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             isPersistent = isPersistent();
             if ( isPersistent ) {
-                log.info( "Make the store persistent." );
+                log.info( "Making the catalog persistent." );
                 db = DBMaker
-                        .fileDB( new File( path ) )
+                        .fileDB( new File( "./" + path ) )
                         .closeOnJvmShutdown()
                         .checksumHeaderBypass() // TODO clean shutdown needed
                         .fileMmapEnable()
@@ -162,7 +162,7 @@ public class CatalogImpl extends Catalog {
                         .fileMmapPreclearDisable()
                         .make();
             } else {
-                log.info( "Make the store not persistent." );
+                log.info( "Making the catalog not persistent." );
                 db = DBMaker.memoryDB().closeOnJvmShutdown().make();
             }
 
