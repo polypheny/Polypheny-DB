@@ -69,7 +69,7 @@ public abstract class Catalog {
 
 
     protected final PolyXid xid;
-    protected final PropertyChangeSupport observers = new PropertyChangeSupport( this );
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
 
 
@@ -90,7 +90,7 @@ public abstract class Catalog {
      * @param listener which gets added
      */
     public void addObserver( PropertyChangeListener listener ) {
-        observers.addPropertyChangeListener( listener );
+        listeners.addPropertyChangeListener( listener );
     }
 
 
@@ -100,9 +100,16 @@ public abstract class Catalog {
      * @param listener which gets removed
      */
     public void removeObserver( PropertyChangeListener listener ) {
-        observers.removePropertyChangeListener( listener );
+        listeners.removePropertyChangeListener( listener );
     }
 
+
+    /**
+     * Validates that all columns have a valid placement,
+     * else deletes them.
+     * TODO DL check
+     */
+    public abstract void validateColumns();
 
     /**
      * Restores all columnPlacements in the dedicated store

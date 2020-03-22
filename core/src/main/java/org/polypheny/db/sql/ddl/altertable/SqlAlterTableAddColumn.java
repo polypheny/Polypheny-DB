@@ -132,6 +132,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         // TODO: Check if the column either allows null values or has a default value defined.
 
         CatalogColumn addedColumn;
+        Long columnId = null;
         try {
             if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.getTable().id, column.getSimple() ) ) {
                 throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
@@ -159,7 +160,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
                 }
             }
-            long columnId = transaction.getCatalog().addColumn(
+            columnId = transaction.getCatalog().addColumn(
                     column.getSimple(),
                     catalogTable.getTable().id,
                     position,
@@ -191,6 +192,13 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
             }
         } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException | UnknownTableException e ) {
+            if( columnId != null){
+                try {
+                    transaction.getCatalog().deleteColumn( columnId );
+                } catch ( GenericCatalogException ex ) {
+                    ex.printStackTrace();
+                }
+            }
             throw new RuntimeException( e );
         }
 

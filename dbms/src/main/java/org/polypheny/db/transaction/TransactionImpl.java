@@ -193,6 +193,7 @@ public class TransactionImpl implements Transaction {
         for ( Store store : involvedStores ) {
             store.rollback( xid );
         }
+        catalog.validateColumns();
 
         /*
         // Rollback changes to the catalog

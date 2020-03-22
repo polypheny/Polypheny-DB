@@ -110,6 +110,7 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<String, CatalogStore> storeNames;
 
     private static HTreeMap<Long, CatalogKey> keys;
+    private static HTreeMap<long[], Long> keyColumns;
     private static HTreeMap<Long, CatalogCombinedKey> combinedKeys;
 
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
@@ -213,6 +214,23 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Initializes the default catalog layout
+     *
+     * @param db the databases object on which the layout is created
+     */
+    private void initDBLayout( DB db ) {
+        initUserInfo( db );
+        initDatabaseInfo( db );
+        initSchemaInfo( db );
+        initTableInfo( db );
+        initColumnInfo( db );
+        initKeysAndConstraintsInfo( db );
+        initStoreInfo( db );
+
+    }
+
+
+    /**
      * Restores all columnPlacements in the dedicated store
      */
     public void restoreColumnPlacements( Transaction trx ) {
@@ -259,23 +277,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Initializes the default catalog layout
-     *
-     * @param db the databases object on which the layout is created
-     */
-    private void initDBLayout( DB db ) {
-        initUserInfo( db );
-        initDatabaseInfo( db );
-        initSchemaInfo( db );
-        initTableInfo( db );
-        initColumnInfo( db );
-        initKeysAndConstraintsInfo( db );
-        initStoreInfo( db );
-
-    }
-
-
     private void restoreIdBuilder( Map<Integer, ?> map, AtomicInteger idBuilder ) {
         if ( !map.isEmpty() ) {
             idBuilder.set( Collections.max( map.keySet() ) + 1 );
@@ -313,11 +314,64 @@ public class CatalogImpl extends Catalog {
 
     private void initKeysAndConstraintsInfo( DB db ) {
         combinedKeys = db.hashMap( "combinedKeys", Serializer.LONG, new GenericSerializer<CatalogCombinedKey>() ).createOrOpen();
+        keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
         keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
         primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
         foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, new GenericSerializer<CatalogForeignKey>() ).createOrOpen();
         constraints = db.hashMap( "constraints", Serializer.LONG, new GenericSerializer<CatalogConstraint>() ).createOrOpen();
         indices = db.hashMap( "indices", Serializer.LONG, new GenericSerializer<CatalogIndex>() ).createOrOpen();
+    }
+
+
+    private void initUserInfo( DB db ) {
+        users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
+        userNames = db.hashMap( "usersNames", Serializer.STRING, new GenericSerializer<CatalogUser>() ).createOrOpen();
+    }
+
+
+    /**
+     * initialize the column maps
+     * "columns" holds all CatalogColumn objects, access by id
+     * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
+     * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
+     *
+     * @param db the MapDB database object on which the maps are generated from
+     */
+    private void initColumnInfo( DB db ) {
+        columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
+        //noinspection unchecked
+        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+        //noinspection unchecked
+        columnPlacements = db.treeMap( "columnPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
+    }
+
+
+    private void initTableInfo( DB db ) {
+        tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
+        combinedTables = db.hashMap( "combinedTables", Serializer.LONG, new GenericSerializer<CatalogCombinedTable>() ).createOrOpen();
+        tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
+        //noinspection unchecked
+        tableNames = db.treeMap( "tableNames" )
+                .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
+                .valueSerializer( Serializer.JAVA )
+                .createOrOpen();
+    }
+
+
+    private void initSchemaInfo( DB db ) {
+        schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
+        combinedSchemas = db.hashMap( "combinedSchemas", Serializer.LONG, new GenericSerializer<CatalogCombinedSchema>() ).createOrOpen();
+        schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
+        //noinspection unchecked
+        schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
+    }
+
+
+    private void initDatabaseInfo( DB db ) {
+        databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
+        combinedDatabases = db.hashMap( "combined", Serializer.LONG, new GenericSerializer<CatalogCombinedDatabase>() ).createOrOpen();
+        databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
+        databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
     }
 
 
@@ -420,55 +474,10 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void initUserInfo( DB db ) {
-        users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
-        userNames = db.hashMap( "usersNames", Serializer.STRING, new GenericSerializer<CatalogUser>() ).createOrOpen();
-    }
-
-
-    /**
-     * initialize the column maps
-     * "columns" holds all CatalogColumn objects, access by id
-     * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
-     * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
-     *
-     * @param db the MapDB database object on which the maps are generated from
-     */
-    private void initColumnInfo( DB db ) {
-        columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
-        //noinspection unchecked
-        columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
-        //noinspection unchecked
-        columnPlacements = db.treeMap( "columnPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
-    }
-
-
-    private void initTableInfo( DB db ) {
-        tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
-        combinedTables = db.hashMap( "combinedTables", Serializer.LONG, new GenericSerializer<CatalogCombinedTable>() ).createOrOpen();
-        tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        //noinspection unchecked
-        tableNames = db.treeMap( "tableNames" )
-                .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
-                .valueSerializer( Serializer.JAVA )
-                .createOrOpen();
-    }
-
-
-    private void initSchemaInfo( DB db ) {
-        schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
-        combinedSchemas = db.hashMap( "combinedSchemas", Serializer.LONG, new GenericSerializer<CatalogCombinedSchema>() ).createOrOpen();
-        schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
-        //noinspection unchecked
-        schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
-    }
-
-
-    private void initDatabaseInfo( DB db ) {
-        databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
-        combinedDatabases = db.hashMap( "combined", Serializer.LONG, new GenericSerializer<CatalogCombinedDatabase>() ).createOrOpen();
-        databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
-        databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
+    @Override
+    public void validateColumns() {
+        CatalogValidator validator = new CatalogValidator();
+        validator.validateColumns();
     }
 
 
@@ -490,7 +499,7 @@ public class CatalogImpl extends Catalog {
      *
      * @return the id of the newly inserted database
      */
-    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) throws GenericCatalogException {
+    public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
         long id = databaseIdBuilder.getAndIncrement();
         CatalogDatabase database = new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName );
         databases.put( id, database );
@@ -500,7 +509,7 @@ public class CatalogImpl extends Catalog {
         combinedDatabases.put( id, buildCombinedDatabase( database ) );
         log.info( "adding combined database" );
 
-        observers.firePropertyChange( "database", null, database );
+        listeners.firePropertyChange( "database", null, database );
         return id;
     }
 
@@ -715,7 +724,7 @@ public class CatalogImpl extends Catalog {
 
             combinedSchemas.put( id, buildCombinedSchema( schema, database ) );
             combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
-            observers.firePropertyChange( "schema", null, schema );
+            listeners.firePropertyChange( "schema", null, schema );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -764,6 +773,7 @@ public class CatalogImpl extends Catalog {
             CatalogDatabase database = getDatabase( schema.databaseId );
             combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
             combinedDatabases.replace( schema.databaseId, buildCombinedDatabase( database ) );
+            listeners.firePropertyChange( "replaceCombinedDatabase", null, database );
         } catch ( UnknownDatabaseException e ) {
             throw new GenericCatalogException( e );
         }
@@ -815,6 +825,7 @@ public class CatalogImpl extends Catalog {
 
             combinedSchemas.remove( schemaId );
             combinedDatabases.replace( schema.databaseId, buildCombinedDatabase( getDatabase( schema.databaseId ) ) );
+            listeners.firePropertyChange( "deleteSchema", null, schema );
         } catch ( NullPointerException | UnknownDatabaseException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1010,7 +1021,7 @@ public class CatalogImpl extends Catalog {
             combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
             combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
 
-            observers.firePropertyChange( "table", null, table );
+            listeners.firePropertyChange( "addTable", null, table );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1065,6 +1076,7 @@ public class CatalogImpl extends Catalog {
         combinedTables.replace( table.id, buildCombinedTable( table, schema, database ) );
         combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
         combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
+        listeners.firePropertyChange( "replaceCombinedTable", null, schema );
     }
 
 
@@ -1099,6 +1111,7 @@ public class CatalogImpl extends Catalog {
             combinedTables.remove( tableId );
             combinedSchemas.replace( schema.id, buildCombinedSchema( schema, database ) );
             combinedDatabases.replace( database.id, buildCombinedDatabase( database ) );
+            listeners.firePropertyChange( "deleteTable", null, table );
 
         } catch ( NullPointerException | UnknownSchemaException | UnknownDatabaseException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
@@ -1208,6 +1221,7 @@ public class CatalogImpl extends Catalog {
             columnPlacements.put( new Object[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
 
             updateCombinedMaps( column );
+            listeners.firePropertyChange( "addColumnPlacement", null, column );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1229,6 +1243,7 @@ public class CatalogImpl extends Catalog {
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             e.printStackTrace();
         }
+        listeners.firePropertyChange( "deleteColumnPlacement", null, columnId );
     }
 
 
@@ -1436,7 +1451,7 @@ public class CatalogImpl extends Catalog {
 
             updateCombinedMaps( column );
 
-            observers.firePropertyChange( "column", null, column );
+            listeners.firePropertyChange( "addColumn", null, column );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1613,6 +1628,7 @@ public class CatalogImpl extends Catalog {
             columns.remove( columnId );
 
             updateCombinedMaps( column );
+            listeners.firePropertyChange( "deleteColumn", null, column );
         } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
@@ -2276,26 +2292,28 @@ public class CatalogImpl extends Catalog {
             }
             keys.remove( keyId );
             combinedKeys.remove( keyId );
+            keyColumns.remove( key.columnIds.stream().mapToLong( Long::longValue ).toArray() );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
 
 
-    // Returns the id of they defined by the specified column ids. If this key does not yet exist, create it.
+    /**
+     * Returns the id of they defined by the specified column ids. If this key does not yet exist, create it.
+     *
+     * @param tableId on which the key is defined
+     * @param columnIds all involved columns
+     * @return the id of the key
+     * @throws GenericCatalogException if the key does not exist
+     */
     private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
-        // TODO change to 0 when done, -1 cause 0 was unrecognizable
-        long keyId = -1;
-        List<CatalogKey> catalogKeys = keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
-        for ( CatalogKey key : catalogKeys ) {
-            if ( key.columnIds.size() == columnIds.size() && key.columnIds.containsAll( columnIds ) && columnIds.containsAll( key.columnIds ) ) {
-                keyId = key.id;
-            }
+
+        Long keyId = keyColumns.get( columnIds.stream().mapToLong( Long::longValue ).toArray() );
+        if ( keyId != null ) {
+            return keyId;
         }
-        if ( keyId == -1 ) {
-            keyId = addKey( tableId, columnIds );
-        }
-        return keyId;
+        return addKey( tableId, columnIds );
     }
 
 
@@ -2307,15 +2325,30 @@ public class CatalogImpl extends Catalog {
             CatalogKey key = new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names );
             keys.put( id, key );
             combinedKeys.put( id, buildCombinedKey( key ) );
+            keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
 
             updateCombinedMaps( columnIds );
 
-            observers.firePropertyChange( "key", null, key );
+            listeners.firePropertyChange( "addKey", null, key );
             return id;
         } catch ( NullPointerException | GenericCatalogException e ) {
             throw new GenericCatalogException( e );
         }
     }
 
+
+    class CatalogValidator {
+
+        public void validateColumns() {
+            columns.values().stream().filter( c -> getColumnPlacements( c.id ).size() == 0 ).forEach( c -> {
+                try {
+                    deleteColumn( c.id );
+                } catch ( GenericCatalogException e ) {
+                    e.printStackTrace();
+                }
+            } );
+        }
+
+    }
 
 }
