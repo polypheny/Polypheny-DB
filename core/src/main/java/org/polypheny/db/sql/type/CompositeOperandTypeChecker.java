@@ -47,7 +47,8 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * This class allows multiple existing {@link SqlOperandTypeChecker} rules to be combined into one rule. For example, allowing an operand to be either string or numeric could be done by:
+ * This class allows multiple existing {@link SqlOperandTypeChecker} rules to be combined into one rule. For example,
+ * allowing an operand to be either string or numeric could be done by:
  *
  * <blockquote>
  * <pre><code>
@@ -77,7 +78,8 @@ import org.polypheny.db.util.Util;
  * </code></pre>
  * </blockquote>
  *
- * For SEQUENCE composition, the rules must be instances of SqlSingleOperandTypeChecker, and signature generation is not supported. For AND composition, only the first rule is used for signature generation.
+ * For SEQUENCE composition, the rules must be instances of SqlSingleOperandTypeChecker, and signature generation is not
+ * supported. For AND composition, only the first rule is used for signature generation.
  */
 public class CompositeOperandTypeChecker implements SqlOperandTypeChecker {
 

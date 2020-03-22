@@ -40,7 +40,8 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
- * Strategy to infer the type of an operator call from the type of the operands by using one {@link SqlReturnTypeInference} rule and a combination of {@link SqlTypeTransform}s
+ * Strategy to infer the type of an operator call from the type of the operands by using one {@link SqlReturnTypeInference}
+ * rule and a combination of {@link SqlTypeTransform}s
  */
 public class SqlTypeTransformCascade implements SqlReturnTypeInference {
 

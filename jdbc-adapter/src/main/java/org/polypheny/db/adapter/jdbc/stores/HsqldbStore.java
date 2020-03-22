@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.PUID;
 import org.polypheny.db.PUID.Type;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -20,6 +19,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.PolyXid;
 
 
@@ -113,8 +113,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    protected String getTypeString( PolySqlType polySqlType ) {
-        switch ( polySqlType ) {
+    protected String getTypeString( SqlTypeName type ) {
+        switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
@@ -131,8 +131,6 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "DECIMAL";
             case VARCHAR:
                 return "VARCHAR";
-            case TEXT:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
             case DATE:
                 return "DATE";
             case TIME:
@@ -140,7 +138,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case TIMESTAMP:
                 return "TIMESTAMP";
         }
-        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
+        throw new RuntimeException( "Unknown type: " + type.name() );
     }
 
 }

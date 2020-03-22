@@ -24,13 +24,13 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 public class SchemaToJsonMapper {
@@ -115,7 +115,7 @@ public class SchemaToJsonMapper {
             if ( addDefaultValueDefinition ) {
                 if ( column.defaultValue != null ) {
                     writer.keyword( "DEFAULT" );
-                    if ( Arrays.asList( PolySqlType.VARCHAR.name(), PolySqlType.TEXT.name(), PolySqlType.DATE.name(), PolySqlType.TIME.name(), PolySqlType.TIMESTAMP.name() ).contains( column.type ) ) {
+                    if ( Arrays.asList( SqlTypeName.VARCHAR.name(), SqlTypeName.DATE.name(), SqlTypeName.TIME.name(), SqlTypeName.TIMESTAMP.name() ).contains( column.type ) ) {
                         writer.literal( "'" + column.defaultValue + "'" );
                     } else {
                         writer.literal( column.defaultValue );

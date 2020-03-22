@@ -39,9 +39,10 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
- * Strategy to transform one type to another. The transformation is dependent on the implemented strategy object and in the general case is a function of the type and the other operands.
- * Can not be used by itself. Must be used in an object of type {@link SqlTypeTransformCascade}.
- *
+ * Strategy to transform one type to another. The transformation is dependent on the implemented strategy object and in the
+ * general case is a function of the type and the other operands. Can not be used by itself. Must be used in an object
+ * of type {@link SqlTypeTransformCascade}.
+ * <p>
  * This class is an example of the {@link org.polypheny.db.util.Glossary#STRATEGY_PATTERN strategy pattern}.
  */
 public interface SqlTypeTransform {

@@ -45,14 +45,16 @@ import org.polypheny.db.util.Util;
 
 /**
  * SqlTypeTransforms defines a number of reusable instances of {@link SqlTypeTransform}.
- *
- * NOTE: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else belongs in a reusable top-level class. If you find yourself copying and pasting an existing strategy's
- * anonymous inner class, you're making a mistake.
+ * <p>
+ * NOTE: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else belongs in a
+ * reusable top-level class. If you find yourself copying and pasting an existing strategy's anonymous inner class,
+ * you're making a mistake.
  */
 public abstract class SqlTypeTransforms {
 
     /**
-     * Parameter type-inference transform strategy where a derived type is transformed into the same type but nullable if any of a calls operands is nullable
+     * Parameter type-inference transform strategy where a derived type is transformed into the same type but nullable
+     * if any of a calls operands is nullable
      */
     public static final SqlTypeTransform TO_NULLABLE =
             ( opBinding, typeToTransform ) ->
@@ -62,7 +64,8 @@ public abstract class SqlTypeTransforms {
                             Objects.requireNonNull( typeToTransform ) );
 
     /**
-     * Parameter type-inference transform strategy where a derived type is transformed into the same type, but nullable if and only if all of a call's operands are nullable.
+     * Parameter type-inference transform strategy where a derived type is transformed into the same type, but nullable if
+     * and only if all of a call's operands are nullable.
      */
     public static final SqlTypeTransform TO_NULLABLE_ALL = ( opBinding, type ) -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
@@ -101,8 +104,9 @@ public abstract class SqlTypeTransforms {
             };
 
     /**
-     * Type-inference strategy whereby the result type of a call is VARYING the type given. The length returned is the same as length of the first argument. Return type will have same nullability as input type
-     * nullability. First Arg must be of string type.
+     * Type-inference strategy whereby the result type of a call is VARYING the type given. The length returned is the same
+     * as length of the first argument. Return type will have same nullability as input type nullability. First Arg must be
+     * of string type.
      */
     public static final SqlTypeTransform TO_VARYING =
             new SqlTypeTransform() {
@@ -144,7 +148,8 @@ public abstract class SqlTypeTransforms {
             };
 
     /**
-     * Parameter type-inference transform strategy where a derived type must be a multiset type and the returned type is the multiset's element type.
+     * Parameter type-inference transform strategy where a derived type must be a multiset type and the returned type
+     * is the multiset's element type.
      *
      * @see MultisetSqlType#getComponentType
      */
@@ -158,7 +163,8 @@ public abstract class SqlTypeTransforms {
     public static final SqlTypeTransform TO_MULTISET = ( opBinding, typeToTransform ) -> opBinding.getTypeFactory().createMultisetType( typeToTransform, -1 );
 
     /**
-     * Parameter type-inference transform strategy where a derived type must be a struct type with precisely one field and the returned type is the type of that field.
+     * Parameter type-inference transform strategy where a derived type must be a struct type with precisely one field and
+     * the returned type is the type of that field.
      */
     public static final SqlTypeTransform ONLY_COLUMN =
             ( opBinding, typeToTransform ) -> {

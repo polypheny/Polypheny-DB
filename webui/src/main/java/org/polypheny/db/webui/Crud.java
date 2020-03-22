@@ -73,7 +73,6 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.Store;
@@ -124,6 +123,8 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.statistic.StatisticColumn;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Transaction;
@@ -489,19 +490,19 @@ public class Crud implements InformationObserver {
         query.append( "INSERT INTO " ).append( tableId );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, SqlTypeName> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( "\"" + entry.getKey() + "\"" );
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
+            } else if ( dataTypes.get( entry.getKey() ).getFamily() == SqlTypeFamily.CHARACTER ) {
                 value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.DATE ) {
+            } else if ( dataTypes.get( entry.getKey() ) == SqlTypeName.DATE ) {
                 value = "DATE '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIME ) {
+            } else if ( dataTypes.get( entry.getKey() ) == SqlTypeName.TIME ) {
                 value = "TIME '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIMESTAMP ) {
+            } else if ( dataTypes.get( entry.getKey() ) == SqlTypeName.TIMESTAMP ) {
                 value = "TIMESTAMP '" + value + "'";
             }
             values.add( value );
@@ -718,13 +719,13 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
-        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, SqlTypeName> dataTypes = getColumnTypes( t[0], t[1] );
         String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition;
             if ( entry.getValue() == null ) {
                 condition = String.format( "\"%s\" IS NULL", entry.getKey() );
-            } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
+            } else if ( dataTypes.get( entry.getKey() ).getFamily() != SqlTypeFamily.CHARACTER ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
                 condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
@@ -1755,9 +1756,9 @@ public class Crud implements InformationObserver {
         }
          */
 
-        for ( PolySqlType polySqlType : PolySqlType.values() ) {
+        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
             String[] row = new String[1];
-            row[0] = polySqlType.name();
+            row[0] = sqlTypeName.name();
             data.add( row );
         }
 
@@ -1931,13 +1932,13 @@ public class Crud implements InformationObserver {
                 while ( (nextRecord = csvReader.readNext()) != null ) {
                     rowJoiner = new StringJoiner( ",", "(", ")" );
                     for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                        if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                        if ( SqlTypeName.get( table.getColumns().get( i ).type ).getFamily() == SqlTypeFamily.CHARACTER ) {
                             rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.DATE ) {
+                        } else if ( SqlTypeName.get( table.getColumns().get( i ).type ) == SqlTypeName.DATE ) {
                             rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIME ) {
+                        } else if ( SqlTypeName.get( table.getColumns().get( i ).type ) == SqlTypeName.TIME ) {
                             rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIMESTAMP ) {
+                        } else if ( SqlTypeName.get( table.getColumns().get( i ).type ) == SqlTypeName.TIMESTAMP ) {
                             rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
                         } else {
                             rowJoiner.add( nextRecord[i] );
@@ -2398,11 +2399,11 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName name of the table
+     * @param tableName  name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, PolySqlType> getColumnTypes( String schemaName, String tableName ) {
-        Map<String, PolySqlType> dataTypes = new HashMap<>();
+    private Map<String, SqlTypeName> getColumnTypes( String schemaName, String tableName ) {
+        Map<String, SqlTypeName> dataTypes = new HashMap<>();
         Transaction transaction = getTransaction();
         try {
             CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );

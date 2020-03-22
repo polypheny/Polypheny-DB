@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.polypheny.db.PolySqlType;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**
@@ -31,14 +31,14 @@ public class CatalogDefaultValue {
     private static final long serialVersionUID = 6085682952587659184L;
 
     public final long columnId;
-    public final PolySqlType type;
+    public final SqlTypeName type;
     public final String value;
     public final String functionName;
 
 
     public CatalogDefaultValue(
             final long columnId,
-            @NonNull final PolySqlType type,
+            @NonNull final SqlTypeName type,
             final String value,
             final String functionName ) {
         this.columnId = columnId;

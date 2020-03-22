@@ -21,8 +21,8 @@ import com.google.gson.annotations.Expose;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**
@@ -46,12 +46,12 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private T max;
 
 
-    public NumericalStatisticColumn( String schema, String table, String column, PolySqlType type ) {
+    public NumericalStatisticColumn( String schema, String table, String column, SqlTypeName type ) {
         super( schema, table, column, type );
     }
 
 
-    public NumericalStatisticColumn( String[] splitColumn, PolySqlType type ) {
+    public NumericalStatisticColumn( String[] splitColumn, SqlTypeName type ) {
         super( splitColumn, type );
     }
 

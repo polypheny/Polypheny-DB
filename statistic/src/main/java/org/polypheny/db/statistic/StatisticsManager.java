@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -34,6 +33,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.sql.type.SqlTypeFamily;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -135,13 +136,13 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Adds a new column to the tracked columns and sorts it correctly
      *
      * @param qualifiedColumn column name
-     * @param type the type of the new column
+     * @param type            the type of the new column
      */
-    private void addColumn( String qualifiedColumn, PolySqlType type ) {
+    private void addColumn( String qualifiedColumn, SqlTypeName type ) {
         String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
-        if ( type.isNumericalType() ) {
+        if ( type.getFamily() == SqlTypeFamily.NUMERIC ) {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
-        } else if ( type.isCharType() ) {
+        } else if ( type.getFamily() == SqlTypeFamily.CHARACTER ) {
             put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
         }
     }
@@ -226,9 +227,9 @@ public class StatisticsManager<T extends Comparable<T>> {
         if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
-        if ( column.getType().isNumericalType() ) {
+        if ( column.getType().getFamily() == SqlTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
-        } else if ( column.getType().isCharType() ) {
+        } else if ( column.getType().getFamily() == SqlTypeFamily.CHARACTER ) {
             return this.reevaluateAlphabeticalColumn( column );
         }
         return null;

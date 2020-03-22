@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -39,6 +38,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -162,7 +162,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     column.getSimple(),
                     catalogTable.getTable().id,
                     position,
-                    PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() ),
+                    SqlTypeName.get( type.getTypeName().getSimple() ),
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     type.getScale() == -1 ? null : type.getScale(),
                     nullable,
@@ -177,7 +177,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
+                transaction.getCatalog().setDefaultValue( addedColumn.id, SqlTypeName.VARCHAR, v );
             }
 
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -50,10 +50,12 @@ public class ExplicitReturnTypeInference implements SqlReturnTypeInference {
 
     /**
      * Creates an inference rule which always returns the same type object.
-     *
-     * If the requesting type factory is different, returns a copy of the type object made using {@link RelDataTypeFactory#copyType(RelDataType)} within the requesting type factory.
-     *
-     * A copy of the type is required because each statement is prepared using a different type factory; each type factory maintains its own cache of canonical instances of each type.
+     * <p>
+     * If the requesting type factory is different, returns a copy of the type object made using
+     * {@link RelDataTypeFactory#copyType(RelDataType)} within the requesting type factory.
+     * <p>
+     * A copy of the type is required because each statement is prepared using a different type factory; each type factory
+     * maintains its own cache of canonical instances of each type.
      *
      * @param protoType Type object
      */

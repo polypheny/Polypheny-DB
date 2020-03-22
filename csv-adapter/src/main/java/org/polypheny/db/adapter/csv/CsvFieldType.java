@@ -37,9 +37,9 @@ package org.polypheny.db.adapter.csv;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 /**
@@ -85,7 +85,7 @@ enum CsvFieldType {
     }
 
 
-    public static CsvFieldType getCsvFieldType( PolySqlType type ) {
+    public static CsvFieldType getCsvFieldType( SqlTypeName type ) {
         switch ( type ) {
             case BOOLEAN:
                 return CsvFieldType.BOOLEAN;
@@ -102,8 +102,6 @@ enum CsvFieldType {
             case DECIMAL:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
             case VARCHAR:
-                return CsvFieldType.STRING;
-            case TEXT:
                 return CsvFieldType.STRING;
             case DATE:
                 return CsvFieldType.DATE;

@@ -46,7 +46,8 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * AssignableOperandTypeChecker implements {@link SqlOperandTypeChecker} by verifying that the type of each argument is assignable to a predefined set of parameter types (under the SQL definition of "assignable").
+ * AssignableOperandTypeChecker implements {@link SqlOperandTypeChecker} by verifying that the type of each argument is
+ * assignable to a predefined set of parameter types (under the SQL definition of "assignable").
  */
 public class AssignableOperandTypeChecker implements SqlOperandTypeChecker {
 

@@ -26,7 +26,6 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -48,6 +47,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -219,7 +219,7 @@ public class StatisticQueryProcessor {
     }
 
 
-    public PolySqlType getColumnType( String schemaTableColumn ) {
+    public SqlTypeName getColumnType( String schemaTableColumn ) {
         String[] splits = schemaTableColumn.split( "\\." );
         if ( splits.length != 3 ) {
             return null;
@@ -231,10 +231,10 @@ public class StatisticQueryProcessor {
     /**
      * Method to get the type of a specific column
      */
-    public PolySqlType getColumnType( String schema, String table, String column ) {
+    public SqlTypeName getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
         // TODO: fix possible NullPointer
-        PolySqlType type = null;
+        SqlTypeName type = null;
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -320,11 +320,11 @@ public class StatisticQueryProcessor {
         }
 
         try {
-            List<PolySqlType> types = new ArrayList<>();
+            List<SqlTypeName> types = new ArrayList<>();
             List<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
 
-                types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
+                types.add( SqlTypeName.get( metaData.type.name ) );
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 

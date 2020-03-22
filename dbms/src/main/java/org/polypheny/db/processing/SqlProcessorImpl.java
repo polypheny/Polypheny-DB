@@ -276,7 +276,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                                     newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
                                     break;
                                 case VARCHAR:
-                                case TEXT:
                                     newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
                                     break;
                                 default:

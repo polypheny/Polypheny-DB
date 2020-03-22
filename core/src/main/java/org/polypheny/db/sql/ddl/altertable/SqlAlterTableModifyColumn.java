@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import lombok.NonNull;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -38,6 +37,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -150,10 +150,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                                 RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
                     }
                 }
-                PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() );
+                SqlTypeName dataType = SqlTypeName.get( type.getTypeName().getSimple() );
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
-                        polySqlType,
+                        dataType,
                         type.getPrecision() == -1 ? null : type.getPrecision(),
                         type.getScale() == -1 ? null : type.getScale() );
                 for ( CatalogColumnPlacement placement : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
@@ -213,7 +213,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( catalogColumn.id, PolySqlType.VARCHAR, v );
+                transaction.getCatalog().setDefaultValue( catalogColumn.id, SqlTypeName.VARCHAR, v );
             } else if ( dropDefault != null && dropDefault ) {
                 transaction.getCatalog().deleteDefaultValue( catalogColumn.id );
             } else {

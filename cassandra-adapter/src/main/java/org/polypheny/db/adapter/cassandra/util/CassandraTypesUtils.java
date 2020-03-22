@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.cassandra.util;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.sql.type.SqlTypeName;
 
 
@@ -74,7 +73,7 @@ public class CassandraTypesUtils {
         }
     }
 
-
+/*
     public static DataType getDataType( PolySqlType polySqlType ) {
         switch ( polySqlType ) {
             case BOOLEAN:
@@ -103,5 +102,5 @@ public class CassandraTypesUtils {
                 return DataTypes.TIMESTAMP;
         }
         throw new RuntimeException( "Unknown type: " + polySqlType.name() );
-    }
+    }*/
 }

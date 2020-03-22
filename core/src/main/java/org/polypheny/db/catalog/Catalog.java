@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -56,6 +55,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.PolyXid;
 
 
@@ -445,7 +445,7 @@ public abstract class Catalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, SqlTypeName type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -468,9 +468,9 @@ public abstract class Catalog {
      * Change the data type of an column.
      *
      * @param columnId The id of the column
-     * @param type The new type of the column
+     * @param type     The new type of the column
      */
-    public abstract void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException;
+    public abstract void setColumnType( long columnId, SqlTypeName type, Integer length, Integer precision ) throws GenericCatalogException;
 
     /**
      * Change nullability of the column (weather the column allows null values).
@@ -509,11 +509,11 @@ public abstract class Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId The id of the column
-     * @param type The type of the default value
+     * @param columnId     The id of the column
+     * @param type         The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException;
+    public abstract void setDefaultValue( long columnId, SqlTypeName type, String defaultValue ) throws GenericCatalogException;
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.

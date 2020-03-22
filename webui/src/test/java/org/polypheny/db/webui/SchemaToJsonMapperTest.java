@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -32,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.sql.type.SqlTypeName;
 
 
 public class SchemaToJsonMapperTest {
@@ -45,9 +45,9 @@ public class SchemaToJsonMapperTest {
         CatalogCombinedTable catalogCombinedTable = new CatalogCombinedTable(
                 new CatalogTable( 4, "stores", 1, "public", 1, "APP", 1, "hans", TableType.TABLE, "", 23L ),
                 Arrays.asList(
-                        new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, PolySqlType.INTEGER, null, null, false, null, null ),
-                        new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, PolySqlType.VARCHAR, 50, null, false, null, null ),
-                        new CatalogColumn( 7, "location", 4, "stores", 1, "public", 1, "APP", 3, PolySqlType.VARCHAR, 30, null, true, null, new CatalogDefaultValue( 7, PolySqlType.VARCHAR, "Basel", null ) )
+                        new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, SqlTypeName.INTEGER, null, null, false, null, null ),
+                        new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, SqlTypeName.VARCHAR, 50, null, false, null, null ),
+                        new CatalogColumn( 7, "location", 4, "stores", 1, "public", 1, "APP", 3, SqlTypeName.VARCHAR, 30, null, true, null, new CatalogDefaultValue( 7, SqlTypeName.VARCHAR, "Basel", null ) )
                 ),
                 new CatalogSchema( 1, "public", 1, "APP", 1, "hans", SchemaType.RELATIONAL ),
                 new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" ),

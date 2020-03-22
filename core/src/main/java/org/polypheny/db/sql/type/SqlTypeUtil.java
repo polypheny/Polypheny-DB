@@ -525,7 +525,8 @@ public abstract class SqlTypeUtil {
 
 
     /**
-     * Computes the maximum number of bytes required to represent a value of a type having user-defined precision. This computation assumes no overhead such as length indicators and NUL-terminators. Complex types for which
+     * Computes the maximum number of bytes required to represent a value of a type having user-defined precision.
+     * This computation assumes no overhead such as length indicators and NUL-terminators. Complex types for which
      * multiple representations are possible (e.g. DECIMAL or TIMESTAMP) return 0.
      *
      * @param type type for which to compute storage
@@ -784,8 +785,8 @@ public abstract class SqlTypeUtil {
 
 
     public static boolean needsNullIndicator( RelDataType recordType ) {
-        // NOTE jvs: It would be more storage-efficient to say that no null indicator is required for structured type columns declared as NOT NULL.  However, the uniformity of always having a null
-        // indicator makes things cleaner in many places.
+        // NOTE jvs: It would be more storage-efficient to say that no null indicator is required for structured type columns
+        // declared as NOT NULL.  However, the uniformity of always having a null indicator makes things cleaner in many places.
         return recordType.getSqlTypeName() == SqlTypeName.STRUCTURED;
     }
 
@@ -974,9 +975,10 @@ public abstract class SqlTypeUtil {
 
     /**
      * Selects data types of the specified fields from an input row type.
-     * This is useful when identifying data types of a function that is going to operate on inputs that are specified as field ordinals (e.g. aggregate calls).
+     * This is useful when identifying data types of a function that is going to operate on inputs that are specified as
+     * field ordinals (e.g. aggregate calls).
      *
-     * @param rowType input row type
+     * @param rowType        input row type
      * @param requiredFields ordinals of the projected fields
      * @return list of data types that are requested by requiredFields
      */
