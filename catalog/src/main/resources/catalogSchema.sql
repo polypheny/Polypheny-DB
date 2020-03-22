@@ -329,11 +329,12 @@ WHERE "id" = 0;
 INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
 VALUES ( 0, 0, 'depts', 0, 1, NULL ),
        ( 1, 0, 'emps', 0, 1, NULL ),
-       ( 2, 0, 'test', 0, 1, NULL );
+       ( 2, 0, 'test', 0, 1, NULL ),
+       ( 3, 0, 'employee', 0, 1, NULL );
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
-        RESTART WITH 3;
+        RESTART WITH 4;
 
 
 --
@@ -350,11 +351,46 @@ VALUES ( 0, 0, 'deptno', 1, 3, NULL, NULL, FALSE, NULL ),
        ( 7, 2, 'country', 1, 9, 20, NULL , FALSE, 2 ),
        ( 8, 2, 'ttt', 2, 9, 20, NULL, FALSE, 2 ),
        ( 9, 2, 'category', 3, 9, 20, NULL, FALSE, 2 ),
-       ( 10, 2, 'working', 4, 9, 20, NULL, FALSE, 2 );
+       ( 10, 2, 'working', 4, 9, 20, NULL, FALSE, 2 ),
+       ( 11, 3, 'Age', 1, 3, NULL, NULL, FALSE, NULL),
+       ( 12, 3, 'Attrition', 2, 9, 20, NULL, FALSE, 2 ),
+       ( 13, 3, 'BusinessTravel', 3, 9, 20, NULL, FALSE, 2 ),
+       ( 14, 3, 'DailyRate', 4, 3, NULL, NULL, FALSE, NULL),
+       ( 15, 3, 'Department', 5, 9, 20, NULL, FALSE, 2 ),
+       ( 16, 3, 'DistanceFromHome', 6, 3, NULL, NULL, FALSE, NULL),
+       ( 17, 3, 'Education', 7, 9, 20, NULL, FALSE, 2 ),
+       ( 18, 3, 'EducationField', 8, 9, 20, NULL, FALSE, 2 ),
+       ( 19, 3, 'EmployeeCount', 9, 3, NULL, NULL, FALSE, NULL),
+       ( 20, 3, 'EmployeeNumber', 10, 3, NULL, NULL, FALSE, NULL),
+       ( 21, 3, 'EnvironmentSatisfaction', 11, 9, 20, NULL, FALSE, 2 ),
+       ( 22, 3, 'Gender', 12, 9, 20, NULL, FALSE, 2 ),
+       ( 23, 3, 'HourlyRate', 13, 3, NULL, NULL, FALSE, NULL),
+       ( 24, 3, 'JobInvolvement', 14, 9, 20, NULL, FALSE, 2 ),
+       ( 25, 3, 'JobLevel', 15, 3, NULL, NULL, FALSE, NULL),
+       ( 26, 3, 'JobRole', 16, 9, 20, NULL, FALSE, 2 ),
+       ( 27, 3, 'JobSatisfaction', 17, 3, NULL, NULL, FALSE, NULL),
+       ( 28, 3, 'MaritalStatus', 18, 9, 20, NULL, FALSE, 2 ),
+       ( 29, 3, 'MonthlyIncome', 19, 3, NULL, NULL, FALSE, NULL),
+       ( 30, 3, 'MonthlyRate', 20, 3, NULL, NULL, FALSE, NULL),
+       ( 31, 3, 'NumCompaniesWorked', 21, 3, NULL, NULL, FALSE, NULL),
+       ( 32, 3, 'Over18', 22, 9, 20, NULL, FALSE, 2 ),
+       ( 33, 3, 'OverTime', 23, 9, 20, NULL, FALSE, 2 ),
+       ( 34, 3, 'PercentSalaryHike', 24, 3, NULL, NULL, FALSE, NULL),
+       ( 35, 3, 'PerformanceRating', 25, 9, 20, NULL, FALSE, 2 ),
+       ( 36, 3, 'RelationshipSatisfaction', 26, 9, 20, NULL, FALSE, 2 ),
+       ( 37, 3, 'StandardHours', 27, 3, NULL, NULL, FALSE, NULL),
+       ( 38, 3, 'StockOptionLevel', 28, 3, NULL, NULL, FALSE, NULL),
+       ( 39, 3, 'TotalWorkingYears', 29, 3, NULL, NULL, FALSE, NULL),
+       ( 40, 3, 'TrainingTimesLastYear', 30, 3, NULL, NULL, FALSE, NULL),
+       ( 41, 3, 'WorkLifeBalance', 31, 9, 20, NULL, FALSE, 2 ),
+       ( 42, 3, 'YearsAtCompany', 32, 3, NULL, NULL, FALSE, NULL),
+       ( 43, 3, 'YearsInCurrentRole', 33, 3, NULL, NULL, FALSE, NULL),
+       ( 44, 3, 'YearsSinceLastPromotion', 34, 3, NULL, NULL, FALSE, NULL),
+       ( 45, 3, 'YearsWithCurrManager', 35, 3, NULL, NULL, FALSE, NULL);
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
-        RESTART WITH 11;
+        RESTART WITH 46;
 
 
 --
@@ -383,5 +419,39 @@ VALUES ( 1, 0, 0, 2, null, 'depts', 'deptno' ),
     ( 1, 7, 2, 2, null, 'test', 'country' ),
     ( 1, 8, 2, 2, null, 'test', 'ttt' ),
     ( 1, 9, 2, 2, null, 'test', 'category' ),
-    ( 1, 10, 2, 2, null, 'test', 'working' );
-
+    ( 1, 10, 2, 2, null, 'test', 'working' ),
+    ( 1, 11, 3, 2, null, 'employee', 'Age'),
+    ( 1, 12, 3, 2, null, 'employee', 'Attrition' ),
+    ( 1, 13, 3, 2, null, 'employee', 'BusinessTravel'),
+    ( 1, 14, 3, 2, null, 'employee', 'DailyRate'),
+    ( 1, 15, 3, 2, null, 'employee', 'Department' ),
+    ( 1, 16, 3, 2, null, 'employee', 'DistanceFromHome'),
+    ( 1, 17, 3, 2, null, 'employee', 'Education'),
+    ( 1, 18, 3, 2, null, 'employee', 'EducationField'),
+    ( 1, 19, 3, 2, null, 'employee', 'EmployeeCount'),
+    ( 1, 20, 3, 2, null, 'employee', 'EmployeeNumber'),
+    ( 1, 21, 3, 2, null, 'employee', 'EnvironmentSatisfaction'),
+    ( 1, 22, 3, 2, null, 'employee', 'Gender'),
+    ( 1, 23, 3, 2, null, 'employee', 'HourlyRate'),
+    ( 1, 24, 3, 2, null, 'employee', 'JobInvolvement'),
+    ( 1, 25, 3, 2, null, 'employee', 'JobLevel'),
+    ( 1, 26, 3, 2, null, 'employee', 'JobRole'),
+    ( 1, 27, 3, 2, null, 'employee', 'JobSatisfaction'),
+    ( 1, 28, 3, 2, null, 'employee', 'MaritalStatus'),
+    ( 1, 29, 3, 2, null, 'employee', 'MonthlyIncome'),
+    ( 1, 30, 3, 2, null, 'employee', 'MonthlyRate'),
+    ( 1, 31, 3, 2, null, 'employee', 'NumCompaniesWorked'),
+    ( 1, 32, 3, 2, null, 'employee', 'Over18' ),
+    ( 1, 33, 3, 2, null, 'employee', 'OverTime' ),
+    ( 1, 34, 3, 2, null, 'employee', 'PercentSalaryHike'),
+    ( 1, 35, 3, 2, null, 'employee', 'PerformanceRating'),
+    ( 1, 36, 3, 2, null, 'employee', 'RelationshipSatisfaction' ),
+    ( 1, 37, 3, 2, null, 'employee', 'StandardHours'),
+    ( 1, 38, 3, 2, null, 'employee', 'StockOptionLevel'),
+    ( 1, 39, 3, 2, null, 'employee', 'TotalWorkingYears'),
+    ( 1, 40, 3, 2, null, 'employee', 'TrainingTimesLastYear'),
+    ( 1, 41, 3, 2, null, 'employee', 'WorkLifeBalance'),
+    ( 1, 42, 3, 2, null, 'employee', 'YearsAtCompany'),
+    ( 1, 43, 3, 2, null, 'employee', 'YearsInCurrentRole'),
+    ( 1, 44, 3, 2, null, 'employee', 'YearsSinceLastPromotion'),
+    ( 1, 45, 3, 2, null, 'employee', 'YearsWithCurrManager');
