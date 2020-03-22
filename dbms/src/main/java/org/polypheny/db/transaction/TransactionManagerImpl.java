@@ -38,9 +38,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 public class TransactionManagerImpl implements TransactionManager {
@@ -59,14 +56,13 @@ public class TransactionManagerImpl implements TransactionManager {
                 runningTransactionsGroup,
                 Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
         im.registerInformation( runningTransactionsTable );
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    runningTransactionsTable.reset();
-                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
-                },
-                "Update transaction overview",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
+        page.setRefreshFunction( () -> {
+            runningTransactionsTable.reset();
+            transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow(
+                    k.getGlobalTransactionId(),
+                    v.isAnalyze(),
+                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
+        } );
     }
 
 

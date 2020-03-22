@@ -48,10 +48,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -105,11 +101,22 @@ public abstract class AbstractJdbcStore extends Store {
         im.registerInformation( connectionPoolSizeTable );
         informationElements.add( connectionPoolSizeTable );
 
-        BackgroundTaskManager.INSTANCE.registerTask(
-                new ConnectionPoolSizeInfo( connectionPoolSizeGraph, connectionPoolSizeTable ),
-                "Update " + uniqueName + " JDBC connection factory pool size information",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
+        informationGroupConnectionPool.setRefreshFunction( () -> {
+            int idle = connectionFactory.getNumIdle();
+            int active = connectionFactory.getNumActive();
+            int max = connectionFactory.getMaxTotal();
+            int available = max - idle - active;
+
+            connectionPoolSizeGraph.updateGraph(
+                    new String[]{ "Active", "Available", "Idle" },
+                    new GraphData<>( getUniqueName() + "-connection-pool-data", new Integer[]{ active, available, idle } )
+            );
+
+            connectionPoolSizeTable.reset();
+            connectionPoolSizeTable.addRow( "Active", active );
+            connectionPoolSizeTable.addRow( "Idle", idle );
+            connectionPoolSizeTable.addRow( "Max", max );
+        } );
     }
 
 
@@ -322,38 +329,6 @@ public abstract class AbstractJdbcStore extends Store {
             im.removeInformation( informationElements.toArray( new Information[0] ) );
             im.removeGroup( informationGroupConnectionPool );
             im.removePage( informationPage );
-        }
-    }
-
-
-    private class ConnectionPoolSizeInfo implements BackgroundTask {
-
-        private final InformationGraph graph;
-        private final InformationTable table;
-
-
-        ConnectionPoolSizeInfo( InformationGraph graph, InformationTable table ) {
-            this.graph = graph;
-            this.table = table;
-        }
-
-
-        @Override
-        public void backgroundTask() {
-            int idle = connectionFactory.getNumIdle();
-            int active = connectionFactory.getNumActive();
-            int max = connectionFactory.getMaxTotal();
-            int available = max - idle - active;
-
-            graph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( getUniqueName() + "-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            table.reset();
-            table.addRow( "Active", active );
-            table.addRow( "Idle", idle );
-            table.addRow( "Max", max );
         }
     }
 
