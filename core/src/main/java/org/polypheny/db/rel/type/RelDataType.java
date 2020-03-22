@@ -44,8 +44,9 @@ import org.polypheny.db.sql.type.SqlTypeName;
 
 /**
  * RelDataType represents the type of a scalar expression or entire row returned from a relational expression.
- *
- * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant, but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
+ * <p>
+ * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
+ * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
  */
 public interface RelDataType {
 
@@ -58,9 +59,6 @@ public interface RelDataType {
      * @return whether this type has fields; examples include rows and user-defined structured types in SQL, and classes in Java
      */
     boolean isStruct();
-
-    // NOTE jvs 17-Dec-2004:  once we move to Java generics, getFieldList() will be declared to return a read-only List<RelDataTypeField>, and getFields() will be eliminated.  Currently,
-    // anyone can mutate a type by poking into the array returned by getFields!
 
     /**
      * Gets the fields in a struct type. The field count is equal to the size of the returned list.
@@ -157,8 +155,8 @@ public interface RelDataType {
     SqlIntervalQualifier getIntervalQualifier();
 
     /**
-     * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified precision. For example, the type INTEGER has no user-specified precision,
-     * but this method returns 10 for an INTEGER type.
+     * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
+     * precision. For example, the type INTEGER has no user-specified precision, but this method returns 10 for an INTEGER type.
      *
      * Returns {@link #PRECISION_NOT_SPECIFIED} (-1) if precision is not applicable for this type.
      *
@@ -181,7 +179,8 @@ public interface RelDataType {
     SqlTypeName getSqlTypeName();
 
     /**
-     * Gets the {@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on {@link #getSqlTypeName}. For a user-defined type, this is a compound identifier which uniquely names the type.
+     * Gets the {@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on
+     * {@link #getSqlTypeName}. For a user-defined type, this is a compound identifier which uniquely names the type.
      *
      * @return SqlIdentifier, or null if this is not an SQL type
      */
@@ -195,14 +194,16 @@ public interface RelDataType {
     String toString();
 
     /**
-     * Gets a string representation of this type with full detail such as character set and nullability. The string must serve as a "digest" for this type, meaning two types can be considered identical iff their digests are equal.
+     * Gets a string representation of this type with full detail such as character set and nullability. The string must
+     * serve as a "digest" for this type, meaning two types can be considered identical iff their digests are equal.
      *
      * @return full type string
      */
     String getFullTypeString();
 
     /**
-     * Gets a canonical object representing the family of this type. Two values can be compared if and only if their types are in the same family.
+     * Gets a canonical object representing the family of this type. Two values can be compared if and only if their types
+     * are in the same family.
      *
      * @return canonical object representing type family
      */

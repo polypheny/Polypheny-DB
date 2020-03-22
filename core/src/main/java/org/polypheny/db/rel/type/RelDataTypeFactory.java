@@ -49,12 +49,13 @@ import org.polypheny.db.util.Glossary;
 
 
 /**
- * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types.
- * The factory also provides methods for return type inference for arithmetic in cases where SQL 2003 is implementation defined or impractical.
- *
+ * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java,
+ * and collection types. The factory also provides methods for return type inference for arithmetic in cases where SQL 2003
+ * is implementation defined or impractical.
+ * <p>
  * This interface is an example of the {@link Glossary#ABSTRACT_FACTORY_PATTERN abstract factory pattern}.
- * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object.
- * This reduces memory consumption and comparison cost.
+ * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal
+ * if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
  */
 public interface RelDataTypeFactory {
 
@@ -143,7 +144,8 @@ public interface RelDataTypeFactory {
     RelDataType createMultisetType( RelDataType elementType, long maxCardinality );
 
     /**
-     * Duplicates a type, making a deep copy. Normally, this is a no-op, since canonical type objects are returned. However, it is useful when copying a type from one factory to another.
+     * Duplicates a type, making a deep copy. Normally, this is a no-op, since canonical type objects are returned.
+     * However, it is useful when copying a type from one factory to another.
      *
      * @param type input type
      * @return output type, a new object equivalent to input type
@@ -151,8 +153,9 @@ public interface RelDataTypeFactory {
     RelDataType copyType( RelDataType type );
 
     /**
-     * Creates a type that is the same as another type but with possibly different nullability. The output type may be identical to the input type. For type systems without a concept of nullability, the return value
-     * is always the same as the input.
+     * Creates a type that is the same as another type but with possibly different nullability. The output type may be
+     * identical to the input type. For type systems without a concept of nullability, the return value is always
+     * the same as the input.
      *
      * @param type input type
      * @param nullable true to request a nullable type; false to request a NOT NULL type
@@ -162,7 +165,8 @@ public interface RelDataTypeFactory {
     RelDataType createTypeWithNullability( RelDataType type, boolean nullable );
 
     /**
-     * Creates a type that is the same as another type but with possibly different charset or collation. For types without a concept of charset or collation this function must throw an error.
+     * Creates a type that is the same as another type but with possibly different charset or collation. For types without a
+     * concept of charset or collation this function must throw an error.
      *
      * @param type input type
      * @param charset charset to assign
@@ -178,7 +182,8 @@ public interface RelDataTypeFactory {
     Charset getDefaultCharset();
 
     /**
-     * Returns the most general of a set of types (that is, one type to which they can all be cast), or null if conversion is not possible. The result may be a new type that is less restrictive than any of the input types,
+     * Returns the most general of a set of types (that is, one type to which they can all be cast), or null if conversion
+     * is not possible. The result may be a new type that is less restrictive than any of the input types,
      * e.g. <code>leastRestrictive(INT, NUMERIC(3, 2))</code> could be {@code NUMERIC(12, 2)}.
      *
      * @param types input types to be combined using union (not null, not empty)
@@ -230,7 +235,8 @@ public interface RelDataTypeFactory {
     RelDataType createSqlIntervalType( SqlIntervalQualifier intervalQualifier );
 
     /**
-     * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and requires both operands to have exact numeric types.
+     * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and
+     * requires both operands to have exact numeric types.
      *
      * @param type1 type of the first operand
      * @param type2 type of the second operand
@@ -246,7 +252,8 @@ public interface RelDataTypeFactory {
     boolean useDoubleMultiplication( RelDataType type1, RelDataType type2 );
 
     /**
-     * Infers the return type of a decimal division. Decimal division involves at least one decimal operand and requires both operands to have exact numeric types.
+     * Infers the return type of a decimal division. Decimal division involves at least one decimal operand and requires
+     * both operands to have exact numeric types.
      *
      * @param type1 type of the first operand
      * @param type2 type of the second operand
@@ -255,8 +262,8 @@ public interface RelDataTypeFactory {
     RelDataType createDecimalQuotient( RelDataType type1, RelDataType type2 );
 
     /**
-     * Creates a {@link org.polypheny.db.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder} is deprecated, we recommend that you use
-     * its base class {@link Builder}, which is not deprecated.
+     * Creates a {@link org.polypheny.db.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder}
+     * is deprecated, we recommend that you use its base class {@link Builder}, which is not deprecated.
      */
     FieldInfoBuilder builder();
 

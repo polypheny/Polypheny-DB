@@ -43,9 +43,9 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Implementation of {@link RelDataType} for a dynamic table.
- *
- * It's used during SQL validation, where the field list is mutable for the getField() call. After SQL validation, a normal {@link RelDataTypeImpl} with an immutable field list takes the place
- * of the DynamicRecordTypeImpl instance.
+ * <p>
+ * It's used during SQL validation, where the field list is mutable for the getField() call. After SQL validation, a
+ * normal {@link RelDataTypeImpl} with an immutable field list takes the place of the DynamicRecordTypeImpl instance.
  */
 public class DynamicRecordTypeImpl extends DynamicRecordType {
 

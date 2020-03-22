@@ -126,8 +126,9 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
 
     /**
      * Per {@link Serializable} API, provides a replacement object to be written during serialization.
-     *
-     * This implementation converts this RelRecordType into a SerializableRelRecordType, whose <code>readResolve</code> method converts it back to a RelRecordType during deserialization.
+     * <p>
+     * This implementation converts this RelRecordType into a SerializableRelRecordType, whose <code>readResolve</code>
+     * method converts it back to a RelRecordType during deserialization.
      */
     private Object writeReplace() {
         return new SerializableRelRecordType( fieldList );
@@ -135,7 +136,8 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
 
 
     /**
-     * Skinny object which has the same information content as a {@link RelRecordType} but skips redundant stuff like digest and the immutable list.
+     * Skinny object which has the same information content as a {@link RelRecordType} but skips redundant stuff like
+     * digest and the immutable list.
      */
     private static class SerializableRelRecordType implements Serializable {
 

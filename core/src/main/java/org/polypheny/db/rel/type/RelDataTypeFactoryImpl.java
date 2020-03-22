@@ -450,7 +450,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
     /**
      * {@inheritDoc}
      *
-     * Implement RelDataTypeFactory with SQL 2003 compliant behavior. Let p1, s1 be the precision and scale of the first operand Let p2, s2 be the precision and scale of the second operand Let p, s be the precision and scale of the result,
+     * Implement RelDataTypeFactory with SQL 2003 compliant behavior. Let p1, s1 be the precision and scale of the first
+     * operand Let p2, s2 be the precision and scale of the second operand Let p, s be the precision and scale of the result,
      * Then the result type is a decimal with:
      *
      * <ul>

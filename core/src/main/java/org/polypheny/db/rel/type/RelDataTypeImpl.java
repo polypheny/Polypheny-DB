@@ -78,8 +78,9 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
     /**
      * Default constructor, to allow derived classes such as {@link BasicSqlType} to be {@link Serializable}.
-     *
-     * (The serialization specification says that a class can be serializable even if its base class is not serializable, provided that the base class has a public or protected zero-args constructor.)
+     * <p>
+     * (The serialization specification says that a class can be serializable even if its base class is not serializable,
+     * provided that the base class has a public or protected zero-args constructor.)
      */
     protected RelDataTypeImpl() {
         this( null );

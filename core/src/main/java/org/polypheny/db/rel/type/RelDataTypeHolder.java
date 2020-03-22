@@ -66,9 +66,10 @@ class RelDataTypeHolder {
 
 
     /**
-     * Get field if exists, otherwise inserts a new field. The new field by default will have "any" type, except for the dynamic star field.
+     * Get field if exists, otherwise inserts a new field. The new field by default will have "any" type, except for the
+     * dynamic star field.
      *
-     * @param fieldName Request field name
+     * @param fieldName     Request field name
      * @param caseSensitive Case Sensitive
      * @return A pair of RelDataTypeField and Boolean. Boolean indicates whether a new field is added to this holder.
      */
