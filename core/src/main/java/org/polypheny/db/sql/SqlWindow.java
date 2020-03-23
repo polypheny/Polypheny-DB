@@ -48,7 +48,7 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;

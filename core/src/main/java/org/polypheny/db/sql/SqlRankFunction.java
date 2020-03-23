@@ -34,8 +34,8 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Optionality;
 
 

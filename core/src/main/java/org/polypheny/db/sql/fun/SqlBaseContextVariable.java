@@ -40,8 +40,8 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**

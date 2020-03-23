@@ -64,7 +64,7 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NlsString;

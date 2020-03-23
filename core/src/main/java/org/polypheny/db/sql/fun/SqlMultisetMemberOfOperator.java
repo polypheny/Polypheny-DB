@@ -40,9 +40,9 @@ import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.type.MultisetPolyType;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyOperandCountRanges;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
 
 

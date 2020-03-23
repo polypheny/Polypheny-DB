@@ -40,10 +40,10 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**

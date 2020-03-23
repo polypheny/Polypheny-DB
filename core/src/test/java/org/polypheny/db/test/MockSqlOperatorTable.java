@@ -45,8 +45,8 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
 
 
 /**

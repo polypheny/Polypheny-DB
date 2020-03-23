@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.type;
 
 
 public class UnknownTypeException extends Exception {

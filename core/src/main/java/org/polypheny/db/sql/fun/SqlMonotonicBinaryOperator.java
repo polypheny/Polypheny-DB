@@ -39,9 +39,9 @@ import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.PolyOperandTypeInference;
-import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**

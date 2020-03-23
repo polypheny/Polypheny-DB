@@ -50,12 +50,12 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
-import org.polypheny.db.type.ComparableOperandTypeChecker;
-import org.polypheny.db.type.InferTypes;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.ComparableOperandTypeChecker;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 

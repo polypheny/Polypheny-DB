@@ -114,9 +114,9 @@ import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.tools.ValidationException;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 

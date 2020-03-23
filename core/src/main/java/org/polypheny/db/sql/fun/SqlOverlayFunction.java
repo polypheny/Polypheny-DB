@@ -39,9 +39,9 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

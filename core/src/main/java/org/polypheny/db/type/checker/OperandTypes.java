@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.type;
+package org.polypheny.db.type.checker;
 
 
 import static org.polypheny.db.util.Static.RESOURCE;
@@ -48,20 +31,26 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
  * Strategies for checking operand types.
  * <p>
- * This class defines singleton instances of strategy objects for operand type checking. {@link org.polypheny.db.type.ReturnTypes} and {@link org.polypheny.db.type.InferTypes} provide similar strategies
+ * This class defines singleton instances of strategy objects for operand type checking. {@link ReturnTypes} and {@link InferTypes} provide similar strategies
  * for operand type inference and operator return type inference.
  * <p>
  * Note to developers: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else belongs in a reusable top-level class. If you find yourself copying and pasting an existing strategy's
  * anonymous inner class, you're making a mistake.
  *
  * @see PolyOperandTypeChecker
- * @see org.polypheny.db.type.ReturnTypes
- * @see org.polypheny.db.type.InferTypes
+ * @see ReturnTypes
+ * @see InferTypes
  */
 public abstract class OperandTypes {
 

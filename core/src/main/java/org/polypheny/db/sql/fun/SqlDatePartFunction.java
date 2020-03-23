@@ -46,10 +46,10 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.type.InferTypes;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyOperandCountRanges;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

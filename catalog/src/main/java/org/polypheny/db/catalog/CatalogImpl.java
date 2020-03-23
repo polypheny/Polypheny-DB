@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -60,6 +59,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.UnknownTypeException;
 
 
 @Slf4j

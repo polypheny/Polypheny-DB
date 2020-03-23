@@ -49,9 +49,9 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.type.PolyOperandCountRanges;
-import org.polypheny.db.type.PolyOperandTypeChecker;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
 
 

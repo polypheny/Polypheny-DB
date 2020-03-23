@@ -42,9 +42,9 @@ import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.PolyOperandTypeInference;
-import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**

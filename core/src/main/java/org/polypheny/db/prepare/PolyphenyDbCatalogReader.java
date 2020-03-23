@@ -76,13 +76,13 @@ import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
 import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.sql.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.type.FamilyOperandTypeChecker;
-import org.polypheny.db.type.InferTypes;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 

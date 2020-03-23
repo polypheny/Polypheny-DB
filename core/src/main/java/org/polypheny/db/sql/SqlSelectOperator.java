@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

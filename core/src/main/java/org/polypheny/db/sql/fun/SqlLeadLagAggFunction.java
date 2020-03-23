@@ -41,14 +41,14 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.PolyReturnTypeInference;
-import org.polypheny.db.type.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransform;
 import org.polypheny.db.type.PolyTypeTransforms;
-import org.polypheny.db.type.ReturnTypes;
-import org.polypheny.db.type.SameOperandTypeChecker;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.checker.SameOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 
 

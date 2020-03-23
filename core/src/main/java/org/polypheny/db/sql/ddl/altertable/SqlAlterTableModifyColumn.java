@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import lombok.NonNull;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -39,6 +38,7 @@ import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.UnknownTypeException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 

@@ -89,10 +89,10 @@ import org.polypheny.db.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.type.PolyOperandTypeChecker;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 

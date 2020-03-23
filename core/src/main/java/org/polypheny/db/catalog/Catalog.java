@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -57,6 +56,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.UnknownTypeException;
 
 
 public abstract class Catalog {

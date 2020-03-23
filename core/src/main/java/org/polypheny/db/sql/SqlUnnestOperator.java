@@ -39,9 +39,9 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.util.Util;
 
 

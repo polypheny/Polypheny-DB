@@ -36,9 +36,9 @@ package org.polypheny.db.sql;
 
 import java.util.function.Predicate;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.PolyOperandTypeInference;
-import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.Util;
 

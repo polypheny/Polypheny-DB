@@ -56,10 +56,10 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.type.InferTypes;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.inference.InferTypes;
 
 
 /**

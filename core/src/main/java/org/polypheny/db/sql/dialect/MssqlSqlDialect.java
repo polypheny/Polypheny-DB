@@ -49,7 +49,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

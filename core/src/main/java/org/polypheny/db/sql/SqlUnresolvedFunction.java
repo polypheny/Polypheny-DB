@@ -37,10 +37,10 @@ package org.polypheny.db.sql;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.PolyOperandTypeInference;
-import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**

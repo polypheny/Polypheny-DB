@@ -242,8 +242,8 @@ public class RexBuilder {
 
     /**
      * Creates a call with an array of arguments.
-     *
-     * If you already know the return type of the call, then {@link #makeCall(RelDataType, SqlOperator, java.util.List)} is preferred.<
+     * <p>
+     * If you already know the return type of the call, then {@link #makeCall(RelDataType, SqlOperator, java.util.List)} is preferred.
      */
     public RexNode makeCall( SqlOperator op, List<? extends RexNode> exprs ) {
         final RelDataType type = deriveReturnType( op, exprs );

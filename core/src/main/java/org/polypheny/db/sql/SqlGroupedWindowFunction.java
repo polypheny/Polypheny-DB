@@ -38,10 +38,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.type.PolyOperandTypeChecker;
-import org.polypheny.db.type.PolyOperandTypeInference;
-import org.polypheny.db.type.PolyReturnTypeInference;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

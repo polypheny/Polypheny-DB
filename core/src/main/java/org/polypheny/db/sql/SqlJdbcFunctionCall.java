@@ -44,7 +44,7 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
-import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Static;
 

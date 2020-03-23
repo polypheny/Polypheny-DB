@@ -53,11 +53,11 @@ import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyOperandCountRanges;
-import org.polypheny.db.type.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 

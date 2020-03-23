@@ -39,8 +39,8 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.type.OperandTypes;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
 
 
 /**

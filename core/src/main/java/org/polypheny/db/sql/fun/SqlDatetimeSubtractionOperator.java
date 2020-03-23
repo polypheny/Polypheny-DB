@@ -42,9 +42,9 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.type.InferTypes;
-import org.polypheny.db.type.OperandTypes;
-import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
